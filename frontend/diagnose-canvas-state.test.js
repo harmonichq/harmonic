@@ -6,8 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, dismissRaisedDock, dockView,
-  isDrilledSpotlight, popInspector, seatableChartIds,
+  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute, dismissRaisedDock,
+  dockView, isDrilledSpotlight, popInspector, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
 
@@ -145,4 +145,74 @@ test('a chart seated directly from its own registry tile is marked on the stage,
 test('an unknown want is refused rather than silently resolved', () => {
   assert.throws(() => dockView(600, 'floating'), RangeError);
   assert.throws(() => dockView(600, 'mounted'), RangeError);
+});
+
+/* THE CHART ROUTE IS THE ROW ROUTE, REACHED BY CHART IDENTITY (ADR 294). A
+   settings chart click resolves the same finding row a queue-row click would,
+   and hands off to it — the pre-change behavior sent every settings kind to a
+   generic 'chart' frame instead, which is exactly what this pins against. */
+test('a settings chart click resolves the row its findings-queue entry would drill to', () => {
+  const findingsRows = [{ id: 'basal:0-30', register: 'assert', parameter: 'basal_rate' }];
+  const descriptor = { chartId: 'basal:0-30', kind: 'basal' };
+  assert.deepEqual(chartClickRoute(descriptor, { k: 'factors' }, findingsRows), {
+    action: 'drill', popToRoot: false, row: findingsRows[0],
+  });
+});
+
+test('a behavioral chart with a published lever still drills to its row', () => {
+  const findingsRows = [{ id: 'finding:over_treated_low', register: 'finding', lever: 'basal_rate' }];
+  const descriptor = { chartId: 'finding:over_treated_low', kind: 'event-comparison' };
+  assert.deepEqual(chartClickRoute(descriptor, { k: 'factors' }, findingsRows), {
+    action: 'drill', popToRoot: false, row: findingsRows[0],
+  });
+});
+
+test('a behavioral chart with no published lever still withholds its case file', () => {
+  const findingsRows = [{ id: 'finding:over_treated_low', register: 'finding', lever: null }];
+  const descriptor = { chartId: 'finding:over_treated_low', kind: 'event-comparison' };
+  assert.deepEqual(chartClickRoute(descriptor, { k: 'factors' }, findingsRows), {
+    action: 'placeholder', popToRoot: false,
+    message: 'This behavioral chart has no published lever, so its case file is withheld.',
+  });
+});
+
+test('clicking the chart the reader already stands on moves nothing, for a settings panel', () => {
+  const findingsRows = [{ id: 'isf', register: 'assert', parameter: 'isf' }];
+  const descriptor = { chartId: 'isf', kind: 'isf' };
+  const standing = { k: 'isf', rowId: 'isf' };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), { action: 'noop' });
+});
+
+test('clicking the chart the reader already stands on moves nothing, for a behavioral finding', () => {
+  const findingsRows = [{ id: 'finding:over_treated_low', register: 'finding', lever: 'basal_rate' }];
+  const descriptor = { chartId: 'finding:over_treated_low', kind: 'event-comparison' };
+  const standing = { k: 'factor', rowId: 'finding:over_treated_low' };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), { action: 'noop' });
+});
+
+test('a chart click while another parameter panel stands replaces that level rather than deepening it', () => {
+  const findingsRows = [{ id: 'ic:720', register: 'assert', parameter: 'carb_ratio' }];
+  const descriptor = { chartId: 'ic:720', kind: 'carb-ratio' };
+  const standing = { k: 'isf', rowId: 'isf' };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), {
+    action: 'drill', popToRoot: true, row: findingsRows[0],
+  });
+});
+
+test('a chart click while a behavioral factor stands also replaces that level', () => {
+  const findingsRows = [{ id: 'basal:0-30', register: 'assert', parameter: 'basal_rate' }];
+  const descriptor = { chartId: 'basal:0-30', kind: 'basal' };
+  const standing = { k: 'factor', rowId: 'finding:over_treated_low' };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), {
+    action: 'drill', popToRoot: true, row: findingsRows[0],
+  });
+});
+
+test('a settings chart with no matching findings row is a silent no-op, inherited from the row route', () => {
+  const descriptor = { chartId: 'basal:0-30', kind: 'basal' };
+  assert.deepEqual(chartClickRoute(descriptor, { k: 'factors' }, []), { action: 'noop' });
+});
+
+test('no descriptor is a no-op', () => {
+  assert.deepEqual(chartClickRoute(null, { k: 'factors' }, []), { action: 'noop' });
 });

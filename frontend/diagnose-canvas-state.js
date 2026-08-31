@@ -68,6 +68,38 @@ export function reconcileTileDescriptors(
   };
 }
 
+/* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE (ADR 294). The behavioral
+   branch already resolved a chart click by finding the findings row whose id
+   equals the chart's own id and handing it to the row route; evidence chart
+   descriptors are generated one per findings row and carry that row's id as
+   their chart identity, so the same resolution reaches every settings kind
+   too — basal, correction factor and carb ratio open the identical panel
+   their findings-queue row opens, never a second implementation of it.
+
+   Every level-2 frame the row route creates (`factor`, `chart`, `isf`,
+   `slot`, `block`) carries `rowId` set to that same finding row id, so
+   "already standing on this chart" is one comparison, not one per frame
+   kind. A click that lands anywhere else pops to root before routing, so a
+   parameter's panel replaces whatever stood before it rather than stacking
+   under it. */
+export function chartClickRoute(descriptor, standingFrame, findingsRows) {
+  if (!descriptor) return { action: 'noop' };
+  const standing = standingFrame && standingFrame.k !== 'factors' ? standingFrame : null;
+  if (standing && standing.rowId === descriptor.chartId) return { action: 'noop' };
+  const popToRoot = Boolean(standing);
+  const behavioral = descriptor.kind === 'event-comparison';
+  const row = (findingsRows || []).find((item) => item.id === descriptor.chartId) || null;
+  if (behavioral && !row?.lever) {
+    return {
+      action: 'placeholder',
+      popToRoot,
+      message: 'This behavioral chart has no published lever, so its case file is withheld.',
+    };
+  }
+  if (row) return { action: 'drill', popToRoot, row };
+  return { action: 'noop' };
+}
+
 export function drilledChartIdForFrame(frame, descriptors) {
   if (!frame) return null;
   if (frame.k === 'chart') return frame.chartId;

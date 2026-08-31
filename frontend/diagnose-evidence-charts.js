@@ -288,7 +288,7 @@ function basalLedgerOption(data, mini, colors, description) {
    the exclusions, the verdict — is set as type, because only the part carrying
    the argument earns ink. */
 const EDITORIAL = Object.freeze({
-  margin: 28, deckTop: 18, standfirstTop: 46, figureTop: 88, footerBand: 86, rail: 206,
+  margin: 28, deckTop: 18, standfirstTop: 46, figureTop: 88, footerBand: 100, rail: 206,
 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
@@ -512,8 +512,9 @@ function basalEditorialOption(data, mini, colors, description) {
             box(railLeft, 186, EDITORIAL.rail, 1, hair),
             text('U/h', cs.x + cs.width + 6, base + 6, `500 10px ${FONT}`, colors.muted),
           ];
-          /* Two dotted counts and nothing else: the baseline is the zero. */
-          for (const count of new Set([total, Math.round(total / 2)])) {
+          /* Two dotted counts and nothing else: the baseline is the zero, so it
+             never gets a rule of its own. */
+          for (const count of new Set([total, Math.round(total / 2)].filter(Boolean))) {
             const y = api.coord([xMin, count])[1];
             children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
               style: { stroke: ink(colors.dark ? 18 : 12), lineWidth: 1, lineDash: [1, 3] } });
@@ -541,10 +542,13 @@ function basalEditorialOption(data, mini, colors, description) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];
             children.push(box(ruleX - .75, cs.y, 1.5, base + 10 - cs.y, colors.basal));
-            const flagRight = ruleX > cs.x + cs.width - 150;
-            children.push(box(ruleX + (flagRight ? -4 : 1), cs.y - 12, 3, 3, colors.basal),
+            /* The flag rides just inside the plot's top edge — the deck owns
+               every pixel above it, and a caps line set into the deck's own band
+               would run through the standfirst. */
+            const flagRight = ruleX > cs.x + cs.width - 160;
+            children.push(box(ruleX + (flagRight ? -4 : 1), cs.y + 7, 3, 3, colors.basal),
               text(`YOU PROGRAMMED ${programmed.toFixed(2)}`,
-                ruleX + (flagRight ? -9 : 7), cs.y - 14, caps, colors.muted,
+                ruleX + (flagRight ? -9 : 7), cs.y + 4, caps, colors.muted,
                 { align: flagRight ? 'right' : 'left' }));
             if (atRate > 0) {
               const yFoot = api.coord([programmed, crossing - atRate])[1];
@@ -569,7 +573,7 @@ function basalEditorialOption(data, mini, colors, description) {
               ? `${nightCount(below)} it ran lower —\nthe lowest reached ${minRate?.toFixed(1)} U/h.`
               : null;
           if (tail) {
-            children.push(text(tail, cs.x + cs.width, cs.y + 14, `500 12px ${FONT}`,
+            children.push(text(tail, cs.x + cs.width, cs.y + 10, `500 12px ${FONT}`,
               colors.text, { align: 'right', lineHeight: 16 }));
           }
           return { type: 'group', children };

@@ -309,6 +309,31 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.equal(rust.data[rust.data.length - 1][1], 0, 'the staircase lands on the baseline');
 });
 
+/* ONE BIG NIGHT MAY NOT SET THE SCALE, AND MAY NOT BE HIDDEN EITHER. A single
+   2.5 U/h night stretched the live domain to three units and crushed the finding
+   into the left third of the tile; the ceiling now rides the roster, and the
+   night past it keeps its true value where the reader can still be told it. */
+test('the editorial ceiling caps an outlier night without hiding its value', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const outlier = { date: '2026-01-09', delivered_rate: 2.5, programmed_rate: 0.6,
+    sign: 1, t: '2026-01-09T00:00:00' };
+  const option = entry.option('editorial', {
+    data: { ...basal, nights: [...basal.nights, outlier] },
+  });
+
+  assert.ok(option.xAxis.max < outlier.delivered_rate,
+    'the domain answers to the roster, not to its tallest night');
+  const squares = option.series.find(({ type }) => type === 'scatter');
+  const capped = squares.data.find(({ name }) => name === outlier.date);
+  assert.equal(capped.value[0], option.xAxis.max, 'the capped night is pinned to the ceiling');
+  assert.equal(capped.delivered, outlier.delivered_rate,
+    'the number the night reports is never the capped one');
+  const rust = option.series.filter(({ type }) => type === 'line')[1];
+  assert.equal(rust.data[rust.data.length - 1][1], 1,
+    'the staircase leaves the right edge still standing at the night beyond it');
+});
+
 test('the editorial staircase tolerates an absent estimate at both ranks', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');

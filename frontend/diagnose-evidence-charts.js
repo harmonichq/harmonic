@@ -288,7 +288,7 @@ function basalLedgerOption(data, mini, colors, description) {
    the exclusions, the verdict — is set as type, because only the part carrying
    the argument earns ink. */
 const EDITORIAL = Object.freeze({
-  margin: 28, deckTop: 18, standfirstTop: 46, figureTop: 88, footerBand: 100, rail: 206,
+  margin: 28, deckTop: 14, standfirstTop: 42, figureTop: 88, footerBand: 104, rail: 206,
 });
 /* Canvas text has no flow, so a line break is a decision made here. The budget
    is a character count off the font's mean advance — a hairline of slack is
@@ -315,27 +315,35 @@ function basalEditorialOption(data, mini, colors, description) {
   const hasRule = finite(programmed);
   const hasBand = finite(ciLo) && finite(ciHi);
   const round2 = (value) => Math.round(value * 100) / 100;
-  const bounds = [...rates, programmed, ciLo, ciHi, estimateValue].filter(finite);
-  const lo = bounds.length ? Math.min(...bounds) : 0;
-  const hi = bounds.length ? Math.max(...bounds) : 1;
-  const pad = Math.max((hi - lo) * .12, .05);
-  const xSpan = (hi - lo) + pad * 2;
-  const xStep = xSpan > 1 ? .25 : xSpan > .5 ? .2 : xSpan > .25 ? .1 : .05;
+  /* THE ARGUMENT SETS THE SCALE, NOT THE OUTLIERS — the same rule the clock
+     mode's ceiling follows. One 2.5 U/h night stretched this domain to three
+     units and crushed the whole finding into the left third of the tile; the
+     ceiling rides the roster's own 85th percentile and the interval instead,
+     and the nights past it leave by a caret carrying their true value, never
+     silently clipped. The step ladder holds no quarter: a .25 tick prints as
+     "0.3" at one decimal and prints as a lie. */
+  const ceiling = Math.max(ciHi || 0, estimateValue || 0, programmed || 0, facts.p85) || 1;
+  const lo = Math.min(...[rates[0], programmed, ciLo].filter(finite), ceiling);
+  const pad = Math.max((ceiling - lo) * .12, .05);
+  const xSpan = (ceiling - lo) + pad * 2;
+  const xStep = xSpan > 2 ? .5 : xSpan > .8 ? .2 : xSpan > .4 ? .1 : .05;
   const xMin = Math.max(0, round2(Math.floor((lo - pad) / xStep) * xStep));
-  const xMax = round2(Math.ceil((hi + pad) / xStep) * xStep);
+  const xMax = round2(Math.ceil((ceiling + pad) / xStep) * xStep);
   const yMax = Math.max(total, 1);
   /* The staircase, built from the roster and nothing else: arrive at a rate's
      corner still standing at the count that reached it, then drop by however
-     many nights sat exactly there. */
+     many nights sat exactly there. Whatever is still standing at the domain's
+     right edge is a night that ran off it. */
   const points = [[xMin, total]];
   let standing = total;
   rates.forEach((rate, index) => {
-    if (index && rate === rates[index - 1]) return;
+    if ((index && rate === rates[index - 1]) || rate > xMax) return;
     points.push([rate, standing]);
     standing -= rates.filter((other) => other === rate).length;
     points.push([rate, standing]);
   });
-  points.push([xMax, 0]);
+  points.push([xMax, standing]);
+  const overflow = standing;
   const crossing = hasRule ? rates.filter((rate) => rate >= programmed).length : total;
   const left = hasRule
     ? [...points.filter(([x]) => x < programmed), [programmed, crossing]] : points;
@@ -478,8 +486,11 @@ function basalEditorialOption(data, mini, colors, description) {
     xAxis: { type: 'value', min: xMin, max: xMax, interval: xStep,
       ...axis(colors), splitLine: { show: false },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
+      /* The unit is set once, after the last tick, where it cannot be mistaken
+         for a value of its own. */
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
-        formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
+        formatter: (value) => `${value.toFixed(xStep >= .1 ? 1 : 2)}`
+          + `${round2(value) === xMax ? ' U/h' : ''}` } },
     yAxis: { type: 'value', min: 0, max: yMax, show: false },
     series: [
       staircase(left, colors.basal, greyFill),
@@ -488,11 +499,14 @@ function basalEditorialOption(data, mini, colors, description) {
          own: one per night, on the corner of the step that night cut. */
       { type: 'scatter', symbol: 'rect', symbolSize: 3, animation: false, z: 6,
         data: roster.map((night, index) => ({
-          value: [night.delivered_rate, total - index], name: night.date,
+          value: [Math.min(night.delivered_rate, xMax), total - index], name: night.date,
+          /* The square can be pinned to the ceiling; the number it reports may
+             never be. */
+          delivered: night.delivered_rate,
           itemStyle: { color: hasRule && night.delivered_rate < programmed
             ? colors.basal : colors.high },
         })),
-        tooltip: { formatter: (params) => `${params.name} — delivered ${params.value[0]} U/h`
+        tooltip: { formatter: (params) => `${params.name} — delivered ${params.data.delivered} U/h`
           + `${hasRule ? ` · programmed ${programmed.toFixed(2)}` : ''}` } },
       { type: 'custom', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
@@ -505,39 +519,51 @@ function basalEditorialOption(data, mini, colors, description) {
             shape: { x, y, width: w, height: h }, style: { fill } });
           const text = (content, x, y, font, fill, extra = {}) => ({ type: 'text',
             style: { text: content, x, y, font, fill, ...extra } });
+          /* The tile's own nameplate already rules the top of the page, so the
+             only hairlines drawn here are the ones nothing else carries. */
           const children = [
-            box(EDITORIAL.margin, 8, width - EDITORIAL.margin * 2, 1, hair),
-            box(EDITORIAL.margin, height - 30, width - EDITORIAL.margin * 2, 1, hair),
+            box(EDITORIAL.margin, height - 28, width - EDITORIAL.margin * 2, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
             box(railLeft, 186, EDITORIAL.rail, 1, hair),
-            text('U/h', cs.x + cs.width + 6, base + 6, `500 10px ${FONT}`, colors.muted),
           ];
           /* Two dotted counts and nothing else: the baseline is the zero, so it
-             never gets a rule of its own. */
+             never gets a rule of its own. Each count is named UNDER its own
+             hairline — the top one runs along the plot's ceiling, and a label
+             set above that lands in the deck. */
           for (const count of new Set([total, Math.round(total / 2)].filter(Boolean))) {
             const y = api.coord([xMin, count])[1];
             children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
               style: { stroke: ink(colors.dark ? 18 : 12), lineWidth: 1, lineDash: [1, 3] } });
-            children.push(text(String(count), cs.x, y - 4, `500 10px ${FONT}`, colors.muted,
-              { verticalAlign: 'bottom' }));
+            children.push(text(String(count), cs.x, y + 3, `500 10px ${FONT}`, colors.muted));
           }
           /* Uncertainty lives on the ground, under the data — a shadow on the
-             floor, not a box drawn around it. */
+             floor, not a box drawn around it. It sits BELOW the tick labels: run
+             through them it reads as a smudge on the axis rather than a mark. */
           if (hasBand) {
             const xLo = api.coord([ciLo, 0])[0];
             const xHi = api.coord([ciHi, 0])[0];
-            children.push(box(xLo, base + 10, xHi - xLo, 6, shadow),
-              box(xLo, base + 7, 1, 12, shadow), box(xHi - 1, base + 7, 1, 12, shadow));
+            children.push(box(xLo, base + 26, xHi - xLo, 6, shadow),
+              box(xLo, base + 23, 1, 12, shadow), box(xHi - 1, base + 23, 1, 12, shadow));
             if (finite(estimateValue)) {
-              children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 6, 2, 14, colors.basal));
+              children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 22, 2, 14, colors.basal));
             }
             children.push({ type: 'polyline',
-              shape: { points: [[xLo, base + 19], [xLo, base + 24],
-                [cs.x, base + 24]] },
+              shape: { points: [[xLo, base + 35], [xLo, base + 40], [cs.x, base + 40]] },
               style: { stroke: leader, lineWidth: 1, fill: 'none' } });
           }
           children.push(text(editorialWrap(caption, cs.width - 8, 11),
-            cs.x, base + 30, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
+            cs.x, base + 44, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
+          /* A night past the ceiling leaves by a caret carrying its true value:
+             an advisory chart may cap a scale, never hide a big night. */
+          if (overflow > 0 && finite(maxRate)) {
+            const yExit = api.coord([xMax, overflow])[1];
+            children.push({ type: 'polygon',
+              shape: { points: [[cs.x + cs.width + 6, yExit],
+                [cs.x + cs.width, yExit - 3.5], [cs.x + cs.width, yExit + 3.5]] },
+              style: { fill: colors.high } },
+            text(maxRate.toFixed(1), cs.x + cs.width - 4, yExit - 6, `9px ${MONO}`,
+              colors.high, { align: 'right', verticalAlign: 'bottom' }));
+          }
           if (hasRule) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];

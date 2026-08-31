@@ -45,9 +45,20 @@ Why: advisory insulin-dosing guidance, so a wrong verdict on a newly reachable
 panel can misadvise a dose; everything else here is navigation.
 Disposition: copied into the work order at admission.
 
+4. **The chart route releases the drawn brace for basal and carb ratio, and
+   frozen story S21's lane-click exclusivity is corrected.** `→ ADR`
+   Why: cold review established that decision 1's framing was wrong in one
+   direction. `releaseWindow` has exactly two call sites, in the basal-slot and
+   carb-ratio-block pickers, and no chart path reaches either, so adopting the
+   per-parameter rule is a change on the chart gesture rather than a no-op — and
+   it lands on locked story S21. S21's sentence already under-describes shipped
+   behavior, since a basal queue-row drill releases the brace today while S21
+   only exercises a behavioral drill. Operator answer, Q4 = A.
+   Recorded as the second ADR in the change's design.md.
+
 ## Open questions
 
-None. All three settled above.
+None. All four settled above.
 
 ## Spawned tasks
 

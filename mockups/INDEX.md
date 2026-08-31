@@ -53,9 +53,11 @@ already did — never a second implementation of the parameter panel. The route
 inherits its queue-row picker's clock-window release: basal and carb ratio
 release a drawn window, correction factor leaves it standing. S21's lane-click
 exclusivity sentence is reconciled to name the drills that actually release
-(ADR 294 in `openspec/changes/one-settings-drill-down/design.md`); paired
-synthetic evidence is stored under
-`openspec/changes/one-settings-drill-down/evidence/`.
+(ADR 294 in `openspec/changes/one-settings-drill-down/design.md`); a paired
+synthetic before/after basal capture is stored under
+`openspec/changes/one-settings-drill-down/evidence/`, with the carb-ratio and
+correction-factor equivalents proven by the replay (S123, S124) rather than a
+separate capture.
 
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it

@@ -2835,9 +2835,38 @@ S126 · The chart route releases a drawn clock window exactly where its
        factor leaves it standing.
 ```
 
-Evidence: replay S122, S123, S124, S125, S126 (app, pass). Before/after
-captures are stored under
-`openspec/changes/one-settings-drill-down/evidence/`.
+Evidence: replay S122, S123, S124, S125, S126 (app, pass). The replay's own
+opener serves frontend modules from its own checkout's `frontend/`, so it
+cannot be pointed at the base app to get a red run of S122-S126 there — doing
+so mixes the two trees and the page dies on a missing `chartClickRoute`
+export before any story executes. In place of a fail-first run, one
+before/after capture pair demonstrates the asserted behavior did not exist on
+the base, stored under `openspec/changes/one-settings-drill-down/evidence/`:
+
+```
+before-basal-01-canvas.png             after-basal-01-canvas.png
+before-basal-02-after-chart-click.png  after-basal-02-after-chart-click.png
+```
+
+Both pairs are 1440×900, Dark, from the synthetic database
+`mockups/revise-e2e.synthetic/harmonic.sqlite` through the declared no-fetch
+server and the committed Diagnose payload; no real patient data. Both click
+the identical tile, `#tile-row .evidence-tile[data-chart-id="basal:420-450"]
+.tile-body`, from the same 24 h state. The BEFORE pair is a separate checkout
+at base commit `b4b8a786825251b094c5168a4559ec0212dab8e2` served on port 8766;
+the AFTER pair is this revision served on port 8765.
+
+BEFORE: the crumb reads `Findings › Basal 07:00` and the panel is the retired
+thin readout — an "Evidence detail" heading, the three counts (Nights shown
+7, Directional support 6, Excluded nights 1), and a flat night roster. AFTER:
+the crumb reads `Findings › 07:00 slot` and the panel is the parameter
+panel — the verdict word `raise`, CURRENT 1.04, ESTIMATE 1.13, RECOMMENDED
+1.13, the CI 1.04-1.37 with its "includes no change at all" sentence, the
+support count "20 nights of steady data · 30 d basal run", and the Stage
+change control. The window chip changes from `24 h` to `Slot 07:00`, which is
+S126's clock-window release. This pair covers basal only, not one per
+parameter — S123 and S124's carb-ratio and correction-factor equivalents are
+proven by the replay, not by a separate capture.
 
 **S21 is reconciled, not retired.** S21's own assertions are unchanged — it
 still exercises a behavioral finding drill, and a lane click still releases

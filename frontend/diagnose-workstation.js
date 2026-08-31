@@ -1221,7 +1221,10 @@ function boot(root, data, callbacks, signal) {
   let clockPanOffset = 0;                           // left edge of the unrolled clock display
   /* An EXPLICIT window choice — a preset press or a drag — outranks the window
      a frame would derive. An explicit preset or drawn window survives factor and
-     occurrence drilling; only the lane scope choice releases it. Presets and
+     occurrence drilling; it is released only by a navigation that carries its
+     own span to substitute (ADR 294) — a lane click, or a basal or I:C drill
+     through the picker, by queue row or by chart. ISF and a behavioral finding
+     drill derive no span of their own, so neither releases it. Presets and
      drawn windows are the same kind of act, so they clear together and reassert
      together. */
   let explicitPreset = false;
@@ -3398,8 +3401,11 @@ function boot(root, data, callbacks, signal) {
   // explicit choice in its own right, so it outranks the frame's window too
   function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
 
-  /** A lane click is a physical scope choice, so it REPLACES the workspace.
-      This is the only navigation that clears one — drilling never does. */
+  /** A lane click is a physical scope choice, so it REPLACES the workspace —
+      and so does a basal or I:C drill reaching this picker, by queue row or
+      by chart (ADR 294): each carries its own span to substitute. A
+      behavioral finding drill and ISF derive no span of their own and never
+      call this. */
   function releaseWindow() { drawn = null; explicitPreset = false; }
 
   /** Position the plot-only clock brace. The basal lane carries no drag listener

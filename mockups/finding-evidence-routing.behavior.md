@@ -532,9 +532,9 @@ P17 · ONE grammar: an EXPLICIT choice — a preset press OR a drag, the same ki
       and so does a basal or I:C queue-row or chart-row drill —
       basal and I:C own a span of their own to substitute; ISF
       and a behavioral finding drill do not, so neither releases it.
-  source:   frontend/diagnose-workstation.js:1227 (`explicitPreset`),
-            2166-2185 (`pickCell`/`pickBlock` call `releaseWindow`),
-            3403 (`releaseWindow`), 2226-2280 (paintChart's precedence chain)
+  source:   frontend/diagnose-workstation.js:1230 (`explicitPreset`),
+            2169-2184 (`pickCell`/`pickBlock` call `releaseWindow`),
+            3409 (`releaseWindow`), 2229-2282 (paintChart's precedence chain)
   mock:     the window group is inert, so no precedence exists to express
   evidence: replay S01, S21, S126 (app, pass)
   verdict:  amended        issue #294 · 2026-08-31; operator-ruled:
@@ -2822,11 +2822,16 @@ settings kind and for a click that crosses parameters:
 
 ```
 S122 · A basal chart click opens the identical slot panel its findings-queue
-       row opens.
+       row opens, printing the same served verdict word and support count and
+       offering the staging control because this slot's asserts_move is true.
 S123 · A carb-ratio chart click opens the identical block panel its
-       findings-queue row opens.
+       findings-queue row opens, printing the same served verdict word and
+       support count and offering the staging control because this block's
+       asserts_move is true.
 S124 · A correction-factor chart click opens the identical ISF panel its
-       findings-queue row opens.
+       findings-queue row opens, printing the same served verdict word and
+       support count and withholding the staging control because this row's
+       asserts_move is false.
 S125 · A settings chart click is one level, always the same one: clicking a
        different parameter's chart replaces the standing level-2 frame
        instead of stacking a third under it.

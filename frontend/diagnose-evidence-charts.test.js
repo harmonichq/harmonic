@@ -407,7 +407,8 @@ test('the editorial tile takes a middle rank from the seat it is handed', () => 
   assert.match(statement, /INSUFFICIENT EVIDENCE/);
   assert.match(statement, /0\.74 U\/h/);
   assert.match(statement, /\(0\.60–0\.92\)/, 'the interval survives the rank');
-  assert.match(statement, /set 0\.60/, 'the rule loses its flag, so the line names the rate');
+  assert.match(statement, /programmed now 0\.60/,
+    'the rule loses its flag, so the line names the rate in force now');
   assert.equal(tally, `${basal.nights.length} steady nights · ${more} more · 0 less`
     + ` · ${asSet} as set · ${basal.excluded_night_count} excluded`);
   assert.match(entry.option('editorial', { data: { ...data, nights: [data.nights[0]] },
@@ -455,6 +456,108 @@ test('the middle rank keeps its labels inside a 480px cell', () => {
     'the rule flies no flag where the deck has become two lines');
 });
 
+/* A ROSTER CAN SPAN A PROFILE CHANGE. `analyze_basal` measures each night against
+   the rate in force THAT night and stamps the direction it found; the roster
+   carries both, and `current` carries today's. The chart used to anchor every
+   night on the oldest night's rate and re-derive direction from the pixels, so a
+   payload like this one drew, counted and read aloud a rate half its nights were
+   never measured against — and the geometry could disagree with the served sign
+   outright. */
+test('the editorial tile honours a roster whose programmed rate moved', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const night = (day, delivered, programmed, sign) => ({
+    date: `2026-03-${String(day).padStart(2, '0')}`, t: `2026-03-${String(day).padStart(2, '0')}T05:30:00`,
+    delivered_rate: delivered, programmed_rate: programmed, sign,
+  });
+  const data = {
+    schema: 'diagnose-basal-night-evidence-v1', slot: 11, current: 0.90,
+    estimate: { value: .95, lo: .88, hi: 1.08 }, asserts_move: false,
+    safety_status: 'insufficient evidence', excluded_night_count: 2,
+    roster_count: 6, directional_support_count: 4,
+    nights: [
+      /* Three nights on the old 0.70 profile, then three on today's 0.90 —
+         including one that ran 0.80: above its own rate, below the rule. */
+      night(1, 0.86, 0.70, 1), night(2, 0.70, 0.70, null), night(3, 0.64, 0.70, -1),
+      night(4, 1.02, 0.90, 1), night(5, 0.80, 0.90, -1), night(6, 0.95, 0.90, 1),
+    ],
+  };
+  const option = entry.option('editorial', { data });
+  const cells = option.series.find(({ id }) => id === 'nights');
+  const byDate = new Map(cells.data.map((item) => [item.name, item]));
+
+  /* Each night reports the rate IT was measured against, never today's. */
+  assert.equal(byDate.get('2026-03-01').programmed, 0.70);
+  assert.equal(byDate.get('2026-03-04').programmed, 0.90);
+  assert.equal(cells.tooltip.formatter({ name: '2026-03-01', data: byDate.get('2026-03-01') }),
+    '2026-03-01 — delivered 0.86 U/h · programmed 0.70');
+  /* Direction is the served sign everywhere, so the night that ran 0.80 counts
+     as LESS — it ran under the 0.90 in force for it — even though 0.80 sits
+     above the old profile's rate and would have read as "more" off the pixels. */
+  const railRows = option.series.find(({ id }) => id === 'rail')
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950 }).children
+    .map(({ style }) => style.text);
+  assert.deepEqual(railRows, ['3', 'more than programmed', '2', 'less', '1', 'exactly as set',
+    '2', 'excluded — not steady']);
+  assert.match(option.aria.description, /3 more, 2 less, 1 exactly as set/);
+  assert.match(option.aria.description,
+    /at or above the rate programmed for that night on 4 of them/);
+  /* The rule is today's rate, named as such — not a rate lifted off a night. */
+  assert.match(option.aria.description, /programmed now 0\.90 U\/h/);
+  /* Each cell is anchored on its own night's rate: the 0.80 night's cell runs
+     from 0.90 down to 0.80, entirely right of nothing and left of its anchor. */
+  const api = {
+    coord: ([x]) => [28 + x * 400, 100],
+    getWidth: () => 950, getHeight: () => 307,
+  };
+  const params = { coordSys: { x: 28, y: 80, width: 672, height: 147 }, dataIndex: 0 };
+  for (const [date, anchor] of [['2026-03-01', 0.70], ['2026-03-05', 0.90]]) {
+    const index = cells.data.findIndex((item) => item.name === date);
+    const [body] = cells.renderItem({ ...params, dataIndex: index },
+      { ...api, coord: ([x, y]) => [28 + x * 400, 80 + y * 20],
+        value: (dimension) => cells.data[index].value[dimension] }).children;
+    const edge = 28 + anchor * 400;
+    assert.ok(Math.abs(body.shape.x - edge) <= 1 || Math.abs(body.shape.x + body.shape.width - edge) <= 1,
+      `${date} is anchored on ${anchor}, not on today's rate`);
+  }
+  /* And the domain holds every anchor: a cell drawn from a rate off the scale
+     would start from nowhere. */
+  assert.ok(option.xAxis.min <= 0.64 && option.xAxis.max >= 1.02);
+});
+
+/* A night the analyzer could not compare is not a night that matched. */
+test('the editorial tile counts unpaired nights apart from the ties', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const night = (day, delivered, programmed, sign) => ({
+    date: `2026-04-0${day}`, t: `2026-04-0${day}T05:30:00`,
+    delivered_rate: delivered, programmed_rate: programmed, sign,
+  });
+  const data = {
+    slot: 11, current: 0.80, excluded_night_count: 0, roster_count: 4,
+    nights: [night(1, 0.80, 0.80, null), night(2, 0.90, 0.80, 1),
+      /* No programmed samples that night: `sign` is null for the same reason a
+         tie is, and only the missing rate tells them apart. */
+      night(3, 0.83, null, null), night(4, 0.75, null, null)],
+  };
+  const option = entry.option('editorial', { data });
+  const railRows = option.series.find(({ id }) => id === 'rail')
+    .renderItem({ dataIndex: 0 }, { getWidth: () => 950 }).children
+    .map(({ style }) => style.text);
+
+  assert.match(option.aria.description, /1 more, 0 less, 1 exactly as set, 2 with no programmed rate on file/);
+  assert.match(option.aria.description, /at or above the rate programmed for that night on 2 of them/);
+  assert.deepEqual(railRows, ['1', 'more than programmed', '0', 'less', '1', 'exactly as set',
+    '2', 'no programmed rate', '0', 'excluded — not steady'],
+  'the unpaired nights get their own row rather than joining the ties');
+  assert.ok(railRows.every((row) => !row.includes('\n')), 'every rail row still sets on one line');
+  const cells = option.series.find(({ id }) => id === 'nights');
+  const unpaired = cells.data.find((item) => item.name === '2026-04-03');
+  assert.equal(unpaired.programmed, null);
+  assert.equal(cells.tooltip.formatter({ name: unpaired.name, data: unpaired }),
+    '2026-04-03 — delivered 0.83 U/h · no programmed rate on file');
+  /* They rank at the foot of the stack, having no departure to sort by. */
+  assert.deepEqual(cells.data.map(({ name }) => name).slice(-2), ['2026-04-03', '2026-04-04']);
+});
+
 test('the editorial staircase tolerates an absent estimate at both ranks', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
@@ -492,6 +595,14 @@ test('the editorial furniture draws against every payload shape', () => {
     { ...basal, estimate: { value: .74, lo: .6, hi: .92 } },
     { ...basal, estimate: null },
     { ...basal, nights: basal.nights.map((night) => ({ ...night, programmed_rate: null })) },
+    /* A roster that spans a profile change, and one that mixes in nights the
+       analyzer had no rate to compare against. */
+    { ...basal, current: .9,
+      nights: basal.nights.map((night, index) => ({ ...night,
+        programmed_rate: index % 2 ? .9 : .6, sign: index % 2 ? -1 : 1 })) },
+    { ...basal,
+      nights: basal.nights.map((night, index) => (index % 3
+        ? night : { ...night, programmed_rate: null, sign: null })) },
   ];
   for (const data of shapes) {
     for (const mini of [false, true]) {
@@ -503,20 +614,29 @@ test('the editorial furniture draws against every payload shape', () => {
       assert.equal(drawn.type, 'group');
       assert.ok(drawn.children.every((child) => typeof child.type === 'string'
         && Number.isFinite(child.shape?.x ?? child.shape?.x1 ?? child.style?.x ?? 0)));
-      /* And every night cell: one row of the stack, anchored ON the programmed
-         rule and extending only as far as that night deviated from it. Nothing
-         grows from a shared baseline, so a cell's own end is the only thing its
-         width can mean. */
-      const programmed = data.nights[0].programmed_rate;
-      const rule = Number.isFinite(programmed) ? api.coord([programmed, 0])[0] : params.coordSys.x;
+      /* And every night cell: one row of the stack, anchored on the rate
+         programmed for THAT night and extending only as far as it departed from
+         it. Nothing grows from a shared baseline, so a cell's own end is the
+         only thing its width can mean — and a night the analyzer had no
+         programmed rate for is marked where it ran, having no delta to draw. */
       const cells = option.series.find(({ id }) => id === 'nights');
       for (const [index, item] of (cells?.data || []).entries()) {
         const boxes = cells.renderItem({ ...params, dataIndex: index },
           { ...api, value: (dimension) => item.value[dimension] }).children;
         const [body] = boxes;
-        assert.ok(Math.abs(body.shape.x - rule) <= 5
-          || Math.abs(body.shape.x + body.shape.width - rule) <= 5,
-        `the cell for ${item.name} is anchored on the programmed rule`);
+        /* A signed night is anchored on the rate it was measured against — its
+           own where it has one, today's where a served sign leaves no other
+           anchor. A night with no rate on file was never compared, so it is
+           marked where it ran instead of against a rule it never met. */
+        const served = data.nights.find(({ date }) => date === item.name);
+        const ran = api.coord([item.value[0], 0])[0];
+        const anchored = [item.programmed, ...(served.sign === null ? [] : [data.current])]
+          .filter(Number.isFinite).map((rate) => api.coord([rate, 0])[0]);
+        assert.ok(anchored.length
+          ? anchored.some((anchor) => Math.abs(body.shape.x - anchor) <= 5
+            || Math.abs(body.shape.x + body.shape.width - anchor) <= 5)
+          : Math.abs(body.shape.x + body.shape.width / 2 - ran) <= 5,
+        `the cell for ${item.name} is anchored on a rate it was measured against`);
         assert.ok(boxes.length > 0, 'a night is drawn as at least one cell');
         for (const cell of boxes) {
           assert.ok(cell.shape.height > 0 && cell.shape.width >= 0);
@@ -543,8 +663,13 @@ test('editorial labels stay inside the plot and clear of each other (held payloa
   const held = { ...basal, slot: 'edge-hold', excluded_night_count: 0, asserts_move: false,
     safety_status: 'held (recurring-low gate)',
     nights: [night(.62, -1), night(.61, -1), night(.72, null)] };
+  /* A roster spanning a profile change puts cells on both sides of the rule, so
+     the two quadrants the crossing label used to rely on are no longer empty. */
+  const moved = { ...basal, current: .9, excluded_night_count: 1,
+    nights: [{ ...night(1.02, 1), programmed_rate: .9 }, { ...night(.64, -1), programmed_rate: .7 },
+      { ...night(.7, null), programmed_rate: .7 }, { ...night(.8, -1), programmed_rate: .9 }] };
   const plot = { x: 28, y: 80, width: 672, height: 147 };
-  for (const data of [held, { ...basal, estimate: { value: .74, lo: .6, hi: .92 } }]) {
+  for (const data of [held, moved, { ...basal, estimate: { value: .74, lo: .6, hi: .92 } }]) {
     const option = entry.option('editorial', { data });
     /* Rank one is the top row, so the stub counts downward like the axis. */
     const api = {
@@ -611,9 +736,14 @@ test('the editorial reading names the crossing, the tally and the exclusions', (
   const asSet = basal.nights.filter(({ sign }) => sign === null).length;
   const { description } = entry.option('editorial', { data: basal }).aria;
 
-  assert.match(description, new RegExp(`at or above the programmed 0\\.60 U/h on ${more + asSet} of them`));
+  /* The reading names the night's own basis, never one rate standing in for a
+     roster: each night is measured against the rate programmed for THAT night,
+     and today's schedule is named separately as the rule the figure draws. */
+  assert.match(description,
+    new RegExp(`at or above the rate programmed for that night on ${more + asSet} of them`));
   assert.match(description, new RegExp(`${more} more, 0 less, ${asSet} exactly as set`));
-  assert.match(description, new RegExp(`${basal.excluded_night_count} nights excluded`));
+  assert.match(description, /programmed now 0\.60 U\/h/);
+  assert.match(description, new RegExp(`${basal.excluded_night_count} night excluded`));
 });
 
 test('every multi-series evidence form carries an on-chart legend', () => {

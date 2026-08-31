@@ -3,8 +3,9 @@
 ### Requirement: The basal evidence tile states its finding and draws each night as an independent delta
 
 The Diagnose basal evidence tile SHALL render one treatment: a factual headline
-stating the finding, one cell per steady night anchored on the programmed rate
-and extending only that night's deviation, the analyzer's interval and estimate
+stating the finding, one cell per steady night anchored on that night's own served programmed
+rate and extending only its deviation (the drawn rule is the current
+programmed rate; direction comes from the served per-night sign), the analyzer's interval and estimate
 drawn on the same rate axis, and a verdict rail carrying the backend verdict
 word with the direction counts and the excluded-night count. No mark may span
 more than one night, no mode toggle is offered, and every fact prints in
@@ -23,6 +24,12 @@ furniture, a compressed middle rank, and a silhouette-only miniature.
 - **WHEN** the payload's estimate is absent or incomplete
 - **THEN** the tile renders the nights and the programmed rule without interval or estimate marks
 - **AND** the verdict rail says the estimate is unavailable rather than inventing one
+
+#### Scenario: A night without a programmed rate on file stays distinct
+
+- **WHEN** a night's `programmed_rate` is null
+- **THEN** the tile counts it in its own rail row rather than as exactly-as-set
+- **AND** marks it at its delivered rate in excluded ink at the foot of the stack
 
 #### Scenario: A night beyond the axis ceiling stays disclosed
 

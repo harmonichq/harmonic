@@ -4294,7 +4294,17 @@ export const S121 = async (page) => {
    findings-queue entry would. S122-S125 prove that for each settings kind and
    for a cross-parameter click; S126 proves the clock-window release each
    route now inherits from its picker (basal and carb ratio release a drawn
-   window, correction factor does not — the ADR 294 clock-window ruling). */
+   window, correction factor does not — the ADR 294 clock-window ruling).
+
+   EVERY CHART CLICK BELOW IS SCOPED TO `#tile-row`. `paintTiles` marks the
+   current Spotlight rather than removing it from the filmstrip (ADR 215:
+   "the spotlighted one is marked rather than removed"), so a chart that is
+   also the current focal seat renders TWICE — once in `#tile-focal`, once in
+   `#tile-row` as the selected mini — while a bare `.evidence-tile[data-
+   chart-id=...]` matches both and throws Playwright's strict-mode violation.
+   `#tile-row` always holds exactly one match regardless of focal state,
+   which is the same reason `diagnose-canvas-composition.browser.test.mjs:221`
+   scopes the identical gesture the same way. */
 
 // STORY:finding-evidence-routing:S122
 /** S122 · A basal chart click opens the identical slot panel its
@@ -4302,7 +4312,7 @@ export const S121 = async (page) => {
 export const S122 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S122-before-chart-click');
-  await page.locator('.evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
   ok(/slot$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
@@ -4348,7 +4358,7 @@ export const S123 = async (page) => {
 export const S124 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S124-before-chart-click');
-  await page.locator('.evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
   is(viaChart.crumb[viaChart.crumb.length - 1], 'ISF',
@@ -4370,12 +4380,12 @@ export const S124 = async (page) => {
     of stacking a third under it. */
 export const S125 = async (page) => {
   await openWholeDay(page);
-  await page.locator('.evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const first = await state(page);
   is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
 
-  await page.locator('.evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const second = await state(page);
   is(second.crumb.length, 2,
@@ -4383,7 +4393,7 @@ export const S125 = async (page) => {
   ok(/block$/.test(second.crumb[second.crumb.length - 1]),
     `S125 the carb-ratio chart is now standing (${second.crumb})`);
 
-  await page.locator('.evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const third = await state(page);
   is(third.crumb.length, 2, 'S125 the correction-factor chart also replaces rather than stacking');
@@ -4406,7 +4416,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [300, 420], [0, 1440]);
   const drawn1 = await state(page);
   ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
-  await page.locator('.evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const basal = await state(page);
   ok(/^Slot /.test(basal.chip || ''), `S126 a basal chart click releases the drawn window (${basal.chip})`);
@@ -4428,7 +4438,7 @@ export const S126 = async (page) => {
   const drawn3 = await state(page);
   ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
   await captureEvidence(page, 'S126-before-isf-chart-click');
-  await page.locator('.evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const isf = await state(page);
   is(isf.chip, drawn3.chip, 'S126 a correction-factor chart click leaves the drawn window standing');

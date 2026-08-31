@@ -305,14 +305,18 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.equal(option.xAxis.name, 'insulin rate, U/h');
   assert.equal(option.xAxis.nameLocation, 'middle');
   assert.ok(option.xAxis.nameGap > 8, 'the name clears the tick labels it sits under');
-  /* ONE CELL PER NIGHT, stacked — the silhouette is countable rather than
-     poured, because a continuous fill under this curve was read as a quantity
-     standing at each rate. Each cell owns one row of the stack. */
+  /* ONE CELL PER NIGHT, one row each, sorted largest-more first through the
+     nights that ran exactly as set to largest-less last — so the rows' far ends
+     fall away from the rule and the reader counts down to the crossing. */
   const cells = option.series.find(({ id }) => id === 'nights');
   assert.equal(cells.data.length, basal.nights.length);
   assert.deepEqual(cells.data.map(({ value }) => value[1]),
-    basal.nights.map((_, index) => basal.nights.length - index),
-    'the cells occupy one row each, from the top of the stack down');
+    basal.nights.map((_, index) => index + 1),
+    'the cells occupy one row each, counted down from the top');
+  assert.deepEqual(cells.data.map(({ delivered }) => delivered),
+    [...basal.nights.map(({ delivered_rate: rate }) => rate)].sort((a, b) => b - a),
+    'the stack is ordered by how far the night ran from the programmed rate');
+  assert.equal(option.yAxis.inverse, true, 'rank one is the top row');
   /* The silhouette is implied by arrangement, never drawn: no mark on this plot
      spans more than one night, because a path through the nights' ends would
      assert a continuity independent observations do not have. So the crossing is
@@ -397,12 +401,20 @@ test('the editorial furniture draws against every payload shape', () => {
       assert.equal(drawn.type, 'group');
       assert.ok(drawn.children.every((child) => typeof child.type === 'string'
         && Number.isFinite(child.shape?.x ?? child.shape?.x1 ?? child.style?.x ?? 0)));
-      /* And every night cell: one row of the stack, drawn from the plot's left
-         edge to the rate that night ran. */
+      /* And every night cell: one row of the stack, anchored ON the programmed
+         rule and extending only as far as that night deviated from it. Nothing
+         grows from a shared baseline, so a cell's own end is the only thing its
+         width can mean. */
+      const programmed = data.nights[0].programmed_rate;
+      const rule = Number.isFinite(programmed) ? api.coord([programmed, 0])[0] : params.coordSys.x;
       const cells = option.series.find(({ id }) => id === 'nights');
       for (const [index, item] of (cells?.data || []).entries()) {
         const boxes = cells.renderItem({ ...params, dataIndex: index },
           { ...api, value: (dimension) => item.value[dimension] }).children;
+        const [body] = boxes;
+        assert.ok(Math.abs(body.shape.x - rule) <= 5
+          || Math.abs(body.shape.x + body.shape.width - rule) <= 5,
+        `the cell for ${item.name} is anchored on the programmed rule`);
         assert.ok(boxes.length > 0, 'a night is drawn as at least one cell');
         for (const cell of boxes) {
           assert.ok(cell.shape.height > 0 && cell.shape.width >= 0);
@@ -432,9 +444,10 @@ test('editorial labels stay inside the plot and clear of each other (held payloa
   const plot = { x: 28, y: 80, width: 672, height: 147 };
   for (const data of [held, { ...basal, estimate: { value: .74, lo: .6, hi: .92 } }]) {
     const option = entry.option('editorial', { data });
+    /* Rank one is the top row, so the stub counts downward like the axis. */
     const api = {
       coord: ([x, y]) => [plot.x + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * plot.width,
-        plot.y + plot.height - (y / option.yAxis.max) * plot.height],
+        plot.y + (y / option.yAxis.max) * plot.height],
       getWidth: () => 950, getHeight: () => 307,
     };
     const boxes = option.series.find(({ id }) => id === 'furniture')
@@ -452,14 +465,33 @@ test('editorial labels stay inside the plot and clear of each other (held payloa
     for (const box of boxes) {
       assert.ok(box.x + box.width <= plot.x + plot.width + 2,
         `"${box.text}" runs out of the plot and into the rail`);
-      assert.ok(box.x >= plot.x - 2, `"${box.text}" runs off the left of the plot`);
+      /* The rank ruler is named in the left margin — outside the plot, because
+         the cells no longer start at its edge — but never off the canvas. */
+      assert.ok(box.x >= 8, `"${box.text}" runs off the left of the canvas`);
     }
+    /* THE NIGHTS ARE OBSTACLES NOW. Anchored on the rule, the cells occupy the
+       middle of the plot where labels used to be safe — the rule's own flag was
+       sitting in the top row's band the moment the cells stopped growing from
+       the left edge — so every label is measured against every cell, not only
+       against the other labels. */
+    const cells = option.series.find(({ id }) => id === 'nights');
+    const marks = cells.data.flatMap((item, index) => cells
+      .renderItem({ coordSys: plot, dataIndex: index },
+        { ...api, value: (dimension) => item.value[dimension] }).children
+      .filter(({ type }) => type === 'rect')
+      .map(({ shape }) => ({ text: `the cell for ${item.name}`, x: shape.x, y: shape.y,
+        width: shape.width, height: shape.height })));
     for (const [index, box] of boxes.entries()) {
-      for (const other of boxes.slice(index + 1)) {
+      for (const other of [...boxes.slice(index + 1), ...marks]) {
         assert.ok(box.x >= other.x + other.width || other.x >= box.x + box.width
           || box.y >= other.y + other.height || other.y >= box.y + box.height,
         `"${box.text}" collides with "${other.text}"`);
       }
+    }
+    for (const cell of marks) {
+      assert.ok(cell.height > 0 && cell.width > 0, `${cell.text} has no extent`);
+      assert.ok(cell.y >= plot.y - 1 && cell.y + cell.height <= plot.y + plot.height + 1,
+        `${cell.text} leaves the plot`);
     }
   }
   /* A slot the payload never numbered prints no window rather than NaN:NaN. */

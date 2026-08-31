@@ -307,9 +307,12 @@ const editorialWrap = (text, width, size) => {
 function basalEditorialOption(data, mini, colors) {
   const facts = basalFacts(data);
   const { programmed, ciLo, ciHi, estimateValue, above, below, atRate } = facts;
+  /* Sorted largest-more first, through the nights that ran exactly as set, to
+     largest-less last — so a night's row is its rank by deviation and the rows'
+     far ends fall away from the rule in both directions. */
   const roster = facts.nights.filter((night) => finite(night.delivered_rate))
-    .sort((a, b) => a.delivered_rate - b.delivered_rate);
-  const rates = roster.map((night) => night.delivered_rate);
+    .sort((a, b) => b.delivered_rate - a.delivered_rate);
+  const rates = roster.map((night) => night.delivered_rate).sort((a, b) => a - b);
   const total = rates.length;
   const hasRule = finite(programmed);
   const hasBand = finite(ciLo) && finite(ciHi);
@@ -346,43 +349,62 @@ function basalEditorialOption(data, mini, colors) {
   const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 24 : 18}%, transparent)`;
   const hair = ink(colors.dark ? 18 : 12);
   const shadow = ink(colors.dark ? 26 : 22);
-  /* ONE NIGHT, ONE CELL, and the cell carries its own end. Each night is the row
-     it occupies in the sorted stack, drawn from the plot's left edge to the rate
-     it ran; at full rank its right end is capped by a 2px tick in that night's
-     own colour at full strength, so the flight of ends reads as an edge without
-     a single mark joining one night to the next. The fills carry the mass the
-     retired outline used to carry. At mini rank the rows abut — no gap, no tick
-     — and the same arrangement reads as one silhouette. */
+  /* ONE NIGHT, ONE CELL, ANCHORED ON THE RULE. A night is the row it occupies
+     and the distance it ran from the rate the wearer set: rust to the right when
+     it ran more, grey-green to the left when it ran less, and a short tick
+     standing ON the rule when it ran exactly as set. There is no common baseline
+     at the plot's edge for the cells to grow from, so no cell shares an edge
+     with another and nothing spans two nights — the descending silhouette is
+     what the sorted ends make, not something drawn through them. The far end of
+     each cell carries a 2px tick in that night's own colour at full strength;
+     the fills carry the mass. At mini rank the rows abut, and only the as-set
+     nights keep a mark of their own, because at that size a night that ran the
+     programmed rate exactly has no width to be seen by. */
   const nightCells = (gap, tick) => ({
-    type: 'custom', id: 'nights', animation: false, z: 3,
+    type: 'custom', id: 'nights', animation: false, clip: false, z: 3,
     data: roster.map((night, index) => ({
-      value: [Math.min(night.delivered_rate, xMax), total - index], name: night.date,
+      value: [Math.min(night.delivered_rate, xMax), index + 1], name: night.date,
       /* The cell can be pinned to the ceiling; the number it reports may
          never be. */
       delivered: night.delivered_rate,
     })),
     renderItem: (params, api) => {
-      const top = api.coord([xMin, api.value(1)])[1];
-      const floor = api.coord([xMin, api.value(1) - 1])[1];
-      const room = Math.min(gap, (floor - top) * .28);
-      const y = top + room / 2;
-      const cell = Math.max(mini ? .5 : 1.5, floor - top - room);
-      const from = params.coordSys.x;
-      const to = api.coord([api.value(0), 0])[0];
-      const split = hasRule
-        ? Math.min(Math.max(api.coord([programmed, 0])[0], from), to) : to;
-      const beyond = hasRule && api.value(0) >= programmed;
-      return { type: 'group', children: [
-        ...(split > from ? [{ type: 'rect',
-          shape: { x: from, y, width: split - from, height: cell },
-          style: { fill: greyFill } }] : []),
-        ...(to > split ? [{ type: 'rect',
-          shape: { x: split, y, width: to - split, height: cell },
-          style: { fill: rustFill } }] : []),
-        ...(tick ? [{ type: 'rect',
-          shape: { x: to - 2, y, width: 2, height: cell },
-          style: { fill: beyond ? colors.high : colors.basal } }] : []),
-      ] };
+      const night = roster[params.dataIndex];
+      const upper = api.coord([xMin, api.value(1) - 1])[1];
+      const lower = api.coord([xMin, api.value(1)])[1];
+      const row = Math.abs(lower - upper);
+      const held = Math.min(gap, row * .28);
+      const y = Math.min(upper, lower) + held / 2;
+      const cell = Math.max(mini ? .5 : 1.5, row - held);
+      const anchor = hasRule ? api.coord([programmed, 0])[0] : params.coordSys.x;
+      const end = api.coord([Math.min(night.delivered_rate, xMax), 0])[0];
+      const more = end > anchor + .5;
+      const less = end < anchor - .5;
+      const children = [];
+      if (more) {
+        children.push({ type: 'rect', shape: { x: anchor, y, width: end - anchor, height: cell },
+          style: { fill: rustFill } });
+      } else if (less) {
+        children.push({ type: 'rect', shape: { x: end, y, width: anchor - end, height: cell },
+          style: { fill: greyFill } });
+      } else {
+        children.push({ type: 'rect',
+          shape: { x: anchor - (mini ? 1.5 : 4.5), y, width: mini ? 3 : 9, height: cell },
+          style: { fill: colors.programmed } });
+      }
+      if (tick && (more || less)) {
+        children.push({ type: 'rect', shape: { x: more ? end - 2 : end, y, width: 2, height: cell },
+          style: { fill: more ? colors.high : colors.basal } });
+      }
+      /* A night past the ceiling leaves by its own caret: an advisory chart may
+         cap a scale, never hide a big night. */
+      if (tick && night.delivered_rate > xMax) {
+        children.push({ type: 'polygon',
+          shape: { points: [[end + 7, y + cell / 2], [end + 1, y + cell / 2 - 3.5],
+            [end + 1, y + cell / 2 + 3.5]] },
+          style: { fill: colors.high } });
+      }
+      return { type: 'group', children };
     },
     tooltip: { formatter: (params) => `${params.name} — delivered ${params.data.delivered} U/h`
       + `${hasRule ? ` · programmed ${programmed.toFixed(2)}` : ''}` },
@@ -410,14 +432,14 @@ function basalEditorialOption(data, mini, colors) {
       legend: { show: false },
       grid: { left: 4, right: 4, top: 16, bottom: 12 },
       xAxis: { type: 'value', min: xMin, max: xMax, show: false },
-      yAxis: { type: 'value', min: 0, max: yMax, show: false },
+      yAxis: { type: 'value', min: 0, max: yMax, show: false, inverse: true },
       graphic: slotLabel ? [{ type: 'text', left: 5, top: 3, silent: true,
         style: { text: slotLabel, fill: colors.muted, font: `500 9px ${FONT}` } }] : [],
       series: [
         nightCells(0, false),
         { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, data: [0],
           renderItem: (params, api) => {
-            const base = api.coord([xMin, 0])[1];
+            const base = params.coordSys.y + params.coordSys.height;
             const children = [];
             if (hasRule) {
               children.push({ type: 'rect',
@@ -523,7 +545,10 @@ function basalEditorialOption(data, mini, colors) {
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
         formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
-    yAxis: { type: 'value', min: 0, max: yMax, show: false },
+    /* The count runs DOWNWARD, because the stack does: the nights at or above
+       the programmed rate are the rows the reader counts down through before the
+       rule runs out of cells, so the crossing is the 16th night from the top. */
+    yAxis: { type: 'value', min: 0, max: yMax, show: false, inverse: true },
     series: [
       nightCells(2, true),
       { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, z: 10, data: [0],
@@ -531,7 +556,7 @@ function basalEditorialOption(data, mini, colors) {
           const cs = params.coordSys;
           const width = api.getWidth();
           const height = api.getHeight();
-          const base = api.coord([xMin, 0])[1];
+          const base = cs.y + cs.height;
           const railLeft = width - EDITORIAL.margin - EDITORIAL.rail;
           const box = (x, y, w, h, fill) => ({ type: 'rect',
             shape: { x, y, width: w, height: h }, style: { fill } });
@@ -551,15 +576,21 @@ function basalEditorialOption(data, mini, colors) {
              sits far enough right that its caption ran into the rail. */
           const roomRight = (x, content, size = 12) =>
             x + content.length * size * .52 < cs.x + cs.width - 4;
-          /* Two dotted counts and nothing else: the baseline is the zero, so it
-             never gets a rule of its own. Each count is named UNDER its own
-             hairline — the top one runs along the plot's ceiling, and a label
-             set above that lands in the deck. */
-          for (const count of new Set([total, Math.round(total / 2)].filter(Boolean))) {
-            const y = api.coord([xMin, count])[1];
+          /* The rank ruler: how far down the stack a row is. It is named in the
+             margin rather than on the plot, because the cells no longer start at
+             the plot's left edge and a number set inside would sit on one. The
+             last rank needs no line of its own — the axis is already there. */
+          const midRank = Math.round(total / 2);
+          if (midRank > 0 && midRank < total) {
+            const y = api.coord([xMin, midRank])[1];
             children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
               style: { stroke: ink(colors.dark ? 18 : 12), lineWidth: 1, lineDash: [1, 3] } });
-            children.push(text(String(count), cs.x, y + 3, `500 10px ${FONT}`, colors.muted));
+            children.push(text(String(midRank), cs.x - 6, y, `500 10px ${FONT}`, colors.muted,
+              { align: 'right', verticalAlign: 'middle' }));
+          }
+          if (total > 0) {
+            children.push(text(String(total), cs.x - 6, base, `500 10px ${FONT}`, colors.muted,
+              { align: 'right', verticalAlign: 'bottom' }));
           }
           /* Uncertainty lives on the ground, under the data — a shadow on the
              floor, not a box drawn around it. It sits BELOW the tick labels: run
@@ -573,51 +604,53 @@ function basalEditorialOption(data, mini, colors) {
               children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 34, 2, 14, colors.basal));
             }
           }
-          /* A night past the ceiling leaves by a caret carrying its true value:
-             an advisory chart may cap a scale, never hide a big night. This is
-             the only rate on the tile no mark can show, so it is the only one
-             still set as a label out here. */
+          /* Each clipped night carries its own caret, drawn with its cell. What
+             no mark can say is the rate itself, so that is set once, under the
+             axis end the carets point past. */
           if (overflow > 0 && finite(maxRate)) {
-            const yExit = api.coord([xMax, overflow])[1];
-            children.push({ type: 'polygon',
-              shape: { points: [[cs.x + cs.width + 6, yExit],
-                [cs.x + cs.width, yExit - 3.5], [cs.x + cs.width, yExit + 3.5]] },
-              style: { fill: colors.high } },
-            text(`tallest ${maxRate.toFixed(1)} U/h`, cs.x + cs.width - 4, yExit - 6,
-              `500 11px ${FONT}`, colors.high, { align: 'right', verticalAlign: 'bottom' }));
+            children.push(text(`tallest ${maxRate.toFixed(1)} U/h`,
+              cs.x + cs.width, base + 22, `500 11px ${FONT}`, colors.high, { align: 'right' }));
           }
           if (hasRule) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];
-            children.push(box(ruleX - .75, cs.y, 1.5, base + 10 - cs.y, colors.basal));
-            /* The flag rides just inside the plot's top edge — the deck owns
-               every pixel above it. The unit comes off it now that the axis
-               below names itself. */
+            children.push(box(ruleX - .75, cs.y - 14, 1.5, base + 24 - cs.y, colors.basal));
+            /* The flag flies ABOVE the plot, on the head of the rule. Inside it
+               used to sit in the top row's band, which was empty while the cells
+               grew from the left edge and is the widest cell on the tile now
+               that they grow from the rule. The deck gave up the room when the
+               standfirst went. */
             const flag = `PROGRAMMED ${programmed.toFixed(2)}`;
             const flagLeft = roomRight(ruleX + 7, flag, 10);
-            children.push(box(ruleX + (flagLeft ? 1 : -4), cs.y + 7, 3, 3, colors.basal),
-              text(flag, ruleX + (flagLeft ? 7 : -9), cs.y + 4, caps, colors.muted,
-                { align: flagLeft ? 'left' : 'right' }));
-            /* The cliff of nights that ran exactly as programmed keeps its
-               thickened mark and loses its caption: the rail already counts
-               them, and the mark is the part the rail cannot draw. */
-            if (atRate > 0) {
-              children.push(box(ruleX - 1.5, yCross,
-                3, api.coord([programmed, crossing - atRate])[1] - yCross, colors.high));
-            }
+            children.push(box(ruleX + (flagLeft ? 1 : -4), cs.y - 15, 3, 3, colors.basal),
+              text(flag, ruleX + (flagLeft ? 7 : -9), cs.y - 6, caps, colors.muted,
+                { align: flagLeft ? 'left' : 'right', verticalAlign: 'bottom' }));
+            /* The cliff is no longer drawn as one mark spanning its nights: each
+               night that ran exactly as programmed stands on the rule as its own
+               tick, and the run of them IS the cliff. */
             /* THE ONE NUMBER THE MARKS CANNOT SAY. The ring's height is the
                finding — nights at or above the programmed rate — and reading it
                off the staircase means counting steps, so the crossing is
                labelled and nothing else on the plot is. */
             children.push({ type: 'circle', shape: { cx: ruleX, cy: yCross, r: 4 },
               style: { fill: colors.surface, stroke: colors.high, lineWidth: 2 } });
+            /* The delta arrangement leaves exactly two quadrants empty, and the
+               label takes whichever one it fits: BELOW the crossing on the right,
+               where every row runs the other way, or ABOVE it on the left, where
+               every row runs right. Where the rule sits too near an edge for
+               either — every night at or above, on a rule close to the left —
+               it drops under the plot, beside the axis, still the only sentence
+               on the figure. */
             const atOrAbove = `${crossing} of ${total} night${total === 1 ? '' : 's'} at or above`;
-            const labelRight = roomRight(ruleX + 10, atOrAbove);
-            /* Clear of the flag's own band: a crossing at the ceiling puts this
-               label exactly where the flag is, and both hang off the same rule. */
-            children.push(text(atOrAbove, ruleX + (labelRight ? 10 : -10),
-              Math.max(cs.y + 38, yCross - 8), `500 12px ${FONT}`, colors.text,
-              { align: labelRight ? 'left' : 'right', verticalAlign: 'bottom' }));
+            const span = atOrAbove.length * 12 * .52;
+            const seat = roomRight(ruleX + 10, atOrAbove) && yCross + 26 <= base ? 'below'
+              : ruleX - 10 - span >= cs.x && yCross - 23 >= cs.y + 20 ? 'above' : 'axis';
+            children.push(text(atOrAbove,
+              seat === 'below' ? ruleX + 10 : seat === 'above' ? ruleX - 10 : cs.x,
+              seat === 'below' ? yCross + 8 : seat === 'above' ? yCross - 8 : base + 22,
+              `500 12px ${FONT}`, colors.text,
+              { align: seat === 'above' ? 'right' : 'left',
+                verticalAlign: seat === 'above' ? 'bottom' : 'top' }));
           }
           return { type: 'group', children };
         } },

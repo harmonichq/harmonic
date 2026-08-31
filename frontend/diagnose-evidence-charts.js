@@ -14,10 +14,12 @@ const FONT = 'Inter, system-ui, sans-serif';
 const FALLBACK_COLORS = {
   signal: '#3f5a3b', basal: '#5d7368', programmed: '#4d5c53',
   line: '#c3bfb4', text: '#141a15', muted: '#3d5848', excluded: '#6b7169',
+  high: '#a94f21', low: '#9d3018',
 };
 const COLOR_TOKENS = {
   signal: '--in-range', basal: '--basal', programmed: '--secondary',
   line: '--line', text: '--text', muted: '--muted', excluded: '--notindata',
+  high: '--high', low: '--low',
 };
 const chartColors = () => {
   if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') {
@@ -161,26 +163,243 @@ function basalOption(mode, { data, mini = false } = {}) {
       ],
     };
   }
+  /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
+     is "how far from the programmed rate did the algorithm land". So a night
+     is a deviation COLUMN rising (or dropping) from the programmed baseline:
+     the comparison the chart exists to make is a length, not a position, and
+     the baseline gets a structural job instead of floating as a third rule
+     (ticket #205, chart-designer pass). Time runs oldest to newest. */
+  const oldestFirst = [...nights].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const programmed = oldestFirst.find((night) => finite(night.programmed_rate))?.programmed_rate;
+  const above = nights.filter((night) => night.sign === 1).length;
+  const below = nights.filter((night) => night.sign === -1).length;
+  const atRate = nights.filter((night) => night.sign === null).length;
+  const ciLo = data?.estimate?.lo;
+  const ciHi = data?.estimate?.hi;
+  const estimateValue = data?.estimate?.value;
+  const hasBand = finite(ciLo) && finite(ciHi);
+  const delivered = nights.map((night) => night.delivered_rate).filter(finite);
+  /* THE ARGUMENT SETS THE SCALE, NOT THE OUTLIERS. Headroom above the interval
+     puts programmed and the CI mid-plot; a night above the cap draws to the top
+     edge and ends in a caret with its true value printed — capped, never
+     silently clipped, because an advisory dosing tool may not hide a big
+     night. */
+  const sorted = [...delivered].sort((a, b) => a - b);
+  const p85 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * .85))] : 0;
+  /* An even ladder: the cap rounds up to a whole step so the top gridline is
+     a scale mark, never something that reads as a data value. */
+  const yRaw = Math.max(
+    Math.ceil(Math.max(ciHi || 0, estimateValue || 0, programmed || 0) * 1.6 * 10) / 10,
+    Math.ceil(p85 * 10) / 10) || 1;
+  const yStep = yRaw > 1.2 ? .5 : yRaw > .6 ? .25 : .1;
+  const yMax = Math.ceil(yRaw / yStep) * yStep;
+  /* One vocabulary everywhere: vs programmed. Rust above, blue below (the
+     `--basal` token IS the app's blue — the retired "slate" reading of it came
+     from a stale comment, not the stylesheet), and an exactly-as-set night is
+     a small solid teal square pinned ON the baseline: a quarter of this
+     payload's evidence is such nights, and a zero-height bar would erase
+     them. */
+  const gutterWidth = 46;
+  /* "Less" mixes toward ink: `--basal` is low-chroma against `--high`'s
+     saturated rust, and at equal length the less nights whispered — a bias an
+     advisory chart must not carry. The mix gains weight in both themes. */
+  const lessColor = `color-mix(in srgb, ${colors.basal} 76%, ${colors.text})`;
+  const BAR_FILL = .56; /* arithmetic complement of barCategoryGap below */
+  const mainGrid = { ...grid(mini), ...(mini ? {} : { top: 30, right: 62 + gutterWidth, bottom: 46 }) };
+  const tallyRich = {
+    /* The legend teaches the plot's own vocabulary: two upright columns and
+       one flat datum tick. */
+    swMore: { backgroundColor: colors.high, width: 4, height: 8, borderRadius: 1 },
+    swLess: { backgroundColor: lessColor, width: 4, height: 8, borderRadius: 1 },
+    swAt: { backgroundColor: colors.programmed, width: 9, height: 2.5 },
+    n: { color: colors.text, fontFamily: FONT, fontSize: 9, padding: [0, 10, 0, 4] },
+    m: { color: colors.muted, fontFamily: FONT, fontSize: 9, padding: [0, 0, 0, 10] },
+  };
+  const tallyText = `{swMore|}{n|${above} more}{swLess|}{n|${below} less}{swAt|}{n|${atRate} as set}`
+    + `{m|of ${nights.length} steady nights · ${data?.excluded_night_count ?? 0} excluded}`;
+  const columns = oldestFirst.map((night) => {
+    const value = night.delivered_rate;
+    const capped = finite(value) && value > yMax;
+    return { ...night, value, capped, top: capped ? yMax : value };
+  });
+  const mondays = new Set(columns.filter((night) => new Date(`${night.date}T00:00:00Z`).getUTCDay() === 1)
+    .map((night) => night.date));
+  const labelDates = new Set([columns[0]?.date, columns[columns.length - 1]?.date]);
+  columns.forEach((night, index) => {
+    if (mondays.has(night.date) && index > 1 && index < columns.length - 2) labelDates.add(night.date);
+  });
+  /* The baseline carries no in-plot label: with mixed openers every side of
+     the line is column territory, so its name lives in the gutter, where the
+     dotted extension already lands and nothing else may draw. */
+  const baselineRule = finite(programmed) ? { markLine: {
+    silent: true, symbol: 'none',
+    label: { show: false },
+    lineStyle: { color: colors.programmed, width: 1.4, type: 'solid' },
+    data: [{ yAxis: programmed }],
+  } } : {};
+  /* THE VERDICT LIVES IN ITS OWN GUTTER, on the shared y-scale to the right:
+     an I-beam spanning the interval with the estimate as its crossbar, and the
+     programmed line extended dotted underneath it. The conclusion stops being
+     drawn through the evidence, the interval's width becomes a length — and
+     this payload's load-bearing fact, that the interval's lower bound IS the
+     programmed rate, becomes a visible coincidence of two marks. */
+  const gutter = (!mini && hasBand) ? [{
+    type: 'custom', animation: false, silent: true, clip: false,
+    xAxisIndex: 1, yAxisIndex: 1,
+    renderItem: (params, api) => {
+      const [x] = api.coord([0.5, 0]);
+      const yLo = api.coord([0, ciLo])[1];
+      const yHi = api.coord([0, ciHi])[1];
+      const yEst = finite(estimateValue) ? api.coord([0, estimateValue])[1] : null;
+      const yProg = finite(programmed) ? api.coord([0, programmed])[1] : null;
+      const beam = 9;
+      const children = [
+        /* A faint panel: the verdict is a different kind of statement than
+           the evidence — a tint says "different room" where a border would
+           say "different chart". */
+        { type: 'rect', shape: { x: params.coordSys.x - 7, y: params.coordSys.y - 6,
+            width: params.coordSys.width + 14, height: params.coordSys.height + 12, r: 3 },
+          style: { fill: `color-mix(in srgb, ${colors.text} 2.5%, transparent)` } },
+        { type: 'rect', shape: { x: x - beam / 2, y: yHi, width: beam, height: yLo - yHi },
+          style: { fill: colors.signal, opacity: .12 } },
+        { type: 'rect', shape: { x: x - .6, y: yHi, width: 1.2, height: yLo - yHi },
+          style: { fill: colors.programmed } },
+        { type: 'rect', shape: { x: x - 4.5, y: yHi - 1, width: 9, height: 1.2 },
+          style: { fill: colors.programmed } },
+        { type: 'rect', shape: { x: x - 4.5, y: yLo, width: 9, height: 1.2 },
+          style: { fill: colors.programmed } },
+      ];
+      if (yEst !== null) {
+        children.push({ type: 'rect', shape: { x: x - 6.5, y: yEst - 1, width: 13, height: 2 },
+          style: { fill: colors.signal } });
+      }
+      if (yProg !== null) {
+        /* One continuous datum: same weight as the in-plot rule, with a
+           dotted lead across the inter-grid void so the eye can join the
+           interval's floor to the programmed rate it coincides with. */
+        children.push(
+          { type: 'rect',
+            shape: { x: x - gutterWidth / 2, y: yProg - .7, width: gutterWidth, height: 1.4 },
+            style: { fill: colors.programmed } },
+          { type: 'line',
+            shape: { x1: x - gutterWidth / 2 - 50, y1: yProg, x2: x - gutterWidth / 2, y2: yProg },
+            style: { stroke: colors.programmed, lineWidth: 1, lineDash: [1, 3], opacity: .7 } });
+      }
+      /* THE GUTTER LABELS ARE A DODGED COLUMN, not four independent texts: any
+         of the interval caps, the estimate and the programmed rate can
+         coincide or cross (a CI reaching below programmed, a hold where all
+         three are equal), so labels sharing a value merge, and the rest are
+         pushed apart to a minimum pitch with a leader tick back to any
+         displaced label's true y. One mechanism, every ordering. */
+      const round2 = (value) => Math.round(value * 100) / 100;
+      const entries = [];
+      const push = (y, value, word, color) => {
+        if (y === null || !finite(value)) return;
+        const twin = entries.find((entry) => Math.abs(entry.trueY - y) < 1);
+        if (twin) { twin.word = twin.word || word; twin.color = word ? color : twin.color; return; }
+        entries.push({ trueY: y, value: round2(value), word, color });
+      };
+      push(yHi, ciHi, '', colors.muted);
+      push(yLo, ciLo, '', colors.muted);
+      push(yEst, estimateValue, 'est', colors.signal);
+      push(yProg, programmed, 'set', colors.programmed);
+      const pitch = 12;
+      const top = params.coordSys.y + 4;
+      const bottom = params.coordSys.y + params.coordSys.height - 4;
+      entries.sort((a, b) => a.trueY - b.trueY);
+      const placed = entries.map((entry) => ({ ...entry, y: Math.min(Math.max(entry.trueY, top), bottom) }));
+      for (let i = 1; i < placed.length; i += 1) {
+        placed[i].y = Math.max(placed[i].y, placed[i - 1].y + pitch);
+      }
+      for (let i = placed.length - 1; i >= 0; i -= 1) {
+        const limit = i === placed.length - 1 ? bottom : placed[i + 1].y - pitch;
+        placed[i].y = Math.min(placed[i].y, limit);
+      }
+      const labelX = x - beam / 2 - 4;
+      placed.forEach((entry) => {
+        children.push({ type: 'text', style: {
+          text: entry.word ? `${entry.word} ${entry.value}` : String(entry.value),
+          x: labelX, y: entry.y, align: 'right', verticalAlign: 'middle',
+          fill: entry.color, font: `9px ${MONO}` } });
+        if (Math.abs(entry.y - entry.trueY) > 3) {
+          children.push({ type: 'rect',
+            shape: { x: labelX + 1, y: entry.trueY - .4,
+              width: x - beam / 2 - labelX - 2, height: .8 },
+            style: { fill: entry.color, opacity: .5 } });
+        }
+      });
+      return { type: 'group', children };
+    },
+    data: [0],
+  }] : [];
   return {
     ...chartBase(description, mini, colors),
-    legend: chartLegend(['Programmed basal', 'Delivered basal'], colors, mini),
-    xAxis: { type: 'category', data: nights.map((night) => night.date), ...axis(colors, mini),
-      splitLine: { show: false } },
-    yAxis: { type: 'value', name: 'U/h', ...axis(colors, mini) },
+    legend: { show: false },
+    graphic: mini ? [] : [{ type: 'text', left: GRID.left, bottom: 6, silent: true,
+      style: { text: tallyText, rich: tallyRich } }],
+    xAxis: [
+      { type: 'category', data: columns.map((night) => night.date),
+        ...axis(colors, mini),
+        axisLabel: { show: !mini, color: colors.muted, fontFamily: MONO, fontSize: 10,
+          formatter: (date) => date.slice(5),
+          interval: (index) => labelDates.has(columns[index]?.date) },
+        axisTick: { show: !mini, alignWithLabel: true, length: 3,
+          lineStyle: { color: colors.line } },
+        splitLine: { show: false } },
+      ...(mini ? [] : [{ gridIndex: 1, type: 'value', min: 0, max: 1, show: false }]),
+    ],
+    yAxis: [
+      /* Bare numbers: the unit is a property of the whole tile — axis and
+         gutter alike — so it is stated once in the title-bar caption, not
+         fought into a 40px inset. */
+      { type: 'value', max: yMax, interval: yStep, ...axis(colors, mini),
+        axisLabel: { show: !mini, color: colors.muted, fontFamily: MONO, fontSize: 10, margin: 10,
+          formatter: (v) => (v === 0 ? '0' : v.toFixed(yStep >= .5 ? 1 : 2)) },
+        splitLine: { show: !mini, lineStyle: {
+          color: `color-mix(in srgb, ${colors.line} 55%, transparent)`, width: 1 } } },
+      ...(mini ? [] : [{ gridIndex: 1, type: 'value', min: 0, max: yMax, show: false }]),
+    ],
+    grid: mini ? [mainGrid] : [mainGrid,
+      { right: 8, width: gutterWidth, top: mainGrid.top, bottom: FULL_GRID.bottom }],
     series: [
-      /* A LEGEND SWATCH READS `itemStyle`, NOT `lineStyle`. Colour set only on
-         the line left the swatch on ECharts' stock palette — a blue dot and a
-         green dot, neither of which exists anywhere in this app, labelling two
-         lines that are both green and told apart by dash against solid. The
-         icon carries the same distinction the plot does. */
-      { name: 'Programmed basal', type: 'line', symbol: 'none', connectNulls: true,
-        data: nights.map((night) => night.programmed_rate),
-        itemStyle: { color: colors.programmed },
-        lineStyle: { color: colors.programmed, width: 1.4, type: 'dashed' } },
-      { name: 'Delivered basal', type: 'line', symbol: 'none', connectNulls: true,
-        data: nights.map((night) => night.delivered_rate),
-        itemStyle: { color: colors.basal },
-        lineStyle: { color: colors.basal, width: mini ? 1.2 : 2 } },
+      /* Two stacked bars make a floating column: a transparent base up to
+         min(programmed, delivered), then the |deviation| in the night's own
+         direction color. */
+      { type: 'bar', stack: 'night', animation: false, barCategoryGap: mini ? '25%' : '44%',
+        itemStyle: { color: 'transparent' }, silent: true,
+        data: columns.map((night) => (night.sign === null || !finite(night.value)
+          ? 0 : Math.min(programmed, night.top))) },
+      { type: 'bar', stack: 'night', animation: false,
+        data: columns.map((night) => ({
+          value: night.sign === null || !finite(night.value)
+            ? 0 : Math.abs(night.top - programmed),
+          itemStyle: { color: night.sign === 1 ? colors.high : lessColor,
+            borderRadius: night.sign === 1 ? [2, 2, 0, 0] : [0, 0, 2, 2] },
+        })),
+        ...baselineRule },
+      /* An exactly-as-set night IS a column of zero height: drawn at column
+         width in the baseline's own colour, so it joins the family instead of
+         hiding as a speck — and `signal` green stays the estimate's alone. */
+      { type: 'custom', animation: false, silent: true,
+        renderItem: (params, api) => {
+          const w = api.size([1, 0])[0] * BAR_FILL;
+          const [x, y] = api.coord([api.value(0), programmed]);
+          return { type: 'rect',
+            shape: { x: x - w / 2, y: y - 1.5, width: w, height: 3 },
+            style: { fill: colors.programmed } };
+        },
+        data: columns.map((night, index) => (night.sign === null ? [index] : null))
+          .filter(Boolean) },
+      /* Capped nights: caret at the top edge plus the true value. */
+      { type: 'scatter', animation: false, symbol: 'triangle',
+        symbolSize: mini ? 4 : [7, 5], symbolOffset: [0, -7], silent: true,
+        data: columns.filter((night) => night.capped)
+          .map((night) => ({ value: [night.date, yMax],
+            label: { show: !mini, position: 'top', distance: 4,
+              color: colors.high, fontFamily: MONO, fontSize: 9,
+              formatter: String(Math.round(night.value * 10) / 10) } })),
+        itemStyle: { color: colors.high } },
+      ...gutter,
     ],
   };
 }
@@ -322,13 +541,19 @@ const spanNamed = (parameter, evidence) => (row) => ({
 const entries = [
   {
     kind: 'basal',
-    name: 'Basal · nights of steady data',
-    nameFor: spanNamed('Basal', 'nights of steady data'),
+    name: 'Basal · delivered vs programmed',
+    /* Identity only: the descriptor lives in `meta`, so the findings breadcrumb
+       (which renders the title beside a kind label saying the same thing) stays
+       "Basal 05:30" instead of repeating and truncating the phrase. */
+    nameFor: (row) => ({
+      title: row.span?.label ? `Basal ${row.span.label}` : 'Basal',
+      meta: null,
+    }),
     modes: ['clock', 'event'],
     meta: (mode) => mode === 'clock'
-      ? 'delivered vs programmed by night' : 'supported vs insufficient evidence',
+      ? 'delivered vs programmed, U/h · one bar per night' : 'supported vs insufficient evidence',
     option: basalOption,
-    thumbnail: (data, title) => thumbnail((title || 'Basal · nights of steady data').toUpperCase(),
+    thumbnail: (data, title) => thumbnail((title || 'Basal · delivered vs programmed').toUpperCase(),
       `${data?.roster_count ?? 0} / ${data?.directional_support_count ?? 0}`,
       [{ type: 'line', symbol: 'none', data: (data?.nights || []).map((night) => night.delivered_rate),
         lineStyle: { color: chartColors().basal, width: 1 } }]),

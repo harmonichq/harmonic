@@ -39,12 +39,19 @@ class BasalNightEvidence:
         roster = evidence["night_roster"]
         if not isinstance(roster, list):
             raise IncompleteBasalNightEvidence(f"basal slot {slot} has malformed night roster")
+        estimate = row.get("estimate") or {}
         return {
             "schema": SCHEMA,
             "analysis_generation": analysis_generation,
             "slot": slot,
             "asserts_move": row.get("asserts_move"),
             "safety_status": row.get("safety_status"),
+            # The verdict triad, copied from the analyzer row so the chart can
+            # draw current, the estimate, and its interval on the dots' own
+            # U/h axis (#290). Copies only; nothing is derived here.
+            "current": row.get("current"),
+            "recommended": row.get("recommended"),
+            "estimate": {key: estimate.get(key) for key in ("value", "lo", "hi", "confidence")},
             "roster_count": len(roster),
             "directional_support_count": evidence.get("directional_support_count"),
             "excluded_night_count": evidence.get("excluded_night_count"),

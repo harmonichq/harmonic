@@ -532,9 +532,9 @@ P17 · ONE grammar: an EXPLICIT choice — a preset press OR a drag, the same ki
       and so does a basal or I:C queue-row or chart-row drill —
       basal and I:C own a span of their own to substitute; ISF
       and a behavioral finding drill do not, so neither releases it.
-  source:   frontend/diagnose-workstation.js:1227 (`explicitPreset`),
-            2166-2185 (`pickCell`/`pickBlock` call `releaseWindow`),
-            3403 (`releaseWindow`), 2226-2280 (paintChart's precedence chain)
+  source:   frontend/diagnose-workstation.js:1230 (`explicitPreset`),
+            2169-2184 (`pickCell`/`pickBlock` call `releaseWindow`),
+            3409 (`releaseWindow`), 2229-2282 (paintChart's precedence chain)
   mock:     the window group is inert, so no precedence exists to express
   evidence: replay S01, S21, S126 (app, pass)
   verdict:  amended        issue #294 · 2026-08-31; operator-ruled:

@@ -1522,8 +1522,13 @@ export const S20 = async (page) => {
   ok(/block$/.test(block.crumb[block.crumb.length - 1]), `S20 View segment opens the I:C block (${block.crumb})`);
 };
 
-/** S21 · A user window is a workspace: it survives drilling and popping, and
-    ONLY a lane click (a physical scope choice) releases it. */
+/** S21 · A user window is a workspace: it survives drilling and popping. A
+    lane click (a physical scope choice) releases it; so does a basal or
+    I:C drill, which carries its own span to substitute (S126) — a
+    behavioral finding drill, exercised here, does not. RECONCILED 2026-08-31,
+    issue #294, operator-ruled: ConnorGriffin — this story's own assertions
+    are unchanged; only the over-general "ONLY a lane click" sentence is
+    corrected to name the drills that actually release. */
 // LOCK:diagnose-workstation:7 LOCK:diagnose-workstation:9
 export const S21 = async (page) => {
   const start = await state(page);
@@ -4282,6 +4287,164 @@ export const S121 = async (page) => {
     'S121 the frontend adds actionability only');
 };
 
+/* ---- #294 one-drill-down-for-every-settings-chart --------------------
+   Chunk 1 extended the behavioral branch's row lookup (ADR 294) to basal,
+   ISF and I:C: a chart click resolves the findings row
+   sharing its chart identity and takes the exact route that row's own
+   findings-queue entry would. S122-S125 prove that for each settings kind and
+   for a cross-parameter click; S126 proves the clock-window release each
+   route now inherits from its picker (basal and I:C release a drawn
+   window, ISF does not — the ADR 294 clock-window ruling).
+
+   EVERY CHART CLICK BELOW IS SCOPED TO `#tile-row`. `paintTiles` marks the
+   current Spotlight rather than removing it from the filmstrip (ADR 215:
+   "the spotlighted one is marked rather than removed"), so a chart that is
+   also the current focal seat renders TWICE — once in `#tile-focal`, once in
+   `#tile-row` as the selected mini — while a bare `.evidence-tile[data-
+   chart-id=...]` matches both and throws Playwright's strict-mode violation.
+   `#tile-row` always holds exactly one match regardless of focal state,
+   which is the same reason `diagnose-canvas-composition.browser.test.mjs:221`
+   scopes the identical gesture the same way. */
+
+// STORY:finding-evidence-routing:S122
+/** S122 · A basal chart click opens the identical slot panel its
+    findings-queue row opens. */
+export const S122 = async (page) => {
+  await openWholeDay(page);
+  await captureEvidence(page, 'S122-before-chart-click');
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await settle(page, 450);
+  const viaChart = await state(page);
+  ok(/slot$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
+    `S122 the basal chart opens the slot panel (${viaChart.crumb})`);
+  ok(/^Slot /.test(viaChart.chip || ''), 'S122 the slot chip stands');
+  await captureEvidence(page, 'S122-after-chart-click');
+
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  await clickQueueRow(page, 'Basal 05:30 · raise');
+  await settle(page, 450);
+  const viaRow = await state(page);
+  is(viaRow.crumb, viaChart.crumb, 'S122 the queue-row route lands on the identical crumb');
+  is(viaRow.chip, viaChart.chip, 'S122 the queue-row route lands on the identical chip');
+};
+
+// STORY:finding-evidence-routing:S123
+/** S123 · A carb-ratio chart click opens the identical block panel its
+    findings-queue row opens. */
+export const S123 = async (page) => {
+  await openWholeDay(page);
+  await captureEvidence(page, 'S123-before-chart-click');
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await settle(page, 450);
+  const viaChart = await state(page);
+  ok(/block$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
+    `S123 the carb-ratio chart opens the block panel (${viaChart.crumb})`);
+  ok(/^Block /.test(viaChart.chip || ''), 'S123 the block chip stands');
+  await captureEvidence(page, 'S123-after-chart-click');
+
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  await clickQueueRow(page, 'I:C 12:00 to 24:00 · lower');
+  await settle(page, 450);
+  const viaRow = await state(page);
+  is(viaRow.crumb, viaChart.crumb, 'S123 the queue-row route lands on the identical crumb');
+  is(viaRow.chip, viaChart.chip, 'S123 the queue-row route lands on the identical chip');
+};
+
+// STORY:finding-evidence-routing:S124
+/** S124 · A correction-factor chart click opens the identical ISF panel its
+    findings-queue row opens. */
+export const S124 = async (page) => {
+  await openWholeDay(page);
+  await captureEvidence(page, 'S124-before-chart-click');
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await settle(page, 450);
+  const viaChart = await state(page);
+  is(viaChart.crumb[viaChart.crumb.length - 1], 'ISF',
+    `S124 the correction-factor chart opens the ISF panel (${viaChart.crumb})`);
+  await captureEvidence(page, 'S124-after-chart-click');
+
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  await clickQueueRow(page, 'ISF · weaken');
+  await settle(page, 450);
+  const viaRow = await state(page);
+  is(viaRow.crumb, viaChart.crumb, 'S124 the queue-row route lands on the identical crumb');
+  is(viaRow.chip, viaChart.chip, 'S124 the queue-row route lands on the identical chip');
+};
+
+// STORY:finding-evidence-routing:S125
+/** S125 · A settings chart click is one level, always the same one: clicking
+    a different parameter's chart replaces the standing level-2 frame instead
+    of stacking a third under it. */
+export const S125 = async (page) => {
+  await openWholeDay(page);
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await settle(page, 450);
+  const first = await state(page);
+  is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
+
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await settle(page, 450);
+  const second = await state(page);
+  is(second.crumb.length, 2,
+    'S125 a different parameter chart click replaces the level rather than stacking under it');
+  ok(/block$/.test(second.crumb[second.crumb.length - 1]),
+    `S125 the carb-ratio chart is now standing (${second.crumb})`);
+
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await settle(page, 450);
+  const third = await state(page);
+  is(third.crumb.length, 2, 'S125 the correction-factor chart also replaces rather than stacking');
+  is(third.crumb[third.crumb.length - 1], 'ISF', `S125 the ISF chart is now standing (${third.crumb})`);
+};
+
+// STORY:finding-evidence-routing:S126
+/** S126 · ADR 294's clock-window ruling: the chart route releases a drawn
+    window exactly where its picker already does — basal and carb ratio
+    release it, correction factor leaves it standing (S21's reconciled
+    lane-click sentence). */
+export const S126 = async (page) => {
+  await openWholeDay(page);
+
+  /* A drawn window re-scopes the queue in place (term 45), so the drag below
+     must overlap the target row's own span or the row — and its tile — drops
+     out of the findings response entirely. Basal (330-360) and I:C
+     (720-1440) are window-filtered; ISF is not (`isfRows` takes no window
+     argument), so its check draws a window that overlaps neither. */
+  await drawWindow(page, [300, 420], [0, 1440]);
+  const drawn1 = await state(page);
+  ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
+  await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
+  await settle(page, 450);
+  const basal = await state(page);
+  ok(/^Slot /.test(basal.chip || ''), `S126 a basal chart click releases the drawn window (${basal.chip})`);
+
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  await drawWindow(page, [700, 900], [0, 1440]);
+  const drawn2 = await state(page);
+  ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
+  await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
+  await settle(page, 450);
+  const carb = await state(page);
+  ok(/^Block /.test(carb.chip || ''),
+    `S126 a carb-ratio chart click also releases the drawn window (${carb.chip})`);
+
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  await drawWindow(page, [540, 660], [0, 1440]);
+  const drawn3 = await state(page);
+  ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
+  await captureEvidence(page, 'S126-before-isf-chart-click');
+  await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
+  await settle(page, 450);
+  const isf = await state(page);
+  is(isf.chip, drawn3.chip, 'S126 a correction-factor chart click leaves the drawn window standing');
+  await captureEvidence(page, 'S126-after-isf-chart-click');
+};
+
 export const STORIES = [
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'],
   ['S03', S03, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],
@@ -4451,6 +4614,21 @@ export const STORIES = [
   ['S120', S120, 'typical', { findingsInputs: FINDINGS_PROJECTION.inputs,
     findingsProjectionInputs: withStarBecomingWatching }],
   ['S121', S121, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
+  ['S122', S122, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
+  ['S123', S123, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
+  ['S124', S124, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
+  ['S125', S125, 'typical', {
+    findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
+  }],
+  ['S126', S126, 'typical', {
     findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
   }],
   ['C41', C41, 'typical', { caseScenario: {

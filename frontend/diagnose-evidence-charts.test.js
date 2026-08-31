@@ -313,9 +313,16 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.deepEqual(cells.data.map(({ value }) => value[1]),
     basal.nights.map((_, index) => basal.nights.length - index),
     'the cells occupy one row each, from the top of the stack down');
-  const rust = option.series.filter(({ type }) => type === 'line')[1];
-  assert.deepEqual(rust.data[0], [programmed, more + asSet]);
-  assert.equal(rust.data[rust.data.length - 1][1], 0, 'the staircase lands on the baseline');
+  /* The silhouette is implied by arrangement, never drawn: no mark on this plot
+     spans more than one night, because a path through the nights' ends would
+     assert a continuity independent observations do not have. So the crossing is
+     read off the cells that reach the rule, not off a curve. */
+  assert.equal(option.series.some(({ type }) => type === 'line'), false,
+    'nothing connects one night to the next');
+  assert.equal(cells.data.filter(({ value }) => value[0] >= programmed).length, more + asSet,
+    'the cells reaching the programmed rule are the nights at or above it');
+  assert.equal(cells.data.filter(({ value }) => value[0] >= option.xAxis.max).length, 0,
+    'no night runs past this roster ceiling');
 });
 
 /* ONE BIG NIGHT MAY NOT SET THE SCALE, AND MAY NOT BE HIDDEN EITHER. A single
@@ -338,9 +345,8 @@ test('the editorial ceiling caps an outlier night without hiding its value', () 
   assert.equal(capped.value[0], option.xAxis.max, 'the capped night runs to the ceiling');
   assert.equal(capped.delivered, outlier.delivered_rate,
     'the number the night reports is never the capped one');
-  const rust = option.series.filter(({ type }) => type === 'line')[1];
-  assert.equal(rust.data[rust.data.length - 1][1], 1,
-    'the staircase leaves the right edge still standing at the night beyond it');
+  assert.equal(cells.data.filter(({ value }) => value[0] >= option.xAxis.max).length, 1,
+    'the night beyond the ceiling is the one cell that reaches the right edge');
 });
 
 test('the editorial staircase tolerates an absent estimate at both ranks', () => {
@@ -384,6 +390,8 @@ test('the editorial furniture draws against every payload shape', () => {
   for (const data of shapes) {
     for (const mini of [false, true]) {
       const option = entry.option('editorial', { data, mini });
+      assert.equal(option.series.some(({ type }) => type === 'line'), false,
+        `the ${mini ? 'mini' : 'full'} rank draws no mark spanning more than one night`);
       const furniture = option.series.find(({ id }) => id === 'furniture');
       const drawn = furniture.renderItem(params, api);
       assert.equal(drawn.type, 'group');

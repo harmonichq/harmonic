@@ -279,10 +279,10 @@ function basalEditorialOption(data, mini, colors, surface) {
   const hasRule = finite(programmed);
   const hasBand = finite(ciLo) && finite(ciHi);
   const round2 = (value) => Math.round(value * 100) / 100;
-  /* THE ARGUMENT SETS THE SCALE, NOT THE OUTLIERS — the same rule the clock
-     mode's ceiling follows. One 2.5 U/h night stretched this domain to three
-     units and crushed the whole finding into the left third of the tile; the
-     ceiling rides the roster's own 85th percentile and the interval instead,
+  /* THE ARGUMENT SETS THE SCALE, NOT THE OUTLIERS. A single tall night can
+     stretch the domain until the whole finding is crushed into a corner of
+     the tile; the ceiling rides the roster's own 85th percentile and the
+     interval instead,
      and the nights past it leave by a caret carrying their true value, never
      silently clipped. The step ladder holds no quarter: a .25 tick prints as
      "0.3" at one decimal and prints as a lie. */

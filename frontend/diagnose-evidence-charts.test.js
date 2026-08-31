@@ -360,14 +360,13 @@ test('the editorial staircase counts the roster from the payload', () => {
     'no night runs past this roster ceiling');
 });
 
-/* ONE BIG NIGHT MAY NOT SET THE SCALE, AND MAY NOT BE HIDDEN EITHER. A single
-   2.5 U/h night stretched the live domain to three units and crushed the finding
-   into the left third of the tile; the ceiling now rides the roster, and the
-   night past it keeps its true value where the reader can still be told it. */
+/* ONE BIG NIGHT MAY NOT SET THE SCALE, AND MAY NOT BE HIDDEN EITHER: the
+   ceiling rides the roster, and a night past it keeps its true value where
+   the reader can still be told it. */
 test('the editorial ceiling caps an outlier night without hiding its value', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
-  const outlier = { date: '2026-01-09', delivered_rate: 2.5, programmed_rate: 0.6,
+  const outlier = { date: '2026-01-09', delivered_rate: 3.7, programmed_rate: 0.6,
     sign: 1, t: '2026-01-09T00:00:00' };
   const option = entry.option('editorial', {
     data: { ...basal, nights: [...basal.nights, outlier] },

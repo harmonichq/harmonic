@@ -2050,18 +2050,6 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 .evidence-tile[data-drilled] {
   outline: 2px solid var(--ck-focus-mark); outline-offset: -2px;
 }
-.chart-evidence-readout {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px; margin-top: 10px; background: var(--ck-hair);
-}
-.chart-evidence-readout > div { display: grid; gap: 3px; padding: 7px; background: var(--ck-rail); }
-.chart-evidence-readout span { color: var(--mk-muted); font-size: var(--ck-micro); }
-.chart-evidence-readout b { color: var(--mk-text); font: 700 var(--ck-data) var(--ck-mono); }
-.chart-evidence-roster { display: grid; gap: 1px; margin-top: 10px; background: var(--ck-hair); }
-.chart-evidence-roster > div {
-  display: flex; justify-content: space-between; gap: 12px; padding: 6px 8px;
-  background: var(--ck-rail); color: var(--mk-secondary); font: var(--ck-micro) var(--ck-mono);
-}
 .occ-foot { display: flex; justify-content: space-between; }
 
 /* Explore removes the complete advisory layer. Reader-owned pins retain the

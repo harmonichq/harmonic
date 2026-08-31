@@ -11,7 +11,7 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**141 issued executable IDs:** S01–S121, C41–C57, and D1–D3
+**146 issued executable IDs:** S01–S126, C41–C57, and D1–D3
 **Active executable IDs:** all issued
 **Retired executable IDs:** none
 
@@ -526,14 +526,19 @@ P16 · The brace re-seats on viewport resize, so the window stays over its own
 
 ```
 P17 · ONE grammar: an EXPLICIT choice — a preset press OR a drag, the same kind
-      of act — outranks the window a frame would derive, and stands until a NEW
-      navigation. A user window is a workspace: it survives drilling and
-      popping. A lane click is the only navigation that releases it.
-  source:   frontend/diagnose-workstation.js:1055-1058, 1104-1117 (`explicitPreset`),
-            2300-2306 (clear/release), 1691-1744 (paintChart's precedence chain)
+      of act — outranks the window a frame would derive, and stands until a
+      navigation that carries its own span to substitute. A user window is a
+      workspace: it survives drilling and popping. A lane click releases it,
+      and so does a basal or carb-ratio queue-row or chart-row drill —
+      basal and carb ratio own a span of their own to substitute; correction
+      factor and a behavioral finding drill do not, so neither releases it.
+  source:   frontend/diagnose-workstation.js:1227 (`explicitPreset`),
+            2166-2185 (`pickCell`/`pickBlock` call `releaseWindow`),
+            3403 (`releaseWindow`), 2226-2280 (paintChart's precedence chain)
   mock:     the window group is inert, so no precedence exists to express
-  evidence: replay S01, S21 (app, pass)
-  verdict:  kept          operator-ruled: Connor Griffin · 2026-08-19
+  evidence: replay S01, S21, S126 (app, pass)
+  verdict:  amended        issue #294 · 2026-08-31; operator-ruled:
+            Connor Griffin · 2026-08-19 otherwise kept
 ```
 
 ### B · The window control and what it re-scopes
@@ -2801,3 +2806,59 @@ stage affordance. Opening it preserves the analyzer's two-signal explanation: th
 fasting fit agrees with the current setting, while recurring correction-linked lows
 own the weaker-corrections direction. The frontend adds only that no new number is
 available, so there is nothing to stage. Evidence: replay S121.
+
+## Revision — 2026-08-31, base `b4b8a786825251b094c5168a4559ec0212dab8e2` (issue #294: one drill-down for every settings chart)
+
+Before product code changes, `app: 141 of 141 stories passed` against exact
+base `b4b8a786825251b094c5168a4559ec0212dab8e2` through the declared no-fetch
+server, served at a second port from a separate worktree cut at that commit,
+and the committed Diagnose payload. Every issued story passed, so there is no
+absence to sanction and no retirement to rule.
+
+**Behavior added.** A settings chart click already resolves to the findings
+row sharing its chart identity and takes that row's own route (ADR 294,
+landed in this ticket's first chunk). S122-S125 prove that route for each
+settings kind and for a click that crosses parameters:
+
+```
+S122 · A basal chart click opens the identical slot panel its findings-queue
+       row opens.
+S123 · A carb-ratio chart click opens the identical block panel its
+       findings-queue row opens.
+S124 · A correction-factor chart click opens the identical ISF panel its
+       findings-queue row opens.
+S125 · A settings chart click is one level, always the same one: clicking a
+       different parameter's chart replaces the standing level-2 frame
+       instead of stacking a third under it.
+S126 · The chart route releases a drawn clock window exactly where its
+       picker already does: basal and carb ratio release it, correction
+       factor leaves it standing.
+```
+
+Evidence: replay S122, S123, S124, S125, S126 (app, pass). Before/after
+captures are stored under
+`openspec/changes/one-settings-drill-down/evidence/`.
+
+**S21 is reconciled, not retired.** S21's own assertions are unchanged — it
+still exercises a behavioral finding drill, and a lane click still releases
+the drawn window through it. Its prose sentence ("ONLY a lane click ...
+releases it") over-described shipped behavior even before this ticket: a
+basal or carb-ratio queue-row drill already released the brace through
+`pickCell`/`pickBlock`, which S21 never exercised. This ticket's chart route
+now reaches the same pickers, so the sentence is corrected to name the drills
+that actually release rather than singling out the lane.
+
+**P17 is corrected to match.** "A lane click is the only navigation that
+releases it" is replaced with: an explicit window (drawn or pressed) stands
+through drilling and popping, and is released only by a navigation that
+carries its own span to substitute — a lane click, or (now) a basal or
+carb-ratio queue-row or chart-row drill reaching `pickCell`/`pickBlock`.
+Correction factor and a behavioral finding drill derive no span of their own,
+so neither releases it.
+
+Sanction: ConnorGriffin — 2026-08-31 — ruled option A: the chart route
+releases the brace for basal and carb ratio, matching their queue rows, and
+S21's lane-click exclusivity sentence is corrected to describe which drills
+actually release. Recorded in
+`openspec/changes/one-settings-drill-down/design.md`, ADR 294 ("The
+clock-window rule stays per-parameter, and the chart gesture adopts it").

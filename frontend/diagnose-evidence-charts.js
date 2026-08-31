@@ -15,13 +15,11 @@ const FALLBACK_COLORS = {
   signal: '#3f5a3b', basal: '#5d7368', programmed: '#4d5c53',
   line: '#c3bfb4', text: '#141a15', muted: '#3d5848', excluded: '#6b7169',
   high: '#a94f21', low: '#9d3018', sunken: '#e7e4dc', ruleStrong: '#6b7669',
-  surface: '#faf8f4',
 };
 const COLOR_TOKENS = {
   signal: '--in-range', basal: '--basal', programmed: '--secondary',
   line: '--line', text: '--text', muted: '--muted', excluded: '--notindata',
   high: '--high', low: '--low', sunken: '--wk-surface-sunken', ruleStrong: '--wk-rule-strong',
-  surface: '--wk-surface',
 };
 const chartColors = () => {
   if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') {
@@ -294,11 +292,12 @@ const EDITORIAL = Object.freeze({
    fixed x, a fixed gutter, and a label column left-aligned to a fixed x, with
    one pitch down the whole section. Set as rich-text rows it was neither — each
    row's line box was laid out to its own content, so the numerals staggered
-   (11, 4, 5 each finding its own right edge), the labels ragged against them,
-   and a wrapped label centred itself under its own row instead of hanging in
-   the label column. The three widths sum to `EDITORIAL.rail`, which is what the
-   section's hairlines already span. */
-const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 168, pitch: 24 });
+   (11, 4, 5 each finding its own right edge) and a wrapped label centred itself
+   under its row. The label column is only as wide as the labels need, so the
+   PAIR stays tight and the block of pairs sits against the rail's own margin:
+   stretched to the full rail width the numerals ended up marooned a column away
+   from the words they belong to, with the white space inside the row. */
+const RAIL = Object.freeze({ numeral: 28, gutter: 10, label: 124, pitch: 24 });
 /* One line per row, and a wrapped label takes another line with an empty
    numeral beside it — so the two columns stay in step and the wrap hangs in the
    label column alone. */
@@ -563,7 +562,7 @@ function basalEditorialOption(data, mini, colors) {
        The name is set below the labels, where the eye arrives on it while it is
        still reading the scale. */
     xAxis: { type: 'value', min: xMin, max: xMax, interval: xStep,
-      name: 'insulin rate, U/h', nameLocation: 'middle',
+      name: 'basal rate, U/h', nameLocation: 'middle',
       ...axis(colors), splitLine: { show: false }, nameGap: 26,
       nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
@@ -652,13 +651,14 @@ function basalEditorialOption(data, mini, colors) {
             /* The cliff is no longer drawn as one mark spanning its nights: each
                night that ran exactly as programmed stands on the rule as its own
                tick, and the run of them IS the cliff. */
-            /* THE ONE NUMBER THE MARKS CANNOT SAY. The ring's height is the
-               finding — nights at or above the programmed rate — and reading it
-               off the staircase means counting steps, so the crossing is
-               labelled and nothing else on the plot is. */
-            children.push({ type: 'circle', shape: { cx: ruleX, cy: yCross, r: 4 },
-              style: { fill: colors.surface, stroke: colors.high, lineWidth: 2 } });
-            /* The delta arrangement leaves exactly two quadrants empty, and the
+            /* THE ONE NUMBER THE MARKS CANNOT SAY, and it needs no glyph to say
+               it. A ring drawn where the rule met the staircase marked a real
+               junction while the cells grew from the left edge; anchored on the
+               rule they already meet it at every row, so the ring marked nothing
+               and read as a stray red circle in the middle of the stack. The
+               label anchors to the rule at the crossing height instead — the
+               boundary where the rust and the as-set ticks give out.
+               The delta arrangement leaves exactly two quadrants empty, and the
                label takes whichever one it fits: BELOW the crossing on the right,
                where every row runs the other way, or ABOVE it on the left, where
                every row runs right. Where the rule sits too near an edge for

@@ -306,7 +306,7 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.equal(tallyLabels.style.text, 'more than programmed\nless\nexactly as set');
   assert.equal(excludedNumerals.style.text, `${basal.excluded_night_count}\n`,
     'a wrapped label leaves its continuation row without a numeral');
-  assert.equal(excludedLabels.style.text, 'excluded — not steady enough\nto count');
+  assert.equal(excludedLabels.style.text, 'excluded — not steady\nenough to count');
   for (const numerals of [tallyNumerals, excludedNumerals]) {
     assert.equal(numerals.style.align, 'right');
     assert.equal(numerals.right, excludedNumerals.right, 'one numeral column, one x');
@@ -318,6 +318,19 @@ test('the editorial staircase counts the roster from the payload', () => {
   }
   assert.equal(tallyNumerals.right, 28 + tallyLabels.style.width + 10,
     'the numerals end one gutter short of where the labels begin');
+  /* The pair stays tight and the block of pairs sits against the rail's margin:
+     a label column stretched to the rail's full width marooned the numerals a
+     column away from the words they belong to. */
+  assert.ok(tallyLabels.style.width <= 130,
+    'the label column is only as wide as the labels need');
+  assert.ok(option.graphic.every(({ style }) => !/circle/.test(style?.text ?? '')));
+  assert.equal(option.series.find(({ id }) => id === 'furniture')
+    .renderItem({ coordSys: { x: 28, y: 80, width: 672, height: 147 }, dataIndex: 0 }, {
+      coord: ([x, y]) => [28 + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * 672,
+        80 + (y / option.yAxis.max) * 147],
+      getWidth: () => 950, getHeight: () => 307,
+    }).children.some(({ type }) => type === 'circle'), false,
+  'no glyph floats at the crossing — the label anchors to the rule itself');
   /* And the verdict block above shares that margin, so the section has one edge
      rather than four. */
   const rail = JSON.stringify(option.graphic);
@@ -325,9 +338,10 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.equal(heads.length, 4, 'slug, estimate, range and table head');
   assert.ok(heads.every(({ right, style }) => right === 28 && style.align === 'right'));
   assert.ok(rail.includes(`${basal.nights.length} STEADY NIGHTS`));
-  /* The scale is a rate, and it says so under its own numbers: a bare 0.0–1.8
-     ladder on a chart about nights was read as a count of days. */
-  assert.equal(option.xAxis.name, 'insulin rate, U/h');
+  /* The scale is a rate, and it says so under its own numbers in the domain's
+     own term: a bare 0.0–1.8 ladder on a chart about nights was read as a count
+     of days. */
+  assert.equal(option.xAxis.name, 'basal rate, U/h');
   assert.equal(option.xAxis.nameLocation, 'middle');
   assert.ok(option.xAxis.nameGap > 8, 'the name clears the tick labels it sits under');
   /* ONE CELL PER NIGHT, one row each, sorted largest-more first through the

@@ -407,9 +407,14 @@ function basalEditorialOption(data, mini, colors, description) {
     : above > below ? 'Overnight, the pump kept adding to the rate you set.'
       : below > above ? 'Overnight, the pump kept trimming the rate you set.'
         : 'Overnight, the pump mostly ran the rate you set.';
+  /* The headline carries the claim; everything under it reports. The deck used
+     to address the reader in the second person throughout ("your 0.72", "YOU
+     PROGRAMMED", "the rate you already use") — one notch of that voice is more
+     than an advisory reading needs, so the programmed rate is simply named
+     below the headline and the claim keeps the only "you" on the tile. */
   const standfirst = hasRule
     ? `On ${above} of ${facts.nights.length} steady nights at ${slotLabel} it delivered more`
-      + ` than your ${programmed.toFixed(2)} U/h; on ${atRate} it matched exactly,`
+      + ` than the programmed ${programmed.toFixed(2)} U/h; on ${atRate} it matched exactly,`
       + ` and on ${below} it delivered less.`
     : `${facts.nights.length} steady nights at ${slotLabel}, counted by the rate`
       + ' the algorithm ran.';
@@ -419,11 +424,13 @@ function basalEditorialOption(data, mini, colors, description) {
   const held = verdict === 'Supported' ? 'Harmonic supports moving this setting.'
     : verdict === 'Held' ? 'Harmonic is holding this setting.'
       : 'Harmonic is not calling this one.';
+  /* One line, because the second one landed on the footer rule and because a
+     caption under a chart is a caption, not a paragraph. */
   const caption = hasBand
-    ? `The likely true rate lands anywhere between ${ciLo.toFixed(2)} and ${ciHi.toFixed(2)}`
+    ? `Likely true rate ${ciLo.toFixed(2)}–${ciHi.toFixed(2)} U/h`
       + (hasRule && ciLo <= programmed && programmed <= ciHi
-        ? ' — a range wide enough that it still includes the rate you already use. '
-        : ' — a range that sits clear of the rate you already use. ')
+        ? ' — wide enough to still include the programmed rate. '
+        : ' — clear of the programmed rate. ')
       + held
     : held;
   const railRows = [
@@ -431,7 +438,7 @@ function basalEditorialOption(data, mini, colors, description) {
     `{n|${below}}{l|less}`,
     `{n|${atRate}}{l|exactly as set}`,
   ].join('\n');
-  const railTail = `{n|${data?.excluded_night_count ?? 0}}{l|more nights weren't}\n{n|}{l|steady enough to count}`;
+  const railTail = `{n|${data?.excluded_night_count ?? 0}}{l|excluded — not steady}\n{n|}{l|enough to count}`;
   const railRich = {
     n: { width: 26, align: 'right', color: colors.text, fontFamily: MONO,
       fontSize: 16, fontWeight: 600, lineHeight: 22 },
@@ -472,7 +479,7 @@ function basalEditorialOption(data, mini, colors, description) {
       /* The roster as type, not as a chart: three directions, then the nights
          that never qualified, disclosed here rather than cluttering the plot. */
       { type: 'text', right: EDITORIAL.margin, top: EDITORIAL.figureTop, silent: true,
-        style: { text: `THE ${facts.nights.length} NIGHTS`, fill: colors.muted, font: caps } },
+        style: { text: `${facts.nights.length} STEADY NIGHTS`, fill: colors.muted, font: caps } },
       { type: 'text', right: EDITORIAL.margin, top: 114, silent: true,
         style: { text: railRows, rich: railRich } },
       { type: 'text', right: EDITORIAL.margin, top: 194, silent: true,
@@ -483,14 +490,18 @@ function basalEditorialOption(data, mini, colors, description) {
         style: { text: 'Steady overnight windows only — nights with a bolus still acting'
           + ` are excluded. ${slotLabel}–${slotEnd}.`, fill: colors.muted, font: caps } },
     ],
+    /* THE AXIS SAYS WHAT IT MEASURES, UNDER ITS OWN NUMBERS. A unit hung after
+       the last tick is read after the scale, not with it: a bare ladder of
+       0.0–1.8 under a chart about nights was first read as a count of days.
+       The name is set below the labels, where the eye arrives on it while it is
+       still reading the scale. */
     xAxis: { type: 'value', min: xMin, max: xMax, interval: xStep,
-      ...axis(colors), splitLine: { show: false },
+      name: 'insulin rate, U/h', nameLocation: 'middle',
+      ...axis(colors), splitLine: { show: false }, nameGap: 26,
+      nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
-      /* The unit is set once, after the last tick, where it cannot be mistaken
-         for a value of its own. */
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
-        formatter: (value) => `${value.toFixed(xStep >= .1 ? 1 : 2)}`
-          + `${round2(value) === xMax ? ' U/h' : ''}` } },
+        formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
     yAxis: { type: 'value', min: 0, max: yMax, show: false },
     series: [
       staircase(left, colors.basal, greyFill),
@@ -542,17 +553,17 @@ function basalEditorialOption(data, mini, colors, description) {
           if (hasBand) {
             const xLo = api.coord([ciLo, 0])[0];
             const xHi = api.coord([ciHi, 0])[0];
-            children.push(box(xLo, base + 26, xHi - xLo, 6, shadow),
-              box(xLo, base + 23, 1, 12, shadow), box(xHi - 1, base + 23, 1, 12, shadow));
+            children.push(box(xLo, base + 38, xHi - xLo, 6, shadow),
+              box(xLo, base + 35, 1, 12, shadow), box(xHi - 1, base + 35, 1, 12, shadow));
             if (finite(estimateValue)) {
-              children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 22, 2, 14, colors.basal));
+              children.push(box(api.coord([estimateValue, 0])[0] - 1, base + 34, 2, 14, colors.basal));
             }
             children.push({ type: 'polyline',
-              shape: { points: [[xLo, base + 35], [xLo, base + 40], [cs.x, base + 40]] },
+              shape: { points: [[xLo, base + 47], [xLo, base + 52], [cs.x, base + 52]] },
               style: { stroke: leader, lineWidth: 1, fill: 'none' } });
           }
           children.push(text(editorialWrap(caption, cs.width - 8, 11),
-            cs.x, base + 44, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
+            cs.x, base + 54, `11px ${FONT}`, colors.muted, { lineHeight: 15 }));
           /* A night past the ceiling leaves by a caret carrying its true value:
              an advisory chart may cap a scale, never hide a big night. */
           if (overflow > 0 && finite(maxRate)) {
@@ -560,9 +571,13 @@ function basalEditorialOption(data, mini, colors, description) {
             children.push({ type: 'polygon',
               shape: { points: [[cs.x + cs.width + 6, yExit],
                 [cs.x + cs.width, yExit - 3.5], [cs.x + cs.width, yExit + 3.5]] },
-              style: { fill: colors.high } },
-            text(maxRate.toFixed(1), cs.x + cs.width - 4, yExit - 6, `9px ${MONO}`,
-              colors.high, { align: 'right', verticalAlign: 'bottom' }));
+              style: { fill: colors.high } });
+            /* The caret prints its own value only when no callout is already
+               carrying it — two copies of one night's rate is one too many. */
+            if (above === 0) {
+              children.push(text(maxRate.toFixed(1), cs.x + cs.width - 4, yExit - 6,
+                `9px ${MONO}`, colors.high, { align: 'right', verticalAlign: 'bottom' }));
+            }
           }
           if (hasRule) {
             const ruleX = api.coord([programmed, 0])[0];
@@ -573,18 +588,18 @@ function basalEditorialOption(data, mini, colors, description) {
                would run through the standfirst. */
             const flagRight = ruleX > cs.x + cs.width - 160;
             children.push(box(ruleX + (flagRight ? -4 : 1), cs.y + 7, 3, 3, colors.basal),
-              text(`YOU PROGRAMMED ${programmed.toFixed(2)}`,
+              text(`PROGRAMMED ${programmed.toFixed(2)} U/H`,
                 ruleX + (flagRight ? -9 : 7), cs.y + 4, caps, colors.muted,
                 { align: flagRight ? 'right' : 'left' }));
             if (atRate > 0) {
               const yFoot = api.coord([programmed, crossing - atRate])[1];
               children.push(box(ruleX - 1.5, yCross, 3, yFoot - yCross, colors.high));
               const yMid = (yCross + yFoot) / 2;
-              const yCallout = Math.max(cs.y + 40, yMid - 26);
+              const yCallout = Math.max(cs.y + 30, yMid - 26);
               children.push({ type: 'polyline',
                 shape: { points: [[ruleX + 4, yMid], [ruleX + 36, yMid], [ruleX + 36, yCallout]] },
                 style: { stroke: leader, lineWidth: 1, fill: 'none' } });
-              children.push(text(`${nightCount(atRate)} it ran exactly what you programmed.`,
+              children.push(text(`${nightCount(atRate)} ran exactly as programmed.`,
                 ruleX + 42, yCallout, `500 12px ${FONT}`, colors.text,
                 { verticalAlign: 'middle' }));
             }
@@ -593,14 +608,22 @@ function basalEditorialOption(data, mini, colors, description) {
             children.push({ type: 'circle', shape: { cx: ruleX, cy: yCross, r: 4 },
               style: { fill: colors.surface, stroke: colors.high, lineWidth: 2 } });
           }
+          /* THE TAIL CALLOUT SITS ON THE TAIL IT NAMES. Anchored to the plot's
+             top edge it shared a band with the cliff's callout and the two ran
+             through each other; anchored to the silhouette's own right-hand end
+             it can only ever sit above a curve that is nearly spent, which is
+             also where the spec asked for it. */
           const tail = above > 0
-            ? `${nightCount(above)} it ran higher —\nthe tallest reached ${maxRate?.toFixed(1)} U/h.`
+            ? `${nightCount(above)} ran higher,\nreaching ${maxRate?.toFixed(1)} U/h.`
             : below > 0
-              ? `${nightCount(below)} it ran lower —\nthe lowest reached ${minRate?.toFixed(1)} U/h.`
+              ? `${nightCount(below)} ran lower,\ndown to ${minRate?.toFixed(1)} U/h.`
               : null;
           if (tail) {
-            children.push(text(tail, cs.x + cs.width, cs.y + 10, `500 12px ${FONT}`,
-              colors.text, { align: 'right', lineHeight: 16 }));
+            const xTail = xMin + (xMax - xMin) * .78;
+            const yTail = Math.max(cs.y + 44,
+              api.coord([xTail, rates.filter((rate) => rate >= xTail).length])[1] - 12);
+            children.push(text(tail, cs.x + cs.width, yTail, `500 12px ${FONT}`,
+              colors.text, { align: 'right', verticalAlign: 'bottom', lineHeight: 16 }));
           }
           return { type: 'group', children };
         } },

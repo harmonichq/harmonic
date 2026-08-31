@@ -299,7 +299,12 @@ test('the editorial staircase counts the roster from the payload', () => {
   assert.ok(rail.includes(`{n|${less}}{l|less}`), 'the rail keeps the payload less count');
   assert.ok(rail.includes(`{n|${asSet}}{l|exactly as set}`), 'the rail keeps the payload as-set count');
   assert.ok(rail.includes(`{n|${basal.excluded_night_count}}`), 'the excluded nights are disclosed in the rail');
-  assert.ok(rail.includes(`THE ${basal.nights.length} NIGHTS`));
+  assert.ok(rail.includes(`${basal.nights.length} STEADY NIGHTS`));
+  /* The scale is a rate, and it says so under its own numbers: a bare 0.0–1.8
+     ladder on a chart about nights was read as a count of days. */
+  assert.equal(option.xAxis.name, 'insulin rate, U/h');
+  assert.equal(option.xAxis.nameLocation, 'middle');
+  assert.ok(option.xAxis.nameGap > 8, 'the name clears the tick labels it sits under');
   /* One step per night, and the staircase meets the programmed rule at the
      nights that ran at or above it. */
   const squares = option.series.find(({ type }) => type === 'scatter');

@@ -285,9 +285,26 @@ function basalLedgerOption(data, mini, colors, description) {
    rate fall as a cliff landing on the rule itself. Everything else — the tally,
    the exclusions, the verdict — is set as type, because only the part carrying
    the argument earns ink. */
+/* THREE SEATS, THREE RANKS. The workstation draws this chart at the stage's
+   ~950px, in the explorer grid at ~480, and in the dock strip as a thumbnail —
+   and it tells the option which by the only signal that is true in all three:
+   the host element it is about to mount into, already passed as `surface` for
+   every tile. The seat NAME would be the obvious channel (`grid` for explorer
+   cells), but `fieldNarrow` shrinks the FOCAL seat too, and a rank chosen by
+   name would pour the 950px deck into a 600px stage exactly as it poured into
+   the explorer. The box is the fact; the seat is only an intention. */
 const EDITORIAL = Object.freeze({
   margin: 28, deckTop: 16, figureTop: 80, footerBand: 80, rail: 206,
 });
+/* At the middle rank the deck and the rail are gone: a 21px headline needs
+   620px to itself and the rail spends 206 of a 480px cell on type. What they
+   carried that the figure cannot — the verdict, the estimate and its range, the
+   three-way tally and the exclusions — is compressed into two lines above the
+   plot, so no fact leaves the tile with them. */
+const EDITORIAL_MIDDLE = Object.freeze({
+  margin: 14, deckTop: 8, tallyTop: 24, figureTop: 46, footerBand: 54, rail: 0,
+});
+const MIDDLE_RANK_WIDTH = 780;
 /* THE RAIL IS A TABLE, so it is set as one: a numeral column right-aligned to a
    fixed x, a fixed gutter, and a label column left-aligned to a fixed x, with
    one pitch down the whole section. Set as rich-text rows it was neither — each
@@ -312,7 +329,10 @@ const editorialWrap = (text, width, size) => {
   return lines.join('\n');
 };
 
-function basalEditorialOption(data, mini, colors) {
+function basalEditorialOption(data, mini, colors, surface) {
+  const seatWidth = surface?.clientWidth || surface?.getBoundingClientRect?.().width || 0;
+  const compact = !mini && seatWidth > 0 && seatWidth < MIDDLE_RANK_WIDTH;
+  const L = compact ? EDITORIAL_MIDDLE : EDITORIAL;
   const facts = basalFacts(data);
   const { programmed, ciLo, ciHi, estimateValue, above, below, atRate } = facts;
   /* Sorted largest-more first, through the nights that ran exactly as set, to
@@ -339,6 +359,7 @@ function basalEditorialOption(data, mini, colors) {
   const xStep = xSpan > 2 ? .5 : xSpan > .8 ? .2 : xSpan > .4 ? .1 : .05;
   const xMin = Math.max(0, round2(Math.floor((lo - pad) / xStep) * xStep));
   const xMax = round2(Math.ceil((ceiling + pad) / xStep) * xStep);
+  const tickStep = compact && (xMax - xMin) / xStep > 6 ? xStep * 2 : xStep;
   const yMax = Math.max(total, 1);
   /* The staircase is never drawn. Sorted by rate and stacked one to a row, the
      nights' own right-hand ends land in a descending flight — the silhouette is
@@ -507,12 +528,32 @@ function basalEditorialOption(data, mini, colors) {
      width, so the section has one edge rather than four. */
   const railHead = (style, top) => ({ type: 'text', right: EDITORIAL.margin, top,
     silent: true, style: { align: 'right', width: EDITORIAL.rail, ...style } });
+  /* AT THE MIDDLE RANK THE DECK AND THE RAIL SPEAK IN ONE VOICE EACH. The
+     verdict line carries what the slug carried — the backend's word, the
+     estimate, its range — and the tally line carries the rail's four counts,
+     exclusions included, because the count arguing against the finding may never
+     be the one that gets dropped for room. */
+  const compactVerdict = [verdict.toUpperCase(),
+    finite(estimateValue) ? `${estimateValue.toFixed(2)} U/h` : 'no estimate',
+    ...(hasBand ? [`(${ciLo.toFixed(2)}–${ciHi.toFixed(2)})`] : []),
+    /* The rule loses its flag at this size — the deck's own band is where the
+       flag flies and the tally line is standing in it — so the rate the whole
+       figure is anchored on is named here instead. */
+    ...(hasRule ? [`set ${programmed.toFixed(2)}`] : [])].join(' · ');
+  const compactTally = `${facts.nights.length} steady`
+    + ` night${facts.nights.length === 1 ? '' : 's'} · ${above} more · ${below} less`
+    + ` · ${atRate} as set · ${data?.excluded_night_count ?? 0} excluded`;
   return {
     ...chartBase(description, false, colors),
     legend: { show: false },
-    grid: { left: EDITORIAL.margin, right: EDITORIAL.rail + EDITORIAL.margin + 16,
-      top: EDITORIAL.figureTop, bottom: EDITORIAL.footerBand, containLabel: false },
-    graphic: [
+    grid: { left: L.margin, right: L.rail + L.margin + (compact ? 26 : 16),
+      top: L.figureTop, bottom: L.footerBand, containLabel: false },
+    graphic: compact ? [
+      { type: 'text', left: L.margin, top: L.deckTop, silent: true,
+        style: { text: compactVerdict, fill: colors.text, font: `600 11px ${MONO}` } },
+      { type: 'text', left: L.margin, top: L.tallyTop, silent: true,
+        style: { text: compactTally, fill: colors.muted, font: `500 10px ${FONT}` } },
+    ] : [
       { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.deckTop, silent: true,
         style: { text: editorialWrap(headline, 620, 21), fill: colors.text,
           font: `600 21px ${FONT}`, lineHeight: 24 } },
@@ -542,20 +583,23 @@ function basalEditorialOption(data, mini, colors) {
        0.0–1.8 under a chart about nights was first read as a count of days.
        The name is set below the labels, where the eye arrives on it while it is
        still reading the scale. */
-    xAxis: { type: 'value', min: xMin, max: xMax, interval: xStep,
+    /* A NARROW SEAT TAKES HALF THE TICKS. The explorer's cell fused its labels
+       into one smear — the ladder was drawn for a 950px plot and handed 200px —
+       so the step doubles when the ticks would crowd. */
+    xAxis: { type: 'value', min: xMin, max: xMax, interval: tickStep,
       name: 'basal rate, U/h', nameLocation: 'middle',
       ...axis(colors), splitLine: { show: false }, nameGap: 26,
       nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
-        formatter: (value) => value.toFixed(xStep >= .1 ? 1 : 2) } },
+        formatter: (value) => value.toFixed(tickStep >= .1 ? 1 : 2) } },
     /* The count runs DOWNWARD, because the stack does: the nights at or above
        the programmed rate are the rows the reader counts down through before the
        rule runs out of cells, so the crossing is the 16th night from the top. */
     yAxis: { type: 'value', min: 0, max: yMax, show: false, inverse: true },
     series: [
       nightCells(2, true),
-      { type: 'custom', id: 'rail', animation: false, silent: true, clip: false, z: 10, data: [0],
+      ...(compact ? [] : [{ type: 'custom', id: 'rail', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
           const numeralEnd = api.getWidth() - EDITORIAL.margin - RAIL.label - RAIL.gutter;
           return { type: 'group', children: railRows.flatMap(([count, label, top]) => {
@@ -569,7 +613,7 @@ function basalEditorialOption(data, mini, colors) {
                 lineHeight: RAIL.lead, fill: colors.muted, font: `11px ${FONT}` } },
             ];
           }) };
-        } },
+        } }]),
       { type: 'custom', id: 'furniture', animation: false, silent: true, clip: false, z: 10, data: [0],
         renderItem: (params, api) => {
           const cs = params.coordSys;
@@ -582,8 +626,9 @@ function basalEditorialOption(data, mini, colors) {
           const text = (content, x, y, font, fill, extra = {}) => ({ type: 'text',
             style: { text: content, x, y, font, fill, ...extra } });
           /* The tile's own nameplate already rules the top of the page, so the
-             only hairlines drawn here are the ones nothing else carries. */
-          const children = [
+             only hairlines drawn here are the ones nothing else carries — and at
+             the middle rank there is no rail to rule and no footer under it. */
+          const children = compact ? [] : [
             box(EDITORIAL.margin, height - 28, width - EDITORIAL.margin * 2, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 18, EDITORIAL.rail, 1, hair),
             box(railLeft, EDITORIAL.figureTop + 104, EDITORIAL.rail, 1, hair),
@@ -599,7 +644,7 @@ function basalEditorialOption(data, mini, colors) {
              margin rather than on the plot, because the cells no longer start at
              the plot's left edge and a number set inside would sit on one. The
              last rank needs no line of its own — the axis is already there. */
-          const midRank = Math.round(total / 2);
+          const midRank = compact ? 0 : Math.round(total / 2);
           if (midRank > 0 && midRank < total) {
             const y = api.coord([xMin, midRank])[1];
             children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
@@ -607,7 +652,11 @@ function basalEditorialOption(data, mini, colors) {
             children.push(text(String(midRank), cs.x - 6, y, `500 10px ${FONT}`, colors.muted,
               { align: 'right', verticalAlign: 'middle' }));
           }
-          if (total > 0) {
+          /* The ruler goes at the middle rank: its numbers live in the canvas
+             margin, and that margin is half as wide there — a "20" set in it
+             would hang off the tile. The tally line above says how many nights
+             the stack holds. */
+          if (total > 0 && !compact) {
             children.push(text(String(total), cs.x - 6, base, `500 10px ${FONT}`, colors.muted,
               { align: 'right', verticalAlign: 'bottom' }));
           }
@@ -633,17 +682,22 @@ function basalEditorialOption(data, mini, colors) {
           if (hasRule) {
             const ruleX = api.coord([programmed, 0])[0];
             const yCross = api.coord([programmed, crossing])[1];
-            children.push(box(ruleX - .75, cs.y - 14, 1.5, base + 24 - cs.y, colors.basal));
+            const head = compact ? cs.y : cs.y - 14;
+            children.push(box(ruleX - .75, head, 1.5, base + 24 - head, colors.basal));
             /* The flag flies ABOVE the plot, on the head of the rule. Inside it
                used to sit in the top row's band, which was empty while the cells
                grew from the left edge and is the widest cell on the tile now
                that they grow from the rule. The deck gave up the room when the
-               standfirst went. */
-            const flag = `PROGRAMMED ${programmed.toFixed(2)}`;
-            const flagLeft = roomRight(ruleX + 7, flag, 10);
-            children.push(box(ruleX + (flagLeft ? 1 : -4), cs.y - 15, 3, 3, colors.basal),
-              text(flag, ruleX + (flagLeft ? 7 : -9), cs.y - 6, caps, colors.muted,
-                { align: flagLeft ? 'left' : 'right', verticalAlign: 'bottom' }));
+               standfirst went — and at the middle rank the deck IS the two
+               compressed lines, so the flag has nowhere to fly and the rate it
+               would name is set in the verdict line instead. */
+            if (!compact) {
+              const flag = `PROGRAMMED ${programmed.toFixed(2)}`;
+              const flagLeft = roomRight(ruleX + 7, flag, 10);
+              children.push(box(ruleX + (flagLeft ? 1 : -4), cs.y - 15, 3, 3, colors.basal),
+                text(flag, ruleX + (flagLeft ? 7 : -9), cs.y - 6, caps, colors.muted,
+                  { align: flagLeft ? 'left' : 'right', verticalAlign: 'bottom' }));
+            }
             /* The cliff is no longer drawn as one mark spanning its nights: each
                night that ran exactly as programmed stands on the rule as its own
                tick, and the run of them IS the cliff. */
@@ -678,7 +732,11 @@ function basalEditorialOption(data, mini, colors) {
   };
 }
 
-function basalOption(mode, { data, mini = false } = {}) {
+/* `surface` is the host the workstation is about to mount this chart into,
+   already handed to every tile so the comparison kind can re-resolve its ink on
+   a theme change. The editorial mode reads its BOX: mounts run after the tile is
+   in the DOM (ADR 215 amendment), so the measurement is the seat's real width. */
+function basalOption(mode, { data, mini = false, surface = null } = {}) {
   const colors = chartColors();
   const nights = data?.nights || [];
   const description = `${data?.roster_count ?? 0} nights of steady data; ${data?.directional_support_count ?? 0} support this reading.`;
@@ -702,7 +760,7 @@ function basalOption(mode, { data, mini = false } = {}) {
   }
   if (mode === 'bay') return basalBayOption(data, mini, colors, description);
   if (mode === 'ledger') return basalLedgerOption(data, mini, colors, description);
-  if (mode === 'editorial') return basalEditorialOption(data, mini, colors);
+  if (mode === 'editorial') return basalEditorialOption(data, mini, colors, surface);
   /* NIGHTS ARE UNCONNECTED OBSERVATIONS, NOT A SERIES — and each one's story
      is "how far from the programmed rate did the algorithm land". So a night
      is a deviation COLUMN rising (or dropping) from the programmed baseline:

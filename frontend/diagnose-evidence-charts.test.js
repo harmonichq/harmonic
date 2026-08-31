@@ -392,6 +392,77 @@ test('the editorial ceiling caps an outlier night without hiding its value', () 
     'the night beyond the ceiling is the one cell that reaches the right edge');
 });
 
+/* THE THIRD SEAT. The explorer grid draws every chart at roughly 480x240 and
+   the workstation only ever says `mini` for the dock, so the full treatment was
+   poured into a cell a third its width: the headline ran under the slug and the
+   axis labels fused into one smear. The rank is taken from the host element the
+   workstation is already passing — the box is the fact, where the seat name is
+   only an intention (`fieldNarrow` shrinks the focal seat too). */
+test('the editorial tile takes a middle rank from the seat it is handed', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const data = { ...basal, estimate: { value: .74, lo: .6, hi: .92 } };
+  const more = basal.nights.filter(({ sign }) => sign === 1).length;
+  const asSet = basal.nights.filter(({ sign }) => sign === null).length;
+  const middle = entry.option('editorial', { data, surface: { clientWidth: 480 } });
+  const full = entry.option('editorial', { data, surface: { clientWidth: 950 } });
+
+  assert.deepEqual(full.graphic, entry.option('editorial', { data }).graphic,
+    'a wide seat is the rank the tile already had');
+  /* The deck and the rail go; nothing they carried goes with them. */
+  assert.equal(middle.graphic.length, 2, 'two compressed lines in place of deck and rail');
+  const [statement, tally] = middle.graphic.map(({ style }) => style.text);
+  assert.match(statement, /INSUFFICIENT EVIDENCE/);
+  assert.match(statement, /0\.74 U\/h/);
+  assert.match(statement, /\(0\.60–0\.92\)/, 'the interval survives the rank');
+  assert.match(statement, /set 0\.60/, 'the rule loses its flag, so the line names the rate');
+  assert.equal(tally, `${basal.nights.length} steady nights · ${more} more · 0 less`
+    + ` · ${asSet} as set · ${basal.excluded_night_count} excluded`);
+  assert.match(entry.option('editorial', { data: { ...data, nights: [data.nights[0]] },
+    surface: { clientWidth: 480 } }).graphic[1].style.text, /^1 steady night · /,
+  'one night is not "1 steady nights"');
+  assert.equal(middle.series.some(({ id }) => id === 'rail'), false, 'no rail table');
+  assert.ok(middle.grid.right < 60, 'no rail width is reserved');
+  assert.ok(middle.grid.top < full.grid.top && middle.grid.bottom < full.grid.bottom);
+  /* The figure itself is unchanged in kind: one cell per night, anchored on the
+     rule, and nothing spanning two nights. */
+  assert.equal(middle.series.some(({ type }) => type === 'line'), false);
+  assert.equal(middle.series.find(({ id }) => id === 'nights').data.length, basal.nights.length);
+  assert.equal(middle.xAxis.name, 'basal rate, U/h');
+  assert.ok(middle.animation === false && middle.series.every(({ animation }) => animation === false));
+});
+
+test('the middle rank keeps its labels inside a 480px cell', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const option = entry.option('editorial', {
+    data: { ...basal, estimate: { value: .74, lo: .6, hi: .92 } },
+    surface: { clientWidth: 480 },
+  });
+  const plot = { x: 14, y: 46, width: 426, height: 140 };
+  const api = {
+    coord: ([x, y]) => [plot.x + ((x - option.xAxis.min) / (option.xAxis.max - option.xAxis.min)) * plot.width,
+      plot.y + (y / option.yAxis.max) * plot.height],
+    getWidth: () => 480, getHeight: () => 240,
+  };
+  const drawn = option.series.find(({ id }) => id === 'furniture')
+    .renderItem({ coordSys: plot, dataIndex: 0 }, api).children;
+  const marks = drawn.filter(({ type }) => type === 'text').map(({ style }) => {
+    const size = Number(/(\d+)px/.exec(style.font)[1]);
+    const width = String(style.text).length * size * .52;
+    return { text: style.text, width, x: style.align === 'right' ? style.x - width : style.x };
+  });
+  for (const mark of marks) {
+    assert.ok(mark.x >= 0, `"${mark.text}" runs off the left of a narrow cell`);
+    assert.ok(mark.x + mark.width <= 480, `"${mark.text}" runs off the right of a narrow cell`);
+  }
+  /* The axis stops crowding: at this width the full rank's ladder fused. */
+  assert.ok((option.xAxis.max - option.xAxis.min) / option.xAxis.interval <= 8,
+    'the middle rank thins its ticks');
+  assert.equal(drawn.some(({ style }) => /PROGRAMMED/.test(style?.text ?? '')), false,
+    'the rule flies no flag where the deck has become two lines');
+});
+
 test('the editorial staircase tolerates an absent estimate at both ranks', () => {
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');

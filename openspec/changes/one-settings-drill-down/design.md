@@ -15,16 +15,36 @@ The alternative — enriching the thin readout until it matched the panel — wa
 rejected because it would have produced a second implementation of the panel,
 diverging from the row route's the first time either moved.
 
-## ADR 294 — The clock-window rule stays per-parameter, not per-gesture
+## ADR 294 — The clock-window rule stays per-parameter, and the chart gesture adopts it
 
 Basal and carb ratio release a drawn clock window when their panel opens;
 correction factor does not. That split is principled rather than accidental: a
 basal slot and a carb-ratio block each carry their own span, which the panel
 substitutes for the reader's brace, and correction factor has no span of its own
-to substitute. Unifying the gesture therefore inherits each parameter's existing
-behavior unchanged. Making the rule uniform across settings charts would have
-changed shipped behavior on a route this work never named, and would have
-re-decided which parameters own a span under cover of a routing change.
+to substitute. Unifying the gesture adopts each parameter's existing rule rather
+than inventing a third one, and does not re-decide which parameters own a span.
+
+Adopting it is a change to the chart gesture, not a no-op. `releaseWindow` has
+exactly two call sites, in the basal-slot and carb-ratio-block pickers, and no
+chart-click path reaches either today, so a settings chart click currently leaves
+a drawn brace standing for all three parameters. After this change basal and carb
+ratio release it there too. The alternative — leaving the chart route alone —
+would have kept the same panel scoped to two different windows depending on which
+control the reader clicked, which is the two-meanings-per-gesture defect this work
+exists to remove, in window form.
+
+That change lands on a locked term. Frozen story S21 (`LOCK:diagnose-workstation:7`,
+`LOCK:diagnose-workstation:9`) states that a drawn window survives drilling and
+popping and that only a lane click releases it. That sentence already
+under-describes shipped behavior: S21 exercises a behavioral finding drill, which
+does not release, while a basal queue-row drill reaches the slot picker and
+releases the brace today. The re-freeze reconciles the sentence with the drills
+that actually release, under an attributed operator ruling, rather than leaving a
+contract that contradicts both the shipped row route and the new chart route.
+
+Sanction: ConnorGriffin — 2026-08-31 — ruled option A: the chart route releases
+the brace for basal and carb ratio, matching their queue rows, and S21's
+lane-click exclusivity is corrected to describe which drills actually release.
 
 ## ADR 294 — Retirement is bounded by reachability, not by association
 

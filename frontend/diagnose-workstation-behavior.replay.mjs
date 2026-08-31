@@ -4362,7 +4362,12 @@ export const S123 = async (page) => {
     `S123 the carb-ratio chart opens the block panel (${viaChart.crumb})`);
   ok(/^Block /.test(viaChart.chip || ''), 'S123 the block chip stands');
   const chartPanel = await panelSnapshot(page);
-  is(chartPanel.verdict, 'suggests a tighter ratio', 'S123 the chart route prints the served verdict word');
+  // renderIcBlockLevel passes the block's own label as headQual, which the
+  // shared panel prefixes onto the .verdict element itself (`${headQual} · `)
+  // — the served verdict word is still "suggests a tighter ratio", carried
+  // whole inside this one heading rather than printed bare.
+  is(chartPanel.verdict, 'Evening · suggests a tighter ratio',
+    'S123 the chart route prints the served verdict word');
   is(chartPanel.support, '24 meal runs · 24 meals',
     'S123 the chart route prints the served support count');
   is(chartPanel.stageCount, 1,

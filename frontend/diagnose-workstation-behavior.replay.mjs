@@ -1524,7 +1524,7 @@ export const S20 = async (page) => {
 
 /** S21 · A user window is a workspace: it survives drilling and popping. A
     lane click (a physical scope choice) releases it; so does a basal or
-    carb-ratio drill, which carries its own span to substitute (S126) — a
+    I:C drill, which carries its own span to substitute (S126) — a
     behavioral finding drill, exercised here, does not. RECONCILED 2026-08-31,
     issue #294, operator-ruled: ConnorGriffin — this story's own assertions
     are unchanged; only the over-general "ONLY a lane click" sentence is
@@ -4289,12 +4289,12 @@ export const S121 = async (page) => {
 
 /* ---- #294 one-drill-down-for-every-settings-chart --------------------
    Chunk 1 extended the behavioral branch's row lookup (ADR 294) to basal,
-   correction factor and carb ratio: a chart click resolves the findings row
+   ISF and I:C: a chart click resolves the findings row
    sharing its chart identity and takes the exact route that row's own
    findings-queue entry would. S122-S125 prove that for each settings kind and
    for a cross-parameter click; S126 proves the clock-window release each
-   route now inherits from its picker (basal and carb ratio release a drawn
-   window, correction factor does not — the ADR 294 clock-window ruling).
+   route now inherits from its picker (basal and I:C release a drawn
+   window, ISF does not — the ADR 294 clock-window ruling).
 
    EVERY CHART CLICK BELOW IS SCOPED TO `#tile-row`. `paintTiles` marks the
    current Spotlight rather than removing it from the filmstrip (ADR 215:
@@ -4410,7 +4410,7 @@ export const S126 = async (page) => {
 
   /* A drawn window re-scopes the queue in place (term 45), so the drag below
      must overlap the target row's own span or the row — and its tile — drops
-     out of the findings response entirely. Basal (330-360) and carb ratio
+     out of the findings response entirely. Basal (330-360) and I:C
      (720-1440) are window-filtered; ISF is not (`isfRows` takes no window
      argument), so its check draws a window that overlaps neither. */
   await drawWindow(page, [300, 420], [0, 1440]);

@@ -529,9 +529,9 @@ P17 · ONE grammar: an EXPLICIT choice — a preset press OR a drag, the same ki
       of act — outranks the window a frame would derive, and stands until a
       navigation that carries its own span to substitute. A user window is a
       workspace: it survives drilling and popping. A lane click releases it,
-      and so does a basal or carb-ratio queue-row or chart-row drill —
-      basal and carb ratio own a span of their own to substitute; correction
-      factor and a behavioral finding drill do not, so neither releases it.
+      and so does a basal or I:C queue-row or chart-row drill —
+      basal and I:C own a span of their own to substitute; ISF
+      and a behavioral finding drill do not, so neither releases it.
   source:   frontend/diagnose-workstation.js:1227 (`explicitPreset`),
             2166-2185 (`pickCell`/`pickBlock` call `releaseWindow`),
             3403 (`releaseWindow`), 2226-2280 (paintChart's precedence chain)
@@ -2852,7 +2852,12 @@ Both pairs are 1440×900, Dark, from the synthetic database
 `mockups/revise-e2e.synthetic/harmonic.sqlite` through the declared no-fetch
 server and the committed Diagnose payload; no real patient data. Both click
 the identical tile, `#tile-row .evidence-tile[data-chart-id="basal:420-450"]
-.tile-body`, from the same 24 h state. The BEFORE pair is a separate checkout
+.tile-body`, from the same 24 h state. That id differs from S122's
+`basal:330-360` because the pair was captured from the replay opener's own
+default state rather than S122's `direction_only_inputs` override — the two
+sources rank a different basal slot into the same tile position, so a reader
+reproducing this pair should look at the opener's default findings, not
+S122's fixture. The BEFORE pair is a separate checkout
 at base commit `b4b8a786825251b094c5168a4559ec0212dab8e2` served on port 8766;
 the AFTER pair is this revision served on port 8765.
 
@@ -2872,7 +2877,7 @@ proven by the replay, not by a separate capture.
 still exercises a behavioral finding drill, and a lane click still releases
 the drawn window through it. Its prose sentence ("ONLY a lane click ...
 releases it") over-described shipped behavior even before this ticket: a
-basal or carb-ratio queue-row drill already released the brace through
+basal or I:C queue-row drill already released the brace through
 `pickCell`/`pickBlock`, which S21 never exercised. This ticket's chart route
 now reaches the same pickers, so the sentence is corrected to name the drills
 that actually release rather than singling out the lane.
@@ -2881,8 +2886,8 @@ that actually release rather than singling out the lane.
 releases it" is replaced with: an explicit window (drawn or pressed) stands
 through drilling and popping, and is released only by a navigation that
 carries its own span to substitute — a lane click, or (now) a basal or
-carb-ratio queue-row or chart-row drill reaching `pickCell`/`pickBlock`.
-Correction factor and a behavioral finding drill derive no span of their own,
+I:C queue-row or chart-row drill reaching `pickCell`/`pickBlock`.
+ISF and a behavioral finding drill derive no span of their own,
 so neither releases it.
 
 Sanction: ConnorGriffin — 2026-08-31 — ruled option A: the chart route

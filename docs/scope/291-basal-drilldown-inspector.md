@@ -57,6 +57,41 @@ exists, untested, and partly contradicted by the shipped tree).
   is discussed or a wireframe drawn. A from-scratch mock of a shipped surface is
   refused, so the sub-agent wireframe shortcut is not available. `inline`
 
+## Re-triage — 2026-08-31, after #294 merged (PR #296)
+
+- **#294 has landed and this branch is rebased onto it** (`c780c67`). The blocking
+  prerequisite in the decisions above is discharged, and the design phase may
+  start. `inline`
+- **One panel across all three settings is already shipped, not owed.**
+  `renderParamLevel` (frontend/diagnose-workstation.js:728) is a single component
+  that basal (`renderSlotLevel`), carb ratio (`renderIcBlockLevel`) and correction
+  factor (`renderIsfLevel`) all substitute words into. The redesign therefore
+  changes one component and reaches all three by construction; "make it work for
+  three evidence shapes" is a constraint on the design, not a build task. `inline`
+- **The bare per-night list no longer exists anywhere.**
+  `renderParameterEvidenceDetail` was retired by #294; grep finds no reference in
+  `frontend/`. The panel today carries head + verdict, an optional scope sentence,
+  Current / Estimate / Recommended, the CI line, the interval-contains-current
+  hedge, the recommendation-not-between hedge, the support count, the analyzer's
+  sentence, and either the stage control or a foot note saying why there is
+  nothing to stage. The roster is rendered by the evidence CHART, not the panel.
+  This retires description item 6 as stated: a per-night table in the panel would
+  restate the nights the chart beside it already draws. `inline`
+- **Every parameter already has its own served roster**, so roster-derived panel
+  content needs no engine work: `/api/diagnose/basal-night-evidence` (nights),
+  `/api/diagnose/isf-rest-window-evidence` (windows + steps),
+  `/api/diagnose/carb-ratio-block-evidence` (runs + series). Only the GLUCOSE
+  items remain unserved, exactly as recorded above. `inline`
+- **The behavior ledger is freshly frozen.** #294 amended and re-froze
+  `mockups/finding-evidence-routing.behavior.md` at base `b4b8a78`, 146 of 146
+  stories passing, and committed before/after basal captures. The design phase's
+  replay therefore starts from a current freeze rather than a stale one. `inline`
+
+### Route
+
+`/ui-craft revise` on the Diagnose settings drill-down panel, starting at the
+behavior-ledger replay against the offline app, per the decisions above.
+
 ## Open questions
 
 - Q2 (carried, now answered by the lock) do the glucose items — average in-slot

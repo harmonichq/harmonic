@@ -3,7 +3,7 @@ import {
 } from '../frontend/diagnose-workstation.js';
 
 export const STORIES = [
-  { id: 'basal', label: 'Basal evidence', modes: ['clock', 'event'], sizes: true, range: false },
+  { id: 'basal', label: 'Basal evidence', modes: ['editorial'], sizes: true, range: false },
   { id: 'isf', label: 'Correction factor evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'carb-ratio', label: 'Carb ratio evidence', modes: ['event', 'clock'], sizes: true, range: true },
   { id: 'event-comparison', label: 'Response comparison', modes: [], sizes: true, range: true },
@@ -21,7 +21,17 @@ async function request(path) {
   return response.json();
 }
 
+/* Basal evidence uses its 0–47 profile index at the API boundary. The harness
+   also accepts an unambiguous wall-clock minute such as `?slot=330`, because
+   that is how a reader sees the same half-hour in the finding. */
+function basalSlot(raw) {
+  if (!/^\d+$/.test(raw || '')) return raw || null;
+  const value = Number(raw);
+  return value >= 48 && value % 30 === 0 ? value / 30 : value;
+}
+
 async function drawWorkstation(host, state, story) {
+  const slot = story.id === 'basal' ? basalSlot(state.slot) : null;
   const [analyze, scenarios, evidence, exposures, preparation, outcomes] = await Promise.all([
     request('/api/analyze?window=30&pool=1'),
     request('/api/scenarios?window=30'),
@@ -52,7 +62,7 @@ async function drawWorkstation(host, state, story) {
       retry: () => {},
       loadDay: async () => null,
       onDayLoaded: () => view.repaintDay(),
-      loadBasalEvidence: (coordinates) => request(`/api/diagnose/basal-night-evidence?slot=${encodeURIComponent(coordinates.slot ?? '')}`),
+      loadBasalEvidence: (coordinates) => request(`/api/diagnose/basal-night-evidence?slot=${encodeURIComponent(slot ?? coordinates.slot ?? '')}`),
       loadIsfEvidence: () => request('/api/diagnose/isf-rest-window-evidence'),
       loadCarbRatioEvidence: (coordinates) => request(
         `/api/diagnose/carb-ratio-block-evidence?block_id=${encodeURIComponent(coordinates.block_id ?? '')}`
@@ -116,7 +126,19 @@ async function drawWorkstation(host, state, story) {
   });
   if (!tile) return `Diagnose workstation · ${story.label} unavailable`;
   tile.click();
-  return `Diagnose workstation · drilled ${tile.dataset.chartId}`;
+  if (state.mode && state.mode !== story.modes?.[0]) {
+    const mode = await new Promise((resolve) => {
+      const deadline = performance.now() + 1000;
+      const find = () => {
+        const button = root.querySelector(`.tile-mode-${state.mode}`);
+        if (button || performance.now() >= deadline) resolve(button || null);
+        else setTimeout(find, 25);
+      };
+      find();
+    });
+    mode?.click();
+  }
+  return `Diagnose workstation · drilled ${slot == null ? tile.dataset.chartId : `basal:${slot}`}`;
 }
 
 export async function renderStory(host, story, state) {

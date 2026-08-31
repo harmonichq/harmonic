@@ -50,6 +50,14 @@ class BasalNightEvidenceEndpointTest(unittest.TestCase):
         self.assertEqual(evidence["directional_support_count"],
                          slot["evidence"]["directional_support_count"])
         self.assertEqual(evidence["asserts_move"], slot["asserts_move"])
+        self.assertEqual(evidence["current"], slot["current"])
+        self.assertEqual(evidence["recommended"], slot["recommended"])
+        self.assertEqual(evidence["estimate"], {
+            "value": slot["estimate"]["value"],
+            "lo": slot["estimate"]["lo"],
+            "hi": slot["estimate"]["hi"],
+            "confidence": slot["estimate"]["confidence"],
+        })
         self.assertEqual(evidence["roster_count"], 7)
         self.assertEqual(evidence["directional_support_count"], 6)
         self.assertEqual(evidence["excluded_night_count"], 1)

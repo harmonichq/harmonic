@@ -3683,8 +3683,13 @@ export const S101 = retiredStory('S101');
 // STORY:finding-evidence-routing:S102
 export const S102 = async (page) => {
   await reachPinCount(page, 4);
+  /* Amended with #205: the basal tile's y-axis is a count of nights, not
+     glucose — under the retired clock treatment its U/h axis had an auto min,
+     so the finite-min+max proxy excluded it by accident; the editorial
+     treatment's 0..N axis is finite both ways and must be excluded by name. */
   const ranges = await page.evaluate(() => [...document.querySelectorAll('.evidence-tile .tile-chart')]
     .flatMap((host) => {
+      if ((host.closest('[data-chart-id]')?.dataset.chartId || '').startsWith('basal')) return [];
       const option = window.echarts.getInstanceByDom(host)?.getOption?.();
       const axis = Array.isArray(option?.yAxis) ? option.yAxis[0] : option?.yAxis;
       return Number.isFinite(axis?.min) && Number.isFinite(axis?.max) ? [[axis.min, axis.max]] : [];

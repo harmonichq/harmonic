@@ -3280,7 +3280,7 @@ function boot(root, data, callbacks, signal) {
       ? queueMeta(findings, selectedChips)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'chart' ? ({
-        basal: 'Nights of steady data',
+        basal: 'Delivered vs programmed',
         isf: 'Rest windows',
         'carb-ratio': 'Meal runs',
         'event-comparison': 'Response comparison',

@@ -505,9 +505,17 @@ test(`#96 · global Align is permanently absent and alignment belongs to each ti
       'the retired global Align host cannot return');
     assert.equal(await page.locator('#tile-row .tile-modes').count(), 0,
       'a strip cell keeps only its pin, never a reading control');
-    const eligible = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
+    /* Basal's mode toggle retired with #205 (one treatment, no clock/event
+       switch), so the per-tile-alignment proof promotes a chart that still
+       owns modes. */
+    /* Basal's clock/event toggle retired with #205, so the tile-owned-controls
+       half of this proof promotes the ISF chart, which still owns modes and
+       docks in the Afternoon window. */
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const eligible = page.locator('#tile-row .evidence-tile[data-chart-id="isf"]').first();
+    await eligible.waitFor({ state: 'visible' });
     assert.equal(await eligible.count(), 1,
-      'the strip publishes a basal chart whose alignment controls can move to the spotlight');
+      'the strip publishes an ISF chart whose alignment controls can move to the spotlight');
     await eligible.click();
     assert.ok(await page.locator('#tile-focal .tile-modes').count() > 0,
       'the promoted event chart owns its alignment control at the spotlight');

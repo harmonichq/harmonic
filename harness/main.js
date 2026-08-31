@@ -36,6 +36,7 @@ function stateFromUrl(stories) {
     range: query.get('range') === 'fitted' ? 'fitted' : 'shared',
     source: query.get('source') === 'live' ? 'live' : 'manufactured',
     chart: query.get('chart') || '',
+    slot: query.get('slot') || '',
   };
 }
 
@@ -125,6 +126,7 @@ controls.addEventListener('change', () => {
     range: controls.elements.range.value,
     source: controls.elements.source.value,
     chart: controls.elements.chart.value.trim(),
+    slot: state.slot,
   };
   void render();
 });

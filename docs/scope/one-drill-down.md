@@ -53,3 +53,16 @@ None. All three settled above.
 
 - https://github.com/harmonichq/harmonic/issues/295 — remove `inspectorStack`
   (dead since introduction), sequenced after #294.
+
+## Review experiment (operator-directed)
+
+The order's whole-diff depth is Full, which makes reviewer-routing stakes
+load-bearing. `review-routing.md` gives load-bearing plan review no
+benchmark-validated Codex route and sends it to Opus directly.
+
+At the operator's direction, the identical cold-reader prompt was dispatched to
+both Opus and Terra to test whether Codex can be trusted for load-bearing
+review. Per `review-routing.md`, a Codex review admitted this way is labeled
+**unvalidated**, and per `routing-table.md`'s provenance rule a field
+observation is promoted to a benchmarked route only by replay against ground
+truth — so this run is evidence, not a promotion.

@@ -68,6 +68,59 @@ export function reconcileTileDescriptors(
   };
 }
 
+/* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE (ADR 294). The behavioral
+   branch already resolved a chart click by finding the findings row whose id
+   equals the chart's own id and handing it to the row route; evidence chart
+   descriptors are generated one per findings row and carry that row's id as
+   their chart identity, so the same resolution reaches every settings kind
+   too — basal, ISF and I:C open the identical panel
+   their findings-queue row opens, never a second implementation of it.
+
+   NOT EVERY LEVEL-2 FRAME CARRIES `rowId`. A frame the row route creates
+   does, but `slot` and `block` are also reachable straight from the lane —
+   `pickCell(cell)` / `pickBlock(cell)` default `rowId` to `null` there — and
+   a CFG-restored boot frame carries no `rowId` at all. "Already standing on
+   this chart" therefore delegates to `drilledChartIdForFrame`, the one place
+   that already knows how to recover a frame's real chart identity per kind
+   (a cell's own coordinates for `slot`/`block`, kind alone for `isf`,
+   `rowId` only where the frame actually has one) rather than trusting a
+   field only some frames set. A click that lands anywhere else pops to root
+   before routing, so a parameter's panel replaces whatever stood before it
+   rather than stacking under it. */
+export function chartClickRoute(descriptor, standingFrame, findingsRows) {
+  if (!descriptor) return { action: 'noop' };
+  const standing = standingFrame && standingFrame.k !== 'factors' ? standingFrame : null;
+  if (standing && drilledChartIdForFrame(standing, [descriptor]) === descriptor.chartId) {
+    return { action: 'noop' };
+  }
+  const popToRoot = Boolean(standing);
+  const behavioral = descriptor.kind === 'event-comparison';
+  const row = (findingsRows || []).find((item) => item.id === descriptor.chartId) || null;
+  if (behavioral && !row?.lever) {
+    return {
+      action: 'placeholder',
+      popToRoot,
+      message: 'This behavioral chart has no published lever, so its case file is withheld.',
+    };
+  }
+  if (row) return { action: 'drill', popToRoot, row };
+  return { action: 'noop' };
+}
+
+/* THE QUESTION IS WHETHER THE FINDING IS LIVE, NOT WHETHER THE TILE IS
+   (ADR 294). `reconcileTileDescriptors` deliberately keeps a PINNED chart's
+   descriptor alive after its findings row drops out — `{...previous, data:
+   null, state: 'empty'}` — so a chart frame's own `chartId` can still resolve
+   through `tileDescriptors` long after the finding it names is gone; a
+   descriptor-presence check reads that retained pin as "still there" and
+   states something untrue. The finding a `chart` frame names is exactly the
+   findings row sharing its id (chart identity IS the row id, one per row),
+   so this reads the one ground truth neither pinning nor tile-runtime
+   retention can shadow. */
+export function chartFrameFindingIsLive(chartId, findingsRows) {
+  return (findingsRows || []).some((row) => row.id === chartId);
+}
+
 export function drilledChartIdForFrame(frame, descriptors) {
   if (!frame) return null;
   if (frame.k === 'chart') return frame.chartId;

@@ -38,7 +38,7 @@ import {
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
 import {
-  DOCK_FLOOR,
+  DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
   dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
   enterFullscreen, inspectorStack, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
@@ -695,55 +695,6 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   foot.append(clear, day); host.append(foot);
 }
 
-function renderParameterEvidenceDetail(host, descriptor, entry) {
-  const data = descriptor.data;
-  const box = document.createElement('div');
-  box.className = 'inner chart-evidence-detail';
-  const heading = document.createElement('div');
-  heading.className = 'slot-head';
-  heading.innerHTML = `<span class="time">${entry.name}</span><span class="verdict">Evidence detail</span>`;
-  box.append(heading);
-  if (!data || descriptor.state !== 'ok') {
-    box.insertAdjacentHTML('beforeend', '<div class="empty">Evidence detail is not available yet.</div>');
-    host.append(box);
-    return;
-  }
-  const facts = [];
-  if (descriptor.kind === 'basal') {
-    facts.push(['Nights shown', data.roster_count],
-      ['Directional support', data.directional_support_count],
-      ['Excluded nights', data.excluded_night_count]);
-  } else if (descriptor.kind === 'isf') {
-    facts.push(['Rest windows', data.counts?.detected_windows],
-      ['Qualifying windows', data.counts?.qualifying_windows],
-      ['Qualifying steps', data.counts?.qualifying_steps]);
-  } else {
-    facts.push(['Meal runs examined', data.block?.examined_runs],
-      ['Support runs', data.block?.support],
-      ['Excluded runs', data.block?.excluded_runs]);
-  }
-  const readout = document.createElement('div');
-  readout.className = 'chart-evidence-readout';
-  for (const [label, value] of facts) {
-    readout.insertAdjacentHTML('beforeend', `<div><span>${label}</span><b>${value ?? '—'}</b></div>`);
-  }
-  box.append(readout);
-  const roster = document.createElement('div');
-  roster.className = 'chart-evidence-roster';
-  if (descriptor.kind === 'basal') {
-    roster.innerHTML = (data.nights || []).map((night) => `<div><span>${fmtDate(night.date)}</span>
-      <span>${u(night.delivered_rate)} delivered · ${u(night.programmed_rate)} programmed U/hr</span></div>`).join('');
-  } else if (descriptor.kind === 'isf') {
-    roster.innerHTML = (data.windows || []).map((window) => `<div><span>${fmtDate(window.date)}</span>
-      <span>${window.start?.slice(11, 16) || '—'}–${window.end?.slice(11, 16) || '—'}</span></div>`).join('');
-  } else {
-    roster.innerHTML = (data.runs || []).map((run) => `<div><span>${fmtDate(run.t.slice(0, 10))}</span>
-      <span>${run.n_meals} meal${run.n_meals === 1 ? '' : 's'} · ${u(run.true_ic)} g/U</span></div>`).join('');
-  }
-  if (roster.children.length) box.append(roster);
-  host.append(box);
-}
-
 function renderBehavioralFullscreen(host, f) {
   /* The workstation supplied the bounded `.tile-chart.ec-surface` host. The
      adapter contributes content only and returns the chart element whose box
@@ -1270,7 +1221,10 @@ function boot(root, data, callbacks, signal) {
   let clockPanOffset = 0;                           // left edge of the unrolled clock display
   /* An EXPLICIT window choice — a preset press or a drag — outranks the window
      a frame would derive. An explicit preset or drawn window survives factor and
-     occurrence drilling; only the lane scope choice releases it. Presets and
+     occurrence drilling; it is released only by a navigation that carries its
+     own span to substitute (ADR 294) — a lane click, or a basal or I:C drill
+     through the picker, by queue row or by chart. ISF and a behavioral finding
+     drill derive no span of their own, so neither releases it. Presets and
      drawn windows are the same kind of act, so they clear together and reassert
      together. */
   let explicitPreset = false;
@@ -2181,40 +2135,27 @@ function boot(root, data, callbacks, signal) {
       ? frame.caseFile : descriptor.data;
   };
 
-  /* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE. The `chart` branch already
-     swapped in place; the behavioural branch pushed unconditionally, so every
-     click on a behavioural tile deepened the path — clicking one twice printed
-     its title twice in the crumb and each new finding stacked under the last,
-     which is the repeating, overflowing breadcrumb the fix round reported. A
-     chart the inspector is already standing on is a no-op; any other chart
-     replaces the standing level-2 frame rather than sitting on top of it. */
+  /* A CHART CLICK IS ONE LEVEL, ALWAYS THE SAME ONE (ADR 294). `chartClickRoute`
+     holds the pure decision — every settings kind now resolves to the same
+     findings row its queue row would, and takes the row route, exactly as the
+     behavioural branch already did. A chart the inspector is already standing
+     on is a no-op; any other chart replaces the standing level-2 frame rather
+     than sitting on top of it. */
   function showChartInspector(descriptor) {
     if (!descriptor) return;
     seatDrill(descriptor.chartId);
-    const standing = top();
-    const LEVEL_TWO = ['factor', 'chart'];
-    if (LEVEL_TWO.includes(standing.k) && standing.rowId === descriptor.chartId) {
+    const route = chartClickRoute(descriptor, top(), findings?.rows || []);
+    if (route.action === 'noop') {
       paint();
       return;
     }
-    const behavioral = descriptor.kind === 'event-comparison';
-    if (standing.k === 'factor' || (standing.k === 'chart' && behavioral)) popTo(0);
-    if (behavioral) {
-      const row = (findings?.rows || []).find((item) => item.id === descriptor.chartId);
-      if (!row?.lever) {
-        push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId,
-          placeholder: 'This behavioral chart has no published lever, so its case file is withheld.' });
-        return;
-      }
-      drillFinding(row);
+    if (route.popToRoot) popTo(0);
+    if (route.action === 'placeholder') {
+      push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId,
+        placeholder: route.message });
       return;
     }
-    if (top().k === 'chart') {
-      Object.assign(top(), { chartId: descriptor.chartId, rowId: descriptor.chartId, placeholder: null });
-      paint();
-      return;
-    }
-    push({ k: 'chart', chartId: descriptor.chartId, rowId: descriptor.chartId });
+    drillFinding(route.row);
   }
 
   function dismissChartFullscreen() {
@@ -3280,9 +3221,6 @@ function boot(root, data, callbacks, signal) {
       ? queueMeta(findings, selectedChips)
       : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'chart' ? ({
-        basal: 'Delivered vs programmed',
-        isf: 'Rest windows',
-        'carb-ratio': 'Meal runs',
         'event-comparison': 'Response comparison',
       }[chartDescriptor(f.chartId)?.kind] || 'Measured evidence')
       : f.k === 'factor'
@@ -3316,14 +3254,24 @@ function boot(root, data, callbacks, signal) {
     // One projection state governs every level before any old row can render.
     host.dataset.loading = String(pendingKey === currentFindingsKey());
     if (f.k === 'chart') {
-      const descriptor = chartDescriptor(f.chartId);
-      const entry = chartEntry(descriptor);
-      if (f.placeholder) {
-        host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
+      // The generic chart level now renders only the behavioral placeholder
+      // (ADR 294): every settings kind routes to its own parameter panel, so
+      // this is the sole `chart` frame the workstation still creates. The
+      // placeholder's "withheld" claim is only true while the FINDING it
+      // names is still live — checking the descriptor instead is not enough,
+      // because a pinned chart's descriptor deliberately survives its row
+      // (reconcileTileDescriptors retains it as empty rather than dropping
+      // it), so a pin would let a vanished finding keep asserting a case
+      // file is withheld for it.
+      if (!chartFrameFindingIsLive(f.chartId, findings?.rows)) {
+        host.insertAdjacentHTML('beforeend',
+          '<div class="empty">This chart is no longer in the live findings.</div>');
+        return;
+      }
+      const entry = chartEntry(chartDescriptor(f.chartId));
+      host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
           <div class="slot-head"><span class="time">${entry?.name || 'Behavioral chart'}</span>
           <span class="verdict">Case file withheld</span></div><p>${f.placeholder}</p></div>`);
-      } else if (descriptor && entry) renderParameterEvidenceDetail(host, descriptor, entry);
-      else host.insertAdjacentHTML('beforeend', '<div class="empty">This chart is no longer in the live findings.</div>');
       return;
     }
     if (f.k === 'history') {
@@ -3453,8 +3401,11 @@ function boot(root, data, callbacks, signal) {
   // explicit choice in its own right, so it outranks the frame's window too
   function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
 
-  /** A lane click is a physical scope choice, so it REPLACES the workspace.
-      This is the only navigation that clears one — drilling never does. */
+  /** A lane click is a physical scope choice, so it REPLACES the workspace —
+      and so does a basal or I:C drill reaching this picker, by queue row or
+      by chart (ADR 294): each carries its own span to substitute. A
+      behavioral finding drill and ISF derive no span of their own and never
+      call this. */
   function releaseWindow() { drawn = null; explicitPreset = false; }
 
   /** Position the plot-only clock brace. The basal lane carries no drag listener

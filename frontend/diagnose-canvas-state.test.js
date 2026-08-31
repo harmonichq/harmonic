@@ -183,6 +183,35 @@ test('clicking the chart the reader already stands on moves nothing, for a setti
   assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), { action: 'noop' });
 });
 
+/* A LANE CLICK NEVER STAMPS `rowId` — `pickCell(cell)` / `pickBlock(cell)`
+   default it to `null`, and a CFG-restored boot frame carries no `rowId` key
+   at all. A `rowId`-only comparison would miss both, so a chart click on the
+   exact slot the reader picked from the lane would pop to root and re-push
+   the same slot — bumping `caseGeneration` and resetting the queue's scroll
+   and shown-row count for a click that changed nothing on screen. */
+test('a slot picked from the lane, with no rowId, still recognizes its own evidence chart', () => {
+  const findingsRows = [{ id: 'basal:0-30', register: 'assert', parameter: 'basal_rate' }];
+  const descriptor = { chartId: 'basal:0-30', kind: 'basal', coordinates: { slot: 0 } };
+  const standing = { k: 'slot', cell: { i: 0 } };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), { action: 'noop' });
+});
+
+test('a block picked from the lane, with no rowId, still recognizes its own evidence chart', () => {
+  const findingsRows = [{ id: 'ic:720', register: 'assert', parameter: 'carb_ratio' }];
+  const descriptor = { chartId: 'ic:720', kind: 'carb-ratio', coordinates: { block_id: 720 } };
+  const standing = { k: 'block', cell: { id: 720 } };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), { action: 'noop' });
+});
+
+test('a lane-picked slot for a DIFFERENT slot than the clicked chart still pops and drills', () => {
+  const findingsRows = [{ id: 'basal:30-60', register: 'assert', parameter: 'basal_rate' }];
+  const descriptor = { chartId: 'basal:30-60', kind: 'basal', coordinates: { slot: 1 } };
+  const standing = { k: 'slot', cell: { i: 0 } };
+  assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), {
+    action: 'drill', popToRoot: true, row: findingsRows[0],
+  });
+});
+
 test('clicking the chart the reader already stands on moves nothing, for a behavioral finding', () => {
   const findingsRows = [{ id: 'finding:over_treated_low', register: 'finding', lever: 'basal_rate' }];
   const descriptor = { chartId: 'finding:over_treated_low', kind: 'event-comparison' };

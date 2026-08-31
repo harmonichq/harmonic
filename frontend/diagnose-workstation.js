@@ -3253,8 +3253,18 @@ function boot(root, data, callbacks, signal) {
     if (f.k === 'chart') {
       // The generic chart level now renders only the behavioral placeholder
       // (ADR 294): every settings kind routes to its own parameter panel, so
-      // this is the sole `chart` frame the workstation still creates.
-      const entry = chartEntry(chartDescriptor(f.chartId));
+      // this is the sole `chart` frame the workstation still creates. Tile
+      // descriptors are generated one per findings row, so a vanished row is
+      // a vanished descriptor here too — the placeholder's "withheld" claim
+      // is only true while that descriptor is still live; once it is gone
+      // the frame outlives the finding it names, and only the truth survives it.
+      const descriptor = chartDescriptor(f.chartId);
+      if (!descriptor) {
+        host.insertAdjacentHTML('beforeend',
+          '<div class="empty">This chart is no longer in the live findings.</div>');
+        return;
+      }
+      const entry = chartEntry(descriptor);
       host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
           <div class="slot-head"><span class="time">${entry?.name || 'Behavioral chart'}</span>
           <span class="verdict">Case file withheld</span></div><p>${f.placeholder}</p></div>`);

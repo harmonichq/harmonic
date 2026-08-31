@@ -76,16 +76,23 @@ export function reconcileTileDescriptors(
    too — basal, correction factor and carb ratio open the identical panel
    their findings-queue row opens, never a second implementation of it.
 
-   Every level-2 frame the row route creates (`factor`, `chart`, `isf`,
-   `slot`, `block`) carries `rowId` set to that same finding row id, so
-   "already standing on this chart" is one comparison, not one per frame
-   kind. A click that lands anywhere else pops to root before routing, so a
-   parameter's panel replaces whatever stood before it rather than stacking
-   under it. */
+   NOT EVERY LEVEL-2 FRAME CARRIES `rowId`. A frame the row route creates
+   does, but `slot` and `block` are also reachable straight from the lane —
+   `pickCell(cell)` / `pickBlock(cell)` default `rowId` to `null` there — and
+   a CFG-restored boot frame carries no `rowId` at all. "Already standing on
+   this chart" therefore delegates to `drilledChartIdForFrame`, the one place
+   that already knows how to recover a frame's real chart identity per kind
+   (a cell's own coordinates for `slot`/`block`, kind alone for `isf`,
+   `rowId` only where the frame actually has one) rather than trusting a
+   field only some frames set. A click that lands anywhere else pops to root
+   before routing, so a parameter's panel replaces whatever stood before it
+   rather than stacking under it. */
 export function chartClickRoute(descriptor, standingFrame, findingsRows) {
   if (!descriptor) return { action: 'noop' };
   const standing = standingFrame && standingFrame.k !== 'factors' ? standingFrame : null;
-  if (standing && standing.rowId === descriptor.chartId) return { action: 'noop' };
+  if (standing && drilledChartIdForFrame(standing, [descriptor]) === descriptor.chartId) {
+    return { action: 'noop' };
+  }
   const popToRoot = Boolean(standing);
   const behavioral = descriptor.kind === 'event-comparison';
   const row = (findingsRows || []).find((item) => item.id === descriptor.chartId) || null;

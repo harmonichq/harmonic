@@ -6,7 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute, dismissRaisedDock,
+  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute,
+  chartFrameFindingIsLive, dismissRaisedDock,
   dockView, isDrilledSpotlight, popInspector, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
@@ -244,4 +245,28 @@ test('a settings chart with no matching findings row is a silent no-op, inherite
 
 test('no descriptor is a no-op', () => {
   assert.deepEqual(chartClickRoute(null, { k: 'factors' }, []), { action: 'noop' });
+});
+
+/* THE QUESTION IS WHETHER THE FINDING IS LIVE, NOT WHETHER THE TILE IS
+   (ADR 294). A pinned chart's descriptor deliberately survives its findings
+   row (reconcileTileDescriptors retains a vanished pin as empty rather than
+   dropping it), so a descriptor-presence check would still call a vanished
+   finding "there." Chart identity is the finding row's own id, one per row,
+   so reading findingsRows directly is the one check a pin cannot shadow. */
+test('the finding a chart frame names is live while its row is still published', () => {
+  const findingsRows = [{ id: 'finding:over_treated_low', register: 'finding', lever: null }];
+  assert.equal(chartFrameFindingIsLive('finding:over_treated_low', findingsRows), true);
+});
+
+test('the finding a chart frame names is not live once its row drops out, even if its chart is pinned', () => {
+  // The descriptor for a pinned chart survives its own vanished row — this
+  // predicate reads findingsRows, never tileDescriptors, so a pin cannot
+  // make a gone finding read as live.
+  const findingsRows = [{ id: 'finding:other', register: 'finding', lever: 'basal_rate' }];
+  assert.equal(chartFrameFindingIsLive('finding:over_treated_low', findingsRows), false);
+});
+
+test('an absent findings payload names no live finding', () => {
+  assert.equal(chartFrameFindingIsLive('finding:over_treated_low', null), false);
+  assert.equal(chartFrameFindingIsLive('finding:over_treated_low', undefined), false);
 });

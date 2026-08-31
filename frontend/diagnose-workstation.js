@@ -38,7 +38,7 @@ import {
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
 import {
-  DOCK_FLOOR, chartClickRoute,
+  DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
   dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
   enterFullscreen, inspectorStack, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
@@ -3253,18 +3253,19 @@ function boot(root, data, callbacks, signal) {
     if (f.k === 'chart') {
       // The generic chart level now renders only the behavioral placeholder
       // (ADR 294): every settings kind routes to its own parameter panel, so
-      // this is the sole `chart` frame the workstation still creates. Tile
-      // descriptors are generated one per findings row, so a vanished row is
-      // a vanished descriptor here too — the placeholder's "withheld" claim
-      // is only true while that descriptor is still live; once it is gone
-      // the frame outlives the finding it names, and only the truth survives it.
-      const descriptor = chartDescriptor(f.chartId);
-      if (!descriptor) {
+      // this is the sole `chart` frame the workstation still creates. The
+      // placeholder's "withheld" claim is only true while the FINDING it
+      // names is still live — checking the descriptor instead is not enough,
+      // because a pinned chart's descriptor deliberately survives its row
+      // (reconcileTileDescriptors retains it as empty rather than dropping
+      // it), so a pin would let a vanished finding keep asserting a case
+      // file is withheld for it.
+      if (!chartFrameFindingIsLive(f.chartId, findings?.rows)) {
         host.insertAdjacentHTML('beforeend',
           '<div class="empty">This chart is no longer in the live findings.</div>');
         return;
       }
-      const entry = chartEntry(descriptor);
+      const entry = chartEntry(chartDescriptor(f.chartId));
       host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
           <div class="slot-head"><span class="time">${entry?.name || 'Behavioral chart'}</span>
           <span class="verdict">Case file withheld</span></div><p>${f.placeholder}</p></div>`);

@@ -107,6 +107,20 @@ export function chartClickRoute(descriptor, standingFrame, findingsRows) {
   return { action: 'noop' };
 }
 
+/* THE QUESTION IS WHETHER THE FINDING IS LIVE, NOT WHETHER THE TILE IS
+   (ADR 294). `reconcileTileDescriptors` deliberately keeps a PINNED chart's
+   descriptor alive after its findings row drops out — `{...previous, data:
+   null, state: 'empty'}` — so a chart frame's own `chartId` can still resolve
+   through `tileDescriptors` long after the finding it names is gone; a
+   descriptor-presence check reads that retained pin as "still there" and
+   states something untrue. The finding a `chart` frame names is exactly the
+   findings row sharing its id (chart identity IS the row id, one per row),
+   so this reads the one ground truth neither pinning nor tile-runtime
+   retention can shadow. */
+export function chartFrameFindingIsLive(chartId, findingsRows) {
+  return (findingsRows || []).some((row) => row.id === chartId);
+}
+
 export function drilledChartIdForFrame(frame, descriptors) {
   if (!frame) return null;
   if (frame.k === 'chart') return frame.chartId;

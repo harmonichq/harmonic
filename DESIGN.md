@@ -95,18 +95,19 @@ components:
 # Design System: Harmonic
 
 > **The Harmonic theme is locked** (2026-08-18, issue #736) and it **ships in
-> `frontend/`**: the tokens are the `:root` / `html.dark` block at the top of
+> `frontend/`**: the tokens are the single `:root` block at the top of
 > `frontend/index.html`, and the shell's role rules are `frontend/theme.css`,
 > which loads last. Those two files are the source of truth for the app-wide
 > material — colour, elevation, and the type split — and they supersede the
 > palette and elevation values recorded below wherever the two disagree. Read
 > them, not this file, for a colour. The design-time manifest the theme was
 > settled against is a record of the decision and is not part of the shipped
-> tree. Light's grounds were re-settled inside that lock by **ADR 37** (pull
-> request #37): parchment
-> `#F3EADB`/`#EBE0CF`/`#E3D7C5` became bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC` over a
-> darker `#C3BFB4` rule, with the saved chroma spent on ink and marks. Values
-> only — no term of #736 was reopened at that point. Dark was subsequently
+> tree. **#304 retired the Light theme** (2026-09-01): the app ships Dark only,
+> and the `:root` block above carries every token directly — no `html.dark`
+> selector, no boot-time class, no stored preference. ADR 37 (pull request #37,
+> parchment `#F3EADB`/`#EBE0CF`/`#E3D7C5` to bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC`)
+> and ADR 230 described the retired Light theme and its repaint behavior; their
+> records stay as history and #304 supersedes them. Dark was separately
 > re-settled by **ADR 255** (issue #255): one warm tonal ladder now owns the
 > Diagnose desk, well, field, sheet, rail, rule, edge, and ink roles; chart
 > wells sit below sheets; vessels use one visible edge; spotlight elevation is
@@ -177,28 +178,28 @@ and technical documentation keep their established domain terms.
 
 ## 2. Colors
 
-Two committed brand colors (teal, terracotta) carry identity; a much larger set of domain-semantic tokens carries data meaning. Both palettes ship full light/dark pairs — dark is not a filtered/inverted version of light, each color was tuned independently for the same relationship (e.g. primary shifts from a deep teal `#1C6E8C` in light to a brighter, more saturated teal `#5BAFD0` in dark to hold contrast against a near-black surface).
+Two committed brand colors (teal, terracotta) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name only that shipped value (e.g. primary is the brighter, more saturated teal `#5BAFD0`, tuned to hold contrast against a near-black surface, not a filtered/inverted version of a light-mode color that no longer ships).
 
 ### Primary
-- **Deep Teal** (`#1C6E8C`, dark: `#5BAFD0`): the one recurring brand color — primary buttons, active tab underline, focus rings, links, the "in-range"/"ok" glucose semantic. Used sparingly outside of these functional roles.
-- **Teal Tint** (`--primary-100`, `#E2EEF2` / `#1C2C32`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
+- **Deep Teal** (`#5BAFD0`): the one recurring brand color — primary buttons, active tab underline, focus rings, links, the "in-range"/"ok" glucose semantic. Used sparingly outside of these functional roles.
+- **Teal Tint** (`--primary-100`, `#1C2C32`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
 
 ### Secondary
-- **Slate** (`--secondary`, `#566069` / `#9BA0A6`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
+- **Slate** (`--secondary`, `#9BA0A6`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
 
 ### Tertiary
-- **Muted Terracotta** (`--accent`, `#C2554D` / `#E08B7E`): the accent color and the "high glucose" / "ran-high" semantic. This dual role is intentional — it reads as "attention, not alarm," matching the brand's refusal to over-dramatize excursions.
+- **Muted Terracotta** (`--accent`, `#E08B7E`): the accent color and the "high glucose" / "ran-high" semantic. This dual role is intentional — it reads as "attention, not alarm," matching the brand's refusal to over-dramatize excursions.
 
 ### Neutral
-- **Paper** (`--bg`, `#F7F8FA` / `#15171A`): page background. Explicitly cool-neutral, not cream/sand-tinted.
-- **Surface** (`--surface`, `#FFFFFF` / `#1C1F22`): card and popover background.
-- **Surface Tint** (`--surface-2`, `#F1F3F5` / `#24272B`): table header rows, hover states, chip backgrounds — one step off `--surface`, never a third tone.
-- **Ink** (`--text`, `#1B2126` / `#E9EAEC`): body text.
-- **Ash** (`--muted`, `#69727B` / `#93979E`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg` in both themes.
-- **Hairline** (`--line`, `#E3E7EA` / `#2C2E33`): all borders and dividers.
+- **Paper** (`--bg`, `#15171A`): page background. Explicitly cool-neutral, not cream/sand-tinted.
+- **Surface** (`--surface`, `#1C1F22`): card and popover background.
+- **Surface Tint** (`--surface-2`, `#24272B`): table header rows, hover states, chip backgrounds — one step off `--surface`, never a third tone.
+- **Ink** (`--text`, `#E9EAEC`): body text.
+- **Ash** (`--muted`, `#93979E`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg`.
+- **Hairline** (`--line`, `#2C2E33`): all borders and dividers.
 
 For the Diagnose Dark workstation, ADR 255's shipped role ladder supersedes
-the legacy Dark examples above: desk `#0F0D0B`, chart well `#14120F`, field
+the legacy examples above: desk `#0F0D0B`, chart well `#14120F`, field
 `#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, vessel edge
 `#453D35`, and inks `#F2EDE2` / `#CFC8BD` / `#A49C90` (nav `#C6BFB3`).
 The `--wk-*`, `--mk-*`, `--ck-*`, and compatibility namespaces derive from
@@ -208,11 +209,11 @@ to data marks and burnt orange to interaction.
 ### Data Semantics (domain-specific, not brand)
 These encode meaning in glucose/insulin charts and are never used decoratively:
 - **In-range** (`--in-range`, shares Primary teal): glucose within target band.
-- **High** (`--high`, shares Tertiary terracotta) / **Low** (`--low`, `#B3402C` / `#E08B6E`): glucose excursions. Distinguished from each other by hue, not just lightness.
-- **On-target** (`--on-target`, `#2A8C5E` / `#3DB87E`): a third, separate green reserved for "hit the target exactly" — never conflated with in-range teal.
-- **Manual Carb** (`--manual-carb`, `#93701B` / `#D9B568`, shares Warn): the user-entered carb-log amber, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
+- **High** (`--high`, shares Tertiary terracotta) / **Low** (`--low`, `#E08B6E`): glucose excursions. Distinguished from each other by hue, not just lightness.
+- **On-target** (`--on-target`, `#3DB87E`): a third, separate green reserved for "hit the target exactly" — never conflated with in-range teal.
+- **Manual Carb** (`--manual-carb`, `#D9B568`, shares Warn): the user-entered carb-log amber, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
 - **Observed / Inferred / Not-in-data** (`--observed` green, `--inferred` amber, `--notindata` grey): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).
-- **Basal** (`--basal`, `#4A6FA5` / `#6E8BB5`): a fourth, dedicated blue reserved for basal-rate chart series so it's never confused with the teal in-range/primary color in the same chart.
+- **Basal** (`--basal`, `#6E8BB5`): a fourth, dedicated blue reserved for basal-rate chart series so it's never confused with the teal in-range/primary color in the same chart.
 
 ### Named Rules
 **The Color-Never-Alone Rule.** Every glucose/evidence/bolus semantic that uses color must pair it with a shape, icon, or text label. Color-only encoding of clinical state is prohibited — this is a hard accessibility requirement (see `bolus_symbol` shape mapping and the daily-chart legend as the reference implementation), not a nice-to-have.

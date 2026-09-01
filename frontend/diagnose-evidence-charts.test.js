@@ -880,6 +880,49 @@ test('chart options resolve live light and dark theme tokens', () => {
   }
 });
 
+/* #304 retired the app's Light theme, so the five Dark/Light constant pairs
+   this module used to pick between (`colors.dark ? a : b`) are now the Dark
+   arm alone, with no `document.documentElement.classList` read to select it.
+   Pinning the rendered fills and strokes here means a reintroduced Light arm
+   — or a stray `colors.dark` read — fails this test rather than silently
+   reappearing. */
+test('the editorial furniture renders the Dark-only fills and strokes (#304)', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const data = { ...basal, estimate: { value: .74, lo: .6, hi: .92 } };
+  const option = entry.option('editorial', { data });
+
+  assert.match(JSON.stringify(option.xAxis.axisTick.lineStyle.color),
+    /color-mix\(in srgb, .* 18%, transparent\)/,
+    'the axis tick keeps the inlined Dark hairline percentage');
+
+  const api = { coord: ([x, y]) => [28 + x * 400, 244 - y * 8], getWidth: () => 950, getHeight: () => 330 };
+  const params = { coordSys: { x: 28, y: 88, width: 640, height: 156 }, dataIndex: 0 };
+  const furnitureFills = option.series.find(({ id }) => id === 'furniture')
+    .renderItem(params, api).children.map(({ style }) => style?.fill).filter(Boolean);
+  assert.ok(furnitureFills.some((fill) => /18%, transparent\)$/.test(fill)),
+    'the hairline rules render at the inlined 18% mix');
+  assert.ok(furnitureFills.some((fill) => /26%, transparent\)$/.test(fill)),
+    'the interval shadow renders at the inlined 26% mix');
+
+  const signed = { ...basal, nights: [
+    { date: '2026-01-10', delivered_rate: .9, programmed_rate: .6, sign: 1, t: '2026-01-10T05:30:00' },
+    { date: '2026-01-11', delivered_rate: .4, programmed_rate: .6, sign: -1, t: '2026-01-11T05:30:00' },
+  ] };
+  const signedOption = entry.option('editorial', { data: signed });
+  const cells = signedOption.series.find(({ id }) => id === 'nights');
+  const moreIndex = cells.data.findIndex((item) => item.name === '2026-01-10');
+  const lessIndex = cells.data.findIndex((item) => item.name === '2026-01-11');
+  const moreFill = cells.renderItem({ ...params, dataIndex: moreIndex },
+    { ...api, value: (dimension) => cells.data[moreIndex].value[dimension] }).children[0].style.fill;
+  const lessFill = cells.renderItem({ ...params, dataIndex: lessIndex },
+    { ...api, value: (dimension) => cells.data[lessIndex].value[dimension] }).children[0].style.fill;
+  assert.match(moreFill, /34%, transparent\)$/,
+    'a night that ran more than programmed fills at the inlined Dark 34% rust mix');
+  assert.match(lessFill, /24%, transparent\)$/,
+    'a night that ran less than programmed fills at the inlined Dark 24% grey mix');
+});
+
 test('payload counts stay distinct in chart and thumbnail presentation', () => {
   const basal = {
     roster_count: 19, directional_support_count: 3, nights: [],

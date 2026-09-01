@@ -1,8 +1,9 @@
 /* EXTRACTED VERBATIM from frontend/index.html's <style> blocks by
  * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —
- * re-run the build script. This carries the app's :root / html.dark token
- * block, its body ground and every base rule the shipped chrome inherits
- * from (including `label { margin: 0 0 5px }`, which the event-comparison
+ * re-run the build script. This carries the app's single `:root` token
+ * block (#304 retired the light theme and its `html.dark` split), its
+ * body ground and every base rule the shipped chrome inherits from
+ * (including `label { margin: 0 0 5px }`, which the event-comparison
  * stylesheet adapts against).
  * Blocks extracted: 2
  */
@@ -18,50 +19,13 @@
          ROLE rules (chrome bar · instrument rail · pane header rail · pane body ·
          dock floor) live in frontend/theme.css.
 
-         LIGHT — a bone sheet on a dark evergreen desk (ADR 37 relit 2026-08-18:
-         the parchment family kept its warmth but gave up ~60% of its chroma, and
-         the rule darkened, because three grounds within 6% of each other over a
-         pale rule read as beige wash rather than as sheet, rail and field).
-         Burnt orange is
-         interaction and high/attention and nothing else (term 5); the measured
-         signal is forest; grounds keep their warmth and give up their
-         saturation, so only marks carry chroma (term 11). */
-      color-scheme: light;
-      --wk-canvas:#17231d; --wk-surface:#faf8f4; --wk-surface-rail:#f0eee8; --wk-surface-sunken:#e7e4dc;
-      --wk-ink:#141a15; --wk-ink-body:#283b2f; --wk-ink-meta:#3d5848; --wk-ink-nav:#405b49;
-      --wk-rule:#c3bfb4; --wk-rule-strong:#6b7669; --wk-hairline:1px; --wk-radius:5px;
-      --wk-shadow:0 1px 2px rgba(8,18,13,.16), 0 14px 30px -16px rgba(8,18,13,.5);
-      --wk-elevation:0 14px 30px -16px rgba(8,18,13,.54);
-      --wk-signal:#a94f21; --wk-signal-well:#f0dccd;
-      --wk-status-incomplete:#71510c; --wk-status-adverse:#93372d; --wk-status-favorable:#215c3b;
-
-      --bg:var(--wk-canvas); --bg-tint:var(--wk-surface-sunken); --surface:var(--wk-surface); --surface-2:var(--wk-surface-sunken);
-      --primary:#a94f21; --primary-600:#87401a; --primary-100:#f0dccd; --on-primary:#ffffff;
-      --secondary:#4d5c53; --accent:#a94f21; --accent-100:#f0dccd;
-      --text:var(--wk-ink); --muted:var(--wk-ink-meta); --line:var(--wk-rule);
-      /* Term 4 — every ink below clears 4.5:1 on all three bone grounds
-         (#FAF8F4 / #F0EEE8 / #E7E4DC). The old text-safe *-ink split for --warn
-         is gone with it: --warn IS the text-safe value now. */
-      --danger:#9d3018; --danger-bg:#f6e3dd; --ok:#5d7368; --ok-bg:#dfe8e2;
-      --warn:#8d3c17; --warn-bg:#f3e3d8; --ring:rgba(169,79,33,.30);
-      --shadow:var(--wk-shadow);
-      --radius:var(--wk-radius); --radius-sm:var(--wk-radius); --grain-op:.02;
-      --in-range:#3f5a3b; --high:#a94f21; --low:#9d3018;
-      --ran-low:#5d7368;  --ran-low-soft:#dfe8e2;
-      --on-target:#3f5a3b; --on-target-soft:#e2ece3; --on-target-ink:#215c3b;
-      /* #126 manual carb log — a user CLAIM. Under Harmonic the claim joins the
-         attention family rather than holding an amber of its own. */
-      --manual-carb:#a94f21; --manual-carb-soft:#f0dccd;
-      /* #64 scenario screen — evidence-tier + basal colors */
-      --observed:#3f5a3b; --inferred:#7d5b41; --notindata:#6b7169; --basal:#5d7368;
-    }
-    html.dark {
-      /* DARK IS DERIVED, NOT INVERTED (term 9): the role ratios below track the
-         light theme against dark's own ground. The desk carries NO GREEN (term
-         10) — a green-black ground under a green line reads as phosphor — and
-         structure recedes by LIGHTNESS rather than by hue, so the frame holds
-         one warm hue family (term 12) across a real 7%-69% tonal range (term
-         13), descending chrome -> rail -> header -> field without banding.
+         DARK IS DERIVED, NOT INVERTED (term 9), against the retired light
+         theme's own role ratios (#304 retired that theme; ADR 304). The desk
+         carries NO GREEN (term 10) — a green-black ground under a green line
+         reads as phosphor — and structure recedes by LIGHTNESS rather than by
+         hue, so the frame holds one warm hue family (term 12) across a real
+         7%-69% tonal range (term 13), descending chrome -> rail -> header ->
+         field without banding.
 
          #215 — ONE HUE, HELD DELIBERATELY LOW. The grounds honoured term 12 in
          name only: measured, they sat at OKLCH chroma .003-.009 with the hue
@@ -71,15 +35,15 @@
          rule, holding each value's ORIGINAL lightness to three decimals.
 
          The ceiling on that chroma is a review finding, not caution. Warmth was
-         taken up to the light theme's own ground register first (80deg, .011 to
-         .028) and the desk read as pumpkin, because at that chroma it shares
-         the burnt-orange signal's own family. Stepping the hue off orange to
-         110deg made it olive — term 10's phosphor warning arriving from the
-         ground rather than from the line. A cool slate at 265deg fixed both and
-         was rejected as a bigger identity change than this canvas is entitled
-         to make. What is left is the one thing all three attempts agreed on:
-         the family must be COHERENT; how much chroma it carries is a small
-         dial, and the setting that survives review is a low one.
+         taken up to the retired light theme's own ground register first (80deg,
+         .011 to .028) and the desk read as pumpkin, because at that chroma it
+         shares the burnt-orange signal's own family. Stepping the hue off
+         orange to 110deg made it olive — term 10's phosphor warning arriving
+         from the ground rather than from the line. A cool slate at 265deg fixed
+         both and was rejected as a bigger identity change than this canvas is
+         entitled to make. What is left is the one thing all three attempts
+         agreed on: the family must be COHERENT; how much chroma it carries is a
+         small dial, and the setting that survives review is a low one.
 
          Depth is made of lightness steps, the top highlight and the pooled
          shadow, so nothing about the tonal range or the stacking order moved;
@@ -116,11 +80,8 @@
       color: var(--text);
       /* The desk, lit from above the frame (#736). Dark takes its own, dimmer
          wash rather than the same one darkened. */
-      background: radial-gradient(860px 280px at 50% -120px, rgba(81,113,96,.34), transparent 64%), var(--wk-canvas);
-      -webkit-font-smoothing: antialiased;
-    }
-    html.dark body {
       background: radial-gradient(820px 260px at 50% -130px, rgba(43,78,59,.3), transparent 66%), var(--wk-canvas);
+      -webkit-font-smoothing: antialiased;
     }
     /* #634: #app is the cockpit shell's fixed viewport positioning root. */
     #app { width: 100%; height: 100%; }
@@ -523,8 +484,7 @@
     .landing-banner .lb-arrow { font-size: 1.15rem; line-height: 1; }
 
     /* The summoned overlay: scrim + full-width drawer. */
-    .pq-scrim { position: fixed; inset: 0; background: rgba(10,14,16,.42); backdrop-filter: blur(1.5px); z-index: 50; animation: pqFade .16s ease; }
-    html.dark .pq-scrim { background: rgba(0,0,0,.58); }
+    .pq-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.58); backdrop-filter: blur(1.5px); z-index: 50; animation: pqFade .16s ease; }
     @keyframes pqFade { from { opacity: 0; } to { opacity: 1; } }
     .pq-drawer { position: fixed; z-index: 51; left: 50%; transform: translateX(-50%); top: 18px; bottom: 18px; width: min(1240px, calc(100vw - 36px)); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--wk-radius); box-shadow: var(--wk-elevation); overflow: hidden; animation: pqRise .2s cubic-bezier(.2,.8,.3,1); }
     @keyframes pqRise { from { opacity: 0; transform: translate(-50%, 14px); } to { opacity: 1; transform: translate(-50%, 0); } }
@@ -562,8 +522,7 @@
     .pq-meta { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
     .pq-revise-flag { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 6px; font-size: .74rem; font-weight: 700; color: var(--ok); background: var(--ok-bg); border: 1px solid var(--ok); border-radius: var(--wk-radius); padding: 3px 10px; }
     .pq-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-    .pq-btn-logcarbs { display: inline-flex; align-items: center; gap: 7px; background: var(--manual-carb); color: var(--on-primary); border: none; padding: 11px 17px; border-radius: var(--wk-radius); font-size: .92rem; font-weight: 700; box-shadow: var(--shadow); cursor: pointer; }
-    html.dark .pq-btn-logcarbs { color: #15171A; }
+    .pq-btn-logcarbs { display: inline-flex; align-items: center; gap: 7px; background: var(--manual-carb); color: #15171A; border: none; padding: 11px 17px; border-radius: var(--wk-radius); font-size: .92rem; font-weight: 700; box-shadow: var(--shadow); cursor: pointer; }
     .pq-btn-logcarbs:hover { filter: brightness(1.06); }
     .pq-btn-no { background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 11px 17px; border-radius: var(--wk-radius); font-weight: 600; font-size: .92rem; cursor: pointer; }
     .pq-btn-no:hover { background: var(--surface-2); }
@@ -594,7 +553,7 @@
        sidebar + article-pane shell (.kb/.side/.article), the two-column
        teaching-copy | live-surface-preview split (.split/.copy/.preview),
        and the forked #157 teaching figures re-scoped under `.viz`. Theme +
-       evidence-tier tokens are the app's own :root/html.dark (above). See
+       evidence-tier tokens are the app's own :root (above). See
        ADR 0044. */
 /* ================= KB LAYOUT: sidebar + article pane ================= */
 .kb { display:grid; grid-template-columns:264px minmax(0,1fr); gap:26px; margin-top:18px; align-items:start; }
@@ -768,8 +727,7 @@
 .viz .srow { display:contents; }
 .viz .tie { grid-column:1 / -1; position:relative; border-radius:var(--wk-radius); transition:background .16s; padding:14px 6px 14px 0; margin-top:2px; }
 .viz .tie::before { content:''; position:absolute; inset:0; border-radius:var(--wk-radius); background:var(--stage); opacity:0; transition:opacity .16s; pointer-events:none; }
-.viz .tie:hover::before { opacity:.06; }
-html.dark .viz .tie:hover::before { opacity:.13; }
+.viz .tie:hover::before { opacity:.13; }
 .viz .tie-inner { display:grid; grid-template-columns:minmax(0,1fr) 40px minmax(0,0.82fr); align-items:start; }
 .viz .rail-cell { position:relative; padding-left:var(--gutter); min-width:0; padding-right:6px; }
 .viz .rail-cell::before { content:''; position:absolute; left:var(--spine-x); top:-16px; bottom:-16px; width:2px; transform:translateX(-1px); background:var(--line); }
@@ -1111,8 +1069,7 @@ html.dark .viz .tie:hover::before { opacity:.13; }
   .dn-col.nodata .dn-cl-dom, .dn-col.nodata .dn-cl-sev { color:var(--muted); opacity:.55; }
   .dn-col.nodata .dn-cl-dow { opacity:.55; }
 
-  .dn-backdrop { position:fixed; inset:0; z-index:30; background:rgba(10,14,18,.34); }
-  html.dark .dn-backdrop { background:rgba(0,0,0,.55); }
+  .dn-backdrop { position:fixed; inset:0; z-index:30; background:rgba(0,0,0,.55); }
   .dn-month-panel { position:absolute; z-index:40; top:100%; left:0; right:0; margin-top:-2px;
     background:var(--surface); border:1px solid var(--line); border-top:2px solid var(--primary);
     border-radius:0 0 var(--radius) var(--radius); box-shadow:var(--wk-elevation); padding:13px 16px 16px; transform-origin:top center; }

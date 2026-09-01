@@ -96,15 +96,15 @@ def css_rule(source: str, masked: str, start: int) -> str:
             depth -= 1
             if depth == 0:
                 return source[start:end + 1]
-    raise ValueError("corrupt Dark theme source: unclosed standalone html.dark token block")
+    raise ValueError("corrupt Dark theme source: unclosed standalone :root token block")
 
 
-def standalone_dark_rule(source: str) -> str:
-    """Return the one standalone Dark token rule, rejecting lookalikes."""
+def standalone_root_rule(source: str) -> str:
+    """Return the one standalone :root token rule, rejecting lookalikes."""
     masked = css_mask(source)
-    matches = list(re.finditer(r"(?m)^[ \t]*html\.dark[ \t]*\{", masked))
+    matches = list(re.finditer(r"(?m)^[ \t]*:root[ \t]*\{", masked))
     if len(matches) != 1:
-        raise ValueError("corrupt Dark theme source: expected exactly one standalone html.dark token block")
+        raise ValueError("corrupt Dark theme source: expected exactly one standalone :root token block")
     rule = css_rule(source, masked, matches[0].start())
     declared = set(re.findall(r"(--[\w-]+)\s*:", masked[matches[0].start():matches[0].start() + len(rule)]))
     missing = [role for role in REQUIRED_DARK_ROLES if role not in declared]
@@ -118,7 +118,7 @@ def self_check() -> int:
     roles = "".join(f"{role}: value;" for role in REQUIRED_DARK_ROLES)
     def rejects(label: str, source: str, expected: str) -> None:
         try:
-            standalone_dark_rule(source)
+            standalone_root_rule(source)
         except ValueError as error:
             if expected not in str(error):
                 raise
@@ -126,26 +126,26 @@ def self_check() -> int:
             raise AssertionError(f"{label} was accepted")
         print(f"{label}: rejected")
 
-    rejects("comment-only fake block", f"/* html.dark {{{roles}}} */",
+    rejects("comment-only fake block", f"/* :root {{{roles}}} */",
             "expected exactly one standalone")
-    selected = standalone_dark_rule(f"/* html.dark {{{roles}}} */\nhtml.dark {{{roles}}}")
+    selected = standalone_root_rule(f"/* :root {{{roles}}} */\n:root {{{roles}}}")
     if selected.startswith("/*"):
         raise AssertionError("commented fake block was selected")
     print("comment-before-real block: real block selected without ambiguity")
-    selected = standalone_dark_rule(
-        f"html.dark {{/* html.dark {{ --wk-signal: fake; }} */"
-        f"--note: 'html.dark {{ --wk-signal: fake; }}';{roles}}}")
+    selected = standalone_root_rule(
+        f":root {{/* :root {{ --wk-signal: fake; }} */"
+        f"--note: ':root {{ --wk-signal: fake; }}';{roles}}}")
     if not selected.endswith("}"):
         raise AssertionError("comment or string content truncated the standalone token block")
     print("comment/string selector, braces, and role names: ignored")
-    selected = standalone_dark_rule(
-        f"html.dark .component {{ --wk-canvas: wrong; }}\nhtml.dark {{{roles}}}")
-    if "wrong" in selected or "html.dark .component" in selected:
-        raise AssertionError("prefixed Dark selector was accepted as the token block")
+    selected = standalone_root_rule(
+        f":root .component {{ --wk-canvas: wrong; }}\n:root {{{roles}}}")
+    if "wrong" in selected or ":root .component" in selected:
+        raise AssertionError("prefixed selector was accepted as the token block")
     print("prefixed selector: ignored")
-    rejects("two real standalone blocks", f"html.dark {{{roles}}}\nhtml.dark {{{roles}}}",
+    rejects("two real standalone blocks", f":root {{{roles}}}\n:root {{{roles}}}",
             "expected exactly one standalone")
-    rejects("missing required role", f"html.dark {{{roles.replace('--wk-signal: value;', '')}}}",
+    rejects("missing required role", f":root {{{roles.replace('--wk-signal: value;', '')}}}",
             "missing required Dark roles --wk-signal")
     for label, decoration in (
         ("comment braces", "/* } { */"),
@@ -153,10 +153,28 @@ def self_check() -> int:
         ("double-quoted braces", '--note: "} {";'),
         ("escaped quoted braces", r'--note: "\\\"} {";'),
     ):
-        standalone_dark_rule(f"html.dark {{{decoration}{roles}}}")
+        standalone_root_rule(f":root {{{decoration}{roles}}}")
         print(f"{label}: accepted")
-    rejects("unclosed real rule", f"html.dark {{{roles}", "unclosed standalone html.dark token block")
+    rejects("unclosed real rule", f":root {{{roles}", "unclosed standalone :root token block")
     return 0
+
+
+def first_style_block(html: str) -> str:
+    """Return the first `<style>` element's own CSS text.
+
+    The `:root` search below needs pure CSS, not the whole HTML document: an
+    apostrophe in surrounding markup or prose (a `<!-- comment -->`, a template
+    string) reads to the CSS quote tracker in ``css_mask`` as an opened string,
+    and one unmatched quote anywhere earlier in the file can mask out a real
+    target further down. Scoping to the first `<style>` block's own content
+    sidesteps that non-CSS contamination entirely, rather than relying on the
+    rest of the document's quotes happening to balance out by the time the
+    scan reaches the token block.
+    """
+    match = re.search(r"<style>([\s\S]*?)</style>", html)
+    if not match:
+        raise ValueError("corrupt Dark theme source: no <style> block found")
+    return match.group(1)
 
 
 def shipped_dark_theme() -> str:
@@ -164,9 +182,11 @@ def shipped_dark_theme() -> str:
     index = (ROOT / "frontend/index.html").read_text()
     theme = (ROOT / "frontend/theme.css").read_text()
     # Keep both shipped sources in the generated HTML. The template names only
-    # composition aliases below; it never copies a Dark value by hand.
-    return ("/* generated from frontend/index.html html.dark and frontend/theme.css */\n"
-            + standalone_dark_rule(index)
+    # composition aliases below; it never copies a Dark value by hand. ADR 304
+    # retired the light theme, so the app's one `:root` block carries every
+    # Dark role directly — no `html.dark` selector to extract any more.
+    return ("/* generated from frontend/index.html :root and frontend/theme.css */\n"
+            + standalone_root_rule(first_style_block(index))
             + "\n\n/* frontend/theme.css — source-bound production role rules */\n"
             + theme)
 

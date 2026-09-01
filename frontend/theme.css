@@ -426,3 +426,85 @@ html.dark :is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
 @media (prefers-reduced-motion: reduce) {
   :is(.dw, .vw) .panes { transition: none; }
 }
+/* ======== DARK RETHEME PROTOTYPE v2 — neutral graphite ladder ========
+   Green lives ONLY in data marks. Structure is one warm-neutral family:
+   desk #0f0d0b · well #14120f · sheet #221e1b · rail #2b2622. */
+html.dark {
+  --wk-canvas:#0f0d0b;
+  --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;
+  --wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;
+  --wk-rule:#3f3833; --wk-rule-strong:#6e655c;
+  --wk-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 1px 2px rgba(0,0,0,.55), 0 16px 34px -16px rgba(0,0,0,.85);
+  --wk-elevation:0 20px 44px -18px rgba(0,0,0,.9);
+  --wk-signal:#e07f3f; --wk-signal-well:#3a2415;
+  --primary:#e07f3f; --primary-600:#ef9459; --primary-100:#3a2415; --on-primary:#180e06;
+  --secondary:#a49c90; --accent:#e07f3f; --accent-100:#3a2415;
+  --danger:#e57a68; --danger-bg:#33201b; --ok:#84ad74; --ok-bg:#1f2a1b;
+  --warn:#d9a05b; --warn-bg:#302312; --ring:rgba(224,127,63,.34);
+  --in-range:#84ad74; --high:#e07f3f; --low:#e57a68;
+  --on-target:#84ad74; --on-target-soft:#222b1e; --on-target-ink:#a3c495;
+  --observed:#84ad74; --inferred:#b39b7e; --notindata:#6e675e; --basal:#8ba18f;
+}
+html.dark body { background:#0f0d0b; }
+/* chart marks: forest data on neutral ground, bone median */
+html.dark {
+  --mk-primary:#84ad74; --mk-primary-600:#d5cfc0; --mk-primary-soft:#222b1e;
+  --mk-ok:#a49c90; --mk-line:#2b2723;
+}
+/* dock literals join the ladder; headers take nav ink */
+html.dark :is(.dw, .vw) .panes,
+html.dark :is(.dw, .vw) .canvas-pane { background: #1e1a17; }
+html.dark .dw .inspector { background: #14120f; }
+html.dark :is(.dw, .vw) .canvas-pane > header,
+html.dark .dw .inspector > header { background: #2b2622; }
+html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: #3f3833; }
+html.dark :is(.dw, .vw) .inspector > .watch { background: #2b2622; }
+html.dark :is(.dw, .vw) .watch .go { border-color: #6e655c; background: #221e1b; }
+html.dark :is(.dw, .vw) .pane > header h2 { color: var(--wk-ink-nav); }
+html.dark :is(.dw, .vw) .pane > header .meta { color: var(--wk-ink-meta); }
+/* THE GREY SPOTLIGHT CANVAS: the wide layout lightens the raised row by mixing
+   12% bone ink over the canvas. The spotlight ground is a WELL — keep it dark. */
+html.dark .dw { --ck-field:#1e1a17; --ck-field-deep:#15130f; }
+html.dark .tile-field[data-raised] > .tile-row { background:#1e1a17; }
+html.dark .tile-field[data-dock="docked"]::after { background:#1a1714; }
+/* THE SPOTLIGHT PLATE: the shipped rule lifts the focal tile 10% toward bone
+   ("one elevated surface"). Rescinded — the spotlight matches every chart well;
+   elevation stays stated by the shadow alone. */
+html.dark .tile-field > .tile-focal > .evidence-tile,
+html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile,
+html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
+  background:#14120f;
+}
+/* the hero chart gets its own well — it was borrowing the field's ground */
+html.dark .dw #chart { background:#14120f; }
+/* SEAMS ARE NOT GRIDLINES: --ck-hair/--ck-tile-edge aliased the gridline ink,
+   so every card edge vanished. Edges take the rule ink; grids keep --mk-line. */
+html.dark :is(.dw, .vw) {
+  --ck-hair:#453d35;
+  --ck-tile-edge:#453d35;
+}
+html.dark .dw {
+  --ck-cell-shadow: 0 0 0 1px #453d35, 0 4px 10px -4px rgba(0,0,0,.55);
+}
+html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile {
+  box-shadow: 0 0 0 1px #453d35, 0 10px 26px -10px rgba(0,0,0,.65);
+}
+/* the basal-slot key joins the body tier — it was whispering at meta rank */
+html.dark :is(.dw, .vw) .lane-key { color: var(--wk-ink-body); }
+/* ONE EDGE SPEC. Every chart vessel: 1px #453d35 ring, 4px radius. The
+   spotlight keeps its drop shadow for elevation; the ring is identical. */
+html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile { border-radius: 4px; }
+/* the basal strip is its own instrument: a rail plate with a gutter of field
+   between it and the hero well, so the chart's bottom edge is a real seam */
+/* ONE VESSEL: the hero chart and its basal slots share an x-axis, so they
+   share a well — one border, no interior seam, the key as its caption row. */
+html.dark .dw #chart { background:#14120f; border:1px solid #453d35; border-top:0; border-bottom:0; border-right:0; border-radius:0; }
+html.dark .dw .lane-wrap { background:#14120f; border:1px solid #453d35; border-top:0; border-right:0; border-radius:0 0 0 4px; padding:2px 6px 6px; }
+/* the charts dock tray gets the same edge as everything else */
+html.dark .tile-field[data-dock="docked"]::after {
+  box-shadow: inset 0 0 0 1px #453d35, inset 0 1px 3px rgba(0,0,0,.5);
+}
+/* the dock handle is the tray's title rail — same header treatment as pane rails */
+html.dark .dw .dock-handle { background: #2b2622; box-shadow: inset 0 0 0 1px #453d35; border-radius: 4px 4px 0 0; }

@@ -6,10 +6,13 @@
 - [x] Build the generator and shared case catalog in #191.
 - [ ] Give the showcase era a dense 30-day background as a catalog primitive
       (5-minute CGM and delivered basal every day, daily carb-entered meal
-      boluses, an overnight fasting stretch, and an earlier carb-ratio setting
-      snapshot inside the window), composed with the two existing coverage
-      recipes; regenerate the showcase expectation from analyzer output, never
-      by hand, and keep both isolated coverage cases byte-for-byte unchanged.
+      boluses, an overnight fasting stretch, an earlier carb-ratio setting
+      snapshot inside the window, and one night slot where delivered basal
+      runs below programmed on at least the supported-nights floor so the
+      basal assert comes from the background itself), overlaid with the
+      behavioral-precedence recipe's readings and boluses; regenerate the
+      showcase expectation from analyzer output, never by hand, and keep both
+      isolated coverage cases byte-for-byte unchanged.
 - [ ] Commit `mockups/qa-e2e.synthetic/harmonic.sqlite` from the generator;
       turn the bare `--check` test from "fails closed while absent" into
       "accepts the committed artifact"; add the CI drift step for the QA

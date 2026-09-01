@@ -165,3 +165,50 @@ the app, so real data has had to stand in.
 ### Open questions (#194)
 
 None. Frontier empty after round 1.
+
+## Triage instrumentation — #194
+
+Flat order. Traits: multiple deliverable artifacts fires once (catalog
+primitive + committed fixture + CI step + entrypoint docs), no live run (rendering
+inputs proven through the producers in tests), no lockstep copies (generator and
+fixture are checked by one tool). Nearby reviewer-memory slicing anchor (#191's
+flat call on the same catalog/generator shape) agrees flat.
+
+- Round 1 (Opus, cold, load-bearing): 3 blocking + 4 notes, all `authoring`.
+  Blockers: AGENTS.md "no revise-e2e path" Done-when contradicted the
+  browser-gates reproduction block that must keep naming what CI serves;
+  dense-background composition order unspecified against last-write-wins
+  upserts, and no non-empty floor on the regenerated expectation; the ISF
+  rest-window count named no source and the obvious producer raises outside
+  the API layer. Notes: shared `_BEHAVIORAL_ROWS` constant; baseline stated in
+  queue units not catalog units; stale drift-check count sentence; launch entry
+  missing `--token ''`. All seven reproduced against the tree and folded into
+  lock v1; zero `injected`.
+- Round 1b (same Opus reviewer, delta re-check): 2 blocking + 1 note, all
+  `injected` by round-1 fixes. Blockers: the composition-order paragraph
+  claimed timestamp-keyed upserts for every table (basal and bolus conflict on
+  `seq_num`, so a dense-first background numbered from 1 gets rewritten in
+  place); the "sole offline exception" sentence was left authorizing one serve
+  while the document now prints two. Note: the revise-e2e pin reason no longer
+  describes its citation. All reproduced and folded into lock v1.
+- Round 1c (same reviewer, delta re-check): 1 blocking + 1 note, both
+  `injected`. Blocker: disjoint `seq_num` ranges let a background delivery and
+  a coverage delivery coexist at one timestamp (basal/bolus have no `t`
+  uniqueness), the doubled-slot pathology; fixed by excluding coverage
+  timestamps from the background and asserting at most one bolus per instant.
+  Note: keep the mandatory `--no-fetch` statement through the sentence
+  rewrite. Injected count climbing (0 → 2 → 1) is the rewrite-clean signal;
+  the residual was one clause, so the order went to a fresh cold panel next
+  rather than a fourth same-reviewer pass.
+- Round 2 (Opus, fresh cold panel): 1 blocking `authoring` + 6 notes. Blocker:
+  `_BasalTimeline` resolves each minute to the last segment started at or
+  before it, so 5-minute background basal rows shadow the setting-recommendation
+  recipe's hour-long 03:00 segments and the inherited asserting slots cannot
+  survive; the composition rule and the "no instant carries two deliveries"
+  invariant were unsatisfiable together. Rewritten clean: the background owns
+  basal outright and carries the asserting night slot itself (task 4 amended,
+  re-pinned); the showcase overlays only the behavioral recipe. Notes folded:
+  pinned background span (window start derives from the store's last event),
+  ledger committed with the re-pin, gitignore comment must not name the
+  committed path, launch entry clears the scratch stem's sidecars, baseline
+  commands named, new expectation fields default.

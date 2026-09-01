@@ -44,14 +44,14 @@
    radius 8, base 12.5px, grid-left 52px). Re-sync the two together. */
 .vw {
   --ck-bar: var(--mk-bg);
-  --ck-rail: var(--mk-surface);
+  --ck-rail: #191c1f;
   --ck-hair: var(--mk-line);
-  --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
+  --ck-inset: #101215;
   --ck-accent: var(--mk-primary);
   --ck-meal: var(--mk-accent);
   --ck-sel: color-mix(in srgb, var(--mk-primary) 16%, transparent);
-  --ck-manual: #93701B;          /* user-claim token, from frontend/index.html */
-  --ck-manual-soft: #F6EFDC;
+  --ck-manual: #D9B568;          /* user-claim token, from frontend/index.html */
+  --ck-manual-soft: #332C1B;
   --ck-up: var(--mk-ok);
   --ck-hold: var(--mk-muted);
   --ck-insuff: var(--mk-warn);
@@ -67,13 +67,6 @@
   --ck-grid-left: 52px;
   --ck-grid-right: 52px;
   font-size: var(--ck-body);
-}
-html.dark .vw {
-  --ck-inset: #101215;
-  --ck-bar: var(--mk-bg);
-  --ck-rail: #191c1f;
-  --ck-manual: #D9B568;
-  --ck-manual-soft: #332C1B;
 }
 
 /* ---- host adapter (NEW) — the app shell owns the topbar and status rows, so

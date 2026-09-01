@@ -1451,9 +1451,8 @@ async function main() {
      "…(extracted from this file's <style> in #100)", and matching `<style>`
      across the raw file starts the first capture inside that comment: the block
      then opens with stray markup, the CSS parser cannot recover until the second
-     rule, and the whole light `:root` token block is silently dropped. That
-     shipped as a mock whose dark theme was pixel-identical to the app and whose
-     light theme had no tokens at all — caught only by rendering light. */
+     rule, and the whole `:root` token block is silently dropped. That shipped
+     as a mock with no tokens at all — caught only by rendering it. */
   const html = indexHtml.replace(/<!--[\s\S]*?-->/g, '');
   const blocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
   if (!blocks.length) throw new Error('no <style> block found in frontend/index.html');
@@ -1467,7 +1466,7 @@ async function main() {
      arriving the build must stop too rather than shipping a legend chip whose
      disclosure silently never opens. */
   const joined = blocks.join('\n');
-  for (const needle of [':root {', 'html.dark {', '--wk-canvas:', 'color-scheme: light',
+  for (const needle of [':root {', '--wk-canvas:', 'color-scheme: dark',
     '.has-tooltip {', '.has-tooltip::after {']) {
     if (!joined.includes(needle)) throw new Error(`extracted app base is missing "${needle}" — extraction is corrupt`);
   }
@@ -1477,9 +1476,10 @@ async function main() {
   artifacts.set('app-base.extracted.css',
     '/* EXTRACTED VERBATIM from frontend/index.html\'s <style> blocks by\n'
     + ' * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —\n'
-    + ' * re-run the build script. This carries the app\'s :root / html.dark token\n'
-    + ' * block, its body ground and every base rule the shipped chrome inherits\n'
-    + ' * from (including `label { margin: 0 0 5px }`, which the event-comparison\n'
+    + ' * re-run the build script. This carries the app\'s single `:root` token\n'
+    + ' * block (#304 retired the light theme and its `html.dark` split), its\n'
+    + ' * body ground and every base rule the shipped chrome inherits from\n'
+    + ' * (including `label { margin: 0 0 5px }`, which the event-comparison\n'
     + ' * stylesheet adapts against).\n'
     + ` * Blocks extracted: ${blocks.length}\n */\n${blocks.join('\n')}\n`);
 

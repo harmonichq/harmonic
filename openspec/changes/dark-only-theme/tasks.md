@@ -2,14 +2,14 @@
 
 ## 1. Retire Light in the shipped app and its generated extracts
 
-- [ ] Remove the boot-time class gate, the `dark` ref, `toggleDark`, `setDark`,
+- [x] Remove the boot-time class gate, the `dark` ref, `toggleDark`, `setDark`,
       `themeMenuOpen`, the footer Theme menu markup, the `watch(dark, …)` repaint
       hook, and every read or write of the `theme` localStorage key from
       `frontend/index.html`.
-- [ ] Merge the `html.dark` token block into `:root` in `frontend/index.html`
+- [x] Merge the `html.dark` token block into `:root` in `frontend/index.html`
       so each token carries today's Dark value, and delete the light values;
       keep `color-scheme: dark`.
-- [ ] Collapse every `html.dark`-scoped rule in `frontend/index.html`,
+- [x] Collapse every `html.dark`-scoped rule in `frontend/index.html`,
       `frontend/theme.css`, `frontend/diagnose-workstation.css`, and
       `frontend/verify-workstation.css` into its base selector with the Dark
       declaration, and delete every `html:not(.dark)` rule and the light-only
@@ -19,22 +19,22 @@
       selector, never by `!important`.
       Re-base the stylesheet byte pins in `frontend/index.test.js` to the
       collapsed base selectors and drop its two Light-preservation assertions.
-- [ ] Retire the harness theme select and `theme` URL parameter in
+- [x] Retire the harness theme select and `theme` URL parameter in
       `harness/index.html` and `harness/main.js`, and confirm the harness still
       resolves the app tokens.
-- [ ] Re-point `mockups/diagnose-evidence-canvas.exploration/generate.py` and
+- [x] Re-point `mockups/diagnose-evidence-canvas.exploration/generate.py` and
       `mockups/finding-evidence-routing.exploration/build.mjs` at the single
       `:root` block per ADR 304, update their corruption self-checks and
       `tests/test_evidence_canvas_generator.py`, and regenerate every committed
       output so both `--check` steps pass.
-- [ ] Reduce `scripts/screenshots.local.mjs` to a no-theme wrapper and re-base
+- [x] Reduce `scripts/screenshots.local.mjs` to a no-theme wrapper and re-base
       `scripts/screenshots.local.test.mjs` so it still fails closed on a wrapper
       that reintroduces theme switching.
-- [ ] Re-point `DESIGN.md`'s token-home paragraph and palette section at the
+- [x] Re-point `DESIGN.md`'s token-home paragraph and palette section at the
       single `:root` block and the shipped dark values, and confirm
       `sh docs/scope/304-one-theme-probe.sh app` exits 0.
 
-- [ ] Inline the Dark arm of every `colors.dark ? a : b` in
+- [x] Inline the Dark arm of every `colors.dark ? a : b` in
       `frontend/diagnose-evidence-charts.js` and drop the `dark` flag it reads
       from the document class, extending `frontend/diagnose-evidence-charts.test.js`
       to pin the Dark constants; remove the `dataset.theme` read in

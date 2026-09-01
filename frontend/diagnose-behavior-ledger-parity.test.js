@@ -130,7 +130,7 @@ test('Diagnose behavior ledger inventory matches the replay registry', () => {
 });
 
 test('Diagnose behavior ledger requires a retirement inventory', () => {
-  const withoutRetiredInventory = ledger.replace('**Retired executable IDs:** none\n', '');
+  const withoutRetiredInventory = ledger.replace('**Retired executable IDs:** S117\n', '');
   assert.throws(
     () => validate(withoutRetiredInventory, replay),
     /ledger must declare one retired-ID inventory/,
@@ -157,10 +157,10 @@ test('Diagnose behavior ledger rejects an issued ID without a replay story', () 
 test('Diagnose behavior ledger accepts a permanent retirement', () => {
   const retiredS91 = ledger
     .replace(
-      '**Active executable IDs:** all issued',
-      '**Active executable IDs:** S01–S90, S92–S126, C41–C57, and D1–D3',
+      '**Active executable IDs:** S01–S116, S118–S126, C41–C57, and D1–D3',
+      '**Active executable IDs:** S01–S90, S92–S116, S118–S126, C41–C57, and D1–D3',
     )
-    .replace('**Retired executable IDs:** none', '**Retired executable IDs:** S91');
+    .replace('**Retired executable IDs:** S117', '**Retired executable IDs:** S91, S117');
   const withoutS91 = replay
     .replace("  ['S91', S91, 'drawn'],\n", '')
     .replaceAll('// STORY:finding-evidence-routing:S91', '// RETIRED:finding-evidence-routing:S91');

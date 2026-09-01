@@ -9,34 +9,30 @@ const theme = readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
 const workstation = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
 
 test('Dark derives the Diagnose material ladder through the shipped role owners (#255)', () => {
-  const dark = page.match(/html\.dark \{[\s\S]*?\n    \}/)[0];
-  assert.match(dark, /--wk-canvas:#0f0d0b; --wk-field:#1e1a17; --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;/,
+  const root = page.match(/:root \{[\s\S]*?\n    \}/)[0];
+  assert.match(root, /--wk-canvas:#0f0d0b; --wk-field:#1e1a17; --wk-surface:#221e1b; --wk-surface-rail:#2b2622; --wk-surface-sunken:#14120f;/,
     'the app token owner orders desk, sheet, rail, and well');
-  assert.match(dark, /--wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;/,
+  assert.match(root, /--wk-ink:#f2ede2; --wk-ink-body:#cfc8bd; --wk-ink-meta:#a49c90; --wk-ink-nav:#c6bfb3;/,
     'the app token owner carries the approved Dark ink hierarchy');
-  assert.match(dark, /--wk-rule:#3f3833; --wk-rule-strong:#453d35;/,
+  assert.match(root, /--wk-rule:#3f3833; --wk-rule-strong:#453d35;/,
     'quiet rules and vessel edges remain separate roles');
-  assert.match(theme, /html\.dark \{[\s\S]*?--mk-line: var\(--wk-rule\);/,
+  assert.match(theme, /:root \{[\s\S]*?--mk-line: var\(--wk-rule\);/,
     'chart grid ink derives from the quiet rule role');
   assert.match(workstation, /--ck-tile-edge: var\(--wk-rule-strong\);/,
     'chart vessel edges derive from the strong edge role, not grid ink');
-  assert.match(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-well\);[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-well\);[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
     'the Dark focal chart uses the shared well and shadow-only elevation');
-  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?background: var\(--ck-rail\); border-radius: 0; box-shadow: none;/,
-    'the Dark-only focal role leaves the fixed-point Light plate untouched');
 });
 
-test('the vessel cascade preserves Light edges and composes one Dark 1px/4px grammar (#255)', () => {
-  assert.match(workstation, /--ck-tile-edge: color-mix\(in srgb, var\(--mk-line\) 72%, transparent\);/,
-    'Light retains its established edge derivation');
-  assert.match(workstation, /html\.dark \.dw \{[\s\S]*?--ck-tile-edge: var\(--wk-rule-strong\);/,
-    'Dark alone resolves the vessel edge through the strong edge role');
-  assert.match(workstation, /html\.dark \.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
-    'the Dark spotlight adds only elevation beyond the shared vessel edge');
-  assert.match(workstation, /html\.dark \.tile-field\[data-dock="docked"\][\s\S]*?html\.dark \.tile-field\[data-raised\][\s\S]*?html\.dark \.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
-    'Dark docked, raised, and Explorer cells keep the shared vessel edge and radius');
-  assert.match(workstation, /html\.dark \.tile-field:is\(\[data-fullscreen-tile\], \[data-explorer\]\) \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
-    'Dark fullscreen cells keep the shared vessel edge and radius');
+test('the vessel cascade composes one Dark 1px/4px grammar (#255)', () => {
+  assert.match(workstation, /--ck-tile-edge: var\(--wk-rule-strong\);/,
+    'the vessel edge resolves through the strong edge role');
+  assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
+    'the spotlight adds only elevation beyond the shared vessel edge');
+  assert.match(workstation, /\.tile-field\[data-dock="docked"\][\s\S]*?\.tile-field\[data-raised\][\s\S]*?\.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'docked, raised, and Explorer cells keep the shared vessel edge and radius');
+  assert.match(workstation, /\.tile-field:is\(\[data-fullscreen-tile\], \[data-explorer\]\) \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'fullscreen cells keep the shared vessel edge and radius');
 });
 
 test('Diagnose mounts the merged workstation surface (#636)', () => {
@@ -112,9 +108,9 @@ test('the cockpit footer keeps the full advisory sentence visible (#535)', () =>
 
 /* #736 re-settled this. The outlined/fill glyph was the pre-Harmonic mark; the
    Harmonic identity is a native capital H in a FILLED burnt-orange rounded
-   square, and the square carries its own orange in both themes instead of
-   reading --ck-accent, so the mark stays one constant object across the theme
-   switch. The empty aria-hidden span is unchanged: the H is drawn by ::before,
+   square, and the square carries its own orange instead of reading
+   --ck-accent, so the mark stays one constant object wherever it
+   sits. The empty aria-hidden span is unchanged: the H is drawn by ::before,
    so it never enters the accessibility tree or a text selection. */
 test('the cockpit identity wears the locked Harmonic mark', () => {
   const mark = page.match(/<span class="cockpit-mark"[\s\S]*?<\/span>/)[0];

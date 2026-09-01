@@ -2,37 +2,37 @@
 name: harmonic
 description: Local, advisory basal/ISF/I:C tuning for Tandem Control-IQ users — a clinical instrument, not a wellness app.
 colors:
-  primary: "#1C6E8C"
-  primary-600: "#15576F"
-  primary-100: "#E2EEF2"
-  on-primary: "#FFFFFF"
-  secondary: "#566069"
-  accent: "#C2554D"
-  accent-100: "#F8E6E4"
-  bg: "#F7F8FA"
-  bg-tint: "#F1F4F7"
-  surface: "#FFFFFF"
-  surface-2: "#F1F3F5"
-  text: "#1B2126"
-  muted: "#656D76"
-  line: "#E3E7EA"
-  danger: "#B3402C"
-  danger-bg: "#F7E4DF"
-  ok: "#1C6E8C"
-  ok-bg: "#E2EEF2"
-  warn: "#93701B"
-  warn-bg: "#F6EFDC"
-  in-range: "#1C6E8C"
-  high: "#C2554D"
-  low: "#B3402C"
-  on-target: "#2A8C5E"
-  on-target-soft: "#E2F4EC"
-  manual-carb: "#93701B"
-  manual-carb-soft: "#F6EFDC"
-  observed: "#2A8C5E"
-  inferred: "#93701B"
-  notindata: "#69727B"
-  basal: "#4A6FA5"
+  primary: "#E07F3F"
+  primary-600: "#EF9459"
+  primary-100: "#40291B"
+  on-primary: "#1B1109"
+  secondary: "#A89A85"
+  accent: "#D08150"
+  accent-100: "#43291D"
+  bg: "#0F0D0B"
+  bg-tint: "#14120F"
+  surface: "#221E1B"
+  surface-2: "#14120F"
+  text: "#F2EDE2"
+  muted: "#A49C90"
+  line: "#3F3833"
+  danger: "#EC6F55"
+  danger-bg: "#3A221C"
+  ok: "#9AADA1"
+  ok-bg: "#2B332D"
+  warn: "#C98A4E"
+  warn-bg: "#3A2B1B"
+  in-range: "#86AD78"
+  high: "#E07F3F"
+  low: "#EC6F55"
+  on-target: "#86AD78"
+  on-target-soft: "#2F3A2C"
+  manual-carb: "#D2743E"
+  manual-carb-soft: "#40291B"
+  observed: "#86AD78"
+  inferred: "#B08858"
+  notindata: "#8D8579"
+  basal: "#A89A85"
 typography:
   title:
     fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
@@ -95,18 +95,19 @@ components:
 # Design System: Harmonic
 
 > **The Harmonic theme is locked** (2026-08-18, issue #736) and it **ships in
-> `frontend/`**: the tokens are the `:root` / `html.dark` block at the top of
+> `frontend/`**: the tokens are the single `:root` block at the top of
 > `frontend/index.html`, and the shell's role rules are `frontend/theme.css`,
 > which loads last. Those two files are the source of truth for the app-wide
 > material — colour, elevation, and the type split — and they supersede the
 > palette and elevation values recorded below wherever the two disagree. Read
 > them, not this file, for a colour. The design-time manifest the theme was
 > settled against is a record of the decision and is not part of the shipped
-> tree. Light's grounds were re-settled inside that lock by **ADR 37** (pull
-> request #37): parchment
-> `#F3EADB`/`#EBE0CF`/`#E3D7C5` became bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC` over a
-> darker `#C3BFB4` rule, with the saved chroma spent on ink and marks. Values
-> only — no term of #736 was reopened at that point. Dark was subsequently
+> tree. **#304 retired the Light theme** (2026-09-01): the app ships Dark only,
+> and the `:root` block above carries every token directly — no `html.dark`
+> selector, no boot-time class, no stored preference. ADR 37 (pull request #37,
+> parchment `#F3EADB`/`#EBE0CF`/`#E3D7C5` to bone `#FAF8F4`/`#F0EEE8`/`#E7E4DC`)
+> and ADR 230 described the retired Light theme and its repaint behavior; their
+> records stay as history and #304 supersedes them. Dark was separately
 > re-settled by **ADR 255** (issue #255): one warm tonal ladder now owns the
 > Diagnose desk, well, field, sheet, rail, rule, edge, and ink roles; chart
 > wells sit below sheets; vessels use one visible edge; spotlight elevation is
@@ -126,7 +127,7 @@ Harmonic reads like a piece of clinical equipment a technically literate patient
 This system explicitly rejects **consumer health/wellness app** conventions (Apple Health, MyFitnessPal): no badges, streaks, mascots, or congratulatory copy. It also rejects the **generic SaaS analytics dashboard**: no hero-KPI-tile templates, no gradient accent cards, no stock chart-library defaults dropped in unmodified.
 
 **Key Characteristics:**
-- Restrained, tinted-neutral palette with two committed colors (teal primary, muted terracotta accent) — never cream/sand-default.
+- Restrained, tinted-neutral palette with two committed colors (burnt-orange primary, muted terracotta accent) — never cream/sand-default.
 - Flat by default; a single soft ambient shadow is the only elevation tier.
 - No display/hero typography — the numeric stat, not the headline, is the largest text on any screen.
 - Domain color tokens (glucose in-range/high/low, evidence tiers, manual-carb) are first-class citizens alongside the brand palette, because this is a data-encoding system as much as a brand system.
@@ -177,28 +178,28 @@ and technical documentation keep their established domain terms.
 
 ## 2. Colors
 
-Two committed brand colors (teal, terracotta) carry identity; a much larger set of domain-semantic tokens carries data meaning. Both palettes ship full light/dark pairs — dark is not a filtered/inverted version of light, each color was tuned independently for the same relationship (e.g. primary shifts from a deep teal `#1C6E8C` in light to a brighter, more saturated teal `#5BAFD0` in dark to hold contrast against a near-black surface).
+Two committed brand colors (primary, accent) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name that shipped value, read directly from `frontend/index.html`'s `:root` block (e.g. primary is burnt orange `#E07F3F`, tuned to hold contrast against a near-black surface).
 
 ### Primary
-- **Deep Teal** (`#1C6E8C`, dark: `#5BAFD0`): the one recurring brand color — primary buttons, active tab underline, focus rings, links, the "in-range"/"ok" glucose semantic. Used sparingly outside of these functional roles.
-- **Teal Tint** (`--primary-100`, `#E2EEF2` / `#1C2C32`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
+- **Burnt Orange** (`--primary`, `#E07F3F`): the one recurring brand color — primary buttons, active tab underline, focus rings, links. Used sparingly outside of these functional roles.
+- **Primary Tint** (`--primary-100`, `#40291B`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
 
 ### Secondary
-- **Slate** (`--secondary`, `#566069` / `#9BA0A6`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
+- **Warm Grey** (`--secondary`, `#A89A85`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
 
 ### Tertiary
-- **Muted Terracotta** (`--accent`, `#C2554D` / `#E08B7E`): the accent color and the "high glucose" / "ran-high" semantic. This dual role is intentional — it reads as "attention, not alarm," matching the brand's refusal to over-dramatize excursions.
+- **Terracotta** (`--accent`, `#D08150`): the interaction accent — bolus markers, near-miss highlights, CIQ-added indicators, and reject actions. High glucose is `--high` (see Data Semantics below), which shares `--primary`'s hex, not this token's.
 
 ### Neutral
-- **Paper** (`--bg`, `#F7F8FA` / `#15171A`): page background. Explicitly cool-neutral, not cream/sand-tinted.
-- **Surface** (`--surface`, `#FFFFFF` / `#1C1F22`): card and popover background.
-- **Surface Tint** (`--surface-2`, `#F1F3F5` / `#24272B`): table header rows, hover states, chip backgrounds — one step off `--surface`, never a third tone.
-- **Ink** (`--text`, `#1B2126` / `#E9EAEC`): body text.
-- **Ash** (`--muted`, `#69727B` / `#93979E`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg` in both themes.
-- **Hairline** (`--line`, `#E3E7EA` / `#2C2E33`): all borders and dividers.
+- **Background** (`--bg`, `#0F0D0B`): page background — ADR 255's desk.
+- **Surface** (`--surface`, `#221E1B`): card and popover background — ADR 255's sheet.
+- **Surface Tint** (`--surface-2`, `#14120F`): table header rows, hover states, chip backgrounds — one step off `--surface`; ADR 255's chart well.
+- **Ink** (`--text`, `#F2EDE2`): body text.
+- **Muted** (`--muted`, `#A49C90`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg`.
+- **Hairline** (`--line`, `#3F3833`): all borders and dividers.
 
 For the Diagnose Dark workstation, ADR 255's shipped role ladder supersedes
-the legacy Dark examples above: desk `#0F0D0B`, chart well `#14120F`, field
+the legacy examples above: desk `#0F0D0B`, chart well `#14120F`, field
 `#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, vessel edge
 `#453D35`, and inks `#F2EDE2` / `#CFC8BD` / `#A49C90` (nav `#C6BFB3`).
 The `--wk-*`, `--mk-*`, `--ck-*`, and compatibility namespaces derive from
@@ -207,12 +208,12 @@ to data marks and burnt orange to interaction.
 
 ### Data Semantics (domain-specific, not brand)
 These encode meaning in glucose/insulin charts and are never used decoratively:
-- **In-range** (`--in-range`, shares Primary teal): glucose within target band.
-- **High** (`--high`, shares Tertiary terracotta) / **Low** (`--low`, `#B3402C` / `#E08B6E`): glucose excursions. Distinguished from each other by hue, not just lightness.
-- **On-target** (`--on-target`, `#2A8C5E` / `#3DB87E`): a third, separate green reserved for "hit the target exactly" — never conflated with in-range teal.
-- **Manual Carb** (`--manual-carb`, `#93701B` / `#D9B568`, shares Warn): the user-entered carb-log amber, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
-- **Observed / Inferred / Not-in-data** (`--observed` green, `--inferred` amber, `--notindata` grey): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).
-- **Basal** (`--basal`, `#4A6FA5` / `#6E8BB5`): a fourth, dedicated blue reserved for basal-rate chart series so it's never confused with the teal in-range/primary color in the same chart.
+- **In-range** (`--in-range`, `#86AD78`): glucose within target band.
+- **High** (`--high`, `#E07F3F`, shares Primary) / **Low** (`--low`, `#EC6F55`): glucose excursions. Distinguished from each other by hue, not just lightness.
+- **On-target** (`--on-target`, `#86AD78`): a separate token reserved for "hit the target exactly" — currently the same shipped value as `--in-range`, so it is always paired with a shape or label per the Color-Never-Alone Rule below, never told apart from in-range by hue alone.
+- **Manual Carb** (`--manual-carb`, `#D2743E`): the user-entered carb-log token, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
+- **Observed / Inferred / Not-in-data** (`--observed`, `#86AD78` / `--inferred`, `#B08858` / `--notindata`, `#8D8579`): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).
+- **Basal** (`--basal`, `#A89A85`): the basal-rate chart-series token; currently the same shipped value as `--secondary`.
 
 ### Named Rules
 **The Color-Never-Alone Rule.** Every glucose/evidence/bolus semantic that uses color must pair it with a shape, icon, or text label. Color-only encoding of clinical state is prohibited — this is a hard accessibility requirement (see `bolus_symbol` shape mapping and the daily-chart legend as the reference implementation), not a nice-to-have.
@@ -239,7 +240,7 @@ These encode meaning in glucose/insulin charts and are never used decoratively:
 Flat by default with exactly one shadow token (`--shadow`) reused everywhere elevation is needed — there is no multi-tier elevation scale. Depth signals "this is a floating/interactive surface" (card, button, popover, drawer), not hierarchy of importance; importance is carried by typography and color, not shadow depth.
 
 ### Shadow Vocabulary
-- **Ambient** (`box-shadow: 0 1px 2px rgba(20,28,22,.05), 0 14px 30px -18px rgba(20,28,22,.20)` light / `0 1px 2px rgba(0,0,0,.3), 0 18px 36px -20px rgba(0,0,0,.55)` dark): the single shadow used on cards, primary buttons, icon buttons, popovers, and drawers. Softer/tighter in light mode, deeper/darker in dark mode to compensate for the near-black surface.
+- **Ambient** (`box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 16px 34px -16px rgba(0,0,0,.8)`, `--shadow`): the single shadow used on cards, primary buttons, icon buttons, popovers, and drawers — deep and dark to compensate for the near-black surface.
 
 ### Named Rules
 **The One-Shadow Rule.** Don't introduce a second shadow tier ("elevated," "raised," "floating") — every floating surface in this system uses the same `--shadow` token. If something needs to look more prominent, change its color or border, not its shadow depth.
@@ -266,7 +267,7 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 
 ### Inputs / Fields
 - **Style:** 1px `--line` border, `--radius-sm` (9px) corners, `--surface` background, inherited font.
-- **Focus:** border shifts to `--primary` + a 3px `--ring` glow (`rgba(28,110,140,.16)` light / `rgba(91,175,208,.22)` dark) — no color-only focus state; the ring is always paired with the border-color shift.
+- **Focus:** border shifts to `--primary` + a 3px `--ring` glow (`rgba(210,116,62,.34)`) — no color-only focus state; the ring is always paired with the border-color shift.
 - **Label:** uppercase-free, `.76rem` `--muted` text above the field, 500 weight.
 
 ### Navigation
@@ -282,7 +283,7 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** keep the palette to two committed brand colors (teal primary, terracotta accent) plus the neutral ramp — resist adding a third "brand" color; new meaning should extend the Data Semantics set instead.
+- **Do** keep the palette to two committed brand colors (burnt-orange primary, terracotta accent) plus the neutral ramp — resist adding a third "brand" color; new meaning should extend the Data Semantics set instead.
 - **Do** pair every color-coded clinical signal (glucose state, evidence tier, bolus kind) with a shape, icon, or text label. This is a hard accessibility requirement, not a style preference.
 - **Do** use the single `--shadow` ambient token for every floating surface; let color/border carry emphasis instead of shadow depth.
 - **Do** keep numeric emphasis in `font-variant-numeric: tabular-nums` wherever a stat can update (I:C stats, chart hovers) so digits don't jitter.

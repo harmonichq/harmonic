@@ -50,12 +50,11 @@ const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
-const evidenceTheme = () => process.env.THEME || 'dark';
 async function captureEvidence(page, label) {
   if (!evidenceDir) return;
   await mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
-    path: join(evidenceDir, `${label}-${evidenceViewport()}-${evidenceTheme()}.png`),
+    path: join(evidenceDir, `${label}-${evidenceViewport()}.png`),
     fullPage: false,
   });
 }
@@ -482,7 +481,7 @@ export const withoutIsfProjectionVerdict = (projection) => ({
  * on-disk source explicitly. Every intercepted endpoint is named.
  */
 export async function openApp(browser, {
-  state: want = 'typical', theme = 'dark', viewport = { width: 1440, height: 900 }, findingsInputs = null,
+  state: want = 'typical', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
   pumpSettingsInputs = null, onPlanDraft = null,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
@@ -640,12 +639,11 @@ export async function openApp(browser, {
       };
     });
   }
-  await page.addInitScript(([t, observeStage]) => {
+  await page.addInitScript((observeStage) => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
     localStorage.setItem('tab', 'diagnose');
-    localStorage.setItem('theme', t);
     if (observeStage) window.__diagnoseStageProbe = { calls: [] };
-  }, [theme, stageProbe]);
+  }, stageProbe);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -4028,57 +4026,14 @@ export const S116 = async (page) => {
     'S116 closing the explorer restores focus to its opener');
 };
 
-// STORY:finding-evidence-routing:S117
-export const S117 = async (page) => {
-  is(await page.locator('html').getAttribute('class'), 'dark',
-    'S117 starts on the dark surface');
-  await openCanvas(page);
-  const defaultSpotlightId = await page.locator('#tile-focal .evidence-tile')
-    .getAttribute('data-chart-id');
-  const chartId = await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]')
-    .evaluateAll((tiles, defaultId) => tiles
-      .map((tile) => tile.dataset.chartId)
-      .find((id) => id && id !== defaultId) || null, defaultSpotlightId);
-  ok(chartId, 'S117 exposes a non-default event chart to spotlight');
-  await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).click();
-  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
-  const readerContext = () => page.evaluate(() => ({
-    pressedWindow: [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
-      .map((button) => button.textContent.replace('×', '').trim()),
-    spotlightId: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
-    dockChartIds: [...document.querySelectorAll('#tile-row .evidence-tile')]
-      .map((tile) => tile.dataset.chartId),
-  }));
-  const eventInk = () => page.locator(
-    `#tile-focal .evidence-tile[data-chart-id="${chartId}"] .tile-chart`,
-  ).evaluate((host) => {
-    const option = window.echarts.getInstanceByDom(host)?.getOption();
-    return option?.series?.find((series) => series.name === 'Target range')
-      ?.markArea?.itemStyle?.color || null;
-  });
-  const darkContext = await readerContext();
-  is(darkContext.pressedWindow, ['24 h'], 'S117 records the pressed 24-hour window');
-  is(darkContext.spotlightId, chartId, 'S117 records the chosen event-chart spotlight');
-  ok(darkContext.dockChartIds.length > 0, 'S117 records the ordered dock charts');
-  const darkInk = await eventInk();
-  ok(darkInk, 'S117 the event tile exposes its live dark-surface ink');
-  await page.locator('#theme-menu-button').click();
-  await page.getByRole('menuitemradio', { name: 'Light', exact: true }).click();
-  await page.locator('html:not(.dark)').waitFor();
-  const lightContext = await readerContext();
-  is(lightContext, darkContext, 'S117 Light preserves the exact reader context');
-  const lightInk = await eventInk();
-  ok(lightInk, 'S117 the event tile exposes its live light-surface ink');
-  ok(lightInk !== darkInk, 'S117 the event tile repaints from the changed surface palette');
-  await page.locator('#theme-menu-button').click();
-  await page.getByRole('menuitemradio', { name: 'Dark', exact: true }).click();
-  await page.locator('html.dark').waitFor();
-  const returnedDarkContext = await readerContext();
-  is(returnedDarkContext, darkContext, 'S117 Dark preserves the exact reader context');
-  const returnedDarkInk = await eventInk();
-  is(returnedDarkInk, darkInk, 'S117 Dark restores the original event-chart ink');
-  ok(returnedDarkInk !== lightInk, 'S117 the return to Dark repaints the event-chart ink');
-};
+// RETIRED:finding-evidence-routing:S117
+// sanction: Connor Griffin · 2026-09-01 · "light theme retired by operator
+// decision". S117 was a Dark → Light → Dark round trip proving the spotlighted
+// event chart repainted from the changed surface palette without disturbing the
+// reader's window, spotlight or dock order. With one surface there is no round
+// trip to make and no second palette to repaint from, so the story retires
+// rather than asserting a no-op. The reader-context half it shared with S110 and
+// S115 stays covered there.
 
 // STORY:finding-evidence-routing:S118
 export const S118 = async (page) => {
@@ -4651,7 +4606,7 @@ export const STORIES = [
   ['S113', S113, 'typical'],
   ['S114', S114, 'typical'],
   ['S115', S115, 'typical'], ['S116', S116, 'typical'],
-  ['S117', S117, 'typical'], ['S118', S118, 'typical'],
+  ['S118', S118, 'typical'],
   ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],
   ['S120', S120, 'typical', { findingsInputs: FINDINGS_PROJECTION.inputs,
     findingsProjectionInputs: withStarBecomingWatching }],
@@ -4744,7 +4699,6 @@ if (isMain) {
     const page = await openApp(browser, {
       state: want,
       ...(options || {}),
-      ...(process.env.THEME ? { theme: process.env.THEME } : {}),
       ...(viewport ? { viewport } : {}),
     });
     try {

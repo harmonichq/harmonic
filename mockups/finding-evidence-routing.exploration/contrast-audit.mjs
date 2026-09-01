@@ -1,13 +1,16 @@
 /* THE STANDING FLOOR GUARD for this exploration — contrast and internal scroll,
- * in BOTH themes, at BOTH locked sizes.
+ * at BOTH locked sizes.
  *
  * WHY IT EXISTS. The round-10 lock audit found the same defect three rounds
  * running: a value was tuned against a measurement in ONE theme, the fix was
- * scoped `html:not(.dark)`, and the other half was never measured — and in each
- * case the unmeasured half ended up the worse of the two. It also found five
- * separate marks and inks that had each been "stepped back" for quiet in some
- * recent round and each landed under a WCAG minimum. A one-time repair does not
- * hold against that; a floor that runs on every build does.
+ * scoped to that theme's half of the cascade, and the other half was never
+ * measured — and in each case the unmeasured half ended up the worse of the
+ * two. It also found five separate marks and inks that had each been "stepped
+ * back" for quiet in some recent round and each landed under a WCAG minimum. A
+ * one-time repair does not hold against that; a floor that runs on every build
+ * does. ADR 304 retired the light theme, which removes the unmeasured half
+ * rather than the guard: every pair below is still measured on the one shipped
+ * surface, at both sizes, in every state.
  *
  * WHAT IT ASSERTS.
  *   TEXT   4.5:1 — DESIGN.md line 188 states 4.5:1 as this system's own bar,
@@ -34,10 +37,10 @@
  * the pixel, and it is where a `color-mix(… , transparent)` hides.
  *
  * THE COCKPIT CHROME IS DELIBERATELY NOT LISTED. `.cockpit-log-carbs .plus`,
- * `.cockpit-flow-separator` and `.cockpit-step-number` each fail their floor in
- * one theme, and all three are the SHIPPED app's own topbar and footer, lifted
- * into this page by harness.mjs. They are a production issue, reported as one;
- * asserting them here would make this mock's gate fail on the app's authorship.
+ * `.cockpit-flow-separator` and `.cockpit-step-number` each fail their floor,
+ * and all three are the SHIPPED app's own topbar and footer, lifted into this
+ * page by harness.mjs. They are a production issue, reported as one; asserting
+ * them here would make this mock's gate fail on the app's authorship.
  *
  * FAILS CLOSED, like every browser leg in this repo: a missing Playwright,
  * vendored asset or built data.json exits nonzero naming what is absent, and a
@@ -98,13 +101,13 @@ if (missing.length) {
    the five their pairs are written against, and that asymmetry is deliberate: a
    colour pair is tuned in one state and reads the same in the rest, while term 9
    — "the inspector column does not scroll internally in ANY state, at either
-   locked size, in either theme" — is a claim about all of them at once.
+   locked size" — is a claim about all of them at once.
 
    WHY THE LIST IS DERIVED AND NOT WRITTEN OUT. Until this round it was five
    hand-listed states, and none of them was an EXPANDED case file. The guard
    therefore reported green over a real violation of the term it exists to hold:
    7px in the finding case file and 12px in the population case file, at
-   1280x800, in both themes. A guard whose green means "the states I happened to
+   1280x800. A guard whose green means "the states I happened to
    list" is the exact failure it is supposed to prevent, and the fix is not a
    longer list — a longer list goes stale against the next fixture. The list
    below is the PRODUCT of the surface's own controls, read off the fixture:
@@ -260,9 +263,10 @@ const PAIRS = [
   /* ---- F3: the canvas-head legend swatches ----
      MEASURED AT THE BOUNDARY, not at the fill, and that is the finding rather
      than a softened test. The percentile swatches inherit the PLOT's own fill
-     alphas, and on the head rail even a solid `--primary` reaches only 3.61:1 in
-     light — so no alpha carries a percentile swatch to 3:1, and forcing one
-     would have meant a legend that lies about how soft the band it names is. A
+     alphas, and on the head rail even a solid `--primary` reached only 3.61:1 in
+     the since-retired light theme — so no alpha carries a percentile swatch to
+     3:1, and forcing one would have meant a legend that lies about how soft the
+     band it names is. A
      legend mark is not the plot: its 1px stroke is what identifies it, and that
      is what is asserted. */
   { id: 'F3 legend swatch 10-90th', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="10–90th"] i' },
@@ -280,10 +284,10 @@ const PAIRS = [
   /* The strip against the pane is a RELATIONSHIP, not a legibility minimum: the
      strip is a recessive track under the axis and 1.4.11 has nothing to say
      about it. What round 9 left behind was one declaration reading as two
-     opposite things — 14.51:1 in light, a black slab on bone, and 1.03:1 in
-     dark, invisible against the desk. So the assertion is a BAND: present in
-     both themes, competing in neither, which is the term the design actually
-     holds. */
+     opposite things — 14.51:1 in the since-retired light theme, a black slab on
+     bone, and 1.03:1 in dark, invisible against the desk. So the assertion is a
+     BAND: present, competing with nothing, which is the term the design actually
+     holds. The band survives ADR 304 unchanged — it was never a light bound. */
   { id: 'F5 .lane strip vs the pane', kind: 'mark', state: 'queue', selector: '.lane', ground: '.lane-wrap',
     min: 1.05, max: 2.0 },
 
@@ -446,16 +450,13 @@ const OVERFLOW = () => ({
   pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
 });
 
-async function openMock(browser, theme, size, problems) {
+async function openMock(browser, size, problems) {
   const page = await browser.newPage({ viewport: size });
-  page.on('pageerror', (e) => problems.push(`pageerror(${theme} ${size.width}x${size.height}): ${e.stack || e}`));
+  const where = `${size.width}x${size.height}`;
+  page.on('pageerror', (e) => problems.push(`pageerror(${where}): ${e.stack || e}`));
   page.on('console', (m) => {
-    if (m.type() === 'error') problems.push(`console(${theme} ${size.width}x${size.height}): ${m.text()}`);
+    if (m.type() === 'error') problems.push(`console(${where}): ${m.text()}`);
   });
-  await page.addInitScript((t) => {
-    if (t === 'dark') localStorage.setItem('theme', 'dark');
-    else localStorage.removeItem('theme');
-  }, theme);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
@@ -463,7 +464,7 @@ async function openMock(browser, theme, size, problems) {
       return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
     }
     if (url.hostname !== 'mock.local') {
-      problems.push(`unrouted ${url.href} (${theme})`);
+      problems.push(`unrouted ${url.href} (${where})`);
       return route.fulfill({ status: 404, body: 'not routed' });
     }
     try {
@@ -472,7 +473,7 @@ async function openMock(browser, theme, size, problems) {
         contentType: MIME[extname(url.pathname)] || 'text/plain',
       });
     } catch {
-      problems.push(`missing asset ${url.pathname} (${theme})`);
+      problems.push(`missing asset ${url.pathname} (${where})`);
       return route.fulfill({ status: 404, body: 'missing' });
     }
   });
@@ -488,75 +489,73 @@ async function main() {
   const problems = [];
   const failures = [];
   const record = {};
-  /* One pass per theme per size per state. The pair list is filtered to the
-     state it belongs in, and a pair that never resolves anywhere is a failure
-     below rather than a silent skip. */
+  /* One pass per size per state. The pair list is filtered to the state it
+     belongs in, and a pair that never resolves anywhere is a failure below
+     rather than a silent skip. */
   const seen = new Set();
   const seenTargets = new Set();
   const targets = {};
   const overflow = {};
 
-  for (const theme of ['light', 'dark']) {
-    for (const size of SIZES) {
-      const key = `${theme} ${size.width}x${size.height}`;
-      const page = await openMock(browser, theme, size, problems);
-      for (const stand of STATES) {
-        const state = stand.id;
-        /* FAILS CLOSED at the door: a state that cannot be entered — a missing
-           expander, a frame the fixture stopped emitting — is a failure named
-           here, never a state quietly measured in some other configuration. */
-        try {
-          await page.evaluate(ENTER, stand);
-        } catch (e) {
-          failures.push(`${key} · ${state}: could not be entered — ${e.message}`);
-          continue;
-        }
-        await page.waitForTimeout(450);
-        const of = await page.evaluate(OVERFLOW);
-        overflow[`${key} · ${state}`] = of;
-        /* F1's own frame, at the size and in the state the defect lived in. The
-           harness shoots 1440x900, where the arrival state fit exactly and the
-           clipped row was invisible — which is how a P0 survived nine rounds of
-           captures. Shot here because this is the run that measures it. */
-        if (state === 'queue' && size.width === 1280) {
-          await page.screenshot({ path: join(SHOTS, `r11-queue-1280x800-${theme}.png`) });
-        }
-        if (of.level > 0) failures.push(`${key} · ${state}: #level overflows by ${of.level}px — the inspector column must not scroll`);
-        if (of.pageX > 0 || of.pageY > 0) failures.push(`${key} · ${state}: the page scrolls (${of.pageX}px x / ${of.pageY}px y)`);
-        const wantedTargets = TARGETS.filter((t) => t.state === state);
-        const sizes = await page.evaluate(TARGET_SIZES, wantedTargets);
-        for (const t of wantedTargets) {
-          const box = sizes[t.id];
-          if (!box) continue;
-          seenTargets.add(t.id);
-          targets[`${t.id} · ${key}`] = box;
-          if (box.w + 1e-9 < TARGET_MIN || box.h + 1e-9 < TARGET_MIN) {
-            failures.push(`${key} · ${state}: ${t.id} — smallest target ${box.w}x${box.h}, `
-              + `minimum ${TARGET_MIN}x${TARGET_MIN}`);
-          }
-        }
-        const wanted = PAIRS.filter((p) => p.state === state);
-        const got = await page.evaluate(MEASURE, wanted);
-        for (const pair of wanted) {
-          const hit = got[pair.id];
-          if (!hit) continue;
-          seen.add(pair.id);
-          const floor = pair.min ?? (pair.kind === 'text' ? TEXT_FLOOR : MARK_FLOOR);
-          record[`${pair.id} · ${theme}`] = {
-            ...hit, ratio: Math.round(hit.ratio * 100) / 100, floor, ceiling: pair.max ?? null,
-          };
-          if (hit.ratio + 1e-9 < floor) {
-            failures.push(`${key} · ${state}: ${pair.id} — ${hit.ratio.toFixed(2)}:1 `
-              + `(${hit.ink} on ${hit.ground}), floor ${floor}:1`);
-          }
-          if (pair.max !== undefined && hit.ratio - 1e-9 > pair.max) {
-            failures.push(`${key} · ${state}: ${pair.id} — ${hit.ratio.toFixed(2)}:1 `
-              + `(${hit.ink} on ${hit.ground}), ceiling ${pair.max}:1 — it is meant to recede, not compete`);
-          }
+  for (const size of SIZES) {
+    const key = `${size.width}x${size.height}`;
+    const page = await openMock(browser, size, problems);
+    for (const stand of STATES) {
+      const state = stand.id;
+      /* FAILS CLOSED at the door: a state that cannot be entered — a missing
+         expander, a frame the fixture stopped emitting — is a failure named
+         here, never a state quietly measured in some other configuration. */
+      try {
+        await page.evaluate(ENTER, stand);
+      } catch (e) {
+        failures.push(`${key} · ${state}: could not be entered — ${e.message}`);
+        continue;
+      }
+      await page.waitForTimeout(450);
+      const of = await page.evaluate(OVERFLOW);
+      overflow[`${key} · ${state}`] = of;
+      /* F1's own frame, at the size and in the state the defect lived in. The
+         harness shoots 1440x900, where the arrival state fit exactly and the
+         clipped row was invisible — which is how a P0 survived nine rounds of
+         captures. Shot here because this is the run that measures it. */
+      if (state === 'queue' && size.width === 1280) {
+        await page.screenshot({ path: join(SHOTS, 'r11-queue-1280x800.png') });
+      }
+      if (of.level > 0) failures.push(`${key} · ${state}: #level overflows by ${of.level}px — the inspector column must not scroll`);
+      if (of.pageX > 0 || of.pageY > 0) failures.push(`${key} · ${state}: the page scrolls (${of.pageX}px x / ${of.pageY}px y)`);
+      const wantedTargets = TARGETS.filter((t) => t.state === state);
+      const sizes = await page.evaluate(TARGET_SIZES, wantedTargets);
+      for (const t of wantedTargets) {
+        const box = sizes[t.id];
+        if (!box) continue;
+        seenTargets.add(t.id);
+        targets[`${t.id} · ${key}`] = box;
+        if (box.w + 1e-9 < TARGET_MIN || box.h + 1e-9 < TARGET_MIN) {
+          failures.push(`${key} · ${state}: ${t.id} — smallest target ${box.w}x${box.h}, `
+            + `minimum ${TARGET_MIN}x${TARGET_MIN}`);
         }
       }
-      await page.close();
+      const wanted = PAIRS.filter((p) => p.state === state);
+      const got = await page.evaluate(MEASURE, wanted);
+      for (const pair of wanted) {
+        const hit = got[pair.id];
+        if (!hit) continue;
+        seen.add(pair.id);
+        const floor = pair.min ?? (pair.kind === 'text' ? TEXT_FLOOR : MARK_FLOOR);
+        record[pair.id] = {
+          ...hit, ratio: Math.round(hit.ratio * 100) / 100, floor, ceiling: pair.max ?? null,
+        };
+        if (hit.ratio + 1e-9 < floor) {
+          failures.push(`${key} · ${state}: ${pair.id} — ${hit.ratio.toFixed(2)}:1 `
+            + `(${hit.ink} on ${hit.ground}), floor ${floor}:1`);
+        }
+        if (pair.max !== undefined && hit.ratio - 1e-9 > pair.max) {
+          failures.push(`${key} · ${state}: ${pair.id} — ${hit.ratio.toFixed(2)}:1 `
+            + `(${hit.ink} on ${hit.ground}), ceiling ${pair.max}:1 — it is meant to recede, not compete`);
+        }
+      }
     }
+    await page.close();
   }
   await browser.close();
 
@@ -572,13 +571,9 @@ async function main() {
     `${JSON.stringify({ pairs: record, targets, overflow }, null, 1)}\n`);
 
   if (process.env.AUDIT_REPORT) {
-    const ids = [...new Set(Object.keys(record).map((k) => k.replace(/ · (light|dark)$/, '')))];
-    process.stdout.write(`\n${'pair'.padEnd(38)}${'light'.padStart(8)}${'dark'.padStart(8)}  floor\n`);
-    for (const id of ids) {
-      const l = record[`${id} · light`];
-      const d = record[`${id} · dark`];
-      process.stdout.write(`${id.padEnd(38)}${(l ? l.ratio.toFixed(2) : '—').padStart(8)}`
-        + `${(d ? d.ratio.toFixed(2) : '—').padStart(8)}  ${(l || d).floor}\n`);
+    process.stdout.write(`\n${'pair'.padEnd(38)}${'ratio'.padStart(8)}  floor\n`);
+    for (const [id, hit] of Object.entries(record)) {
+      process.stdout.write(`${id.padEnd(38)}${hit.ratio.toFixed(2).padStart(8)}  ${hit.floor}\n`);
     }
     process.stdout.write(`\nsmallest target per control class (minimum ${TARGET_MIN}x${TARGET_MIN}):\n`);
     for (const [k, v] of Object.entries(targets)) {
@@ -591,9 +586,9 @@ async function main() {
   }
 
   process.stdout.write(`\ncontrast + target + overflow guard — ${Object.keys(record).length} contrast `
-    + `measurements (${PAIRS.length} pairs x 2 themes), ${Object.keys(targets).length} target-size reads `
-    + `(${TARGETS.length} control classes x 2 themes x 2 sizes), ${Object.keys(overflow).length} `
-    + `state/size/theme overflow reads (${STATES.length} states x 2 themes x 2 sizes — term 9's "any `
+    + `measurements (${PAIRS.length} pairs), ${Object.keys(targets).length} target-size reads `
+    + `(${TARGETS.length} control classes x 2 sizes), ${Object.keys(overflow).length} `
+    + `state/size overflow reads (${STATES.length} states x 2 sizes — term 9's "any `
     + `state", derived from the fixture), ${failures.length} failure(s)\n`);
   for (const f of failures) process.stdout.write(`  x ${f}\n`);
   if (failures.length) process.exit(1);

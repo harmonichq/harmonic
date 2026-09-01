@@ -825,8 +825,8 @@ export function renderCanvas(el, echarts, opts) {
                    3-hourly vertical gridlines. It now clears the rule (distance
                    10 drops it into the band's own clear space) AND carries an
                    opaque pad in the panel's ground colour, so gridlines and
-                   dashes visibly break behind the text. The ground token is
-                   theme-aware, so this holds in light mode too. */
+                   dashes visibly break behind the text. The pad reads the
+                   ground token, so it follows the panel wherever it moves. */
                 label: {
                   show: true, position: 'insideStartTop', distance: 10,
                   color: colors.targetText, fontSize: 10, fontWeight: 600,

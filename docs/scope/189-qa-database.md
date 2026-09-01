@@ -94,4 +94,12 @@ analyzer→projection→parity→surface path.
 
 Review rounds on the #191 draft lock are instrumented here per triage 12b:
 
-- (rounds appended as they run)
+- Round 1 (Opus, cold, load-bearing): 5 blocking + 3 notes, all tagged
+  `authoring`. Blockers: branch-from-default contradicted the branch-only pin;
+  Expected diff vs Boundaries contradiction on this ledger; bare `--check`
+  undefined with no committed artifact (fail-open risk); no Done-when covering
+  whole-set expectation assertion (silent under-assertion must-prevent);
+  `prepare_ic_history_events` dropped from the retained five-interface surface.
+  Notes: CI drift step deferral unstated; suite-budget command ambiguous;
+  generator-consumes-catalog not in Done-when. All eight folded into lock v1
+  before posting; zero `injected`.

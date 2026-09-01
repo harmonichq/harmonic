@@ -52,6 +52,9 @@ jobs:
       # A live app revision may use only this manufactured local store. Keep its
       # logical SQLite contents tied to the committed generator before any
       # supervised no-fetch server run is authorized.
+      - name: Check the QA E2E synthetic database is current
+        timeout-minutes: 3
+        run: uv run python scripts/gen_qa_e2e_db.py --check
       - name: Check the revise E2E synthetic database is current
         run: uv run python scripts/gen_revise_e2e_db.py --check
       # #730: the Diagnose findings queue is a server-owned projection, and its

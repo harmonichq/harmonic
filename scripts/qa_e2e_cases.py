@@ -28,6 +28,9 @@ class QaExpectation:
     asserting_basal_slots: frozenset[str]
     behavioral_rows: frozenset[tuple[str, str, str]]
     finding_titles: frozenset[str]
+    history_row_ids: frozenset[str] = frozenset()
+    isf_rest_window_count: int = 0
+    ic_history_series_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -65,14 +68,61 @@ _BEHAVIORAL_ROWS = frozenset({
     ("correction_clusters", "2024-06-25 13:40:00", "clean"),
     ("meals", "2024-06-29 19:00:00", "no_data"),
 })
+# SYNTHETIC-FIXTURE: Exact analyzer output for the manufactured dense showcase.
+_SHOWCASE_BEHAVIORAL_ROWS = frozenset({
+    ("meals", "2024-06-01 08:00:00", "no_data"),
+    ("meals", "2024-06-02 08:00:00", "no_data"),
+    ("meals", "2024-06-03 08:00:00", "no_data"),
+    ("meals", "2024-06-04 08:00:00", "no_data"),
+    ("meals", "2024-06-05 08:00:00", "no_data"),
+    ("meals", "2024-06-06 08:00:00", "no_data"),
+    ("meals", "2024-06-07 08:00:00", "no_data"),
+    ("meals", "2024-06-08 08:00:00", "no_data"),
+    ("meals", "2024-06-09 08:00:00", "no_data"),
+    ("meals", "2024-06-10 08:00:00", "no_data"),
+    ("meals", "2024-06-11 08:00:00", "no_data"),
+    ("meals", "2024-06-12 08:00:00", "no_data"),
+    ("meals", "2024-06-13 08:00:00", "no_data"),
+    ("meals", "2024-06-14 08:00:00", "no_data"),
+    ("meals", "2024-06-15 08:00:00", "no_data"),
+    ("meals", "2024-06-16 08:00:00", "no_data"),
+    ("meals", "2024-06-17 08:00:00", "no_data"),
+    ("meals", "2024-06-18 08:00:00", "no_data"),
+    ("meals", "2024-06-19 08:00:00", "no_data"),
+    ("meals", "2024-06-20 08:00:00", "no_data"),
+    ("meals", "2024-06-21 08:00:00", "no_data"),
+    ("meals", "2024-06-22 08:00:00", "no_data"),
+    ("meals", "2024-06-23 08:00:00", "no_data"),
+    ("meals", "2024-06-24 08:00:00", "no_data"),
+    ("meals", "2024-06-25 08:00:00", "no_data"),
+    ("meals", "2024-06-25 12:00:00", "no_data"),
+    ("correction_clusters", "2024-06-25 13:40:00", "clean"),
+    ("highs", "2024-06-25 14:00:00", "fired"),
+    ("meals", "2024-06-26 08:00:00", "no_data"),
+    ("lows", "2024-06-26 13:55:00", "fired"),
+    ("highs", "2024-06-26 14:35:00", "near_miss"),
+    ("meals", "2024-06-27 08:00:00", "no_data"),
+    ("lows", "2024-06-27 12:10:00", "near_miss"),
+    ("meals", "2024-06-28 08:00:00", "no_data"),
+    ("lows", "2024-06-28 12:10:00", "clean"),
+    ("lows", "2024-06-28 16:10:00", "no_data"),
+    ("meals", "2024-06-29 08:00:00", "no_data"),
+    ("meals", "2024-06-29 19:00:00", "no_data"),
+    ("correction_clusters", "2024-06-29 20:00:00", "clean"),
+    ("lows", "2024-06-29 22:00:00", "fired"),
+    ("meals", "2024-06-30 08:00:00", "no_data"),
+})
 
 QA_CASES = (
     QaCase(
         _SHOWCASE,
         QaExpectation(
             frozenset({"03:00", "03:30"}),
-            _BEHAVIORAL_ROWS,
-            frozenset({"Basal 03:00 to 04:00 · lower", "Carb undercount", "Correction on active insulin", "Over-treated low"}),
+            _SHOWCASE_BEHAVIORAL_ROWS,
+            frozenset({"Basal 03:00 to 04:00 · lower", "Carb ratio All day. Past setting.", "Correction on active insulin", "Meal bolus fell short", "Over-treated low"}),
+            frozenset({"ich1_WzAsMTQ0MCwiMTIiXQ"}),
+            29,
+            14,
         ),
     ),
     QaCase(
@@ -97,7 +147,7 @@ QA_CASES = (
 def materialize_case(store, case: QaCase) -> None:
     """Write exactly one case's manufactured input rows into ``store``."""
     if case.name == _SHOWCASE:
-        _materialize_setting_recommendation(store)
+        _materialize_showcase_background(store)
         _materialize_behavioral_precedence(store)
     elif case.name == _SETTING_RECOMMENDATION:
         _materialize_setting_recommendation(store)
@@ -145,21 +195,69 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         for occurrence in family["occurrences"]
     )
     observed_titles = frozenset(row["title"] for row in execution.findings["rows"])
+    observed_history_ids = frozenset(
+        row["id"] for row in execution.findings["rows"]
+        if row["register"] == "history"
+    )
+    isf_row = next(row for row in execution.analysis["isf"])
+    observed_rest_windows = len(isf_row["evidence"]["rest_windows"])
+    observed_history_series = len(execution.ic_history["series"])
     assert observed_slots == case.expectation.asserting_basal_slots, observed_slots
     assert observed_rows == case.expectation.behavioral_rows, observed_rows
     assert observed_titles == case.expectation.finding_titles, observed_titles
+    assert observed_history_ids == case.expectation.history_row_ids, observed_history_ids
+    assert observed_rest_windows == case.expectation.isf_rest_window_count, observed_rest_windows
+    assert observed_history_series == case.expectation.ic_history_series_count, observed_history_series
 
 
-def _settings() -> PumpSettings:
+def _settings(carb_ratio: float = 10.0) -> PumpSettings:
     profile = ProfileSettings(
         idp=1,
         name="QA synthetic profile",
         dia_min=180,
         carb_entry=True,
         max_bolus=10.0,
-        segments=(ProfileSegment(0, 0.6, 40, 10.0, 110),),
+        segments=(ProfileSegment(0, 0.6, 40, carb_ratio, 110),),
     )
     return PumpSettings(active_idp=1, profiles=(profile,))
+
+
+def _materialize_showcase_background(store) -> None:
+    first = date(2024, 6, 1)
+    cgm, basal, bolus = [], [], []
+    for offset in range(30):
+        current = first + timedelta(days=offset)
+        for minute in range(0, 24 * 60, 5):
+            stamp = f"{current.isoformat()} {minute // 60:02d}:{minute % 60:02d}:00"
+            cgm.append({
+                "EventDateTime": stamp,
+                "Readings (CGM / BGM)": 120.0,
+                "Description": "Synthetic EGV",
+            })
+            basal.append({
+                "seq_num": 10_000 + offset * 288 + minute // 5,
+                "time": stamp,
+                "delivery_type": "algorithmDelivery",
+                "duration_mins": 5,
+                "basal_rate": 0.48 if 180 <= minute < 240 else 0.6,
+                "profile_basal_rate": 0.6,
+            })
+        ratio = 12.0 if 1 <= offset < 15 else 10.0
+        bolus.append({
+            "seq_num": 1_000 + offset,
+            "request_time": f"{current.isoformat()} 08:00:00",
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": 48.0 / ratio,
+            "requested_insulin": 48.0 / ratio,
+            "carbs": 48.0,
+            "carb_ratio": ratio,
+        })
+    store.upsert_cgm(cgm)
+    store.upsert_basal(basal)
+    store.upsert_bolus(bolus)
+    store.upsert_settings_snapshot("2024-06-02 00:00:00", _settings(12.0))
+    store.upsert_settings_snapshot("2024-06-16 00:00:00", _settings())
 
 
 def _materialize_setting_recommendation(store) -> None:

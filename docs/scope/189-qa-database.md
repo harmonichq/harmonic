@@ -118,3 +118,111 @@ Review rounds on the #191 draft lock are instrumented here per triage 12b:
   still arriving; both were derivable from the pinned source rather than
   unsettled decisions, and the posting call went to the operator with this
   disclosed.
+
+## Triage — #194 (showcase cut)
+
+Routed: interview mode (the operator ruling names the cut; what "migrate the
+stage-1 harness" means and whether the thin showcase era honors the ruling's
+intent are the operator's decisions).
+
+Measured this session from origin/main 3886c63, showcase-only generator output
+in scratch versus the committed revise-e2e store:
+
+| Store | Size | Rows | Queue | ISF rest windows | I:C runs / history | Exposures (lows/meals/highs/corr) |
+| --- | ---: | --- | --- | ---: | --- | --- |
+| qa-e2e showcase | 139 KB | 356 CGM, 12 basal, 4 bolus, 1 settings (2024-06-01..29) | 1 basal assert, 3 findings, 0 history | 0 | 2 / 0 | 5 / 2 / 2 / 2 |
+| revise-e2e | 4.2 MB | 28,800 CGM, 28,800 basal, 600 bolus, 2 settings (100 days) | 1 I:C assert, 1 finding, 1 history | 30 | 179 / 1 | 96 / 180 / 0 / 0 |
+
+Other grounding: `tests/test_gen_qa_e2e_db.py` asserts a bare `--check` exits 1
+while the artifact is absent (flips on commit); serving any committed store
+flips it to WAL and writes `-wal`, `-shm` and `<db>.derived.sqlite` beside it,
+none gitignored; the harness owns no database path (manufactured mode reads
+JSON fixtures, live mode proxies port 8765; its README names the old generator
+for restore); `scripts/check_public_links.py` pins the revise-e2e path for
+AGENTS.md/CLAUDE.md only.
+
+### Decisions (#194)
+
+Operator delegated all four calls (2026-09-01): "you make the calls, you get
+this shipped". Stated need: the committed store is too thin to render parts of
+the app, so real data has had to stand in.
+
+- Q1 = C: the showcase era gains a dense 30-day background (5-minute CGM and
+  basal, daily meals, overnight fasting, one earlier carb-ratio setting) so
+  every Diagnose story renders, before the offline app moves to it. Why: the
+  ruling's payoff is a fed harness; moving to the thin era hands the operator a
+  poorer app for ISF, I:C and clock-strip stories. Expectations stay
+  analyzer-produced, never hand-set. `inline`
+- Q2 = B: the harness migration is a launch entry that serves the qa-e2e store
+  on port 8765 plus the README naming it; no new harness source. `inline`
+- Q3 = B: that launch entry (and the documented command) serve a scratch copy,
+  so the tracked store never flips to WAL; sidecar and derived-store patterns
+  are gitignored as belt and braces. `inline`
+- Q4 = A: launch, harness README, the AGENTS.md permitted command and its
+  public-link pin move now; CI browser-gates server, case-file route test,
+  allowlist pin and retirement wait for #192/#193. `inline`
+
+### Open questions (#194)
+
+None. Frontier empty after round 1.
+
+## Triage instrumentation — #194
+
+Flat order. Traits: multiple deliverable artifacts fires once (catalog
+primitive + committed fixture + CI step + entrypoint docs), no live run (rendering
+inputs proven through the producers in tests), no lockstep copies (generator and
+fixture are checked by one tool). Nearby reviewer-memory slicing anchor (#191's
+flat call on the same catalog/generator shape) agrees flat.
+
+- Round 1 (Opus, cold, load-bearing): 3 blocking + 4 notes, all `authoring`.
+  Blockers: AGENTS.md "no revise-e2e path" Done-when contradicted the
+  browser-gates reproduction block that must keep naming what CI serves;
+  dense-background composition order unspecified against last-write-wins
+  upserts, and no non-empty floor on the regenerated expectation; the ISF
+  rest-window count named no source and the obvious producer raises outside
+  the API layer. Notes: shared `_BEHAVIORAL_ROWS` constant; baseline stated in
+  queue units not catalog units; stale drift-check count sentence; launch entry
+  missing `--token ''`. All seven reproduced against the tree and folded into
+  lock v1; zero `injected`.
+- Round 1b (same Opus reviewer, delta re-check): 2 blocking + 1 note, all
+  `injected` by round-1 fixes. Blockers: the composition-order paragraph
+  claimed timestamp-keyed upserts for every table (basal and bolus conflict on
+  `seq_num`, so a dense-first background numbered from 1 gets rewritten in
+  place); the "sole offline exception" sentence was left authorizing one serve
+  while the document now prints two. Note: the revise-e2e pin reason no longer
+  describes its citation. All reproduced and folded into lock v1.
+- Round 1c (same reviewer, delta re-check): 1 blocking + 1 note, both
+  `injected`. Blocker: disjoint `seq_num` ranges let a background delivery and
+  a coverage delivery coexist at one timestamp (basal/bolus have no `t`
+  uniqueness), the doubled-slot pathology; fixed by excluding coverage
+  timestamps from the background and asserting at most one bolus per instant.
+  Note: keep the mandatory `--no-fetch` statement through the sentence
+  rewrite. Injected count climbing (0 → 2 → 1) is the rewrite-clean signal;
+  the residual was one clause, so the order went to a fresh cold panel next
+  rather than a fourth same-reviewer pass.
+- Round 2 (Opus, fresh cold panel): 1 blocking `authoring` + 6 notes. Blocker:
+  `_BasalTimeline` resolves each minute to the last segment started at or
+  before it, so 5-minute background basal rows shadow the setting-recommendation
+  recipe's hour-long 03:00 segments and the inherited asserting slots cannot
+  survive; the composition rule and the "no instant carries two deliveries"
+  invariant were unsatisfiable together. Rewritten clean: the background owns
+  basal outright and carries the asserting night slot itself (task 4 amended,
+  re-pinned); the showcase overlays only the behavioral recipe. Notes folded:
+  pinned background span (window start derives from the store's last event),
+  ledger committed with the re-pin, gitignore comment must not name the
+  committed path, launch entry clears the scratch stem's sidecars, baseline
+  commands named, new expectation fields default.
+- Round 3 (Opus, fresh cold panel, cap): 3 blocking `authoring` + 5 notes.
+  Blockers: the migration checklist and task 6 said the public-link pin
+  "moves" while the order (correctly) adds it beside the revise-e2e pin, and
+  the checklist was outside the closed diff; the two new expectation fields had
+  no proof-of-failure clause (the risk contract's silently under-asserted run);
+  the history acceptance was satisfiable by a row id with an empty series.
+  Notes: `profile_settings` conflicts on `(captured_at, idp)` and both recipes
+  already collide there; "no empty day" was five minutes wrong; isolated-case
+  defaults unmeasured (measured: both cases publish 0 history ids, 0 rest
+  windows, 0 history series); stale AGENTS.md harness-test sentence; stale
+  proposal boundaries. All reproduced and folded; record amended and
+  re-pinned. Cap reached with blockers still arriving, every one derivable
+  from the pinned source rather than an unsettled decision; posted on the
+  operator's delegation with this disclosed.

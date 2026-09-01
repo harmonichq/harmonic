@@ -20,9 +20,18 @@ targets.
 | Browser support audit | `mockups/diagnose-event-comparison-support-audit.mjs` | Retain the audit; the workflow server lifecycle remains its app source. |
 | Browser replay | `frontend/verify-660-story-behavior.replay.mjs` | Retain the replay; the workflow server lifecycle remains its app source. |
 | Route-level fixture copy | `tests/test_finding_case_file_api.py` | Point the copied app database at QA E2E and retain its route-level assertions. |
-| Public-link path pin | `scripts/check_public_links.py` | Replace the allowed generated-runtime path and its generator explanation. |
-| Public-link pin test | `tests/test_check_public_links.py` | Replace the expected generated database path while retaining the agent-instructions-only policy. |
+| Public-link path pin | `scripts/check_public_links.py` | Add the QA path pin beside the revise-e2e one; the revise-e2e pin stays until the browser-gates server row moves, then is removed. |
+| Public-link pin test | `tests/test_check_public_links.py` | Assert the QA path pin beside the revise-e2e one while retaining the agent-instructions-only policy; drop the revise-e2e assertion with its pin. |
 | Public-tree binary policy test | `tests/test_check_public_allowlist.py` | Replace the exact local-only QA database path and retain the `.sqlite` denial. |
+
+## Showcase cut (#194, per the 2026-08-29 ruling)
+
+- [x] Move the permitted offline command, local launch entry, and harness restore
+      reference to the QA database through a scratch copy.
+- [x] Add the QA drift check beside the retained revise-E2E check.
+- [x] Add the QA public-link pin and its test beside the retained revise-E2E pin.
+- [ ] After #192/#193, move the browser-gates server and route-level fixture copy,
+      replace the public-tree binary policy pin, and complete every retirement.
 
 ## Non-executable historical references
 

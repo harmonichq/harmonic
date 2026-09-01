@@ -1,4 +1,4 @@
-"""CLI coverage for the future committed synthetic QA E2E database."""
+"""CLI coverage for the committed synthetic QA E2E database."""
 
 import pathlib
 import sqlite3
@@ -38,10 +38,10 @@ class QaE2EDatabaseGeneratorTest(unittest.TestCase):
             self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
 
 
-    def test_bare_check_fails_closed_when_the_future_artifact_is_absent(self):
+    def test_check_accepts_the_committed_database(self):
         result = run("--check")
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("mockups/qa-e2e.synthetic/harmonic.sqlite", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("current", result.stdout)
 
     def test_check_rejects_logical_database_drift(self):
         with tempfile.TemporaryDirectory() as tmp:

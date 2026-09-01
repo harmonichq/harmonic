@@ -52,9 +52,9 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs twelve **drift checks**, so a committed
+The backend job also runs thirteen **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator.
-Eleven are listed below; the twelfth is the evidence-canvas exploration's
+Twelve are listed below; the thirteenth is the evidence-canvas exploration's
 generator — a private design artifact the public tree excludes, so its
 `--check` command lives in `.github/workflows/ci.yml`:
 
@@ -63,6 +63,7 @@ uv run python scripts/gen_ic_block_fixtures.py --check
 uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
+uv run python scripts/gen_qa_e2e_db.py --check
 uv run python scripts/gen_revise_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_ic_history_event_fixtures.py --check
@@ -138,8 +139,10 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=moc
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-# In another terminal, first start the exact no-fetch server declared under
-# "The data boundary" below.
+# In another terminal, start the exact no-fetch server CI still runs:
+#   uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+# After reproducing the gates, restore that tracked store:
+#   uv run python scripts/gen_revise_e2e_db.py
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
@@ -179,13 +182,17 @@ your own database — never a published one, and never a live pull.**
   plain `Store.open` writes WAL sidecars and migration DDL into it.
 - **Never run normal `harmonic serve` or any `harmonic fetch` in automated
   work.** Normal startup fires a live OAuth login against the vendor (possibly
-  2FA) and pulls real data; it cannot be exercised headless. The sole offline
-  UI-design/replay exception is this exact command, whose `--no-fetch` flag is
-  mandatory and whose database is generated entirely by
-  `scripts/gen_revise_e2e_db.py`:
+  2FA) and pulls real data; it cannot be exercised headless. There are exactly
+  two permitted offline serves: the QA copy-then-serve command below for UI
+  design and replay, and the revise-E2E server printed in the browser-gates
+  reproduction block above. `--no-fetch` is mandatory for both. The QA database
+  is generated entirely by `scripts/gen_qa_e2e_db.py`:
 
   ```sh
-  uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+  scratch="${TMPDIR:-/tmp}/harmonic-qa-e2e.sqlite"
+  rm -f "$scratch" "$scratch-wal" "$scratch-shm" "$scratch.derived.sqlite"
+  cp mockups/qa-e2e.synthetic/harmonic.sqlite "$scratch"
+  uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
   ```
 
   Exercise every other model path through tests and fixtures instead.
@@ -197,9 +204,9 @@ your own database — never a published one, and never a live pull.**
   real Diagnose composition, so a chart revised there is the shipped chart.
   Live mode only forwards to a `serve` the operator already started, and is
   never used in automated work. One coupling to watch: the harness names app
-  API paths as hand-written strings that no test checks, so an endpoint
-  rename breaks a story silently in manufactured mode and loudly in live —
-  when an `/api/...` path changes, grep `harness/` in the same change.
+  API paths as hand-written strings; `frontend/harness-api-paths.test.js`
+  checks those paths, so an endpoint rename must update the harness in the
+  same change.
 - **Committed fixtures come from a committed generator**, and carry a
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.

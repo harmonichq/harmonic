@@ -64,6 +64,12 @@ into the work order).
   shared expansion state) — must-prevent violation as drafted; (5) front door
   underspecified: caller-owned data attributes, headers, empty states unnamed.
   All five reproduced against the tree before fixing.
+- Round 2 (same reviewer, BLOCKED, 1 blocker + 1 note, both `injected` by round-1
+  fixes): the moved ADR 79 guard as re-worded proved less than the original
+  (recount only committable at call sites once the count is a parameter); the
+  regenerated extract's export surface has hand-written out-of-allowlist
+  consumers. Both reproduced, fixed at 7bd1534.
+- Round 3 (same reviewer): COUNTERSIGNED.
 
 ## Spawned tasks
 

@@ -130,6 +130,69 @@ behavior-ledger replay against the offline app, per the decisions above.
 - The panel occupies roughly the top third of its rail and leaves the rest empty
   in all three shapes.
 
+### Direction — 2026-08-31, operator ruling on round 1
+
+- **The chart is a chart; the panel certifies the information.** (Q1) Operator:
+  the previous round treated chart and panel as separate items and the chart did
+  not know the panel existed, so it over-editorialised. The chart keeps what is
+  genuinely graphical -- the per-night bars, the confidence interval, the
+  programmed rate against the estimate, and the visible fact of whether the set
+  rate falls inside the interval. `inline`
+- **The chart's headline sentence comes out**, and **the more/less/exactly/excluded
+  tally comes out of the chart and into the panel**, where it becomes the entry to
+  a drill rather than a static count. `inline`
+- **The panel gains a per-night drill.** Clicking a night's row in the chart
+  selects it; the panel shows that night's detail and steps night by night. The
+  reader's question is "usually this slot needs 0.6 and that night it needed three
+  times that -- why", so the detail must carry enough context to start answering
+  it. `inline`
+- **Selecting a night draws that night's trace on Glucose by time of day.**
+  Operator, explicit. `inline`
+- **Restraint is a constraint, not a preference.** No proliferation of new charts
+  or visual elements; the screen already carries a lot of visualization. A small
+  confidence-interval graphic or a small surrounding-blocks graphic is admissible,
+  a new full chart is not. `inline`
+
+### The precedent this should reuse (found on the base, not invented)
+
+The **behavioral** branch already ships the whole interaction the direction
+describes, and the parameter branch simply never received the payload to drive
+it:
+
+- grouped roster rows, each a button with `aria-pressed`
+  (`renderCaseRoster` / `renderEventComparisonRoster`,
+  frontend/diagnose-workstation.js:590-655);
+- a selected-item detail block carrying date, verdict tag, and an `n of N`
+  position with the up/down key hints -- the night-by-night stepping
+  (`renderCaseSelection`, frontend/diagnose-workstation.js:656-696);
+- an "Evidence facts" list under it;
+- the selected occurrence's **server-owned glucose trace painted over the pooled
+  envelope** on Glucose by time of day (frontend/diagnose-workstation.js:2283-2302),
+  with "Clear trace" and "Open <date> in Day".
+
+So the frontend mechanism for stepping and for the trace exists and is proven.
+What does not exist is the served per-night detail for a settings parameter.
+
+### Served-data gap, measured
+
+`/api/diagnose/basal-night-evidence` serves per night only
+`{date, delivered_rate, programmed_rate, sign, t}`, plus `roster_count`,
+`directional_support_count` and a bare `excluded_night_count`. Confirmed against
+the running no-fetch app:
+
+- **no per-night glucose of any kind** -- not entry, not exit, not in-block mean;
+- **no per-night exclusion reason** (bare count only, as recorded above);
+- **no neighbouring-slot delivery** for a selected night;
+- **and Glucose by time of day carries no per-day trace at all.** Both it and
+  `/api/explore/time-of-day` are pooled percentile envelopes (bins with
+  median/p10/p25/p75/p90 over N captured days). The behavioral branch's trace
+  comes from its case file's own `detail.glucose`, not from the envelope feed.
+
+The direction therefore requires the spike foreseen by decision 1: a served
+per-night detail for a settings parameter, shaped like the case file's existing
+per-occurrence detail so the shipped renderers and the shipped trace path are
+reused rather than duplicated.
+
 ## Open questions
 
 - Q2 (carried, now answered by the lock) do the glucose items — average in-slot

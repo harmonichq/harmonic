@@ -80,6 +80,23 @@ into the work order).
   in api.py; the existing guard is the test. Proposal boundary and tasks amended,
   lock 2 posted over the re-pinned commit.
 
+### Q2 resolved (operator, lock-2 session)
+
+The verdict-list empty state ("No occurrences in this verdict.") is supported by
+the case-file contract but posed by no committed fixture, so UI Craft's
+before/after render for it cannot be captured. Operator accepted the evidence
+gap: omit that render, state the omission in the PR evidence, add no fixture (a
+zero-count case would regenerate the payload the frozen 146-story replay judges
+the change by). Its empty-before-header ordering is held by the roster module's
+node test. `inline`
+
+- Lock-2 review (Terra, routine route): round 1 BLOCKED, 2 `authoring` (no
+  generated-facts appendix; UI Craft render evidence absent) — both fixed; rounds
+  2–4 each 1 `injected` blocker narrowing the render matrix (empty states and
+  narrow viewport; capture driver is the replay's fixtures not SQLite; the
+  verdict empty state is supported, not unsupported) — the last reached the
+  three-panel cap and resolved as Q2 above.
+
 ## Spawned tasks
 
 - none yet

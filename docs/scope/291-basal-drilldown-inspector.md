@@ -193,6 +193,45 @@ per-night detail for a settings parameter, shaped like the case file's existing
 per-occurrence detail so the shipped renderers and the shipped trace path are
 reused rather than duplicated.
 
+### Round 2 ruling — 2026-08-31
+
+- **One component and one drill-down for every chart** (Q3). Operator: features may
+  be customised per chart where a chart needs it, but bespoke per-chart components
+  are refused, at least for now. This confirms and strengthens P40's existing
+  one-panel rule rather than introducing it. `inline`
+- **The other two charts are not restructured in this ticket.** Operator does not
+  want #291 bogged down in correction factor and carb ratio. The settled direction
+  is carried to them by comment on their existing open review tickets --
+  **#206** (correction-factor rest-windows chart) and **#207** (carb-ratio
+  meal-runs chart) -- rather than by new tickets. `-> comment on #206, #207`
+- **No component-retirement ticket is owed.** Verified against the tree: there is
+  no second panel component left to retire. `renderParamLevel` is the single
+  component and #291 rebuilds it in place; `renderParameterEvidenceDetail`, the
+  component that would have needed retiring, was already retired by #294. The
+  operator's proposed retirement ticket has no subject. `inline`
+- **The trace target is confirmed as the always-present Glucose by time of day
+  chart** (Q4) -- the same pooled-envelope canvas the behavioral branch already
+  paints its selected occurrence's trace onto. Same surface, proven mechanism.
+  `inline`
+- **The panel's per-night rows carry glucose aggregates, so divergence from the
+  norm is separable from the norm needing correction.** Operator's worked example:
+  the slot's typical in-block mean is 115 against a 110 target, three nights ran
+  130, and those three are a big-meal carry-over rather than a basal problem. That
+  requires the night's own in-block mean AND the block-level mean to compare it
+  against. `inline`
+
+### Premise correction, verified
+
+The operator recalled "a component that lets people tab between over / under /
+excluded, with table support". **No tabs exist anywhere in `frontend/`** -- zero
+matches for `role="tab"`, `tablist` or `aria-selected`. What ships is verdict
+GROUP HEADERS in a single scroll (`ev-group`, frontend/diagnose-workstation.js:594,
+625). The table half of the recollection is correct: `.ev-row` is a five-column
+grid -- `when`, `entry`, `arrow`, `worst`, `delta`
+(frontend/diagnose-workstation.css:1636-1657) -- so the behavioral roster already
+prints entry glucose, worst glucose and a delta per occurrence. That is the column
+vocabulary the basal night rows want, and it is precedent rather than new design.
+
 ## Open questions
 
 - Q2 (carried, now answered by the lock) do the glucose items — average in-slot

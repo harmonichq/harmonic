@@ -70,12 +70,12 @@
       `sh docs/scope/304-one-theme-probe.sh contracts` exiting 0.
 
 ## 3. Identity evidence and the record
-- [ ] Serve the ticket base and the revision from two worktrees on distinct
+- [x] Serve the ticket base and the revision from two worktrees on distinct
       ports with the same synthetic database, and record a computed-style
       identity diff of the Dark surface across the gated states and viewports
       under `openspec/changes/dark-only-theme/evidence/`, with the exact commands
       and their complete output.
-- [ ] Update `mockups/INDEX.md` with the one-theme revision and its evidence
+- [x] Update `mockups/INDEX.md` with the one-theme revision and its evidence
       path.
 - [ ] Tick each task above only when implemented and verified; run `/review` at
       Full depth and resolve every blocking finding before opening one pull

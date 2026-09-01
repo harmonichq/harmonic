@@ -906,13 +906,13 @@ test('the editorial furniture renders the Dark-only fills and strokes (#304)', (
     'the interval shadow renders at the inlined 26% mix');
 
   const signed = { ...basal, nights: [
-    { date: '2026-01-10', delivered_rate: .9, programmed_rate: .6, sign: 1, t: '2026-01-10T05:30:00' },
-    { date: '2026-01-11', delivered_rate: .4, programmed_rate: .6, sign: -1, t: '2026-01-11T05:30:00' },
+    { date: '2026-03-04', delivered_rate: .9, programmed_rate: .6, sign: 1, t: '2026-03-04T05:30:00' },
+    { date: '2026-03-05', delivered_rate: .4, programmed_rate: .6, sign: -1, t: '2026-03-05T05:30:00' },
   ] };
   const signedOption = entry.option('editorial', { data: signed });
   const cells = signedOption.series.find(({ id }) => id === 'nights');
-  const moreIndex = cells.data.findIndex((item) => item.name === '2026-01-10');
-  const lessIndex = cells.data.findIndex((item) => item.name === '2026-01-11');
+  const moreIndex = cells.data.findIndex((item) => item.name === '2026-03-04');
+  const lessIndex = cells.data.findIndex((item) => item.name === '2026-03-05');
   const moreFill = cells.renderItem({ ...params, dataIndex: moreIndex },
     { ...api, value: (dimension) => cells.data[moreIndex].value[dimension] }).children[0].style.fill;
   const lessFill = cells.renderItem({ ...params, dataIndex: lessIndex },

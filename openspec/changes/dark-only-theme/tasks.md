@@ -32,6 +32,12 @@
       single `:root` block and the shipped dark values, and confirm
       `sh docs/scope/304-one-theme-probe.sh app` exits 0.
 
+- [ ] Inline the Dark arm of every `colors.dark ? a : b` in
+      `frontend/diagnose-evidence-charts.js` and drop the `dark` flag it reads
+      from the document class, extending `frontend/diagnose-evidence-charts.test.js`
+      to pin the Dark constants; remove the `dataset.theme` read in
+      `frontend/verify-workstation.js` the same way.
+
 ## 2. Re-base the browser contracts to one theme
 
 - [ ] In `frontend/cockpit-shell.browser.test.mjs`,
@@ -48,18 +54,17 @@
       scenarios keep their identities on the one theme (it commits no captures).
 - [ ] Re-base `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
       and `harness.mjs` to one theme and regenerate their committed reports.
+- [ ] Retire cockpit S3 and S10 and Diagnose S117 in
+      `mockups/cockpit-shell.behavior.md` and
+      `mockups/finding-evidence-routing.behavior.md` with the ADR 304 sanction
+      quoted on each entry, in the same commit as their replay functions go, so
+      `frontend/diagnose-behavior-ledger-parity.test.js` stays green; amend the
+      cross-theme wording of S1 and S11 and every story that names both themes.
 - [ ] Run the fast gate and all ten browser legs locally against the no-fetch
       server; require zero failures and no skipped assertion, and
       `sh docs/scope/304-one-theme-probe.sh contracts` exiting 0.
 
-## 3. Ledgers, identity evidence, and the record
-
-- [ ] Retire cockpit S3 and S10 and Diagnose S117 in
-      `mockups/cockpit-shell.behavior.md` and
-      `mockups/finding-evidence-routing.behavior.md` with the ADR 304 sanction
-      quoted on each entry; amend the cross-theme wording of S1 and S11 and every
-      story that names both themes; keep
-      `frontend/diagnose-behavior-ledger-parity.test.js` green.
+## 3. Identity evidence and the record
 - [ ] Serve the ticket base and the revision from two worktrees on distinct
       ports with the same synthetic database, and record a computed-style
       identity diff of the Dark surface across the gated states and viewports

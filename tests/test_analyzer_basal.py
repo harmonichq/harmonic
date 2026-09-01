@@ -174,6 +174,111 @@ class AnalyzeBasalTest(unittest.TestCase):
         s = slot_at(analyze_basal(basal, cgm, [], []), "18:00")  # no data here
         self.assertEqual(s.evidence["points"], [])
 
+    def test_night_roster_carries_glucose_story_and_slot_norm(self):
+        slot_start = datetime(2026, 6, 1, 3, 0)
+        basal = [BasalEvent(
+            t=slot_start, delivery_type="algorithmDelivery", duration_mins=30,
+            basal_rate=0.8, profile_basal_rate=0.6,
+        )]
+        trace_start = slot_start - timedelta(minutes=60)
+        cgm = [
+            CgmReading(t=trace_start + timedelta(minutes=5 * i), bg=100 + i, type="EGV")
+            for i in range(19)
+        ]
+
+        slot = slot_at(analyze_basal(basal, cgm, [], []), "03:00")
+        roster_night = slot.evidence["night_roster"][0]
+
+        self.assertEqual(roster_night["glucose_mean"], 114.5)
+        self.assertEqual(roster_night["glucose_entry"], 112.0)
+        self.assertEqual(roster_night["glucose_exit"], 118.0)
+        self.assertEqual(roster_night["glucose_trace"], [
+            {
+                "t": (trace_start + timedelta(minutes=5 * i)).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+                "minute": float(-60 + 5 * i),
+                "bg": 100 + i,
+            }
+            for i in range(19)
+        ])
+        self.assertEqual(slot.evidence["roster_glucose_mean"], 114.5)
+
+    def test_last_slot_mean_stops_before_next_day_exit_reading(self):
+        slot_start = datetime(2026, 6, 1, 23, 30)
+        basal = [BasalEvent(
+            t=slot_start, delivery_type="algorithmDelivery", duration_mins=30,
+            basal_rate=0.8, profile_basal_rate=0.6,
+        )]
+        cgm = [
+            CgmReading(t=slot_start + timedelta(minutes=5 * i), bg=110 + i, type="EGV")
+            for i in range(7)
+        ]
+
+        roster_night = slot_at(
+            analyze_basal(basal, cgm, [], []), "23:30"
+        ).evidence["night_roster"][0]
+
+        self.assertEqual(roster_night["glucose_mean"], 112.5)
+        self.assertEqual(roster_night["glucose_exit"], 116.0)
+        self.assertEqual(roster_night["glucose_trace"][-1], {
+            "t": "2026-06-02 00:00:00", "minute": 30.0, "bg": 116,
+        })
+
+    def test_midnight_slot_trace_keeps_prior_day_lead_timestamp(self):
+        slot_start = datetime(2026, 6, 2)
+        basal = [BasalEvent(
+            t=slot_start, delivery_type="algorithmDelivery", duration_mins=30,
+            basal_rate=0.8, profile_basal_rate=0.6,
+        )]
+        trace_start = slot_start - timedelta(minutes=60)
+        cgm = [
+            CgmReading(t=trace_start + timedelta(minutes=5 * i), bg=120, type="EGV")
+            for i in range(19)
+        ]
+
+        trace = slot_at(
+            analyze_basal(basal, cgm, [], []), "00:00"
+        ).evidence["night_roster"][0]["glucose_trace"]
+
+        self.assertEqual(trace[0], {
+            "t": "2026-06-01 23:00:00", "minute": -60.0, "bg": 120,
+        })
+        self.assertEqual(trace[-1], {
+            "t": "2026-06-02 00:30:00", "minute": 30.0, "bg": 120,
+        })
+
+    def test_lead_only_night_stays_in_roster_but_not_glucose_norm(self):
+        covered_start = datetime(2026, 6, 1, 3, 0)
+        gappy_start = datetime(2026, 6, 2, 3, 0)
+        basal = [
+            BasalEvent(covered_start, "algorithmDelivery", 30, 0.8, 0.6),
+            BasalEvent(gappy_start, "algorithmDelivery", 30, 0.8, 0.6),
+        ]
+        cgm = [
+            *(CgmReading(covered_start + timedelta(minutes=minute), 120, "EGV")
+              for minute in (-25, -15, -5, 0)),
+            *(CgmReading(gappy_start + timedelta(minutes=minute), 130, "EGV")
+              for minute in (-25, -15, -5)),
+        ]
+
+        slot = slot_at(analyze_basal(basal, cgm, [], []), "03:00")
+        roster = slot.evidence["night_roster"]
+
+        self.assertEqual([night["date"] for night in roster], [
+            "2026-06-01", "2026-06-02",
+        ])
+        self.assertEqual(roster[0]["glucose_mean"], 120.0)
+        self.assertIsNone(roster[1]["glucose_mean"])
+        self.assertEqual(roster[1]["glucose_entry"], 130.0)
+        self.assertIsNone(roster[1]["glucose_exit"])
+        self.assertEqual(roster[1]["glucose_trace"], [
+            {"t": "2026-06-02 02:35:00", "minute": -25.0, "bg": 130},
+            {"t": "2026-06-02 02:45:00", "minute": -15.0, "bg": 130},
+            {"t": "2026-06-02 02:55:00", "minute": -5.0, "bg": 130},
+        ])
+        self.assertEqual(slot.evidence["roster_glucose_mean"], 120.0)
+
     def test_n_equals_one_slot_emits_no_direction(self):
         # #54/#56: one night (n=1) is far above current (0.8 vs 0.6) but the data
         # can't support a sign — the slot must NOT read as a raise/lower.

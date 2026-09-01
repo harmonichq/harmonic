@@ -51,7 +51,7 @@
   `delivered_rate`, `programmed_rate`, `sign`, `directional_support_count`,
   `excluded_night_count`, `asserts_move`, `safety_status`, `current`,
   `recommended` and `estimate` unchanged against the predecessor.
-- [ ] Keep the cache adapter's byte-parity test idempotent at the now-served
+- [x] Keep the cache adapter's byte-parity test idempotent at the now-served
   glucose layer: `tests/test_api.py`
   `CachePreWarmTest.test_worker_and_direct_fixed_endpoint_keep_identical_payload_bytes`
   overwrites the seeded `2026-06-01 00:00:00` reading from 120 to 110, which
@@ -63,4 +63,4 @@
   analysis. The comment above that upsert may be updated to say the write is
   deliberately value-identical and exists solely to advance the input revision.
   No other assertion in that test changes.
-- [ ] Fast gate and drift checks green.
+- [x] Fast gate and drift checks green.

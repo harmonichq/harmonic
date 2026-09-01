@@ -26,7 +26,7 @@ class QaExpectation:
     """The complete rows this case must publish, plus the rows it must omit."""
 
     asserting_basal_slots: frozenset[str]
-    behavioral_states: frozenset[str]
+    behavioral_rows: frozenset[tuple[str, str, str]]
     finding_titles: frozenset[str]
 
 
@@ -52,14 +52,27 @@ class QaExecution:
 _SHOWCASE = "showcase"
 _SETTING_RECOMMENDATION = "setting-recommendation"
 _BEHAVIORAL_PRECEDENCE = "behavioral-precedence"
+_BEHAVIORAL_ROWS = frozenset({
+    ("lows", "2024-06-27 12:10:00", "near_miss"),
+    ("correction_clusters", "2024-06-29 20:00:00", "clean"),
+    ("lows", "2024-06-26 13:55:00", "fired"),
+    ("lows", "2024-06-28 16:10:00", "no_data"),
+    ("highs", "2024-06-26 14:35:00", "near_miss"),
+    ("lows", "2024-06-28 12:10:00", "clean"),
+    ("highs", "2024-06-25 14:00:00", "outranked"),
+    ("lows", "2024-06-29 22:00:00", "fired"),
+    ("meals", "2024-06-25 12:00:00", "fired"),
+    ("correction_clusters", "2024-06-25 13:40:00", "clean"),
+    ("meals", "2024-06-29 19:00:00", "no_data"),
+})
 
 QA_CASES = (
     QaCase(
         _SHOWCASE,
         QaExpectation(
-            frozenset(),
-            frozenset({"fired", "outranked", "near_miss", "clean", "no_data"}),
-            frozenset({"Carb undercount", "Correction on active insulin", "Over-treated low"}),
+            frozenset({"03:00", "03:30"}),
+            _BEHAVIORAL_ROWS,
+            frozenset({"Basal 03:00 to 04:00 · lower", "Carb undercount", "Correction on active insulin", "Over-treated low"}),
         ),
     ),
     QaCase(
@@ -74,7 +87,7 @@ QA_CASES = (
         _BEHAVIORAL_PRECEDENCE,
         QaExpectation(
             frozenset(),
-            frozenset({"fired", "outranked", "near_miss", "clean", "no_data"}),
+            _BEHAVIORAL_ROWS,
             frozenset({"Carb undercount", "Correction on active insulin", "Over-treated low"}),
         ),
     ),
@@ -84,6 +97,7 @@ QA_CASES = (
 def materialize_case(store, case: QaCase) -> None:
     """Write exactly one case's manufactured input rows into ``store``."""
     if case.name == _SHOWCASE:
+        _materialize_setting_recommendation(store)
         _materialize_behavioral_precedence(store)
     elif case.name == _SETTING_RECOMMENDATION:
         _materialize_setting_recommendation(store)
@@ -125,14 +139,14 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
     observed_slots = frozenset(
         row["label"] for row in execution.analysis["basal"] if row["asserts_move"]
     )
-    observed_states = frozenset(
-        occurrence["state"]
-        for family in execution.exposures["exposures"].values()
+    observed_rows = frozenset(
+        (family_name, occurrence["t"], occurrence["state"])
+        for family_name, family in execution.exposures["exposures"].items()
         for occurrence in family["occurrences"]
     )
     observed_titles = frozenset(row["title"] for row in execution.findings["rows"])
     assert observed_slots == case.expectation.asserting_basal_slots, observed_slots
-    assert observed_states == case.expectation.behavioral_states, observed_states
+    assert observed_rows == case.expectation.behavioral_rows, observed_rows
     assert observed_titles == case.expectation.finding_titles, observed_titles
 
 

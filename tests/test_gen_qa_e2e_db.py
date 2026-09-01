@@ -42,3 +42,13 @@ class QaE2EDatabaseGeneratorTest(unittest.TestCase):
         result = run("--check")
         self.assertEqual(result.returncode, 1)
         self.assertIn("mockups/qa-e2e.synthetic/harmonic.sqlite", result.stdout)
+
+    def test_check_rejects_logical_database_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = pathlib.Path(tmp) / "harmonic.sqlite"
+            self.assertEqual(run("--out", str(output)).returncode, 0)
+            with sqlite3.connect(output) as conn:
+                conn.execute("UPDATE cgm_readings SET bg = bg + 1 WHERE t = (SELECT MIN(t) FROM cgm_readings)")
+            checked = run("--check", "--out", str(output))
+            self.assertEqual(checked.returncode, 1)
+            self.assertIn("differ", checked.stdout)

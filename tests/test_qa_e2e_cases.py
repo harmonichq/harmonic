@@ -41,3 +41,15 @@ class QaE2ECasesTest(unittest.TestCase):
             with Store.open_readonly(database.name) as store:
                 with self.assertRaises(AssertionError):
                     assert_expectation(perturbed, execute_case(store))
+
+        behavioral = next(case for case in QA_CASES if case.name == "behavioral-precedence")
+        perturbed_behavioral = replace(
+            behavioral,
+            expectation=replace(behavioral.expectation, behavioral_rows=frozenset()),
+        )
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, behavioral)
+            with Store.open_readonly(database.name) as store:
+                with self.assertRaises(AssertionError):
+                    assert_expectation(perturbed_behavioral, execute_case(store))

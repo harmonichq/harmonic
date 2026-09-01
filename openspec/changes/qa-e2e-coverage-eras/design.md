@@ -4,12 +4,10 @@
 
 The archived [ADR 190](../archive/2026-09-01-qa-e2e-database/design.md#adr-190--one-showcase-first-qa-database-with-isolated-coverage-cases)
 remains authoritative for the one committed database, isolated temporary case
-stores, fixed production clock, synthetic provenance, showcase ordering, and
-strictly-greater-than-30-day era separation. The archived
+stores, fixed production clock, synthetic provenance, and showcase ordering. The archived
 [ADR 194](../archive/2026-09-01-qa-e2e-database/design.md#adr-194--dense-showcase-background-served-from-a-scratch-copy)
-remains authoritative for the dense showcase and scratch-copy serve. This change
-records no new ADR: the delivery rulings select work already allowed by those
-decisions.
+remains authoritative for the dense showcase and scratch-copy serve. ADR 192
+below closes the newly demonstrated cross-era history and storage-key hazards.
 
 ## Existing seam and required extension
 
@@ -19,8 +17,9 @@ recipes. Settings snapshots are placed by each recipe through Store APIs; the
 showcase now uses distinct instants for the behavioral snapshot and the earlier
 and current I:C snapshots. `execute_case` runs the production `analyze`, exposure,
 scenario, findings-projection, and I:C-history producers. `assert_expectation`
-compares six observed collections as exact whole sets or counts, and the tests
-prove that a perturbed expectation fails.
+compares four observed collections as exact whole sets and currently compares ISF
+rest windows and I:C history series only by integer count; the tests prove that a
+perturbed expectation fails.
 
 #192 extends that seam rather than creating a second fixture language. A coverage
 case still materializes into its own temporary store. Its expectation additionally
@@ -29,6 +28,12 @@ unscoped whole-day projection and any scoped clock query needed to expose `held`
 or `blind`; the analyzer-stamped support counts; and `asserts_move`. Expectations
 observe analyzer output only. Recipes never accept or write a verdict, status,
 direction, held reason, register, queue row, or ranking.
+
+Task 1 replaces `isf_rest_window_count` and `ic_history_series_count` with keyed
+exact sets. An ISF rest-window key is `(date, start, end)` and an I:C history
+series key is `run_id`; the expected value is the complete row payload for that
+key. Equality covers both keys and payloads, so a missing manifest row cannot pass
+merely because another row preserved the count.
 
 ## Era condition matrix
 
@@ -53,22 +58,58 @@ the condition into a fixture.
 | I:C capped raise / lower | The same four eligibility conditions hold and the half-gap exceeds the ±20% bound, so the recommendation stops at that bound (`analyzers/ic.py:1449-1464`). | Exact `assert` row and exact bounded recommendation. |
 | I:C held | A numeric, band-excluding block names a move but the regime bracket straddles programmed, a meal-owned low gates tightening, or a pre-empted low gates tightening; `held_reason` is analyzer-owned (`analyzers/ic.py:2448-2501,2524-2526,2633-2643`). | Exact `held` row, `asserts_move=false`, and no global assert row. |
 | I:C quiet / collecting | A block is collecting, below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise has neither `asserts_move` nor `held_reason` (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run below-floor case and assert the eight-run threshold separately from the display minimum. | Exact analyzer block and explicit absence from scoped and global queue rows (`findings_projection.py:369-408`). |
-| I:C history register | A snapshot-proven past block identity differs from the current identity, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active `history` row and exact nonempty projected history series; current identities and aged-out/unavailable histories are absent from the active queue. |
+| I:C history register | A snapshot-proven past block identity differs from the current identity, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active `history` row and exact keyed projected history series; current identities and aged-out/unavailable histories are absent from the active queue. |
+
+The three existing cases (`showcase`, `setting-recommendation`, and
+`behavioral-precedence`) are re-keyed onto the per-era allocation scheme below.
+Their analyzer and projection expectations remain byte-identical.
+
+## ADR 192 — Contain cross-era history and storage identities
+
+**Decision.** A coverage recipe SHALL NOT combine carb-ratio-varying settings
+snapshots with carb-bearing boluses except in the designated I:C recipes. Those
+I:C recipes may exercise the existing showcase history identity, but SHALL NOT
+mint an additional identity in the concatenated database. After concatenation,
+the generator compares the showcase projection's complete I:C history identity
+set with the isolated showcase case's expected `history_row_ids` and fails closed
+on any additional or missing identity. This is required because history assembly
+indexes every run and settings snapshot before applying the current-run window
+(`analyzers/ic.py:2209-2245`); time separation alone cannot isolate that register.
+
+Each era also owns a disjoint `seq_num` block in every seq-keyed source table.
+The catalog computes the block from `era index × stride`; each table's stride is
+larger than the maximum dense-background allocation for one era. Recipes allocate
+inside their block rather than carrying reusable local keys. The generator test
+compares the concatenated store's per-table row counts with the sum of rows each
+era wrote. This catches the silent `ON CONFLICT (seq_num) DO UPDATE` merge for
+which Store reports the submitted count rather than the inserted count
+(`store.py:601-608`).
+
+The executable feasibility spike and its complete output are recorded in
+`generated-facts.md`; it proves the existing shifted case can precede showcase
+with additive rows, unchanged showcase I:C identities, no key overlap, and all
+four provisional budget measurements below their limits.
 
 ## Concatenation and isolation
 
 The generator appends every #192 coverage era before the existing showcase era.
 After all writes it queries the materialized rows and fails unless the showcase is
-last in basal/CGM event time and settings-snapshot order, every earlier snapshot
-precedes every showcase snapshot, and every earlier era's last basal/CGM event is
-strictly more than 30 days before the showcase's first. Those are enforced facts,
-not timestamp-offset comments. The same catalog case remains independently
-runnable and contains only its own source rows and snapshots.
+last in basal/CGM/bolus event time and settings-snapshot order, every earlier
+snapshot precedes every showcase snapshot, and every earlier era's latest
+basal/CGM/bolus event is strictly more than `ic.BLOCK_WINDOW_DAYS` plus
+`analyze._BOLUS_LEADIN` before the showcase's earliest event. The generator
+imports `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` and compares with
+`timedelta(days=BLOCK_WINDOW_DAYS) + _BOLUS_LEADIN`; it never repeats 90 as a
+fixture literal. Those are enforced facts, not timestamp-offset comments. The
+same catalog case remains independently runnable and contains only its own source
+rows and snapshots.
 
 Production composition stays unchanged: `window_days=30`, `now` is derived from
-the latest basal/CGM event in each store, I:C blocks retain their fixed 90-day
-analysis span, and IOB remains bolus-only reconstruction. Every manufactured date
-is earlier than 2025-07-01.
+the latest basal/CGM event in each store, and IOB remains bolus-only
+reconstruction. The I:C block lane independently reads the trailing
+`BLOCK_WINDOW_DAYS` plus one `_BOLUS_LEADIN` day (`analyze.py:89,413-422`), which
+is why era separation exceeds that combined span rather than the 30-day
+projection window. Every manufactured date is earlier than 2025-07-01.
 
 ## Exactness and failure evidence
 

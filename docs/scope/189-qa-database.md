@@ -249,3 +249,4 @@ Review rounds on the #192 draft lock (the coordinator fills this table):
 
 | round | blockers | authoring | injected |
 | --- | ---: | ---: | ---: |
+| 1 | 7 | 7 | 0 |

@@ -7,6 +7,8 @@ events and settings into an isolated temporary store and SHALL run the productio
 analysis, exposure, scenario, findings-projection, and I:C-history composition.
 The case SHALL compare exact whole sets of expected analyzer rows and queue rows,
 including explicit absences, support-floor counts, and `asserts_move` values.
+ISF rest windows and I:C history series SHALL be represented and compared as
+keyed exact sets rather than integer counts.
 Fixture inputs SHALL NOT set `asserts_move`, safety status, direction, held reason,
 register, queue row, priority, or attribution. A case whose expected analyzer row,
 queue row or absence, support count, or `asserts_move` value is perturbed SHALL
@@ -40,10 +42,13 @@ fail.
 ### Requirement: The committed QA database preserves showcase ownership while adding eras
 
 The QA generator SHALL append coverage eras before the showcase era and SHALL
-verify from materialized rows that the showcase is newest in basal/CGM event time
+verify from materialized rows that the showcase is newest in basal/CGM/bolus event time
 and settings-snapshot order, every coverage-era settings snapshot precedes every
-showcase snapshot, and each coverage era's latest basal/CGM event is strictly more
-than 30 days before the showcase's earliest basal/CGM event. Every catalog case
+showcase snapshot, and each coverage era's latest basal/CGM/bolus event is
+strictly more than `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` plus
+`ciq_autotune.analyze._BOLUS_LEADIN` before the showcase's earliest event. The
+generator SHALL import `BLOCK_WINDOW_DAYS` rather than duplicate its numeric
+value. Every catalog case
 SHALL remain independently runnable with only its own rows and settings snapshots.
 The generated SQLite artifact SHALL retain its synthetic provenance stamp and
 logical `--check` drift comparison.
@@ -54,6 +59,24 @@ logical `--check` drift comparison.
   database
 - **THEN** the production 30-day projection derives its cutoff from the showcase's
   latest event and no earlier era or settings snapshot enters that projection
+- **AND** no earlier bolus enters the fixed I:C block lane, including its one-day
+  bolus lead-in
+
+#### Scenario: Earlier eras cannot mint showcase history identities
+
+- **GIVEN** coverage recipes combine carb-ratio-varying snapshots and carb-bearing
+  boluses only inside designated I:C recipes
+- **WHEN** all eras are concatenated ahead of showcase
+- **THEN** the complete I:C history identity set equals the isolated showcase
+  expectation and the generator fails on any additional or missing identity
+
+#### Scenario: Era storage keys cannot silently merge
+
+- **GIVEN** every era owns one disjoint `era index × stride` `seq_num` block per
+  seq-keyed table, with a stride larger than one dense background
+- **WHEN** all eras are concatenated
+- **THEN** every table's stored row count equals the sum of rows written by its
+  individual recipes, and any collision fails the generator test
 
 #### Scenario: A case stays isolated from concatenation
 

@@ -29,7 +29,8 @@
       `scripts/screenshots.local.test.mjs` so it still fails closed on a wrapper
       that reintroduces theme switching.
 - [ ] Re-point `DESIGN.md`'s token-home paragraph and palette section at the
-      single `:root` block and the shipped dark values.
+      single `:root` block and the shipped dark values, and confirm
+      `sh docs/scope/304-one-theme-probe.sh app` exits 0.
 
 ## 2. Re-base the browser contracts to one theme
 
@@ -44,12 +45,12 @@
       `frontend/diagnose-event-comparison-behavior.replay.mjs`, and
       `frontend/verify-660-story-behavior.replay.mjs`.
 - [ ] Re-base `mockups/diagnose-event-comparison-support-audit.mjs` so its five
-      scenarios keep their identities on the one theme, and regenerate its
-      committed captures.
+      scenarios keep their identities on the one theme (it commits no captures).
 - [ ] Re-base `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
       and `harness.mjs` to one theme and regenerate their committed reports.
 - [ ] Run the fast gate and all ten browser legs locally against the no-fetch
-      server; require zero failures and no skipped assertion.
+      server; require zero failures and no skipped assertion, and
+      `sh docs/scope/304-one-theme-probe.sh contracts` exiting 0.
 
 ## 3. Ledgers, identity evidence, and the record
 

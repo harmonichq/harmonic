@@ -103,3 +103,8 @@ Review rounds on the #191 draft lock are instrumented here per triage 12b:
   Notes: CI drift step deferral unstated; suite-budget command ambiguous;
   generator-consumes-catalog not in Done-when. All eight folded into lock v1
   before posting; zero `injected`.
+- Round 2 (Opus, cold): 1 blocking + 1 note, both `authoring` (the round-1
+  fixes injected nothing). Blocker: the PR-gating contamination scan reads the
+  new scripts' prose and the order neither ran it nor allowlisted
+  `scripts/public_scan_config.txt` for the dose-ratio ack. Note: pin the
+  `from scripts.…` namespace-package import form. Both folded into lock v1.

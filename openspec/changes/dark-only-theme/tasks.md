@@ -17,6 +17,8 @@
       Light reached. Where a collapsed rule loses the specificity that let it
       outrank `diagnose-workstation.css`'s depth idiom, restore the order by
       selector, never by `!important`.
+      Re-base the stylesheet byte pins in `frontend/index.test.js` to the
+      collapsed base selectors and drop its two Light-preservation assertions.
 - [ ] Retire the harness theme select and `theme` URL parameter in
       `harness/index.html` and `harness/main.js`, and confirm the harness still
       resolves the app tokens.

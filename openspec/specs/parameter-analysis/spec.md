@@ -35,6 +35,7 @@ regime spans several segments and wraps midnight.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: ISF is the slope of glucose change against insulin that acted
 
 The system SHALL satisfy the following:
@@ -52,6 +53,7 @@ before the fit.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The fasting window is a detected rest window with no carbs in play
 
 The system SHALL satisfy the following:
@@ -173,6 +175,7 @@ are too aggressive; it does not identify a trustworthy replacement.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: One predicate decides whether an ISF row may stage
 
 The system SHALL satisfy the following:
@@ -270,6 +273,7 @@ plenty to say.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Retired I:C history requires proved schedule membership
 
 The system SHALL satisfy the following:
@@ -402,6 +406,7 @@ from there rather than restated.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Meals that cannot be attributed leave the numeric pool without leaving the record
 
 The system SHALL satisfy the following:
@@ -419,6 +424,7 @@ with the reason it is excluded and how many identifiable meals are still needed.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The analysis names what it refuses to assert
 
 The system SHALL satisfy the following:
@@ -449,6 +455,7 @@ Several silences are deliberate and must survive refactoring:
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The measured ISF feeds the I:C ledger's glucose-travel term
 
 The system SHALL satisfy the following:
@@ -465,6 +472,7 @@ alone rather than folding a mixture into one number.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: A candidate I:C estimator is admitted by evidence, never by plausibility
 
 The system SHALL satisfy the following:
@@ -483,6 +491,7 @@ incumbent that fails a bar means the bar is wrong.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The entry bar recovers known ratios and stays silent on placebo
 
 The system SHALL satisfy the following:
@@ -524,6 +533,7 @@ cannot pass is a defect in the placebo, never grounds for loosening the bar.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The real-data bar measures agreement, not truth, and refuses what it cannot judge
 
 The system SHALL satisfy the following:
@@ -552,6 +562,7 @@ a legitimate outcome that names why, never a score.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Replay output carries counts, deltas, and verdicts only
 
 The system SHALL satisfy the following:
@@ -569,3 +580,61 @@ prints its arguments nor one that raises carrying them can leak through.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+### Requirement: The basal analyzer stamps per-night glucose evidence on the night roster
+
+For each night in a basal slot's night roster, the analyzer SHALL stamp, beside
+the existing rate facts: `glucose_mean`, the mean of every CGM reading in the
+half-open window [slot start, slot end); `glucose_entry` and `glucose_exit`,
+the reading nearest each window boundary within the analyzer's staleness cap,
+null when none qualifies; and `glucose_trace`, the night's CGM readings from 60
+minutes before slot start through slot end as a sparse list of `{t, minute,
+bg}` points — `t` the absolute wall-clock timestamp, `minute` relative to slot
+start and negative across the lead, the case file's `detail.glucose` fields —
+where a lead point before midnight carries the prior date in `t`. Per
+slot, the analyzer SHALL stamp `roster_glucose_mean` unconditionally: the mean
+of the per-night `glucose_mean` values, each roster night counting once, nights
+with a null mean excluded, and null when no night has a mean — an empty roster
+included, which SHALL keep serving a complete payload. A roster night without usable in-window CGM SHALL serve null glucose
+facts and SHALL remain in the roster. The projection SHALL copy these facts
+verbatim, SHALL fail closed when `roster_glucose_mean` is absent from a payload
+that carries a night roster, and SHALL derive nothing; no safety verdict,
+membership decision, or support floor SHALL change on account of glucose
+evidence.
+
+#### Scenario: A night's divergence is readable against the roster norm
+
+- **WHEN** the night-evidence payload serves a slot whose roster nights carry
+  in-window glucose means and the slot carries its roster-level mean
+- **THEN** each night's mean and the roster norm are in the same units, the
+  norm counting every night once
+
+#### Scenario: A gappy night serves a null mean without leaving the roster
+
+- **GIVEN** a roster night whose CGM sits only in the staleness-capped lead,
+  with no reading inside the slot window itself
+- **WHEN** the analyzer stamps glucose evidence
+- **THEN** that night's `glucose_mean` is null and `roster_glucose_mean`
+  excludes it
+- **AND** `glucose_entry`, `glucose_exit` and `glucose_trace` follow their own
+  rules — served where a qualifying reading exists, null or empty where none
+  does
+- **AND** the night remains in the roster and in every count it appears in
+  today
+
+#### Scenario: The last slot of the day reaches midnight
+
+- **GIVEN** a roster night on the 23:30 slot
+- **WHEN** the analyzer stamps glucose evidence
+- **THEN** the window is [23:30, next-day 00:00): `glucose_mean` covers those
+  readings and `glucose_exit` may resolve to the next day's 00:00 reading
+- **AND** no slot's window is empty by construction
+
+#### Scenario: The trace is drawable by the shipped trace path
+
+- **WHEN** a roster night carries its CGM trace
+- **THEN** the trace is a sparse list of `{t, minute, bg}` points — absolute
+  wall-clock `t`, `minute` relative to slot start — spanning from 60 minutes
+  before slot start through slot end
+- **AND** for the midnight-adjacent slot, lead points carry the prior date in
+  `t` rather than an inferred one

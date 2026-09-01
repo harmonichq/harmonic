@@ -135,12 +135,10 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
     const css = getComputedStyle(document.documentElement);
     const v = n => css.getPropertyValue(n).trim();
     const mix = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
-    // the dark ground eats a 20% tint — the trial-higher tint steps up so the
-    // ribbon's two directions stay tellable apart
     return {
       muted: v('--mk-muted'), line: v('--mk-line'), accent: v('--mk-primary'),
       manual: v('--ck-manual') || '#93701B',
-      accentSoft: mix(v('--mk-primary'), 32), mutedSoft: mix(v('--mk-muted'), 18),
+      accentSoft: mix(v('--mk-primary'), 20), mutedSoft: mix(v('--mk-muted'), 20),
       // the Diagnose workstation's target-band tokens, same mixes
       targetFill: mix(v('--mk-ok'), 8),
       targetEdge: mix(v('--mk-ok'), 55),

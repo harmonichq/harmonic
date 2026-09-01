@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the future committed synthetic QA E2E SQLite store."""
+"""Generate the committed synthetic QA E2E SQLite store."""
 
 from __future__ import annotations
 

@@ -129,13 +129,20 @@ PINNED = {
         " those records sit in.",
     ("CLAUDE.md", "openspec/changes/"):
         "the same line, reached through the CLAUDE.md symlink.",
-    ("AGENTS.md", "mockups/revise-e2e.synthetic/harmonic.sqlite"):
+    ("AGENTS.md", "mockups/qa-e2e.synthetic/harmonic.sqlite"):
         "the exact offline UI-design command names a generated runtime output."
+        " The public tree deliberately excludes the committed binary, but ships"
+        " scripts/gen_qa_e2e_db.py so the same path can be manufactured from"
+        " its fixed seed before the command runs.",
+    ("CLAUDE.md", "mockups/qa-e2e.synthetic/harmonic.sqlite"):
+        "the same safe-start declaration, reached through the CLAUDE.md symlink.",
+    ("AGENTS.md", "mockups/revise-e2e.synthetic/harmonic.sqlite"):
+        "the browser-gates reproduction block names a generated runtime output."
         " The public tree deliberately excludes the committed binary, but ships"
         " scripts/gen_revise_e2e_db.py so the same path can be manufactured from"
         " its fixed seed before the command runs.",
     ("CLAUDE.md", "mockups/revise-e2e.synthetic/harmonic.sqlite"):
-        "the same safe-start declaration, reached through the CLAUDE.md symlink.",
+        "the same browser-gates declaration, reached through the CLAUDE.md symlink.",
     (".gitignore", "mockups/sweep/"):
         "a comment explaining the ignore rule directly above it. Behaviour-sweep"
         " renders are excluded from the public tree by design, so the directory"

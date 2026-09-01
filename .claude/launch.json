@@ -21,14 +21,10 @@
     },
     {
       "name": "harmonic-nofetch",
-      "runtimeExecutable": "uv",
+      "runtimeExecutable": "sh",
       "runtimeArgs": [
-        "run",
-        "harmonic",
-        "serve",
-        "--no-fetch",
-        "--db",
-        "mockups/revise-e2e.synthetic/harmonic.sqlite"
+        "-c",
+        "scratch=\"${TMPDIR:-/tmp}/harmonic-qa-e2e.sqlite\"; rm -f \"$scratch\" \"$scratch-wal\" \"$scratch-shm\" \"$scratch.derived.sqlite\"; cp mockups/qa-e2e.synthetic/harmonic.sqlite \"$scratch\"; exec uv run harmonic serve --no-fetch --token '' --db \"$scratch\" --port 8765"
       ],
       "port": 8765
     }

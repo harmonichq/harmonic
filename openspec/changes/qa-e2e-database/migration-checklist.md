@@ -26,12 +26,12 @@ targets.
 
 ## Showcase cut (#194, per the 2026-08-29 ruling)
 
-Rows this cut moves: permitted offline command (AGENTS.md / CLAUDE.md), local
-launch entry, and the harness README's restore reference; it adds the QA
-public-link pin and its pin assertion beside the revise-e2e ones, which stay
-while the browser-gates reproduction block still names the old store. Rows that wait for #192/#193: CI drift-check replacement
-(this cut adds the QA check beside the old one), browser-gates server, route-
-level fixture copy, public-tree binary policy test, and every retirement.
+- [x] Move the permitted offline command, local launch entry, and harness restore
+      reference to the QA database through a scratch copy.
+- [x] Add the QA drift check beside the retained revise-E2E check.
+- [x] Add the QA public-link pin and its test beside the retained revise-E2E pin.
+- [ ] After #192/#193, move the browser-gates server and route-level fixture copy,
+      replace the public-tree binary policy pin, and complete every retirement.
 
 ## Non-executable historical references
 

@@ -108,3 +108,13 @@ Review rounds on the #191 draft lock are instrumented here per triage 12b:
   new scripts' prose and the order neither ran it nor allowlisted
   `scripts/public_scan_config.txt` for the dose-ratio ack. Note: pin the
   `from scripts.…` namespace-package import form. Both folded into lock v1.
+- Round 3 (Opus, cold, panel cap): 2 blocking + 2 notes, all `authoring`.
+  Blockers: the generator's default artifact content was undefined (resolved
+  from ADR 190 — showcase case is the sole era; coverage cases stay in
+  temporary stores); the public tree copies git-tracked files only, so an
+  unstaged scan false-greens. Notes: rule-4 timestamp-series remedy is the
+  `# SYNTHETIC-FIXTURE:` marker, not the dose-ratio baseline; the scan reads
+  tests' prose too. All four folded into lock v1. Cap reached with blockers
+  still arriving; both were derivable from the pinned source rather than
+  unsettled decisions, and the posting call went to the operator with this
+  disclosed.

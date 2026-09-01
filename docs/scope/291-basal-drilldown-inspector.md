@@ -232,6 +232,47 @@ grid -- `when`, `entry`, `arrow`, `worst`, `delta`
 prints entry glucose, worst glucose and a delta per occurrence. That is the column
 vocabulary the basal night rows want, and it is precedent rather than new design.
 
+### Round 3 ruling — 2026-08-31, and the resulting slicing
+
+- **The convergence goes first, as its own ticket, and #291 waits on it.**
+  Operator: "if it means we have to pause here, start a new ticket for that work,
+  and then apply the customizations in this ticket once that has landed, that's
+  fine… I don't really care how we slice it." Operator handed the slicing call to
+  triage and it was taken on the operator's own proposed shape, which is better
+  than the recommendation it replaced: convergence-first avoids rebuilding the
+  settings panel twice, which convergence-after would have required (the #53
+  anchor — replacing in-flight scope is work of its own). `→ issue: filed as #298`
+- **The extraction has an unusually crisp gate.** A pure extraction is proven by
+  the frozen ledger replaying 146 of 146 with ZERO story amendments. An amendment
+  means a behavior moved and it stopped being an extraction, so the amendment
+  blocks rather than gets recorded. `inline`
+- **The per-night glucose payload belongs in `analyze_basal`, not the projection.**
+  `ciq_autotune/basal_night_evidence.py` opens by declaring it only copies facts
+  stamped by the analyzer and `"nights"` is `night_roster` passed through verbatim,
+  so the analyzer stamps the new facts and the projection stays a pass-through. It
+  is backend-only and #298 is frontend-only, so the two run in parallel.
+  `→ issue: filed as #299`
+- **Q6 was decided by triage under a stated assumption, not by the operator.**
+  #299 is filed for the night's in-block mean, its entry and exit glucose, that
+  night's trace, and the slot-level mean to read them against — recommendation B
+  of round 3. The operator was fatigued and handed over the slicing; this is the
+  cheapest decision to correct, by comment on #299. `inline`
+- **#206 and #207 are NOT commented yet.** The settled direction reaches the
+  correction-factor and carb-ratio chart tickets once #291's design locks; a
+  half-settled direction commented now would have to be corrected there later.
+  Held deliberately. `→ comment on #206, #207, at lock`
+
+## Slicing as it now stands
+
+- **#298** — converge the two inspector panel families into one roster-and-drill
+  component. Frontend only. Blocks #291.
+- **#299** — serve per-night glucose evidence for a basal slot. Backend only.
+  Parallel with #298. Consumed by #291.
+- **#291** — the settings drill-down redesign: the chart sheds its headline and
+  its tally, the panel gains the tally as the entry to a per-night drill, and a
+  selected night draws its trace on Glucose by time of day. Waits on #298; its
+  glucose columns wait on #299.
+
 ## Open questions
 
 - Q2 (carried, now answered by the lock) do the glucose items — average in-slot

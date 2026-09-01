@@ -1,0 +1,41 @@
+"""CLI coverage for the future committed synthetic QA E2E database."""
+
+import pathlib
+import sqlite3
+import subprocess
+import sys
+import tempfile
+
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+GENERATOR = ROOT / "scripts" / "gen_qa_e2e_db.py"
+
+
+def run(*args):
+    return subprocess.run([sys.executable, str(GENERATOR), *args], cwd=ROOT,
+                          capture_output=True, text=True)
+
+
+def test_cli_writes_stamped_showcase_only_store():
+    with tempfile.TemporaryDirectory() as tmp:
+        output = pathlib.Path(tmp) / "harmonic.sqlite"
+        result = run("--out", str(output))
+        assert result.returncode == 0, result.stderr
+        with sqlite3.connect(output) as conn:
+            assert conn.execute("SELECT _generated_by, synthetic FROM synthetic_fixture_provenance").fetchone() == (
+                "scripts/gen_qa_e2e_db.py", 1
+            )
+
+
+def test_check_compares_a_generated_store_logically():
+    with tempfile.TemporaryDirectory() as tmp:
+        output = pathlib.Path(tmp) / "harmonic.sqlite"
+        assert run("--out", str(output)).returncode == 0
+        checked = run("--check", "--out", str(output))
+        assert checked.returncode == 0, checked.stdout + checked.stderr
+
+
+def test_bare_check_fails_closed_when_the_future_artifact_is_absent():
+    result = run("--check")
+    assert result.returncode == 1
+    assert "mockups/qa-e2e.synthetic/harmonic.sqlite" in result.stdout

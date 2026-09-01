@@ -71,6 +71,15 @@ into the work order).
   consumers. Both reproduced, fixed at 7bd1534.
 - Round 3 (same reviewer): COUNTERSIGNED.
 
+- Supersession (lock 2, this session): `start` under lock 1 found the built app
+  404ing `/assets/occurrence-roster.js` — api.py serves frontend modules through an
+  explicit per-file route whitelist, and `tests/test_frontend_asset_routes.py`
+  (served == reachable import graph) fails 2 of 4 live on the branch. Lock 1's
+  closed `Expected diff` excluded `ciq_autotune/api.py`, an `authoring` blocker the
+  three review rounds missed because none opened the route guard. Fix: one route
+  in api.py; the existing guard is the test. Proposal boundary and tasks amended,
+  lock 2 posted over the re-pinned commit.
+
 ## Spawned tasks
 
 - none yet

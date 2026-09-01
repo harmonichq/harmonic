@@ -11,6 +11,11 @@
   gating counts are the caller's served figures, never a recount of rendered rows,
   and that the response-comparison caller keeps one expansion state across its
   cohorts.
+- [ ] Register the new module's static asset route in the API's per-file
+  whitelist, mirroring its neighbouring module routes, so the existing route
+  guard (which walks the page's import graph and requires served == reachable)
+  passes and the built app serves the module instead of 404ing it. No new test:
+  that guard is the test, and it fails today without the route.
 - [ ] Move the ADR 79 guard with the code, asserting both halves it protects:
   the extracted mechanism performs no recount of rendered rows, and each call
   site in the workstation module hands it the served figure — the published

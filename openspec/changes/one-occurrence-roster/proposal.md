@@ -26,7 +26,11 @@ coming settings-side roster would have written the idiom a third time.
 
 ## Boundaries
 
-Frontend only. No analyzer, projection, endpoint or payload change. The frontend
+Frontend only, plus the one static asset route the API must register for any
+new frontend module: the server hands out frontend files through an explicit
+per-file whitelist, and its route guard fails the fast gate (and the built app
+404s the module) until the new module has its entry. No analyzer, projection,
+API endpoint or payload change. The frontend
 re-derives no floor, threshold, direction or safety verdict. The settings panels
 (basal, correction factor, carb ratio) are untouched; #291 makes them the third
 caller of this mechanism, and the cross-family panel #298's original text

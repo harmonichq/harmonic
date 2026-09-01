@@ -60,8 +60,11 @@
       `mockups/cockpit-shell.behavior.md` and
       `mockups/finding-evidence-routing.behavior.md` with the ADR 304 sanction
       quoted on each entry, in the same commit as their replay functions go, so
-      `frontend/diagnose-behavior-ledger-parity.test.js` stays green; amend the
-      cross-theme wording of S1 and S11 and every story that names both themes.
+      `frontend/diagnose-behavior-ledger-parity.test.js` stays green, re-basing
+      that test's mutation fixtures (the `all issued` / `none` literals it
+      rewrites) onto the post-retirement inventory so each case still asserts
+      what it asserts today; amend the cross-theme wording of S1 and S11 and
+      every story that names both themes.
 - [ ] Run the fast gate and all ten browser legs locally against the no-fetch
       server; require zero failures and no skipped assertion, and
       `sh docs/scope/304-one-theme-probe.sh contracts` exiting 0.

@@ -27,11 +27,26 @@ Ticket: #304 (parent composition: #305, order step 3)
   `light-ground-bone` (ADR 37) and `preserve-diagnose-theme-context` (ADR 230)
   are recorded as superseded in this change's design record, not archived here.
 
+- Q1 → A: the finished palette (and the orange shared by action controls and
+  high-glucose marks) is settled in an attended UI Craft revise round on the
+  running app and posted as this ticket's second lock; lock 1 is the
+  mechanical light retirement with Dark computed values unchanged. Why: the
+  prototype is far from finished design and a headless worker cannot make
+  that call. → ADR 304 (pinned change design.md)
+- Q2 → A: cockpit S3/S10 and Diagnose S117 retire under "Connor Griffin, issue
+  #304, 2026-09-01: light theme retired by operator decision". Why: a no-op
+  Theme control is the papering-over the ticket forbids. → ADR 304
+- Shape: three serial chunks (app + extracts; browser contracts + ledgers;
+  identity evidence + record). Traits fired: multiple deliverable artifacts,
+  lockstep copies, live run, lifecycle-gated surface revision. A nearby
+  reviewer-memory anchor agreed. inline
+- Review depth Full (every shipped surface; gates re-based). Profile none (no
+  `Harden:` line). inline
+
 ## Open questions
 
-- Q1 design settlement mode and the orange collision (pending).
-- Q2 behavior-ledger retirement sanction for the Theme menu and theme-repaint
-  stories (pending).
+None for lock 1. Lock 2 (palette settlement) opens after the attended revise
+round.
 
 ## Spawned tasks
 
@@ -41,3 +56,12 @@ None.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial chunked draft | Reviewer found the evidence-chart module's dark flag, the ledger-parity test spanning chunks 2/3, and fidelity-report.json misowned (all `authoring`); probe blind to harness/screenshot files; a hand-typed match count | OBJECT (3 block, 2 note) |
+| 2 | 3 | Task 1.8, ledger retirement moved into chunk 2, counts removed, probe widened | Reviewer read a stale draft (patch chain aborted on a failed count check), re-surfacing two `authoring` blockers; new `authoring` blocker: `frontend/index.test.js` pins html.dark selectors; probe missed optional chaining | OBJECT (3 block, 2 note) |
+| 3 | 3 | Ledgers and fidelity report into chunk 2, index.test.js into chunk 1, probe fixed | New `authoring` blocker: ledger-parity mutation fixtures hardcode pre-retirement literals | OBJECT (1 block) |
+| 4 | 1 | Parity test into chunk 2 with task 2.5 extension | Note: contracts probe blind to opener defaults and storage writes | COUNTERSIGN (1 note) |
+| 5 | 0 | Probe pattern extended (mechanical) | — | COUNTERSIGN |
+
+No `injected` blockers: every blocker was present since the draft. The
+recurring class was a fast-gate test pinning stylesheet or ledger bytes that
+no chunk owned.

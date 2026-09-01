@@ -92,6 +92,44 @@ exists, untested, and partly contradicted by the shipped tree).
 `/ui-craft revise` on the Diagnose settings drill-down panel, starting at the
 behavior-ledger replay against the offline app, per the decisions above.
 
+### Base established — 2026-08-31 (UI Craft `revise` §0-§2)
+
+- **Safe-start declaration verified.** `CLAUDE.md`/`AGENTS.md` declare the exact
+  entrypoint `uv run harmonic serve --no-fetch --db
+  mockups/revise-e2e.synthetic/harmonic.sqlite`; the named source is the
+  committed synthetic database generated in full by `scripts/gen_revise_e2e_db.py`
+  from fixed seed 620. Route script returns `{"mode":"revise","reason":"safe
+  synthetic data source declared"}`. `inline`
+- **Base SHA `c780c67`** (#294's merge), with this branch rebased onto it.
+  `inline`
+- **The frozen behavior ledger replays 146 of 146 against this base app**, so the
+  contract #294 re-froze holds on current main and the design phase starts from a
+  fresh freeze rather than a stale one. `inline`
+- **Base panel states captured** at 1440x900 in both themes for all three
+  parameters (S121, S122, S123, S124, S126 evidence points), held in session
+  scratch pending the design conversation. `inline`
+- **Inventory drift, non-behavioral:** ledger entry P40's source pointers still
+  read `frontend/diagnose-workstation.js:635-694` and callers `696-844`;
+  `renderParamLevel` now sits at 728-786 with callers at 789-941. The behavior is
+  unchanged, so this is a pointer refresh owed at the next amendment, not a
+  retirement. `inline`
+
+### Observed on the base, feeding the design round
+
+- The panel's **conclusion is its least prominent element**: the verdict phrase
+  ("suggests a tighter ratio", "corrections look stronger than needed") renders as
+  the smallest dimmest text in the head, while CURRENT / ESTIMATE / RECOMMENDED
+  dominate. PRODUCT.md's two-tier-disclosure principle is conclusion first.
+- The panel **restates the support denominator the header prints one line above**
+  ("24 meal runs · 24 meals" appears in both the crumb row and the panel body).
+- A **zero-width interval prints as an interval** ("CI 4.29-4.29 g/U on the
+  estimate") with no remark, on a product whose stated principle is to show
+  uncertainty rather than hide it.
+- `RECOMMENDED --` **holds a full prominent row when there is nothing to
+  recommend**, in every held state.
+- The panel occupies roughly the top third of its rail and leaves the rest empty
+  in all three shapes.
+
 ## Open questions
 
 - Q2 (carried, now answered by the lock) do the glucose items — average in-slot

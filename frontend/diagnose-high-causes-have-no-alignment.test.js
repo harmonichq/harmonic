@@ -14,6 +14,7 @@ import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
 const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+const rosterSource = readFileSync(new URL('./occurrence-roster.js', import.meta.url), 'utf8');
 
 test('#181 · eligible rows publish their own lever and server window', () => {
   const rows = fixture.windows.global.rows.filter((row) => row.event_chart !== null);
@@ -67,12 +68,14 @@ test('ADR 79 · no title router or browser population join remains', () => {
 });
 
 test('ADR 79 · roster controls consume the published cohort count', () => {
-  const roster = source.match(/function renderCaseRoster[\s\S]*?function renderCaseSelection/);
-  assert.ok(roster, 'the server-owned case roster exists');
-  assert.match(roster[0], /caseFile\.verdict_counts\[verdict\]/,
-    'the roster reads the published cohort count');
-  assert.doesNotMatch(roster[0], /rows\.length/,
-    'the roster never recounts its server-owned cohort for display or pagination');
+  assert.doesNotMatch(rosterSource, /rows\.length/,
+    'the shared roster never recounts caller-owned rows for display or pagination');
+  assert.match(source,
+    /function renderCaseRoster[\s\S]*?servedCount:\s*publishedCount[\s\S]*?renderOccurrenceRoster/,
+    'the verdict roster passes its published verdict count');
+  assert.match(source,
+    /function renderEventComparisonRoster[\s\S]*?servedCount:\s*cohort\.routed_count[\s\S]*?renderOccurrenceRoster/,
+    'the comparison roster passes each cohort routed count');
 });
 
 test('ADR 79 · every visible behavioral row requests its opaque case id', () => {

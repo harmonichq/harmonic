@@ -35,6 +35,11 @@ Decisions from the 2026-08-31 scoping session (operator-settled where marked):
   reading nearest each window boundary within the analyzer's existing staleness
   cap; the trace leads the window by 60 minutes (the event chart's −60
   precedent) to answer "was I drifting up beforehand".
+- **Window arithmetic is duration-based:** slot end is
+  `slot start + timedelta(minutes=cfg.slot_minutes)`. The roster's existing
+  clock-time `replace` idiom cannot express slot 47's next-day midnight end;
+  copying it would silently null every slot-47 night under green gates — the
+  contract's named must-prevent.
 - **Nulls, never membership changes:** a roster night without usable in-window
   CGM serves null glucose facts; which nights are informative is decided
   exactly where it is decided today.

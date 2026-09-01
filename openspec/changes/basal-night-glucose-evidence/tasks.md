@@ -7,10 +7,16 @@
   existing `bg_max_stale_min` cap — reuse it, do not write a third
   nearest-reading lookup — null when none qualifies); and `glucose_trace` (the
   night's CGM readings from 60 minutes before slot start through slot end, a
-  sparse list of `{t, minute, bg}` — `t` absolute wall-clock, `minute` relative
-  to slot start and negative across the lead, matching the case file's
-  `detail.glucose` fields; lead points before midnight carry the prior date in
-  `t`).
+  sparse list of `{t, minute, bg}` — `t` formatted with
+  `finding_case_file.FMT` (`%Y-%m-%d %H:%M:%S`, the case file's own trace
+  format, not the roster's ISO-`T`), `minute` `round(..., 1)` relative to slot
+  start and negative across the lead; lead points before midnight carry the
+  prior date in `t`). `glucose_mean`, `glucose_entry` and `glucose_exit` are
+  rounded to one decimal. The window end is
+  `slot start + timedelta(minutes=cfg.slot_minutes)` — never a same-day
+  clock-time replace, which cannot express slot 47's next-day midnight end.
+  Window slices bisect the sorted CGM series once per boundary; never rescan
+  the full reading list per slot-night.
 - [ ] Stamp the slot's `roster_glucose_mean` once per slot — the mean of the
   per-night `glucose_mean` values, each roster night counting once, null-mean
   nights excluded from the average.
@@ -21,8 +27,9 @@
 - [ ] Cover the new facts with analyzer-output tests built from N nights of
   synthetic events — never hand-set flags — including a night whose readings sit
   only in the lead (null `glucose_mean`, excluded from `roster_glucose_mean`,
-  entry/exit and trace per their own rules), and a projection pass-through
-  test.
+  entry/exit and trace per their own rules); a 23:30-slot test where
+  `glucose_exit` resolves to the next day's 00:00 reading and `glucose_mean`
+  covers only [23:30, 24:00); and a projection pass-through test.
 - [ ] Extend `scripts/gen_basal_night_evidence_fixtures.py` so the new facts
   are exercised — CGM covering the 60-minute lead, per-night glucose variation,
   and one roster night whose CGM is confined to the staleness-capped lead so it
@@ -32,7 +39,11 @@
   (`frontend/__fixtures__/basal-night-evidence.json`,
   `frontend/__fixtures__/analysis.json`) and leave both `--check` drift gates
   green in the same change.
-- [ ] Prove the frozen verdicts did not move: the regenerated fixtures are
-  identical to their predecessors except for the added glucose keys — every
-  rate, sign, count, `asserts_move` and `safety_status` byte-unchanged.
+- [ ] Prove the frozen verdicts did not move. `analysis.json` (whose generator
+  is untouched) is identical to its predecessor except for the added glucose
+  keys. `basal-night-evidence.json` is regenerated from edited synthetic input,
+  so its served verdict facts are what must not move: roster dates and count,
+  `delivered_rate`, `programmed_rate`, `sign`, `directional_support_count`,
+  `excluded_night_count`, `asserts_move`, `safety_status`, `current`,
+  `recommended` and `estimate` unchanged against the predecessor.
 - [ ] Fast gate and drift checks green.

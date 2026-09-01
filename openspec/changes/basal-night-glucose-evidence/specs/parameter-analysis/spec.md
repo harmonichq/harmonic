@@ -40,6 +40,14 @@ evidence.
 - **AND** the night remains in the roster and in every count it appears in
   today
 
+#### Scenario: The last slot of the day reaches midnight
+
+- **GIVEN** a roster night on the 23:30 slot
+- **WHEN** the analyzer stamps glucose evidence
+- **THEN** the window is [23:30, next-day 00:00): `glucose_mean` covers those
+  readings and `glucose_exit` may resolve to the next day's 00:00 reading
+- **AND** no slot's window is empty by construction
+
 #### Scenario: The trace is drawable by the shipped trace path
 
 - **WHEN** a roster night carries its CGM trace

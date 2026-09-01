@@ -71,6 +71,15 @@ the sole owner of judgment. Disposition: inline (copied into the work order).
   scan is a cold-path regression, bisect instead. All reproduced, fixed at
   1b01f9f.
 
+- Panel 3, the cap (fresh cold Opus, BLOCKED, 2 blockers + 1 note; blocker 1
+  `injected` by round-1's fail-closed wording, blocker 2 and the note
+  `authoring`): required-key mandate would 500 the 15 empty-roster slots —
+  restated as unconditional stamp, presence-only check, null a served fact;
+  the slot-0 lead's prior-date stamping had no owed test (wrong date would
+  freeze green into the fixture); growth figure understated ~2-3x (984 nights
+  measured). All reviewer-specified mechanical fixes, applied at e0a54dd,
+  re-verified same-round by the panel-3 reviewer per the mechanical-fix rule.
+
 ## Spawned tasks
 
 (none yet)

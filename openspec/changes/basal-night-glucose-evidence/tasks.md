@@ -60,5 +60,7 @@
   seeded row verbatim (120, `Description` `EGV`) instead; `Store._upsert`
   advances the input revision on every write regardless of value, so the
   worker still recomputes and the test keeps proving the adapter, not the
-  analysis. No other assertion in that test changes.
+  analysis. The comment above that upsert may be updated to say the write is
+  deliberately value-identical and exists solely to advance the input revision.
+  No other assertion in that test changes.
 - [ ] Fast gate and drift checks green.

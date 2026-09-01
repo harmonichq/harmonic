@@ -59,6 +59,26 @@ synthetic before/after basal capture is stored under
 correction-factor equivalents proven by the replay (S123, S124) rather than a
 separate capture.
 
+Issue [#304](https://github.com/harmonichq/harmonic/issues/304) revises the
+shipped Cockpit shell and Finding → evidence routing surfaces so Harmonic ships
+one theme. The footer Theme control, the `theme` localStorage key and the
+boot-time class gate are gone, and every rule the light theme reached collapses
+into its Dark declaration; the shipped Dark surface itself does not move.
+Cockpit S3 (the Theme radio menu) and S10 (the ADR 49 hover, checked and focus
+recipe, which the Theme rows were the only surface for) are retired, and
+Diagnose S117 (the Dark → Light → Dark repaint round trip) with them — each for
+want of a surface, not by assertion of a no-op. Cockpit S6 is amended rather
+than retired: its desk/bar/control count of three grounds was a Light-only
+truth, and on the shipped Dark surface the chrome bar keeps its own token set on
+the desk's own ground, so the vocabulary is two grounds. Identity evidence — a
+full `getComputedStyle` diff of the ticket base against the revision across the
+gated Diagnose, Verify, Day and shell states at 1440×900, 1280×800 and 390×844,
+over the generated synthetic database — is stored under
+`openspec/changes/dark-only-theme/evidence/`, and reports no difference beyond
+the removed Theme control, the boot-time gate that read the retired key, and the
+footer utilities nav reflowing around the button's absent box (ADR 304 ×3 in
+`openspec/changes/dark-only-theme/design.md`).
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

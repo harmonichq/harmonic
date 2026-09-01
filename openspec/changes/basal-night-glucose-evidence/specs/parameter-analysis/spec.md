@@ -11,9 +11,10 @@ minutes before slot start through slot end as a sparse list of `{t, minute,
 bg}` points — `t` the absolute wall-clock timestamp, `minute` relative to slot
 start and negative across the lead, the case file's `detail.glucose` fields —
 where a lead point before midnight carries the prior date in `t`. Per
-slot, the analyzer SHALL stamp `roster_glucose_mean`: the mean of the per-night
-`glucose_mean` values, each roster night counting once, nights with a null mean
-excluded. A roster night without usable in-window CGM SHALL serve null glucose
+slot, the analyzer SHALL stamp `roster_glucose_mean` unconditionally: the mean
+of the per-night `glucose_mean` values, each roster night counting once, nights
+with a null mean excluded, and null when no night has a mean — an empty roster
+included, which SHALL keep serving a complete payload. A roster night without usable in-window CGM SHALL serve null glucose
 facts and SHALL remain in the roster. The projection SHALL copy these facts
 verbatim, SHALL fail closed when `roster_glucose_mean` is absent from a payload
 that carries a night roster, and SHALL derive nothing; no safety verdict,

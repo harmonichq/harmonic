@@ -25,12 +25,13 @@ Decisions from the 2026-08-31 scoping session (operator-settled where marked):
   per-night mean counts every CGM reading in the half-open window
   [slot start, slot end), not the clean-window minutes the estimate used — the
   contaminated nights are the ones the divergence reading exists to show.
-- **Accepted payload growth:** the facts ride every slot's evidence
-  (48 slots x up to ~30 roster nights x ~19 trace points, roughly a megabyte
-  across the analysis payload and its committed fixtures). The projection may
-  not compute, so on-demand assembly is rejected; bounding to "slots a reader
-  opens" is impossible because every slot is served from the same cached
-  payload.
+- **Accepted payload growth:** the facts ride every slot's evidence — 984
+  roster nights across 48 slots in the committed `analysis.json` today, each
+  gaining a ~19-point trace: roughly two to three megabytes across the
+  analysis payload and its committed fixtures (`analysis.json` alone grows
+  ~2 MB over its current 324 kB). The projection may not compute, so on-demand
+  assembly is rejected; bounding to "slots a reader opens" is impossible
+  because every slot is served from the same cached payload.
 - **Edge semantics** (operator delegated): entering/leaving glucose is the
   reading nearest each window boundary within the analyzer's existing staleness
   cap; the trace leads the window by 60 minutes (the event chart's −60

@@ -17,9 +17,11 @@
   clock-time replace, which cannot express slot 47's next-day midnight end.
   Window slices bisect the sorted CGM series once per boundary; never rescan
   the full reading list per slot-night.
-- [ ] Stamp the slot's `roster_glucose_mean` once per slot — the mean of the
-  per-night `glucose_mean` values, each roster night counting once, null-mean
-  nights excluded from the average.
+- [ ] Stamp the slot's `roster_glucose_mean` on every slot unconditionally —
+  the mean of the per-night `glucose_mean` values, each roster night counting
+  once, null-mean nights excluded, and null when no night has a mean (an empty
+  roster included). The projection's required-key check stays presence-only; a
+  null value is a served fact, not an error.
 - [ ] Copy `roster_glucose_mean` through the night-evidence projection
   verbatim (the per-night facts ride the existing roster pass-through), adding
   it to the projection's `required` evidence keys so an incomplete payload
@@ -29,7 +31,10 @@
   only in the lead (null `glucose_mean`, excluded from `roster_glucose_mean`,
   entry/exit and trace per their own rules); a 23:30-slot test where
   `glucose_exit` resolves to the next day's 00:00 reading and `glucose_mean`
-  covers only [23:30, 24:00); and a projection pass-through test.
+  covers only [23:30, 24:00); a 00:00-slot test asserting the lead points carry
+  the prior calendar date in `t` and negative `minute` down to −60; a test that
+  a slot with an empty roster still projects a 200 payload with a null
+  `roster_glucose_mean`; and a projection pass-through test.
 - [ ] Extend `scripts/gen_basal_night_evidence_fixtures.py` so the new facts
   are exercised — CGM covering the 60-minute lead, per-night glucose variation,
   and one roster night whose CGM is confined to the staleness-capped lead so it

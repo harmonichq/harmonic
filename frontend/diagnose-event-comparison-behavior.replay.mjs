@@ -110,11 +110,10 @@ export async function openApp(browser, options = {}) {
     [apiPattern('/pump'), () => ({ settings: {} })],
   ];
   page.on('pageerror', (error) => problems.push(`pageerror(app): ${error}`));
-  await page.addInitScript(([theme]) => {
+  await page.addInitScript(() => {
     localStorage.setItem('ciq_token', 'event-comparison-replay');
     localStorage.setItem('tab', 'diagnose');
-    localStorage.setItem('theme', theme);
-  }, [options.theme || 'light']);
+  });
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -516,21 +515,19 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
 // LOCK:diagnose-event-comparison:20
 // AMENDED (issue #181) — the five capture states were the standalone route's
 // own coordinates. The rendering matrix is now the served case files a reader
-// can actually drill, in both themes.
+// can actually drill.
 export const S9 = async (open, browser) => {
   for (const finding of FINDINGS) {
-    for (const theme of ['light', 'dark']) {
-      const statePage = await open(browser, { finding, theme });
-      try {
-        const state = await rendered(statePage);
-        ok(await visibleFindingTile(statePage, finding).isVisible(),
-          `${finding}/${theme} did not keep its comparison tile visible`);
-        ok(state.dockMini.visible && state.dockMini.ids.length > 0,
-          `${finding}/${theme} mounted no populated dock-mini comparison canvas`);
-        ok(await statePage.locator('#tile-focal #ec-chart canvas').count() > 0,
-          `${finding}/${theme} mounted no additional fullscreen comparison canvas`);
-      } finally { await statePage.close(); }
-    }
+    const statePage = await open(browser, { finding });
+    try {
+      const state = await rendered(statePage);
+      ok(await visibleFindingTile(statePage, finding).isVisible(),
+        `${finding} did not keep its comparison tile visible`);
+      ok(state.dockMini.visible && state.dockMini.ids.length > 0,
+        `${finding} mounted no populated dock-mini comparison canvas`);
+      ok(await statePage.locator('#tile-focal #ec-chart canvas').count() > 0,
+        `${finding} mounted no additional fullscreen comparison canvas`);
+    } finally { await statePage.close(); }
   }
   // What remains at narrow width is the canvas alone: no overflow, and the
   // chart still draws.

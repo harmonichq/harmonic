@@ -12,12 +12,15 @@ The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
 **146 issued executable IDs:** S01–S126, C41–C57, and D1–D3
-**Active executable IDs:** all issued
-**Retired executable IDs:** none
+**Active executable IDs:** S01–S116, S118–S126, C41–C57, and D1–D3
+**Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
 an attributed absence check and prints its sanction. `Retired executable IDs`
-would count only IDs removed from execution, which this ledger forbids.
+counts only IDs removed from execution, which this ledger admits solely on an
+operator sanction that removes the behaviour's surface outright. S117 is the
+first: ADR 304 retired the light theme, so there is no second palette to repaint
+from and no absence for a replay to check.
 
 All are opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
@@ -2756,11 +2759,15 @@ spotlight. Evidence: replay S115.
 **S116.** Closing the chart explorer restores focus to its opener. Evidence:
 replay S116.
 
-**S117.** Starting in Dark, the reader selects the 24-hour window and spotlights
-a non-default Event chart. A Dark → Light → Dark round trip repaints that
-chart from the live surface palette without changing the pressed window,
-spotlight, or ordered dock charts, and the reader does not re-select any of that
-context after either theme action. Evidence: replay S117.
+**S117 is RETIRED.** It asserted that a Dark → Light → Dark round trip repainted
+the spotlighted Event chart from the live surface palette while leaving the
+pressed window, spotlight and ordered dock charts alone. The light theme is
+gone, so there is no round trip to make and no second palette to repaint from;
+the story retires rather than asserting a no-op.
+  sanction: Connor Griffin · 2026-09-01 · "light theme retired by operator
+  decision" (ADR 304, issue #304)
+  the reader-context half it shared with S110 and S115 remains covered there;
+  its replay function and its `STORY:` tag left in the same commit as this entry.
 
 **S118.** Findings rows number only visible priced ranked rows and reveal an
 asserting row's server-published annotation, composing no new clinical copy.
@@ -2777,14 +2784,14 @@ contract without changing its existing assertions. Evidence: replay S118.
 ## Revision amendment — 2026-08-28 (shared fullscreen containment)
 
 **S119.** Every registered evidence chart uses the workstation's one fullscreen
-frame. At 2084×450 and 2084×742, in Light and Dark, the chart host, axis-bearing
+frame. At 2084×450 and 2084×742, the chart host, axis-bearing
 canvas, plot, and any cohort key or legend remain inside all four frame edges;
 plot and key do not overlap; fullscreen introduces no page or pane scroll; resize
 uses the frame's current box; and Back restores the exact prior Spotlight, dock,
 pins, selection, and arrangement. Evidence: replay S119 for the shared ordinary
 path, event-comparison replay S14 for the Carb undercount plot/key contract, and
 `frontend/diagnose-workstation.browser.test.mjs` for the complete four-family,
-two-theme, two-viewport matrix. Synthetic before/after renders are stored under
+two-viewport matrix. Synthetic before/after renders are stored under
 `openspec/changes/fullscreen-chart-containment/evidence/`.
 
 ## Revision amendment — 2026-08-28 (star means keep)

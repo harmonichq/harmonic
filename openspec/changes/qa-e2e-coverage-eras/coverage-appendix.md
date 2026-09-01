@@ -1,0 +1,25 @@
+# QA E2E coverage-era budget appendix
+
+Task 1 inherits the showcase-only measurements below from
+`openspec/changes/archive/2026-09-01-qa-e2e-database/coverage-appendix.md`.
+The implementation records the post-append values with the same commands before
+ticking task 1.
+
+| Budget | Baseline measured | Limit |
+| --- | ---: | ---: |
+| Database size | 2 MiB | 25 MiB |
+| Logical drift check | 0.13 s | 30 s |
+| Focused QA suite | 5.69 s | 90 s |
+| Single isolated case | 0.14 s | 15 s |
+
+Commands:
+
+```sh
+du -m "$TASK_TMP/harmonic.sqlite"
+/usr/bin/time -p uv run python scripts/gen_qa_e2e_db.py --check --out "$TASK_TMP/harmonic.sqlite"
+/usr/bin/time -p uv run python -m pytest tests/test_gen_qa_e2e_db.py tests/test_qa_e2e_cases.py
+/usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py -k <case-name>
+```
+
+If any limit is exceeded, stop before committing the replacement database and
+return the split decision to the operator. Do not raise a limit in this phase.

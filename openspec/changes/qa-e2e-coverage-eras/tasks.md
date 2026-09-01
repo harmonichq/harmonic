@@ -1,0 +1,5 @@
+# Tasks — QA E2E coverage eras
+
+- [ ] #192 — Add isolated basal, ISF, and I:C coverage eras, extend exact whole-set expectations through analyzer and findings-projection outputs, append the eras to the committed QA database, enforce ADR 190 ordering and separation from materialized rows, preserve per-case temporary-store execution, and record the post-append budgets.
+- [ ] #193 — Add behavioral and verdict-band coverage eras, including the closed occurrence-state vocabulary, exact per-family denominators, and required negative and outranked/silence cases without continuous IOB or injected verdicts.
+- [ ] Follow-on ticket replacing the final #194 cut — migrate the CI browser-gates server, case-file route test, and public-tree allowlist pin; prove and retire revise-e2e by the executable-consumer checklist; add agent-facing guidance in `AGENTS.md` and `CONTEXT.md` for adding or updating an era when analyzer/finding behavior lands and for using the QA database when making UI decisions; then archive this change.

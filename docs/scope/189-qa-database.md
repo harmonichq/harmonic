@@ -226,3 +226,26 @@ flat call on the same catalog/generator shape) agrees flat.
   re-pinned. Cap reached with blockers still arriving, every one derivable
   from the pinned source rather than an unsettled decision; posted on the
   operator's delegation with this disclosed.
+
+## #192 triage
+
+The original `qa-e2e-database` change was archived by PR #312, so #192 opens
+`openspec/changes/qa-e2e-coverage-eras/` as the active successor while citing
+archived ADR 190 and ADR 194 as standing authority. The operator's 2026-09-01
+rulings settle the remaining scope: this new change is the record home; the last
+#194 cut is replaced by a follow-on ticket that owns the remaining migration,
+retirement, and agent-facing guidance; and #192 concatenates its coverage eras
+into the committed QA database while retaining isolated per-case stores. No
+genuine uncertainty remains for a `/scope` interview.
+
+Flat order. Traits fired: none. The work stays on one analyzer-fed fixture
+boundary; it introduces no server projection implementation, rendered surface,
+browser run, live resource, trust-boundary write, split-path harness, or unchecked
+lockstep copy. The generator, catalog, and their two test files are shared by every
+era, so parallel chunks would collide on file ownership. A nearby reviewer-memory
+anchor agrees with the flat call.
+
+Review rounds on the #192 draft lock (the coordinator fills this table):
+
+| round | blockers | authoring | injected |
+| --- | ---: | ---: | ---: |

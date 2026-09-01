@@ -16,24 +16,22 @@ primitives needed here: a dense 30-day showcase background and focused overlay
 recipes. Settings snapshots are placed by each recipe through Store APIs; the
 showcase now uses distinct instants for the behavioral snapshot and the earlier
 and current I:C snapshots. `execute_case` runs the production `analyze`, exposure,
-scenario, findings-projection, and I:C-history producers. `assert_expectation`
-compares four observed collections as exact whole sets and currently compares ISF
-rest windows and I:C history series only by integer count; the tests prove that a
-perturbed expectation fails.
+scenario, findings-projection, and I:C-history producers. Today
+`assert_expectation` compares four collections exactly but reads only ISF row zero
+and compares its rest windows and the I:C history series by integer count
+(`scripts/qa_e2e_cases.py:187-210`).
 
-#192 extends that seam rather than creating a second fixture language. A coverage
-case still materializes into its own temporary store. Its expectation additionally
-names exact analyzer rows and absences; exact queue rows and absences for the
-unscoped whole-day projection and any scoped clock query needed to expose `held`
-or `blind`; the analyzer-stamped support counts; and `asserts_move`. Expectations
-observe analyzer output only. Recipes never accept or write a verdict, status,
-direction, held reason, register, queue row, or ranking.
-
-Task 1 replaces `isf_rest_window_count` and `ic_history_series_count` with keyed
-exact sets. An ISF rest-window key is `(date, start, end)` and an I:C history
-series key is `run_id`; the expected value is the complete row payload for that
-key. Equality covers both keys and payloads, so a missing manifest row cannot pass
-merely because another row preserved the count.
+#192 keeps this fixture language and splits implementation at the analyzer family.
+Task 1 owns the shared expectation and generator contracts plus every basal era;
+task 2 consumes those contracts for every ISF and I:C era. A coverage case still
+materializes into its own temporary store. `QaExpectation` gains exact analyzer
+rows and absences; scoped and unscoped queue rows and absences; support values;
+`asserts_move`; ISF rest-window rows keyed by ISF row identity plus
+`(date, start, end)` across every ISF row, including an expressible empty ISF
+list; I:C history-series rows keyed by `run_id`; and the complete
+`analysis["ic_history"]` catalog keyed by identity across every lifecycle. Each
+key maps to the complete expected row payload. Recipes never accept or write a
+verdict, status, direction, held reason, lifecycle, register, queue row, or rank.
 
 ## Era condition matrix
 
@@ -60,49 +58,57 @@ the condition into a fixture.
 | I:C quiet / collecting | A block is collecting, below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise has neither `asserts_move` nor `held_reason` (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run below-floor case and assert the eight-run threshold separately from the display minimum. | Exact analyzer block and explicit absence from scoped and global queue rows (`findings_projection.py:369-408`). |
 | I:C history register | A snapshot-proven past block identity differs from the current identity, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active `history` row and exact keyed projected history series; current identities and aged-out/unavailable histories are absent from the active queue. |
 
-The three existing cases (`showcase`, `setting-recommendation`, and
-`behavioral-precedence`) are re-keyed onto the per-era allocation scheme below.
-Their analyzer and projection expectations remain byte-identical.
+Task 1 owns every basal row above and re-keys the three existing cases
+(`showcase`, `setting-recommendation`, and `behavioral-precedence`) onto the
+per-era allocation scheme below without changing their expectations. Task 2 owns
+the ISF and I:C rows above, including the history-register era.
 
 ## ADR 192 — Contain cross-era history and storage identities
 
-**Decision.** A coverage recipe SHALL NOT combine carb-ratio-varying settings
-snapshots with carb-bearing boluses except in the designated I:C recipes. Those
-I:C recipes may exercise the existing showcase history identity, but SHALL NOT
-mint an additional identity in the concatenated database. After concatenation,
-the generator compares the showcase projection's complete I:C history identity
-set with the isolated showcase case's expected `history_row_ids` and fails closed
-on any additional or missing identity. This is required because history assembly
-indexes every run and settings snapshot before applying the current-run window
-(`analyzers/ic.py:2209-2245`); time separation alone cannot isolate that register.
+**Decision.** Cross-era containment is checked at the analyzer boundary, not the
+projection boundary. `findings_projection._history_rows` omits every non-active
+history row (`findings_projection.py:234-239`), while I:C history establishes
+publishability from all runs and only its measurement from in-window runs
+(`analyzers/ic.py:2240-2262`). Therefore `QaExpectation` carries both projected
+`history_row_ids` and a full-catalog identity set for `analysis["ic_history"]`.
+After concatenation, the generator compares the complete catalog identity set
+across active, aged-out, and unavailable lifecycles with the isolated showcase's
+expected full-catalog set and fails on any additional or missing identity.
 
-Each era also owns a disjoint `seq_num` block in every seq-keyed source table.
-The catalog computes the block from `era index × stride`; each table's stride is
-larger than the maximum dense-background allocation for one era. Recipes allocate
-inside their block rather than carrying reusable local keys. The generator test
-compares the concatenated store's per-table row counts with the sum of rows each
-era wrote. This catches the silent `ON CONFLICT (seq_num) DO UPDATE` merge for
-which Store reports the submitted count rather than the inserted count
-(`store.py:601-608`).
+Storage identity is allocated in two dimensions from the era index. Every
+seq-keyed table gets a disjoint `era index × stride` block whose stride exceeds
+one dense background. Every timestamp-keyed table gets a descending,
+non-overlapping date slot computed from the same era index, with showcase fixed as
+the newest slot. Recipes allocate only inside both assigned ranges. Generator
+tests compare each concatenated table's stored row count with the sum written by
+its recipes. The seq block catches silent `ON CONFLICT (seq_num) DO UPDATE`
+merges, for which Store returns the submitted count (`store.py:601-608`); the date
+slot prevents equivalent merges in timestamp-keyed `cgm_readings` and
+`profile_settings`.
 
-The executable feasibility spike and its complete output are recorded in
-`generated-facts.md`; it proves the existing shifted case can precede showcase
-with additive rows, unchanged showcase I:C identities, no key overlap, and all
-four provisional budget measurements below their limits.
+The executable spike and complete output in `generated-facts.md` exercise the
+history hazard with 32 shifted carb-bearing boluses and a distinct carb-ratio
+snapshot. The active projection remains unchanged while the full catalog gains an
+aged-out identity, proving that projected `history_row_ids` cannot enforce the
+boundary. Its timings are diagnostic: the rebuild measurement includes two full
+`execute_case` compositions, and the two-case measurement runs in-process rather
+than through pytest. Only its database size and isolated-case measurement are
+comparable to the appendix baselines.
 
 ## Concatenation and isolation
 
 The generator appends every #192 coverage era before the existing showcase era.
-After all writes it queries the materialized rows and fails unless the showcase is
-last in basal/CGM/bolus event time and settings-snapshot order, every earlier
-snapshot precedes every showcase snapshot, and every earlier era's latest
-basal/CGM/bolus event is strictly more than `ic.BLOCK_WINDOW_DAYS` plus
-`analyze._BOLUS_LEADIN` before the showcase's earliest event. The generator
-imports `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` and compares with
+The catalog derives each earlier era's descending date slot and disjoint seq block
+from its index. After all writes the generator queries materialized rows and fails
+unless those ranges do not overlap; showcase is last in basal, CGM, bolus, and
+settings time; every earlier snapshot precedes every showcase snapshot; and every
+earlier era's latest basal, CGM, or bolus event is strictly more than
+`ic.BLOCK_WINDOW_DAYS` plus `analyze._BOLUS_LEADIN` before showcase's earliest
+event. It imports `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` and compares with
 `timedelta(days=BLOCK_WINDOW_DAYS) + _BOLUS_LEADIN`; it never repeats 90 as a
-fixture literal. Those are enforced facts, not timestamp-offset comments. The
-same catalog case remains independently runnable and contains only its own source
-rows and snapshots.
+fixture literal. It also enforces additive row counts and full-catalog history
+identity equality. These are queried facts, not timestamp-offset comments. Each
+catalog case remains independently runnable with only its own rows and snapshots.
 
 Production composition stays unchanged: `window_days=30`, `now` is derived from
 the latest basal/CGM event in each store, and IOB remains bolus-only
@@ -117,8 +123,8 @@ The expectation comparison is whole-set equality for analyzer rows, every querie
 queue, and every explicit absence. Tests deliberately perturb one expected
 analyzer row, one queue row or absence, one support count, and one `asserts_move`
 value and require each perturbation to fail. Scenario and I:C-history outputs that
-were previously only exercised become row-for-row expectations where task 1 uses
-them. No subset or “contains” assertion can satisfy this contract.
+were previously only exercised become row-for-row expectations in the task that
+owns each era. No subset or “contains” assertion can satisfy this contract.
 
 Every committed artifact is generator-built and provenance-stamped. New literal
 timestamp series in scripts or tests carry the contamination scan's
@@ -128,17 +134,25 @@ live fetch, or normal serve enters this work.
 ## Budgets and stop rule
 
 The inherited measured baseline and limits live in
-`coverage-appendix.md`. After appending the eras, the implementer records the same
-four measurements. If the database exceeds 25 MiB, logical `--check` exceeds 30
-seconds, the focused suite exceeds 90 seconds, or any case exceeds 15 seconds, the
-phase stops before committing a replacement database and returns the split
-decision to the operator. Limits are not raised in this ticket. CI keeps the
-existing three-minute drift-step timeout for runner variance.
+`coverage-appendix.md`. Each chunk records five measurements after its eras are
+appended: database size, logical drift, focused QA suite, slowest isolated case,
+and whole-pytest wall time. The first four retain limits of 25 MiB, 30 seconds, 90
+seconds, and 15 seconds; whole pytest is limited to 8 minutes against the backend
+job's 10-minute timeout (`.github/workflows/ci.yml:19`). Limits are not raised.
+
+On any budget breach, or whenever a worker session ends before its sub-order's
+Done-when, the worker commits its source and tests on the chunk branch, does not
+regenerate or commit the database, opens no pull request, posts the five
+measurements or stopping point on #192, and stops. Once generator behavior has
+changed, the unchanged database intentionally leaves `--check` and its committed-
+database test red on that stopped branch. That red state is evidence of an
+incomplete chunk, not permission to replace the artifact; only a newer lock on
+#192 resumes it.
 
 ## Change lifetime
 
-This change remains active after task 1. Task 2 adds #193's behavioral and
-verdict-band eras. Task 3 completes the remaining revise-e2e migration and
+This change remains active after tasks 1 and 2. Task 3 adds #193's behavioral and
+verdict-band eras. Task 4 completes the remaining revise-e2e migration and
 evidence-based retirement, then adds agent-facing guidance to `AGENTS.md` and
 `CONTEXT.md` for maintaining eras and using the QA database for UI decisions.
-Only task 3 archives the change.
+Only task 4 archives the change.

@@ -1,18 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: Coverage eras prove analyzer-owned parameter states exactly
+### Requirement: The shared expectation contract proves basal states exactly
 
-Each basal, ISF, and I:C coverage case SHALL materialize manufactured source
-events and settings into an isolated temporary store and SHALL run the production
-analysis, exposure, scenario, findings-projection, and I:C-history composition.
-The case SHALL compare exact whole sets of expected analyzer rows and queue rows,
-including explicit absences, support-floor counts, and `asserts_move` values.
-ISF rest windows and I:C history series SHALL be represented and compared as
-keyed exact sets rather than integer counts.
-Fixture inputs SHALL NOT set `asserts_move`, safety status, direction, held reason,
-register, queue row, priority, or attribution. A case whose expected analyzer row,
-queue row or absence, support count, or `asserts_move` value is perturbed SHALL
-fail.
+Each basal coverage case SHALL materialize manufactured source events and settings
+into an isolated temporary store and SHALL run the production analysis, exposure,
+scenario, findings-projection, and I:C-history composition. `QaExpectation` SHALL
+compare exact whole sets of analyzer rows and absences, scoped and unscoped queue
+rows and absences, support values, and `asserts_move` values. ISF rest windows
+SHALL be keyed by ISF row identity plus `(date, start, end)`, observed across every
+ISF row rather than row zero, and SHALL express an empty ISF list. I:C history
+series SHALL be keyed by `run_id`, and the complete I:C history catalog SHALL be
+keyed by identity across every lifecycle. Each keyed expectation SHALL compare the
+complete row payload, not a count. Fixture inputs SHALL NOT set `asserts_move`,
+safety status, direction, held reason, register, queue row, priority, or
+attribution. Perturbing any expected row, absence, support value, or staging value
+SHALL fail. The basal cases SHALL cover every basal condition in the design matrix.
 
 #### Scenario: The eight-night basal floor is data-produced
 
@@ -22,6 +24,72 @@ fail.
   contract without staging, and the supported eight-night case publishes its exact
   direction and stageability only when the family-corrected sign test also passes
 
+### Requirement: The committed QA database contains eras without cross-era leakage
+
+The QA generator SHALL append coverage eras before the showcase and SHALL verify
+from materialized rows that showcase is newest in basal, CGM, bolus, and settings
+time. It SHALL allocate descending, non-overlapping date slots from era index for
+timestamp-keyed tables and disjoint `era index × stride` `seq_num` blocks for every
+seq-keyed table. Each coverage era's latest basal, CGM, or bolus event SHALL be
+strictly more than `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` plus
+`ciq_autotune.analyze._BOLUS_LEADIN` before showcase's earliest event; the
+generator SHALL import `BLOCK_WINDOW_DAYS` rather than duplicate its numeric
+value. Stored row counts SHALL equal the sum written by all recipes. The complete
+concatenated `analysis["ic_history"]` identity set across active, aged-out, and
+unavailable lifecycles SHALL equal the isolated showcase's expected full-catalog
+identity set. Every case SHALL remain independently runnable with only its own
+rows and snapshots. The generated SQLite artifact SHALL retain its synthetic
+provenance and logical drift comparison.
+
+#### Scenario: Earlier coverage eras cannot own an analysis lane
+
+- **WHEN** all #192 eras and showcase are materialized into the committed database
+- **THEN** the production 30-day projection derives its cutoff from showcase and no
+  earlier event or settings snapshot enters it
+- **AND** no earlier bolus enters the fixed I:C block lane or its one-day lead-in
+
+#### Scenario: Earlier eras cannot hide history identities outside projection
+
+- **GIVEN** an earlier era has enough carb-bearing boluses and a carb-ratio snapshot
+  to make a past identity publishable
+- **WHEN** the concatenated showcase analysis runs
+- **THEN** its complete all-lifecycle I:C history identity set equals the isolated
+  showcase full-catalog expectation
+- **AND** any additional active, aged-out, or unavailable identity fails the
+  generator even when findings projection omits it
+
+#### Scenario: Era storage keys cannot silently merge
+
+- **GIVEN** each era owns a descending date slot and a disjoint `seq_num` block
+- **WHEN** all eras are concatenated
+- **THEN** timestamp-keyed rows do not overlap, seq-keyed rows do not collide, and
+  every table's stored row count equals the sum written by its recipes
+
+#### Scenario: A case stays isolated from concatenation
+
+- **WHEN** any #192 catalog case is materialized by itself
+- **THEN** its exact analyzer and queue expectations pass using only that case's
+  source rows and settings snapshots
+
+#### Scenario: An incomplete or over-budget chunk stops without a database
+
+- **WHEN** a chunk exceeds any recorded limit or ends before its Done-when
+- **THEN** the worker commits its source and tests on the chunk branch without
+  regenerating or committing the database, opens no pull request, reports the
+  measurements or stopping point on #192, and stops
+- **AND** a red drift check on that stopped branch is expected until a newer lock
+  authorizes resumption
+
+### Requirement: ISF and I:C eras prove their analyzer-owned states exactly
+
+Each ISF and I:C coverage case SHALL use the shared exact expectation contract and
+production composition. The cases SHALL cover every ISF and I:C condition in the
+design matrix, including direction-only non-stageable ISF, quiet I:C, and the
+history register. Their isolated and concatenated executions SHALL compare exact
+analyzer rows, queue rows and absences, support values, staging values, keyed ISF
+rest windows, keyed I:C history series, and the complete all-lifecycle I:C history
+catalog.
+
 #### Scenario: The eight-run I:C floor is data-produced
 
 - **GIVEN** isolated I:C cases with seven and eight effective closed meal runs
@@ -30,63 +98,13 @@ fail.
   eight-run block asserts only when every analyzer-owned eligibility condition
   passes
 
-#### Scenario: Held, blind, quiet, direction-only, and history rows stay distinct
+#### Scenario: Held, blind, quiet, direction-only, and history outcomes stay distinct
 
-- **WHEN** the isolated cases run the unscoped whole-day projection and the scoped
-  clock projections named by their expectations
-- **THEN** asserting, held, blind, quiet/absent, direction-only non-stageable, and
-  active history outcomes match their exact expected rows and absences
-- **AND** a direction-only ISF weaken never gains a recommendation, priority rank,
-  or stageable move
-
-### Requirement: The committed QA database preserves showcase ownership while adding eras
-
-The QA generator SHALL append coverage eras before the showcase era and SHALL
-verify from materialized rows that the showcase is newest in basal/CGM/bolus event time
-and settings-snapshot order, every coverage-era settings snapshot precedes every
-showcase snapshot, and each coverage era's latest basal/CGM/bolus event is
-strictly more than `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` plus
-`ciq_autotune.analyze._BOLUS_LEADIN` before the showcase's earliest event. The
-generator SHALL import `BLOCK_WINDOW_DAYS` rather than duplicate its numeric
-value. Every catalog case
-SHALL remain independently runnable with only its own rows and settings snapshots.
-The generated SQLite artifact SHALL retain its synthetic provenance stamp and
-logical `--check` drift comparison.
-
-#### Scenario: Earlier coverage eras cannot own the app projection
-
-- **WHEN** all #192 eras and the showcase are materialized into the committed QA
-  database
-- **THEN** the production 30-day projection derives its cutoff from the showcase's
-  latest event and no earlier era or settings snapshot enters that projection
-- **AND** no earlier bolus enters the fixed I:C block lane, including its one-day
-  bolus lead-in
-
-#### Scenario: Earlier eras cannot mint showcase history identities
-
-- **GIVEN** coverage recipes combine carb-ratio-varying snapshots and carb-bearing
-  boluses only inside designated I:C recipes
-- **WHEN** all eras are concatenated ahead of showcase
-- **THEN** the complete I:C history identity set equals the isolated showcase
-  expectation and the generator fails on any additional or missing identity
-
-#### Scenario: Era storage keys cannot silently merge
-
-- **GIVEN** every era owns one disjoint `era index × stride` `seq_num` block per
-  seq-keyed table, with a stride larger than one dense background
-- **WHEN** all eras are concatenated
-- **THEN** every table's stored row count equals the sum of rows written by its
-  individual recipes, and any collision fails the generator test
-
-#### Scenario: A case stays isolated from concatenation
-
-- **WHEN** any #192 catalog case is materialized by itself
-- **THEN** its exact analyzer and queue expectations pass using only that case's
-  source rows and settings snapshots
-
-#### Scenario: A budget breach stops the phase
-
-- **WHEN** the appended database exceeds 25 MiB, logical drift check exceeds 30
-  seconds, the focused QA suite exceeds 90 seconds, or any case exceeds 15 seconds
-- **THEN** the replacement database is not committed and the split decision returns
-  to the operator without raising a limit
+- **WHEN** the isolated ISF and I:C cases run the unscoped whole-day projection and
+  the scoped clock projections named by their expectations
+- **THEN** asserting, held, blind, quiet or absent, direction-only non-stageable,
+  and active history outcomes match their exact expected rows and absences
+- **AND** direction-only ISF weaken never gains a recommendation, priority rank, or
+  stageable move
+- **AND** projected history IDs and series match exactly while the full catalog
+  separately accounts for every lifecycle

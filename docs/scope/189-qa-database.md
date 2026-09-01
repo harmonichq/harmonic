@@ -238,15 +238,19 @@ retirement, and agent-facing guidance; and #192 concatenates its coverage eras
 into the committed QA database while retaining isolated per-case stores. No
 genuine uncertainty remains for a `/scope` interview.
 
-Flat order. Traits fired: none. The work stays on one analyzer-fed fixture
-boundary; it introduces no server projection implementation, rendered surface,
-browser run, live resource, trust-boundary write, split-path harness, or unchecked
-lockstep copy. The generator, catalog, and their two test files are shared by every
-era, so parallel chunks would collide on file ownership. A nearby reviewer-memory
-anchor agrees with the flat call.
+Chunked order. Trait fired: many analyzer-tuned artifacts in one fixture boundary;
+the roughly twenty eras exceed one implementation session even though they share
+one catalog and generator. A nearby reviewer-memory anchor agrees with the chunked
+call. Basal plus the shared expectation/generator contract lands first; ISF and I:C
+consume that contract serially because both chunks touch the catalog, generator,
+tests, and database. The coordinator alone ticks tasks and records each chunk's
+budget measurements after its verified merge.
 
 Review rounds on the #192 draft lock (the coordinator fills this table):
 
 | round | blockers | authoring | injected |
 | --- | ---: | ---: | ---: |
 | 1 | 7 | 7 | 0 |
+| 2 | 4 | 2 | 2 |
+
+Round 3 is the hard cap.

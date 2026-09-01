@@ -66,6 +66,10 @@ Disposition: inline in this proposal and unchanged in the locked work order.
 - `mockups/diagnose-evidence-canvas.exploration/`,
   `mockups/finding-evidence-routing.exploration/`, `scripts/screenshots.local.*`:
   extraction and capture re-pointed and regenerated.
-- Browser suites, replays, support audit, and the two behavior ledgers re-based.
+- Browser suites, replays, support audit, and the two behavior ledgers re-based;
+  the frontend unit tests that pinned two-theme behaviour re-base with them.
+- `frontend/diagnose-workstation.js`: the envelope, median and window-scrim
+  values that a color-scheme read used to select are inlined.
+- `docs/scope/304-*`: the triage scope ledger and the one-theme probe.
 - `DESIGN.md` and `mockups/INDEX.md` record the one-theme lock;
   `openspec/changes/dark-only-theme/evidence/` holds the identity diff.

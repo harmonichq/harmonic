@@ -109,7 +109,8 @@ test('the cockpit footer keeps the full advisory sentence visible (#535)', () =>
 /* #736 re-settled this. The outlined/fill glyph was the pre-Harmonic mark; the
    Harmonic identity is a native capital H in a FILLED burnt-orange rounded
    square, and the square carries its own orange instead of reading
-   --ck-accent, so the mark stays one constant object wherever it sits. The empty aria-hidden span is unchanged: the H is drawn by ::before,
+   --ck-accent, so the mark stays one constant object wherever it
+   sits. The empty aria-hidden span is unchanged: the H is drawn by ::before,
    so it never enters the accessibility tree or a text selection. */
 test('the cockpit identity wears the locked Harmonic mark', () => {
   const mark = page.match(/<span class="cockpit-mark"[\s\S]*?<\/span>/)[0];

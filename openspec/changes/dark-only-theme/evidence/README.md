@@ -169,7 +169,9 @@ other origin is aborted, so the run touches no network.
 
 The script writes `identity-diff.json` (the full structured diff) and
 `identity-diff.report.txt` (the human-readable report) into `OUT_DIR`, and exits
-0 only when the sole differences are the removed Theme control nodes.
+0 only when every difference falls under one of the five sanctioned rules above:
+the removed Theme control nodes, the removed boot-time theme gate script, and
+the utilities nav reflowing around the removed button's box.
 
 ## Output
 

@@ -52,6 +52,19 @@ Why: frontend-only refactor of an advisory-dosing surface; the ledger replay is
 the strongest no-change instrument the repo owns. Disposition: inline (copied
 into the work order).
 
+## Review rounds
+
+- Round 1 (cold Opus, BLOCKED, 5 blockers, all `authoring`): (1) fast-gate test
+  parses `renderCaseRoster` span out of the workstation module — allowlist and
+  guard-move missing; (2) exploration `build.mjs` lifts the function verbatim
+  under a CI `--check` — regeneration missing; (3) verification narrower than
+  pinned task "fast gate, drift checks, browser gates" and omitted the only two
+  instruments of the comparison roster; (4) spec delta demanded identical cap
+  behavior the two lists do not share today (published vs routed counts, one
+  shared expansion state) — must-prevent violation as drafted; (5) front door
+  underspecified: caller-owned data attributes, headers, empty states unnamed.
+  All five reproduced against the tree before fixing.
+
 ## Spawned tasks
 
 - none yet

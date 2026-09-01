@@ -42,21 +42,21 @@
 
 ## 2. Re-base the browser contracts to one theme
 
-- [ ] In `frontend/cockpit-shell.browser.test.mjs`,
+- [x] In `frontend/cockpit-shell.browser.test.mjs`,
       `frontend/diagnose-workstation.browser.test.mjs`, and
       `frontend/diagnose-canvas-composition.browser.test.mjs`, remove the theme
       option from the openers, the `['light','dark']` loops, the in-test Theme
       toggle, the Light fixed-point cascade test, and the `theme` localStorage
       writes; keep every Dark assertion byte-for-byte and re-base the
       theme-invariant geometry test to assert the Dark values directly.
-- [ ] Apply the same rule to `frontend/diagnose-workstation-behavior.replay.mjs`,
+- [x] Apply the same rule to `frontend/diagnose-workstation-behavior.replay.mjs`,
       `frontend/diagnose-event-comparison-behavior.replay.mjs`, and
       `frontend/verify-660-story-behavior.replay.mjs`.
-- [ ] Re-base `mockups/diagnose-event-comparison-support-audit.mjs` so its five
+- [x] Re-base `mockups/diagnose-event-comparison-support-audit.mjs` so its five
       scenarios keep their identities on the one theme (it commits no captures).
 - [ ] Re-base `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
       and `harness.mjs` to one theme and regenerate their committed reports.
-- [ ] Retire cockpit S3 and S10 and Diagnose S117 in
+- [x] Retire cockpit S3 and S10 and Diagnose S117 in
       `mockups/cockpit-shell.behavior.md` and
       `mockups/finding-evidence-routing.behavior.md` with the ADR 304 sanction
       quoted on each entry, in the same commit as their replay functions go, so
@@ -65,7 +65,7 @@
       rewrites) onto the post-retirement inventory so each case still asserts
       what it asserts today; amend the cross-theme wording of S1 and S11 and
       every story that names both themes.
-- [ ] Run the fast gate and all ten browser legs locally against the no-fetch
+- [x] Run the fast gate and all ten browser legs locally against the no-fetch
       server; require zero failures and no skipped assertion, and
       `sh docs/scope/304-one-theme-probe.sh contracts` exiting 0.
 

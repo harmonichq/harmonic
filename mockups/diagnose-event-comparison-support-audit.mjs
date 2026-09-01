@@ -44,19 +44,23 @@ const downgrade = (caseFile, url) => {
   return caseFile;
 };
 
+/* The `-light` / `-dark` suffixes are scenario IDENTITIES, kept across the #304
+   one-theme retirement so a named case keeps its name in the audit's output and
+   in every report that already cites it. They no longer select a surface — the
+   app has one — and none of these five cases ever asserted a palette. */
 const cases = [
-  { name: 'matched-supported-light', finding: 'finding:late_bolus', theme: 'light' },
-  { name: 'comparison-withheld-dark', finding: 'finding:missed_meal', theme: 'dark' },
+  { name: 'matched-supported-light', finding: 'finding:late_bolus' },
+  { name: 'comparison-withheld-dark', finding: 'finding:missed_meal' },
   {
-    name: 'selected-withheld-light', finding: 'finding:missed_meal', theme: 'light',
+    name: 'selected-withheld-light', finding: 'finding:missed_meal',
     selectCohort: 'matched',
   },
   {
-    name: 'served-downgrade-light', finding: 'finding:late_bolus', theme: 'light',
+    name: 'served-downgrade-light', finding: 'finding:late_bolus',
     caseFile: downgrade,
   },
   {
-    name: 'narrow-mixed-light', finding: 'finding:late_bolus', theme: 'light',
+    name: 'narrow-mixed-light', finding: 'finding:late_bolus',
     viewport: { width: 390, height: 844 },
   },
 ];

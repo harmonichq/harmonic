@@ -93,7 +93,15 @@ const PAYLOAD = 'mockups/diagnose-workstation.synthetic/payload.json';
    app-base.extracted.css, and the contrast guard then measured a theme the app
    had already left for the whole of an exploration. In check mode the build
    computes every artifact exactly as it would to write it, compares against the
-   committed bytes, and exits nonzero naming what diverged — it never writes. */
+   committed bytes, and exits nonzero naming what diverged — it never writes.
+
+   chrome.extracted.html is a FOURTH committed artifact, but not one this
+   script can compute: harness.mjs regenerates it by lifting the shell out of a
+   live browser, and nothing static can reproduce that. `--check` only guards
+   known rot on it — a shell marker #304 retired reappearing, or a link it
+   carries that is no longer a route in frontend/index.html — never a full
+   byte comparison, so passing this guard is not proof the extract is current;
+   re-running the harness is. */
 const CHECK = process.argv.includes('--check');
 /* ROUND 6, FORM 3 — the day traces the CLOCK projection lays over the pooled
    envelope when an event is drilled (amendment: "the day-trace overlay is KEPT
@@ -1492,15 +1500,38 @@ async function main() {
       const current = await readFile(path, 'utf8').catch(() => '');
       if (current !== text) stale.push(path);
     }
+    /* chrome.extracted.html is harness.mjs's own artifact, not this build's —
+       it is lifted from a live browser, which this script cannot recompute
+       statically, so it is not in `artifacts` above and never byte-compared.
+       This guards only known rot: the shell markers #304 retired surviving a
+       chrome the app has moved past, and a link this scene routes to that the
+       app no longer serves. It is not a substitute for re-running the harness. */
+    const chromePath = join(HERE, 'chrome.extracted.html');
+    const chrome = await readFile(chromePath, 'utf8').catch(() => '');
+    if (!chrome) {
+      stale.push(chromePath);
+    } else {
+      const retiredMarkers = ['cockpit-theme', 'theme-menu-button', 'cockpit-utility-menu', 'href="#"'];
+      for (const marker of retiredMarkers) {
+        if (chrome.includes(marker)) stale.push(`${chromePath} — retired marker "${marker}"`);
+      }
+      const hrefs = [...chrome.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((m) => m[1]);
+      for (const href of hrefs) {
+        if (!indexHtml.includes(`href="${href}"`)) {
+          stale.push(`${chromePath} — links to "${href}", not a route in frontend/index.html`);
+        }
+      }
+    }
     if (stale.length) {
       for (const path of stale) {
         process.stdout.write(`stale artifact: ${path} — rerun `
-          + 'node mockups/finding-evidence-routing.exploration/build.mjs\n');
+          + 'node mockups/finding-evidence-routing.exploration/build.mjs '
+          + 'or, for chrome.extracted.html, node mockups/finding-evidence-routing.exploration/harness.mjs\n');
       }
       return 1;
     }
     process.stdout.write('finding-evidence-routing artifacts current '
-      + `(${[...artifacts.keys()].join(', ')})\n`);
+      + `(${[...artifacts.keys()].join(', ')}, chrome.extracted.html)\n`);
     return 0;
   }
 

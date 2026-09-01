@@ -210,13 +210,6 @@
        and footer are lifted out of the running app's DOM into
        chrome.extracted.html by harness.mjs. -->
 
-  <script>
-    // The app's own first-paint theme switch (frontend/index.html), verbatim.
-    (function () {
-      if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-    })();
-  </script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

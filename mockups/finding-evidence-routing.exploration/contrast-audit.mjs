@@ -519,7 +519,12 @@ async function main() {
          clipped row was invisible — which is how a P0 survived nine rounds of
          captures. Shot here because this is the run that measures it. */
       if (state === 'queue' && size.width === 1280) {
-        await page.screenshot({ path: join(SHOTS, 'r11-queue-1280x800.png') });
+        /* `-dark` IS A FILENAME TOKEN AND NOTHING ELSE, for the same reason
+           harness.mjs's `t` is: it selects no theme and is read by no
+           assertion, but the committed capture is `r11-queue-1280x800-dark.png`
+           and dropping the suffix would overwrite nothing and orphan it while
+           writing an unrelated new file. */
+        await page.screenshot({ path: join(SHOTS, 'r11-queue-1280x800-dark.png') });
       }
       if (of.level > 0) failures.push(`${key} · ${state}: #level overflows by ${of.level}px — the inspector column must not scroll`);
       if (of.pageX > 0 || of.pageY > 0) failures.push(`${key} · ${state}: the page scrolls (${of.pageX}px x / ${of.pageY}px y)`);

@@ -304,32 +304,18 @@
 }
 .fer-band .seg:first-child { border-radius: 2px 0 0 2px; }
 .fer-band .seg:last-child { border-radius: 0 2px 2px 0; }
-/* ROUND 9, FINDING 17 / ROUND 11, F2 — THE INACTIVE SEGMENTS CARRY A 3:1 MARK
-   IN BOTH THEMES, MEASURED IN BOTH.
-   Round 9 raised light from invisible to nearly invisible (2.17:1) and left dark
-   where it was — 1.60:1, the worse half of the pair, and unmeasured. The band IS
-   the split figure and each segment is also a `<button>`, so WCAG 1.4.11's 3:1
-   applies twice over. Both values below are tuned against their own ground and
-   both are asserted by contrast-audit.mjs on every run, which is the only thing
-   that stops the next quieting pass from walking them back down:
-     light  `--mk-text` 50% into `--mk-surface-2`  -> 3.82:1 on bone
-     dark   `--mk-text` 40% into transparent       -> 3.36:1 on the desk
-   The light form still mixes into the column's second surface rather than into
-   the ground it sits on, which is the pairing DESIGN.md asks for; only the
-   percentage moved. */
+/* ROUND 9, FINDING 17 / ROUND 11, F2 — THE INACTIVE SEGMENTS CARRY A 3:1 MARK.
+   Round 9 raised the segments from invisible to nearly invisible and left dark
+   where it was — 1.60:1, unmeasured. The band IS the split figure and each
+   segment is also a `<button>`, so WCAG 1.4.11's 3:1 applies twice over. The
+   value below is tuned against the desk ground and asserted by
+   contrast-audit.mjs on every run, which is the only thing that stops the next
+   quieting pass from walking it back down:
+     `--mk-text` 40% into transparent -> 3.36:1 on the desk */
 .fer-band .seg {
   border: 0; padding: 0; cursor: pointer;
   background: color-mix(in srgb, var(--mk-text) 40%, transparent);
 }
-html:not(.dark) .fer-surface .fer-band .seg {
-  background: color-mix(in srgb, var(--mk-text) 50%, var(--mk-surface-2));
-}
-/* The pressed rule below is three classes; the light override above is five, so
-   without this the drilled segment lost its accent in light and the band went
-   back to reading as one undifferentiated bar — the very defect finding 17 is
-   about, arriving through the fix for it. Scoped identically so the two rules
-   are decided by order rather than by weight. */
-html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
 .fer-band .seg[aria-pressed="true"] { background: var(--ck-accent); }
 .fer-band .seg:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
 
@@ -484,29 +470,15 @@ html:not(.dark) .fer-surface .fer-band .seg[aria-pressed="true"] { background: v
 /* ======================================================================
    ROUND 4 ITEM 8 — TWO GROUNDS, TWO NEAR-RULE INKS.
    ====================================================================== */
-/* `--ec-near` is `--mk-warn` in both themes, and the Near-rule median is a
- * `limited`-support series, which the shipped lens draws at 1.05px dashed and
- * 58% opacity. On the dark ground that lands as a legible warm dash. On bone it
- * does not: `--mk-warn` (#94501f) at 58% over #FAF8F4 resolves to about #BF9778,
- * 2.51:1 against its own ground — a cohort line the reader has to hunt for, on
- * the very chart that exists to compare it.
+/* `--ec-near` is `--mk-warn`, and the Near-rule median is a `limited`-support
+ * series, which the shipped lens draws at 1.05px dashed and 58% opacity.
  *
- * The alpha is shipped grammar (it is how "limited support" is said, on every
- * cohort), so the INK moves instead: the same warm family, taken far enough down
- * that 58% of it still resolves to ~3.3:1 on parchment, which is the graphics
- * floor. DARK IS UNTOUCHED — the override is scoped to `html:not(.dark)`, the
- * same scoping theme.css uses for its own light-only warn/danger split, and for
- * the same reason: a light literal leaking into dark is how Verify's movement
- * chips lost their ink. */
-html:not(.dark) .fer-surface { --ec-near: #5d2a0c; }
-/* ROUND 11, F6 — AND THE DARK HALF, WHICH ROUND 4 NEVER MEASURED. The paragraph
-   above is exactly right about the mechanism and was applied to one theme: on
-   the desk the shipped `#c98a4e` at the same 58% resolves to 2.93:1 against the
-   lens plot ground, under the same 3:1 floor the light fix was written to
-   satisfy. Same move, other ground — the ink steps toward its own theme's light
-   end until 58% of it lands at 3.34:1, and the alpha, which is how "limited
-   support" is said on every cohort, does not move. */
-html.dark .fer-surface { --ec-near: #d59a60; }
+ * ROUND 11, F6 — MEASURED ON THE DESK. The shipped `#c98a4e` at 58% resolves to
+ * 2.93:1 against the lens plot ground, under the 3:1 graphics floor. The alpha
+ * is shipped grammar (it is how "limited support" is said, on every cohort), so
+ * the INK moves instead — the ink steps toward its own theme's light end until
+ * 58% of it lands at 3.34:1, and the alpha does not move. */
+.fer-surface { --ec-near: #d59a60; }
 
 /* ======================================================================
    ROUND 4 ITEM 12 — SECTIONS SEPARATE BY SPACE.
@@ -693,28 +665,19 @@ html.dark .fer-surface { --ec-near: #d59a60; }
 .fer-head-key .k[data-series="25–75th"] i { background: color-mix(in srgb, var(--primary) 38%, transparent); }
 
 /* ---------- FINDING 18: one token pair for the two dot states ----------
-   The shipped scatter draws at `--primary-600`, which on bone is a near-full-
-   contrast dark teal — so the UNSELECTED dots were louder in light than the
-   terracotta accent marking the ones being read, and the emphasis hierarchy
-   inverted between the two themes. `--fer-dot` is the recessive half of the pair
-   and the accent is the lead half, tuned independently against each ground for
-   the SAME relationship (the lead reads clearly ahead of the field in both).
-   Declared as literal colours rather than a `color-mix()` for the reason
-   `--ec-near` above is: pooled.js reads this through `getPropertyValue` and hands
-   it to a canvas, and an unresolved `color-mix()` comes back as its own source
-   text, which no canvas can paint. */
-/* ROUND 11, F4 — the light half is stepped down until it clears the 3:1 graphics
-   floor on bone (3.82:1); dark measured 3.81:1 and is unchanged. The
-   lead/recessive separation this pair exists for is carried by HUE and by the
-   selected dot's size, not by lightness — dot against `--primary` is 1.35:1
-   light / 1.69:1 dark. That is a real limit of the pair and is reported rather
-   than papered over; the floor is the thing that is not negotiable.
-   The pre-step light literal this replaced is unrecoverable (#40 was squashed
-   and the value survives in no comment, report or lock), so the "2.37:1 -> "
-   this note used to open with is gone rather than restated on a ground it was
-   never measured against. */
-.fer-surface { --fer-dot: #5c8494; }
-html.dark .fer-surface { --fer-dot: #4d7789; }
+   The shipped scatter draws at `--primary-600`, so `--fer-dot` is the recessive
+   half of a pair whose lead half is the accent, tuned against the desk ground
+   for the relationship (the lead reads clearly ahead of the field). Declared as
+   a literal colour rather than a `color-mix()` for the reason `--ec-near` above
+   is: pooled.js reads this through `getPropertyValue` and hands it to a canvas,
+   and an unresolved `color-mix()` comes back as its own source text, which no
+   canvas can paint.
+   ROUND 11, F4 — dark measured 3.81:1 and is unchanged. The lead/recessive
+   separation this pair exists for is carried by HUE and by the selected dot's
+   size, not by lightness — dot against `--primary` is 1.69:1. That is a real
+   limit of the pair and is reported rather than papered over; the floor is the
+   thing that is not negotiable. */
+.fer-surface { --fer-dot: #4d7789; }
 
 /* ---------- FINDING 3 / ROUND 11, F12: the hedge hangs off the key ----------
    `.fer-tip` IS DELETED. Round 9 declared it on a false premise — that this
@@ -754,50 +717,34 @@ html.dark .fer-surface { --fer-dot: #4d7789; }
 .fer-day { padding-top: 8px; }
 
 /* ======================================================================
-   ROUND 11 — THE FLOOR, STATED ONCE AND MEASURED IN BOTH THEMES.
+   ROUND 11 — THE FLOOR, STATED ONCE AND MEASURED ON THE DESK.
    ====================================================================== */
 /* The lock audit's systemic finding, in one sentence: three separate rounds
- * tuned a light value against a measurement, scoped the fix `html:not(.dark)`,
- * and never measured dark — and in every one of the three dark ended up the
- * worse half. So every value in this block is measured on BOTH grounds, and
- * contrast-audit.mjs re-measures all of them on every run and fails the run if
- * one regresses. The floors are DESIGN.md line 188's own 4.5:1 for text and
- * WCAG 1.4.11's 3:1 for marks and control boundaries.
+ * tuned a value against a measurement and never measured the desk — and in
+ * every one of the three the desk ended up the worse half. So every value in
+ * this block is measured against the desk, and contrast-audit.mjs re-measures
+ * all of them on every run and fails the run if one regresses. The floors are
+ * DESIGN.md line 188's own 4.5:1 for text and WCAG 1.4.11's 3:1 for marks and
+ * control boundaries.
  *
  * TWO TOKENS CAUSED THIRTEEN OF THE FORTY TEXT FAILURES, which is why they are
  * declared here rather than fixed one selector at a time.
  */
 .fer-surface {
-  /* (a) THE ROUTE INK. This was written against the PARCHMENT light theme,
-     where `--primary` was `#b35b2e` at 3.95:1 and every accent-inked STRING in
-     light failed at once: both routes, the expander, the queue chevron, the
-     option tick. The fix is not a new colour; it is the accent's own next step,
-     `--primary-600`, which the app already pairs per theme (`#87401a` light,
-     `#ef9459` dark) and which clears the floor on both the pane ground and the
-     row wash the option tick sits on:
-       light  7.13:1 on bone / 6.40:1 on the selected-option wash
-       dark   6.79:1 on the desk / 4.83:1 on that wash
-     THE LIGHT HALF OF THIS FIX IS NOW REDUNDANT. The bone relight (decision
-     record 37) took `--primary` to `#a94f21`, which measures 5.17:1 on the pane
-     and 4.65:1 on the wash — so light would clear 4.5:1 unaided today. Dark is
-     what keeps the token: dark's `--primary` passes on the pane (5.46:1) and
-     still fails on the wash (3.88:1), which is exactly the half-measured fix
-     this round exists to stop. One token, one value, both themes. */
+  /* (a) THE ROUTE INK. The fix is not a new colour; it is the accent's own
+     next step, `--primary-600`, which the app pairs against the desk
+     (`#ef9459`) and which clears the floor on both the pane ground and the row
+     wash the option tick sits on: 6.79:1 on the desk / 4.83:1 on that wash. */
   --fer-route-ink: var(--primary-600);
   /* (b) THE DIM META INK, which was `color-mix(--mk-text 45%, transparent)` on
      the dock line, the residue and the band's meta, and 55% on the two counts.
-     At 2.88:1 and 3.88:1 in light neither cleared 4.5:1, and the two steps have
-     no room between them above the floor — so they become ONE dim register
-     rather than two that both fail. Light needs 63% and dark 56% against the
-     worst ground either lands on (the dock's own fill, and the selected-option
-     wash), so each theme takes its own value with margin:
-       light  66% -> 5.54:1 on bone, 5.30:1 on the row wash
-       dark   62% -> 6.04:1 on the desk, 5.26:1 on the dock, 4.79:1 on the wash
-     It is still visibly dimmer than `--mk-muted` in light, which is the step the
-     register exists for. */
-  --fer-meta-dim: color-mix(in srgb, var(--mk-text) 66%, transparent);
+     Neither cleared 4.5:1, and the two steps have no room between them above
+     the floor — so they become ONE dim register rather than two that both
+     fail. 62% against the worst ground it lands on (the dock's own fill, and
+     the selected-option wash) clears with margin: 6.04:1 on the desk, 5.26:1 on
+     the dock, 4.79:1 on the wash. */
+  --fer-meta-dim: color-mix(in srgb, var(--mk-text) 62%, transparent);
 }
-html.dark .fer-surface { --fer-meta-dim: color-mix(in srgb, var(--mk-text) 62%, transparent); }
 
 /* F7 — THE SHIPPED ELEMENTS ON THIS SURFACE THAT INHERIT THOSE TWO DEFECTS.
    Each is a step away from a shipped sibling and each is named in the harness's

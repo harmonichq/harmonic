@@ -12,9 +12,9 @@
  *       grids, the legend, the target band and its knock-out labels, the window
  *       markArea and its fitted rich-text label, both envelope band pairs, the
  *       hairline p25/p75 edges, the median and its axis-riding value tags, the
- *       occurrence scatter, the meal track, and the docked-readout wiring.
+ *       occurrence scatter, and the docked-readout wiring.
  *   frontend/diagnose-workstation-chart.js  windowStats, buildSlotLane
- *   frontend/diagnose-workstation-data.js   envelopeFromPooled, markersFromPooled
+ *   frontend/diagnose-workstation-data.js   envelopeFromPooled
  *   frontend/diagnose-workstation.js        resolveColors
  *
  * Every one of those is the module's own exported entry point, so the mock's
@@ -57,7 +57,7 @@ import {
   renderCanvas, windowStats, buildSlotLane,
 } from '../../frontend/diagnose-workstation-chart.js';
 import {
-  envelopeFromPooled, markersFromPooled,
+  envelopeFromPooled,
 } from '../../frontend/diagnose-workstation-data.js';
 import { resolveColors } from '../../frontend/diagnose-workstation.js';
 import { Y_DOMAIN } from './chart.js';
@@ -231,7 +231,6 @@ export function paintPooled({
   dayLabel = null,
 }) {
   const envelope = envelopeFromPooled(payload.pooled);
-  const markers = markersFromPooled(payload.pooled);
   const lane = buildSlotLane(payload.basal);
   const drawn = win || payload.window;
   const stats = windowStats(envelope, drawn);
@@ -242,7 +241,6 @@ export function paintPooled({
 
   const chart = renderCanvas(chartHost, window.echarts, {
     envelope,
-    markers,
     colors,
     stats,
     // Private fixture mirror of the API's served basal_support_floor.

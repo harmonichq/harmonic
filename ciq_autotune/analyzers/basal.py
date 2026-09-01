@@ -24,8 +24,9 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from ..events import BasalEvent, BolusEvent, CarbEntry, CgmReading, PumpEvent
+from ..finding_case_file import FMT
 from ..harm import BasalHarm, HarmConfig, PrintedLow, basal_harm, basal_harm_evidence
-from ..model import CleanSample, ModelConfig, _slot_label, _slot_of, clean_samples
+from ..model import CgmSeries, CleanSample, ModelConfig, _slot_label, _slot_of, clean_samples
 from ..result import (
     ConsolidatedProfile,
     IcBlock,
@@ -388,6 +389,40 @@ def analyze_basal(
     active_by_slot = schedule_by_slot(active_basal, cfg.slot_minutes) if active_basal else {}
     programmed = active_by_slot or reconstructed
     slot_starts = slot_starts or {}
+    cgm = CgmSeries(cgm_readings, timedelta(minutes=cfg.bg_max_stale_min))
+
+    def night_glucose(day, slot):
+        slot_start = datetime.combine(day, datetime.min.time()) + timedelta(
+            minutes=slot * cfg.slot_minutes
+        )
+        slot_end = slot_start + timedelta(minutes=cfg.slot_minutes)
+        window_lo = bisect.bisect_left(cgm.times, slot_start)
+        window_hi = bisect.bisect_left(cgm.times, slot_end)
+        window_values = cgm.values[window_lo:window_hi]
+        trace_start = slot_start - timedelta(minutes=60)
+        trace_lo = bisect.bisect_left(cgm.times, trace_start)
+        trace_hi = bisect.bisect_right(cgm.times, slot_end)
+        return {
+            "glucose_mean": (
+                round(statistics.mean(window_values), 1) if window_values else None
+            ),
+            "glucose_entry": (
+                round(value, 1) if (value := cgm.nearest(slot_start)) is not None else None
+            ),
+            "glucose_exit": (
+                round(value, 1) if (value := cgm.nearest(slot_end)) is not None else None
+            ),
+            "glucose_trace": [
+                {
+                    "t": t.strftime(FMT),
+                    "minute": round((t - slot_start).total_seconds() / 60, 1),
+                    "bg": bg,
+                }
+                for t, bg in zip(
+                    cgm.times[trace_lo:trace_hi], cgm.values[trace_lo:trace_hi]
+                )
+            ],
+        }
 
     # Keep the source-night roster beside the clean samples.  The evidence
     # projection reads these analyzer-owned facts; it must never run the window
@@ -497,17 +532,27 @@ def analyze_basal(
             # midnight) so the unified drill-down (#20) can jump straight to the
             # moment in the Daily report, same as basal/ISF/I:C now all support.
             for (d, _), r in zip(days_sorted, per_day)]}
-        evidence["night_roster"] = [
-            {"date": d.isoformat(),
-             "t": datetime.combine(d, datetime.min.time())
-                  .replace(hour=(s * cfg.slot_minutes) // 60,
-                           minute=(s * cfg.slot_minutes) % 60).isoformat(),
-             "delivered_rate": rate,
-             "programmed_rate": (statistics.median(programmed_map[d])
-                                 if programmed_map.get(d) else None),
-             "sign": night_signs[s].get(d)}
-            for (d, _), rate in zip(days_sorted, per_day)
+        roster = []
+        for (d, _), rate in zip(days_sorted, per_day):
+            roster.append({
+                "date": d.isoformat(),
+                "t": datetime.combine(d, datetime.min.time())
+                     .replace(hour=(s * cfg.slot_minutes) // 60,
+                              minute=(s * cfg.slot_minutes) % 60).isoformat(),
+                "delivered_rate": rate,
+                "programmed_rate": (statistics.median(programmed_map[d])
+                                    if programmed_map.get(d) else None),
+                "sign": night_signs[s].get(d),
+                **night_glucose(d, s),
+            })
+        evidence["night_roster"] = roster
+        roster_glucose = [
+            night["glucose_mean"] for night in roster
+            if night["glucose_mean"] is not None
         ]
+        evidence["roster_glucose_mean"] = (
+            round(statistics.mean(roster_glucose), 1) if roster_glucose else None
+        )
         estimate_dates = {d for d, _ in days_sorted}
         # This count names every source night absent from the final estimate,
         # including epoch and Regime-B exclusions.  Pooling merely decides which

@@ -31,7 +31,10 @@ class BasalNightEvidence:
         if row is None:
             raise UnknownBasalSlot(slot)
         evidence = row.get("evidence") or {}
-        required = ("night_roster", "directional_support_count", "excluded_night_count")
+        required = (
+            "night_roster", "roster_glucose_mean",
+            "directional_support_count", "excluded_night_count",
+        )
         missing = [key for key in required if key not in evidence]
         if missing:
             raise IncompleteBasalNightEvidence(
@@ -53,6 +56,7 @@ class BasalNightEvidence:
             "recommended": row.get("recommended"),
             "estimate": {key: estimate.get(key) for key in ("value", "lo", "hi", "confidence")},
             "roster_count": len(roster),
+            "roster_glucose_mean": evidence["roster_glucose_mean"],
             "directional_support_count": evidence.get("directional_support_count"),
             "excluded_night_count": evidence.get("excluded_night_count"),
             "nights": roster,

@@ -817,7 +817,7 @@ test('surface copy says Carb ratio rather than the engine abbreviation', () => {
   assert.match(visible, /Carb ratio/);
 });
 
-test('chart options resolve live light and dark theme tokens', () => {
+test('chart options resolve live theme tokens', () => {
   const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
   const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
   const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;

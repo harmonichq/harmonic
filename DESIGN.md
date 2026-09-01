@@ -178,25 +178,25 @@ and technical documentation keep their established domain terms.
 
 ## 2. Colors
 
-Two committed brand colors (teal, terracotta) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name only that shipped value (e.g. primary is the brighter, more saturated teal `#5BAFD0`, tuned to hold contrast against a near-black surface, not a filtered/inverted version of a light-mode color that no longer ships).
+Two committed brand colors (primary, accent) carry identity; a much larger set of domain-semantic tokens carries data meaning. #304 retired the Light theme, so the app ships the Dark value of each token alone — the swatches below name that shipped value, read directly from `frontend/index.html`'s `:root` block (e.g. primary is burnt orange `#E07F3F`, tuned to hold contrast against a near-black surface).
 
 ### Primary
-- **Deep Teal** (`#5BAFD0`): the one recurring brand color — primary buttons, active tab underline, focus rings, links, the "in-range"/"ok" glucose semantic. Used sparingly outside of these functional roles.
-- **Teal Tint** (`--primary-100`, `#1C2C32`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
+- **Burnt Orange** (`--primary`, `#E07F3F`): the one recurring brand color — primary buttons, active tab underline, focus rings, links. Used sparingly outside of these functional roles.
+- **Primary Tint** (`--primary-100`, `#40291B`): pill/badge backgrounds and hover fills where primary needs a soft surface, not a solid fill.
 
 ### Secondary
-- **Slate** (`--secondary`, `#9BA0A6`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
+- **Warm Grey** (`--secondary`, `#A89A85`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
 
 ### Tertiary
-- **Muted Terracotta** (`--accent`, `#E08B7E`): the accent color and the "high glucose" / "ran-high" semantic. This dual role is intentional — it reads as "attention, not alarm," matching the brand's refusal to over-dramatize excursions.
+- **Terracotta** (`--accent`, `#D08150`): the accent color and the "high glucose" / "ran-high" semantic. This dual role is intentional — it reads as "attention, not alarm," matching the brand's refusal to over-dramatize excursions.
 
 ### Neutral
-- **Paper** (`--bg`, `#15171A`): page background. Explicitly cool-neutral, not cream/sand-tinted.
-- **Surface** (`--surface`, `#1C1F22`): card and popover background.
-- **Surface Tint** (`--surface-2`, `#24272B`): table header rows, hover states, chip backgrounds — one step off `--surface`, never a third tone.
-- **Ink** (`--text`, `#E9EAEC`): body text.
-- **Ash** (`--muted`, `#93979E`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg`.
-- **Hairline** (`--line`, `#2C2E33`): all borders and dividers.
+- **Background** (`--bg`, `#0F0D0B`): page background — ADR 255's desk.
+- **Surface** (`--surface`, `#221E1B`): card and popover background — ADR 255's sheet.
+- **Surface Tint** (`--surface-2`, `#14120F`): table header rows, hover states, chip backgrounds — one step off `--surface`; ADR 255's chart well.
+- **Ink** (`--text`, `#F2EDE2`): body text.
+- **Muted** (`--muted`, `#A49C90`): secondary text, labels, placeholders. Meets 4.5:1 against `--bg`.
+- **Hairline** (`--line`, `#3F3833`): all borders and dividers.
 
 For the Diagnose Dark workstation, ADR 255's shipped role ladder supersedes
 the legacy examples above: desk `#0F0D0B`, chart well `#14120F`, field
@@ -208,12 +208,12 @@ to data marks and burnt orange to interaction.
 
 ### Data Semantics (domain-specific, not brand)
 These encode meaning in glucose/insulin charts and are never used decoratively:
-- **In-range** (`--in-range`, shares Primary teal): glucose within target band.
-- **High** (`--high`, shares Tertiary terracotta) / **Low** (`--low`, `#E08B6E`): glucose excursions. Distinguished from each other by hue, not just lightness.
-- **On-target** (`--on-target`, `#3DB87E`): a third, separate green reserved for "hit the target exactly" — never conflated with in-range teal.
-- **Manual Carb** (`--manual-carb`, `#D9B568`, shares Warn): the user-entered carb-log amber, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
-- **Observed / Inferred / Not-in-data** (`--observed` green, `--inferred` amber, `--notindata` grey): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).
-- **Basal** (`--basal`, `#6E8BB5`): a fourth, dedicated blue reserved for basal-rate chart series so it's never confused with the teal in-range/primary color in the same chart.
+- **In-range** (`--in-range`, `#86AD78`): glucose within target band.
+- **High** (`--high`, `#E07F3F`, shares Primary) / **Low** (`--low`, `#EC6F55`): glucose excursions. Distinguished from each other by hue, not just lightness.
+- **On-target** (`--on-target`, `#86AD78`): a third, separate token reserved for "hit the target exactly," always paired with a shape or label per the Color-Never-Alone Rule below.
+- **Manual Carb** (`--manual-carb`, `#D2743E`): the user-entered carb-log token, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
+- **Observed / Inferred / Not-in-data** (`--observed`, `#86AD78` / `--inferred`, `#B08858` / `--notindata`, `#8D8579`): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).
+- **Basal** (`--basal`, `#A89A85`): the basal-rate chart-series token; currently the same shipped value as `--secondary`.
 
 ### Named Rules
 **The Color-Never-Alone Rule.** Every glucose/evidence/bolus semantic that uses color must pair it with a shape, icon, or text label. Color-only encoding of clinical state is prohibited — this is a hard accessibility requirement (see `bolus_symbol` shape mapping and the daily-chart legend as the reference implementation), not a nice-to-have.

@@ -160,16 +160,14 @@
   border-bottom: 1px solid var(--wk-rule);
 }
 
-/* Dark has to make the material step explicit or the inspector floats on the
-   chart's own ground. Light never needed it stated: the sheet and the rail were
-   already different substances with a tonal step behind the divider. Three
-   substances, each one step warmer than the last — chart field, inspector wall,
-   dock floor — and no jump big enough to band (term 13). */
+/* The material step has to be explicit or the inspector floats on the chart's
+   own ground: three substances, each one step warmer than the last — chart
+   field, inspector wall, dock floor — and no jump big enough to band (term 13). */
 /* #215 — the Diagnose inspector joins the canvas on that ground. With the two
-   anchors abutting as one docked surface, the wall/field step read as two
-   materials in dark where light shows one, and the darker chart ground is the
-   one worth keeping. Verify's `.vw` dock is untouched, and the values stay
-   single-sourced here rather than restated in the Diagnose adapter. */
+   anchors abutting as one docked surface, the wall/field step reads as two
+   materials, and the darker chart ground is the one worth keeping. Verify's
+   `.vw` dock is untouched, and the values stay single-sourced here rather than
+   restated in the Diagnose adapter. */
 :is(.dw, .vw) .panes,
 :is(.dw, .vw) .canvas-pane,
 .dw .inspector { background: var(--wk-field); }

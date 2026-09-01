@@ -62,6 +62,15 @@ the sole owner of judgment. Disposition: inline (copied into the work order).
   formation (a roster night needs clean samples, so the construction is
   lead-only CGM with a null in-window mean). All reproduced, fixed at ff95ecf.
 
+- Panel 2 (fresh cold Opus, BLOCKED, 3 blockers + 1 note; 1 & 2 `authoring`,
+  3 `injected` by round-1's byte-identity anchor, note `authoring`): trace `t`
+  format unpinned between the case file's space-separated FMT and the roster's
+  ISO-T; slot 47's window end inexpressible by the clock-time replace idiom
+  (silent null must-prevent); the byte-identity expectation unsatisfiable for
+  the fixture whose synthetic input the generator task rewrites; naive window
+  scan is a cold-path regression, bisect instead. All reproduced, fixed at
+  1b01f9f.
+
 ## Spawned tasks
 
 (none yet)

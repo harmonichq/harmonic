@@ -333,8 +333,8 @@ const chartColors = (root) => {
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:
        not by resolveColors(), not here. ECharts fell back to the option's
-       textStyle colour, so the tag drew MUTED GREY on the primary plate in
-       both themes (#651). The token exists; it just was not passed. */
+       textStyle colour, so the tag drew MUTED GREY on the primary plate
+       (#651). The token exists; it just was not passed. */
     onAccent: css('--mk-on-primary'),
     meal: css('--ck-meal'),
     mealEdge: c.surface,

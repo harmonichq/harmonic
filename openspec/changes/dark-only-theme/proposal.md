@@ -58,10 +58,14 @@ Disposition: inline in this proposal and unchanged in the locked work order.
 ## Impact
 
 - `frontend/index.html`, `frontend/theme.css`, `frontend/diagnose-workstation.css`,
-  `frontend/verify-workstation.css`: token block and rule collapse.
+  `frontend/verify-workstation.css`: token block and rule collapse;
+  `frontend/shell.css` loses the Theme menu's styles.
+- `frontend/diagnose-evidence-charts.js`, `frontend/verify-workstation.js`: the
+  Dark arm of each theme-selected constant is inlined.
 - `harness/`: the theme select and URL parameter retire.
 - `mockups/diagnose-evidence-canvas.exploration/`,
   `mockups/finding-evidence-routing.exploration/`, `scripts/screenshots.local.*`:
   extraction and capture re-pointed and regenerated.
 - Browser suites, replays, support audit, and the two behavior ledgers re-based.
-- `DESIGN.md` and `mockups/INDEX.md` record the one-theme lock.
+- `DESIGN.md` and `mockups/INDEX.md` record the one-theme lock;
+  `openspec/changes/dark-only-theme/evidence/` holds the identity diff.

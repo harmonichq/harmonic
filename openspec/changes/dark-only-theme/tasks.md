@@ -77,6 +77,6 @@
       and their complete output.
 - [x] Update `mockups/INDEX.md` with the one-theme revision and its evidence
       path.
-- [ ] Tick each task above only when implemented and verified; run `/review` at
+- [x] Tick each task above only when implemented and verified; run `/review` at
       Full depth and resolve every blocking finding before opening one pull
       request. Do not merge.

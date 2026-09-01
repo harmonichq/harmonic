@@ -17,11 +17,11 @@ trace.
   the window (via the model's staleness-capped nearest-reading lookup, null
   when none qualifies); and that night's CGM trace from 60 minutes before slot
   start through slot end, served as the case file's `detail.glucose` shape — a
-  sparse list of `{t, bg}` points carrying absolute wall-clock timestamps at
-  the CGM's own cadence — which is exactly what the shipped
-  trace-over-envelope path consumes, so #291 wires only night selection. Lead
-  points before midnight carry the prior date in `t`; nothing infers a date
-  from a clock time.
+  sparse list of `{t, minute, bg}` points, `t` the absolute wall-clock
+  timestamp and `minute` relative to slot start (negative across the lead) —
+  which is exactly what the shipped trace-over-envelope path consumes, so #291
+  wires only night selection. Lead points before midnight carry the prior date
+  in `t`; nothing infers a date from a clock time.
 - Per slot, once: the roster-level mean in-block glucose — every night counts
   once, the mean of the per-night means, so the norm and the deviations read in
   the same units.

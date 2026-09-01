@@ -7,8 +7,10 @@
   existing `bg_max_stale_min` cap — reuse it, do not write a third
   nearest-reading lookup — null when none qualifies); and `glucose_trace` (the
   night's CGM readings from 60 minutes before slot start through slot end, a
-  sparse list of `{t, bg}` with absolute wall-clock timestamps; lead points
-  before midnight carry the prior date in `t`).
+  sparse list of `{t, minute, bg}` — `t` absolute wall-clock, `minute` relative
+  to slot start and negative across the lead, matching the case file's
+  `detail.glucose` fields; lead points before midnight carry the prior date in
+  `t`).
 - [ ] Stamp the slot's `roster_glucose_mean` once per slot — the mean of the
   per-night `glucose_mean` values, each roster night counting once, null-mean
   nights excluded from the average.
@@ -17,11 +19,14 @@
   it to the projection's `required` evidence keys so an incomplete payload
   fails closed rather than serving a silent null.
 - [ ] Cover the new facts with analyzer-output tests built from N nights of
-  synthetic events — never hand-set flags — including a night with no usable
-  in-window CGM serving nulls, and a projection pass-through test.
+  synthetic events — never hand-set flags — including a night whose readings sit
+  only in the lead (null `glucose_mean`, excluded from `roster_glucose_mean`,
+  entry/exit and trace per their own rules), and a projection pass-through
+  test.
 - [ ] Extend `scripts/gen_basal_night_evidence_fixtures.py` so the new facts
   are exercised — CGM covering the 60-minute lead, per-night glucose variation,
-  and one roster night with no usable in-window CGM — while preserving the
+  and one roster night whose CGM is confined to the staleness-capped lead so it
+  keeps its clean samples while the window itself holds no reading — while preserving the
   eight-night, one-bolus-exclusion shape its tests' hard-coded counts depend
   on; regenerate both committed fixtures the analyzer change moves
   (`frontend/__fixtures__/basal-night-evidence.json`,

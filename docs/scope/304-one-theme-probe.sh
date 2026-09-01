@@ -11,7 +11,7 @@ case "${1:-}" in
     pattern='html\.dark|html:not\(\.dark\)|localStorage[^\n]*theme|cockpit-theme|prefers-color-scheme|dataset\.theme|name="theme"|value="light"|classList\??\.contains\(.dark.\)|colors\.dark|get\(.theme.\)' ;;
   contracts)
     files="frontend/cockpit-shell.browser.test.mjs frontend/diagnose-workstation.browser.test.mjs frontend/diagnose-canvas-composition.browser.test.mjs frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-event-comparison-behavior.replay.mjs frontend/verify-660-story-behavior.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs mockups/finding-evidence-routing.exploration/contrast-audit.mjs mockups/finding-evidence-routing.exploration/harness.mjs"
-    pattern="'light'|\"light\"|html\.dark|html:not\(\.dark\)|cockpit-theme|theme:" ;;
+    pattern="'light'|\"light\"|html\.dark|html:not\(\.dark\)|cockpit-theme|theme:|theme[[:space:]]*=|setItem\(.theme." ;;
   *) echo "usage: $0 app|contracts" >&2; exit 2 ;;
 esac
 grep -nE "$pattern" $files

@@ -40,7 +40,7 @@ import {
 import {
   DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
   dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
-  enterFullscreen, inspectorStack, isDrilledSpotlight,
+  enterFullscreen, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
   recommendedFocalId, rosterChartIds, seatableChartIds, untraceDrill,
 } from './diagnose-canvas-state.js';

@@ -80,6 +80,16 @@ the sole owner of judgment. Disposition: inline (copied into the work order).
   measured). All reviewer-specified mechanical fixes, applied at e0a54dd,
   re-verified same-round by the panel-3 reviewer per the mechanical-fix rule.
 
+- Lock 2 supersession (start blocked at the full backend gate: one pre-existing
+  cache byte-parity test in tests/test_api.py sat outside lock 1's closed
+  Expected diff). Panel 1 (fresh cold Opus, COUNTERSIGNED, 0 blockers + 3
+  notes, all `authoring`): generated-facts appendix owed for the two pytest
+  counts; comment-update permission unstated beside the strict assertion
+  boundary; Context restated the fix without the Description field the task
+  named. All reproduced, fixed (tasks.md at 9e34b1c1, lock text), re-checked
+  by the same reviewer. Lesson carried to reviewer memory: ground a closed
+  allowlist on an analyzer change with a full-gate run, not a focused one.
+
 ## Spawned tasks
 
 (none yet)

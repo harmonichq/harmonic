@@ -212,3 +212,17 @@ flat call on the same catalog/generator shape) agrees flat.
   ledger committed with the re-pin, gitignore comment must not name the
   committed path, launch entry clears the scratch stem's sidecars, baseline
   commands named, new expectation fields default.
+- Round 3 (Opus, fresh cold panel, cap): 3 blocking `authoring` + 5 notes.
+  Blockers: the migration checklist and task 6 said the public-link pin
+  "moves" while the order (correctly) adds it beside the revise-e2e pin, and
+  the checklist was outside the closed diff; the two new expectation fields had
+  no proof-of-failure clause (the risk contract's silently under-asserted run);
+  the history acceptance was satisfiable by a row id with an empty series.
+  Notes: `profile_settings` conflicts on `(captured_at, idp)` and both recipes
+  already collide there; "no empty day" was five minutes wrong; isolated-case
+  defaults unmeasured (measured: both cases publish 0 history ids, 0 rest
+  windows, 0 history series); stale AGENTS.md harness-test sentence; stale
+  proposal boundaries. All reproduced and folded; record amended and
+  re-pinned. Cap reached with blockers still arriving, every one derivable
+  from the pinned source rather than an unsettled decision; posted on the
+  operator's delegation with this disclosed.

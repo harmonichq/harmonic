@@ -1092,10 +1092,17 @@ async function main() {
    * dark), 17 (a band that read as three scopes in dark and as a progress bar
    * in light), 18 (a dot hierarchy that inverted between them). ADR 304
    * retired light, so those three findings are settled by the one ground that
-   * ships and each frame below is shot once. It keeps its `-dark` suffix: the
-   * dark capture is the same file it always was, and renaming it would orphan
-   * every round note that cites it. Every frame is reached through the
-   * surface's own routing, as every other capture here is. */
+   * ships and each frame below is shot once.
+   *
+   * `t` IS A FILENAME TOKEN AND NOTHING ELSE — it selects no theme and is read
+   * by no assertion. It stays `'dark'` because ten `r9-*-dark.png` captures are
+   * committed under screenshots/ and every round note cites them by name;
+   * dropping the suffix would orphan all ten and write ten new files in a
+   * directory this change does not regenerate. The `-light` captures beside
+   * them stop being rewritten and are left as the history they now are.
+   *
+   * Every frame is reached through the surface's own routing, as every other
+   * capture here is. */
   const t = 'dark';
   await page.evaluate(() => window.__ferProject('clock'));
   await gotoLevel(page, null);
@@ -1133,8 +1140,8 @@ async function main() {
   await page.screenshot({ path: join(SHOTS, `r9-selection-by-event-${t}.png`) });
   await page.evaluate(() => window.__ferProject('clock'));
 
-  /* FINDINGS 8 + 17 — THE BAND, AT REST AND DRILLED, IN BOTH THEMES. The
-     population case file is where it has three segments to state. */
+  /* FINDINGS 8 + 17 — THE BAND, AT REST AND DRILLED. The population case file
+     is where it has three segments to state. */
   await gotoLevel(page, 'population:lows');
   await page.waitForTimeout(450);
   await page.mouse.move(0, 0);

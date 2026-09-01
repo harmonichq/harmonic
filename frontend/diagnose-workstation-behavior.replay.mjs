@@ -50,12 +50,11 @@ const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
-const evidenceTheme = () => process.env.THEME || 'dark';
 async function captureEvidence(page, label) {
   if (!evidenceDir) return;
   await mkdir(evidenceDir, { recursive: true });
   await page.screenshot({
-    path: join(evidenceDir, `${label}-${evidenceViewport()}-${evidenceTheme()}.png`),
+    path: join(evidenceDir, `${label}-${evidenceViewport()}.png`),
     fullPage: false,
   });
 }

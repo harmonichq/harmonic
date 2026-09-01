@@ -118,3 +118,50 @@ Review rounds on the #191 draft lock are instrumented here per triage 12b:
   still arriving; both were derivable from the pinned source rather than
   unsettled decisions, and the posting call went to the operator with this
   disclosed.
+
+## Triage — #194 (showcase cut)
+
+Routed: interview mode (the operator ruling names the cut; what "migrate the
+stage-1 harness" means and whether the thin showcase era honors the ruling's
+intent are the operator's decisions).
+
+Measured this session from origin/main 3886c63, showcase-only generator output
+in scratch versus the committed revise-e2e store:
+
+| Store | Size | Rows | Queue | ISF rest windows | I:C runs / history | Exposures (lows/meals/highs/corr) |
+| --- | ---: | --- | --- | ---: | --- | --- |
+| qa-e2e showcase | 139 KB | 356 CGM, 12 basal, 4 bolus, 1 settings (2024-06-01..29) | 1 basal assert, 3 findings, 0 history | 0 | 2 / 0 | 5 / 2 / 2 / 2 |
+| revise-e2e | 4.2 MB | 28,800 CGM, 28,800 basal, 600 bolus, 2 settings (100 days) | 1 I:C assert, 1 finding, 1 history | 30 | 179 / 1 | 96 / 180 / 0 / 0 |
+
+Other grounding: `tests/test_gen_qa_e2e_db.py` asserts a bare `--check` exits 1
+while the artifact is absent (flips on commit); serving any committed store
+flips it to WAL and writes `-wal`, `-shm` and `<db>.derived.sqlite` beside it,
+none gitignored; the harness owns no database path (manufactured mode reads
+JSON fixtures, live mode proxies port 8765; its README names the old generator
+for restore); `scripts/check_public_links.py` pins the revise-e2e path for
+AGENTS.md/CLAUDE.md only.
+
+### Decisions (#194)
+
+Operator delegated all four calls (2026-09-01): "you make the calls, you get
+this shipped". Stated need: the committed store is too thin to render parts of
+the app, so real data has had to stand in.
+
+- Q1 = C: the showcase era gains a dense 30-day background (5-minute CGM and
+  basal, daily meals, overnight fasting, one earlier carb-ratio setting) so
+  every Diagnose story renders, before the offline app moves to it. Why: the
+  ruling's payoff is a fed harness; moving to the thin era hands the operator a
+  poorer app for ISF, I:C and clock-strip stories. Expectations stay
+  analyzer-produced, never hand-set. `inline`
+- Q2 = B: the harness migration is a launch entry that serves the qa-e2e store
+  on port 8765 plus the README naming it; no new harness source. `inline`
+- Q3 = B: that launch entry (and the documented command) serve a scratch copy,
+  so the tracked store never flips to WAL; sidecar and derived-store patterns
+  are gitignored as belt and braces. `inline`
+- Q4 = A: launch, harness README, the AGENTS.md permitted command and its
+  public-link pin move now; CI browser-gates server, case-file route test,
+  allowlist pin and retirement wait for #192/#193. `inline`
+
+### Open questions (#194)
+
+None. Frontier empty after round 1.

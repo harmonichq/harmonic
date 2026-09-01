@@ -75,3 +75,28 @@ than replace it with lower-level fixture checks.
 
 The migration inventory that phase 5 executes is in
 [migration-checklist.md](migration-checklist.md).
+
+## ADR 194 — Dense showcase background, served from a scratch copy
+
+**Decision.** The showcase era carries a dense, manufactured 30-day
+background — 5-minute CGM and delivered-basal rows every day, daily
+carb-entered meal boluses, an overnight fasting stretch, and one earlier
+carb-ratio setting snapshot inside the window — composed with the coverage
+recipes it already stacks. The offline entrypoints that serve the committed
+store (`.claude/launch.json` `harmonic-nofetch` and the AGENTS.md permitted
+command) copy it to a scratch path first and serve the copy.
+
+**Why.** Measured on the #191 showcase-only artifact: 356 CGM readings across
+17 sparse days publish four queue rows but zero ISF rest windows, no
+carb-ratio history and gaps across the day chart, so three of the six harness
+stories and the clock strip render empty — the gap that has forced real data
+into chart reviews. The background is a catalog primitive, so the coverage
+cases stay isolated and their expectations unchanged; the showcase expectation
+is regenerated from analyzer output under the #189 risk contract (no injected
+verdicts). Serving a committed SQLite file through the app flips it to WAL and
+writes `-wal`, `-shm` and a derived store beside it; a scratch copy removes the
+restore-before-commit ritual instead of documenting it.
+
+**Consequences.** The CI browser-gates server, the case-file route test and
+the allowlist pin stay on revise-e2e until #192/#193 land, per the 2026-08-29
+ruling; the migration checklist marks which rows this cut moves.

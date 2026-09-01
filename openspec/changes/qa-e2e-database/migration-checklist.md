@@ -24,6 +24,14 @@ targets.
 | Public-link pin test | `tests/test_check_public_links.py` | Replace the expected generated database path while retaining the agent-instructions-only policy. |
 | Public-tree binary policy test | `tests/test_check_public_allowlist.py` | Replace the exact local-only QA database path and retain the `.sqlite` denial. |
 
+## Showcase cut (#194, per the 2026-08-29 ruling)
+
+Rows this cut moves: permitted offline command (AGENTS.md / CLAUDE.md), local
+launch entry, public-link path pin and its pin test, plus the harness README's
+restore reference. Rows that wait for #192/#193: CI drift-check replacement
+(this cut adds the QA check beside the old one), browser-gates server, route-
+level fixture copy, public-tree binary policy test, and every retirement.
+
 ## Non-executable historical references
 
 The remaining literal matches under `docs/scope/`, `openspec/changes/`, and

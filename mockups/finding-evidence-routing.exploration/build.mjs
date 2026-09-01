@@ -160,10 +160,9 @@ async function shippedInstruments() {
    blanked the tier column, and `.fer-group` replaced the shipped group header
    with a hairline rule. All four are DELETED, not kept beside the real thing.
 
-   What replaces them is `renderCaseRoster` itself, lifted out of
-   frontend/diagnose-workstation.js at build time exactly the way the toolbar's
-   two standing groups are — the function is module-private there, so there is
-   no export to import, and a transcription is the one thing this ruling
+   What replaces them is `renderOccurrenceRoster` itself, lifted out of
+   frontend/occurrence-roster.js at build time exactly the way the toolbar's
+   two standing groups are. A transcription is the one thing this ruling
    forbids. Extraction fails closed: an upstream rename stops the build rather
    than freezing a stale copy of the production table into the mock.
 
@@ -172,24 +171,29 @@ async function shippedInstruments() {
    point — the mock now shows what the shipped table actually does over this
    fixture, quirks included, instead of a prettier thing only the mock has. */
 async function shippedEvidenceTable() {
-  const path = 'frontend/diagnose-workstation.js';
-  const dw = await readFile(join(ROOT, path), 'utf8');
-  const grab = (name, re) => {
-    const m = dw.match(re);
-    if (!m) throw new Error(`${path} no longer declares \`${name}\` in the shape this build extracts`);
+  const path = 'frontend/occurrence-roster.js';
+  const rosterSource = await readFile(join(ROOT, path), 'utf8');
+  const workstationPath = 'frontend/diagnose-workstation.js';
+  const workstationSource = await readFile(join(ROOT, workstationPath), 'utf8');
+  const grab = (sourcePath, source, name, re) => {
+    const m = source.match(re);
+    if (!m) throw new Error(`${sourcePath} no longer declares \`${name}\` in the shape this build extracts`);
     return m[0];
   };
-  const cap = grab('EVIDENCE_CAP', /^const EVIDENCE_CAP = \d+;$/m);
-  const fmt = grab('fmtDate', /^const fmtDate = [\s\S]*?;$/m);
-  const bandKey = grab('VERDICT_BAND_KEY', /^const VERDICT_BAND_KEY = .*;$/m);
-  const residueKey = grab('VERDICT_RESIDUE_KEY', /^const VERDICT_RESIDUE_KEY = .*;$/m);
-  const render = grab('renderCaseRoster', /^function renderCaseRoster\([\s\S]*?\n\}$/m);
+  const cap = grab(path, rosterSource, 'EVIDENCE_CAP', /^export const EVIDENCE_CAP = \d+;$/m);
+  const render = grab(path, rosterSource, 'renderOccurrenceRoster',
+    /^export function renderOccurrenceRoster\([\s\S]*?\n\}$/m);
+  const fmt = grab(workstationPath, workstationSource, 'fmtDate', /^const fmtDate = [\s\S]*?;$/m);
+  const bandKey = grab(workstationPath, workstationSource, 'VERDICT_BAND_KEY',
+    /^const VERDICT_BAND_KEY = .*;$/m);
+  const residueKey = grab(workstationPath, workstationSource, 'VERDICT_RESIDUE_KEY',
+    /^const VERDICT_RESIDUE_KEY = .*;$/m);
   /* The three things the fidelity comparison hangs off. If the shipped painter
      ever stops emitting them the mock's table is no longer the app's, and the
      build says so here rather than in a screenshot nobody re-reads. */
-  for (const needle of ["className = 'ev-row case-occurrence'", 'class="ev-group"', "className = 'more'"]) {
+  for (const needle of ["className = 'ev-row case-occurrence'", 'group.header', "className = 'more'"]) {
     if (!render.includes(needle)) {
-      throw new Error(`extracted \`renderCaseRoster\` no longer emits ${needle} — extraction is corrupt`);
+      throw new Error(`extracted \`renderOccurrenceRoster\` no longer emits ${needle} — extraction is corrupt`);
     }
   }
   return `/* EXTRACTED VERBATIM from ${path} by\n`
@@ -201,8 +205,8 @@ async function shippedEvidenceTable() {
     + ' * adapter below reshapes this archived exploration\'s rows, then calls the\n'
     + ' * extracted renderer; it does not paint a second table.\n'
     + ' */\n'
-    + `${cap.replace(/^const /, 'export const ')}\n\n`
-    + `${fmt}\n${bandKey}\n${residueKey}\n\n${render}\n\n`
+    + `${cap}\n\n`
+    + `${fmt}\n${bandKey}\n${residueKey}\n\n${render.replace(/^export /, '')}\n\n`
     + `export function tierOf(occ) {\n`
     + `  const matched = (occ.verdicts || []).find((item) => item.matched);\n`
     + `  return matched ? matched.evidence_tier : null;\n`
@@ -213,11 +217,20 @@ async function shippedEvidenceTable() {
     + `    id: occurrence.id, date: occurrence.date, verdict,\n`
     + `    anchor: { t: occurrence.t, bg: occurrence.worst_bg ?? occurrence.bg ?? null, label: 'Low excursion' },\n`
     + `  }));\n`
-    + `  const caseFile = { occurrences: rows, verdict_counts: { [verdict]: rows.length },\n`
-    + `    summary: { denominator: factor.denominator ?? rows.length },\n`
-    + `    finding: { title: factor.title || (factor.cause || '').trim() } };\n`
-    + `  renderCaseRoster(host, caseFile, verdict, selected?.id || null,\n`
-    + `    (id) => onOpen(occurrences.find((occurrence) => occurrence.id === id)), onMore, shownCount);\n`
+    + `  const label = VERDICT_BAND_KEY[verdict] || VERDICT_RESIDUE_KEY[verdict] || verdict;\n`
+    + `  const servedCount = rows.length;\n`
+    + `  host.insertAdjacentHTML('beforeend',\n`
+    + `    \`<div class="lvl-cap">Occurrences<span class="meta">\${servedCount} of \${factor.denominator ?? servedCount}</span></div>\`);\n`
+    + `  renderOccurrenceRoster(host, [{\n`
+    + `    header: \`<div class="ev-group"><b>\${factor.title || (factor.cause || '').trim()}</b> — \${label}\n`
+    + `      <span class="n">· \${servedCount} episode\${servedCount === 1 ? '' : 's'}</span></div>\`,\n`
+    + `    servedCount,\n`
+    + `    rows: rows.map((row) => ({ id: row.id, html: \`<span class="when">\${fmtDate(row.date)} · \${row.anchor.t.slice(11, 16)}</span>\n`
+    + `      <span class="only">\${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}\n`
+    + `        <span>· \${row.anchor.label}</span></span><span class="tier">\${label}</span>\` })),\n`
+    + `    empty: '<div class="empty">No occurrences in this verdict.</div>', emptyBeforeHeader: true,\n`
+    + `  }], { selectedId: selected?.id || null, shownCount,\n`
+    + `    onSelect: (id) => onOpen(occurrences.find((occurrence) => occurrence.id === id)), onMore });\n`
     + `}\n`;
 }
 
@@ -1511,8 +1524,8 @@ async function main() {
       + `${f.occurrences.groups.length} group(s), `
       + `${f.occurrences.groups.reduce((n, g) => n + g.occurrences.length, 0)} rows\n`).join('')
     + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`
-    + `evidence-table.extracted.js written — the production renderCaseRoster, ${evidenceTable.split('\n').length} lines `
-    + 'from frontend/diagnose-workstation.js\n',
+    + `evidence-table.extracted.js written — the production renderOccurrenceRoster, ${evidenceTable.split('\n').length} lines `
+    + 'from frontend/occurrence-roster.js\n',
   );
   return 0;
 }

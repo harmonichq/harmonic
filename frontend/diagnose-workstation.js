@@ -54,6 +54,7 @@ import {
 import {
   eventChartCoordinate, renderFindingsQueue, queueMeta,
 } from './diagnose-findings-queue.js';
+import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
@@ -233,7 +234,6 @@ function paintReadout(r) {
 }
 
 /** Occurrence rows shown before the "N more" toggle. */
-const EVIDENCE_CAP = 5;
 
 /* The chart module's grid[0] insets, in px — the brace is clipped to them so it
    never runs into the chart header above or past the basal lane below. Must
@@ -587,29 +587,19 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   const label = VERDICT_BAND_KEY[verdict] || VERDICT_RESIDUE_KEY[verdict] || verdict;
   host.insertAdjacentHTML('beforeend',
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
-  if (publishedCount === 0) {
-    host.insertAdjacentHTML('beforeend', '<div class="empty">No occurrences in this verdict.</div>');
-    return;
-  }
-  host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
-    <span class="n">· ${publishedCount} episode${publishedCount === 1 ? '' : 's'}</span></div>`);
-  for (const row of rows.slice(0, shownCount)) {
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'ev-row case-occurrence';
-    button.dataset.occurrenceId = row.id;
-    button.setAttribute('aria-pressed', String(row.id === selectedId));
-    button.innerHTML = `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
-      <span class="only">${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}
-        <span>· ${row.anchor.label}</span></span><span class="tier">${label}</span>`;
-    button.addEventListener('click', () => onSelect(row.id));
-    host.append(button);
-  }
-  if (publishedCount > EVIDENCE_CAP) {
-    const more = document.createElement('button'); more.type = 'button'; more.className = 'more';
-    more.textContent = shownCount > EVIDENCE_CAP ? `Show first ${EVIDENCE_CAP}`
-      : `${publishedCount - EVIDENCE_CAP} more`;
-    more.addEventListener('click', onMore); host.append(more);
-  }
+  renderOccurrenceRoster(host, [{
+    header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
+      <span class="n">· ${publishedCount} episode${publishedCount === 1 ? '' : 's'}</span></div>`,
+    servedCount: publishedCount,
+    rows: rows.map((row) => ({
+      id: row.id,
+      html: `<span class="when">${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}</span>
+        <span class="only">${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}
+          <span>· ${row.anchor.label}</span></span><span class="tier">${label}</span>`,
+    })),
+    empty: '<div class="empty">No occurrences in this verdict.</div>',
+    emptyBeforeHeader: true,
+  }], { selectedId, shownCount, onSelect, onMore });
 }
 
 /* Event comparison is its own served population. Members remain opaque until
@@ -620,37 +610,29 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Response comparison
     <span class="meta">${counts.matched} matched · ${counts.nearly_matched} nearly matched
       · ${counts.comparison} comparison · ${counts.not_comparable} not comparable</span></div>`);
-  for (const cohort of cohorts) {
+  const groups = cohorts.map((cohort) => {
     const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
-    host.insertAdjacentHTML('beforeend', `<div class="ev-group"><b>${cohort.name}</b>
-      <span class="n">· ${cohort.routed_count} occurrence${cohort.routed_count === 1 ? '' : 's'}</span></div>`);
-    if (cohort.routed_count === 0) {
-      host.insertAdjacentHTML('beforeend', '<div class="empty">No occurrences in this population.</div>');
-      continue;
-    }
-    for (const row of rows.slice(0, shownCount)) {
-      const button = document.createElement('button');
-      button.type = 'button'; button.className = 'ev-row case-occurrence';
-      button.dataset.occurrenceId = row.id;
-      button.dataset.comparisonCohort = cohort.key;
-      button.setAttribute('aria-pressed', String(row.id === selectedId));
+    return {
+      header: `<div class="ev-group"><b>${cohort.name}</b>
+        <span class="n">· ${cohort.routed_count} occurrence${cohort.routed_count === 1 ? '' : 's'}</span></div>`,
+      servedCount: cohort.routed_count,
+      rows: rows.map((row) => {
       const when = row.anchor ? `${fmtDate(row.date)} · ${row.anchor.t.slice(11, 16)}`
         : `${cohort.name} ${row.index + 1}`;
       const detail = row.anchor
         ? `${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)} · ${row.anchor.label}`
         : 'Select to see this occurrence’s glucose trace';
-      button.innerHTML = `<span class="when">${when}</span><span class="only">${detail}</span>
-        <span class="tier">${cohort.name}</span>`;
-      button.addEventListener('click', () => onSelect(row.id));
-      host.append(button);
-    }
-    if (cohort.routed_count > EVIDENCE_CAP) {
-      const more = document.createElement('button'); more.type = 'button'; more.className = 'more';
-      more.textContent = shownCount > EVIDENCE_CAP ? `Show first ${EVIDENCE_CAP}`
-        : `${cohort.routed_count - EVIDENCE_CAP} more`;
-      more.addEventListener('click', onMore); host.append(more);
-    }
-  }
+        return {
+          id: row.id,
+          dataset: { comparisonCohort: cohort.key },
+          html: `<span class="when">${when}</span><span class="only">${detail}</span>
+            <span class="tier">${cohort.name}</span>`,
+        };
+      }),
+      empty: '<div class="empty">No occurrences in this population.</div>',
+    };
+  });
+  renderOccurrenceRoster(host, groups, { selectedId, shownCount, onSelect, onMore });
 }
 
 function renderCaseSelection(host, caseFile, onDay, onClearTrace) {

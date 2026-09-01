@@ -14,12 +14,14 @@ trace.
 
 - `analyze_basal` stamps new evidence facts onto each `night_roster` entry: the
   night's mean glucose within the slot window; the glucose entering and leaving
-  the window (the reading nearest each boundary within the analyzer's existing
-  staleness cap, null when none); and that night's CGM trace across the window
-  plus a 60-minute lead, served as five-minute `{minute, bg}` bins with minutes
-  relative to slot start — the same shape the Finding case file's trace already
-  ships, so the shipped trace-over-envelope path draws it unchanged when #291
-  wires night selection.
+  the window (via the model's staleness-capped nearest-reading lookup, null
+  when none qualifies); and that night's CGM trace from 60 minutes before slot
+  start through slot end, served as the case file's `detail.glucose` shape — a
+  sparse list of `{t, bg}` points carrying absolute wall-clock timestamps at
+  the CGM's own cadence — which is exactly what the shipped
+  trace-over-envelope path consumes, so #291 wires only night selection. Lead
+  points before midnight carry the prior date in `t`; nothing infers a date
+  from a clock time.
 - Per slot, once: the roster-level mean in-block glucose — every night counts
   once, the mean of the per-night means, so the norm and the deviations read in
   the same units.
@@ -27,6 +29,14 @@ trace.
   as it copies everything else; nothing is derived downstream of the analyzer.
 - A roster night without usable in-window CGM serves nulls; roster membership
   never changes on account of glucose.
+
+The per-night mean counts every CGM reading in the half-open window
+[slot start, slot end) — what happened, not the estimate's cleaned minutes —
+because the contaminated nights are exactly the ones the divergence reading
+must show. Accepted cost: stamping rides every slot's evidence, growing the
+analysis payload and its committed fixtures by roughly a megabyte
+(48 slots x up to ~30 roster nights x ~19 trace points); the projection may
+not compute, so on-demand assembly is not an option.
 
 ## Boundaries
 

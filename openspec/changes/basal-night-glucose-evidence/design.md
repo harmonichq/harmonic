@@ -12,9 +12,23 @@ Decisions from the 2026-08-31 scoping session (operator-settled where marked):
   is the mean of per-night in-window means, so the norm and the per-night
   deviations share units and a gappy night cannot tilt the norm.
 - **The trace ships now, not with #291** (operator): its consumer is the shipped
-  trace-over-envelope path on Glucose by time of day — the same served shape the
-  Finding case file uses — so serving it is not building ahead of an unsettled
-  design; #291 wires only the night-selection click.
+  trace-over-envelope path on Glucose by time of day, which consumes the case
+  file's `detail.glucose` shape — sparse `{t, bg}` points with absolute
+  wall-clock timestamps, matched to the envelope by clock label — so the night
+  trace serves that exact shape and #291 wires only the night-selection click.
+  Absolute timestamps also settle the slot-0 midnight case: a lead point before
+  midnight carries the prior date, so no consumer can paint yesterday's evening
+  onto today's clock.
+- **Denominator is what-happened, not the estimate's population:** the
+  per-night mean counts every CGM reading in the half-open window
+  [slot start, slot end), not the clean-window minutes the estimate used — the
+  contaminated nights are the ones the divergence reading exists to show.
+- **Accepted payload growth:** the facts ride every slot's evidence
+  (48 slots x up to ~30 roster nights x ~19 trace points, roughly a megabyte
+  across the analysis payload and its committed fixtures). The projection may
+  not compute, so on-demand assembly is rejected; bounding to "slots a reader
+  opens" is impossible because every slot is served from the same cached
+  payload.
 - **Edge semantics** (operator delegated): entering/leaving glucose is the
   reading nearest each window boundary within the analyzer's existing staleness
   cap; the trace leads the window by 60 minutes (the event chart's −60

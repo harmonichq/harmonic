@@ -54,6 +54,14 @@ the sole owner of judgment. Disposition: inline (copied into the work order).
   payload growth; projection fail-closed unstated. All reproduced, fixed at
   55255e8.
 
+- Round 2 (same reviewer, BLOCKED, 3 blockers, all `injected` by round-1
+  fixes): trace parity claimed {t, bg} but detail.glucose is {t, minute, bg}
+  and the validator requires all three; the ADR overclaimed that absolute t
+  settles the midnight trap (the shipped match is date-blind — #291 owns
+  full-timestamp matching); the gappy-night scenario contradicted roster
+  formation (a roster night needs clean samples, so the construction is
+  lead-only CGM with a null in-window mean). All reproduced, fixed at ff95ecf.
+
 ## Spawned tasks
 
 (none yet)

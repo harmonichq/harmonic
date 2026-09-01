@@ -22,8 +22,8 @@
       `.claude/launch.json` `harmonic-nofetch` entry and the AGENTS.md
       permitted no-fetch command serve a scratch copy of the committed store so
       the tracked file never changes; the AGENTS.md drift-check list and the
-      harness README name the QA generator; the public-link pin and its test
-      move to the QA path; sidecar and derived-store patterns are gitignored.
+      harness README name the QA generator; the QA public-link pin and its
+      test assertion are added beside the revise-e2e ones; sidecar and derived-store patterns are gitignored.
 - [ ] After #192 and #193 add coverage eras, complete the remaining migration
       (CI browser-gates server, case-file route test, allowlist pin) and the
       evidence-based retirement of revise-e2e.

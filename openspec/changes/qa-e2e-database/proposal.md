@@ -18,6 +18,7 @@ that dataset into a simultaneous proof of every coverage case.
 
 ## Boundaries
 
-This phase changes documentation only. It adds no generator, case catalog,
-database binary, CI command, clock seam, or fixture migration. The risk contract
-in #189 remains authoritative.
+Phase 1 (#190) changed documentation only. Phase 2 (#191) added the generator
+and case catalog; the showcase cut of #194 adds the database binary, its CI
+drift command and the offline-entrypoint migration. No phase adds a clock seam.
+The risk contract in #189 remains authoritative.

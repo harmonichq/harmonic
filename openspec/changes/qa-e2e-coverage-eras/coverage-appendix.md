@@ -12,14 +12,20 @@ ticking task 1.
 | Focused QA suite | 5.69 s | 90 s |
 | Single isolated case | 0.14 s | 15 s |
 
-Commands:
+Commands (`TASK_TMP` is a scratch directory the implementer creates for the
+measurement run; the generator writes the candidate database there first):
 
 ```sh
+TASK_TMP="$(mktemp -d)"
+uv run python scripts/gen_qa_e2e_db.py --out "$TASK_TMP/harmonic.sqlite"
 du -m "$TASK_TMP/harmonic.sqlite"
 /usr/bin/time -p uv run python scripts/gen_qa_e2e_db.py --check --out "$TASK_TMP/harmonic.sqlite"
 /usr/bin/time -p uv run python -m pytest tests/test_gen_qa_e2e_db.py tests/test_qa_e2e_cases.py
 /usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py -k <case-name>
 ```
 
-If any limit is exceeded, stop before committing the replacement database and
-return the split decision to the operator. Do not raise a limit in this phase.
+If any limit is exceeded, stop before committing the replacement database:
+post the four measurements and the exceeded limit as a comment on #192, leave
+the committed database unchanged, and end the session there. Resuming needs a
+newer lock on #192 that records how the eras are split. Do not raise a limit in
+this phase.

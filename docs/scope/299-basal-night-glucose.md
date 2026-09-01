@@ -42,6 +42,18 @@ the sole owner of judgment. Disposition: inline (copied into the work order).
 
 - none.
 
+## Review rounds
+
+- Round 1 (cold Opus, BLOCKED, 9 blockers + 1 note, all `authoring`): missed
+  second generated fixture (analysis.json); trace shape contradiction (order
+  cited the event chart's relative bins, the shipped consumer eats
+  detail.glucose absolute-t points); slot-0 −60 lead midnight trap; unnamed
+  JSON keys; unspecified denominator/boundaries/density; steered into a third
+  nearest-reading copy instead of CgmSeries.nearest; generator data cannot
+  exercise the new facts; no frozen-verdict acceptance anchor; unstated
+  payload growth; projection fail-closed unstated. All reproduced, fixed at
+  55255e8.
+
 ## Spawned tasks
 
 (none yet)

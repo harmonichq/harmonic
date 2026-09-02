@@ -736,6 +736,13 @@ const DELIBERATELY_ABSENT_BOTH = {
      (already its own entry above) when the header became case-file-shaped;
      neither the app nor the mock has emitted `.ec-title-context` since. */
   '.ec-title-context': 'retired for .canvas-head .persist (9553bbcc)',
+  /* 1d065305 (#41), re-asserted at #181, retired the inspector's own
+     `.ec-boundary-note` hedge line entirely — the app's own S5 replay story
+     asserts its count is 0 in every state. The mock retired it the same
+     round (build.mjs, ROUND 5 BLOCK 6): the hedge now hangs off the canvas
+     legend's Near-rule key as a sub-line instead. Not state-scoped — neither
+     side has anywhere left that emits it. */
+  '.ec-boundary-note': 'retired; the hedge moved onto the Near-rule legend key (1d065305, #41/#181)',
   '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
     'the queue flavor tag prints its word without the retired decorative glyph',
   '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',

@@ -324,15 +324,26 @@ export function paintPooled({
     ?? context?.markPoint?.data?.[0]?.label?.formatter);
 
   if (context) {
+    /* `context.markArea` is guarded, not assumed: `renderCanvas` structures it
+       unconditionally in the option it SETS (diagnose-workstation-chart.js:817,
+       the target band alone is two `data` entries with no window present to
+       drop) — this reads what `chart.getOption()` reports back after the
+       browser's ECharts instance has been reused across several prior
+       `setOption(option, true)` calls, which is not always the same shape the
+       last call set. `windowArea` above already assumed as much (`context?.
+       markArea?.data?.find`); this call fell through that same gap without the
+       same safety. */
     set('__context', {
-      markArea: {
-        ...context.markArea,
-        data: context.markArea.data.map((entry) => (entry === windowArea
-          /* (2) the border off, the fill kept; (3) the caption off the plot. */
-          ? [{ ...entry[0], itemStyle: { ...entry[0].itemStyle, borderWidth: 0 },
-            label: { ...entry[0].label, show: false } }, entry[1]]
-          : entry)),
-      },
+      ...(context.markArea ? {
+        markArea: {
+          ...context.markArea,
+          data: context.markArea.data.map((entry) => (entry === windowArea
+            /* (2) the border off, the fill kept; (3) the caption off the plot. */
+            ? [{ ...entry[0], itemStyle: { ...entry[0].itemStyle, borderWidth: 0 },
+              label: { ...entry[0].label, show: false } }, entry[1]]
+            : entry)),
+        },
+      } : {}),
       /* (3) the parked copy of the same caption, for the viewports where the
          shipped renderer could not fit it inside. */
       markPoint: { data: [] },

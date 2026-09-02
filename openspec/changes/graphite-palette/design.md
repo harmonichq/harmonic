@@ -17,7 +17,14 @@ design, and a worker cannot see what the eye rejects.
 
 **Sanctions.** Appended by the executing session, one entry per ruling:
 
-- High-glucose hue: _pending_.
+- High-glucose hue: `--high` `#e07f3f` → `#e2be4c` (gold). Connor Griffin ·
+  2026-09-02 · "Lavender looks good but I hear you on the cool tones thing. I
+  guess gold then." Rendered live on Day (1440×900, 390×844), the Diagnose
+  chart strip and the Guide worked-example peak against gold `#e2be4c`,
+  lavender `#b4a1e0` and straw `#e4cf8e`; gold follows the CGM convention
+  (yellow high, red low) and is tellable at a glance from the action orange,
+  low, in-range and every amber; its nearest neighbour is the chrome's
+  `--ck-manual` `#d9b568`, which never shares a surface with a high mark.
 - Verify ribbon tints: _pending_.
 - Chrome bar on Plan and Day: _pending_.
 
@@ -68,7 +75,8 @@ the executing session as each ruling lands and read by the gate re-base and the
 palette-only diff as their only authority. A token not listed here may not
 differ between base and revision.
 
-- _none yet_ (each entry: `--token · before `#xxxxxx` · after `#yyyyyy` · ruling`)
+- `--high` · before `#e07f3f` · after `#e2be4c` · high-glucose hue ruling,
+  2026-09-02 (above).
 
 ### Derived colour pairs
 

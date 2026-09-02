@@ -329,10 +329,11 @@
 /* ---- findings-queue flavour tags (#662 term 36) --------------------------
    Markup owned by the queue build; the ink is a theme decision, so it is
    recorded here rather than left to be re-derived. The tag names a KIND of
-   finding, not a state: under Harmonic `--primary` is byte-identical to
-   `--high`, so a tag on the accent would read as clinical attention — the exact
-   collision term 36 forbids. Warm graphite is on-theme and is shared with no
-   chart mark and no clinical token; the glyph carries the differentiation. */
+   finding, not a state: `--primary` is the action orange and `--high` the
+   gold of a high reading (ADR 317), so a tag on either would read as a control
+   or as clinical attention — the exact collision term 36 forbids. Warm
+   graphite is on-theme and is shared with no chart mark and no clinical token;
+   the glyph carries the differentiation. */
 :is(.dw, .vw) .qrow .tag.setting,
 :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
 :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,

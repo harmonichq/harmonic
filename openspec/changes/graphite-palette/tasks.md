@@ -13,7 +13,7 @@
       `frontend/diagnose-workstation-behavior.replay.mjs` against it and
       record their applicable story counts under `## Base story counts` in
       `design.md`.
-- [ ] Inventory every reader of `--high` (`frontend/index.html`,
+- [x] Inventory every reader of `--high` (`frontend/index.html`,
       `frontend/nav-chart.js`, `frontend/diagnose-evidence-charts.js`,
       `frontend/scenario.css`) and every surface that renders one beside an
       action control; render two or three candidate hues for `--high` on Day

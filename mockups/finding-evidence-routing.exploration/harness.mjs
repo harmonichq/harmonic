@@ -731,6 +731,11 @@ const laidOut = (entry) => entry && (entry.rect.w !== 0 || entry.rect.h !== 0);
    permitted when a future deliberate removal records its reason here; otherwise
    the harness fails instead of certifying an empty assertion. */
 const DELIBERATELY_ABSENT_BOTH = {
+  /* 9553bbcc "Render case-file event comparisons" replaced the standalone
+     lens's own `.ec-title-context` factor label with `.canvas-head .persist`
+     (already its own entry above) when the header became case-file-shaped;
+     neither the app nor the mock has emitted `.ec-title-context` since. */
+  '.ec-title-context': 'retired for .canvas-head .persist (9553bbcc)',
   '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
     'the queue flavor tag prints its word without the retired decorative glyph',
   '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',

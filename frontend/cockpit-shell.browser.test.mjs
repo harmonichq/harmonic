@@ -1454,10 +1454,13 @@ test('each cockpit lock assertion proves red under deliberate mutation and resto
     // keeps holding and the proof reaches the pins #317 added (ADR 317);
     // moving the top bar alone trips `footer === bar` first and proves nothing
     // about them. The first puts the bars back on the desk, the exact state the
-    // ruling retired: `bar !== desk` goes red, and the grounds count with it.
-    // The second moves them to a shade no ruling sanctioned, which leaves the
-    // count at three and `bar !== desk` true, so only the pinned literal can
-    // catch it — that is the mutation that proves the literal pin is live.
+    // ruling retired: the literal pin fires first, and `bar !== desk` and the
+    // grounds count are the assertions that would catch it were the pin gone
+    // (they are proven jointly, never alone — no bar-side mutation can reach
+    // `bar !== desk` past the pin). The second moves them to a shade no ruling
+    // sanctioned, which leaves the count at three and `bar !== desk` true, so
+    // only the pinned literal can catch it — that is the mutation that proves
+    // the literal pin is live.
     const bothBars = (value) => async () => {
       const bars = page.locator('.cockpit-topbar, .cockpit-footer');
       await bars.evaluateAll((nodes, next) => nodes.forEach((node) => node.style.setProperty('background-color', next)), value);

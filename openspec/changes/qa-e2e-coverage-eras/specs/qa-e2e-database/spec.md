@@ -21,8 +21,9 @@ serializes as `None`; ISF direction-only SHALL use
 emitted `days_observed`; every other I:C row SHALL include `days_observed` in
 `omitted`, and its non-collecting span guard SHALL be exact `state`.
 `QaExpectation` SHALL gain
-`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
-`absent_analyzer_rows`. `QaCase` SHALL gain
+`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]`. Whole-set equality
+SHALL fail on every unexpected or missing analyzer key without a separate absence
+collection. `QaCase` SHALL gain
 `target_family: Literal["basal", "isf", "ic"] | None`. Every new #192 coverage
 case SHALL name its family; `showcase`, `setting-recommendation`, and
 `behavioral-precedence` SHALL use `None`. `assert_expectation` SHALL pin a named
@@ -41,12 +42,30 @@ stray states fail closed without repeating every quiet row. `QaCase` SHALL also 
 empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
 `(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
-values exactly. The single Fasting ISF row's rest windows SHALL be an exact set
+through `support: Mapping[AnalyzerRowKey, ExpectedSupport]`. Basal support SHALL
+pin `evidence["directional_support_count"]` (`analyzers/basal.py:562-564`); ISF
+support SHALL pin `evidence["n_steps"]` (`analyzers/isf.py:634-645`); I:C support
+SHALL pin top-level `n_runs` and
+`evidence["eligibility"]["effective_run_count"]` (`result.py:330-366`;
+`analyzers/ic.py:2511-2518`). Support SHALL distinguish
+`basal-insufficient-seven-night` from
+`basal-insufficient-unsupported-sign`, and `ic-quiet-seven-run` from `ic-raise`.
+The single Fasting ISF row's rest windows SHALL be an exact set
 keyed by `(date, start, end)`. Projected I:C history series SHALL contain one
 non-empty series per active identity keyed by identity; the mapping SHALL be empty
-when no identity is active. Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
-registers, ranks, or queue rows. Perturbing any expected row, absence, support
-value, or staging value SHALL fail. The basal cases SHALL cover every basal
+when no identity is active.
+
+Every case's target-family map SHALL be authored by hand as one literal per-case
+default `ExpectedAnalyzerRow` plus named per-key literal overrides from the design
+matrix. Neither default nor overrides SHALL be constructed from a `QaExecution`
+or analyzer output at test time. At least one generated `test_case_*` SHALL
+perturb the default row rather than a named override and SHALL fail. Queue rows
+and absences, support, rest windows, and history series SHALL follow the same
+literal-only rule. Existing `behavioral_rows` and `finding_titles` SHALL be
+retained verbatim; the extended contract SHALL add to them and replace neither.
+Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
+registers, ranks, or queue rows. Perturbing any expected row, queue absence,
+support value, or staging value SHALL fail. The basal cases SHALL cover every basal
 condition in the design matrix.
 
 #### Scenario: The eight-night basal floor is data-produced

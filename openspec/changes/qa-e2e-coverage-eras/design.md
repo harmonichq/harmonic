@@ -38,8 +38,9 @@ direction-only similarly uses `omitted={"recommended"}`. I:C collecting and asse
 serialized `days_observed`; every other I:C block includes `days_observed` in
 `omitted`. A non-collecting span is guarded by its exact `state`, not by a field
 the serializer omits. `QaExpectation` gains
-`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
-`absent_analyzer_rows`. Every case runs full `analyze`
+`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]`. Whole-set equality
+already fails on every unexpected or missing key, so there is no separate analyzer
+absence collection. Every case runs full `analyze`
 (`scripts/qa_e2e_cases.py:162-168`). `QaCase.target_family` is
 `"basal" | "isf" | "ic"` for new coverage cases and `None` for `showcase`,
 `setting-recommendation`, and `behavioral-precedence`. `assert_expectation` pins
@@ -60,6 +61,26 @@ non-target set is measured from the exact complement of the predicates above; it
 is never assumed empty. This keeps stray states fail-closed at a fraction of the
 all-family literal volume.
 
+`QaExpectation.support: Mapping[AnalyzerRowKey, ExpectedSupport]` pins the
+serialized support beside those rows. Basal support is
+`evidence["directional_support_count"]` (`analyzers/basal.py:562-564`); ISF
+support is `evidence["n_steps"]` (`analyzers/isf.py:634-645`); I:C support is the
+top-level `n_runs` plus `evidence["eligibility"]["effective_run_count"]`
+(`result.py:330-366`; `analyzers/ic.py:2511-2518`). The executed support-field
+probe and complete output are in `generated-facts.md`.
+`basal-insufficient-seven-night` and `basal-insufficient-unsupported-sign` have
+different literal support despite both being held; `ic-quiet-seven-run` and
+`ic-raise` likewise separate below-floor and supported evidence through this map.
+
+Every target-family expectation is authored literally per case as one default
+`ExpectedAnalyzerRow` plus named per-key literal overrides copied by hand from
+the design matrix. Neither the default nor an override may be constructed from a
+`QaExecution` or analyzer output at test time. At least one generated
+`test_case_*` perturbs a default row, rather than a named override, and must fail.
+Queue rows and absences, support, rest windows, and history series obey the same
+literal-only rule. Existing `behavioral_rows` and `finding_titles` are retained
+verbatim; the extended contract adds to them and replaces none.
+
 `QaCase` also gains a `recipe` callable, and `materialize_case` calls it directly
 instead of using the current `if`/`elif` dispatch
 (`scripts/qa_e2e_cases.py:147-157`). Sub-order 2 adds cases through that task-1
@@ -68,8 +89,8 @@ callable contract. `QaCase` gains
 empty by default. `execute_case` keeps `whole_day()` and additionally projects
 each declared window through `WindowQuery.clock`
 (`window_membership.py:47-60`). Queue expectations and absences are keyed by
-`(window | "whole_day", row key)`. Task 1 further extends the expectation to
-support values; the single Fasting ISF row's rest-window set keyed by
+`(window | "whole_day", row key)`. Task 1 further extends the expectation to the
+single Fasting ISF row's rest-window set keyed by
 `(date, start, end)`; and one projected I:C history series per active identity
 keyed by identity. The mapping is empty when no identity is active; an active
 identity's expected series is never empty. Non-active identities remain available
@@ -256,7 +277,7 @@ guard and decoded-name-set pin are the only retained execution-free tests.
 ## Exactness, public-tree scan, and provenance
 
 Expectation comparison is whole-set equality for analyzer rows, each queried
-queue, each explicit absence, support values, and staging values. Tests perturb
+queue and queue absence, support values, and staging values. Tests perturb
 one expected value in each class and require failure. No subset assertion
 satisfies the contract.
 
@@ -264,7 +285,7 @@ Every committed artifact is generator-built and provenance-stamped. Every litera
 series of 20 or more ascending clock-time values paired with numbers is hoisted
 to its own module-level constant directly below a
 `# SYNTHETIC-FIXTURE: <reason>` marker, which exempts that one top-level
-assignment (`scan_public_tree.py:72`); such a series is never inline in
+assignment (`scan_public_tree.py:486-510,671-686`); such a series is never inline in
 `QA_CASES`. Exact analyzer
 prose containing dose or ratio units such as `U/h` and `g/U` is accepted only
 through the generated dose-ratio baseline. For Python files the scan reads
@@ -294,11 +315,16 @@ entry is the 2.41 s showcase-bearing catalog execution test, while the 3.04 s
 span-probe run is the mature-case representative. Once generated methods exist,
 the slowest `test_case_*` entry is the post-change single-case measurement. The
 recorded 137.69 s local measurement and CI's 2 min 57 s are references only. The
-committed showcase bytes are not replaced in either chunk. Task 1 derives the
-`pytest (backend)` timeout from the same 2.5× rule applied to CI's 2 min 57 s
-reference: 7 min 23 s for pytest plus 3 min for other steps yields 11 min, rounded
-up from 10 to 12 minutes. That one line is the only permitted CI workflow edit;
-a backend-job timeout on the ticket pull request is a budget breach.
+committed showcase bytes are not replaced in either chunk.
+
+The coordinator-captured CI timestamps in `generated-facts.md` measure the backend
+job at `21:39:39–21:43:01 = 202 s = 3:22`, and `Run tests` at
+`21:39:49–21:42:46 = 177 s = 2:57`; all other job time is
+`202 − 177 = 25 s = 0:25`. The projected 23-case delta is
+`23 × 3.04 = 69.92 s`. Therefore the derived timeout is
+`ceil((2.5 × 177 + 25 + 69.92) / 60) = ceil(8.957) = 9 minutes`. The existing
+10-minute timeout already exceeds that result, so task 1 makes no CI workflow
+edit. A backend-job timeout on the ticket pull request remains a budget breach.
 
 After the first representative basal case and before the remaining basal cases,
 sub-order 1 computes the sum of the representative time for each of its 11
@@ -310,11 +336,16 @@ single-case time for that family) + current focused-suite total`. A result above
 the 90-second focused-suite limit triggers the stop rule before the remaining
 recipes are authored.
 
-The captured pre-authoring proxy for chunk 2 is
-`11 × 3.04 s + 5.92 s = 39.36 s`, using the mature-store representative for all
-3 ISF and 8 I:C cases until family representatives exist. It is below 90 s with
-50.64 s headroom. The implementation gate keeps the 90 s limit and replaces this
-proxy with the measured representative for each family.
+The captured pre-authoring proxy first projects chunk 1's post-change focused
+suite as `12 × 3.04 + 5.92 = 42.40 s`. Chunk 2 then projects its 11 cases on top
+of that POST-change total: `11 × 3.04 + 42.40 = 75.84 s` (about 75.8 s), leaving
+`90 − 75.84 = 14.16 s` (about 14 s) headroom. The 3.04 s span probe times its
+whole process and overstates one catalog case. Chunk 1 records the actual
+per-case `test_case_*` durations and post-change focused-suite total; before
+authoring, chunk 2 re-projects from that recorded total and measured basal
+per-case times, then replaces those proxies with its own measured ISF and I:C
+representatives as they exist. A projected breach stops the chunk; the 90 s limit
+is not raised.
 
 On a budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch

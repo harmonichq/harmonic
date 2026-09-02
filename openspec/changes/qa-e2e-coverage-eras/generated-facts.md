@@ -64,6 +64,25 @@ Complete output:
 91-day showcase I:C state/direction/held_reason/asserts_move/days_observed-presence histogram: [{"count": 1, "values": ["numeric", null, null, false, false]}]
 ```
 
+### Serialized support fields
+
+The frozen row-shape probe does not print nested support fields, so
+`evidence/support-shape-probe.py` uses the same public catalog materializer and
+production composition to record them without editing either frozen probe.
+
+Command:
+
+```sh
+uv run python openspec/changes/qa-e2e-coverage-eras/evidence/support-shape-probe.py
+```
+
+Complete output:
+
+```text
+support field names: {"basal": {"evidence": ["directional_support_count"]}, "ic": {"evidence.eligibility": ["effective_run_count"], "top_level": ["n_runs"]}, "isf": {"evidence": ["n_steps"]}}
+showcase support values: {"basal.directional_support_count": 0, "ic.effective_run_count": 16.0, "ic.n_runs": 16, "isf.n_steps": 3426}
+```
+
 ## Existing behavioral-precedence depth
 
 Command:
@@ -161,6 +180,7 @@ openspec/changes/qa-e2e-coverage-eras/coverage-appendix.md
 openspec/changes/qa-e2e-coverage-eras/design.md
 openspec/changes/qa-e2e-coverage-eras/evidence/row-shape-probe.py
 openspec/changes/qa-e2e-coverage-eras/evidence/span-probe.py
+openspec/changes/qa-e2e-coverage-eras/evidence/support-shape-probe.py
 openspec/changes/qa-e2e-coverage-eras/generated-facts.md
 openspec/changes/qa-e2e-coverage-eras/proposal.md
 openspec/changes/qa-e2e-coverage-eras/specs/qa-e2e-database/spec.md
@@ -180,4 +200,21 @@ tests/test_finding_case_file_api.py
 tests/test_gen_qa_e2e_db.py
 tests/test_gen_revise_e2e_db.py
 tests/test_qa_e2e_cases.py
+```
+
+## CI backend job timing
+
+The coordinator captured this read-only GitHub query and complete output; the
+triage worker has no network and did not re-run it.
+
+Command:
+
+```console
+$ gh run view 33562270356 --repo harmonichq/harmonic --json jobs --jq '.jobs[] | select(.name=="pytest (backend)") | {name, startedAt, completedAt, steps: [.steps[] | {name, startedAt, completedAt}]}'
+```
+
+Complete output:
+
+```text
+{"completedAt":"2026-09-01T21:43:01Z","name":"pytest (backend)","startedAt":"2026-09-01T21:39:39Z","steps":[{"completedAt":"2026-09-01T21:39:41Z","name":"Set up job","startedAt":"2026-09-01T21:39:40Z"},{"completedAt":"2026-09-01T21:39:46Z","name":"Run actions/checkout@v5","startedAt":"2026-09-01T21:39:41Z"},{"completedAt":"2026-09-01T21:39:48Z","name":"Install uv","startedAt":"2026-09-01T21:39:46Z"},{"completedAt":"2026-09-01T21:39:49Z","name":"Sync deps (api + sync extras, from the lockfile)","startedAt":"2026-09-01T21:39:48Z"},{"completedAt":"2026-09-01T21:42:46Z","name":"Run tests","startedAt":"2026-09-01T21:39:49Z"},{"completedAt":"2026-09-01T21:42:47Z","name":"Check the generated I:C block fixtures are current","startedAt":"2026-09-01T21:42:46Z"},{"completedAt":"2026-09-01T21:42:47Z","name":"Check the generated evidence-canvas exploration is current","startedAt":"2026-09-01T21:42:47Z"},{"completedAt":"2026-09-01T21:42:48Z","name":"Check the generated annotation fixtures are current","startedAt":"2026-09-01T21:42:47Z"},{"completedAt":"2026-09-01T21:42:51Z","name":"Check the generated chart-builder fixtures are current","startedAt":"2026-09-01T21:42:48Z"},{"completedAt":"2026-09-01T21:42:53Z","name":"Check the committed demo fixture sets are current","startedAt":"2026-09-01T21:42:51Z"},{"completedAt":"2026-09-01T21:42:53Z","name":"Check the QA E2E synthetic database is current","startedAt":"2026-09-01T21:42:53Z"},{"completedAt":"2026-09-01T21:42:54Z","name":"Check the revise E2E synthetic database is current","startedAt":"2026-09-01T21:42:53Z"},{"completedAt":"2026-09-01T21:42:55Z","name":"Check the generated findings-projection fixtures are current","startedAt":"2026-09-01T21:42:54Z"},{"completedAt":"2026-09-01T21:42:55Z","name":"Check the generated I:C history-event fixtures are current","startedAt":"2026-09-01T21:42:55Z"},{"completedAt":"2026-09-01T21:42:56Z","name":"Check the generated current I:C block-evidence fixtures are current","startedAt":"2026-09-01T21:42:55Z"},{"completedAt":"2026-09-01T21:42:56Z","name":"Check the generated basal-night-evidence fixtures are current","startedAt":"2026-09-01T21:42:56Z"},{"completedAt":"2026-09-01T21:42:57Z","name":"Check the generated ISF rest-window evidence fixtures are current","startedAt":"2026-09-01T21:42:56Z"},{"completedAt":"2026-09-01T21:42:57Z","name":"Check the generated missed-meal comparison fixture is current","startedAt":"2026-09-01T21:42:57Z"},{"completedAt":"2026-09-01T21:42:57Z","name":"Post Install uv","startedAt":"2026-09-01T21:42:57Z"},{"completedAt":"2026-09-01T21:42:57Z","name":"Post Run actions/checkout@v5","startedAt":"2026-09-01T21:42:57Z"},{"completedAt":"2026-09-01T21:42:57Z","name":"Complete job","startedAt":"2026-09-01T21:42:57Z"}]}
 ```

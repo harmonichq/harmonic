@@ -141,20 +141,26 @@ real 137.69
 It is reference-only. CI run 33562270356's `Run tests` duration of 2 min 57 s is
 also a reference.
 
-Task 1 raises only `.github/workflows/ci.yml`'s `pytest (backend)`
-`timeout-minutes` from 10 to 12. The same 2.5× rule applied to CI's 2 min 57 s
-reference yields 7 min 23 s for pytest; adding 3 min for the other backend steps
-yields 11 min, rounded up to a 12-minute fail-closed job timeout. No other CI
-setting changes. A backend-job timeout on the ticket pull request is a budget
-breach and follows the stop rule below.
+The coordinator-captured timestamps in `generated-facts.md` give:
+
+```text
+backend job: 21:39:39–21:43:01 = 202 s = 3:22
+Run tests:   21:39:49–21:42:46 = 177 s = 2:57
+other steps: 202 − 177 = 25 s = 0:25
+```
+
+The projected 23-case delta is `23 × 3.04 = 69.92 s`. The timeout derivation is
+`ceil((2.5 × 177 + 25 + 69.92) / 60) = ceil(8.957) = 9 minutes`. The existing
+10-minute backend timeout already exceeds the derived value, so no CI workflow
+edit is necessary. A backend-job timeout on the ticket pull request remains a
+budget breach and follows the stop rule below.
 
 On any budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch
 `mockups/qa-e2e.synthetic/harmonic.sqlite`, does not open a pull request, posts the
 five measurements or stopping point on #192, and stops. The unchanged
 showcase-only drift check remains green. Only a newer lock on #192 may resume the
-chunk. No measurement budget is raised in this phase; the CI job timeout change
-above supplies execution headroom without changing an acceptance limit.
+chunk. No measurement budget is raised in this phase.
 
 After sub-order 1's first representative basal case, it projects the 11 remaining
 named basal cases. After sub-order 2's first representative ISF case and first
@@ -164,7 +170,14 @@ of 3 ISF and 8 I:C. Each gate computes `Σ over remaining planned cases of
 total` against 90 seconds. If a projection or any measured limit is exceeded, the
 worker posts the measurements on #192 and stops under the same rule.
 
-Before either family-specific representative exists, the captured mature-store
-time is a conservative proxy: `11 × 3.04 s + 5.92 s = 39.36 s` for chunk 2,
-leaving 50.64 s under the 90 s limit. The gate remains fixed at 90 s and replaces
-the proxy with the measured ISF and I:C representative times once they exist.
+Before generated per-case measurements exist, the captured proxy projects chunk
+1's POST-change focused-suite total as `12 × 3.04 + 5.92 = 42.40 s`. Chunk 2's
+pre-authoring projection then uses that post-change total:
+`11 × 3.04 + 42.40 = 75.84 s` (about 75.8 s), leaving
+`90 − 75.84 = 14.16 s` (about 14 s) headroom. The 3.04 s span probe times its
+whole process and overstates one catalog case. Chunk 1 records the actual
+`test_case_*` durations and post-change focused-suite total here; the coordinator
+transcribes them after the verified merge. Before authoring, chunk 2 re-projects
+from that total and those measured basal per-case times, then replaces the family
+proxies with its measured ISF and I:C representatives as they exist. A projected
+breach stops under the existing rule. The 90 s limit is not raised.

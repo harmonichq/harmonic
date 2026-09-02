@@ -28,10 +28,15 @@ materializes into its own temporary store. `QaExpectation` gains exact analyzer
 rows and absences; scoped and unscoped queue rows and absences; support values;
 `asserts_move`; ISF rest-window rows keyed by ISF row identity plus
 `(date, start, end)` across every ISF row, including an expressible empty ISF
-list; I:C history-series rows keyed by `run_id`; and the complete
-`analysis["ic_history"]` catalog keyed by identity across every lifecycle. Each
-key maps to the complete expected row payload. Recipes never accept or write a
-verdict, status, direction, held reason, lifecycle, register, queue row, or rank.
+list; one projected I:C history series per active identity, keyed by identity,
+with an empty keyed set when no identity is active; a declaration of the
+full-catalog identities and lifecycles the case contributes to concatenation; and
+the isolated case's complete `analysis["ic_history"]` catalog keyed by identity
+across every lifecycle. Non-active identities are already reachable through
+`PreparedFindings.history_catalog` (`findings_projection.py:169-171`); the missing
+piece is an expectation field, not a projection change. Each key maps to the
+complete expected row payload. Recipes never accept or write a verdict, status,
+direction, held reason, lifecycle, register, queue row, or rank.
 
 ## Era condition matrix
 
@@ -56,24 +61,32 @@ the condition into a fixture.
 | I:C capped raise / lower | The same four eligibility conditions hold and the half-gap exceeds the ±20% bound, so the recommendation stops at that bound (`analyzers/ic.py:1449-1464`). | Exact `assert` row and exact bounded recommendation. |
 | I:C held | A numeric, band-excluding block names a move but the regime bracket straddles programmed, a meal-owned low gates tightening, or a pre-empted low gates tightening; `held_reason` is analyzer-owned (`analyzers/ic.py:2448-2501,2524-2526,2633-2643`). | Exact `held` row, `asserts_move=false`, and no global assert row. |
 | I:C quiet / collecting | A block is collecting, below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise has neither `asserts_move` nor `held_reason` (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run below-floor case and assert the eight-run threshold separately from the display minimum. | Exact analyzer block and explicit absence from scoped and global queue rows (`findings_projection.py:369-408`). |
-| I:C history register | A snapshot-proven past block identity differs from the current identity, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active `history` row and exact keyed projected history series; current identities and aged-out/unavailable histories are absent from the active queue. |
+| I:C history register | A snapshot-proven past block identity differs from the current identity, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active `history` row and one exact projected history series per active identity keyed by identity; current identities and aged-out/unavailable histories are absent from the active queue. |
 
 Task 1 owns every basal row above and re-keys the three existing cases
 (`showcase`, `setting-recommendation`, and `behavioral-precedence`) onto the
-per-era allocation scheme below without changing their expectations. Task 2 owns
-the ISF and I:C rows above, including the history-register era.
+per-era allocation scheme below. Occurrence timestamps shift with the era's date
+slot and are re-derived from analyzer output; slot labels, finding titles,
+asserting-slot sets, families and states are unchanged; `setting-recommendation`
+and `showcase` expectations are byte-identical. Task 2 owns the ISF and I:C rows
+above, including the history-register era.
 
 ## ADR 192 — Contain cross-era history and storage identities
 
 **Decision.** Cross-era containment is checked at the analyzer boundary, not the
-projection boundary. `findings_projection._history_rows` omits every non-active
-history row (`findings_projection.py:234-239`), while I:C history establishes
-publishability from all runs and only its measurement from in-window runs
-(`analyzers/ic.py:2240-2262`). Therefore `QaExpectation` carries both projected
-`history_row_ids` and a full-catalog identity set for `analysis["ic_history"]`.
-After concatenation, the generator compares the complete catalog identity set
-across active, aged-out, and unavailable lifecycles with the isolated showcase's
-expected full-catalog set and fails on any additional or missing identity.
+active projection boundary. `findings_projection._history_rows` omits every
+non-active history row (`findings_projection.py:234-239`), although non-active
+identities remain reachable through `PreparedFindings.history_catalog`
+(`findings_projection.py:169-171`). I:C history establishes publishability from
+all runs and only its measurement from in-window runs
+(`analyzers/ic.py:2240-2262`). Therefore `QaExpectation` carries projected
+`history_row_ids`, one keyed history series per active identity, the isolated
+case's exact full catalog, and the full-catalog identities (identity → lifecycle)
+that the case declares it contributes to concatenation. Showcase declares its
+own identities and most eras declare none. After concatenation, the generator
+compares the complete `analysis["ic_history"]` identity set across active,
+aged-out, and unavailable lifecycles with the union of every case's declaration,
+failing closed on every undeclared or missing identity.
 
 Storage identity is allocated in two dimensions from the era index. Every
 seq-keyed table gets a disjoint `era index × stride` block whose stride exceeds
@@ -95,6 +108,10 @@ boundary. Its timings are diagnostic: the rebuild measurement includes two full
 than through pytest. Only its database size and isolated-case measurement are
 comparable to the appendix baselines.
 
+The spike's added aged-out identity is the expected proof that a carb-bearing era
+must declare its contribution; it is not leakage when the declared union contains
+it.
+
 ## Concatenation and isolation
 
 The generator appends every #192 coverage era before the existing showcase era.
@@ -106,9 +123,11 @@ earlier era's latest basal, CGM, or bolus event is strictly more than
 `ic.BLOCK_WINDOW_DAYS` plus `analyze._BOLUS_LEADIN` before showcase's earliest
 event. It imports `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` and compares with
 `timedelta(days=BLOCK_WINDOW_DAYS) + _BOLUS_LEADIN`; it never repeats 90 as a
-fixture literal. It also enforces additive row counts and full-catalog history
-identity equality. These are queried facts, not timestamp-offset comments. Each
-catalog case remains independently runnable with only its own rows and snapshots.
+fixture literal. It also enforces additive row counts and equality between the
+concatenated full-catalog history identities and the union declared by all cases.
+These are queried facts, not timestamp-offset comments. Each catalog case remains
+independently runnable with only its own rows and snapshots and asserts that
+isolated full catalog exactly.
 
 Production composition stays unchanged: `window_days=30`, `now` is derived from
 the latest basal/CGM event in each store, and IOB remains bolus-only
@@ -126,10 +145,14 @@ value and require each perturbation to fail. Scenario and I:C-history outputs th
 were previously only exercised become row-for-row expectations in the task that
 owns each era. No subset or “contains” assertion can satisfy this contract.
 
-Every committed artifact is generator-built and provenance-stamped. New literal
-timestamp series in scripts or tests carry the contamination scan's
-`# SYNTHETIC-FIXTURE: <reason>` marker; no real snapshot, `.env`, `tconnect-data/`,
-live fetch, or normal serve enters this work.
+Every committed artifact is generator-built and provenance-stamped. Rule-4
+literal timestamp series in scripts or tests carry the contamination scan's
+`# SYNTHETIC-FIXTURE: <reason>` marker. Rule-5 dose-ratio strings are accepted by
+the scan's generated baseline: run the scan, inspect its printed delta, confirm
+every addition is manufactured catalog data, then re-record with
+`python3 scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`; never
+hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
+`tconnect-data/`, live fetch, or normal serve enters this work.
 
 ## Budgets and stop rule
 
@@ -137,8 +160,10 @@ The inherited measured baseline and limits live in
 `coverage-appendix.md`. Each chunk records five measurements after its eras are
 appended: database size, logical drift, focused QA suite, slowest isolated case,
 and whole-pytest wall time. The first four retain limits of 25 MiB, 30 seconds, 90
-seconds, and 15 seconds; whole pytest is limited to 8 minutes against the backend
-job's 10-minute timeout (`.github/workflows/ci.yml:19`). Limits are not raised.
+seconds, and 15 seconds; whole pytest is limited to 6 minutes under the derivation
+recorded in the appendix against the backend job's 10-minute timeout
+(`.github/workflows/ci.yml:19`). Limits are not raised, and the workflow remains
+unchanged.
 
 On any budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits its source and tests on the chunk branch, does not

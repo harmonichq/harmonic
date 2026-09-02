@@ -9,9 +9,12 @@ compare exact whole sets of analyzer rows and absences, scoped and unscoped queu
 rows and absences, support values, and `asserts_move` values. ISF rest windows
 SHALL be keyed by ISF row identity plus `(date, start, end)`, observed across every
 ISF row rather than row zero, and SHALL express an empty ISF list. I:C history
-series SHALL be keyed by `run_id`, and the complete I:C history catalog SHALL be
-keyed by identity across every lifecycle. Each keyed expectation SHALL compare the
-complete row payload, not a count. Fixture inputs SHALL NOT set `asserts_move`,
+series SHALL contain one series per active identity keyed by identity, and a case
+with no active identity SHALL expect an empty keyed set. Every case SHALL declare
+the full-catalog identities and lifecycles it contributes to concatenation, and
+its isolated complete I:C history catalog SHALL be keyed by identity across every
+lifecycle. Each keyed expectation SHALL compare the complete row payload, not a
+count. Fixture inputs SHALL NOT set `asserts_move`,
 safety status, direction, held reason, register, queue row, priority, or
 attribution. Perturbing any expected row, absence, support value, or staging value
 SHALL fail. The basal cases SHALL cover every basal condition in the design matrix.
@@ -36,10 +39,12 @@ strictly more than `ciq_autotune.analyzers.ic.BLOCK_WINDOW_DAYS` plus
 generator SHALL import `BLOCK_WINDOW_DAYS` rather than duplicate its numeric
 value. Stored row counts SHALL equal the sum written by all recipes. The complete
 concatenated `analysis["ic_history"]` identity set across active, aged-out, and
-unavailable lifecycles SHALL equal the isolated showcase's expected full-catalog
-identity set. Every case SHALL remain independently runnable with only its own
-rows and snapshots. The generated SQLite artifact SHALL retain its synthetic
-provenance and logical drift comparison.
+unavailable lifecycles SHALL equal the union of the identity → lifecycle
+declarations made by every catalog case, failing on every undeclared or missing
+identity. Every case SHALL remain independently runnable with only its own rows
+and snapshots and SHALL assert its isolated full catalog exactly. The generated
+SQLite artifact SHALL retain its synthetic provenance and logical drift
+comparison.
 
 #### Scenario: Earlier coverage eras cannot own an analysis lane
 
@@ -48,15 +53,16 @@ provenance and logical drift comparison.
   earlier event or settings snapshot enters it
 - **AND** no earlier bolus enters the fixed I:C block lane or its one-day lead-in
 
-#### Scenario: Earlier eras cannot hide history identities outside projection
+#### Scenario: Every concatenated history identity is declared
 
 - **GIVEN** an earlier era has enough carb-bearing boluses and a carb-ratio snapshot
   to make a past identity publishable
 - **WHEN** the concatenated showcase analysis runs
-- **THEN** its complete all-lifecycle I:C history identity set equals the isolated
-  showcase full-catalog expectation
-- **AND** any additional active, aged-out, or unavailable identity fails the
-  generator even when findings projection omits it
+- **THEN** that case declares the identity and lifecycle it contributes, and the
+  concatenated complete all-lifecycle I:C history identity set equals the union of
+  every case declaration
+- **AND** any undeclared or missing active, aged-out, or unavailable identity fails
+  the generator even when active findings projection omits it
 
 #### Scenario: Era storage keys cannot silently merge
 
@@ -87,8 +93,8 @@ production composition. The cases SHALL cover every ISF and I:C condition in the
 design matrix, including direction-only non-stageable ISF, quiet I:C, and the
 history register. Their isolated and concatenated executions SHALL compare exact
 analyzer rows, queue rows and absences, support values, staging values, keyed ISF
-rest windows, keyed I:C history series, and the complete all-lifecycle I:C history
-catalog.
+rest windows, one keyed I:C history series per active identity, per-case catalog
+declarations, and each isolated case's complete all-lifecycle I:C history catalog.
 
 #### Scenario: The eight-run I:C floor is data-produced
 

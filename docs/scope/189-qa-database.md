@@ -252,5 +252,7 @@ Review rounds on the #192 draft lock (the coordinator fills this table):
 | --- | ---: | ---: | ---: |
 | 1 | 7 | 7 | 0 |
 | 2 | 4 | 2 | 2 |
+| 3 | 5 | 1 | 4 |
 
-Round 3 is the hard cap.
+The cap was reached with unsettled decisions, which the coordinator settled under
+operator delegation (D1–D5); one further fresh cold pass verifies the rewrite.

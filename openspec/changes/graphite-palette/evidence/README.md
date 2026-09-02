@@ -43,6 +43,15 @@ fixture payload instead, because neither committed database holds a Trial.
   the run.
 - Driver: the repository's browser-gate Playwright and vendored Vue and ECharts
   (`scripts/ensure_browser_gate_env.py`), 2026-09-02.
+- The two serves, each started from its own worktree root, exactly as
+  `AGENTS.md` "The data boundary" permits (the `--no-fetch` flag is mandatory;
+  the QA copy-then-serve entrypoint serves a different database, on which
+  `/plan` never reaches `.active-profile-ref`, so it is not a substitute):
+
+  ```
+  cd /Users/connor/worktrees/harmonic/317-base && uv run --frozen --extra api harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 8318
+  cd /Users/connor/worktrees/harmonic/317-c3  && uv run --frozen --extra api harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite --port 8317
+  ```
 
 ## Moved tokens (from `../design.md`, read by the run)
 
@@ -52,11 +61,10 @@ fixture payload instead, because neither committed database holds a Trial.
 | `--ck-ground` | `.cockpit-topbar` (and the footer) | `#0f0d0b` | `#14120f` | chrome bar |
 | `--ck-bar-on-signal` | the same elements, follows `--ck-ground` | `#0f0d0b` | `#14120f` | chrome bar |
 
-Derived colour pairs: none needed. No refusal the run reported was explained by
-a runtime-only token: the navigator tiles' inline `--sev` resolves to
-`--low` on every day the synthetic database renders (each carries a low), so
-no `--high`-derived inline property appeared, and no alpha wash of a moved
-token surfaced as an unlisted pair.
+Derived colour pairs: none needed. The run of record reports zero refusals,
+so no runtime-only token (an inline custom property such as the navigator
+tiles' `--sev`, or an alpha wash of a moved token) surfaced as an unlisted
+pair; `palette-diff.json` lists no `--sev` entry on either side.
 
 ## States and viewports
 
@@ -72,7 +80,11 @@ token surfaced as an unlisted pair.
 Viewports: 1440×900, 1280×800, 390×844 — eighteen state/viewport pairs. Above
 the cockpit breakpoint the drawer trigger is `display: none`; `shell-drawer`
 records that on both sides and leaves the drawer closed, so the pair stays
-comparable rather than failing.
+comparable rather than failing. The router canonicalises `/` to Diagnose, so
+`shell` is the Diagnose page reached by the shell gate's own address, and at
+the two desktop viewports its renders are byte-identical to `diagnose`'s; the
+states are kept separate because each is reached the way its own gate reaches
+it.
 
 ## The run of record
 
@@ -132,4 +144,20 @@ the fixture's profile Trial: on the base `20/20` and `32/18`, each as-is and
 mirrored (`SWAP=1`, Before and Trial exchanged so the Trial band has area);
 on the revision `20/20` as-is and mirrored. The ruling held the ribbon at
 20/20, so base and revision render the same setting; the 32/18 frames record
-the candidate the operator saw and retired.
+the candidate the operator saw and retired. The six invocations, run from the
+chunk-3 worktree with `PLAYWRIGHT_MODULE` and `VENDOR_DIR` set as above:
+
+```
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-base RIBBON=20/20 TRIAL=Profile        OUT=renders/verify-ribbon-20-20-1440x900-base.png              node verify-trial-opener.mjs
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-base RIBBON=32/18 TRIAL=Profile        OUT=renders/verify-ribbon-32-18-1440x900-base.png              node verify-trial-opener.mjs
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-base RIBBON=20/20 TRIAL=Profile SWAP=1 OUT=renders/verify-ribbon-20-20-mirrored-1440x900-base.png     node verify-trial-opener.mjs
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-base RIBBON=32/18 TRIAL=Profile SWAP=1 OUT=renders/verify-ribbon-32-18-mirrored-1440x900-base.png     node verify-trial-opener.mjs
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-c3   RIBBON=20/20 TRIAL=Profile        OUT=renders/verify-ribbon-20-20-1440x900-revision.png          node verify-trial-opener.mjs
+FRONTEND_ROOT=/Users/connor/worktrees/harmonic/317-c3   RIBBON=20/20 TRIAL=Profile SWAP=1 OUT=renders/verify-ribbon-20-20-mirrored-1440x900-revision.png node verify-trial-opener.mjs
+```
+
+The 36 state renders:
+
+```
+BASE_URL_BASE=http://127.0.0.1:8318 BASE_URL_REVISION=http://127.0.0.1:8317 OUT_DIR=renders node render-states.mjs
+```

@@ -127,7 +127,9 @@ if (!existsSync(DESIGN)) {
     colourPairs.push([before, after]);
   }
   const derived = section('### Derived colour pairs', '## Base story counts');
-  for (const m of derived.matchAll(/^- `([^`]+)`\s*→\s*`([^`]+)`/gm)) colourPairs.push([m[1], m[2]]);
+  // Either shape the record documents: `before → after` in one code span, or
+  // `before` → `after` in two.
+  for (const m of derived.matchAll(/^- `([^`→]+?)`?\s*→\s*`?([^`→]+?)`/gm)) colourPairs.push([m[1].trim(), m[2].trim()]);
   if (!movedTokens.size) missing.push(`${DESIGN} lists no moved token — nothing is sanctioned to differ`);
 }
 

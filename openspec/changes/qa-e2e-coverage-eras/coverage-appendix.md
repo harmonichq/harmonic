@@ -5,7 +5,10 @@ their coordinator ticks the task; the coordinator transcribes that output from
 each chunk report into this file. The committed-size and drift measurements apply
 only to the unchanged showcase store. Every baseline figure in the table is
 reference-only. Only the whole-pytest baseline measured in-session before chunk
-1's edits is load-bearing; chunk 2 reuses that figure without compounding it.
+1's edits is load-bearing. After the verified chunk-1 merge, the coordinator
+transcribes its literal `real` here; chunk 2 reads that value from this file
+without compounding it. If the value is absent, chunk 2 stops and comments on
+#192 instead of re-measuring.
 
 | Budget | Baseline measured | Limit |
 | --- | ---: | ---: |
@@ -49,6 +52,10 @@ showcase-only drift check remains green. Only a newer lock on #192 may resume th
 chunk. No measurement budget is raised in this phase; the CI job timeout change
 above supplies execution headroom without changing an acceptance limit.
 
-Before sub-order 2 authors the remaining I:C eras, it builds one mature 91-day
-I:C case and records literal output for all five measurements. If any limit is
-exceeded, it posts the measurements on #192 and stops under the same rule.
+After sub-order 1's first representative basal case, it projects the 9 remaining
+named basal cases. After sub-order 2's first representative ISF case and first
+mature I:C case, it projects the remaining cases from the design table's totals
+of 3 ISF and 8 I:C. Each gate computes `Σ over remaining planned cases of
+(measured representative single-case time for that family) + current focused-suite
+total` against 90 seconds. If a projection or any measured limit is exceeded, the
+worker posts the measurements on #192 and stops under the same rule.

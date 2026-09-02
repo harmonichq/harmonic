@@ -27,8 +27,10 @@ implementation spelled that extension as `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN`;
 the current contract instead states the analyzer rule directly: the earliest
 event is at least `BLOCK_WINDOW_DAYS` (90 days) back from `now`, with no I:C block-
 lane lead-in. Both use production `analyze`. The short store is forced to
-collecting; the long store reaches the analyzer's full observation age and a
-numeric state. The short store's
+collecting; the long store's `numeric` state proves maturity because a sub-90
+block is forced to `collecting`. Its printed `observed_days: [90]` is the probe's
+`row.get("days_observed", BLOCK_WINDOW_DAYS)` fallback, not a serialized analyzer
+value. The short store's
 single ISF row also shows that row presence alone does not exercise the prior-
 decision replay that requires the ISF family span.
 

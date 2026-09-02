@@ -29,17 +29,23 @@ pins `ExpectedAnalyzerRow` as a family-discriminated contract:
 | ISF | `asserts_move`, `direction` read from `evidence["direction"]`, and `omitted` |
 | I:C | `state`, `direction`, `held_reason`, `asserts_move`, conditionally present `days_observed`, and `omitted` |
 
-`omitted` is compared exactly as the serialized field names expected absent or
-`None`. Basal no-baseline uses `omitted={"current"}` and ISF direction-only uses
-`omitted={"recommended"}`. I:C collecting and asserting blocks pin the exact
+`omitted` is compared exactly and ranges only over the family's serialized field
+names outside its value-pinned list. It names fields expected absent or `None`;
+a value-pinned field whose value is `None` is pinned as that value and is never
+also listed in `omitted`. Basal no-baseline uses `omitted={"current"}` because
+`current` is outside basal's value-pinned list and serializes as `None`; ISF
+direction-only similarly uses `omitted={"recommended"}`. I:C collecting and asserting blocks pin the exact
 serialized `days_observed`; every other I:C block includes `days_observed` in
 `omitted`. A non-collecting span is guarded by its exact `state`, not by a field
 the serializer omits. `QaExpectation` gains
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
 `absent_analyzer_rows`. Every case runs full `analyze`
-(`scripts/qa_e2e_cases.py:162-168`). The family under test pins its full emitted
-key set. Each non-target family pins the exact set of keys outside its measured
-quiet predicate:
+(`scripts/qa_e2e_cases.py:162-168`). `QaCase.target_family` is
+`"basal" | "isf" | "ic"` for new coverage cases and `None` for `showcase`,
+`setting-recommendation`, and `behavioral-precedence`. `assert_expectation` pins
+the target family's full emitted key set and each other family's exact set of keys
+outside its measured quiet predicate. A `None` target pins that measured
+non-quiet complement in all three families. The quiet predicates are:
 
 * basal quiet is `safety_status` in `{NO_CHANGE, NO_DATA, None}`; `NO_DATA`
   projects a blind row, but the slot has no estimate and cannot hide a move;
@@ -54,9 +60,10 @@ non-target set is measured from the exact complement of the predicates above; it
 is never assumed empty. This keeps stray states fail-closed at a fraction of the
 all-family literal volume.
 
-`QaCase` also gains a `recipe` callable. A name-to-recipe registry replaces the
-`if`/`elif` dispatch in `materialize_case` (`scripts/qa_e2e_cases.py:147-157`),
-and sub-order 2 only registers cases through that task-1 contract. `QaCase` gains
+`QaCase` also gains a `recipe` callable, and `materialize_case` calls it directly
+instead of using the current `if`/`elif` dispatch
+(`scripts/qa_e2e_cases.py:147-157`). Sub-order 2 adds cases through that task-1
+callable contract. `QaCase` gains
 `scoped_windows: tuple[tuple[int, int], ...]`, expressed as clock minutes and
 empty by default. `execute_case` keeps `whole_day()` and additionally projects
 each declared window through `WindowQuery.clock`
@@ -136,6 +143,42 @@ condition; it never permits writing the condition into a fixture.
 | I:C quiet | The mature block is below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise owns neither move nor held reason (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run case separately from collecting. | Exact analyzer block with `omitted` containing `days_observed`, plus explicit `QaCase.scoped_windows`/global absence. |
 | I:C history register | A snapshot-proven past block identity differs from current, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active history row and one exact projected series per active identity. |
 
+## Named #192 coverage cases
+
+These are the exact new catalog entries. Span is the inclusive declaration from
+the family table above. `—` means the case projects `whole_day` only; every listed
+clock window is additionally projected through `QaCase.scoped_windows`. The
+generated unittest method is mechanically `test_case_<name with '-' replaced by
+'_'>`.
+
+| Case name | Family | Span days | Scoped windows | Matrix condition |
+| --- | --- | ---: | --- | --- |
+| `basal-raise` | basal | 32 | — | Basal raise |
+| `basal-lower` | basal | 32 | — | Basal lower |
+| `basal-capped-raise` | basal | 32 | — | Basal capped raise |
+| `basal-capped-lower` | basal | 32 | — | Basal capped lower |
+| `basal-insufficient-seven-night` | basal | 32 | `(180, 240)` | Basal insufficient at the seven-night floor |
+| `basal-blind` | basal | 32 | `(180, 240)` | Basal blind |
+| `basal-no-baseline` | basal | 32 | `(180, 240)` | Basal no baseline |
+| `basal-no-change` | basal | 32 | `(180, 240)` | Basal no change |
+| `basal-recurring-low-lower` | basal | 32 | — | Basal recurring-low lower |
+| `basal-recurring-low-gate` | basal | 32 | `(180, 240)` | Basal recurring-low gate |
+| `isf-strengthen` | isf | 39 | — | ISF strengthen |
+| `isf-direction-only-weaken` | isf | 39 | — | ISF weaken / direction-only non-stageable |
+| `isf-held` | isf | 39 | — | ISF held |
+| `ic-collecting` | ic | 30 | `(0, 720)` | I:C collecting |
+| `ic-raise` | ic | 91 | — | I:C raise |
+| `ic-lower` | ic | 91 | — | I:C lower |
+| `ic-capped-raise` | ic | 91 | — | I:C capped raise |
+| `ic-capped-lower` | ic | 91 | — | I:C capped lower |
+| `ic-held` | ic | 91 | `(0, 720)` | I:C held |
+| `ic-quiet-seven-run` | ic | 91 | `(0, 720)` | I:C quiet at the seven-run floor |
+| `ic-history-register` | ic | 91 | — | I:C history register |
+
+Task 1 therefore adds 10 basal cases. Task 2 adds 3 ISF and 8 I:C cases. Those
+counts are load-bearing inputs to the pre-authoring runtime projections below;
+the generated test-name guard derives from this same closed table.
+
 ## ADR 192 — Isolated coverage stores, showcase-only committed database
 
 **Decision.** The committed database remains showcase-only. Concatenating older
@@ -161,8 +204,11 @@ observed value changing. The committed database membership is exactly one case:
 The executed span probe and complete output in `generated-facts.md` demonstrate
 the boundary with existing recipes: the 30-day showcase is collecting at 29
 observed days, while its 91-inclusive-calendar-day long store places its earliest
-event at least 90 days back, reaches 90 observed days, and produces a numeric I:C
-state. The same 30-day store still emits one ISF row, but the
+event at least 90 days back and produces a numeric I:C state. The printed long-
+store `observed_days: [90]` is the probe's `row.get(..., BLOCK_WINDOW_DAYS)`
+fallback, not an emitted analyzer value; maturity is proved by `numeric`, because
+a sub-90 block is forced to `collecting` and would serialize `days_observed`.
+The same 30-day store still emits one ISF row, but the
 family span is required for prior-decision outcomes. This probe is frozen evidence
 of the pre-change tree at `origin/main` `6defd69`; it is not re-run after chunk 1,
 and no chunk repairs it.
@@ -175,8 +221,11 @@ materializer used by tests. The parser changes `--out` to `default=None`; withou
 `--case`, `None` resolves to `DEFAULT_OUTPUT`, preserving the documented bare
 generator and `--check`. With `--case`, an unsupplied `--out` is an argument
 error that writes nothing. `--case` and `--check` are mutually exclusive, and an
-unknown case fails while naming the available catalog. Tests assert that every
-named-case invocation leaves `DEFAULT_OUTPUT` unwritten.
+unknown case fails while naming the available catalog. Generator tests snapshot
+`DEFAULT_OUTPUT`'s bytes and mtime and require every invocation in the suite to
+leave both unchanged. Default-output resolution is exercised only through the
+read-only bare `--check`; tests never invoke bare write mode against the committed
+path.
 The output is scratch data and is never committed. A one-line `AGENTS.md`
 amendment permits it through the existing mandatory copy-then-serve, `--no-fetch`
 workflow by substituting either a `$TMPDIR` scratch path or the already-pinned
@@ -235,10 +284,15 @@ chunk. Task 1 raises the `pytest (backend)` job timeout from 10 to 15 minutes so
 the expanded suite retains CI headroom; that one line is the only permitted CI
 workflow edit.
 
-Before authoring the remaining I:C cases, sub-order 2 times one mature case and
-computes `measured single-case time × planned I:C case count + current focused-suite
-total`. A result above the 90-second focused-suite limit triggers the same stop
-rule before the remaining I:C recipes are authored.
+After the first representative basal case and before the remaining basal cases,
+sub-order 1 computes the sum of the representative time for each of its 9
+remaining named basal cases plus the current focused-suite total. Sub-order 2
+does the same by family after one representative ISF case and one mature I:C case:
+3 ISF and 8 I:C cases total, subtracting the representatives already measured.
+Each projection is `Σ over remaining planned cases of (measured representative
+single-case time for that family) + current focused-suite total`. A result above
+the 90-second focused-suite limit triggers the stop rule before the remaining
+recipes are authored.
 
 On a budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch

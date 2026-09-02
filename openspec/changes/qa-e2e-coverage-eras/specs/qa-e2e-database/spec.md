@@ -11,24 +11,32 @@ basal SHALL contain exact `safety_status`, top-level `direction`, `asserts_move`
 and `omitted: frozenset[str]`; ISF SHALL contain exact `asserts_move`, `direction`
 read from `evidence["direction"]`, and `omitted`; I:C SHALL contain exact `state`,
 `direction`, `held_reason`, `asserts_move`, conditionally present
-`days_observed`, and `omitted`. `omitted` SHALL compare exactly the serialized
-field names expected absent or `None`; basal no-baseline SHALL use
-`omitted={"current"}` and ISF direction-only SHALL use
+`days_observed`, and `omitted`. `omitted` SHALL compare exactly and SHALL range
+only over the family's serialized field names outside its value-pinned list. A
+value-pinned field whose value is `None` SHALL be pinned as that value and SHALL
+NOT also appear in `omitted`. Basal no-baseline SHALL use
+`omitted={"current"}` because `current` is outside basal's value-pinned list and
+serializes as `None`; ISF direction-only SHALL use
 `omitted={"recommended"}`. I:C collecting and asserting rows SHALL pin exact
 emitted `days_observed`; every other I:C row SHALL include `days_observed` in
 `omitted`, and its non-collecting span guard SHALL be exact `state`.
 `QaExpectation` SHALL gain
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
-`absent_analyzer_rows`. Each case's target family SHALL pin its full emitted key
-set. Each non-target family SHALL pin the exact set of keys outside its measured
-quiet predicate: basal quiet SHALL mean `safety_status` in
+`absent_analyzer_rows`. `QaCase` SHALL gain
+`target_family: Literal["basal", "isf", "ic"] | None`. Every new #192 coverage
+case SHALL name its family; `showcase`, `setting-recommendation`, and
+`behavioral-precedence` SHALL use `None`. `assert_expectation` SHALL pin a named
+target family's full emitted key set and each other family's exact set of keys
+outside its measured quiet predicate. A `None` target SHALL pin that measured
+non-quiet complement in all three families. The quiet predicates are: basal
+quiet SHALL mean `safety_status` in
 `{NO_CHANGE, NO_DATA, None}` (a `NO_DATA` blind slot has no estimate and cannot
 hide a move); ISF quiet SHALL mean `asserts_move == false` with no
 `evidence["direction"]`; I:C quiet SHALL mean `state` in `collecting`,
 `below-floor`, or `unmeasured-alone`, or `state == "numeric"` with
 `asserts_move == false` and no `held_reason`. The non-target set SHALL be the
 exact measured complement of those predicates, never an assumed-empty set, so
-stray states fail closed without repeating every quiet row. `QaCase` SHALL gain
+stray states fail closed without repeating every quiet row. `QaCase` SHALL also gain
 `scoped_windows: tuple[tuple[int, int], ...]`, expressed in clock minutes and
 empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
@@ -92,8 +100,8 @@ The default generator and `--check` SHALL continue to materialize and compare on
 `showcase`. The committed database bytes, showcase recipe, and showcase-produced
 rows SHALL remain unchanged; the expectation SHALL be re-expressed in the
 extended contract without changing any observed value. `QaCase` SHALL gain a
-`recipe` callable, and a name-to-recipe registry SHALL replace the current
-`if`/`elif` materializer dispatch. One unittest method named
+`recipe` callable, and `materialize_case` SHALL call it directly instead of using
+the current `if`/`elif` dispatch. One unittest method named
 `test_case_<name with '-' replaced by '_'>` per catalog case SHALL make
 `--durations=0` report each case independently, and each generated method SHALL
 carry the original case name. Tests SHALL decode those method names and assert
@@ -104,8 +112,12 @@ case fails closed. The generated methods SHALL replace
 `test_setting_recommendation_case_runs_the_real_producer_composition`; the exact
 catalog-tuple and decoded-name-set tests SHALL be the only retained
 execution-free catalog tests.
-Named-case tests SHALL assert that every `--case` invocation, including a valid
-scratch emission and every failure mode, leaves `DEFAULT_OUTPUT` unwritten.
+Generator tests SHALL snapshot `DEFAULT_OUTPUT`'s bytes and mtime and assert that
+every generator invocation in the suite leaves both unchanged. Resolution of an
+unsupplied `--out` to `DEFAULT_OUTPUT` SHALL be proved only through the read-only
+bare `--check`; the suite SHALL NOT exercise bare write mode against the committed
+path. Named-case tests SHALL retain the valid scratch-emission and failure-mode
+coverage above.
 
 `gen_qa_e2e_db.py --check` SHALL report the showcase's logical contents current.
 `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to

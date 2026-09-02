@@ -261,6 +261,7 @@ Review rounds on the #192 draft lock (the coordinator fills this table):
 | 8 | 3 | 0 | 3 |
 | 9 | 3 | 1 | 2 |
 | 10 | 4 | 0 | 4 |
+| 11 | 4 | 0 | 4 |
 
 Rounds 5+ verify the clean rewrite.
 Round 5 regrounded the pivot premise cleanly.

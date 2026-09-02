@@ -457,3 +457,82 @@ committed output remain unchanged. Only a newer lock on #192 resumes the chunk.
 This change remains active after tasks 1 and 2. Task 3 adds #193's behavioral and
 verdict-band eras. Task 4 completes the remaining migration and evidence-based
 revise-e2e retirement, adds agent guidance, and archives the change.
+
+## #319 migration
+
+The pre-implementation `rg` inventory in `generated-facts.md` finds 78 files that
+name `revise-e2e`, `revise_e2e`, or `gen_revise_e2e_db`. Eight are live
+executable or agent-instruction files. The other 70 are non-executable scope,
+design, evidence, behavior-ledger, and active-change records; they remain as an
+accurate history of the source used by those completed runs. The archived
+migration checklist names 14 executable consumers: ten direct consumers and four
+browser consumers that inherit their database from the CI server. The harness
+README is an additional already-migrated guidance consumer that #319 verifies.
+
+The implementation follows this closed migration table. “Proof” is the
+public-interface check that must remain after the old source is removed.
+
+| Consumer | Current evidence | New source | Proof |
+| --- | --- | --- | --- |
+| Fixture generator | `scripts/gen_revise_e2e_db.py:8-33,201-215` | None; `scripts/gen_qa_e2e_db.py` is the sole QA-store generator. | Delete the old generator only after its production-composition coverage is present in `tests/test_gen_qa_e2e_db.py` and `tests/test_qa_e2e_cases.py`. |
+| Generator public-interface/drift test | `tests/test_gen_revise_e2e_db.py:18,22-91` | QA showcase and isolated case stores. | Delete the old test; the QA tests retain CLI generation, logical drift, production `analyze`, exposures, scenarios, findings projection, and I:C history coverage. |
+| CI drift check | `.github/workflows/ci.yml:55-59` | `scripts/gen_qa_e2e_db.py --check` only. | The backend job retains the QA check and removes the revise-E2E step. |
+| Permitted offline command | `AGENTS.md:55-73,142-145,183-200` | A scratch copy of `mockups/qa-e2e.synthetic/harmonic.sqlite`, or a named case store emitted to scratch. | The documented command retains `--no-fetch`, removes the second permitted revise-E2E serve and its restore command, and names no retired path. |
+| Local launch entry | `.claude/launch.json:23-29` | Already uses a scratch copy of the QA showcase. | Retain the entry byte-for-byte unless its source/consumer wiring must change; the executable-retirement test scans this hidden path. |
+| Browser-gates server | `.github/workflows/ci.yml:304-313` | A scratch copy of the QA showcase. | Retain `--no-fetch`, tokenless/offline startup, health polling, failure-log output, and the existing server lifecycle; CI supplies the browser proof. |
+| Diagnose workstation replay | `.github/workflows/ci.yml:244-247`; `frontend/diagnose-workstation-behavior.replay.mjs:494-506` | The migrated CI server through localhost `BASE_URL`. | Retain the replay and its server-only localhost guard; the browser-gate leg passes in CI. |
+| Diagnose event-comparison replay | `.github/workflows/ci.yml:255-257`; `frontend/diagnose-event-comparison-behavior.replay.mjs:1-18` | The migrated CI server through the app opener. | Retain the replay; its browser-gate leg passes in CI. |
+| Diagnose comparison support audit | `.github/workflows/ci.yml:258-260`; `mockups/diagnose-event-comparison-support-audit.mjs:1-31` | The migrated CI server through the event-comparison app opener. | Retain the audit and its `TARGET=app` fail-closed guard; its browser-gate leg passes in CI. |
+| Verify behavior replay | `.github/workflows/ci.yml:266-268`; `frontend/verify-660-story-behavior.replay.mjs:67-77` | The migrated CI server for the built app, with its existing payload stubs. | Retain the replay; its browser-gate leg passes in CI. |
+| Route-level fixture copy | `tests/test_finding_case_file_api.py:459-472` | The committed QA showcase copied to a temporary SQLite file. | Preserve every route-level assertion and prove the populated route through the API test. |
+| Public-link path pin | `scripts/check_public_links.py:132-145` | The existing QA-only `AGENTS.md`/`CLAUDE.md` pin. | Remove the revise-E2E pin and retain the QA pin plus its agent-instructions-only scope. |
+| Public-link pin test | `tests/test_check_public_links.py:124-144` | The QA path. | Delete the revise-E2E case and retain the QA positive and non-agent-document negative assertions. |
+| Public-tree binary policy test | `tests/test_check_public_allowlist.py:149-155` | `mockups/qa-e2e.synthetic/harmonic.sqlite`. | Rename/repoint the exact-path assertion while retaining the generic `.sqlite` denial from `scripts/public_allowlist.txt`. |
+
+`harness/README.md:14-24` and `.claude/launch.json:23-29` already describe the
+QA scratch-copy path and remain part of the executable retirement scan. After
+both serial chunks land, the coordinator repeats the executable-only `rg` command
+recorded in `generated-facts.md` across `AGENTS.md`, `.claude/`, `.github/`,
+`harness/`, `scripts/`, `tests/`, `frontend/`, and executable JavaScript under
+`mockups/`. The command names every path explicitly, including the hidden paths,
+and succeeds only with no output. `docs/scope/`, `openspec/changes/`, and the
+frozen behavior ledger are deliberately outside this executable scan and stay
+unchanged.
+
+The committed QA showcase is an input, not an implementation output. Before and
+after the migration, `git diff --quiet origin/main --
+mockups/qa-e2e.synthetic/harmonic.sqlite` must exit zero. The migration may
+delete `mockups/revise-e2e.synthetic/harmonic.sqlite`; it does not regenerate or
+replace the showcase. The active change remains active in the implementation
+pull request. `/ticket finalize` archives it after a human merges #319.
+
+## #319 agent guidance
+
+`AGENTS.md` owns a short maintenance and UI-use recipe. A new analyzer state or
+Finding starts as a manufactured `QaCase` recipe in `scripts/qa_e2e_cases.py`.
+The author runs that case through `execute_case`, copies the serialized analyzer,
+queue, support, rest-window, history, behavioral, verdict-tally, and uncaused-high
+rows that the case actually emits into literal `QaExpectation` values, then
+relies on the catalog-generated `test_case_<case name with hyphens replaced by
+underscores>` method. Expectations are never derived at assertion time. The
+focused suite, slowest generated case, full pytest, generator drift, and database
+size are re-measured against the existing budgets; a breach keeps the showcase
+untouched and stops for a new split decision.
+
+The same guide gives the exact scratch workflow: emit with `uv run python
+scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>`, substitute that
+path as the copy source in the one documented QA copy-then-serve command, and
+retain `--no-fetch` and the empty token. The showcase answers whole-app layout,
+dense chronology, navigation, and mixed-state composition questions. A named
+case store answers whether one exact analyzer or Finding state is represented and
+rendered through production APIs. The component harness's manufactured stories
+remain the first surface for isolated chart layout and interaction questions;
+the full no-fetch app is the later integration proof. No guide authorizes a live
+fetch or committing an emitted case store.
+
+`CONTEXT.md` adds only the ubiquitous-language definitions: a **coverage era** is
+one named manufactured case recipe and its literal analyzer-produced expectation;
+a **case store** is the uncommitted isolated SQLite output for one coverage era;
+and the **showcase** is the one committed dense QA database whose recent 30-day
+view supports whole-app UI exploration. These terms do not create another case
+catalog or another source of truth.

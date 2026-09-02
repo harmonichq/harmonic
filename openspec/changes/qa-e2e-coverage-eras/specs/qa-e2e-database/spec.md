@@ -353,3 +353,113 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 - **THEN** the committed showcase drift check remains current and its bytes remain
   unchanged against `origin/main`
 - **AND** the five measured budgets are recorded without raising a limit
+
+### Requirement: Remaining consumers migrate before revise-E2E retires
+
+The 14 executable consumers in the archived migration checklist SHALL be
+accounted for by the `#319 migration` table in `design.md`. The CI drift step,
+browser-gates server, route-level fixture copy, public-link pin and test, public
+binary-policy test, agent instructions, and every direct database reference SHALL
+use the QA showcase or an explicitly emitted named case store. The four browser
+replays/audits SHALL remain wired to the browser-gates server through their
+existing app-openers and localhost contract. The already-migrated
+`harmonic-nofetch` launch entry and harness instructions SHALL remain on the QA
+scratch-copy workflow.
+
+The CI server and documented local serve SHALL retain `--no-fetch`, tokenless
+operation, scratch-copy isolation, health/failure behavior, and the existing
+browser-leg lifecycle. The route test SHALL copy the committed QA showcase into a
+temporary path and retain its route-level assertions. The QA generator and case
+tests SHALL retain the old generator test's public production-composition proof:
+analysis, exposures, scenarios, findings projection, and I:C history. The QA drift
+step SHALL remain fail-closed.
+
+Only after those replacements are proved SHALL the implementation delete
+`scripts/gen_revise_e2e_db.py`, `tests/test_gen_revise_e2e_db.py`,
+`mockups/revise-e2e.synthetic/`, and the old CI drift step. After both serial
+chunks land, the coordinator SHALL repeat the exact `rg` completion check from
+`generated-facts.md` against the closed executable surface—`AGENTS.md`,
+`.claude/`, `.github/`, `harness/`, `scripts/`, `tests/`, `frontend/`, and
+executable JavaScript under `mockups/`—for `revise-e2e`, `revise_e2e`, and
+`gen_revise_e2e_db`. The check SHALL explicitly include hidden paths and SHALL
+produce no output. Historical records under `docs/scope/` and
+`openspec/changes/`, plus the frozen behavior ledger, SHALL remain unchanged.
+
+The committed QA showcase SHALL remain byte-identical to `origin/main`. The
+implementation SHALL leave this active change unarchived; `/ticket finalize`
+owns archival after a human merges the implementation pull request.
+
+#### Scenario: Every direct consumer has one QA successor
+
+- **WHEN** the migration completes
+- **THEN** the QA drift check is the only QA-database drift step
+- **AND** the browser server and route-level API test consume a scratch copy of
+  the committed showcase
+- **AND** the QA-only public-link pin and binary-denial assertion remain
+- **AND** launch and harness entrypoints remain on the QA scratch workflow
+
+#### Scenario: Indirect browser consumers prove the migrated server
+
+- **WHEN** the browser-gates job starts its declared synthetic server
+- **THEN** the four retained app replays and audits consume that server through
+  their existing localhost/app-opener wiring
+- **AND** every browser leg remains fail-closed in CI
+
+#### Scenario: Retirement is evidence-based
+
+- **WHEN** the completion check runs against the closed executable surface,
+  including `.claude/` and `.github/`
+- **THEN** any retired spelling produces a match and blocks completion
+- **AND** when the command produces no output, the old generator, test, fixture directory, and
+  CI step are absent while historical evidence remains intact
+
+#### Scenario: The showcase and active record do not move
+
+- **WHEN** task 4 reaches the pull-request boundary
+- **THEN** `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite`
+  exits zero
+- **AND** the active change remains under `openspec/changes/qa-e2e-coverage-eras/`
+  for post-merge finalization to archive
+
+### Requirement: Agent guidance explains era upkeep and UI use
+
+`AGENTS.md` SHALL contain a short procedural recipe for adding or updating a
+coverage era when an analyzer state or Finding changes. The recipe SHALL start
+from a manufactured case recipe, require the author to execute the case and copy
+the complete serialized row dump into literal expectations, identify the
+catalog-generated `test_case_<case name with hyphens replaced by underscores>`
+method as the per-case test, and require all five existing budgets to be
+re-measured without raising their limits. It SHALL state that expectations are
+never derived from analyzer or projection output at assertion time and that a
+budget breach stops without changing the committed showcase.
+
+The guide SHALL show `uv run python scripts/gen_qa_e2e_db.py --case <name> --out
+<scratch path>` as the named-case emitter and SHALL connect that output to the
+single documented copy-then-serve command with `--no-fetch` and an empty token.
+It SHALL distinguish the UI questions each source answers: the showcase for
+whole-app layout, dense chronology, navigation, and mixed-state composition; a
+named case store for one exact analyzer or Finding state through production APIs;
+and manufactured component-harness stories for isolated chart layout or
+interaction before full-app integration. It SHALL forbid committing emitted case
+stores, normal serve, and live fetch in automated work.
+
+`CONTEXT.md` SHALL define **coverage era**, **case store**, and **showcase** as the
+ubiquitous terms in `#319 agent guidance` without duplicating the catalog or
+expectation contract.
+
+#### Scenario: A new analyzer or Finding behavior gains a coverage era
+
+- **GIVEN** a manufactured recipe for the new behavior
+- **WHEN** an agent executes it through the production composition
+- **THEN** the serialized rows become literal expectations owned by the case
+- **AND** the generated per-case test and all five budgets prove the addition
+- **AND** no expected verdict or row is derived at assertion time
+
+#### Scenario: A named case drives a UI decision safely
+
+- **WHEN** an agent needs one exact analyzer or Finding state in the full app
+- **THEN** it emits the named case to an uncommitted scratch path
+- **AND** serves a scratch copy through the documented tokenless `--no-fetch`
+  command
+- **AND** uses the showcase or component harness instead when the question is
+  whole-app composition or isolated chart behavior, respectively

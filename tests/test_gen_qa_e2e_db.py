@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 
+from ciq_autotune.store import Store
 from scripts.qa_e2e_cases import QA_CASES
 
 
@@ -48,6 +49,8 @@ class QaE2EDatabaseGeneratorTest(unittest.TestCase):
             output = pathlib.Path(tmp) / "harmonic.sqlite"
             result = run("--out", str(output))
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(output.with_name(output.name + "-wal").exists())
+            self.assertFalse(output.with_name(output.name + "-shm").exists())
             with sqlite3.connect(output) as conn:
                 self.assertEqual(
                     conn.execute(
@@ -57,6 +60,10 @@ class QaE2EDatabaseGeneratorTest(unittest.TestCase):
                     ("scripts/gen_qa_e2e_db.py", 1),
                 )
             self.assertEqual(dump(output), dump(DEFAULT_OUTPUT))
+
+    def test_committed_showcase_contains_no_credentials(self):
+        with Store.open_readonly(str(DEFAULT_OUTPUT)) as store:
+            self.assertIsNone(store.get_credentials())
 
     def test_named_case_writes_only_that_stamped_scratch_store(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,1569 @@
+{
+  "base": "http://127.0.0.1:8766/",
+  "revision": "http://127.0.0.1:8765/",
+  "elementsCompared": 7274,
+  "propertiesCompared": 4190688,
+  "sanctionedRemovals": 75,
+  "sanctionedGateRemovals": 15,
+  "sanctionedReflows": 60,
+  "unexplained": 0,
+  "emptyComparisons": [],
+  "pass": true,
+  "results": [
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 557,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "151.109px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "151.117px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 557,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "143.109px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "143.117px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 509,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": []
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": "drawer trigger is display:none at this width — drawer left closed on both sides",
+        "revision": "drawer trigger is display:none at this width — drawer left closed on both sides"
+      },
+      "elementsCompared": 557,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "151.109px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "151.117px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": "drawer trigger is display:none at this width — drawer left closed on both sides",
+        "revision": "drawer trigger is display:none at this width — drawer left closed on both sides"
+      },
+      "elementsCompared": 557,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "143.109px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "143.117px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 509,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": []
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 561,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "151.109px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "151.117px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 561,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "143.109px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "143.117px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 513,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": []
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "151.109px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "151.117px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "143.109px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "143.117px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": []
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 489,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "479.984px",
+          "revision": "529.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "151.109px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "151.117px 12px",
+          "revision": "126.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "302.234px",
+          "revision": "252.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 489,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": [
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "inline-size",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-inline-start",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "margin-left",
+          "base": "343.984px",
+          "revision": "389.562px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "perspective-origin",
+          "base": "143.109px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "transform-origin",
+          "base": "143.117px 12px",
+          "revision": "120.328px 12px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0",
+          "property": "width",
+          "base": "286.234px",
+          "revision": "240.656px",
+          "rule": "utilities-nav-reflow",
+          "expected": "the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)"
+        }
+      ]
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 464,
+      "removed": [
+        {
+          "key": "html:0>head:0>script@czhabq:0",
+          "sig": "script@czhabq",
+          "tag": "script",
+          "text": "(function () { if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark'); })();",
+          "rule": "boot-theme-gate",
+          "kind": "boot-gate",
+          "expected": "boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7",
+          "sig": "button",
+          "tag": "button",
+          "text": "Theme · Dark",
+          "rule": "drawer-theme-button",
+          "kind": "theme-control",
+          "expected": "navigation-drawer Theme button (drawer <button> labelled Theme)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0",
+          "sig": "button#theme-menu-button.cockpit-theme",
+          "tag": "button",
+          "text": "Theme",
+          "rule": "footer-theme-button",
+          "kind": "theme-control",
+          "expected": "footer Theme button (button.cockpit-theme#theme-menu-button)"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0",
+          "sig": "div.cockpit-utility-menu",
+          "tag": "div",
+          "text": "",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0",
+          "sig": "button",
+          "tag": "button",
+          "text": "Light",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        },
+        {
+          "key": "html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1",
+          "sig": "button",
+          "tag": "button",
+          "text": "Dark",
+          "rule": "footer-theme-menu",
+          "kind": "theme-control",
+          "expected": "footer Theme preference menu (div.cockpit-utility-menu) and its items"
+        }
+      ],
+      "added": [],
+      "changed": [],
+      "reflow": []
+    }
+  ]
+}

@@ -162,13 +162,13 @@ The Diagnose glucose-by-time-of-day chart SHALL confine clock-window gate paint
 and hit testing to the glucose plot. Its clock-aligned basal verdict strip SHALL
 retain each backend verdict's paint independently of window selection. Held,
 insufficient-evidence, and no-data states SHALL remain distinguishable through
-theme-owned paint plus a non-color structural tell in Light and Dark. The plotted
-glucose evidence and chart furniture SHALL remain readable with and without an
-active clock window after every overlay is composited.
+theme-owned paint plus a non-color structural tell. The plotted glucose evidence
+and chart furniture SHALL remain readable with and without an active clock
+window after every overlay is composited.
 
 #### Scenario: Moving a clock window preserves basal verdict rendering and chart legibility
 
-- **GIVEN** a populated Diagnose glucose-by-time-of-day chart in Light or Dark
+- **GIVEN** a populated Diagnose glucose-by-time-of-day chart
 - **AND** the basal strip contains held, insufficient-evidence, and no-data slots
 - **WHEN** the wearer chooses, draws, resizes, slides, or wraps a clock window
 - **THEN** the gate paint and hit zones remain inside the glucose plot
@@ -211,9 +211,9 @@ existing no-page-scroll contract SHALL remain unchanged.
 
 ### Requirement: Dark Diagnose material hierarchy keeps advisory evidence distinct
 
-The Dark Diagnose workstation SHALL derive its desk, chart well, field, pane
-sheet, rail, rule, edge, and ink roles from one ordered warm tonal ladder. Chart
-wells SHALL sit below pane sheets; chart-vessel edges SHALL remain distinct from
+The Diagnose workstation SHALL derive its desk, chart well, field, pane sheet,
+rail, rule, edge, and ink roles from one ordered warm tonal ladder. Chart wells
+SHALL sit below pane sheets; chart-vessel edges SHALL remain distinct from
 interior gridlines; the spotlight SHALL differ from peer vessels by shadow rather
 than a brighter plate; and the glucose chart, basal strip, Findings boundary, and
 chart dock SHALL read as one coherent instrument without doubled seams.
@@ -221,13 +221,13 @@ chart dock SHALL read as one coherent instrument without doubled seams.
 The named Diagnose evidence charts and desktop Day chart SHALL render the 70 and
 180 mg/dL target bounds as dashed rails rather than a filled target slab. The
 carb-ratio evidence chart SHALL keep overlapping support and directional-only
-runs individually readable. These presentation changes SHALL leave Light,
-published chart data, window and dock interactions, advisory verdicts, and
-staging behavior unchanged.
+runs individually readable. These presentation rules SHALL leave published chart
+data, window and dock interactions, advisory verdicts, and staging behavior
+unchanged.
 
 #### Scenario: Dark renders the same evidence through distinct material roles
 
-- **GIVEN** a populated synthetic Diagnose workstation in Dark
+- **GIVEN** a populated synthetic Diagnose workstation
 - **WHEN** the reader views the focal chart, basal strip, Findings pane, chart
   dock, fullscreen chart, explorer, and carb-ratio evidence
 - **THEN** wells remain darker than sheets and every chart vessel has one visible
@@ -239,7 +239,6 @@ staging behavior unchanged.
   membership line style and the re-settled opacity
 - **AND** the same interactions, evidence values, and advisory states replay
   unchanged
-- **AND** the Light theme remains unchanged
 
 ### Requirement: The basal evidence tile states its finding and draws each night as an independent delta
 
@@ -277,3 +276,113 @@ furniture, a compressed middle rank, and a silhouette-only miniature.
 - **WHEN** a night's delivered rate exceeds the computed axis ceiling
 - **THEN** its cell caps at the ceiling with an overflow mark
 - **AND** the tile prints the true value
+
+### Requirement: Every settings evidence chart opens the parameter panel its queue row opens
+
+A Diagnose settings evidence chart — basal, correction factor, or carb ratio —
+SHALL open the same parameter panel that parameter's findings-queue row opens,
+resolved from the chart's own published identity against the live findings rows.
+The panel SHALL carry the same served facts on both entry paths, including the
+backend verdict word, the support count and the staging control, and the surface
+SHALL re-derive no floor, threshold, direction or safety verdict on either path.
+A settings-chart click SHALL occupy exactly one inspector level: a click while
+another parameter's panel stands replaces that level rather than deepening the
+breadcrumb. The generic chart level SHALL no longer render a settings readout,
+and SHALL remain available to the behavioral placeholder.
+
+#### Scenario: A setting reached by its chart shows what its queue row shows
+
+- **WHEN** the reader clicks a basal, correction factor or carb-ratio evidence chart
+- **THEN** that parameter's panel opens, the same one its findings-queue row opens
+- **AND** the panel prints the served verdict word and support count
+- **AND** offers the staging control only where the backend `asserts_move` verdict is true
+
+#### Scenario: A chart click does not deepen the breadcrumb
+
+- **WHEN** the reader clicks one parameter's evidence chart while another parameter's panel stands
+- **THEN** the standing level is replaced by the clicked parameter's panel
+- **AND** the breadcrumb depth is unchanged
+- **AND** clicking the chart the reader already stands on moves nothing
+
+#### Scenario: The thin settings readout is unreachable
+
+- **WHEN** any settings evidence chart is opened by any gesture
+- **THEN** no generic counts-and-roster readout renders
+- **AND** the generic chart level still renders the behavioral placeholder for a behavioral chart with no published lever
+
+#### Scenario: Each parameter's chart route keeps its own clock-window behavior
+
+- **GIVEN** the reader has drawn a clock window
+- **WHEN** they open a basal or carb-ratio evidence chart
+- **THEN** the drawn window is released and the panel's own span governs, exactly as on the queue-row route
+- **AND** opening a correction factor evidence chart instead leaves the drawn window standing, exactly as on its queue-row route
+
+### Requirement: Finding occurrence lists share one roster presentation
+
+Both occurrence lists a Finding case file renders — the verdict-band roster and
+the response-comparison cohort roster — SHALL present occurrences through one
+shared roster mechanism: grouped headers carrying their counts, one button row
+per occurrence exposing its pressed state, at most one selected occurrence at a
+time, and an over-cap show-more control whose gating count is the caller's
+served figure — never a recount of rendered rows. Each list SHALL keep its own
+grouping — verdict bands for one, server-named cohorts for the other — its own
+header and empty-state wording, its own row text and row data attributes, and
+selection SHALL remain keyed to server-owned Occurrence identity in both. The
+mechanism SHALL preserve each list's rendered behavior exactly as shipped,
+including the response-comparison list's single expansion state across its
+cohorts.
+
+#### Scenario: Selection behaves identically in both lists
+
+- **WHEN** the reader selects an occurrence in either the verdict-band roster or
+  the response-comparison roster
+- **THEN** that row alone reports pressed state
+- **AND** the previously selected row, in either list, releases it
+
+#### Scenario: The show-more cap is one mechanism with caller-owned counts
+
+- **GIVEN** a group holding more occurrences than the roster cap
+- **WHEN** the reader toggles that group's show-more control
+- **THEN** the list expands past the cap and collapses back to it
+- **AND** the control's count is the caller's served figure — the published
+  verdict count for the verdict-band list, each cohort's routed count for the
+  response-comparison list — never a recount of rendered rows
+- **AND** the response-comparison list keeps one expansion state across all its
+  cohorts, exactly as shipped
+
+### Requirement: The app ships one dark theme
+
+The app SHALL render every surface in its one dark theme with no theme
+selection: no boot-time class gate, no stored theme preference, no Theme control,
+and no rule scoped to a theme class. Every rendered colour SHALL resolve from
+the single `:root` token block, and a token value SHALL change only through a
+ruling recorded with its dated operator sanction in the change's design record.
+
+#### Scenario: A fresh visit renders dark with nothing stored
+
+- **GIVEN** a browser with no stored preference for the app's origin
+- **WHEN** the reader opens any surface
+- **THEN** the surface renders in the dark theme
+- **AND** the footer offers no Theme control
+- **AND** no `theme` value is written to storage
+
+#### Scenario: A palette revision moves only colour
+
+- **GIVEN** the ticket base and the revision served from the same synthetic database
+- **WHEN** every gated state's computed style is diffed between them
+- **THEN** every difference is a colour-valued property or a moved token
+- **AND** no element is added or removed and no layout or typographic property differs
+
+### Requirement: Clinical attention and tappable affordance do not share a hue
+
+High-glucose marks SHALL render in a hue that is not the action colour used by
+controls, links, focus rings and the chrome bar's signal, and SHALL remain
+tellable from low, in-range and the non-clinical ambers. Every consumer of the
+high-glucose mark SHALL read the one `--high` token.
+
+#### Scenario: A high reading beside a control on the Day surface
+
+- **GIVEN** a Day surface whose hero chart, navigator and highs count show at least one high reading
+- **WHEN** the reader views them beside the Log carbs control and the active workflow step
+- **THEN** the high marks and the controls render in different hues
+- **AND** the high marks share one hue across the hero chart, navigator, legend and count

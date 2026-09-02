@@ -14,8 +14,9 @@ Reviewing or revising a chart runs on three processes, started in this order:
 2. **A tokenless serve on port 8765**, which the harness's live source proxies:
    `TIMEZONE_NAME=<pump tz> uv run harmonic serve --no-fetch --db <snapshot copy> --port 8765 --token ''`.
    The `--no-fetch` flag is mandatory; the db argument is always a scratch copy.
-   Running any serve against the committed synthetic db writes WAL sidecars into
-   it — restore it with `gen_revise_e2e_db.py` before committing anything.
+   For a no-real-data live source, start the `harmonic-nofetch` launch entry; it
+   copies the committed QA database to scratch before serving. Regenerate that
+   source with `uv run python scripts/gen_qa_e2e_db.py` if it ever needs restoring.
 3. **The harness itself**: `npm run dev` in this directory. The source dropdown
    switches manufactured fixtures against your real history; behavior questions
    read the fixtures, accuracy questions read the snapshot.

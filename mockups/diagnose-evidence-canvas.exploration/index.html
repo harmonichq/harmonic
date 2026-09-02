@@ -6,14 +6,25 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <style>
 /* ── source-bound Dark roles ───────────────────────────────────────────────── */
-/* generated from frontend/index.html html.dark and frontend/theme.css */
-    html.dark {
-      /* DARK IS DERIVED, NOT INVERTED (term 9): the role ratios below track the
-         light theme against dark's own ground. The desk carries NO GREEN (term
-         10) — a green-black ground under a green line reads as phosphor — and
-         structure recedes by LIGHTNESS rather than by hue, so the frame holds
-         one warm hue family (term 12) across a real 7%-69% tonal range (term
-         13), descending chrome -> rail -> header -> field without banding.
+/* generated from frontend/index.html :root and frontend/theme.css */
+    :root {
+      /* ★ HARMONIC — the app-wide material, locked 2026-08-18 (#736), against
+         the archived Harmonic-theme lock. The overlay the lock was settled
+         against is a design-time record and does not ship; #736 landed its
+         resolved values here, so this block stays what
+         #612 made it — the one material home for the whole app. --bg/--text/…
+         and shell.css's cockpit tokens resolve onto --wk-*, so every existing
+         rule inherits the sheet's ground with no per-rule edit. The shell's
+         ROLE rules (chrome bar · instrument rail · pane header rail · pane body ·
+         dock floor) live in frontend/theme.css.
+
+         DARK IS DERIVED, NOT INVERTED (term 9), against the retired light
+         theme's own role ratios (#304 retired that theme; ADR 304). The desk
+         carries NO GREEN (term 10) — a green-black ground under a green line
+         reads as phosphor — and structure recedes by LIGHTNESS rather than by
+         hue, so the frame holds one warm hue family (term 12) across a real
+         7%-69% tonal range (term 13), descending chrome -> rail -> header ->
+         field without banding.
 
          #215 — ONE HUE, HELD DELIBERATELY LOW. The grounds honoured term 12 in
          name only: measured, they sat at OKLCH chroma .003-.009 with the hue
@@ -23,15 +34,15 @@
          rule, holding each value's ORIGINAL lightness to three decimals.
 
          The ceiling on that chroma is a review finding, not caution. Warmth was
-         taken up to the light theme's own ground register first (80deg, .011 to
-         .028) and the desk read as pumpkin, because at that chroma it shares
-         the burnt-orange signal's own family. Stepping the hue off orange to
-         110deg made it olive — term 10's phosphor warning arriving from the
-         ground rather than from the line. A cool slate at 265deg fixed both and
-         was rejected as a bigger identity change than this canvas is entitled
-         to make. What is left is the one thing all three attempts agreed on:
-         the family must be COHERENT; how much chroma it carries is a small
-         dial, and the setting that survives review is a low one.
+         taken up to the retired light theme's own ground register first (80deg,
+         .011 to .028) and the desk read as pumpkin, because at that chroma it
+         shares the burnt-orange signal's own family. Stepping the hue off
+         orange to 110deg made it olive — term 10's phosphor warning arriving
+         from the ground rather than from the line. A cool slate at 265deg fixed
+         both and was rejected as a bigger identity change than this canvas is
+         entitled to make. What is left is the one thing all three attempts
+         agreed on: the family must be COHERENT; how much chroma it carries is a
+         small dial, and the setting that survives review is a low one.
 
          Depth is made of lightness steps, the top highlight and the pooled
          shadow, so nothing about the tonal range or the stacking order moved;
@@ -55,7 +66,7 @@
       --warn:#c98a4e; --warn-bg:#3a2b1b; --ring:rgba(210,116,62,.34);
       --shadow:var(--wk-shadow);
       --radius:var(--wk-radius); --radius-sm:var(--wk-radius); --grain-op:.035;
-      --in-range:#86ad78; --high:#e07f3f; --low:#ec6f55;
+      --in-range:#86ad78; --high:#e2be4c; --low:#ec6f55;
       --ran-low:#a89a85;  --ran-low-soft:#2b332d;
       --on-target:#86ad78; --on-target-soft:#2f3a2c; --on-target-ink:#9fbea5;
       --manual-carb:#d2743e; --manual-carb-soft:#40291b;
@@ -70,7 +81,8 @@
  * The lock was settled against a five-file REFERENCE overlay, applied in
  * filename order, which is a design-time record and does not ship. This file is
  * where those five files resolve to in the app's own tree: the token values
- * landed in the :root / html.dark block of frontend/index.html, and every rule
+ * landed in the single :root block of frontend/index.html (#304 retired the
+ * light theme's separate block), and every rule
  * below is one of the overlay's rules with its cascade already collapsed — a
  * declaration a later overlay file overwrote is simply absent here, rather than
  * restated and then beaten.
@@ -109,42 +121,21 @@
    grid may not read from `--primary` / `--line`. Only the diverging tokens are
    declared — the rest keep the adapter's alias, so there is still one source. */
 :root {
-  /* the measured signal is forest, and the median (`--mk-primary-600`) is the
-     darkest step of it against the sheet */
-  --mk-primary: #2f6b4f;
-  --mk-primary-600: #123d2b;
-  --mk-primary-soft: #d6e8dc;
-  --mk-ok: #347354;
-  /* the plot draws no frame of its own: the grid recedes beneath the data so
-     the dashed target rails outrank the gridlines (term 6) */
-  --mk-line: #d4cfc3;
-}
-/* Light ALONE splits the warn/danger marks from their text inks: term 4 raises
-   --warn and --danger far enough to clear 4.5:1 as small text, and a mark
-   calibrated for 3:1 graphics should not follow them up. Re-measured against
-   the bone grounds ADR 37 landed (#FAF8F4 sheet / #F0EEE8 rail / #E7E4DC
-   sunken): --warn #8d3c17 reads 7.09 / 6.48 / 5.92:1 and --danger #9d3018
-   reads 6.90 / 6.31 / 5.76:1, so the claim holds with more headroom than it
-   had on parchment, where the same inks read 6.13–5.15:1. Dark's inks already
-   sit where its marks want to be, so it keeps the adapter's alias rather than
-   restating a value — and scoping this to light is what stops a light literal
-   from leaking into dark, which is how Verify's movement chips lost their ink. */
-html:not(.dark) {
-  --mk-warn: #94501f;
-  --mk-danger: #ab3a24;
-}
-html.dark {
-  /* THE INVERSION: in light the measured signal is dark forest ON the sheet; in
-     dark the light theme's GROUND becomes the ink. The median is bone and the
-     green identity lives in the bands beneath it, so the two are set apart.
-     The median joins the BODY tier, warmed toward the sheet and never toward
-     white — the brightest LINE, never the brightest THING (term 14). */
+  /* THE INVERSION: the measured signal is bone against a dark desk; the median
+     is bone and the green identity lives in the bands beneath it, so the two
+     are set apart. The median joins the BODY tier, warmed toward the sheet and
+     never toward white — the brightest LINE, never the brightest THING (term
+     14). Dark's inks already sit where its marks want to be, so --mk-warn and
+     --mk-danger keep the adapter's alias (frontend/diagnose-workstation.css's
+     `:root`) rather than restating a value. */
   --mk-primary: #86ad78;
   --mk-primary-600: #cfc8bd;
   --mk-primary-soft: #2f3a2c;
   /* structure rejoins the warm family and recedes by lightness (term 12) */
   --mk-accent: #e07f3f;
   --mk-ok: #a49c90;
+  /* the plot draws no frame of its own: the grid recedes beneath the data so
+     the dashed target rails outrank the gridlines (term 6) */
   --mk-line: var(--wk-rule);
 }
 
@@ -154,49 +145,27 @@ html.dark {
    of the sheet's ground. */
 .cockpit-topbar,
 .cockpit-footer {
-  --ck-ground: #183326;
-  --ck-panel: #244638;
-  --ck-text: #f5f1e9;
-  --ck-body: #d8e0da;
-  --ck-meta: #afc0b5;
-  --ck-rule: #557061;
-  /* The bar's signal is DERIVED FOR THIS GROUND, and can never be the sheet's
-     (ADR 47). This bar is dark in both themes while light's sheet is bone, so no
-     one value serves both: bone caps a signal used as text at relative luminance
-     .1700 for 4.5:1, and this evergreen floors a signal used as a mark at .1811
-     for 3:1. That band is empty. It is also how the literals that used to sit
-     here came to BE the pre-ADR-37 primary ramp (#b35b2e / #8f4524) — copied
-     once, then left behind when the sheet relit from parchment to bone.
-     Re-derive, never copy. The rule: the signal must clear 4.5:1 as TEXT on
-     --ck-panel above, which is the heaviest job it has (the Log carbs `+`, the
-     checked theme name). Every other use is a 3:1 mark and follows for free. */
-  --ck-bar-signal: #f79d60;       /* L .4470 — 4.95:1 on --ck-panel, 6.46:1 on --ck-ground */
-  --ck-bar-signal-well: #874928;  /* L .1000 — holds --ck-body at 5.17:1, sits 3.30:1 under the signal */
-  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.46:1 */
-  --ck-accent: var(--ck-bar-signal);
-  --ck-accent-soft: var(--ck-bar-signal-well);
-  background: #183326;
-  color: #f5f1e9;
-}
-html.dark .cockpit-topbar,
-html.dark .cockpit-footer {
-  /* the same desk, one step deeper — never a black bar */
-  --ck-ground: var(--wk-canvas);
+  /* one step up from the desk — the well — so the frame reads as its own
+     material where cards sit on the page directly (ADR 317); never a black bar */
+  --ck-ground: var(--wk-surface-sunken);
   --ck-panel: var(--wk-surface);
   --ck-text: var(--wk-ink);
   --ck-body: var(--wk-ink-body);
   --ck-meta: var(--wk-ink-meta);
   --ck-rule: var(--wk-rule);
-  /* Derived against THIS bar's panel by the same rule, not carried over from
-     light and not aliased to the sheet's dark signal. Both grounds happen to be
-     dark in this theme, so one value COULD serve both here — which is exactly
-     the coincidence that produced the light bug, so the token stays its own. */
-  --ck-bar-signal: #dc7b42;       /* L .2960 — 5.05:1 on --ck-panel, 6.08:1 on --ck-ground */
-  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.03:1, sits 3.33:1 under the signal */
-  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.08:1 */
+  /* The bar's signal is DERIVED FOR THIS GROUND, and can never be the sheet's
+     (ADR 47) — not carried over from a lighter desk and not aliased to the
+     sheet's own signal. Re-derive, never copy. The rule: the signal must clear
+     4.5:1 as TEXT on --ck-panel above, which is the heaviest job it has (the
+     Log carbs `+`, the checked theme name). Every other use is a 3:1 mark and
+     follows for free. */
+  --ck-bar-signal: #dc7b42;       /* L .2977 — 5.48:1 on --ck-panel, 6.19:1 on --ck-ground (WCAG 2.x, re-measured #317) */
+  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.06:1, sits 3.33:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.19:1 */
   --ck-accent: var(--ck-bar-signal);
   --ck-accent-soft: var(--ck-bar-signal-well);
   background: var(--ck-ground);
+  color: #f5f1e9;
 }
 .cockpit-step[aria-current="step"] {
   border-color: color-mix(in srgb, var(--ck-accent) 75%, #f5f1e9);
@@ -269,29 +238,27 @@ html.dark .cockpit-footer {
   border-bottom: 1px solid var(--wk-rule);
 }
 
-/* Dark has to make the material step explicit or the inspector floats on the
-   chart's own ground. Light never needed it stated: the sheet and the rail were
-   already different substances with a tonal step behind the divider. Three
-   substances, each one step warmer than the last — chart field, inspector wall,
-   dock floor — and no jump big enough to band (term 13). */
+/* The material step has to be explicit or the inspector floats on the chart's
+   own ground: three substances, each one step warmer than the last — chart
+   field, inspector wall, dock floor — and no jump big enough to band (term 13). */
 /* #215 — the Diagnose inspector joins the canvas on that ground. With the two
-   anchors abutting as one docked surface, the wall/field step read as two
-   materials in dark where light shows one, and the darker chart ground is the
-   one worth keeping. Verify's `.vw` dock is untouched, and the values stay
-   single-sourced here rather than restated in the Diagnose adapter. */
-html.dark :is(.dw, .vw) .panes,
-html.dark :is(.dw, .vw) .canvas-pane,
-html.dark .dw .inspector { background: var(--wk-field); }
-html.dark :is(.dw, .vw) .canvas-pane > header,
-html.dark .dw .inspector > header { background: var(--wk-surface-rail); }
-html.dark :is(.dw, .vw) .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
+   anchors abutting as one docked surface, the wall/field step reads as two
+   materials, and the darker chart ground is the one worth keeping. Verify's
+   `.vw` dock is untouched, and the values stay single-sourced here rather than
+   restated in the Diagnose adapter. */
+:is(.dw, .vw) .panes,
+:is(.dw, .vw) .canvas-pane,
+.dw .inspector { background: var(--wk-field); }
+:is(.dw, .vw) .canvas-pane > header,
+.dw .inspector > header { background: var(--wk-surface-rail); }
+:is(.dw, .vw) .panes > .pane + .pane { border-left-color: var(--wk-rule-strong); }
 
 /* ---- ROLE: dock floor ----------------------------------------------------
    The pinned watched-change slot. Its markup belongs to the dock re-settle
    (#662); the material it sits on belongs to the theme, so the role is styled
    here and the surface inherits it the moment the markup lands. */
-html.dark :is(.dw, .vw) .inspector > .watch { background: #36312e; }
-html.dark :is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623; }
+:is(.dw, .vw) .inspector > .watch { background: #36312e; }
+:is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623; }
 
 /* ---- ROLE: instrument rail ----------------------------------------------
    Term 7. The controls that scope the surface below them belong to the SHEET,
@@ -333,15 +300,15 @@ html.dark :is(.dw, .vw) .watch .go { border-color: #68605a; background: #2a2623;
    the sheet: chrome -> rail -> chart header -> field, each step slightly
    deeper. Lit the other way it was lighter than both its neighbours and the top
    of the surface stacked as three warm-grey stripes. */
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates),
-html.dark .vw .verify-strip {
+:is(.dw, .vw) :is(.instruments, .ec-coordinates),
+.vw .verify-strip {
   background: var(--wk-surface-rail);
   color: var(--wk-ink);
   border-bottom-color: var(--wk-rule);
 }
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
-html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg { border-color: var(--wk-rule); background: var(--wk-surface-sunken); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button { color: var(--wk-ink-body); }
+:is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pressed="true"] {
   background: var(--wk-surface);
   color: var(--wk-ink);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
@@ -389,28 +356,16 @@ html.dark :is(.dw, .vw) :is(.instruments, .ec-coordinates) .seg button[aria-pres
    surface; only the labels take the brand's evergreen, and that is what relates
    them to the chrome above. */
 :is(.dw, .vw) .lane-key { color: var(--mk-secondary); }
+/* The labels take the topbar's own ink, one clear step above body text, so
+   structure reads as chrome-family, by value instead of by colour. */
 :is(.dw, .vw) .pane > header h2,
 :is(.dw, .vw) .instrument > .cap,
-.vw .verify-strip .cap { color: #1f4130; }
-
-/* Dark cannot copy that. Evergreen ink is a LIGHT-theme device: at 145° against
-   dark's warm 30-37° substrate it recreates the clash term 12 measures out.
-   What transfers is the RELATIONSHIP, not the hue — the labels take the
-   topbar's own ink, one clear step above body text, so structure still reads as
-   chrome-family, by value instead of by colour. */
-html.dark :is(.dw, .vw) .pane > header h2,
-html.dark :is(.dw, .vw) .instrument > .cap,
-html.dark .vw .verify-strip .cap { color: var(--wk-ink-nav); }
+.vw .verify-strip .cap { color: var(--wk-ink-nav); }
 
 /* ---- orange means interaction and high/attention, and nothing else ------- */
 /* Term 5. Meals take clay, neutral proportions take forest, and insufficiency
    takes neutral ink plus a structural tell. */
 :is(.dw, .vw) {
-  --ck-meal: #9f6030;
-  --ck-insuff: #5e645b;
-  --ck-up: #2f6b4f;
-}
-html.dark :is(.dw, .vw) {
   --ck-rail: var(--wk-surface-sunken);
   --ck-inset: var(--wk-surface-sunken);
   --ck-manual: #d9b568;
@@ -419,26 +374,6 @@ html.dark :is(.dw, .vw) {
   --ck-insuff: #8d8579;
   --ck-up: #86ad78;
 }
-/* TEXT NEVER SITS ON THE LANE'S GROUND.
-   `--ck-inset` is derived as `color-mix(--mk-bg 82%, #000)`. That produced a
-   light grey while `--mk-bg` was one; under Harmonic `--mk-bg` IS the dark desk,
-   so in LIGHT the derivation drops to near-black — correct for what it mostly
-   is (the schedule lanes' track, the clock's empty cells, the level meter),
-   where nothing but colour sits on it, and wrong for the few wells that carry
-   words. Measured on parchment: the occurrence tag read #526358 on #131D18 at
-   2.71:1, and the event comparison's Factor and occurrence selects read #172219
-   on the same ground at 1.05:1 — invisible. Those wells step DOWN into the
-   sheet instead, which is the material the instrument rail's own segmented
-   controls already sit on. `.capchip` is here because it carries the identical
-   border/ground/ink triple as the tag that was measured, not because it was
-   rendered. DARK is deliberately untouched: its well is stated outright at
-   #191614, the same tag measures 6.54:1 there, and dark's `--wk-surface-sunken`
-   is lifted for the value tag's plate, so borrowing it here would make this
-   worse rather than better. */
-html:not(.dark) :is(.dw, .vw) :is(select, .capchip, .occ-head .tag) {
-  background: var(--wk-surface-sunken);
-}
-
 :is(.dw, .vw) [data-safety="insufficient"],
 :is(.dw, .vw) [data-verdict="insufficient"] {
   outline: 1px dashed color-mix(in srgb, var(--wk-rule-strong) 90%, transparent);
@@ -472,22 +407,19 @@ html:not(.dark) :is(.dw, .vw) :is(select, .capchip, .occ-head .tag) {
 /* ---- findings-queue flavour tags (#662 term 36) --------------------------
    Markup owned by the queue build; the ink is a theme decision, so it is
    recorded here rather than left to be re-derived. The tag names a KIND of
-   finding, not a state: under Harmonic `--primary` is byte-identical to
-   `--high`, so a tag on the accent would read as clinical attention — the exact
-   collision term 36 forbids. Warm graphite is on-theme and is shared with no
-   chart mark and no clinical token; the glyph carries the differentiation. */
+   finding, not a state: `--primary` is the action orange and `--high` the
+   gold of a high reading (ADR 317), so a tag on either would read as a control
+   or as clinical attention — the exact collision term 36 forbids. Warm
+   graphite is on-theme and is shared with no chart mark and no clinical token;
+   the glyph carries the differentiation. */
 :is(.dw, .vw) .qrow .tag.setting,
-:is(.dw, .vw) .qrow .tag.habit { color: #6a5d4e; }
+:is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
 :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
-:is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #6a5d4e 72%, transparent); }
-html.dark :is(.dw, .vw) .qrow .tag.setting,
-html.dark :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
-html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,
-html.dark :is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
+:is(.dw, .vw) .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, #a2937f 72%, transparent); }
 /* One phrase, one ink: a bright value beside a dim noun inside four words read
    as two colours arguing, so the noun comes up to meet it. */
-html.dark :is(.dw, .vw) .qrow .den { color: #bdb1a0; }
-html.dark :is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
+:is(.dw, .vw) .qrow .den { color: #bdb1a0; }
+:is(.dw, .vw) .qrow .den .v { color: #f0e6d6; }
 
 @media (prefers-reduced-motion: reduce) {
   :is(.dw, .vw) .panes { transition: none; }

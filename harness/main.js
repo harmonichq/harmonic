@@ -32,7 +32,6 @@ function stateFromUrl(stories) {
     story,
     mode: query.get('mode'),
     size: query.get('size') === 'mini' ? 'mini' : 'full',
-    theme: query.get('theme') === 'dark' ? 'dark' : 'light',
     range: query.get('range') === 'fitted' ? 'fitted' : 'shared',
     source: query.get('source') === 'live' ? 'live' : 'manufactured',
     chart: query.get('chart') || '',
@@ -70,11 +69,9 @@ function renderControls(stories, state) {
   controls.querySelector('[data-control="range"]').hidden = !story.range;
   controls.querySelector('[data-control="chart"]').hidden = story.id !== 'workstation';
   controls.elements.size.value = state.size;
-  controls.elements.theme.value = state.theme;
   controls.elements.range.value = state.range;
   controls.elements.source.value = state.source;
   controls.elements.chart.value = state.chart;
-  document.documentElement.classList.toggle('dark', state.theme === 'dark');
   return story;
 }
 
@@ -122,7 +119,6 @@ controls.addEventListener('change', () => {
     story: controls.elements.story.value,
     mode: controls.elements.mode.value,
     size: controls.elements.size.value,
-    theme: controls.elements.theme.value,
     range: controls.elements.range.value,
     source: controls.elements.source.value,
     chart: controls.elements.chart.value.trim(),

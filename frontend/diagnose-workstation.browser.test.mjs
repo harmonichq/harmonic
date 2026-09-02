@@ -30,7 +30,7 @@
  * the verifier instead.
  *
  * What else stays: geometry regression coverage the replay does not do
- * (theme parity, both locked viewports — opened through the replay's own
+ * (panel geometry, both locked viewports — opened through the replay's own
  * `openApp` so this file cannot silently drift from the port's DOM again),
  * the `setError` failure path (real, working, exercised against a live
  * render so its teardown branch actually runs), and the static source-scan
@@ -137,11 +137,11 @@ after(() => runner.close());
 // this is the same wait, kept local rather than widening that file's surface.
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
 
-async function shot(page, family, state_, viewport, theme) {
+async function shot(page, family, state_, viewport) {
   if (!SHOTS) return;
   const dir = join(SHOTS, family);
   await mkdir(dir, { recursive: true });
-  await page.screenshot({ path: join(dir, `${state_}-${viewport.width}x${viewport.height}-${theme}.png`),
+  await page.screenshot({ path: join(dir, `${state_}-${viewport.width}x${viewport.height}.png`),
     fullPage: false });
 }
 
@@ -176,7 +176,7 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
   assert.equal(expected.length, 7, 'the generator publishes seven simultaneous history rows');
 
   const page = await openApp(browser, {
-    state: 'dense', viewport: { width: 390, height: 844 }, theme: 'light',
+    state: 'dense', viewport: { width: 390, height: 844 },
     history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
   });
   try {
@@ -337,157 +337,155 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
     && box.left >= frame.left - tolerance && box.top >= frame.top - tolerance
     && box.right <= frame.right + tolerance && box.bottom <= frame.bottom + tolerance;
 
-  for (const theme of ['light', 'dark']) {
-    for (const viewport of FULLSCREEN_VIEWPORTS) {
-      for (const family of FULLSCREEN_FAMILIES) {
-        const page = await openApp(browser, {
-          state: 'typical', theme, viewport, appSource: 'fixture',
-          findingsInputs: twoFamilyInputs,
-          exposuresInputs: async () => (await twoFamilyInputs()).exposures,
-          resizeProbe: true,
-        });
-        try {
-          await page.getByRole('button', { name: family.window, exact: true }).click();
-          await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
-          let row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
-          if (!await row.count()) {
-            const watching = page.locator('#level .qcollapse');
-            if (await watching.count() && await watching.getAttribute('aria-expanded') !== 'true') {
-              await watching.click();
-              row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
-            }
+  for (const viewport of FULLSCREEN_VIEWPORTS) {
+    for (const family of FULLSCREEN_FAMILIES) {
+      const page = await openApp(browser, {
+        state: 'typical', viewport, appSource: 'fixture',
+        findingsInputs: twoFamilyInputs,
+        exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+        resizeProbe: true,
+      });
+      try {
+        await page.getByRole('button', { name: family.window, exact: true }).click();
+        await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+        let row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
+        if (!await row.count()) {
+          const watching = page.locator('#level .qcollapse');
+          if (await watching.count() && await watching.getAttribute('aria-expanded') !== 'true') {
+            await watching.click();
+            row = page.locator(`#level .qrow[data-id="${family.chartId}"]`);
           }
-          assert.equal(await row.count(), 1,
-            `${family.kind} has one live generated queue row in ${family.window}`);
-          await row.click();
-          const focal = page.locator(
-            `#tile-focal .evidence-tile[data-chart-id="${family.chartId}"]`,
-          );
-          await focal.waitFor({ state: 'visible' });
-          const before = await page.evaluate(() => ({
-            focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
-            dock: document.querySelector('#tile-field')?.dataset.dock || null,
-            pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
-              .map((tile) => tile.dataset.chartId),
-            row: [...document.querySelectorAll('#tile-row .evidence-tile')]
-              .map((tile) => ({ id: tile.dataset.chartId,
-                selected: tile.hasAttribute('data-selected') })),
-            resizeObservers: window.__diagnoseResizeProbe.active().length,
-          }));
-          await page.evaluate(() => {
-            window.__fullscreenPreviousComparison = window.__diagnoseEventComparison;
-          });
-
-          await focal.locator('.tile-fullscreen').click();
-          await page.waitForSelector('#tile-field[data-fullscreen-tile]');
-          await page.setViewportSize({ width: viewport.width, height: viewport.height + 20 });
-          await page.setViewportSize(viewport);
-          await settle(page, 500);
-          await page.evaluate(() => {
-            const host = document.querySelector('#tile-focal #ec-chart')
-              || document.querySelector('#tile-focal .tile-chart');
-            const chart = window.echarts.getInstanceByDom(host);
-            const dispose = chart.dispose.bind(chart);
-            window.__fullscreenDisposeCount = 0;
-            chart.dispose = () => {
-              window.__fullscreenDisposeCount += 1;
-              return dispose();
-            };
-            window.__fullscreenResizeOwners = window.__diagnoseResizeProbe.observing(host);
-            window.__fullscreenDetachedHost = host;
-          });
-          assert.equal(await page.evaluate(() => window.__fullscreenResizeOwners), 1,
-            `${family.kind} fullscreen host has exactly one resize owner`);
-
-          const measured = await page.evaluate(() => {
-            const frameElement = document.querySelector(
-              '#tile-field[data-fullscreen-tile] #tile-focal .evidence-tile',
-            );
-            const hostElement = frameElement?.querySelector('.tile-chart');
-            const plotElement = frameElement?.querySelector('#ec-chart')
-              || frameElement?.querySelector('.tile-chart canvas');
-            const canvasElement = frameElement?.querySelector('.tile-chart canvas');
-            const keyElement = frameElement?.querySelector('#ec-chart-key');
-            const box = (element) => element?.getBoundingClientRect() || null;
-            const pane = document.querySelector('.canvas-pane');
-            const field = document.querySelector('#tile-field');
-            return {
-              frame: box(frameElement), host: box(hostElement), plot: box(plotElement),
-              canvas: box(canvasElement), key: box(keyElement),
-              /* #72's ruling, measured where it kept breaking: the fullscreen row
-                 names the chart, and no family may RENDER a second header under it.
-                 The tile's hidden structural nameplate is not a second title. */
-              headers: document.querySelectorAll('header.canvas-head').length,
-              framedHeaders: [...frameElement.querySelectorAll('header')]
-                .filter((header) => header.checkVisibility()).length,
-              fullTitle: document.querySelector('#full-title')?.textContent || '',
-              scroll: {
-                pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-                pageY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
-                paneX: pane.scrollWidth - pane.clientWidth,
-                paneY: pane.scrollHeight - pane.clientHeight,
-                fieldX: field.scrollWidth - field.clientWidth,
-                fieldY: field.scrollHeight - field.clientHeight,
-              },
-            };
-          });
-          const boxes = Object.fromEntries(['frame', 'host', 'plot', 'canvas', 'key']
-            .map((name) => [name, rect(measured[name])]));
-          const label = `${family.kind}/${theme}/${viewport.width}x${viewport.height}`;
-          for (const name of ['host', 'plot', 'canvas']) {
-            if (!inside(measured.frame, measured[name])) {
-              failures.push(`${label} ${name} escaped: ${JSON.stringify(boxes)}`);
-            }
-          }
-          if (measured.key && !inside(measured.frame, measured.key)) {
-            failures.push(`${label} key escaped: ${JSON.stringify(boxes)}`);
-          }
-          if (measured.key && measured.plot.bottom > measured.key.top + 1) {
-            failures.push(`${label} plot/key overlap: ${JSON.stringify(boxes)}`);
-          }
-          if (measured.headers !== 1 || measured.framedHeaders !== 0) {
-            failures.push(`${label} fullscreen doubled its header: `
-              + `${measured.headers} on the surface, ${measured.framedHeaders} in the frame`);
-          }
-          if (!measured.fullTitle.trim()) {
-            failures.push(`${label} fullscreen row names no chart`);
-          }
-          if (Object.values(measured.scroll).some((value) => value > 1)) {
-            failures.push(`${label} fullscreen introduced scroll: ${JSON.stringify(measured.scroll)}`);
-          }
-          await shot(page, `fullscreen-${family.kind}`,
-            process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', viewport, theme);
-
-          await page.getByRole('button', { name: 'Back to the dock' }).click();
-          await settle(page);
-          const after = await page.evaluate(() => ({
-            focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
-            dock: document.querySelector('#tile-field')?.dataset.dock || null,
-            pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
-              .map((tile) => tile.dataset.chartId),
-            row: [...document.querySelectorAll('#tile-row .evidence-tile')]
-              .map((tile) => ({ id: tile.dataset.chartId,
-                selected: tile.hasAttribute('data-selected') })),
-            resizeObservers: window.__diagnoseResizeProbe.active().length,
-          }));
-          assert.deepEqual(after, before, `${label} Back restores the exact prior canvas state`);
-          assert.equal(await page.evaluate(() => window.__fullscreenDisposeCount), 1,
-            `${label} disposes the replaced fullscreen chart exactly once`);
-          assert.equal(await page.evaluate(() => window.__diagnoseEventComparison
-            === window.__fullscreenPreviousComparison), true,
-          `${label} restores the prior event-comparison global`);
-          const detachedKey = await page.evaluate(() => {
-            const event = new KeyboardEvent('keydown', {
-              key: 'ArrowRight', bubbles: true, cancelable: true,
-            });
-            const notCanceled = window.__fullscreenDetachedHost.dispatchEvent(event);
-            return { notCanceled, defaultPrevented: event.defaultPrevented };
-          });
-          assert.deepEqual(detachedKey, { notCanceled: true, defaultPrevented: false },
-            `${label} releases listeners from the dismissed fullscreen host`);
-        } finally {
-          await page.close();
         }
+        assert.equal(await row.count(), 1,
+          `${family.kind} has one live generated queue row in ${family.window}`);
+        await row.click();
+        const focal = page.locator(
+          `#tile-focal .evidence-tile[data-chart-id="${family.chartId}"]`,
+        );
+        await focal.waitFor({ state: 'visible' });
+        const before = await page.evaluate(() => ({
+          focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+          dock: document.querySelector('#tile-field')?.dataset.dock || null,
+          pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
+            .map((tile) => tile.dataset.chartId),
+          row: [...document.querySelectorAll('#tile-row .evidence-tile')]
+            .map((tile) => ({ id: tile.dataset.chartId,
+              selected: tile.hasAttribute('data-selected') })),
+          resizeObservers: window.__diagnoseResizeProbe.active().length,
+        }));
+        await page.evaluate(() => {
+          window.__fullscreenPreviousComparison = window.__diagnoseEventComparison;
+        });
+
+        await focal.locator('.tile-fullscreen').click();
+        await page.waitForSelector('#tile-field[data-fullscreen-tile]');
+        await page.setViewportSize({ width: viewport.width, height: viewport.height + 20 });
+        await page.setViewportSize(viewport);
+        await settle(page, 500);
+        await page.evaluate(() => {
+          const host = document.querySelector('#tile-focal #ec-chart')
+            || document.querySelector('#tile-focal .tile-chart');
+          const chart = window.echarts.getInstanceByDom(host);
+          const dispose = chart.dispose.bind(chart);
+          window.__fullscreenDisposeCount = 0;
+          chart.dispose = () => {
+            window.__fullscreenDisposeCount += 1;
+            return dispose();
+          };
+          window.__fullscreenResizeOwners = window.__diagnoseResizeProbe.observing(host);
+          window.__fullscreenDetachedHost = host;
+        });
+        assert.equal(await page.evaluate(() => window.__fullscreenResizeOwners), 1,
+          `${family.kind} fullscreen host has exactly one resize owner`);
+
+        const measured = await page.evaluate(() => {
+          const frameElement = document.querySelector(
+            '#tile-field[data-fullscreen-tile] #tile-focal .evidence-tile',
+          );
+          const hostElement = frameElement?.querySelector('.tile-chart');
+          const plotElement = frameElement?.querySelector('#ec-chart')
+            || frameElement?.querySelector('.tile-chart canvas');
+          const canvasElement = frameElement?.querySelector('.tile-chart canvas');
+          const keyElement = frameElement?.querySelector('#ec-chart-key');
+          const box = (element) => element?.getBoundingClientRect() || null;
+          const pane = document.querySelector('.canvas-pane');
+          const field = document.querySelector('#tile-field');
+          return {
+            frame: box(frameElement), host: box(hostElement), plot: box(plotElement),
+            canvas: box(canvasElement), key: box(keyElement),
+            /* #72's ruling, measured where it kept breaking: the fullscreen row
+               names the chart, and no family may RENDER a second header under it.
+               The tile's hidden structural nameplate is not a second title. */
+            headers: document.querySelectorAll('header.canvas-head').length,
+            framedHeaders: [...frameElement.querySelectorAll('header')]
+              .filter((header) => header.checkVisibility()).length,
+            fullTitle: document.querySelector('#full-title')?.textContent || '',
+            scroll: {
+              pageX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+              pageY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+              paneX: pane.scrollWidth - pane.clientWidth,
+              paneY: pane.scrollHeight - pane.clientHeight,
+              fieldX: field.scrollWidth - field.clientWidth,
+              fieldY: field.scrollHeight - field.clientHeight,
+            },
+          };
+        });
+        const boxes = Object.fromEntries(['frame', 'host', 'plot', 'canvas', 'key']
+          .map((name) => [name, rect(measured[name])]));
+        const label = `${family.kind}/${viewport.width}x${viewport.height}`;
+        for (const name of ['host', 'plot', 'canvas']) {
+          if (!inside(measured.frame, measured[name])) {
+            failures.push(`${label} ${name} escaped: ${JSON.stringify(boxes)}`);
+          }
+        }
+        if (measured.key && !inside(measured.frame, measured.key)) {
+          failures.push(`${label} key escaped: ${JSON.stringify(boxes)}`);
+        }
+        if (measured.key && measured.plot.bottom > measured.key.top + 1) {
+          failures.push(`${label} plot/key overlap: ${JSON.stringify(boxes)}`);
+        }
+        if (measured.headers !== 1 || measured.framedHeaders !== 0) {
+          failures.push(`${label} fullscreen doubled its header: `
+            + `${measured.headers} on the surface, ${measured.framedHeaders} in the frame`);
+        }
+        if (!measured.fullTitle.trim()) {
+          failures.push(`${label} fullscreen row names no chart`);
+        }
+        if (Object.values(measured.scroll).some((value) => value > 1)) {
+          failures.push(`${label} fullscreen introduced scroll: ${JSON.stringify(measured.scroll)}`);
+        }
+        await shot(page, `fullscreen-${family.kind}`,
+          process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', viewport);
+
+        await page.getByRole('button', { name: 'Back to the dock' }).click();
+        await settle(page);
+        const after = await page.evaluate(() => ({
+          focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
+          dock: document.querySelector('#tile-field')?.dataset.dock || null,
+          pins: [...document.querySelectorAll('.evidence-tile[data-pinned]')]
+            .map((tile) => tile.dataset.chartId),
+          row: [...document.querySelectorAll('#tile-row .evidence-tile')]
+            .map((tile) => ({ id: tile.dataset.chartId,
+              selected: tile.hasAttribute('data-selected') })),
+          resizeObservers: window.__diagnoseResizeProbe.active().length,
+        }));
+        assert.deepEqual(after, before, `${label} Back restores the exact prior canvas state`);
+        assert.equal(await page.evaluate(() => window.__fullscreenDisposeCount), 1,
+          `${label} disposes the replaced fullscreen chart exactly once`);
+        assert.equal(await page.evaluate(() => window.__diagnoseEventComparison
+          === window.__fullscreenPreviousComparison), true,
+        `${label} restores the prior event-comparison global`);
+        const detachedKey = await page.evaluate(() => {
+          const event = new KeyboardEvent('keydown', {
+            key: 'ArrowRight', bubbles: true, cancelable: true,
+          });
+          const notCanceled = window.__fullscreenDetachedHost.dispatchEvent(event);
+          return { notCanceled, defaultPrevented: event.defaultPrevented };
+        });
+        assert.deepEqual(detachedKey, { notCanceled: true, defaultPrevented: false },
+          `${label} releases listeners from the dismissed fullscreen host`);
+      } finally {
+        await page.close();
       }
     }
   }
@@ -737,85 +735,74 @@ function contrastRatio(foreground, background) {
   return (a + .05) / (b + .05);
 }
 
-test('Diagnose scopes the readable user-claim palette in both themes', async () => {
-    /* #736 deepened dark's user-claim well from #332C1B to #3A2E18 so it sits on
-       the warm umber substrate rather than the retired cool near-black; light is
-       unchanged. The pair still has to clear AA, which is what the ratio below
-       actually guards — these literals only pin WHICH pair was measured. */
-    for (const [theme, foreground, background] of [
-      ['light', 'rgb(134, 102, 25)', 'rgb(246, 239, 220)'],
-      ['dark', 'rgb(217, 181, 104)', 'rgb(58, 46, 24)'],
-    ]) {
-      const browser = await runner.browser();
-      try {
-        const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-        const colors = await page.locator('.dw').evaluate((node) => {
-          const probe = document.createElement('span');
-          probe.style.cssText = 'color:var(--ck-manual);background:var(--ck-manual-soft)';
-          node.append(probe);
-          const style = getComputedStyle(probe);
-          const result = { foreground: style.color, background: style.backgroundColor };
-          probe.remove();
-          return result;
-        });
-        assert.deepEqual(colors, { foreground, background }, `${theme} Diagnose user-claim scope`);
-        assert.ok(contrastRatio(colors.foreground, colors.background) >= 4.5,
-          `${theme} Diagnose user-claim foreground meets WCAG AA against its well`);
-        // LOCK:diagnose-workstation:3 — the semantic token must be attached to
-        // the actual, visible cockpit action in the populated real-app render,
-        // not merely be present in the workstation's variable scope.
-        const logCarbs = page.locator('.cockpit-log-carbs');
-        assert.equal(await logCarbs.isVisible(), true, `${theme} Log carbs is visible in Diagnose`);
-        assert.equal((await logCarbs.innerText()).replace('＋', '').replace(/\s+/g, ' ').trim(), 'Log carbs',
-          `${theme} populated Diagnose names the user-claim action`);
-        await page.close();
-      } finally { /* browser stays open; closed once in after() */ }
-    }
-  });
+test('Diagnose scopes the readable user-claim palette', async () => {
+  /* #736 deepened the user-claim well from #332C1B to #3A2E18 so it sits on the
+     warm umber substrate rather than the retired cool near-black. The pair still
+     has to clear AA, which is what the ratio below actually guards — these
+     literals only pin WHICH pair was measured. */
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    const colors = await page.locator('.dw').evaluate((node) => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'color:var(--ck-manual);background:var(--ck-manual-soft)';
+      node.append(probe);
+      const style = getComputedStyle(probe);
+      const result = { foreground: style.color, background: style.backgroundColor };
+      probe.remove();
+      return result;
+    });
+    assert.deepEqual(colors,
+      { foreground: 'rgb(217, 181, 104)', background: 'rgb(58, 46, 24)' },
+      'Diagnose user-claim scope');
+    assert.ok(contrastRatio(colors.foreground, colors.background) >= 4.5,
+      'Diagnose user-claim foreground meets WCAG AA against its well');
+    // LOCK:diagnose-workstation:3 — the semantic token must be attached to
+    // the actual, visible cockpit action in the populated real-app render,
+    // not merely be present in the workstation's variable scope.
+    const logCarbs = page.locator('.cockpit-log-carbs');
+    assert.equal(await logCarbs.isVisible(), true, 'Log carbs is visible in Diagnose');
+    assert.equal((await logCarbs.innerText()).replace('＋', '').replace(/\s+/g, ' ').trim(), 'Log carbs',
+      'populated Diagnose names the user-claim action');
+  } finally { await page.close(); }
+});
 
-test('populated Diagnose renders readable theme-specific ink and chart marks', async () => {
-  for (const [theme, expected] of [
-    ['light', {
-      surface: 'rgb(250, 248, 244)', body: 'rgb(40, 59, 47)', meta: 'rgb(61, 88, 72)',
-      signal: 'rgb(47, 107, 79)', median: 'rgb(18, 61, 43)', meal: 'rgb(159, 96, 48)',
-    }],
-    ['dark', {
-      surface: 'rgb(20, 18, 15)', body: 'rgb(207, 200, 189)', meta: 'rgb(164, 156, 144)',
-      signal: 'rgb(134, 173, 120)', median: 'rgb(207, 200, 189)', meal: 'rgb(192, 141, 82)',
-    }],
-  ]) {
-    const browser = await runner.browser();
-    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-    try {
-      const colors = await page.locator('.dw').evaluate((node) => {
-        const resolved = (property, value) => {
-          const probe = document.createElement('span');
-          probe.style[property] = value;
-          node.append(probe);
-          const color = getComputedStyle(probe)[property];
-          probe.remove();
-          return color;
-        };
-        return {
-          surface: resolved('backgroundColor', 'var(--ck-rail)'),
-          body: resolved('color', 'var(--wk-ink-body)'),
-          meta: resolved('color', 'var(--wk-ink-meta)'),
-          signal: resolved('color', 'var(--mk-primary)'),
-          median: resolved('color', 'var(--mk-primary-600)'),
-          meal: resolved('color', 'var(--ck-meal)'),
-        };
-      });
-      assert.deepEqual(colors, expected, `${theme} ink and chart palette`);
-      assert.ok(contrastRatio(colors.body, colors.surface) >= 4.5,
-        `${theme} body ink meets WCAG AA on the chart surface`);
-      assert.ok(contrastRatio(colors.meta, colors.surface) >= 4.5,
-        `${theme} metadata ink meets WCAG AA on the chart surface`);
-      for (const mark of ['signal', 'median', 'meal']) {
-        assert.ok(contrastRatio(colors[mark], colors.surface) >= 3,
-          `${theme} ${mark} clears the non-text contrast floor on the chart surface`);
-      }
-    } finally { await page.close(); }
-  }
+test('populated Diagnose renders readable ink and chart marks', async () => {
+  const expected = {
+    surface: 'rgb(20, 18, 15)', body: 'rgb(207, 200, 189)', meta: 'rgb(164, 156, 144)',
+    signal: 'rgb(134, 173, 120)', median: 'rgb(207, 200, 189)', meal: 'rgb(192, 141, 82)',
+  };
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    const colors = await page.locator('.dw').evaluate((node) => {
+      const resolved = (property, value) => {
+        const probe = document.createElement('span');
+        probe.style[property] = value;
+        node.append(probe);
+        const color = getComputedStyle(probe)[property];
+        probe.remove();
+        return color;
+      };
+      return {
+        surface: resolved('backgroundColor', 'var(--ck-rail)'),
+        body: resolved('color', 'var(--wk-ink-body)'),
+        meta: resolved('color', 'var(--wk-ink-meta)'),
+        signal: resolved('color', 'var(--mk-primary)'),
+        median: resolved('color', 'var(--mk-primary-600)'),
+        meal: resolved('color', 'var(--ck-meal)'),
+      };
+    });
+    assert.deepEqual(colors, expected, 'ink and chart palette');
+    assert.ok(contrastRatio(colors.body, colors.surface) >= 4.5,
+      'body ink meets WCAG AA on the chart surface');
+    assert.ok(contrastRatio(colors.meta, colors.surface) >= 4.5,
+      'metadata ink meets WCAG AA on the chart surface');
+    for (const mark of ['signal', 'median', 'meal']) {
+      assert.ok(contrastRatio(colors[mark], colors.surface) >= 3,
+        `${mark} clears the non-text contrast floor on the chart surface`);
+    }
+  } finally { await page.close(); }
 });
 
 test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
@@ -962,7 +949,7 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       accessibleName: { role: chartNode.getAttribute('role'),
         label: chartNode.getAttribute('aria-label') },
       /* #258 regression pins: the scrim's alpha read off the __dim series' own
-         renderItem, and the median colour resolved against the live theme —
+         renderItem, and the median colour resolved against the live surface —
          without these both corrections could revert with every gate green. */
       dimFill: (() => {
         const dim = option.series.find((series) => series.name === '__dim');
@@ -974,8 +961,7 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       })(),
       medianPaint: {
         actual: resolveColor(root, option.series.find((series) => series.name === 'Median').lineStyle.color),
-        dark: resolveColor(root, 'color-mix(in srgb, var(--mk-primary) 62%, #fff)'),
-        light: resolveColor(root, 'var(--mk-primary-600)'),
+        expected: resolveColor(root, 'color-mix(in srgb, var(--mk-primary) 62%, #fff)'),
       },
       graphics: Object.fromEntries(['Median']
         .flatMap((name) => [4, 16].map((index) => [`${name}:${index}`, boundaryRatio(name, index)]))),
@@ -1005,320 +991,271 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
       verdicts: [...document.querySelectorAll('#lane .lane-cell')].map((cell) => cell.dataset.verdict),
     };
   });
-  for (const theme of ['light', 'dark']) {
-    const browser = await runner.browser();
-    const page = await openApp(browser, {
-      state: 'typical', theme, viewport: { width: 2084, height: 742 }, appSource: 'fixture',
-      frontendRoot, analysisInputs: withPassiveStates,
-    });
-    try {
-      await page.getByRole('button', { name: '24 h', exact: true }).click();
-      const before = await audit(page);
-      await shot(page, 'glucose-chart-legibility', `${evidenceKind}-no-window`, { width: 2084, height: 742 }, theme);
-      await page.getByRole('button', { name: 'Morning', exact: true }).click();
-      const after = await audit(page);
-      await shot(page, 'glucose-chart-legibility', `${evidenceKind}-morning`, { width: 2084, height: 742 }, theme);
-      if (captureOnly) continue;
-      assert.ok(before.width > 1000, `${theme} audit uses the locked wide chart geometry`);
-      assert.equal(before.dim, 0, `${theme} 24 h scope has no selection scrim`);
-      assert.equal(after.dim, 2, `${theme} non-default Morning scope preserves the two scrim regions`);
-      const dimAlpha = parseFloat((after.dimFill?.match(/rgba\([^)]+,\s*([\d.]+)\)/) || [])[1]);
-      assert.equal(dimAlpha, theme === 'dark' ? 0.28 : 0.10,
-        `${theme} outside-window scrim keeps its recomposed alpha (${after.dimFill})`);
-      const pixelShift = (first, second) => {
-        assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
-        return first.reduce((total, rgb, index) => total
-          + rgb.reduce((sum, channel, channelIndex) =>
-            sum + Math.abs(channel - second[index][channelIndex]), 0), 0) / (first.length * 3);
-      };
-      const outsideShift = pixelShift(before.composite.outside, after.composite.outside);
-      const insideShift = pixelShift(before.composite.inside, after.composite.inside);
-      assert.ok(outsideShift >= 1 && outsideShift >= insideShift + 0.75,
-        `${theme} Morning visibly composites the outside (${outsideShift.toFixed(2)} mean RGB shift) `
-        + `beyond the inside redraw baseline (${insideShift.toFixed(2)})`);
-      for (const [state, result] of [['without a window', before], ['with Morning selected', after]]) {
-        for (const [subject, measured] of Object.entries(result.text)) {
-          if (measured == null) continue;
-          assert.ok(measured >= 4.5,
-            `${theme} ${state} ${subject} text clears 4.5:1 (${measured.toFixed(2)}:1)`);
-        }
-        for (const [subject, measured] of Object.entries(result.graphics)) assert.ok(measured >= 3,
-          `${theme} ${state} ${subject} boundary clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
-        for (const measured of result.legendTexts) assert.equal(measured, 0,
-          `${theme} ${state} renders no legend text`);
-        assert.equal(result.retiredEdges, 0,
-          `${theme} ${state} draws no percentile boundary strokes`);
-        assert.equal(result.accessibleName.role, 'img',
-          `${theme} ${state} chart root carries the img role`);
-        assert.equal(result.accessibleName.label,
-          'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line',
-          `${theme} ${state} chart root names the marks the legend used to`);
-        assert.equal(result.medianPaint.actual,
-          theme === 'dark' ? result.medianPaint.dark : result.medianPaint.light,
-          `${theme} ${state} median draws lightened primary in Dark, primary-600 in Light`);
-        for (const measured of result.targetRails) assert.ok(measured >= 3,
-          `${theme} ${state} target rail clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
-        assert.ok(result.gate >= 3, `${theme} ${state} active gate clears 3:1 (${result.gate.toFixed(2)}:1)`);
-        assert.deepEqual(result.passive.map((entry) => entry.verdict), ['hold', 'insufficient', 'nodata']);
-        for (const entry of result.passive) {
-          assert.equal(entry.missing, false, `${theme} fixture renders ${entry.verdict}`);
-          assert.ok(entry.markRatio >= 3,
-            `${theme} ${entry.verdict} structural paint clears its track (${entry.markRatio.toFixed(2)}:1; ${entry.mark} on ${entry.track})`);
-          const structure = (image) => image.includes('repeating') ? 'stripe'
-            : image.includes('radial') ? 'dot' : 'solid';
-          assert.equal(structure(entry.laneImage), structure(entry.keyImage),
-            `${theme} ${entry.verdict} key repeats the lane structure`);
-        }
-        const structures = result.passive.map((entry) => entry.laneImage.includes('repeating') ? 'stripe'
-          : entry.laneImage.includes('radial') ? 'dot' : 'solid');
-        assert.equal(new Set(structures).size, 3,
-          `${theme} passive lane structures remain mutually distinct`);
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 2084, height: 742 }, appSource: 'fixture',
+    frontendRoot, analysisInputs: withPassiveStates,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const before = await audit(page);
+    await shot(page, 'glucose-chart-legibility', `${evidenceKind}-no-window`, { width: 2084, height: 742 });
+    await page.getByRole('button', { name: 'Morning', exact: true }).click();
+    const after = await audit(page);
+    await shot(page, 'glucose-chart-legibility', `${evidenceKind}-morning`, { width: 2084, height: 742 });
+    if (captureOnly) return;
+    assert.ok(before.width > 1000, `audit uses the locked wide chart geometry`);
+    assert.equal(before.dim, 0, `24 h scope has no selection scrim`);
+    assert.equal(after.dim, 2, `non-default Morning scope preserves the two scrim regions`);
+    const dimAlpha = parseFloat((after.dimFill?.match(/rgba\([^)]+,\s*([\d.]+)\)/) || [])[1]);
+    assert.equal(dimAlpha, 0.28,
+      `outside-window scrim keeps its recomposed alpha (${after.dimFill})`);
+    const pixelShift = (first, second) => {
+      assert.equal(second.length, first.length, 'composite pixel samples keep a stable shape');
+      return first.reduce((total, rgb, index) => total
+        + rgb.reduce((sum, channel, channelIndex) =>
+          sum + Math.abs(channel - second[index][channelIndex]), 0), 0) / (first.length * 3);
+    };
+    const outsideShift = pixelShift(before.composite.outside, after.composite.outside);
+    const insideShift = pixelShift(before.composite.inside, after.composite.inside);
+    assert.ok(outsideShift >= 1 && outsideShift >= insideShift + 0.75,
+      `Morning visibly composites the outside (${outsideShift.toFixed(2)} mean RGB shift) `
+      + `beyond the inside redraw baseline (${insideShift.toFixed(2)})`);
+    for (const [state, result] of [['without a window', before], ['with Morning selected', after]]) {
+      for (const [subject, measured] of Object.entries(result.text)) {
+        if (measured == null) continue;
+        assert.ok(measured >= 4.5,
+          `${state} ${subject} text clears 4.5:1 (${measured.toFixed(2)}:1)`);
       }
-      if (theme === 'light') {
-        const scope = after.scope; const verdicts = after.verdicts;
-        await page.getByRole('button', { name: 'Theme', exact: true }).click();
-        await page.getByRole('menuitemradio', { name: 'Dark', exact: true }).click();
-        await settle(page, 500);
-        const repainted = await audit(page);
-        assert.equal(repainted.scope, scope, 'theme toggle preserves the non-default window scope');
-        assert.deepEqual(repainted.verdicts, verdicts, 'theme toggle preserves all basal verdicts');
-        assert.notEqual(repainted.passive[0].laneColor, after.passive[0].laneColor,
-          'theme toggle repaints the basal lane');
+      for (const [subject, measured] of Object.entries(result.graphics)) assert.ok(measured >= 3,
+        `${state} ${subject} boundary clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
+      for (const measured of result.legendTexts) assert.equal(measured, 0,
+        `${state} renders no legend text`);
+      assert.equal(result.retiredEdges, 0,
+        `${state} draws no percentile boundary strokes`);
+      assert.equal(result.accessibleName.role, 'img',
+        `${state} chart root carries the img role`);
+      assert.equal(result.accessibleName.label,
+        'Glucose bands: 10th to 90th and 25th to 75th percentile ranges; median line',
+        `${state} chart root names the marks the legend used to`);
+      assert.equal(result.medianPaint.actual, result.medianPaint.expected,
+        `${state} median draws the lightened primary`);
+      for (const measured of result.targetRails) assert.ok(measured >= 3,
+        `${state} target rail clears 3:1 on both sides (${measured.toFixed(2)}:1)`);
+      assert.ok(result.gate >= 3, `${state} active gate clears 3:1 (${result.gate.toFixed(2)}:1)`);
+      assert.deepEqual(result.passive.map((entry) => entry.verdict), ['hold', 'insufficient', 'nodata']);
+      for (const entry of result.passive) {
+        assert.equal(entry.missing, false, `fixture renders ${entry.verdict}`);
+        assert.ok(entry.markRatio >= 3,
+          `${entry.verdict} structural paint clears its track (${entry.markRatio.toFixed(2)}:1; ${entry.mark} on ${entry.track})`);
+        const structure = (image) => image.includes('repeating') ? 'stripe'
+          : image.includes('radial') ? 'dot' : 'solid';
+        assert.equal(structure(entry.laneImage), structure(entry.keyImage),
+          `${entry.verdict} key repeats the lane structure`);
       }
-    } finally { await page.close(); }
-  }
+      const structures = result.passive.map((entry) => entry.laneImage.includes('repeating') ? 'stripe'
+        : entry.laneImage.includes('radial') ? 'dot' : 'solid');
+      assert.equal(new Set(structures).size, 3,
+        `passive lane structures remain mutually distinct`);
+    }
+  } finally { await page.close(); }
 });
 
 /* The dock is now the canvas filmstrip, and the Charts lip is its control —
    neither inherits the retired explorer drawer's trench. Both carry compact
-   text, so measure their rendered chrome in each theme rather than a token
-   probe that could remain green after either surface moves. */
-test('the chart dock and its lip clear the text contrast floor in both themes', async () => {
-  for (const theme of ['light', 'dark']) {
-    const browser = await runner.browser();
-    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-    try {
-      await page.getByRole('button', { name: '24 h', exact: true }).click();
-      await page.locator('#tile-row .evidence-tile').first().waitFor({ state: 'visible' });
-      const colors = await page.locator('#tile-field').evaluate((field) => {
-        const color = (node) => {
-          if (!node) throw new Error('the chart dock is missing a text role to measure');
-          return getComputedStyle(node).color;
-        };
-        const ground = (node) => {
-          if (!node) throw new Error('the chart dock is missing chrome to measure');
-          return getComputedStyle(node).backgroundColor;
-        };
-        const cell = field.querySelector('#tile-row .evidence-tile');
-        const lip = field.querySelector('#dock-handle');
-        return {
-          cell: ground(cell),
-          name: color(cell?.querySelector('.tile-head h3')),
-          meta: color(cell?.querySelector('.tile-meta')),
-          lip: ground(lip),
-          label: color(lip?.querySelector('.dock-word')),
-          act: color(lip?.querySelector('button')),
-        };
-      });
-      for (const [role, foreground, background] of [
-        ['name', colors.name, colors.cell], ['meta', colors.meta, colors.cell],
-        ['lip label', colors.label, colors.lip], ['lip act', colors.act, colors.lip],
-      ]) {
-        const ratio = contrastRatio(foreground, background);
-        assert.ok(ratio >= 4.5,
-          `${theme} chart dock ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
-      }
-    } finally {
-      await page.close();
+   text, so measure their rendered chrome rather than a token probe that could
+   remain green after either surface moves. */
+test('the chart dock and its lip clear the text contrast floor', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#tile-row .evidence-tile').first().waitFor({ state: 'visible' });
+    const colors = await page.locator('#tile-field').evaluate((field) => {
+      const color = (node) => {
+        if (!node) throw new Error('the chart dock is missing a text role to measure');
+        return getComputedStyle(node).color;
+      };
+      const ground = (node) => {
+        if (!node) throw new Error('the chart dock is missing chrome to measure');
+        return getComputedStyle(node).backgroundColor;
+      };
+      const cell = field.querySelector('#tile-row .evidence-tile');
+      const lip = field.querySelector('#dock-handle');
+      return {
+        cell: ground(cell),
+        name: color(cell?.querySelector('.tile-head h3')),
+        meta: color(cell?.querySelector('.tile-meta')),
+        lip: ground(lip),
+        label: color(lip?.querySelector('.dock-word')),
+        act: color(lip?.querySelector('button')),
+      };
+    });
+    for (const [role, foreground, background] of [
+      ['name', colors.name, colors.cell], ['meta', colors.meta, colors.cell],
+      ['lip label', colors.label, colors.lip], ['lip act', colors.act, colors.lip],
+    ]) {
+      const ratio = contrastRatio(foreground, background);
+      assert.ok(ratio >= 4.5,
+        `chart dock ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
     }
+  } finally {
+    await page.close();
   }
 });
 
 test('Diagnose keeps the Dark material roles ordered and target bounds as rails', async () => {
   const browser = await runner.browser();
-  for (const theme of ['dark', 'light']) {
-    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-    try {
-      await page.getByRole('button', { name: '24 h', exact: true }).click();
-      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
-      const roles = await page.locator('.dw').evaluate((root) => {
-        const bg = (selector) => getComputedStyle(root.querySelector(selector)).backgroundColor;
-        const token = (value) => {
-          const probe = document.createElement('i');
-          probe.style.background = value;
-          root.append(probe);
-          const result = getComputedStyle(probe).backgroundColor;
-          probe.remove();
-          return result;
-        };
-        const option = window.echarts.getInstanceByDom(document.querySelector('#chart')).getOption();
-        const targetSeries = option.series.find((series) => (series.markLine?.data || [])
-          .some((line) => Number.isFinite(line.yAxis)));
-        return {
-          canvas: bg('.canvas-pane'), inspector: bg('.inspector'), header: bg('.canvas-pane > header'),
-          rail: bg('.instruments'), field: bg('#tile-field'), focal: bg('#tile-focal .evidence-tile'),
-          wkField: token('var(--wk-field)'), wkRail: token('var(--wk-surface-rail)'),
-          wkWell: token('var(--wk-surface-sunken)'),
-          targetRails: (targetSeries?.markLine?.data || []).map((line) => line.yAxis).sort((a, b) => a - b),
-        };
-      });
-      if (theme === 'dark') {
-        assert.equal(roles.canvas, roles.wkField, 'Dark canvas uses the field role');
-        assert.equal(roles.inspector, roles.wkField, 'Dark Findings shares the canvas field');
-        assert.equal(roles.field, roles.wkField, 'Dark chart field keeps the field role');
-        assert.equal(roles.header, roles.wkRail, 'Dark pane header uses the rail role');
-        assert.equal(roles.rail, roles.wkRail, 'Dark controls use the shared rail role');
-        assert.equal(roles.focal, roles.wkWell, 'Dark focal vessel uses the chart-well role');
-      } else {
-        assert.notEqual(roles.canvas, 'rgba(0, 0, 0, 0)', 'Light canvas remains painted');
-        assert.notEqual(roles.focal, 'rgba(0, 0, 0, 0)', 'Light focal vessel remains painted');
-      }
-      assert.deepEqual(roles.targetRails, [70, 180], `${theme} glucose target is two boundary rails`);
-    } finally { await page.close(); }
-  }
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+    const roles = await page.locator('.dw').evaluate((root) => {
+      const bg = (selector) => getComputedStyle(root.querySelector(selector)).backgroundColor;
+      const token = (value) => {
+        const probe = document.createElement('i');
+        probe.style.background = value;
+        root.append(probe);
+        const result = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return result;
+      };
+      const option = window.echarts.getInstanceByDom(document.querySelector('#chart')).getOption();
+      const targetSeries = option.series.find((series) => (series.markLine?.data || [])
+        .some((line) => Number.isFinite(line.yAxis)));
+      return {
+        canvas: bg('.canvas-pane'), inspector: bg('.inspector'), header: bg('.canvas-pane > header'),
+        rail: bg('.instruments'), field: bg('#tile-field'), focal: bg('#tile-focal .evidence-tile'),
+        wkField: token('var(--wk-field)'), wkRail: token('var(--wk-surface-rail)'),
+        wkWell: token('var(--wk-surface-sunken)'),
+        targetRails: (targetSeries?.markLine?.data || []).map((line) => line.yAxis).sort((a, b) => a - b),
+      };
+    });
+    assert.equal(roles.canvas, roles.wkField, 'Dark canvas uses the field role');
+    assert.equal(roles.inspector, roles.wkField, 'Dark Findings shares the canvas field');
+    assert.equal(roles.field, roles.wkField, 'Dark chart field keeps the field role');
+    assert.equal(roles.header, roles.wkRail, 'Dark pane header uses the rail role');
+    assert.equal(roles.rail, roles.wkRail, 'Dark controls use the shared rail role');
+    assert.equal(roles.focal, roles.wkWell, 'Dark focal vessel uses the chart-well role');
+    assert.deepEqual(roles.targetRails, [70, 180], 'glucose target is two boundary rails');
+  } finally { await page.close(); }
 });
 
-test('Light vessel states retain their fixed-point cascade while Dark owns the retheme', async () => {
+test('every vessel state retains the Dark retheme edge', async () => {
   const browser = await runner.browser();
-  for (const theme of ['light', 'dark']) {
-    const page = await openApp(browser, { state: 'typical', theme, appSource: 'fixture' });
-    try {
-      await page.locator(theme === 'light' ? 'html:not(.dark)' : 'html.dark').waitFor();
-      await page.getByRole('button', { name: '24 h', exact: true }).click();
-      const styles = await page.evaluate(() => {
-        const field = document.querySelector('#tile-field');
-        const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
-        const style = (node) => {
-          const computed = getComputedStyle(node);
-          return { radius: computed.borderRadius, shadow: computed.boxShadow };
-        };
-        field.removeAttribute('data-dock');
-        field.removeAttribute('data-raised');
-        field.removeAttribute('data-explorer');
-        const general = style(document.querySelector(selector));
-        field.setAttribute('data-dock', 'docked');
-        const docked = style(document.querySelector(selector));
-        const selectedNode = document.querySelector(selector);
-        selectedNode.setAttribute('data-selected', '');
-        const selected = style(selectedNode);
-        selectedNode.removeAttribute('data-selected');
-        selectedNode.setAttribute('data-tail-head', '');
-        const tail = style(selectedNode);
-        selectedNode.removeAttribute('data-tail-head');
-        field.setAttribute('data-raised', '');
-        const raised = style(document.querySelector(selector));
-        field.removeAttribute('data-raised');
-        field.setAttribute('data-explorer', '');
-        const explorer = style(document.querySelector(selector));
-        return { general, docked, selected, tail, raised, explorer };
-      });
-      if (theme === 'light') {
-        assert.equal(styles.general.radius, '2px');
-        assert.match(styles.general.shadow, /inset/, 'Light general tiles keep the fixed-point edge and top highlight');
-        for (const state of ['docked', 'raised', 'explorer']) {
-          assert.equal(styles[state].radius, '4px');
-          assert.doesNotMatch(styles[state].shadow, /inset/, `Light ${state} cells keep their fixed-point shadow stack`);
-        }
-        assert.match(styles.selected.shadow, /rgb\(107, 118, 105\) 0px 0px 0px 1px inset/,
-          'Light selected cells retain their fixed-point strong-rule ring');
-        assert.match(styles.tail.shadow, /color\(srgb 0\.831372 0\.811765 0\.764706 \/ 0\.72\) -5px 0px 0px -4px/,
-          'Light tail-head cells retain their fixed-point edge marker');
-      } else {
-        for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
-          assert.equal(styles[state].radius, '4px');
-          assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
-            `Dark ${state} cells retain the #453d35 vessel edge`);
-        }
-      }
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const styles = await page.evaluate(() => {
+      const field = document.querySelector('#tile-field');
+      const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
+      const style = (node) => {
+        const computed = getComputedStyle(node);
+        return { radius: computed.borderRadius, shadow: computed.boxShadow };
+      };
+      field.removeAttribute('data-dock');
+      field.removeAttribute('data-raised');
+      field.removeAttribute('data-explorer');
+      const general = style(document.querySelector(selector));
+      field.setAttribute('data-dock', 'docked');
+      const docked = style(document.querySelector(selector));
+      const selectedNode = document.querySelector(selector);
+      selectedNode.setAttribute('data-selected', '');
+      const selected = style(selectedNode);
+      selectedNode.removeAttribute('data-selected');
+      selectedNode.setAttribute('data-tail-head', '');
+      const tail = style(selectedNode);
+      selectedNode.removeAttribute('data-tail-head');
+      field.setAttribute('data-raised', '');
+      const raised = style(document.querySelector(selector));
+      field.removeAttribute('data-raised');
+      field.setAttribute('data-explorer', '');
+      const explorer = style(document.querySelector(selector));
+      return { general, docked, selected, tail, raised, explorer };
+    });
+    for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
+      assert.equal(styles[state].radius, '4px');
+      assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+        `Dark ${state} cells retain the #453d35 vessel edge`);
+    }
 
-      await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
-      const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
-      await hoverTile.hover();
-      const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
-      if (theme === 'light') {
-        assert.match(hover, /rgb\(195, 191, 180\) 0px 0px 0px 1px inset, rgba\(20, 26, 21, 0\.05\) 0px 1px 2px 0px, rgba\(20, 26, 21, 0\.12\) 0px 3px 8px -3px, rgba\(20, 26, 21, 0\.13\) 0px 0px 0px 1px/,
-          'Light hover keeps the fixed-point quiet-rule inset and cell-shadow stack');
-      } else {
-        assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
-          'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
-      }
+    await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
+    const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
+    await hoverTile.hover();
+    const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
+    assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
+      'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
 
-      await page.locator('#tile-row .evidence-tile').first().click();
-      await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
-      const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { radius: style.borderRadius, shadow: style.boxShadow };
-      });
-      if (theme === 'light') {
-        assert.equal(focal.radius, '6px');
-        assert.doesNotMatch(focal.shadow, /inset/, 'Light focal vessel keeps its fixed-point elevation stack');
-      } else {
-        assert.equal(focal.radius, '4px');
-        assert.match(focal.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
-          'Dark focal retains its #453d35 vessel edge');
-      }
+    await page.locator('#tile-row .evidence-tile').first().click();
+    await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
+    const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { radius: style.borderRadius, shadow: style.boxShadow };
+    });
+    assert.equal(focal.radius, '4px');
+    assert.match(focal.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+      'Dark focal retains its #453d35 vessel edge');
 
-      await page.locator('#tile-focal .tile-fullscreen').click();
-      await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
-      const fullscreen = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { radius: style.borderRadius, shadow: style.boxShadow };
-      });
-      if (theme === 'light') assert.deepEqual(fullscreen, { radius: '0px', shadow: 'none' });
-      else {
-        assert.equal(fullscreen.radius, '4px');
-        assert.match(fullscreen.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
-          'Dark fullscreen retains its #453d35 vessel edge');
-      }
-    } finally { await page.close(); }
-  }
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    const fullscreen = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { radius: style.borderRadius, shadow: style.boxShadow };
+    });
+    assert.equal(fullscreen.radius, '4px');
+    assert.match(fullscreen.shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
+      'Dark fullscreen retains its #453d35 vessel edge');
+  } finally { await page.close(); }
 });
 
 /* LOCK:diagnose-workstation:1 — no page scroll at both required viewports (a
    narrower slice of term 1 than story S22 already owns: S22 covers it for
    the full "every state" contract; this only opens 'typical'). The
-   panel-geometry comparison below is not itself a named term — no LOCK term
-   addresses theme — it is a plain regression check that light/dark's CSS
-   variables never leak into layout dimensions, which nothing else tests
-   because the replay never switches theme mid-run. */
-test('locked panel geometry matches across both required viewports and light/dark themes', async () => {
+   panel-geometry check below is not itself a named term. It used to assert
+   only that Light's and Dark's rects agreed, which says nothing once Light
+   retires (ADR 304), so it now asserts the Dark layout directly: the two panes
+   are non-degenerate and meet on one seam, and the crumb trail sits inside the
+   inspector that labels it. */
+test('locked panel geometry holds at both required viewports', async () => {
     const browser = await runner.browser();
     try {
       const before = openerProblems().length;
       for (const viewport of VIEWPORTS) {
-        const boxes = {};
-        for (const theme of ['light', 'dark']) {
-          const page = await openApp(browser, {
-            state: 'typical', theme, viewport, appSource: 'fixture',
-          });
-          await shot(page, 'build', 'typical', viewport, theme);
-          boxes[theme] = await page.evaluate(() => {
-            const rect = (sel) => {
-              const box = document.querySelector(sel).getBoundingClientRect();
-              return [box.x, box.y, box.width, box.height];
-            };
-            return {
-              canvasPane: rect('.canvas-pane'),
-              inspector: rect('.inspector'),
-              crumbTrail: rect('#crumb-trail'),
-              hScroll: document.documentElement.scrollWidth - window.innerWidth,
-              vScroll: document.documentElement.scrollHeight - window.innerHeight,
-            };
-          });
-          await page.close();
-        }
-        assert.deepEqual(boxes.dark.canvasPane, boxes.light.canvasPane,
-          `${viewport.width}×${viewport.height} canvas panel geometry is theme-invariant`);
-        assert.deepEqual(boxes.dark.inspector, boxes.light.inspector,
-          `${viewport.width}×${viewport.height} inspector geometry is theme-invariant`);
-        assert.deepEqual(boxes.dark.crumbTrail, boxes.light.crumbTrail,
-          `${viewport.width}×${viewport.height} crumb trail geometry is theme-invariant`);
-        for (const theme of ['light', 'dark']) {
-          assert.equal(boxes[theme].hScroll, 0,
-            `${viewport.width}×${viewport.height} ${theme} has no horizontal page scroll`);
-          assert.equal(boxes[theme].vScroll, 0,
-            `${viewport.width}×${viewport.height} ${theme} has no vertical page scroll`);
-        }
+        const page = await openApp(browser, {
+          state: 'typical', viewport, appSource: 'fixture',
+        });
+        await shot(page, 'build', 'typical', viewport);
+        const boxes = await page.evaluate(() => {
+          const rect = (sel) => {
+            const box = document.querySelector(sel).getBoundingClientRect();
+            return [box.x, box.y, box.width, box.height];
+          };
+          return {
+            canvasPane: rect('.canvas-pane'),
+            inspector: rect('.inspector'),
+            crumbTrail: rect('#crumb-trail'),
+            hScroll: document.documentElement.scrollWidth - window.innerWidth,
+            vScroll: document.documentElement.scrollHeight - window.innerHeight,
+          };
+        });
+        await page.close();
+        const label = `${viewport.width}×${viewport.height}`;
+        const [canvasX, , canvasWidth, canvasHeight] = boxes.canvasPane;
+        const [inspectorX, inspectorY, inspectorWidth, inspectorHeight] = boxes.inspector;
+        const [crumbX, crumbY, crumbWidth, crumbHeight] = boxes.crumbTrail;
+        assert.ok(canvasWidth > 0 && canvasHeight > 0,
+          `${label} canvas panel occupies a real box (${canvasWidth}×${canvasHeight})`);
+        assert.ok(inspectorWidth > 0 && inspectorHeight > 0,
+          `${label} inspector occupies a real box (${inspectorWidth}×${inspectorHeight})`);
+        assert.ok(Math.abs(inspectorX - (canvasX + canvasWidth)) <= 1,
+          `${label} inspector begins on the canvas panel's seam `
+          + `(canvas ends ${canvasX + canvasWidth}, inspector starts ${inspectorX})`);
+        assert.ok(crumbX >= inspectorX - 1 && crumbY >= inspectorY - 1
+          && crumbX + crumbWidth <= inspectorX + inspectorWidth + 1
+          && crumbY + crumbHeight <= inspectorY + inspectorHeight + 1,
+        `${label} crumb trail stays inside the inspector it labels`);
+        assert.equal(boxes.hScroll, 0, `${label} has no horizontal page scroll`);
+        assert.equal(boxes.vScroll, 0, `${label} has no vertical page scroll`);
       }
       // openApp records a page error or an unstubbed/unserved asset into its
       // own `problems` ledger rather than failing the open outright (so a
@@ -1327,7 +1264,7 @@ test('locked panel geometry matches across both required viewports and light/dar
       // length captured above, so problems recorded by an earlier test in
       // this same process are never double-counted.
       assert.deepEqual(openerProblems().slice(before), [],
-        'no opener problems (page errors / unstubbed routes) across the four geometry opens');
+        'no opener problems (page errors / unstubbed routes) across the two geometry opens');
     } finally { /* browser stays open; closed once in after() */ }
   });
 
@@ -1335,81 +1272,79 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
   const browser = await runner.browser();
   const before = openerProblems().length;
   const viewport = VIEWPORTS[0];
-  for (const theme of ['light', 'dark']) {
-    const page = await openApp(browser, { state: 'typical', theme, viewport, appSource: 'fixture' });
-    try {
-      await page.getByRole('button', { name: '24 h', exact: true }).click();
-      await settle(page, 450);
-      const snapshotBasalPaint = () => page.locator('#lane button:not([data-clock-copy])')
-        .evaluateAll((cells) => cells.map((cell) => {
-          const style = getComputedStyle(cell);
-          const border = (side) => [style[`border${side}Width`], style[`border${side}Style`],
-            style[`border${side}Color`]];
-          return {
-            label: cell.getAttribute('aria-label'), verdict: cell.dataset.verdict,
-            opacity: style.opacity,
-            background: [style.backgroundColor, style.backgroundImage, style.backgroundSize,
-              style.backgroundPosition, style.backgroundRepeat],
-            boxShadow: style.boxShadow,
-            outline: [style.outlineWidth, style.outlineStyle, style.outlineColor, style.outlineOffset],
-            border: ['Top', 'Right', 'Bottom', 'Left'].map(border),
-          };
-        }));
-      const basalPaintBefore = await snapshotBasalPaint();
-      assert.equal(basalPaintBefore.length, 48, 'the paint snapshot covers every basal slot');
-      const chart = await page.locator('#chart').boundingBox();
-      const xAt = (minute) => chart.x + 34 + (minute / 1425) * (chart.width - 86);
-      const y = chart.y + chart.height * 0.45;
-      // travel at the right edge, then aim the draw's moving end onto the next
-      // day's 02:00 — a held boundary is travel, never a place to release on
-      const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
-        { past: 180, aim: 24 * 60 + 2 * 60 });
-      assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
-      await page.mouse.up();
-      await settle(page, 500);
-
-      const wrapped = await page.evaluate(() => ({
-        chip: document.querySelector('#seg-window [data-follow]')?.firstChild?.textContent.trim(),
-        edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
-        grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
-        braceParts: document.getElementById('brace').children.length,
-        copies: document.querySelectorAll('#lane [data-clock-copy]').length,
-        axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
-          .getOption().xAxis[0].data.length,
+  const page = await openApp(browser, { state: 'typical', viewport, appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settle(page, 450);
+    const snapshotBasalPaint = () => page.locator('#lane button:not([data-clock-copy])')
+      .evaluateAll((cells) => cells.map((cell) => {
+        const style = getComputedStyle(cell);
+        const border = (side) => [style[`border${side}Width`], style[`border${side}Style`],
+          style[`border${side}Color`]];
+        return {
+          label: cell.getAttribute('aria-label'), verdict: cell.dataset.verdict,
+          opacity: style.opacity,
+          background: [style.backgroundColor, style.backgroundImage, style.backgroundSize,
+            style.backgroundPosition, style.backgroundRepeat],
+          boxShadow: style.boxShadow,
+          outline: [style.outlineWidth, style.outlineStyle, style.outlineColor, style.outlineOffset],
+          border: ['Top', 'Right', 'Bottom', 'Left'].map(border),
+        };
       }));
-      assert.equal(wrapped.chip, 'Window 22:00–02:00');
-      /* Edge and grip counts are static markup and paintBrace writes the same
-         two offsets into both, so counting them or comparing them proves
-         nothing. What can actually move is WHERE each one lands: pin all four
-         against this file's own minute-to-pixel formula, and pin the wrap
-         itself — a window that failed to cross midnight would put its end edge
-         to the RIGHT of its start edge. */
-      assert.equal(wrapped.braceParts, 5, 'the brace is two edges, two grips and one readout');
-      assert.ok(wrapped.edges[1] < wrapped.edges[0],
-        'a wrapped window carries its end edge left of its start edge');
-      assert.ok(Math.abs(wrapped.edges[0] - (xAt(1320) - chart.x)) <= 1,
-        'the start edge sits at 22:00');
-      assert.ok(Math.abs(wrapped.edges[1] - (xAt(120) - chart.x)) <= 1,
-        'the end edge sits at 02:00');
-      assert.ok(Math.abs(wrapped.grips[0] - (xAt(1320) - chart.x)) <= 1,
-        'the start grip sits on the 22:00 endpoint');
-      assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
-        'the end grip sits on the 02:00 endpoint');
-      assert.deepEqual(await snapshotBasalPaint(), basalPaintBefore,
-        'the wrapped scope leaves every basal verdict cell at its original computed paint');
-      assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
-      assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
+    const basalPaintBefore = await snapshotBasalPaint();
+    assert.equal(basalPaintBefore.length, 48, 'the paint snapshot covers every basal slot');
+    const chart = await page.locator('#chart').boundingBox();
+    const xAt = (minute) => chart.x + 34 + (minute / 1425) * (chart.width - 86);
+    const y = chart.y + chart.height * 0.45;
+    // travel at the right edge, then aim the draw's moving end onto the next
+    // day's 02:00 — a held boundary is travel, never a place to release on
+    const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
+      { past: 180, aim: 24 * 60 + 2 * 60 });
+    assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
+    await page.mouse.up();
+    await settle(page, 500);
 
-      for (const [minute, cursor] of [[1380, 'grab'], [60, 'grab'], [1320, 'col-resize']]) {
-        await page.mouse.move(xAt(minute), y);
-        assert.equal(await page.locator('#chart').evaluate((node) => getComputedStyle(node).cursor), cursor,
-          `${minute} minutes advertises the wrapped-window gesture`);
-      }
-      await shot(page, 'issue-130', 'wrapped-window-at-rest', viewport, theme);
-    } finally { await page.close(); }
-  }
+    const wrapped = await page.evaluate(() => ({
+      chip: document.querySelector('#seg-window [data-follow]')?.firstChild?.textContent.trim(),
+      edges: [...document.querySelectorAll('#brace .edge')].map((edge) => parseFloat(edge.style.left)),
+      grips: [...document.querySelectorAll('#brace .grip')].map((grip) => parseFloat(grip.style.left)),
+      braceParts: document.getElementById('brace').children.length,
+      copies: document.querySelectorAll('#lane [data-clock-copy]').length,
+      axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
+        .getOption().xAxis[0].data.length,
+    }));
+    assert.equal(wrapped.chip, 'Window 22:00–02:00');
+    /* Edge and grip counts are static markup and paintBrace writes the same
+       two offsets into both, so counting them or comparing them proves
+       nothing. What can actually move is WHERE each one lands: pin all four
+       against this file's own minute-to-pixel formula, and pin the wrap
+       itself — a window that failed to cross midnight would put its end edge
+       to the RIGHT of its start edge. */
+    assert.equal(wrapped.braceParts, 5, 'the brace is two edges, two grips and one readout');
+    assert.ok(wrapped.edges[1] < wrapped.edges[0],
+      'a wrapped window carries its end edge left of its start edge');
+    assert.ok(Math.abs(wrapped.edges[0] - (xAt(1320) - chart.x)) <= 1,
+      'the start edge sits at 22:00');
+    assert.ok(Math.abs(wrapped.edges[1] - (xAt(120) - chart.x)) <= 1,
+      'the end edge sits at 02:00');
+    assert.ok(Math.abs(wrapped.grips[0] - (xAt(1320) - chart.x)) <= 1,
+      'the start grip sits on the 22:00 endpoint');
+    assert.ok(Math.abs(wrapped.grips[1] - (xAt(120) - chart.x)) <= 1,
+      'the end grip sits on the 02:00 endpoint');
+    assert.deepEqual(await snapshotBasalPaint(), basalPaintBefore,
+      'the wrapped scope leaves every basal verdict cell at its original computed paint');
+    assert.equal(wrapped.copies, 0, 'neighbour lane copies leave with the pan');
+    assert.equal(wrapped.axisPoints, 96, 'the settled axis returns to the canonical day');
+
+    for (const [minute, cursor] of [[1380, 'grab'], [60, 'grab'], [1320, 'col-resize']]) {
+      await page.mouse.move(xAt(minute), y);
+      assert.equal(await page.locator('#chart').evaluate((node) => getComputedStyle(node).cursor), cursor,
+        `${minute} minutes advertises the wrapped-window gesture`);
+    }
+    await shot(page, 'issue-130', 'wrapped-window-at-rest', viewport);
+  } finally { await page.close(); }
   assert.deepEqual(openerProblems().slice(before), [],
-    'no opener problems while proving the wrapped window in both themes');
+    'no opener problems while proving the wrapped window');
 });
 
 test('the Filter menu renders each server-published Sift count', async () => {
@@ -1713,37 +1648,35 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
     try {
       const before = openerProblems().length;
       for (const viewport of VIEWPORTS) {
-        for (const theme of ['light', 'dark']) {
-          const page = await openApp(browser, {
-            state: 'typical', viewport, theme, appSource: 'fixture',
-            analysisInputs: (analysis) => withIsfVerdict(analysis, {
-              direction: 'strengthen', recommended: 42, assertsMove: false,
-              annotation: 'The conservative strengthen step rounds to the current Correction factor.',
-            }),
-          });
-          const row = page.locator('#level .qrow[data-id="isf"]');
-          const root = {
-            state: await row.getAttribute('data-state'),
-            tier: await row.getAttribute('data-tier'),
-            nums: await row.locator('.den.nums').count(),
-          };
-          await row.click();
-          await settle(page, 450);
-          await shot(page, 'isf-verdict', 'false-drilled', viewport, theme);
-          observed.push({
-            viewport, theme, root,
-            recommended: await page.locator('#level .numrow').nth(2).locator('b').innerText(),
-            estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
-            text: await page.locator('#level').innerText(),
-            stage: await page.locator('#level .stagebtn').count(),
-          });
-          await page.close();
-        }
+        const page = await openApp(browser, {
+          state: 'typical', viewport, appSource: 'fixture',
+          analysisInputs: (analysis) => withIsfVerdict(analysis, {
+            direction: 'strengthen', recommended: 42, assertsMove: false,
+            annotation: 'The conservative strengthen step rounds to the current Correction factor.',
+          }),
+        });
+        const row = page.locator('#level .qrow[data-id="isf"]');
+        const root = {
+          state: await row.getAttribute('data-state'),
+          tier: await row.getAttribute('data-tier'),
+          nums: await row.locator('.den.nums').count(),
+        };
+        await row.click();
+        await settle(page, 450);
+        await shot(page, 'isf-verdict', 'false-drilled', viewport);
+        observed.push({
+          viewport, root,
+          recommended: await page.locator('#level .numrow').nth(2).locator('b').innerText(),
+          estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
+          text: await page.locator('#level').innerText(),
+          stage: await page.locator('#level .stagebtn').count(),
+        });
+        await page.close();
       }
-      assert.equal(observed.length, VIEWPORTS.length * 2);
+      assert.equal(observed.length, VIEWPORTS.length);
       for (const reading of observed) {
         assert.deepEqual(reading.root, { state: 'assert', tier: 'noted', nums: 0 },
-          `${reading.viewport.width}x${reading.viewport.height} ${reading.theme}: queue register survives without an action number`);
+          `${reading.viewport.width}x${reading.viewport.height}: queue register survives without an action number`);
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
@@ -1945,7 +1878,6 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
       await page.addInitScript(() => {
         localStorage.setItem('ciq_token', 'hotfix-regression');
         localStorage.setItem('tab', 'diagnose');
-        localStorage.setItem('theme', 'dark');
       });
       await page.route('**/*', async (route) => {
         const url = new URL(route.request().url());

@@ -93,7 +93,15 @@ const PAYLOAD = 'mockups/diagnose-workstation.synthetic/payload.json';
    app-base.extracted.css, and the contrast guard then measured a theme the app
    had already left for the whole of an exploration. In check mode the build
    computes every artifact exactly as it would to write it, compares against the
-   committed bytes, and exits nonzero naming what diverged — it never writes. */
+   committed bytes, and exits nonzero naming what diverged — it never writes.
+
+   chrome.extracted.html is a FOURTH committed artifact, but not one this
+   script can compute: harness.mjs regenerates it by lifting the shell out of a
+   live browser, and nothing static can reproduce that. `--check` only guards
+   known rot on it — a shell marker #304 retired reappearing, or a link it
+   carries that is no longer a route in frontend/index.html — never a full
+   byte comparison, so passing this guard is not proof the extract is current;
+   re-running the harness is. */
 const CHECK = process.argv.includes('--check');
 /* ROUND 6, FORM 3 — the day traces the CLOCK projection lays over the pooled
    envelope when an event is drilled (amendment: "the day-trace overlay is KEPT
@@ -160,10 +168,9 @@ async function shippedInstruments() {
    blanked the tier column, and `.fer-group` replaced the shipped group header
    with a hairline rule. All four are DELETED, not kept beside the real thing.
 
-   What replaces them is `renderCaseRoster` itself, lifted out of
-   frontend/diagnose-workstation.js at build time exactly the way the toolbar's
-   two standing groups are — the function is module-private there, so there is
-   no export to import, and a transcription is the one thing this ruling
+   What replaces them is `renderOccurrenceRoster` itself, lifted out of
+   frontend/occurrence-roster.js at build time exactly the way the toolbar's
+   two standing groups are. A transcription is the one thing this ruling
    forbids. Extraction fails closed: an upstream rename stops the build rather
    than freezing a stale copy of the production table into the mock.
 
@@ -172,24 +179,29 @@ async function shippedInstruments() {
    point — the mock now shows what the shipped table actually does over this
    fixture, quirks included, instead of a prettier thing only the mock has. */
 async function shippedEvidenceTable() {
-  const path = 'frontend/diagnose-workstation.js';
-  const dw = await readFile(join(ROOT, path), 'utf8');
-  const grab = (name, re) => {
-    const m = dw.match(re);
-    if (!m) throw new Error(`${path} no longer declares \`${name}\` in the shape this build extracts`);
+  const path = 'frontend/occurrence-roster.js';
+  const rosterSource = await readFile(join(ROOT, path), 'utf8');
+  const workstationPath = 'frontend/diagnose-workstation.js';
+  const workstationSource = await readFile(join(ROOT, workstationPath), 'utf8');
+  const grab = (sourcePath, source, name, re) => {
+    const m = source.match(re);
+    if (!m) throw new Error(`${sourcePath} no longer declares \`${name}\` in the shape this build extracts`);
     return m[0];
   };
-  const cap = grab('EVIDENCE_CAP', /^const EVIDENCE_CAP = \d+;$/m);
-  const fmt = grab('fmtDate', /^const fmtDate = [\s\S]*?;$/m);
-  const bandKey = grab('VERDICT_BAND_KEY', /^const VERDICT_BAND_KEY = .*;$/m);
-  const residueKey = grab('VERDICT_RESIDUE_KEY', /^const VERDICT_RESIDUE_KEY = .*;$/m);
-  const render = grab('renderCaseRoster', /^function renderCaseRoster\([\s\S]*?\n\}$/m);
+  const cap = grab(path, rosterSource, 'EVIDENCE_CAP', /^export const EVIDENCE_CAP = \d+;$/m);
+  const render = grab(path, rosterSource, 'renderOccurrenceRoster',
+    /^export function renderOccurrenceRoster\([\s\S]*?\n\}$/m);
+  const fmt = grab(workstationPath, workstationSource, 'fmtDate', /^const fmtDate = [\s\S]*?;$/m);
+  const bandKey = grab(workstationPath, workstationSource, 'VERDICT_BAND_KEY',
+    /^const VERDICT_BAND_KEY = .*;$/m);
+  const residueKey = grab(workstationPath, workstationSource, 'VERDICT_RESIDUE_KEY',
+    /^const VERDICT_RESIDUE_KEY = .*;$/m);
   /* The three things the fidelity comparison hangs off. If the shipped painter
      ever stops emitting them the mock's table is no longer the app's, and the
      build says so here rather than in a screenshot nobody re-reads. */
-  for (const needle of ["className = 'ev-row case-occurrence'", 'class="ev-group"', "className = 'more'"]) {
+  for (const needle of ["className = 'ev-row case-occurrence'", 'group.header', "className = 'more'"]) {
     if (!render.includes(needle)) {
-      throw new Error(`extracted \`renderCaseRoster\` no longer emits ${needle} — extraction is corrupt`);
+      throw new Error(`extracted \`renderOccurrenceRoster\` no longer emits ${needle} — extraction is corrupt`);
     }
   }
   return `/* EXTRACTED VERBATIM from ${path} by\n`
@@ -201,8 +213,8 @@ async function shippedEvidenceTable() {
     + ' * adapter below reshapes this archived exploration\'s rows, then calls the\n'
     + ' * extracted renderer; it does not paint a second table.\n'
     + ' */\n'
-    + `${cap.replace(/^const /, 'export const ')}\n\n`
-    + `${fmt}\n${bandKey}\n${residueKey}\n\n${render}\n\n`
+    + `${cap}\n\n`
+    + `${fmt}\n${bandKey}\n${residueKey}\n\n${render.replace(/^export /, '')}\n\n`
     + `export function tierOf(occ) {\n`
     + `  const matched = (occ.verdicts || []).find((item) => item.matched);\n`
     + `  return matched ? matched.evidence_tier : null;\n`
@@ -213,11 +225,20 @@ async function shippedEvidenceTable() {
     + `    id: occurrence.id, date: occurrence.date, verdict,\n`
     + `    anchor: { t: occurrence.t, bg: occurrence.worst_bg ?? occurrence.bg ?? null, label: 'Low excursion' },\n`
     + `  }));\n`
-    + `  const caseFile = { occurrences: rows, verdict_counts: { [verdict]: rows.length },\n`
-    + `    summary: { denominator: factor.denominator ?? rows.length },\n`
-    + `    finding: { title: factor.title || (factor.cause || '').trim() } };\n`
-    + `  renderCaseRoster(host, caseFile, verdict, selected?.id || null,\n`
-    + `    (id) => onOpen(occurrences.find((occurrence) => occurrence.id === id)), onMore, shownCount);\n`
+    + `  const label = VERDICT_BAND_KEY[verdict] || VERDICT_RESIDUE_KEY[verdict] || verdict;\n`
+    + `  const servedCount = rows.length;\n`
+    + `  host.insertAdjacentHTML('beforeend',\n`
+    + `    \`<div class="lvl-cap">Occurrences<span class="meta">\${servedCount} of \${factor.denominator ?? servedCount}</span></div>\`);\n`
+    + `  renderOccurrenceRoster(host, [{\n`
+    + `    header: \`<div class="ev-group"><b>\${factor.title || (factor.cause || '').trim()}</b> — \${label}\n`
+    + `      <span class="n">· \${servedCount} episode\${servedCount === 1 ? '' : 's'}</span></div>\`,\n`
+    + `    servedCount,\n`
+    + `    rows: rows.map((row) => ({ id: row.id, html: \`<span class="when">\${fmtDate(row.date)} · \${row.anchor.t.slice(11, 16)}</span>\n`
+    + `      <span class="only">\${row.anchor.bg == null ? '—' : Math.round(row.anchor.bg)}\n`
+    + `        <span>· \${row.anchor.label}</span></span><span class="tier">\${label}</span>\` })),\n`
+    + `    empty: '<div class="empty">No occurrences in this verdict.</div>', emptyBeforeHeader: true,\n`
+    + `  }], { selectedId: selected?.id || null, shownCount,\n`
+    + `    onSelect: (id) => onOpen(occurrences.find((occurrence) => occurrence.id === id)), onMore });\n`
     + `}\n`;
 }
 
@@ -1013,7 +1034,7 @@ async function main() {
         + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
       queue_canvas: 'mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, '
         + 'evidence.target_range) — handed across RAW. The surface runs the shipped envelopeFromPooled / '
-        + 'markersFromPooled / windowStats / buildSlotLane / renderCanvas over it in the browser, which is the '
+        + 'windowStats / buildSlotLane / stripGlucoseRange / renderCanvas over it in the browser, which is the '
         + 'app\'s own path from its API response. This is a THIRD synthetic fixture, disjoint from the other '
         + 'two again: its 3 captured CGM days and 48 basal slots are not the lens capture\'s 20 lows and not '
         + 'the projection\'s 30-day window. Nothing on the queue root reconciles them, and nothing tries to.',
@@ -1128,10 +1149,10 @@ async function main() {
       ],
       /* ---------- ROUND 5, WORKSTREAM A: the queue root's canvas ----------
          THE POOLED GLUCOSE CHART, from the workstation payload fixture. Nothing
-         is derived here: the surface runs `envelopeFromPooled`,
-         `markersFromPooled`, `windowStats`, `buildSlotLane` and `renderCanvas`
-         — all shipped — over exactly these two raw sub-objects, which is the
-         same path frontend/diagnose-workstation.js takes from its API response.
+         is derived here: the surface runs `envelopeFromPooled`, `windowStats`,
+         `buildSlotLane`, `stripGlucoseRange` and `renderCanvas` — all shipped —
+         over exactly these two raw sub-objects, which is the same path
+         frontend/diagnose-workstation.js takes from its API response.
 
          Round 4 collapsed this pane on the grounds that the queue level had
          nothing to answer with. That was true of round 3's MOCK, which put a
@@ -1438,9 +1459,8 @@ async function main() {
      "…(extracted from this file's <style> in #100)", and matching `<style>`
      across the raw file starts the first capture inside that comment: the block
      then opens with stray markup, the CSS parser cannot recover until the second
-     rule, and the whole light `:root` token block is silently dropped. That
-     shipped as a mock whose dark theme was pixel-identical to the app and whose
-     light theme had no tokens at all — caught only by rendering light. */
+     rule, and the whole `:root` token block is silently dropped. That shipped
+     as a mock with no tokens at all — caught only by rendering it. */
   const html = indexHtml.replace(/<!--[\s\S]*?-->/g, '');
   const blocks = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
   if (!blocks.length) throw new Error('no <style> block found in frontend/index.html');
@@ -1454,7 +1474,7 @@ async function main() {
      arriving the build must stop too rather than shipping a legend chip whose
      disclosure silently never opens. */
   const joined = blocks.join('\n');
-  for (const needle of [':root {', 'html.dark {', '--wk-canvas:', 'color-scheme: light',
+  for (const needle of [':root {', '--wk-canvas:', 'color-scheme: dark',
     '.has-tooltip {', '.has-tooltip::after {']) {
     if (!joined.includes(needle)) throw new Error(`extracted app base is missing "${needle}" — extraction is corrupt`);
   }
@@ -1464,9 +1484,10 @@ async function main() {
   artifacts.set('app-base.extracted.css',
     '/* EXTRACTED VERBATIM from frontend/index.html\'s <style> blocks by\n'
     + ' * mockups/finding-evidence-routing.exploration/build.mjs. Do not edit —\n'
-    + ' * re-run the build script. This carries the app\'s :root / html.dark token\n'
-    + ' * block, its body ground and every base rule the shipped chrome inherits\n'
-    + ' * from (including `label { margin: 0 0 5px }`, which the event-comparison\n'
+    + ' * re-run the build script. This carries the app\'s single `:root` token\n'
+    + ' * block (#304 retired the light theme and its `html.dark` split), its\n'
+    + ' * body ground and every base rule the shipped chrome inherits from\n'
+    + ' * (including `label { margin: 0 0 5px }`, which the event-comparison\n'
     + ' * stylesheet adapts against).\n'
     + ` * Blocks extracted: ${blocks.length}\n */\n${blocks.join('\n')}\n`);
 
@@ -1479,15 +1500,38 @@ async function main() {
       const current = await readFile(path, 'utf8').catch(() => '');
       if (current !== text) stale.push(path);
     }
+    /* chrome.extracted.html is harness.mjs's own artifact, not this build's —
+       it is lifted from a live browser, which this script cannot recompute
+       statically, so it is not in `artifacts` above and never byte-compared.
+       This guards only known rot: the shell markers #304 retired surviving a
+       chrome the app has moved past, and a link this scene routes to that the
+       app no longer serves. It is not a substitute for re-running the harness. */
+    const chromePath = join(HERE, 'chrome.extracted.html');
+    const chrome = await readFile(chromePath, 'utf8').catch(() => '');
+    if (!chrome) {
+      stale.push(chromePath);
+    } else {
+      const retiredMarkers = ['cockpit-theme', 'theme-menu-button', 'cockpit-utility-menu', 'href="#"'];
+      for (const marker of retiredMarkers) {
+        if (chrome.includes(marker)) stale.push(`${chromePath} — retired marker "${marker}"`);
+      }
+      const hrefs = [...chrome.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((m) => m[1]);
+      for (const href of hrefs) {
+        if (!indexHtml.includes(`href="${href}"`)) {
+          stale.push(`${chromePath} — links to "${href}", not a route in frontend/index.html`);
+        }
+      }
+    }
     if (stale.length) {
       for (const path of stale) {
         process.stdout.write(`stale artifact: ${path} — rerun `
-          + 'node mockups/finding-evidence-routing.exploration/build.mjs\n');
+          + 'node mockups/finding-evidence-routing.exploration/build.mjs '
+          + 'or, for chrome.extracted.html, node mockups/finding-evidence-routing.exploration/harness.mjs\n');
       }
       return 1;
     }
     process.stdout.write('finding-evidence-routing artifacts current '
-      + `(${[...artifacts.keys()].join(', ')})\n`);
+      + `(${[...artifacts.keys()].join(', ')}, chrome.extracted.html)\n`);
     return 0;
   }
 
@@ -1511,8 +1555,8 @@ async function main() {
       + `${f.occurrences.groups.length} group(s), `
       + `${f.occurrences.groups.reduce((n, g) => n + g.occurrences.length, 0)} rows\n`).join('')
     + `app-base.extracted.css written — ${blocks.length} style block(s) from frontend/index.html\n`
-    + `evidence-table.extracted.js written — the production renderCaseRoster, ${evidenceTable.split('\n').length} lines `
-    + 'from frontend/diagnose-workstation.js\n',
+    + `evidence-table.extracted.js written — the production renderOccurrenceRoster, ${evidenceTable.split('\n').length} lines `
+    + 'from frontend/occurrence-roster.js\n',
   );
   return 0;
 }

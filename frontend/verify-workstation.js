@@ -135,13 +135,10 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
     const css = getComputedStyle(document.documentElement);
     const v = n => css.getPropertyValue(n).trim();
     const mix = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
-    // dark ground eats the 20% tints — the trial-higher tint steps up so the
-    // ribbon's two directions stay tellable apart in both themes
-    const dark = document.documentElement.dataset.theme === 'dark';
     return {
       muted: v('--mk-muted'), line: v('--mk-line'), accent: v('--mk-primary'),
       manual: v('--ck-manual') || '#93701B',
-      accentSoft: mix(v('--mk-primary'), dark ? 32 : 20), mutedSoft: mix(v('--mk-muted'), dark ? 18 : 20),
+      accentSoft: mix(v('--mk-primary'), 20), mutedSoft: mix(v('--mk-muted'), 20),
       // the Diagnose workstation's target-band tokens, same mixes
       targetFill: mix(v('--mk-ok'), 8),
       targetEdge: mix(v('--mk-ok'), 55),
@@ -344,7 +341,7 @@ export function createVerifyWorkstation({ root, callbacks = {} }) {
       renderTrialLine();
       render();
     },
-    /** Re-render in place — the theme toggle changes every chart colour. */
+    /** Re-render in place, e.g. after data changes underneath the mount. */
     refresh() { if (cap && sel) { renderTrialLine(); render(); } },
     setError(message) { showMessage(`Couldn't load Verify: ${message}`); },
   };

@@ -210,13 +210,6 @@
        and footer are lifted out of the running app's DOM into
        chrome.extracted.html by harness.mjs. -->
 
-  <script>
-    // The app's own first-paint theme switch (frontend/index.html), verbatim.
-    (function () {
-      if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-    })();
-  </script>
-
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -304,17 +297,18 @@
                     <div class="head-line head-rest">
                       <h2>Glucose by time of day</h2>
                       <span class="meta" id="dw-scope">—</span>
-                      <!-- ROUND 9, FINDING 5 — THE CHART'S LEGEND AND ITS WINDOW
-                           CAPTION LIVE IN THE HEADER RAIL NOW. Both used to
-                           float over the plot: ECharts' own legend in the top
-                           right, and `24 H 00:00–24:00 · 25–75 spread …`
-                           unanchored in the empty upper third. The caption joins
-                           `#dw-scope`, which is already the window's meta; the
-                           keys take this rail beside the title. Their content is
-                           the shipped chart's own legend `data`, read back off
-                           its option by pooled.js — the head prints what the
-                           chart drew, it does not decide it. -->
-                      <span class="fer-head-key" id="dw-key" aria-label="Chart legend"></span>
+                      <!-- ROUND 9, FINDING 5 — THE WINDOW CAPTION LIVES IN THE
+                           HEADER RAIL NOW, rather than floating over the plot as
+                           `24 H 00:00–24:00 · 25–75 spread …` unanchored in the
+                           empty upper third. It joins `#dw-scope`, which is
+                           already the window's meta.
+                           RETIRED HALF: this rail used to also carry the
+                           chart's legend as chips beside the title, reading the
+                           shipped chart's own legend `data` back off its option.
+                           5bc3020f/d72f5775 (#204/#258) retired that legend from
+                           the shipped `renderCanvas` itself, so there is no
+                           `data` left to read and the `.fer-head-key` span that
+                           held the chips is gone with it. -->
                     </div>
                     <div class="head-line head-live" id="dw-readout" aria-hidden="true">
                       <span class="rd-time" id="rd-time">--:--</span>

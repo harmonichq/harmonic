@@ -121,11 +121,11 @@ class TestProsePathReferences(_Tree):
         self.write("PRODUCT.md", "and openspec/changes/ for the reasoning trail\n")
         self.assertEqual(len(self.check({"PRODUCT.md", "openspec/changes/x/design.md"})), 1)
 
-    def test_generated_revise_database_path_is_pinned_only_for_agent_instructions(self) -> None:
-        path = "mockups/revise-e2e.synthetic/harmonic.sqlite"
+    def test_generated_qa_database_path_is_pinned_only_for_agent_instructions(self) -> None:
+        path = "mockups/qa-e2e.synthetic/harmonic.sqlite"
         self.assertIn(("AGENTS.md", path), check_public_links.PINNED)
         self.assertIn(("CLAUDE.md", path), check_public_links.PINNED)
-        self.write("AGENTS.md", f"Run with `{path}` after its fixed-seed generator.\n")
+        self.write("AGENTS.md", f"Run with `{path}` after its generator.\n")
         self.assertEqual(self.check({"AGENTS.md", path}), [])
         self.write("README.md", f"Open `{path}` directly.\n")
         failures = self.check({"AGENTS.md", "README.md", path})

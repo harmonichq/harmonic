@@ -141,6 +141,10 @@ tconnect-data
 mockups/*.capture.json
 # Review screenshots render that same real data — equally PHI, never commit.
 mockups/*.png
+# SQLite sidecars and scratch-derived stores created while serving synthetic fixtures.
+mockups/*.synthetic/*.sqlite-wal
+mockups/*.synthetic/*.sqlite-shm
+mockups/*.synthetic/*.derived.sqlite
 # EXCEPTION: behaviour-sweep renders under mockups/sweep/<surface>/ DO commit,
 # even though they render real captures.
 # The rule above would not have covered them anyway — it does not cross a slash.

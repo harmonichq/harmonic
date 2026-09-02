@@ -1,0 +1,32 @@
+# fail-closed mutation 1 — one layout property changed (.cockpit-topbar padding 16px -> 17px)
+# revision-side edit, frontend/shell.css: '  padding: 0 16px;' -> '  padding: 0 17px;' (reverted after the run)
+$ BASE_URL_BASE=http://127.0.0.1:8318 BASE_URL_REVISION=http://127.0.0.1:8317 OUT_DIR=<scratch> node openspec/changes/graphite-palette/evidence/palette-diff.mjs | sed -n '/^## summary/,$p'
+## summary
+states × viewports          18
+elements compared           8237
+computed properties read    4737084
+admitted colour differences 10450
+unexplained differences     48
+base-check mismatches       0
+states comparing nothing    0
+
+FAIL: see the differences above.
+
+exit=1
+
+# first unexplained entries:
+   UNEXPLAINED difference — not colour-valued on both sides
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>header.cockpit-topbar:0
+             property: padding-inline-end
+             base:     16px
+             revision: 17px
+   UNEXPLAINED difference — not colour-valued on both sides
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>header.cockpit-topbar:0
+             property: padding-inline-start
+             base:     16px
+             revision: 17px
+   UNEXPLAINED difference — not colour-valued on both sides
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>header.cockpit-topbar:0
+             property: padding-left
+             base:     16px
+             revision: 17px

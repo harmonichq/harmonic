@@ -453,11 +453,10 @@ function launch() {
 async function openApp(browser, options = {}) {
   const page = await browser.newPage({ viewport: options.viewport || VIEWPORTS[1] });
   await routeApp(page, options);
-  await page.addInitScript(({ tab, theme }) => {
+  await page.addInitScript((tab) => {
     localStorage.setItem('ciq_token', 'fixture-token');
     localStorage.setItem('tab', tab);
-    localStorage.setItem('theme', theme);
-  }, { tab: options.tab || 'diagnose', theme: options.theme || 'light' });
+  }, options.tab || 'diagnose');
   const initialHash = options.initialHash || '';
   const query = new URLSearchParams({ view: options.eventView || 'glucose' });
   if (options.state) query.set('mode', options.state);
@@ -627,7 +626,7 @@ async function assertDestinationInventory(page) {
 
   assert.deepEqual(await page.locator('.cockpit-utilities > button').evaluateAll((nodes) =>
     nodes.map((node) => node.childNodes[0].textContent.trim())),
-  ['Carb questions', 'Guide', 'Settings', 'Glossary', 'Theme']);
+  ['Carb questions', 'Guide', 'Settings', 'Glossary']);
   // Scoped to the footer: the narrow drawer also carries a Guide destination,
   // and it precedes the footer in the DOM.
   const ink = await page.evaluate(() => ({
@@ -675,43 +674,54 @@ async function assertChromeSurfaces(page) {
       footerRule: getComputedStyle(document.querySelector('.cockpit-footer')).borderTopWidth,
     };
   });
-  /* #736 re-settled the count from two to three, and names them rather than
-     counting them. Harmonic gives the chrome BAR its own evergreen ground,
-     distinct from the desk the stage sits on — that separation is the whole
-     point of the "chrome bar" role — and the scope chip is the control ground
-     both it and Log carbs share. Three MATERIALS with three jobs (desk, bar,
-     control), which is still the guard the two-surface rule was written to be:
-     it fails the moment a fourth appears. */
+  /* #736 re-settled the count from two to three — desk, bar, control — and
+     #304 re-based it to two when Light retired, because on the shipped Dark
+     surface the bar's `--ck-ground` was the desk's own `--wk-canvas`. #317
+     moved the bar one step up the ladder by operator sanction (ADR 317,
+     2026-09-02: "The slightly lighter one looks better I guess"): the chrome-bar
+     role block in theme.css now re-declares `--ck-ground` as the well
+     (`--wk-surface-sunken`, #14120f), so there are THREE grounds again — the
+     desk the shell and stage share, the bar the top bar and footer share, and
+     the control ground the scope chip and Log carbs share. The bar is pinned to
+     the sanctioned literal and held off the desk; the desk itself never moves.
+     It is still deliberately not ruled off the desk by a line: `shell.css`
+     sets `border: 0` on both bars, which the two hairline pins below have
+     always asserted and still do, unchanged.
+
+     A fourth ground anywhere in the chrome, a bar back on the desk, or a bar
+     on any shade but the sanctioned one, fails it. */
   const { shell, desk, bar, footer, control } = material.surfaces;
   assert.equal(shell, desk, 'the shell and the stage are one desk, not two');
   assert.equal(footer, bar, 'the footer and the top bar are one bar ground, not two');
-  assert.equal(new Set([desk, bar, control]).size, 3,
-    `desk, bar and control must be three distinct materials: ${desk}, ${bar}, ${control}`);
+  assert.equal(bar, 'rgb(20, 18, 15)',
+    `the chrome bar sits on the well, the sanctioned #14120f (ADR 317): bar ${bar}`);
+  assert.notEqual(bar, desk,
+    `the chrome bar is its own ground, not the desk: bar ${bar}, desk ${desk}`);
+  assert.notEqual(control, desk,
+    `the control ground stays distinct from the desk: ${control}`);
   assert.equal(material.backgrounds.length, 3,
-    `chrome surfaces: ${material.backgrounds.join(', ')}`);
+    `chrome surfaces — desk, bar, control: ${material.backgrounds.join(', ')}`);
   assert.equal(material.topRule, '0px', 'no chrome-to-chrome hairline under the top bar');
   assert.equal(material.footerRule, '0px', 'no chrome-to-chrome hairline over the footer');
 }
 
 test('the page never scrolls, the panes do, and the advisory stays whole on every tab', async () => {
-  for (const theme of ['light', 'dark']) {
-    for (const viewport of VIEWPORTS) {
-      const browser = await launch();
-      let page;
-      try {
-        page = await openApp(browser, { viewport, theme, promptCount: 2 });
-        for (const tab of TABS) {
-          await chooseTab(page, tab);
-          const label = `${tab} at ${viewport.width}x${viewport.height} in ${theme}`;
-          await assertViewportFrame(page, label);
-          await assertPaneReachability(page, label);
-          await assertAdvisoryWhole(page, label);
-          await assertPointerTargets(page);
-          // The pane walk scrolled the pane; the frame must be untouched by it.
-          await assertViewportFrame(page, `${label} after scrolling the pane`);
-        }
-      } finally { if (page) await page.close(); }
-    }
+  for (const viewport of VIEWPORTS) {
+    const browser = await launch();
+    let page;
+    try {
+      page = await openApp(browser, { viewport, promptCount: 2 });
+      for (const tab of TABS) {
+        await chooseTab(page, tab);
+        const label = `${tab} at ${viewport.width}x${viewport.height}`;
+        await assertViewportFrame(page, label);
+        await assertPaneReachability(page, label);
+        await assertAdvisoryWhole(page, label);
+        await assertPointerTargets(page);
+        // The pane walk scrolled the pane; the frame must be untouched by it.
+        await assertViewportFrame(page, `${label} after scrolling the pane`);
+      }
+    } finally { if (page) await page.close(); }
   }
 });
 
@@ -737,9 +747,6 @@ test('top bar and footer expose the locked destination inventory and neutral pro
     await page.locator('.cockpit-glossary').click();
     assert.equal(await page.locator('.glossary[role="dialog"]').isVisible(), true);
     await page.getByRole('button', { name: 'Close' }).click();
-    await page.locator('.cockpit-theme').click();
-    await page.getByRole('menuitemradio', { name: 'Dark' }).click();
-    assert.equal(await page.locator('html').evaluate((node) => node.classList.contains('dark')), true);
     await page.locator('.cockpit-log-carbs').click();
     const carbForm = page.locator('body > .popover');
     assert.equal(await carbForm.isVisible(), true);
@@ -952,22 +959,9 @@ export async function S2(browser) {
   } finally { await page.close(); }
 }
 
-// STORY:cockpit-shell:S3
-export async function S3(browser) {
-  const page = await openApp(browser);
-  try {
-    await page.locator('.cockpit-theme').click();
-    assert.equal(await page.locator('.cockpit-utility-menu').isVisible(), true);
-    await page.getByRole('menuitemradio', { name: 'Dark' }).click();
-    assert.equal(await page.locator('html').evaluate((node) => node.classList.contains('dark')), true);
-    assert.equal(await page.evaluate(() => localStorage.getItem('theme')), 'dark',
-      'theme choice persists');
-    assert.equal(await page.locator('.cockpit-utility-menu').isVisible(), false,
-      'choosing a theme closes the menu');
-    await page.locator('.cockpit-theme').click();
-    assert.equal(await page.getByRole('menuitemradio', { name: 'Dark' }).getAttribute('aria-checked'), 'true');
-  } finally { await page.close(); }
-}
+// RETIRED:cockpit-shell:S3 — Connor Griffin · 2026-09-01 · "light theme
+// retired by operator decision". The Theme menu it drove no longer exists, so
+// the story is retired rather than re-based; the ledger carries the sanction.
 
 // STORY:cockpit-shell:S4
 export async function S4(browser) {
@@ -1030,128 +1024,65 @@ export async function S8(browser) {
 
 // STORY:cockpit-shell:S9
 export async function S9(browser) {
-  for (const theme of ['light', 'dark']) {
-    const page = await openApp(browser, { theme });
-    try {
-      const currentNode = page.locator('.cockpit-step[aria-current="step"]');
-      const current = await currentNode.evaluate((node) => {
+  const page = await openApp(browser);
+  try {
+    const currentNode = page.locator('.cockpit-step[aria-current="step"]');
+    const current = await currentNode.evaluate((node) => {
+      const style = getComputedStyle(node);
+      const disc = getComputedStyle(node.querySelector('.cockpit-step-number'));
+      const bar = getComputedStyle(document.querySelector('.cockpit-topbar'));
+      return {
+        background: style.backgroundColor,
+        border: style.borderTopColor,
+        borderWidth: style.borderTopWidth,
+        color: style.color,
+        bar: bar.backgroundColor,
+        disc: disc.backgroundColor,
+        geometry: [style.height, style.paddingTop, style.paddingRight,
+          style.paddingBottom, style.paddingLeft, style.borderRadius],
+      };
+    });
+    const peerGeometry = await page.locator('.cockpit-step:not([aria-current="step"])').first()
+      .evaluate((node) => {
         const style = getComputedStyle(node);
-        const disc = getComputedStyle(node.querySelector('.cockpit-step-number'));
-        const bar = getComputedStyle(document.querySelector('.cockpit-topbar'));
-        return {
-          background: style.backgroundColor,
-          border: style.borderTopColor,
-          borderWidth: style.borderTopWidth,
-          color: style.color,
-          bar: bar.backgroundColor,
-          disc: disc.backgroundColor,
-          geometry: [style.height, style.paddingTop, style.paddingRight,
-            style.paddingBottom, style.paddingLeft, style.borderRadius],
-        };
+        return [style.height, style.paddingTop, style.paddingRight,
+          style.paddingBottom, style.paddingLeft, style.borderRadius];
       });
-      const peerGeometry = await page.locator('.cockpit-step:not([aria-current="step"])').first()
-        .evaluate((node) => {
-          const style = getComputedStyle(node);
-          return [style.height, style.paddingTop, style.paddingRight,
-            style.paddingBottom, style.paddingLeft, style.borderRadius];
-        });
-      assert.equal(current.background, 'rgba(0, 0, 0, 0)', `${theme} current step has no plate fill`);
-      assert.deepEqual(current.geometry, peerGeometry, `${theme} current step keeps workflow geometry`);
-      assert.equal(current.borderWidth, '1px', `${theme} current step keeps its outline`);
-      assert.ok(contrastRatio(current.border, current.bar) >= 3,
-        `${theme} current-step outline clears 3:1 against the bar`);
-      assert.ok(contrastRatio(current.disc, current.bar) >= 3,
-        `${theme} current-step disc clears 3:1 against the bar`);
-      assert.ok(contrastRatio(current.color, current.bar) >= 4.5,
-        `${theme} current-step label clears 4.5:1 against the bar`);
-      await currentNode.focus();
-      const focus = await currentNode.evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { color: style.outlineColor, width: style.outlineWidth, offset: style.outlineOffset };
-      });
-      assert.equal(focus.width, '2px', `${theme} current step keeps its focus outline`);
-      assert.equal(focus.offset, '2px', `${theme} current step keeps its focus offset`);
-      assert.ok(contrastRatio(focus.color, current.bar) >= 3,
-        `${theme} current-step focus clears 3:1 against the bar`);
-      console.log(`cockpit-shell ${theme} current ratios: outline ${contrastRatio(current.border, current.bar).toFixed(2)}, disc ${contrastRatio(current.disc, current.bar).toFixed(2)}, label ${contrastRatio(current.color, current.bar).toFixed(2)}, focus ${contrastRatio(focus.color, current.bar).toFixed(2)}`);
-      const transparent = async () => assert.equal(
-        await currentNode.evaluate((node) => getComputedStyle(node).backgroundColor),
-        'rgba(0, 0, 0, 0)', `${theme} current step has no plate fill`);
-      await currentNode.evaluate((node) => node.style.setProperty(
-        'background', 'var(--ck-accent-soft)', 'important'));
-      await assert.rejects(transparent, undefined,
-        `${theme} current-step assertion must fail when its plate fill returns`);
-      await currentNode.evaluate((node) => node.style.removeProperty('background'));
-      await transparent();
-    } finally { await page.close(); }
-  }
+    assert.equal(current.background, 'rgba(0, 0, 0, 0)', 'current step has no plate fill');
+    assert.deepEqual(current.geometry, peerGeometry, 'current step keeps workflow geometry');
+    assert.equal(current.borderWidth, '1px', 'current step keeps its outline');
+    assert.ok(contrastRatio(current.border, current.bar) >= 3,
+      'current-step outline clears 3:1 against the bar');
+    assert.ok(contrastRatio(current.disc, current.bar) >= 3,
+      'current-step disc clears 3:1 against the bar');
+    assert.ok(contrastRatio(current.color, current.bar) >= 4.5,
+      'current-step label clears 4.5:1 against the bar');
+    await currentNode.focus();
+    const focus = await currentNode.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { color: style.outlineColor, width: style.outlineWidth, offset: style.outlineOffset };
+    });
+    assert.equal(focus.width, '2px', 'current step keeps its focus outline');
+    assert.equal(focus.offset, '2px', 'current step keeps its focus offset');
+    assert.ok(contrastRatio(focus.color, current.bar) >= 3,
+      'current-step focus clears 3:1 against the bar');
+    console.log(`cockpit-shell current ratios: outline ${contrastRatio(current.border, current.bar).toFixed(2)}, disc ${contrastRatio(current.disc, current.bar).toFixed(2)}, label ${contrastRatio(current.color, current.bar).toFixed(2)}, focus ${contrastRatio(focus.color, current.bar).toFixed(2)}`);
+    const transparent = async () => assert.equal(
+      await currentNode.evaluate((node) => getComputedStyle(node).backgroundColor),
+      'rgba(0, 0, 0, 0)', 'current step has no plate fill');
+    await currentNode.evaluate((node) => node.style.setProperty(
+      'background', 'var(--ck-accent-soft)', 'important'));
+    await assert.rejects(transparent, undefined,
+      'current-step assertion must fail when its plate fill returns');
+    await currentNode.evaluate((node) => node.style.removeProperty('background'));
+    await transparent();
+  } finally { await page.close(); }
 }
 
-// STORY:cockpit-shell:S10
-export async function S10(browser) {
-  for (const theme of ['light', 'dark']) {
-    const page = await openApp(browser, { theme });
-    try {
-      await page.locator('.cockpit-theme').click();
-      const checked = page.getByRole('menuitemradio', { name: theme === 'light' ? 'Light' : 'Dark' });
-      const row = page.getByRole('menuitemradio', { name: theme === 'light' ? 'Dark' : 'Light' });
-      await row.hover();
-      const seen = await row.evaluate((node) => {
-        const style = getComputedStyle(node);
-        const menu = getComputedStyle(node.parentElement);
-        const probe = document.createElement('i');
-        probe.style.background = style.getPropertyValue('--ck-accent-soft').trim();
-        probe.style.color = 'var(--ck-accent)';
-        node.appendChild(probe);
-        const well = getComputedStyle(probe).backgroundColor;
-        const accent = getComputedStyle(probe).color;
-        probe.style.background = 'color-mix(in srgb, var(--ck-panel) 95%, var(--ck-meta))';
-        const expected = getComputedStyle(probe).backgroundColor;
-        probe.remove();
-        return {
-          background: style.backgroundColor,
-          color: style.color,
-          panel: menu.backgroundColor,
-          well,
-          accent,
-          expected,
-        };
-      });
-      const checkedStyle = await checked.evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { color: style.color, background: style.backgroundColor };
-      });
-      assert.notEqual(seen.background, 'rgba(0, 0, 0, 0)', `${theme} hover paints a lift`);
-      assert.equal(seen.background, seen.expected, `${theme} hover uses the exact 95/5 neutral lift`);
-      assert.notEqual(seen.background, seen.panel, `${theme} hover is distinct from the panel`);
-      assert.notEqual(seen.background, seen.well, `${theme} hover is distinct from the orange well`);
-      assert.ok(contrastRatio(seen.color, seen.background) >= 4.5,
-        `${theme} unchecked row ink clears 4.5:1 on hover`);
-      assert.equal(await checked.getAttribute('aria-checked'), 'true', `${theme} checked state remains semantic`);
-      assert.equal(checkedStyle.color, seen.accent, `${theme} checked row resolves to accent ink`);
-      assert.ok(contrastRatio(checkedStyle.color, checkedStyle.background) >= 4.5,
-        `${theme} checked row ink clears 4.5:1`);
-      await row.focus();
-      const focus = await row.evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { color: style.outlineColor, width: style.outlineWidth };
-      });
-      assert.ok(parseFloat(focus.width) > 0, `${theme} theme row keeps a separate focus outline`);
-      assert.ok(contrastRatio(focus.color, seen.background) >= 3,
-        `${theme} theme-row focus clears 3:1 against hover`);
-      console.log(`cockpit-shell ${theme} menu ratios: unchecked ${contrastRatio(seen.color, seen.background).toFixed(2)}, checked ${contrastRatio(checkedStyle.color, checkedStyle.background).toFixed(2)}, focus ${contrastRatio(focus.color, seen.background).toFixed(2)}`);
-      const exactNeutral = async () => assert.equal(
-        await row.evaluate((node) => getComputedStyle(node).backgroundColor), seen.expected,
-        `${theme} hover uses the exact 95/5 neutral lift`);
-      await row.evaluate((node) => node.style.setProperty(
-        'background', 'color-mix(in srgb, var(--ck-panel) 50%, var(--ck-meta))', 'important'));
-      await assert.rejects(exactNeutral, undefined,
-        `${theme} hover assertion must fail when the neutral recipe drifts`);
-      await row.evaluate((node) => node.style.removeProperty('background'));
-      await exactNeutral();
-    } finally { await page.close(); }
-  }
-}
+// RETIRED:cockpit-shell:S10 — Connor Griffin · 2026-09-01 · "light theme
+// retired by operator decision". The Theme menu rows this measured were the
+// only `.cockpit-utility-menu` rows the shell ever rendered, so the hover,
+// checked and focus recipe has no surviving surface to assert against.
 
 // STORY:cockpit-shell:S11
 export async function S11(browser) {
@@ -1163,7 +1094,7 @@ export async function S11(browser) {
     await banner.waitFor();
     assert.equal(await banner.innerText(), 'Showing results from data through 2026-08-24 08:00:00.');
     assert.equal(await page.locator('.dw').isVisible(), true, 'stale age keeps Diagnose rendered');
-    if (SHOTS) await page.screenshot({ path: join(SHOTS, 'stale-result-banner-1280x800-light.png'), fullPage: true });
+    if (SHOTS) await page.screenshot({ path: join(SHOTS, 'stale-result-banner-1280x800.png'), fullPage: true });
     options.inputDataAge = null;
     await page.reload();
     await page.locator('.dw').waitFor();
@@ -1261,7 +1192,7 @@ export async function R1(browser) {
 }
 
 export const COCKPIT_SHELL_STORIES = Object.freeze([
-  S1, S2, S3, S4, S5, S6, S7, S8, S9, S10, S11, R1,
+  S1, S2, S4, S5, S6, S7, S8, S9, S11, R1,
 ]);
 
 test('cockpit shell behavior ledger replays every registered story', async () => {
@@ -1280,36 +1211,33 @@ test('cockpit shell behavior ledger replays every registered story', async () =>
    that the button is INDISTINGUISHABLE from the scope chip, that the `+` alone
    carries the accent, and that the label still clears AA on its own ground. */
 test('Log carbs speaks the chrome control vocabulary and stays readable', async () => {
-    for (const theme of ['light', 'dark']) {
-      const browser = await launch();
-      try {
-        const page = await openApp(browser, { theme, promptCount: 2 });
-        const seen = await page.evaluate(() => {
-          const read = (sel, props) => {
-            const style = getComputedStyle(document.querySelector(sel));
-            return Object.fromEntries(props.map((p) => [p, style[p]]));
-          };
-          const shape = ['color', 'backgroundColor', 'borderTopColor', 'borderTopWidth', 'borderTopLeftRadius'];
-          return {
-            button: read('.cockpit-log-carbs', shape),
-            chip: read('.cockpit-scope', shape),
-            plus: getComputedStyle(document.querySelector('.cockpit-log-carbs .plus')).color,
-            accent: getComputedStyle(document.querySelector('.cockpit-topbar'))
-              .getPropertyValue('--ck-accent').trim(),
-          };
-        });
-        assert.deepEqual(seen.button, seen.chip,
-          `${theme} Log carbs does not match the scope chip's border, ground, radius and ink`);
-        assert.notEqual(seen.plus, seen.button.color,
-          `${theme} Log carbs spends no accent on its glyph`);
-        assert.ok(contrastRatio(seen.button.color, seen.button.backgroundColor) >= 4.5,
-          `${theme} Log carbs label meets WCAG AA against its own ground`);
-        await page.close();
-      } finally { /* browser stays open; closed once in after() */ }
-    }
-  });
+  const browser = await launch();
+  const page = await openApp(browser, { promptCount: 2 });
+  try {
+    const seen = await page.evaluate(() => {
+      const read = (sel, props) => {
+        const style = getComputedStyle(document.querySelector(sel));
+        return Object.fromEntries(props.map((p) => [p, style[p]]));
+      };
+      const shape = ['color', 'backgroundColor', 'borderTopColor', 'borderTopWidth', 'borderTopLeftRadius'];
+      return {
+        button: read('.cockpit-log-carbs', shape),
+        chip: read('.cockpit-scope', shape),
+        plus: getComputedStyle(document.querySelector('.cockpit-log-carbs .plus')).color,
+        accent: getComputedStyle(document.querySelector('.cockpit-topbar'))
+          .getPropertyValue('--ck-accent').trim(),
+      };
+    });
+    assert.deepEqual(seen.button, seen.chip,
+      'Log carbs does not match the scope chip\'s border, ground, radius and ink');
+    assert.notEqual(seen.plus, seen.button.color,
+      'Log carbs spends no accent on its glyph');
+    assert.ok(contrastRatio(seen.button.color, seen.button.backgroundColor) >= 4.5,
+      'Log carbs label meets WCAG AA against its own ground');
+  } finally { await page.close(); }
+});
 
-test('cockpit chrome uses only the locked type ranks and three materials', async () => {
+test('cockpit chrome uses only the locked type ranks and three grounds', async () => {
   const browser = await launch();
   let page;
   try {
@@ -1319,72 +1247,70 @@ test('cockpit chrome uses only the locked type ranks and three materials', async
   } finally { if (page) await page.close(); }
 });
 
-test('Diagnose and Verify pane headers meet on one seam at every desktop size and theme', async () => {
+test('Diagnose and Verify pane headers meet on one seam at every desktop size', async () => {
   const mismatches = [];
   if (SHOTS) await mkdir(SHOTS, { recursive: true });
   for (const viewport of VIEWPORTS) {
-    for (const theme of ['light', 'dark']) {
-      for (const surface of ['diagnose', 'verify']) {
-        const browser = await launch();
-        let page;
-        try {
-          page = await openApp(browser, { viewport, theme, tab: surface });
-          const root = surface === 'diagnose' ? '.dw' : '.vw';
-          await page.locator(root).waitFor();
-          const populated = surface === 'diagnose' ? '.dw .qrow' : '.vw .trial-line';
-          await page.locator(populated).first().waitFor();
-          // This fixture opener is intentionally network-free, so it cannot load
-          // the shipped Inter webfont. Pin the 14px line box observed in the safe
-          // running app; otherwise Chromium's fallback font hides the 30px/31px
-          // split this gate exists to catch.
-          await page.addStyleTag({ content:
-            `${root} .pane > header h2, ${root} .pane > header .meta { line-height: 14px; }` });
-          const canvasHeader = surface === 'diagnose'
-            ? '.canvas-pane > header' : '.panes > .pane:first-child > header';
-          const seam = await page.evaluate(({ selector, canvasSelector }) => {
-            const rect = (suffix) => {
-              const box = document.querySelector(`${selector} ${suffix}`).getBoundingClientRect();
-              return { top: box.top, right: box.right, bottom: box.bottom, left: box.left };
-            };
-            const canvas = rect(canvasSelector);
-            const inspector = rect('.inspector > header');
-            const canvasPane = document.querySelector(`${selector} ${canvasSelector}`).parentElement;
-            const inspectorPane = document.querySelector(`${selector} .inspector`);
-            return {
-              canvas,
-              inspector,
-              edge: {
-                canvasRight: getComputedStyle(canvasPane).borderRightWidth,
-                inspectorLeft: getComputedStyle(inspectorPane).borderLeftWidth,
-                inspectorColor: getComputedStyle(inspectorPane).borderLeftColor,
-              },
-              populated: selector === '.dw'
-                ? document.querySelectorAll(`${selector} .qrow`).length > 0
-                : Boolean(document.querySelector(`${selector} .trial-line`)),
-            };
-          }, { selector: root, canvasSelector: canvasHeader });
-          const label = `${surface} ${viewport.width}x${viewport.height} ${theme}`;
-          assert.equal(seam.populated, true, `${label} mounts its populated workstation`);
-          assert.ok(seam.canvas.left < seam.inspector.left,
-            `${label} keeps the canvas and inspector side by side`);
-          assert.equal(seam.edge.canvasRight, '0px', `${label} canvas contributes no duplicate seam`);
-          assert.equal(seam.edge.inspectorLeft, '1px', `${label} inspector owns one vessel edge`);
-          assert.notEqual(seam.edge.inspectorColor, 'rgba(0, 0, 0, 0)', `${label} vessel edge is visible`);
-          if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
-            mismatches.push({
-              label,
-              canvas: { top: seam.canvas.top, bottom: seam.canvas.bottom },
-              inspector: { top: seam.inspector.top, bottom: seam.inspector.bottom },
-            });
-          }
-          if (SHOTS) {
-            await page.screenshot({
-              path: join(SHOTS, `header-seam-${surface}-${viewport.width}x${viewport.height}-${theme}.png`),
-              fullPage: true,
-            });
-          }
-        } finally { if (page) await page.close(); }
-      }
+    for (const surface of ['diagnose', 'verify']) {
+      const browser = await launch();
+      let page;
+      try {
+        page = await openApp(browser, { viewport, tab: surface });
+        const root = surface === 'diagnose' ? '.dw' : '.vw';
+        await page.locator(root).waitFor();
+        const populated = surface === 'diagnose' ? '.dw .qrow' : '.vw .trial-line';
+        await page.locator(populated).first().waitFor();
+        // This fixture opener is intentionally network-free, so it cannot load
+        // the shipped Inter webfont. Pin the 14px line box observed in the safe
+        // running app; otherwise Chromium's fallback font hides the 30px/31px
+        // split this gate exists to catch.
+        await page.addStyleTag({ content:
+          `${root} .pane > header h2, ${root} .pane > header .meta { line-height: 14px; }` });
+        const canvasHeader = surface === 'diagnose'
+          ? '.canvas-pane > header' : '.panes > .pane:first-child > header';
+        const seam = await page.evaluate(({ selector, canvasSelector }) => {
+          const rect = (suffix) => {
+            const box = document.querySelector(`${selector} ${suffix}`).getBoundingClientRect();
+            return { top: box.top, right: box.right, bottom: box.bottom, left: box.left };
+          };
+          const canvas = rect(canvasSelector);
+          const inspector = rect('.inspector > header');
+          const canvasPane = document.querySelector(`${selector} ${canvasSelector}`).parentElement;
+          const inspectorPane = document.querySelector(`${selector} .inspector`);
+          return {
+            canvas,
+            inspector,
+            edge: {
+              canvasRight: getComputedStyle(canvasPane).borderRightWidth,
+              inspectorLeft: getComputedStyle(inspectorPane).borderLeftWidth,
+              inspectorColor: getComputedStyle(inspectorPane).borderLeftColor,
+            },
+            populated: selector === '.dw'
+              ? document.querySelectorAll(`${selector} .qrow`).length > 0
+              : Boolean(document.querySelector(`${selector} .trial-line`)),
+          };
+        }, { selector: root, canvasSelector: canvasHeader });
+        const label = `${surface} ${viewport.width}x${viewport.height}`;
+        assert.equal(seam.populated, true, `${label} mounts its populated workstation`);
+        assert.ok(seam.canvas.left < seam.inspector.left,
+          `${label} keeps the canvas and inspector side by side`);
+        assert.equal(seam.edge.canvasRight, '0px', `${label} canvas contributes no duplicate seam`);
+        assert.equal(seam.edge.inspectorLeft, '1px', `${label} inspector owns one vessel edge`);
+        assert.notEqual(seam.edge.inspectorColor, 'rgba(0, 0, 0, 0)', `${label} vessel edge is visible`);
+        if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
+          mismatches.push({
+            label,
+            canvas: { top: seam.canvas.top, bottom: seam.canvas.bottom },
+            inspector: { top: seam.inspector.top, bottom: seam.inspector.bottom },
+          });
+        }
+        if (SHOTS) {
+          await page.screenshot({
+            path: join(SHOTS, `header-seam-${surface}-${viewport.width}x${viewport.height}.png`),
+            fullPage: true,
+          });
+        }
+      } finally { if (page) await page.close(); }
     }
   }
   assert.deepEqual(mismatches, [],
@@ -1523,10 +1449,27 @@ test('each cockpit lock assertion proves red under deliberate mutation and resto
       () => assertTypeRanks(page),
       style('.cockpit-scope-label', 'font-size', '16px'));
 
-    // Term 27 — a third chrome surface, and a chrome-to-chrome hairline.
-    await proveRedOnce('diagnose-workstation:27 (two surfaces)',
-      () => assertChromeSurfaces(page),
-      style('.cockpit-topbar', 'background-color', 'rgb(120, 20, 20)'));
+    // Term 27 — a bar that leaves its sanctioned ground, and a chrome-to-chrome
+    // hairline. Both bar mutations move BOTH bars together, so `footer === bar`
+    // keeps holding and the proof reaches the pins #317 added (ADR 317);
+    // moving the top bar alone trips `footer === bar` first and proves nothing
+    // about them. The first puts the bars back on the desk, the exact state the
+    // ruling retired: the literal pin fires first, and `bar !== desk` and the
+    // grounds count are the assertions that would catch it were the pin gone
+    // (they are proven jointly, never alone — no bar-side mutation can reach
+    // `bar !== desk` past the pin). The second moves them to a shade no ruling
+    // sanctioned, which leaves the count at three and `bar !== desk` true, so
+    // only the pinned literal can catch it — that is the mutation that proves
+    // the literal pin is live.
+    const bothBars = (value) => async () => {
+      const bars = page.locator('.cockpit-topbar, .cockpit-footer');
+      await bars.evaluateAll((nodes, next) => nodes.forEach((node) => node.style.setProperty('background-color', next)), value);
+      return () => bars.evaluateAll((nodes) => nodes.forEach((node) => node.style.removeProperty('background-color')));
+    };
+    await proveRedOnce('diagnose-workstation:27 (three grounds)',
+      () => assertChromeSurfaces(page), bothBars('rgb(15, 13, 11)'));
+    await proveRedOnce('diagnose-workstation:27 (sanctioned shade)',
+      () => assertChromeSurfaces(page), bothBars('rgb(30, 26, 23)'));
     await proveRedOnce('diagnose-workstation:27 (no hairlines)',
       () => assertChromeSurfaces(page), async () => {
         const footer = page.locator('.cockpit-footer');
@@ -1541,54 +1484,43 @@ test('each cockpit lock assertion proves red under deliberate mutation and resto
 // (#722); the app is now the sole contract artifact. Populated state renders —
 // an empty tab body shows nothing about how the chrome sits against real
 // content.
-test('build renders cover both locked sizes and themes',
+test('build renders cover both locked sizes',
   { skip: !SHOTS }, async () => {
   await mkdir(SHOTS, { recursive: true });
-  for (const theme of ['light', 'dark']) {
-    for (const viewport of VIEWPORTS) {
-      const label = `${viewport.width}x${viewport.height}-${theme}`;
-      const browser = await launch();
-      let production;
-      try {
-        production = await openApp(browser, {
-          viewport, theme, promptCount: 2,
-          planDraftItems: [{ type: 'isf', key: 0, start_min: 0, value: 45 },
-            { type: 'isf', key: 360, start_min: 360, value: 42 }],
-        });
-        await production.locator('.cockpit-theme').click();
-        await production.getByRole('menuitemradio', {
-          name: theme === 'light' ? 'Dark' : 'Light',
-        }).hover();
-        await production.waitForTimeout(400);
-        const current = production.locator('.cockpit-step[aria-current="step"]');
-        assert.equal(await current.count(), 1, `${label} renders one current workflow step`);
-        assert.equal(await production.locator('.cockpit-utility-menu').isVisible(), true,
-          `${label} renders the open theme menu`);
-        const path = join(SHOTS, `cockpit-shell-${RENDER_PHASE}-${label}.png`);
-        await production.screenshot({ path });
-        const image = await readFile(path);
-        assert.ok(image.length > 0, `${label} writes a populated ${RENDER_PHASE} capture`);
-      } finally { if (production) await production.close(); }
-    }
+  for (const viewport of VIEWPORTS) {
+    const label = `${viewport.width}x${viewport.height}`;
+    const browser = await launch();
+    let production;
+    try {
+      production = await openApp(browser, {
+        viewport, promptCount: 2,
+        planDraftItems: [{ type: 'isf', key: 0, start_min: 0, value: 45 },
+          { type: 'isf', key: 360, start_min: 360, value: 42 }],
+      });
+      const current = production.locator('.cockpit-step[aria-current="step"]');
+      assert.equal(await current.count(), 1, `${label} renders one current workflow step`);
+      const path = join(SHOTS, `cockpit-shell-${RENDER_PHASE}-${label}.png`);
+      await production.screenshot({ path });
+      const image = await readFile(path);
+      assert.ok(image.length > 0, `${label} writes a populated ${RENDER_PHASE} capture`);
+    } finally { if (production) await production.close(); }
   }
 });
 
-test('retired occurrence route evidence covers both desktop sizes and themes',
+test('retired occurrence route evidence covers both desktop sizes',
   { skip: !SHOTS }, async () => {
   await mkdir(SHOTS, { recursive: true });
-  for (const theme of ['light', 'dark']) {
-    for (const viewport of VIEWPORTS) {
-      const label = `${viewport.width}x${viewport.height}-${theme}`;
-      const browser = await launch();
-      let page;
-      try {
-        page = await openRetiredOccurrence(browser, { viewport, theme });
-        const path = join(SHOTS, `occurrence-retirement-${RENDER_PHASE}-${label}.png`);
-        await page.screenshot({ path });
-        assert.ok((await readFile(path)).length > 0,
-          `${label} writes a populated ${RENDER_PHASE} retirement capture`);
-      } finally { if (page) await page.close(); }
-    }
+  for (const viewport of VIEWPORTS) {
+    const label = `${viewport.width}x${viewport.height}`;
+    const browser = await launch();
+    let page;
+    try {
+      page = await openRetiredOccurrence(browser, { viewport });
+      const path = join(SHOTS, `occurrence-retirement-${RENDER_PHASE}-${label}.png`);
+      await page.screenshot({ path });
+      assert.ok((await readFile(path)).length > 0,
+        `${label} writes a populated ${RENDER_PHASE} retirement capture`);
+    } finally { if (page) await page.close(); }
   }
 });
 

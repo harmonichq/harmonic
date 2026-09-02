@@ -2048,12 +2048,13 @@ class CachePreWarmTest(unittest.TestCase):
             with TestClient(self.app) as client:
                 direct = client.get("/api/analyze", params={"window": 30, "pool": True})
                 self.assertEqual(direct.status_code, 200)
-                # The fetch-shaped idempotent write advances the input revision without
-                # changing this synthetic analysis, so the worker must compute rather
-                # than reopen the first response's durable artifact.
+                # This value-identical write advances the input revision without changing
+                # the synthetic analysis, so the worker must compute rather than reopen
+                # the first response's durable artifact.
                 with Store.open(self.tmp.name) as store:
                     store.upsert_cgm([{"EventDateTime": "2026-06-01 00:00:00",
-                                       "Readings (CGM / BGM)": 110}])
+                                       "Readings (CGM / BGM)": 120,
+                                       "Description": "EGV"}])
                 self.app.state.signal_recompute()
                 self.assertTrue(completed.wait(3))
                 worker_warm = client.get("/api/analyze", params={"window": 30, "pool": True})

@@ -4,12 +4,12 @@
 
 The exact transported bytes are `mockups/diagnose-workstation.synthetic/payload.json`, `mockups/diagnose-event-comparison.synthetic/capture.json`, `mockups/explore-investigation.fixture.js`, `mockups/findings-projection.mirror.mjs`, and `frontend/__fixtures__/findings-projection.json` at the pinned base SHA. They are manufactured/synthetic inputs served by the app-only opener in `frontend/cockpit-shell.browser.test.mjs`; no live server, fetch, personal database, credential, or network response participates. Source inventory covered the shell markup and Vue handlers in `frontend/index.html`, the interaction selectors in `frontend/shell.css` and `frontend/theme.css`, the imported tab-routing helper, and the fixture projections imported by the opener.
 
-No QUESTION remains open. Every active story and permanent retirement below is exported, tagged, and registered in `COCKPIT_SHELL_STORIES`; the replay prints its nonzero applicable count and every retirement sanction, and the opener aborts unknown or missing requests.
+No QUESTION remains open. Every active story and permanent retirement below is exported, tagged, and registered in `COCKPIT_SHELL_STORIES`; the replay prints its nonzero applicable count and every retirement sanction, and the opener aborts unknown or missing requests. The two ADR 304 retirements, S3 and S10, are the sole exception: the Theme control they drove no longer exists, so they carry a sanction here and a `RETIRED:cockpit-shell:` tag in the suite instead of an executable absence check. An absence check needs a surface to be absent from, and the whole footer affordance went with Light.
 
 ## Stories
 
 S1 · The viewport stays fixed while each populated pane scrolls internally, and the advisory sentence remains whole.
-  handlers/invariants: tab content swaps; pane overflow; viewport and footer geometry across tabs, themes, and locked desktop sizes
+  handlers/invariants: tab content swaps; pane overflow; viewport and footer geometry across tabs and locked desktop sizes
   source: `frontend/index.html` shell stage/footer; `frontend/shell.css` frame and pane rules
   evidence: `STORY:cockpit-shell:S1` / exported `S1`; full matrix remains in the surrounding Cockpit browser gate
   status: replayed-pass on base
@@ -20,11 +20,11 @@ S2 · The numbered Diagnose → Plan → Verify workflow, Day link, utility dest
   evidence: `STORY:cockpit-shell:S2` / exported `S2`
   status: replayed-pass on base
 
-S3 · Theme opens a radio menu; choosing Dark updates the rendered theme, checked state, persisted choice, and closes the menu.
-  handlers/invariants: Theme `@click`; menu-row `@click="setDark(...)"`; `toggleDark` and `setDark`
-  source: `frontend/index.html`; `frontend/shell.css` menu states
-  evidence: `STORY:cockpit-shell:S3` / exported `S3`
-  status: replayed-pass on base
+S3 · RETIRED. Theme opened a radio menu; choosing Dark updated the rendered theme, checked state, persisted choice, and closed the menu.
+  sanction: Connor Griffin · 2026-09-01 · "light theme retired by operator decision" (ADR 304, issue #304)
+  why retired: the footer Theme control, the `theme` localStorage key and both handlers are gone, so every affordance this story drove is absent. A no-op Theme control is the papering-over the ticket forbids.
+  evidence: `RETIRED:cockpit-shell:S3` in `frontend/cockpit-shell.browser.test.mjs`; the export and its registration left in the same commit as this entry
+  status: retired 2026-09-01
 
 S4 · Log carbs opens the teleported quick-entry form and accepts a gram value without leaving the shell frame.
   handlers/invariants: Log carbs `@click="qlToggle()"`; quick-log form input/close handlers
@@ -38,8 +38,10 @@ S5 · Glossary and Carb questions remain reachable from the footer and open thei
   evidence: `STORY:cockpit-shell:S5` / exported `S5`
   status: replayed-pass on base
 
-S6 · Desktop chrome keeps reachable pointer targets, three type ranks, and exactly the desk/bar/control material vocabulary.
-  handlers/invariants: hover/focus target geometry; across-theme material and typography invariants
+S6 · Desktop chrome keeps reachable pointer targets, three type ranks, and exactly the desk/bar/control ground vocabulary — the shell and stage on one desk, the top bar and footer on one bar ground one step up from it, the scope chip and Log carbs on the control ground, and no hairline between chrome and chrome.
+  amendment: Connor Griffin · 2026-09-02 · "The slightly lighter one looks better I guess" (ADR 317, issue #317): the chrome bar moves one step up the ladder, from the desk `#0f0d0b` to the well `#14120f`, by re-declaring `--ck-ground` inside `frontend/theme.css`'s chrome-bar role block; the desk itself does not move. The vocabulary is three grounds again — desk, bar, control — and the gate pins the bar to the sanctioned literal, holds it off the desk, counts three, and keeps both hairline pins byte-for-byte; its "two grounds" mutation now puts the bar back on the desk, the state this ruling retired.
+  amendment: Connor Griffin · 2026-09-01 · "light theme retired by operator decision" (ADR 304, issue #304): the desk/bar/control count of three was a Light-only truth. On the shipped Dark surface the chrome bar's `--ck-ground` is the desk's own `--wk-canvas`, so the vocabulary is two grounds; the bar keeps its own token set on the shared ground rather than a ground of its own. The assertion had never run against Dark, because the opener defaulted to Light and every caller took the default. Re-based to the Dark relationship, not satisfied by moving a Dark value.
+  handlers/invariants: hover/focus target geometry; material and typography invariants
   source: `frontend/shell.css`; `frontend/theme.css`
   evidence: `STORY:cockpit-shell:S6` / exported `S6`; deliberate mutation block in the same gate
   status: replayed-pass on base
@@ -61,21 +63,20 @@ S9 · The current workflow step keeps its geometry, signal outline, bright label
   handlers/invariants: `[aria-current="step"]`; `:focus-visible`; route changes move current state without reflow
   source: `frontend/shell.css`; `frontend/theme.css`; `frontend/index.html`
   evidence: `STORY:cockpit-shell:S9` / exported `S9`; base renders under `openspec/changes/chrome-bar-surface-states/evidence/`
-  old-fail/new-pass: amended assertion failed on the base light fill `rgb(135, 73, 40)`; passed after the ADR 49 CSS revision; deliberate fill-restoration mutations fail in both themes
+  old-fail/new-pass: amended assertion failed on the base light fill `rgb(135, 73, 40)`; passed after the ADR 49 CSS revision; the deliberate fill-restoration mutation fails on the one shipped surface
   status: amended 2026-08-21 · replayed-pass on revision
 
-S10 · Opening Theme and hovering the unchecked row paints a neutral 95% panel / 5% meta lift while checked state remains orange and keyboard focus remains separate.
+S10 · RETIRED. Opening Theme and hovering the unchecked row painted a neutral 95% panel / 5% meta lift while checked state remained orange and keyboard focus remained separate.
   amendment: Connor · 2026-08-21 · ADR 49, approved work order: reserve orange for checked/persistent signal and make transient hover a neutral lift
-  handlers/invariants: `.cockpit-utility-menu button:hover`; `:focus-visible`; `[aria-checked="true"]`
-  source: `frontend/shell.css`; `frontend/index.html`
-  evidence: `STORY:cockpit-shell:S10` / exported `S10`; base renders under `openspec/changes/chrome-bar-surface-states/evidence/`
-  old-fail/new-pass: the amended hover relationship would fail on the base because hover equaled `--ck-accent-soft`; it passes after the ADR 49 CSS revision; deliberate signal-well-restoration mutations fail in both themes
-  status: amended 2026-08-21 · replayed-pass on revision
+  sanction: Connor Griffin · 2026-09-01 · "light theme retired by operator decision" (ADR 304, issue #304)
+  why retired: the Theme rows were the only `.cockpit-utility-menu` rows the shell rendered, so the ADR 49 hover, checked and focus recipe has no surviving surface to be measured on.
+  evidence: `RETIRED:cockpit-shell:S10` in `frontend/cockpit-shell.browser.test.mjs`; base renders under `openspec/changes/chrome-bar-surface-states/evidence/`; the export and its registration left in the same commit as this entry
+  status: amended 2026-08-21 · retired 2026-09-01
 
 S11 · When a rendered fixed Diagnose shape carries backend input-data age, the cockpit keeps the rendered result visible and shows `Showing results from data through <covers_to>.`; a fresh replacement clears that shape's age without clearing its rendered data.
   handlers/invariants: backend `input_data_age`; per-shape age record; oldest rendered stale horizon; persistent non-color-only status text
   source: `frontend/index.html`; `frontend/diagnose-data-age.js`; fixture-only API responses in `frontend/cockpit-shell.browser.test.mjs`
-  evidence: `STORY:cockpit-shell:S11` / exported `S11`; desktop light/dark screenshot hook when `COCKPIT_SHOTS` is set
+  evidence: `STORY:cockpit-shell:S11` / exported `S11`; desktop screenshot hook when `COCKPIT_SHOTS` is set
   status: replayed-pass on revision
 
 ## Retired behavior
@@ -89,4 +90,4 @@ R1 · The obsolete occurrence-list route stays retired while the Diagnose Inspec
 
 ## Inventory completeness
 
-All shell navigation, Theme, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, checked/current state, viewport, cross-tab, cross-theme, count, material, type-rank, responsive invariants, and stale fixed-result banner map to S1–S11. The retired occurrence-list route maps permanently to R1. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.
+All shell navigation, quick Carb log entry, Carb questions, Glossary, drawer, hover, focus, current state, viewport, cross-tab, count, material, type-rank, responsive invariants, and stale fixed-result banner map to S1, S2 and S4–S9 and S11. Theme mapped to S3 and S10, both retired under ADR 304 with the footer control they drove. The retired occurrence-list route maps permanently to R1. The browser gate's Diagnose/Verify seam and event-comparison assertions remain independent carried regressions; they do not register cockpit-shell handlers and are not relabeled as shell stories.

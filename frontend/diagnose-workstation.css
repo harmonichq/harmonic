@@ -64,33 +64,25 @@
 .dw, .dw * { box-sizing: border-box; }
 .dw button { font: inherit; }
 
-/* ---- tokens — VERBATIM from mock 258-298; the two selectors are rescoped
-       (`:root`->`.dw`, `html[data-theme=dark]`->`html.dark .dw`) because this
-       app themes with a `.dark` class and because shell.css already owns a
-       different `--ck-*` set globally — scoping keeps the two from colliding. */
+/* ---- tokens — VERBATIM from mock 258-298; rescoped from `:root` to `.dw`
+       because shell.css already owns a different `--ck-*` set globally —
+       scoping keeps the two from colliding. (The mock also carried a second,
+       `html[data-theme=dark]`-scoped block; the app's own dark tokens merged
+       into this one below, and #304 later retired the app's light theme
+       entirely, so there is only ever the one `.dw` block now.) */
 .dw {
   /* TWO SURFACES ONLY — ground and panel — both reused existing values.
      Chrome (top bar, instrument row, status) is ground; the two cards are
      panel. The old --ck-bar third value is gone: it now IS ground. */
-  --ck-rail: var(--mk-surface);
   --ck-hair: var(--mk-line);
   --ck-inset: color-mix(in srgb, var(--mk-bg) 82%, #000);
-  /* A WELL THAT CARRIES MARKS, not just colour. `--ck-inset` is right for the
-     things nothing sits on — the schedule lanes' track, the clock's empty
-     cells, the level meter — but in LIGHT it derives to near-black off
-     `--mk-bg`, which under Harmonic IS the dark desk. theme.css records that
-     trap for the wells that carry WORDS and steps them down into the sheet
-     instead; a well that carries GLYPHS needs the same step and did not get it.
-     Measured on the hovered evidence-tile rail: #3D5848 marks on #131D18 ground
-     at 2.16:1, under the 3:1 floor a graphical object needs. */
-  --ck-well: var(--ck-inset);
   --ck-accent: var(--mk-primary);
   --ck-meal: var(--mk-accent);
   --ck-sel: color-mix(in srgb, var(--mk-primary) 16%, transparent);
-  --ck-manual: #866619;          /* user-claim token, from frontend/index.html */
-  --ck-manual-soft: #F6EFDC;
+  --ck-manual: #D9B568;
+  --ck-manual-soft: #332C1B;
   --ck-up: var(--mk-ok);
-  --ck-hold: var(--mk-surface);
+  --ck-hold: var(--mk-muted);
   --ck-insuff: var(--mk-warn);
   --ck-pad: 12px;
   --ck-gap: 10px;
@@ -115,32 +107,18 @@
   --ck-grid-right: 52px;   /* must track GRID in diagnose-workstation-chart.js */
   --ck-canvas-gap: 8px;
   /* The explorer's well is a pane material, not the outer desk. `--bg` is the
-     dark shell canvas in both themes, so deriving from it gave light the dark
-     trench too. The locked theme already owns this inset pane ground. */
+     shell canvas, so deriving from it gave the trench too little step off the
+     desk. The locked theme already owns this inset pane ground. */
   --ck-trench: var(--wk-surface-sunken);
-  --ck-tile-edge: color-mix(in srgb, var(--mk-line) 72%, transparent);
-  /* A TOP-EDGE HIGHLIGHT IS LIGHT IN BOTH THEMES. Deriving it from the text ink
-     made it near-black on the bone panel — a shadow along the top edge, which
-     reads as the panel sinking rather than catching the light. */
-  --ck-tile-top: color-mix(in srgb, #fff 70%, transparent);
   --ck-tile-shadow: 0 7px 15px -11px rgba(0, 0, 0, .72);
+  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
   /* RANK, NOT HUE (#215). A role on this canvas owns a rung, not a colour: rank
      one is the tile the inspector is holding, rank two is a control the reader
-     is holding down. Which paint reaches a rung depends on the ground, so the
-     two themes agree about the ORDER and swap the pigment — over bone nothing
-     out-reaches the burnt orange that theme term 5 already reserves for
-     interaction, and over graphite nothing out-reaches bone-white. Neither
-     token states a colour; both point at ink the theme already settled. */
-  --ck-focus-mark: var(--ck-accent);
-  --ck-held-mark: var(--mk-text);
-}
-html.dark .dw { --ck-hold: var(--mk-muted); }
-html.dark .dw {
+     is holding down. Nothing on the graphite ground out-reaches bone-white;
+     neither token states a colour, both point at ink the theme already
+     settled. */
   --ck-focus-mark: var(--mk-text);
   --ck-held-mark: var(--ck-accent);
-  --ck-tile-top: color-mix(in srgb, var(--mk-text) 15%, transparent);
-  --ck-manual: #D9B568;
-  --ck-manual-soft: #332C1B;
 }
 
 /* ---- shipped workstation rules, with #135 canvas revisions ---- */
@@ -362,12 +340,6 @@ html.dark .dw {
   background-color: var(--ck-field);
   box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .35);
 }
-/* The Dark field is the named field role, one step above the shared chart well.
-   Keeping this scoped preserves Light's independently settled material roles. */
-/* `background-color`, not the shorthand: the docked field paints the channel's
-   ground as a background LAYER, and this rule outspecifies it — a shorthand
-   here resets that layer and the channel loses its floor in dark only. */
-html.dark .tile-field { background-color: var(--ck-field); }
 /* ONE GEOMETRY (ADR 215): the focal chart takes the field, and the mini row is
    a fixed 145px band under it. Nothing derives a grid from a pin count. */
 .tile-field { grid-template-rows: minmax(0, 1fr) 145px; }
@@ -449,7 +421,7 @@ html.dark .tile-field { background-color: var(--ck-field); }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
   border-radius: 0; box-shadow: none; background: var(--ck-rail);
 }
-html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+.tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
   background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
 }
 /* THE DRILL ACCENT IS OFF IN BOTH. It marks the chart the inspector is holding,
@@ -467,7 +439,6 @@ html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile
 .tile-field[data-explorer] > .tile-row {
   gap: var(--ck-canvas-gap); background: var(--ck-field); padding: var(--ck-canvas-gap);
 }
-html.dark .tile-field[data-explorer] > .tile-row { background: var(--ck-field); }
 
 /* ---- the dock's three states (ADR 215 amendment) ---------------------
    HIDDEN · BOTTOM-DOCKED · MOUNTED. Same tiles, same rails, same pins; only the
@@ -544,41 +515,27 @@ html.dark .tile-field[data-explorer] > .tile-row { background: var(--ck-field); 
    any of them moves; a second literal is how they came apart in the first
    place. */
 .dw {
-  --ck-dock-well: var(--ck-well); --ck-slot-rail: var(--wk-surface-sunken);
+  --ck-dock-well: var(--ck-well);
   --ck-rail-col: 24px; --ck-rail-inset: 1px;
-  /* ONE SHADOW PER RANK ("wall of flatness" round). The spotlight's is stated
-     at its own rule; every strip cell shares this quieter one, so the selected
-     mark and the tail divider can append to it without re-tuning it. */
-  --ck-cell-shadow:
-    0 1px 2px rgba(20, 26, 21, .05),
-    0 3px 8px -3px rgba(20, 26, 21, .12),
-    0 0 0 1px rgba(20, 26, 21, .13);
-  /* THE FIELD IS SLATE, NOT A THIRD BONE ("hierarchy through color" round).
-     Every ground on the canvas was one bone family telling rank by 4% value
-     steps; the workbench ground steps out of the family instead — a muted
-     slate green drawn from the chrome's hue, so the bone cards pop by HUE, and
-     rank stops leaning on near-identical values. No text sits on either. */
-  --ck-field: #6e7b71;
-  --ck-field-deep: #5e6b62;
 }
-html.dark .dw {
+.dw {
   --ck-rail: var(--wk-surface-sunken);
   --ck-well: var(--wk-surface-sunken);
   --ck-tile-edge: var(--wk-rule-strong);
   --ck-slot-rail: var(--wk-surface-rail);
   --ck-field: var(--wk-field);
   --ck-field-deep: var(--wk-canvas);
+  /* ONE SHADOW PER RANK ("wall of flatness" round). The spotlight's is stated
+     at its own rule; every strip cell shares this quieter one, so the selected
+     mark and the tail divider can append to it without re-tuning it. Dark is
+     throwing black onto ground that is already nearly black and needs more of
+     the same shadow to travel the same distance; every alpha below is a
+     fraction of it, so "quieter" is one edit and not a re-tune of seven
+     shadows. */
   --ck-cell-shadow:
     0 0 0 1px rgba(0, 0, 0, .5),
     0 4px 10px -4px rgba(0, 0, 0, .55);
 }
-html:not(.dark) .dw {
-  --ck-dock-well: color-mix(in srgb, var(--wk-surface-sunken) 92%, var(--mk-text));
-}
-/* HOW HARD THE WALLS THROW. One number per theme, because dark is throwing
-   black onto ground that is already nearly black and needs more of the same
-   shadow to travel the same distance. Every alpha below is a fraction of it, so
-   "quieter" is one edit and not a re-tune of seven shadows. */
 
 /* --- the enclosure. The spotlight runs to all three of the field's own walls;
    only the channel floor is padding, added BELOW the locked 145px band, so the
@@ -643,7 +600,7 @@ html:not(.dark) .dw {
 .tile-field > .tile-focal > .evidence-tile {
   background: var(--ck-rail); border-radius: 0; box-shadow: none;
 }
-html.dark .tile-field > .tile-focal > .evidence-tile {
+.tile-field > .tile-focal > .evidence-tile {
   background: color-mix(in srgb, var(--ck-rail) 90%, var(--mk-text));
 }
 /* THE SPOTLIGHT FLOATS ON THE TRAY IT ALWAYS HAD (2026-08-27, "wall of
@@ -666,20 +623,17 @@ html.dark .tile-field > .tile-focal > .evidence-tile {
     0 8px 20px -8px rgba(20, 26, 21, .18),
     0 0 0 1px rgba(20, 26, 21, .05);
 }
-html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, .5),
     0 10px 26px -10px rgba(0, 0, 0, .65);
 }
-/* --- 4 · the frames. Dark vessels retain the shared 1px edge and 4px radius.
-   Minis step back by omitting the spotlight elevation, not their boundary
-   against the field; Light keeps its fixed-point cascade below. */
+/* --- 4 · the frames. Vessels keep the shared 1px edge and 4px radius. Minis
+   step back by omitting the spotlight elevation, not their boundary against
+   the field. */
 .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   border-radius: 4px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
-  background: var(--ck-rail);
-}
-html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   background: var(--ck-rail);
 }
 .tile-field[data-raised] > .tile-row > .evidence-tile {
@@ -775,7 +729,7 @@ html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile {
   background: var(--wk-surface-rail);
   box-shadow: inset 0 1px 3px rgba(20, 26, 21, .1), 0 0 0 1px rgba(20, 26, 21, .14);
 }
-html.dark .tile-field[data-dock="docked"]::after {
+.tile-field[data-dock="docked"]::after {
   background: color-mix(in srgb, var(--wk-canvas) 88%, var(--mk-text));
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5);
 }
@@ -831,8 +785,8 @@ html.dark .tile-field[data-dock="docked"]::after {
 /* THE EXPLORER SPEAKS THE CANVAS'S CARD LANGUAGE ("wall of flatness" round,
    superseding the flat-cells-and-grout reading above). Every chart on the
    tray is a rounded card with the shared cell shadow; the explorer's cells
-   are the same objects at a readable size. Dark keeps the vessel edge and
-   radius; Light retains its fixed-point card cascade. */
+   are the same objects at a readable size, keeping the vessel edge and radius
+   from the flat-cells-and-grout rule above. */
 .tile-field[data-explorer] .evidence-tile {
   border-radius: 6px; overflow: hidden; box-shadow: var(--ck-cell-shadow);
 }
@@ -849,7 +803,7 @@ html.dark .tile-field[data-dock="docked"]::after {
   background: var(--wk-surface-sunken);
   box-shadow: 0 -10px 22px -12px rgba(0, 0, 0, .8), 0 0 0 1px var(--ck-tile-edge);
 }
-html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, var(--wk-canvas) 88%, var(--mk-text)); }
+.tile-field[data-raised] > .tile-row { background: color-mix(in srgb, var(--wk-canvas) 88%, var(--mk-text)); }
 
 /* THE DIVIDER before the dock's tail, drawn as a MARK on the first tail cell
    rather than as an element of its own. As a `<span>` child of the row it was
@@ -898,10 +852,9 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
   /* THE LIP IS THE MOST SEPARATE OF THE THREE RAILS, because it is the only one
      that is a control rather than a caption: the other two name the chart under
      them, and this one operates the strip under it. It takes the theme's sunken
-     role for that — which steps DOWN in light and UP in dark, since dark's
-     sunken token is deliberately the lighter one. Both directions read the same
-     way against their own neighbours, which is the point of asking for the role
-     rather than for a luminance.
+     role for that, which steps UP since dark's sunken token is deliberately the
+     lighter one. That reads correctly against its own neighbours, which is the
+     point of asking for the role rather than for a luminance.
 
      Its rules are the separation the retired channel used to shade in: one
      crisp line above and one below, and the strip sits flush against the lower
@@ -1053,48 +1006,40 @@ html.dark .tile-field[data-raised] > .tile-row { background: color-mix(in srgb, 
 .evidence-tile {
   display: grid; grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) 24px;
   min-width: 0; min-height: 0;
-  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 2px;
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge),
-    inset 0 1px 0 var(--ck-tile-top), var(--ck-tile-shadow);
-}
-
-/* #255 changes vessel grammar only in Dark. Light retains the fixed-point
-   material, radii, and shadow cascade above. */
-html.dark .evidence-tile {
-  border-radius: 4px;
+  margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-tile-shadow);
 }
-html.dark .tile-field > .tile-focal > .evidence-tile {
+.tile-field > .tile-focal > .evidence-tile {
   background: var(--ck-well); border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
 }
-html.dark .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile {
   border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
 }
-html.dark .tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
+.tile-field:is([data-fullscreen-tile], [data-explorer]) .evidence-tile {
   border-radius: 4px; box-shadow: inset 0 0 0 1px var(--ck-tile-edge);
   background: var(--ck-rail);
 }
-html.dark .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile {
+.tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile {
   background: var(--ck-well); border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--wk-elevation);
 }
-html.dark .tile-field[data-dock="docked"] > .tile-row > .evidence-tile,
-html.dark .tile-field[data-raised] > .tile-row > .evidence-tile,
-html.dark .tile-field[data-explorer] .evidence-tile {
+.tile-field[data-dock="docked"] > .tile-row > .evidence-tile,
+.tile-field[data-raised] > .tile-row > .evidence-tile,
+.tile-field[data-explorer] .evidence-tile {
   border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
-html.dark .tile-field:is([data-dock="docked"], [data-raised])
+.tile-field:is([data-dock="docked"], [data-raised])
   > .tile-row > .evidence-tile[data-selected],
-html.dark .tile-field:is([data-dock="docked"], [data-raised])
+.tile-field:is([data-dock="docked"], [data-raised])
   > .tile-row > .evidence-tile:hover:not([data-selected]) {
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
-html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head],
-html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head][data-selected] {
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head],
+.tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tail-head][data-selected] {
   box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
     inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
@@ -1120,9 +1065,8 @@ html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tai
   display: flex; align-items: baseline; flex: 1 1 auto; gap: 7px; min-width: 0;
 }
 /* ENGRAVED, NOT PRINTED: label ink with a light lower edge under it, catching
-   the same light the tile's own top highlight does. `--ck-tile-top` is derived
-   from white in both themes, so one token carves the label on bone and on
-   graphite alike. */
+   the same light the tile's own top highlight does. `--ck-tile-top` derives
+   from the ink itself, so one token carves the label and the highlight alike. */
 .tile-head h3 {
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   color: var(--mk-secondary); font-size: var(--ck-micro); font-weight: 700;
@@ -1164,12 +1108,10 @@ html.dark .tile-field:not([data-explorer]) > .tile-row > .evidence-tile[data-tai
 }
 /* The hover well plate is retired ("hover sits over top of it" round): the
    rail's glyphs surface on hover with no band painted over the plot. */
-/* LIGHT steps down into the sheet, the same material theme.css already sends
-   its word-carrying wells to. DARK is untouched: its `--ck-inset` is stated
-   outright at #191614 and measures fine, while dark's `--wk-surface-sunken` is
-   LIFTED for the value tag's plate, so borrowing it there would invert the
-   recess — the reason recorded at `--ck-trench` and again on `.tile-field`. */
-html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
+/* DARK's `--ck-inset` is stated outright at #191614 and measures fine, while
+   dark's `--wk-surface-sunken` is LIFTED for the value tag's plate, so
+   borrowing it here would invert the recess — the reason recorded at
+   `--ck-trench` and again on `.tile-field`. */
 /* 20px IN THE RAIL'S 23px INTERIOR, so a hover fill floats on rail ground with
    an equal margin on both sides and touches no line at all. */
 /* A BUTTON IN THIS RAIL IS ITS GLYPH; the label is for a screen reader and the
@@ -1376,11 +1318,9 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
    color-mix()ed with `transparent`, so what a cell actually reads as is the
    token composited over that track. The key row has no track, so a swatch
    composited over the panel ground instead and was a different colour from the
-   cell it names. Measured on rendered pixels: in light theme the raise swatch
-   read 104,146,125 against a real raise cell's 39,85,63 — a distance of 109,
-   with the reader asked to match them by eye. `hold` is the control that names
-   the cause: it mixes with an OPAQUE --mk-surface, so it is backing-independent
-   and matched exactly (distance 0) in both themes throughout. */
+   cell it names, with the reader asked to match them by eye. `hold` is the
+   control that names the cause: it mixes with an OPAQUE --mk-surface, so it is
+   backing-independent and matches exactly (distance 0). */
 .lane-key .lane-cell {
   width: 12px; height: 8px; display: inline-block;
   background-color: var(--ck-inset);
@@ -1773,17 +1713,17 @@ html:not(.dark) .dw { --ck-well: var(--wk-surface-sunken); }
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
    make a flavor read as a verdict. `--mk-accent` was tried for Habit and
-   REVERTED: it is the hue the chart spends on the Meal-boluses mark and it is
-   byte-identical to the clinical `--high` token in both themes, so the tag
-   collided with a data encoding and read as clinical state at once. The ◈ / ⚙
-   glyph carries the differentiation; the hue only has to stay out of the way. */
+   REVERTED: it is the hue the chart spends on the Meal-boluses mark and it
+   collided with the clinical `--high` token's data encoding, reading as
+   clinical state at once. The ◈ / ⚙ glyph carries the differentiation; the hue
+   only has to stay out of the way. */
 .dw .qrow .tag {
   grid-column: 3; grid-row: 1; justify-self: end; align-self: center;
   text-align: right; font-size: var(--ck-micro); font-weight: 650;
   letter-spacing: var(--ck-track); text-transform: uppercase; white-space: nowrap;
   /* slice 4 — the flavor is a CHIP: a quiet plate on the well ground
-     (`--ck-well`, never `--ck-inset` — the light-theme trap design.md
-     records), so SETTING/HABIT read as classification furniture rather than
+     (`--ck-well`, never `--ck-inset`, for the contrast a graphical object
+     needs), so SETTING/HABIT read as classification furniture rather than
      trailing words. Hue and glyph are unchanged. */
   padding: 1px 6px; border-radius: 4px;
   border: 1px solid var(--ck-hair); background: var(--ck-well);

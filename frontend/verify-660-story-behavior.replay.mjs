@@ -65,7 +65,7 @@ const settle = (page, ms) => page.waitForTimeout(ms);
 const scoped = (page, prefix) => (selector) => page.locator(prefix + selector);
 
 /** The BUILT workstation, its API answered from the same data. */
-export async function openApp(browser, { state = 'complete', theme = 'light' } = {}) {
+export async function openApp(browser, { state = 'complete' } = {}) {
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const apiPattern = (path) => new RegExp(`^/api${path}`);
@@ -96,10 +96,9 @@ export async function openApp(browser, { state = 'complete', theme = 'light' } =
   ];
   const page = await browser.newPage({ viewport: VIEWPORT });
   page.on('pageerror', (e) => problems.push(`pageerror(app ${state}): ${e}`));
-  await page.addInitScript(([t]) => {
+  await page.addInitScript(() => {
     localStorage.setItem('ciq_token', 'behaviour-replay');
-    localStorage.setItem('theme', t);
-  }, [theme]);
+  });
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;

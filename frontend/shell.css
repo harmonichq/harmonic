@@ -62,8 +62,8 @@ body { background: var(--ck-ground); }
 }
 /* The locked Harmonic mark (#736): a native Inter capital H in a burnt-orange
    rounded square. No wordmark asset exists — `Harmonic` beside it is simply set
-   in Inter. The square holds the same orange in both themes, so the mark reads
-   as one constant object rather than a themed one.
+   in Inter. The square holds its own orange rather than reading the chrome's
+   accent, so the mark reads as one constant object rather than a themed one.
    #b35b2e survives HERE and in the favicon only, and is no longer the chrome
    signal (ADR 47): the mark is identity, not interaction, and WCAG exempts a
    logotype from a contrast minimum. It is also the empty band in miniature —
@@ -304,35 +304,6 @@ body { background: var(--ck-ground); }
 }
 .cockpit-utilities > button:hover { color: var(--ck-text); text-decoration: underline; text-underline-offset: 2px; }
 .cockpit-count { font-family: var(--ck-mono); font-size: var(--ck-label); font-variant-numeric: tabular-nums; }
-
-.cockpit-utility-menu {
-  position: fixed;
-  z-index: 42;
-  right: 8px;
-  bottom: 30px;
-  width: 158px;
-  padding: 5px;
-  border: 1px solid var(--ck-rule);
-  border-radius: 7px;
-  background: var(--ck-panel);
-}
-.cockpit-utility-menu[hidden] { display: none; }
-.cockpit-utility-menu button {
-  display: block;
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--ck-body);
-  font-size: var(--ck-data);
-  text-align: left;
-}
-.cockpit-utility-menu button:hover {
-  background: color-mix(in srgb, var(--ck-panel) 95%, var(--ck-meta));
-}
-.cockpit-utility-menu button[aria-checked="true"] { color: var(--ck-accent); font-weight: 700; }
 
 .cockpit-menu-button,
 .cockpit-drawer,

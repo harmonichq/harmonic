@@ -463,7 +463,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         source = (Path(__file__).resolve().parents[1]
-                  / "mockups" / "revise-e2e.synthetic" / "harmonic.sqlite")
+                  / "mockups" / "qa-e2e.synthetic" / "harmonic.sqlite")
         handle, cls.path = tempfile.mkstemp(suffix=".sqlite")
         os.close(handle)
         shutil.copyfile(source, cls.path)
@@ -694,7 +694,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         case_url = (
             "/api/diagnose/finding-case-file"
             f"?projection_id={prepared['projection_id']}"
-            "&finding_id=finding:late_bolus&alignment=event"
+            "&finding_id=finding:over_treated_low&alignment=event"
         )
         case_response = self.client.get(case_url)
         self.assertEqual(case_response.status_code, 200)
@@ -702,10 +702,10 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assert_case_tree(case)
         self.assertEqual(case["schema"], "diagnose-finding-case-file-v1")
         self.assertEqual(case["summary"], {
-            "claimed": 2, "denominator": 180, "noun": "meals",
+            "claimed": 1, "denominator": 5, "noun": "lows",
         })
-        self.assertEqual(sum(case["verdict_counts"].values()), 180)
-        self.assertEqual(len(case["occurrences"]), 180)
+        self.assertEqual(sum(case["verdict_counts"].values()), 5)
+        self.assertEqual(len(case["occurrences"]), 5)
 
         occurrence_id = case["occurrences"][0]["id"]
         selected = self.client.get(f"{case_url}&occ={occurrence_id}")

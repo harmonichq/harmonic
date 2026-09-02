@@ -152,21 +152,6 @@ export function popInspector(stack, index, descriptors) {
   return { stack: next, drilledChartId: drilledChartIdForFrame(next.at(-1), descriptors) };
 }
 
-/* ONE ROOT, BECAUSE THERE IS ONE MODE (ADR 215). The inspector's root frame was
-   `factors` under advice and `explore` without it; Explore is retired, so the
-   root is `factors` and the normalization no longer takes a mode to branch on. */
-export function inspectorStack(stack, drilledChartId, descriptors) {
-  const root = { k: 'factors' };
-  const descriptor = descriptors.find(({ chartId }) => chartId === drilledChartId);
-  if (!descriptor) return [root];
-  if (descriptor.kind === 'event-comparison') {
-    const factor = stack.find((frame) => frame.k === 'factor'
-      && frame.rowId === drilledChartId);
-    return factor ? [root, factor] : [root];
-  }
-  return [root, { k: 'chart', chartId: drilledChartId, rowId: drilledChartId }];
-}
-
 export function enterFullscreen(layout, chartId) {
   return {
     chartId,

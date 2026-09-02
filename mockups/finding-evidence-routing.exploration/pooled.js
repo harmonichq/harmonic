@@ -12,9 +12,10 @@
  *       grids, the legend, the target band and its knock-out labels, the window
  *       markArea and its fitted rich-text label, both envelope band pairs, the
  *       hairline p25/p75 edges, the median and its axis-riding value tags, the
- *       occurrence scatter, the meal track, and the docked-readout wiring.
- *   frontend/diagnose-workstation-chart.js  windowStats, buildSlotLane
- *   frontend/diagnose-workstation-data.js   envelopeFromPooled, markersFromPooled
+ *       occurrence scatter, and the docked-readout wiring.
+ *   frontend/diagnose-workstation-chart.js  windowStats, buildSlotLane,
+ *       stripGlucoseRange
+ *   frontend/diagnose-workstation-data.js   envelopeFromPooled
  *   frontend/diagnose-workstation.js        resolveColors
  *
  * Every one of those is the module's own exported entry point, so the mock's
@@ -54,10 +55,10 @@
  *       a divergence from the shipped two-row stack and is reported as one.
  */
 import {
-  renderCanvas, windowStats, buildSlotLane,
+  renderCanvas, windowStats, buildSlotLane, stripGlucoseRange,
 } from '../../frontend/diagnose-workstation-chart.js';
 import {
-  envelopeFromPooled, markersFromPooled,
+  envelopeFromPooled,
 } from '../../frontend/diagnose-workstation-data.js';
 import { resolveColors } from '../../frontend/diagnose-workstation.js';
 import { Y_DOMAIN } from './chart.js';
@@ -231,7 +232,6 @@ export function paintPooled({
   dayLabel = null,
 }) {
   const envelope = envelopeFromPooled(payload.pooled);
-  const markers = markersFromPooled(payload.pooled);
   const lane = buildSlotLane(payload.basal);
   const drawn = win || payload.window;
   const stats = windowStats(envelope, drawn);
@@ -242,9 +242,9 @@ export function paintPooled({
 
   const chart = renderCanvas(chartHost, window.echarts, {
     envelope,
-    markers,
     colors,
     stats,
+    range: stripGlucoseRange(envelope),
     // Private fixture mirror of the API's served basal_support_floor.
     supportFloor: 8,
     /* No `target`: the shipped workstation passes none and lets `renderCanvas`
@@ -299,10 +299,10 @@ export function paintPooled({
    *       already reports, and unlabelled on a pooled envelope they read as a
    *       "last value" the chart does not have.
    *
-   *   (5) THE LEGEND LEAVES THE PLOT. ECharts' own legend floated over the plot
-   *       area; its keys are returned to the caller and drawn as chips in the
-   *       head rail beside the title. The chip list is the shipped legend's own
-   *       `data`, so nothing here decides what is on the chart.
+   *   (5) THE LEGEND IS GONE. ECharts' own legend used to float over the plot
+   *       area; 5bc3020f/d72f5775 (#204/#258) retired it from the shipped
+   *       `renderCanvas` entirely, so `live.legend` carries no series data any
+   *       more and there is nothing left here to read back or hand to a caller.
    *
    * FINDING 6 rides (5): the selected day's key is named with the occurrence's
    * date rather than the pronoun `That day`.
@@ -324,15 +324,26 @@ export function paintPooled({
     ?? context?.markPoint?.data?.[0]?.label?.formatter);
 
   if (context) {
+    /* `context.markArea` is guarded, not assumed: `renderCanvas` structures it
+       unconditionally in the option it SETS (diagnose-workstation-chart.js:817,
+       the target band alone is two `data` entries with no window present to
+       drop) — this reads what `chart.getOption()` reports back after the
+       browser's ECharts instance has been reused across several prior
+       `setOption(option, true)` calls, which is not always the same shape the
+       last call set. `windowArea` above already assumed as much (`context?.
+       markArea?.data?.find`); this call fell through that same gap without the
+       same safety. */
     set('__context', {
-      markArea: {
-        ...context.markArea,
-        data: context.markArea.data.map((entry) => (entry === windowArea
-          /* (2) the border off, the fill kept; (3) the caption off the plot. */
-          ? [{ ...entry[0], itemStyle: { ...entry[0].itemStyle, borderWidth: 0 },
-            label: { ...entry[0].label, show: false } }, entry[1]]
-          : entry)),
-      },
+      ...(context.markArea ? {
+        markArea: {
+          ...context.markArea,
+          data: context.markArea.data.map((entry) => (entry === windowArea
+            /* (2) the border off, the fill kept; (3) the caption off the plot. */
+            ? [{ ...entry[0], itemStyle: { ...entry[0].itemStyle, borderWidth: 0 },
+              label: { ...entry[0].label, show: false } }, entry[1]]
+            : entry)),
+        },
+      } : {}),
       /* (3) the parked copy of the same caption, for the viewports where the
          shipped renderer could not fit it inside. */
       markPoint: { data: [] },
@@ -362,13 +373,6 @@ export function paintPooled({
     series: patch,
   });
 
-  /* (5) + (3) — what the head rail has to print, handed back rather than
-     reached for: the caller owns the head. The keys are the shipped legend's
-     own `data` in the shipped order, with `That day` renamed. */
-  const keys = (live.legend?.[0]?.data || [])
-    .map((k) => (typeof k === 'string' ? { name: k } : k))
-    .map((k) => (k.name === 'That day' && dayLabel ? { ...k, name: dayLabel } : k));
-
   /* The two provenance readouts the shipped head carries — the window's own
      reading count against the capture's, and the pooling terms. Both are the
      shipped strings, built from the shipped `windowStats` / envelope fields. */
@@ -377,8 +381,9 @@ export function paintPooled({
   head.querySelector('#dw-pool').textContent =
     `pooled from ${envelope.days} captured CGM days · ±${envelope.pool} min`;
 
-  /* ROUND 9, FINDING 5 — the instance, plus the two things the head now owns.
-     Round 8 returned the instance alone because the plot carried its own legend
-     and its own caption. */
-  return { chart, keys, caption };
+  /* ROUND 9, FINDING 5 — the instance, plus the caption the head now owns.
+     Round 8 returned the instance alone because the plot carried its own
+     legend and its own caption; the legend chip list this once also returned
+     retired with the shipped legend itself (5bc3020f/d72f5775, #204/#258). */
+  return { chart, caption };
 }

@@ -37,8 +37,13 @@ def fixture() -> dict:
                               "delivery_type": "algorithmDelivery", "duration_mins": 1,
                               "basal_rate": 0.6 if day == 7 else 0.8,
                               "profile_basal_rate": 0.6})
+            for minute in range(-60, 31, 5):
+                if day == 7 and minute >= 0:
+                    continue
+                t = start + timedelta(minutes=minute)
                 cgm.append({"EventDateTime": t.isoformat(),
-                            "Readings (CGM / BGM)": 120, "Description": "EGV"})
+                            "Readings (CGM / BGM)": 110 + day,
+                            "Description": "EGV"})
             if day == 8:
                 bolus.append({"seq_num": 1000, "request_time": start.isoformat(" "),
                               "description": "Bolus", "insulin": 1.0})

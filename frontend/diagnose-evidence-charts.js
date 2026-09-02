@@ -30,7 +30,7 @@ const chartColors = () => {
   const colors = Object.fromEntries(Object.entries(COLOR_TOKENS).map(([name, token]) => [
     name, styles.getPropertyValue(token).trim() || FALLBACK_COLORS[name],
   ]));
-  return { ...colors, dark: document.documentElement.classList?.contains('dark') ?? false,
+  return { ...colors,
     target: `color-mix(in srgb, ${colors.signal} 8%, transparent)` };
 };
 /* Both grids open on the canvas-wide spine, so a tile's numbers and its title
@@ -317,10 +317,10 @@ function basalEditorialOption(data, mini, colors, surface) {
   const slotLabel = finite(data?.slot) ? hhmm(data.slot * 30) : null;
   const slotWindow = slotLabel ? `${slotLabel}–${hhmm(data.slot * 30 + 30)}` : null;
   const ink = (percent) => `color-mix(in srgb, ${colors.text} ${percent}%, transparent)`;
-  const rustFill = `color-mix(in srgb, ${colors.high} ${colors.dark ? 34 : 26}%, transparent)`;
-  const greyFill = `color-mix(in srgb, ${colors.basal} ${colors.dark ? 24 : 18}%, transparent)`;
-  const hair = ink(colors.dark ? 18 : 12);
-  const shadow = ink(colors.dark ? 26 : 22);
+  const rustFill = `color-mix(in srgb, ${colors.high} 34%, transparent)`;
+  const greyFill = `color-mix(in srgb, ${colors.basal} 24%, transparent)`;
+  const hair = ink(18);
+  const shadow = ink(26);
   /* ONE NIGHT, ONE CELL, ANCHORED ON THE RULE. A night is the row it occupies
      and the distance it ran from the rate the wearer set: rust to the right when
      it ran more, grey-green to the left when it ran less, and a short tick
@@ -627,7 +627,7 @@ function basalEditorialOption(data, mini, colors, surface) {
           if (midRank > 0 && midRank < total) {
             const y = api.coord([xMin, midRank])[1];
             children.push({ type: 'line', shape: { x1: cs.x, y1: y, x2: cs.x + cs.width, y2: y },
-              style: { stroke: ink(colors.dark ? 18 : 12), lineWidth: 1, lineDash: [1, 3] } });
+              style: { stroke: ink(18), lineWidth: 1, lineDash: [1, 3] } });
             children.push(text(String(midRank), cs.x - 6, y, `500 10px ${FONT}`, colors.muted,
               { align: 'right', verticalAlign: 'middle' }));
           }

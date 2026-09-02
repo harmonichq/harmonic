@@ -1158,8 +1158,8 @@ async function main() {
    * by no assertion. It stays `'dark'` because ten `r9-*-dark.png` captures are
    * committed under screenshots/ and every round note cites them by name;
    * dropping the suffix would orphan all ten and write ten new files in a
-   * directory this change does not regenerate. The `-light` captures beside
-   * them stop being rewritten and are left as the history they now are.
+   * directory this change does not regenerate. The `-light` captures that sat
+   * beside them were removed with the light theme (#313).
    *
    * Every frame is reached through the surface's own routing, as every other
    * capture here is. */

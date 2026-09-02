@@ -1,32 +1,88 @@
 """Public-interface coverage for the synthetic QA E2E case catalog."""
 
+import sqlite3
 import tempfile
 import unittest
-from datetime import date, timedelta
 from dataclasses import replace
+from datetime import date, datetime, timedelta
 
 from ciq_autotune.store import Store
 
-from scripts.qa_e2e_cases import QA_CASES, assert_expectation, execute_case, materialize_case
+from scripts.qa_e2e_cases import (
+    BASAL_SOURCE_SPAN_DAYS,
+    IC_SOURCE_SPAN_DAYS,
+    ISF_SOURCE_SPAN_DAYS,
+    QA_CASES,
+    ExpectedAnalyzerRow,
+    ExpectedAnalyzerRows,
+    ExpectedQueueRow,
+    ExpectedSupport,
+    assert_expectation,
+    execute_case,
+    materialize_case,
+)
 
 
-def _assert_case(case):
+EXPECTED_CASE_NAMES = (
+    "showcase", "setting-recommendation", "behavioral-precedence",
+    "basal-raise", "basal-lower", "basal-capped-raise",
+    "basal-capped-lower", "basal-insufficient-seven-night",
+    "basal-insufficient-unsupported-sign", "basal-blind",
+    "basal-no-baseline", "basal-no-change",
+    "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
+    "basal-recurring-low-gate",
+    "isf-strengthen", "isf-direction-only-weaken", "isf-held",
+    "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
+    "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
+    "ic-history-register",
+)
+
+
+def _execution_and_span(case):
     with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
         with Store.open(database.name) as store:
             materialize_case(store, case)
+        with sqlite3.connect(database.name) as conn:
+            earliest = conn.execute(
+                "SELECT MIN(t) FROM (SELECT t FROM basal_events UNION ALL "
+                "SELECT t FROM cgm_readings UNION ALL SELECT t FROM bolus_events)"
+            ).fetchone()[0]
+            latest = conn.execute(
+                "SELECT MAX(t) FROM (SELECT t FROM basal_events UNION ALL "
+                "SELECT t FROM cgm_readings)"
+            ).fetchone()[0]
+        span = (datetime.fromisoformat(latest).date()
+                - datetime.fromisoformat(earliest).date()).days + 1
         with Store.open_readonly(database.name) as store:
-            assert_expectation(case, execute_case(store))
+            return execute_case(store, case), span
+
+
+def _execution(case):
+    return _execution_and_span(case)[0]
 
 
 class QaE2ECasesTest(unittest.TestCase):
-    def test_catalog_names_the_showcase_and_two_isolated_coverage_cases(self):
-        self.assertEqual(tuple(case.name for case in QA_CASES), (
-            "showcase", "setting-recommendation", "behavioral-precedence",
-        ))
+    def test_catalog_names_every_declared_coverage_case(self):
+        self.assertEqual(tuple(case.name for case in QA_CASES), EXPECTED_CASE_NAMES)
 
-    def test_each_catalog_case_runs_the_real_producer_composition(self):
-        for case in QA_CASES:
-            _assert_case(case)
+    def test_representative_lever_cases_declare_their_family_spans(self):
+        expected = {
+            "isf-strengthen": ("isf", ISF_SOURCE_SPAN_DAYS),
+            "ic-raise": ("ic", IC_SOURCE_SPAN_DAYS),
+        }
+        observed = {
+            case.name: (case.target_family, case.source_span_days)
+            for case in QA_CASES if case.name in expected
+        }
+        self.assertEqual(observed, expected)
+
+    def test_generated_case_methods_decode_to_the_catalog(self):
+        decoded = {
+            method._qa_case_name
+            for name in dir(type(self)) if name.startswith("test_case_")
+            for method in (getattr(type(self), name),)
+        }
+        self.assertEqual(decoded, {case.name for case in QA_CASES})
 
     def test_showcase_materializes_a_dense_thirty_day_source_window(self):
         showcase = next(case for case in QA_CASES if case.name == "showcase")
@@ -43,50 +99,126 @@ class QaE2ECasesTest(unittest.TestCase):
                 bolus_times = [event.t for event in store.bolus_events()]
                 self.assertEqual(len(bolus_times), len(set(bolus_times)))
 
-    def test_setting_recommendation_case_runs_the_real_producer_composition(self):
-        _assert_case(next(case for case in QA_CASES if case.name == "setting-recommendation"))
-
-    def test_a_perturbed_expectation_fails_the_whole_set_check(self):
-        case = next(case for case in QA_CASES if case.name == "setting-recommendation")
+    def test_a_literal_default_row_is_load_bearing(self):
+        case = next(case for case in QA_CASES if case.name == "basal-raise")
+        rows = case.expectation.analyzer_rows
+        perturbed_rows = replace(
+            rows, default=replace(rows.default, safety_status="no change"),
+        )
         perturbed = replace(
-            case, expectation=replace(case.expectation, asserting_basal_slots=frozenset())
+            case, expectation=replace(case.expectation, analyzer_rows=perturbed_rows),
         )
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                materialize_case(store, case)
-            with Store.open_readonly(database.name) as store:
-                with self.assertRaises(AssertionError):
-                    assert_expectation(perturbed, execute_case(store))
+        with self.assertRaises(AssertionError):
+            assert_expectation(perturbed, _execution(case))
 
-        behavioral = next(case for case in QA_CASES if case.name == "behavioral-precedence")
-        perturbed_behavioral = replace(
-            behavioral,
-            expectation=replace(behavioral.expectation, behavioral_rows=frozenset()),
+    def test_exact_expectation_classes_reject_perturbations(self):
+        case = next(case for case in QA_CASES if case.name == "basal-raise")
+        execution = _execution(case)
+        row_key = ("basal", "03:00")
+        rows = case.expectation.analyzer_rows
+        perturbations = (
+            replace(case.expectation, analyzer_rows=replace(
+                rows,
+                overrides={**rows.overrides, row_key: replace(
+                    rows[row_key], asserts_move=False,
+                )},
+            )),
+            replace(case.expectation, support={
+                **case.expectation.support,
+                row_key: ExpectedSupport(directional_support_count=29),
+            }),
+            replace(case.expectation, queue_rows={
+                **case.expectation.queue_rows,
+                ("whole_day", row_key): ExpectedQueueRow("held", "raise", None),
+            }),
+            replace(
+                case.expectation,
+                queue_absences=(
+                    case.expectation.queue_absences | {("whole_day", row_key)}
+                ),
+            ),
         )
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                materialize_case(store, behavioral)
-            with Store.open_readonly(database.name) as store:
+        for expectation in perturbations:
+            with self.subTest(expectation=expectation):
                 with self.assertRaises(AssertionError):
-                    assert_expectation(perturbed_behavioral, execute_case(store))
+                    assert_expectation(replace(case, expectation=expectation), execution)
 
-    def test_showcase_rejects_each_perturbed_evidence_expectation(self):
-        showcase = next(case for case in QA_CASES if case.name == "showcase")
-        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
-            with Store.open(database.name) as store:
-                materialize_case(store, showcase)
-            with Store.open_readonly(database.name) as store:
-                execution = execute_case(store)
-                perturbations = (
-                    {"history_row_ids": frozenset()},
-                    {"isf_rest_window_count": 0},
-                    {"ic_history_series_count": 0},
-                )
-                for fields in perturbations:
-                    with self.subTest(fields=fields):
-                        perturbed = replace(
-                            showcase,
-                            expectation=replace(showcase.expectation, **fields),
-                        )
-                        with self.assertRaises(AssertionError):
-                            assert_expectation(perturbed, execution)
+    def test_showcase_exact_rest_windows_and_history_series_are_load_bearing(self):
+        case = next(case for case in QA_CASES if case.name == "showcase")
+        execution = _execution(case)
+        perturbations = (
+            replace(case.expectation, rest_windows=frozenset()),
+            replace(case.expectation, history_series={}),
+            replace(case.expectation, behavioral_rows=frozenset()),
+            replace(case.expectation, finding_titles=frozenset()),
+        )
+        for expectation in perturbations:
+            with self.subTest(expectation=expectation):
+                with self.assertRaises(AssertionError):
+                    assert_expectation(replace(case, expectation=expectation), execution)
+
+    def test_direction_only_isf_never_stages_or_ranks(self):
+        case = next(
+            case for case in QA_CASES
+            if case.name == "isf-direction-only-weaken"
+        )
+        execution = _execution(case)
+        analyzer_row = execution.analysis["isf"][0]
+        queue_row = next(
+            row for row in execution.findings["whole_day"]["rows"]
+            if row.get("parameter") == "isf"
+        )
+        self.assertEqual(analyzer_row["evidence"]["direction"], "weaken")
+        self.assertIsNone(analyzer_row["recommended"])
+        self.assertIs(analyzer_row["asserts_move"], False)
+        self.assertNotIn("rank", queue_row)
+
+    def test_capped_and_uncapped_ic_recommendations_are_distinct(self):
+        expected = {
+            "ic-raise": 11.0,
+            "ic-capped-raise": 12.0,
+            "ic-lower": 9.0,
+            "ic-capped-lower": 8.0,
+        }
+        for name, recommendation in expected.items():
+            with self.subTest(name=name):
+                case = next(case for case in QA_CASES if case.name == name)
+                row = _execution(case).analysis["ic_blocks"][0]
+                self.assertEqual(row["recommended"], recommendation)
+
+
+def _case_test(case):
+    def test(self):
+        if case.target_family == "basal":
+            rows = case.expectation.analyzer_rows
+            self.assertIsInstance(rows, ExpectedAnalyzerRows)
+            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
+            self.assertEqual(len(rows), 48)
+            self.assertTrue(rows.overrides)
+            self.assertEqual(case.source_span_days, BASAL_SOURCE_SPAN_DAYS)
+        elif case.target_family == "isf":
+            rows = case.expectation.analyzer_rows
+            self.assertIsInstance(rows, ExpectedAnalyzerRows)
+            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(case.source_span_days, ISF_SOURCE_SPAN_DAYS)
+        elif case.target_family == "ic":
+            rows = case.expectation.analyzer_rows
+            self.assertIsInstance(rows, ExpectedAnalyzerRows)
+            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
+            self.assertEqual(len(rows), 1)
+            if rows.default.state == "collecting":
+                self.assertEqual(case.source_span_days, 30)
+            else:
+                self.assertEqual(case.source_span_days, IC_SOURCE_SPAN_DAYS)
+        execution, source_span = _execution_and_span(case)
+        self.assertEqual(source_span, case.source_span_days)
+        assert_expectation(case, execution)
+
+    test.__name__ = f"test_case_{case.name.replace('-', '_')}"
+    test._qa_case_name = case.name
+    return test
+
+
+for _case in QA_CASES:
+    setattr(QaE2ECasesTest, f"test_case_{_case.name.replace('-', '_')}", _case_test(_case))

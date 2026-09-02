@@ -226,3 +226,44 @@ flat call on the same catalog/generator shape) agrees flat.
   re-pinned. Cap reached with blockers still arriving, every one derivable
   from the pinned source rather than an unsettled decision; posted on the
   operator's delegation with this disclosed.
+
+## #192 triage
+
+The original `qa-e2e-database` change was archived by PR #312, so #192 opens
+`openspec/changes/qa-e2e-coverage-eras/` as the active successor while citing
+archived ADR 190 and ADR 194 as standing authority. The operator's 2026-09-01
+rulings settle the remaining scope: this new change is the record home, and the
+last #194 cut is replaced by a follow-on ticket that owns the remaining migration,
+retirement, and agent-facing guidance. Round 4 reversed Q-B on analyzer evidence:
+#192 does not concatenate coverage eras; ADR 192 supersedes that clause of ADR 190,
+keeps the committed database showcase-only, and gives every coverage case its own
+family-depth store. No genuine uncertainty remains for a `/scope` interview.
+
+Chunked order. Trait fired: many analyzer-tuned artifacts in one fixture boundary;
+the roughly twenty eras exceed one implementation session even though they share
+one catalog and generator. A nearby reviewer-memory anchor agrees with the chunked
+call. Basal plus the shared expectation/generator contract lands first; ISF and I:C
+consume that contract serially because both chunks touch the catalog, generator,
+tests, and database. The coordinator alone ticks tasks and records each chunk's
+budget measurements after its verified merge.
+
+Review rounds on the #192 draft lock (the coordinator fills this table):
+
+| round | blockers | authoring | injected |
+| --- | ---: | ---: | ---: |
+| 1 | 7 | 7 | 0 |
+| 2 | 4 | 2 | 2 |
+| 3 | 5 | 1 | 4 |
+| 4 | 7 | 2 | 5 |
+| 5 | 5 | 1 | 4 |
+| 6 | 4 | 2 | 2 |
+| 7 | 4 | 1 | 3 |
+| 8 | 3 | 0 | 3 |
+| 9 | 3 | 1 | 2 |
+| 10 | 4 | 0 | 4 |
+| 11 | 4 | 0 | 4 |
+| 12 | 3 | 1 | 2 |
+| 13 | 5 | 2 | 3 |
+
+Rounds 5+ verify the clean rewrite.
+Round 5 regrounded the pivot premise cleanly.

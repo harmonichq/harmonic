@@ -98,10 +98,15 @@ gate re-base as the counts every leg must still report.
   (`assertChromeSurfaces` in `frontend/cockpit-shell.browser.test.mjs`)
   keeps `shell === desk`, `footer === bar` and `control !== desk` unchanged,
   replaces `bar === desk` with `bar` pinned to the sanctioned literal and
-  `bar !== desk`, and its deliberate "two grounds" mutation re-points to a
-  value that still drives that pair red. That is the one structural re-base
-  this change authorises; the S6 sentence "the shell, stage, top bar and
-  footer on one desk" amends in the same commit quoting the sanction.
+  `bar !== desk`, raises its distinct-grounds count from 2 to 3 naming them
+  (desk, bar, control), and re-points its deliberate "two grounds" mutation to
+  a value that still drives that pair red; its two hairline pins stay
+  byte-for-byte. That is the one structural re-base this change authorises,
+  and it is the whole of it. In the same commit, S6 amends both its opening
+  "exactly the desk/control ground vocabulary" phrase and its "the shell,
+  stage, top bar and footer on one desk" clause quoting the sanction, and the
+  gate's own rationale comment ("there are TWO grounds, not three") is swept
+  to describe the ruled state.
 - The Verify ribbon: 32%/18% and 20%/20% are rendered side by side on the
   same Trial and the operator picks; 32/18 is shown first as the documented
   intent. Neither committed synthetic database carries a Trial, so the render

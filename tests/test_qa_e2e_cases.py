@@ -10,6 +10,8 @@ from ciq_autotune.store import Store
 
 from scripts.qa_e2e_cases import (
     BASAL_SOURCE_SPAN_DAYS,
+    IC_SOURCE_SPAN_DAYS,
+    ISF_SOURCE_SPAN_DAYS,
     QA_CASES,
     ExpectedAnalyzerRow,
     ExpectedAnalyzerRows,
@@ -29,6 +31,10 @@ EXPECTED_CASE_NAMES = (
     "basal-no-baseline", "basal-no-change",
     "basal-recurring-low-lower", "basal-recurring-low-no-clean-median",
     "basal-recurring-low-gate",
+    "isf-strengthen", "isf-direction-only-weaken", "isf-held",
+    "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
+    "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
+    "ic-history-register",
 )
 
 
@@ -56,8 +62,19 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
-    def test_catalog_names_the_existing_and_twelve_basal_cases(self):
+    def test_catalog_names_every_declared_coverage_case(self):
         self.assertEqual(tuple(case.name for case in QA_CASES), EXPECTED_CASE_NAMES)
+
+    def test_representative_lever_cases_declare_their_family_spans(self):
+        expected = {
+            "isf-strengthen": ("isf", ISF_SOURCE_SPAN_DAYS),
+            "ic-raise": ("ic", IC_SOURCE_SPAN_DAYS),
+        }
+        observed = {
+            case.name: (case.target_family, case.source_span_days)
+            for case in QA_CASES if case.name in expected
+        }
+        self.assertEqual(observed, expected)
 
     def test_generated_case_methods_decode_to_the_catalog(self):
         decoded = {
@@ -140,6 +157,35 @@ class QaE2ECasesTest(unittest.TestCase):
                 with self.assertRaises(AssertionError):
                     assert_expectation(replace(case, expectation=expectation), execution)
 
+    def test_direction_only_isf_never_stages_or_ranks(self):
+        case = next(
+            case for case in QA_CASES
+            if case.name == "isf-direction-only-weaken"
+        )
+        execution = _execution(case)
+        analyzer_row = execution.analysis["isf"][0]
+        queue_row = next(
+            row for row in execution.findings["whole_day"]["rows"]
+            if row.get("parameter") == "isf"
+        )
+        self.assertEqual(analyzer_row["evidence"]["direction"], "weaken")
+        self.assertIsNone(analyzer_row["recommended"])
+        self.assertIs(analyzer_row["asserts_move"], False)
+        self.assertNotIn("rank", queue_row)
+
+    def test_capped_and_uncapped_ic_recommendations_are_distinct(self):
+        expected = {
+            "ic-raise": 11.0,
+            "ic-capped-raise": 12.0,
+            "ic-lower": 9.0,
+            "ic-capped-lower": 8.0,
+        }
+        for name, recommendation in expected.items():
+            with self.subTest(name=name):
+                case = next(case for case in QA_CASES if case.name == name)
+                row = _execution(case).analysis["ic_blocks"][0]
+                self.assertEqual(row["recommended"], recommendation)
+
 
 def _case_test(case):
     def test(self):
@@ -150,6 +196,21 @@ def _case_test(case):
             self.assertEqual(len(rows), 48)
             self.assertTrue(rows.overrides)
             self.assertEqual(case.source_span_days, BASAL_SOURCE_SPAN_DAYS)
+        elif case.target_family == "isf":
+            rows = case.expectation.analyzer_rows
+            self.assertIsInstance(rows, ExpectedAnalyzerRows)
+            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(case.source_span_days, ISF_SOURCE_SPAN_DAYS)
+        elif case.target_family == "ic":
+            rows = case.expectation.analyzer_rows
+            self.assertIsInstance(rows, ExpectedAnalyzerRows)
+            self.assertIsInstance(rows.default, ExpectedAnalyzerRow)
+            self.assertEqual(len(rows), 1)
+            if rows.default.state == "collecting":
+                self.assertEqual(case.source_span_days, 30)
+            else:
+                self.assertEqual(case.source_span_days, IC_SOURCE_SPAN_DAYS)
         execution, source_span = _execution_and_span(case)
         self.assertEqual(source_span, case.source_span_days)
         assert_expectation(case, execution)

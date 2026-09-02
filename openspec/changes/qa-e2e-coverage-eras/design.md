@@ -64,9 +64,9 @@ than repeating their values:
 
 | Family | Earliest event required | Inclusive declaration | Why |
 | --- | --- | --- | --- |
-| Basal | At least `window_days + _BOLUS_LEADIN` = 31 days back | At least 32 days | The 30-day segment lane reads the bolus-only IOB lead-in when coverage recipes place boluses (`analyze.py:395,405`). |
+| Basal | At least `window_days + _BOLUS_LEADIN` = 31 days back | At least 32 days | The 30-day segment lane reads basal rows from `window_start` and bolus-only IOB from `window_start - _BOLUS_LEADIN` when coverage recipes place boluses (`analyze.py:264-265,284`). |
 | ISF | At least `window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` = 38 days back | At least 39 days | The prior-decision replay reads from `prior_isf_start - _BOLUS_LEADIN` (`analyze.py:90,322,328-330`). |
-| I:C | At least `BLOCK_WINDOW_DAYS` = 90 days back | At least 91 days | Block maturity is `now - insulin_history_start >= BLOCK_WINDOW_DAYS`; the block lane starts at `ic_start = window_start` and does not read the segment lane's bolus lead-in (`analyze.py:250,438-441`). |
+| I:C | At least `BLOCK_WINDOW_DAYS` = 90 days back | At least 91 days | The block lane uses `block_start = now - BLOCK_WINDOW_DAYS` and all block inputs through `now` (`analyze.py:422,443-454`); maturity is `now - insulin_history_start >= BLOCK_WINDOW_DAYS` (`analyze.py:438-441`), with no segment-lane bolus lead-in. |
 
 Because `observed_days` floors elapsed seconds, each coverage recipe anchors its
 earliest event at or before `now`'s time of day. The exact I:C
@@ -152,10 +152,13 @@ materializer used by tests. The parser changes `--out` to `default=None`; withou
 `--case`, `None` resolves to `DEFAULT_OUTPUT`, preserving the documented bare
 generator and `--check`. With `--case`, an unsupplied `--out` is an argument
 error that writes nothing. `--case` and `--check` are mutually exclusive, and an
-unknown case fails while naming the available catalog.
+unknown case fails while naming the available catalog. Tests assert that every
+named-case invocation leaves `DEFAULT_OUTPUT` unwritten.
 The output is scratch data and is never committed. A one-line `AGENTS.md`
 amendment permits it through the existing mandatory copy-then-serve, `--no-fetch`
-workflow by substituting the emitted path for the committed path. The generator's
+workflow by substituting either a `$TMPDIR` scratch path or the already-pinned
+committed path, never a new repository path token: public-link exceptions are
+pinned per `(document, token)` (`check_public_links.py:125-145`). The generator's
 default mode and `--check` remain showcase-only. The follow-on task still owns
 the complete named-case and UI-decision guidance in `AGENTS.md` and `CONTEXT.md`.
 
@@ -184,10 +187,11 @@ assignment (`scan_public_tree.py:72`); such a series is never inline in
 prose containing dose or ratio units such as `U/h` and `g/U` is accepted only
 through the generated dose-ratio baseline. For Python files the scan reads only
 comment text (`scan_public_tree.py:540-561`), so its printed delta may be empty;
-an empty delta needs no re-record. The baseline is line-number keyed
-(`scan_public_tree.py:264,790-800`), so line churn can produce expected removals
-and additions without new prose. When the delta is non-empty, confirm every new
-manufactured value is not real-shaped, then re-record with
+an empty delta needs no re-record. The baseline is keyed on `(path, matched
+text)` (`scan_public_tree.py:755-766,788-800`); line numbers are retained only for
+audit output (`scan_public_tree.py:745-752`), so line churn alone produces no
+delta. Read every printed addition as new dose/ratio prose and confirm that its
+value is manufactured; confirm removals likewise. Only then re-record with
 `python3 scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`; never
 hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
 `tconnect-data/`, live fetch, or normal serve enters this work.
@@ -198,9 +202,12 @@ Each chunk records literal command output for all five measurements in
 `coverage-appendix.md`; the coordinator transcribes it from the chunk report.
 The budget record binds committed showcase size ≤25 MiB,
 showcase drift ≤30 s, focused QA suite ≤90 s, each isolated case ≤15 s, and whole
-pytest ≤2.5× that chunk's own pre-change local baseline, measured on its worker's
-machine at session start. The recorded 137.69 s local measurement and CI's 2 min
-57 s are references only. The committed showcase bytes are not replaced in either
+pytest in both chunks ≤2.5× chunk 1's pre-change local baseline, measured on its
+worker's machine at session start. Chunk 2 reuses that recorded figure without
+compounding it. The single-case measurement is the slowest `test_case_*` entry in
+the focused suite's `--durations=0` output, not the slowest entry overall; the
+showcase-materialization and perturbation tests remain. The recorded 137.69 s
+local measurement and CI's 2 min 57 s are references only. The committed showcase bytes are not replaced in either
 chunk. Task 1 raises the `pytest (backend)` job timeout from 10 to 15 minutes so
 the expanded suite retains CI headroom; that one line is the only permitted CI
 workflow edit.

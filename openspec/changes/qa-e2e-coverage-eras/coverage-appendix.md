@@ -4,8 +4,8 @@ Tasks 1 and 2 record literal command output for all five measurements before
 their coordinator ticks the task; the coordinator transcribes that output from
 each chunk report into this file. The committed-size and drift measurements apply
 only to the unchanged showcase store. Every baseline figure in the table is
-reference-only. Only the whole-pytest baseline measured in-session, before that
-chunk's edits, is load-bearing.
+reference-only. Only the whole-pytest baseline measured in-session before chunk
+1's edits is load-bearing; chunk 2 reuses that figure without compounding it.
 
 | Budget | Baseline measured | Limit |
 | --- | ---: | ---: |
@@ -13,7 +13,7 @@ chunk's edits, is load-bearing.
 | Showcase logical drift check | 0.13 s | 30 s |
 | Focused QA suite | 5.69 s | 90 s |
 | Single isolated case | 0.14 s | 15 s |
-| Whole pytest wall time, local | Each chunk's pre-change `real`; reference `real 137.69` s | 2.5× that chunk's in-session baseline |
+| Whole pytest wall time, local | Chunk 1's pre-change `real`; reference `real 137.69` s | 2.5× chunk 1's in-session baseline for both chunks |
 
 Commands:
 
@@ -27,10 +27,12 @@ uv run python -m pytest tests/test_qa_e2e_cases.py --durations=0 -p no:cacheprov
 
 `tests/test_qa_e2e_cases.py` generates one named test method per `QA_CASES` entry.
 Those methods replace both catalog execution loops; the tuple and decoded-name-set
-pins are execution-free. Therefore the slowest `--durations=0` call is the
-single-case measurement. At the start of each chunk session, before edits, its worker
-runs the whole-suite timing command on that machine, records the `real` line, and
-uses 2.5× that in-session value as the chunk's limit. The 2026-09-01 measurement
+pins are execution-free. The single-case measurement is the slowest
+`test_case_*` entry in `--durations=0`, not the slowest entry overall: the
+showcase-materialization and perturbation tests remain. At the start of chunk 1,
+before edits, its worker runs the whole-suite timing command on that machine and
+records the `real` line. Both chunks use 2.5× that value as their ceiling; chunk 2
+reuses it without compounding. The 2026-09-01 measurement
 on this machine—2120 passed, 1 skipped, 185 warnings; `real 137.69`—is a reference
 only. CI run 33562270356's `Run tests` duration of 2 min 57 s is also a reference.
 

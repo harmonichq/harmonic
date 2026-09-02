@@ -93,6 +93,8 @@ case fails closed. The generated methods SHALL replace
 `test_setting_recommendation_case_runs_the_real_producer_composition`; the exact
 catalog-tuple and decoded-name-set tests SHALL be the only retained
 execution-free catalog tests.
+Named-case tests SHALL assert that every `--case` invocation, including a valid
+scratch emission and every failure mode, leaves `DEFAULT_OUTPUT` unwritten.
 
 `gen_qa_e2e_db.py --check` SHALL report the showcase's logical contents current.
 `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to

@@ -66,6 +66,17 @@ differ between base and revision.
 
 - _none yet_ (each entry: `--token · before `#xxxxxx` · after `#yyyyyy` · ruling`)
 
+### Derived colour pairs
+
+Colours that are not a moved token's own computed value but follow from one
+(a `color-mix()` of `--high`, an alpha wash of it), listed as explicit
+before → after pairs with the rule that derives each. The palette-only diff
+admits a colour change only when its before → after pair is a moved token's
+own pair or a pair listed here; a colour pair that appears in neither is an
+unexplained difference and fails the run.
+
+- _none yet_ (each entry: `before rgb(…) → after rgb(…) · derived by … · ruling`)
+
 ## Base story counts
 
 Recorded by the executing session before the first value moves, read by the
@@ -83,7 +94,14 @@ gate re-base as the counts every leg must still report.
   it moves, cockpit S6 amends with the sanction in the same commit; if it does
   not, S6 and its gate stay byte-identical and the "three materials" term in
   `frontend/theme.css` is amended to say the step is carried by the
-  workstation.
+  workstation. If the bar moves, the cockpit gate's chrome-surface check
+  (`assertChromeSurfaces` in `frontend/cockpit-shell.browser.test.mjs`)
+  keeps `shell === desk`, `footer === bar` and `control !== desk` unchanged,
+  replaces `bar === desk` with `bar` pinned to the sanctioned literal and
+  `bar !== desk`, and its deliberate "two grounds" mutation re-points to a
+  value that still drives that pair red. That is the one structural re-base
+  this change authorises; the S6 sentence "the shell, stage, top bar and
+  footer on one desk" amends in the same commit quoting the sanction.
 - The Verify ribbon: 32%/18% and 20%/20% are rendered side by side on the
   same Trial and the operator picks; 32/18 is shown first as the documented
   intent. Neither committed synthetic database carries a Trial, so the render

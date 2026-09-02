@@ -52,7 +52,10 @@
       `frontend/diagnose-canvas-composition.browser.test.mjs`) to the
       sanctioned value; keep every other assertion byte-for-byte; where the
       bar moved, amend cockpit S6 in `mockups/cockpit-shell.behavior.md` with
-      the sanction quoted and re-base its gate in the same commit.
+      the sanction quoted and re-base its gate in the same commit, in exactly
+      the shape `design.md`'s bar ruling records (pinned literal plus
+      `bar !== desk`, mutation re-pointed); no other structural change to any
+      gate.
 - [ ] Re-run `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
       against the regenerated extract and commit its regenerated
       `contrast-report.json`; any pair that fails a floor returns to the
@@ -68,7 +71,8 @@
       its four `REMOVAL_RULES`, its `REFLOW_RULE`, its `theme` localStorage
       seeding and its Theme-control base check, and make
       `evidence/palette-rule.mjs`'s `admits` the only sanction rule, fed the
-      moved-token list from `design.md`. The base check becomes: every moved
+      moved-token list and the colour-pair table (each moved token's computed
+      before/after plus `design.md`'s derived pairs). The base check becomes: every moved
       token resolves on the base side to the before-value the list records,
       and on the revision side to the after-value; otherwise the run fails as
       "not the ticket base". Add `plan` (`/plan`, ready `.active-profile-ref`, which the
@@ -77,7 +81,11 @@
       removed, any refused difference, and any state comparing nothing fails
       the run. Serve base and revision from two worktrees on distinct ports
       with the same revise database and record the exact commands and complete
-      output under the evidence directory.
+      output under the evidence directory. Prove the run fails closed three
+      ways on the revision side, recording each command and output: one layout
+      property changed, one colour changed on a token outside the list, and
+      one hardcoded colour literal that no token owns changed (for instance
+      the dock-floor literal in `frontend/theme.css`).
 - [ ] Capture before/after renders of shell, Diagnose, Verify (through
       `evidence/verify-trial-opener.mjs`, both ribbon settings on the base and
       the sanctioned one on the revision), Day and Plan at 1440×900, 1280×800

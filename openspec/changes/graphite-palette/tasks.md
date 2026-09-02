@@ -76,7 +76,7 @@
 
 ## 3. Evidence of record
 
-- [ ] Copy `openspec/changes/archive/2026-09-01-dark-only-theme/evidence/identity-diff.mjs`
+- [x] Copy `openspec/changes/archive/2026-09-01-dark-only-theme/evidence/identity-diff.mjs`
       to `openspec/changes/graphite-palette/evidence/palette-diff.mjs`; delete
       its four `REMOVAL_RULES`, its `REFLOW_RULE`, its `theme` localStorage
       seeding and its Theme-control base check, and make
@@ -101,12 +101,12 @@
       property changed, one colour changed on a token outside the list, and
       one hardcoded colour literal that no token owns changed (for instance
       the dock-floor literal in `frontend/theme.css`).
-- [ ] Capture before/after renders of shell, Diagnose, Verify (through
+- [x] Capture before/after renders of shell, Diagnose, Verify (through
       `evidence/verify-trial-opener.mjs`, both ribbon settings on the base and
       the sanctioned one on the revision), Day and Plan at 1440×900, 1280×800
       and 390×844 from both worktrees into the evidence directory, and write the
       evidence README naming provenance and the moved-token list.
-- [ ] Update `mockups/INDEX.md` with the #317 revision, the rulings and the
+- [x] Update `mockups/INDEX.md` with the #317 revision, the rulings and the
       evidence path.
 
 ## 4. Close (coordinator)

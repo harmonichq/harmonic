@@ -47,6 +47,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openApp, openerProblems } from '../../frontend/diagnose-workstation-behavior.replay.mjs';
+import { openApp as openComparisonApp } from '../../frontend/diagnose-event-comparison-behavior.replay.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -279,9 +280,12 @@ const EXPECTED = {
     + 'dark), which is the same step the two in-body routes take, so every accent-inked string in this column '
     + 'reads at one value.',
   '.qrow .go|color': 'F7: ditto — the queue row\'s chevron is the same `--ck-accent` at the same 3.95:1.',
-  '.ev-row .arrow|color': 'F7: the production table\'s `→` is `--mk-muted` at 70%, which measures 3.21:1 light '
-    + 'and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It '
-    + 'takes this surface\'s one dim-meta ink instead.',
+  /* `.ev-row .arrow|color` RETIRED — the `→` it named went with the rest of
+     the dual-reading roster (be9a4093, #87; see DELIBERATELY_ABSENT_BOTH
+     below). Kept as history, unreachable: F7 measured the production table's
+     `→` at `--mk-muted` 70%, 3.21:1 light / 3.42:1 dark — failing in BOTH
+     themes, which is why it was not fixed by a light-only override, and took
+     this surface's one dim-meta ink instead. */
   '.crumb .trail .chev|color': 'F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the '
     + 'worst text pair on the surface and failing in both themes. Same dim-meta ink.',
   '.crumb .trail button|color': 'F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column\'s '
@@ -293,11 +297,13 @@ const EXPECTED = {
  *
  * `border-*-color` defaults to `currentColor`, so on an element that paints no
  * border at all the probe reads the element's TEXT ink back under a second name.
- * Five of the six inks F7 moves sit on such elements, which is why one ink
- * change surfaced as eleven rows: two per element, plus `.more`'s top edge —
- * `.more` paints a real bottom border with an explicit colour, and that one is
- * still compared, because a fix that stopped comparing it would be the
- * loosening this table exists to avoid.
+ * Four of the five inks F7 moves sit on such elements (a fifth, `.ev-row
+ * .arrow`, retired with the dual-reading roster — be9a4093, #87 — and came
+ * out of this loop with it), which is why one ink change surfaced as nine
+ * rows: two per element, plus `.more`'s top edge — `.more` paints a real
+ * bottom border with an explicit colour, and that one is still compared,
+ * because a fix that stopped comparing it would be the loosening this table
+ * exists to avoid.
  *
  * The harness already names this exact artifact once, on `.watch|border-top-color`
  * ("the app declares no top border at all, so its 'colour' is the inherited text
@@ -309,7 +315,6 @@ for (const [selector, edges] of [
   ['.crumb .trail .chev', ['border-top-color', 'border-bottom-color']],
   ['.qrow .go', ['border-top-color', 'border-bottom-color']],
   ['.linkbtn', ['border-top-color', 'border-bottom-color']],
-  ['.ev-row .arrow', ['border-top-color', 'border-bottom-color']],
   ['.more', ['border-top-color']],
 ]) {
   for (const edge of edges) {
@@ -487,12 +492,19 @@ const POOLED_READER = () => JSON.parse(JSON.stringify((() => {
 const WINDOW_READER = () => JSON.parse(JSON.stringify((() => {
   const o = window.__ferPooled.getOption();
   const context = o.series.find((s) => s.name === '__context');
-  const area = context.markArea.data.find((d) => d[0].xAxis !== undefined);
+  /* `context.markArea` is guarded, not assumed — the same shape pooled.js
+     guards its own `__context` patch against. `renderCanvas` structures it
+     unconditionally in the option it SETS (diagnose-workstation-chart.js:817);
+     this reads what `chart.getOption()` reports back after the browser's
+     ECharts instance has been reused across several prior
+     `setOption(option, true)` calls, which is not always the same shape the
+     last call set. */
+  const area = context.markArea?.data?.find((d) => d[0].xAxis !== undefined);
   const axis = o.xAxis[0].data;
   return {
-    windowFrom: area[0].xAxis,
-    windowTo: area[1].xAxis,
-    windowLabel: area[0].label?.formatter ?? null,
+    windowFrom: area?.[0]?.xAxis ?? null,
+    windowTo: area?.[1]?.xAxis ?? null,
+    windowLabel: area?.[0]?.label?.formatter ?? null,
     parkedLabel: context.markPoint?.data?.[0]?.label?.formatter ?? null,
     xExtent: [axis[0], axis[axis.length - 1]],
     xBins: axis.length,
@@ -607,12 +619,18 @@ async function probeApp(browser, findingsInputs) {
   }
   await ws.close();
 
-  const lensPage = await openApp(browser, { viewport: VIEWPORT });
-  await lensPage.evaluate(() => {
-    // #62 — the anchor-time block coordinate retired; the whole day is the
-    // absence of a clock window, so this probe carries no time coordinate.
-    history.pushState(null, '', '/?view=lows&factor=over_treated_low');
-    dispatchEvent(new PopStateEvent('popstate'));
+  /* #181/#135 retired the standalone lens route this used to reach by pushing
+     `/?view=lows&factor=…` — there is no global mode switch left to push a URL
+     at. A hand-rolled dock-mini click reached `#tile-focal` but never mounted
+     `#ec-chart`: the real drill also raises the dock, settles it back down
+     past `#tile-field[data-raised]`, and only THEN clicks
+     `#tile-focal .tile-fullscreen` to mount the chart — steps a single click
+     skips. frontend/diagnose-event-comparison-behavior.replay.mjs's `openApp`
+     is that exact drill (its own suite reaches `#tile-focal #ec-chart` green
+     against this same server), so this mirrors it by calling it rather than
+     re-deriving the sequence. */
+  const lensPage = await openComparisonApp(browser, {
+    viewport: VIEWPORT, finding: 'finding:over_treated_low',
   });
   await lensPage.waitForSelector('.ec-chart-key .ec-key-item');
   await lensPage.waitForTimeout(700);
@@ -724,6 +742,43 @@ const laidOut = (entry) => entry && (entry.rect.w !== 0 || entry.rect.h !== 0);
    permitted when a future deliberate removal records its reason here; otherwise
    the harness fails instead of certifying an empty assertion. */
 const DELIBERATELY_ABSENT_BOTH = {
+  /* 9553bbcc "Render case-file event comparisons" replaced the standalone
+     lens's own `.ec-title-context` factor label with `.canvas-head .persist`
+     (already its own entry above) when the header became case-file-shaped;
+     neither the app nor the mock has emitted `.ec-title-context` since. */
+  '.ec-title-context': 'retired for .canvas-head .persist (9553bbcc)',
+  /* 1d065305 (#41), re-asserted at #181, retired the inspector's own
+     `.ec-boundary-note` hedge line entirely — the app's own S5 replay story
+     asserts its count is 0 in every state. The mock retired it the same
+     round (build.mjs, ROUND 5 BLOCK 6): the hedge now hangs off the canvas
+     legend's Near-rule key as a sub-line instead. Not state-scoped — neither
+     side has anywhere left that emits it. */
+  '.ec-boundary-note': 'retired; the hedge moved onto the Near-rule legend key (1d065305, #41/#181)',
+  /* be9a4093 (#87) collapsed the dual-reading roster (entry → worst · Δ) to
+     the single-value `.only` + `.tier` cells the current roster still uses —
+     the same retirement the contrast-audit.mjs pairs for these four columns
+     already name. All four columns went together, in the one commit. */
+  '.ev-row .entry': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .arrow': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .worst': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .delta': 'retired with the dual-reading roster (be9a4093, #87)',
+  /* 087cbf17 "refine evidence row drill affordance" dropped the row's own
+     `<span class="chev">›</span>` — the row selects, it does not route, and
+     no glyph promising a destination replaced it. */
+  '.ev-row .chev': 'retired; the row selects rather than routes (087cbf17)',
+  /* NOT a retirement — app-only-by-design, unlike the five above. `.slotlink`
+     still renders in `renderCaseHead` (frontend/diagnose-workstation.js) for
+     any CLOCK-aligned finding case file (finding-case-files.json carries
+     several, e.g. finding:carb_undercount's `clock` entry) — the mock never
+     builds it on purpose (ROUND 6, SEND-BACK 6: the coincidence routes take
+     block 6's own right-aligned action form instead). It lands here only
+     because no state this harness currently opens drills a clock-aligned
+     finding on the APP side either — `ws`'s own basal-slot drill
+     (`slotProbe`) goes through the settings drill panel, not
+     `renderCaseHead`, so it never reaches it. The honest fix is a state the
+     harness should open, not a permanent exemption; flagged rather than
+     silently folded into the four true retirements above. */
+  '.slotlink': 'unreached by any currently-probed state; the app still builds it for a clock-aligned finding',
   '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
     'the queue flavor tag prints its word without the retired decorative glyph',
   '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',
@@ -1051,8 +1106,12 @@ async function main() {
     segments: [...document.querySelectorAll('.fer-band .seg')].map((n) => n.dataset.verdict),
     pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
     rosterRows: document.querySelectorAll('.ev-row').length,
+    /* No series named 'Occurrences' has existed since 16cfbda7 (#229) dropped
+       the whole occurrence scatter from `renderCanvas` along with the meal
+       markers — `markCanvas` (surface.js) already no-ops on the same absence.
+       null, not 0: there is nothing left to count, not a count of zero. */
     dotsDrawn: window.__ferPooled.getOption().series
-      .find((x) => x.name === 'Occurrences').data.length,
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
   }));
   await page.evaluate(() => window.__ferVerdict('near_rule'));
   await page.mouse.move(0, 0);
@@ -1063,8 +1122,9 @@ async function main() {
   results.verdictBandDrilled = await page.evaluate(() => ({
     pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
     rosterRows: document.querySelectorAll('.ev-row').length,
+    /* Same absence as results.verdictBand above. */
     dotsDrawn: window.__ferPooled.getOption().series
-      .find((x) => x.name === 'Occurrences').data.length,
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
   }));
   await page.evaluate(() => window.__ferVerdict('fired'));
   await page.waitForTimeout(300);
@@ -1098,8 +1158,8 @@ async function main() {
    * by no assertion. It stays `'dark'` because ten `r9-*-dark.png` captures are
    * committed under screenshots/ and every round note cites them by name;
    * dropping the suffix would orphan all ten and write ten new files in a
-   * directory this change does not regenerate. The `-light` captures beside
-   * them stop being rewritten and are left as the history they now are.
+   * directory this change does not regenerate. The `-light` captures that sat
+   * beside them were removed with the light theme (#313).
    *
    * Every frame is reached through the surface's own routing, as every other
    * capture here is. */

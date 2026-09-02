@@ -178,28 +178,21 @@ const pooledHosts = {
   keyHost: el('lane-key'),
   payload: data.queue.canvas,
 };
-/* ROUND 9, FINDING 5 — `paintPooled` returns the instance PLUS the two things
-   the chart used to draw over its own plot and the head now owns: the legend's
-   keys and the window's caption. `paintHeadKeys` prints them. */
-const pooledChart = paintHeadKeys(paintPooled(pooledHosts));
+/* ROUND 9, FINDING 5 — `paintPooled` returns the instance PLUS the window
+   caption the head now owns. `paintWindowCaption` prints it.
+   RETIRED HALF: this used to also print the shipped legend's chip list in the
+   head rail; 5bc3020f/d72f5775 (#204/#258) retired the legend itself from the
+   shipped `renderCanvas`, so `paintPooled` no longer returns keys to print —
+   see pooled.js. */
+const pooledChart = paintWindowCaption(paintPooled(pooledHosts));
 new ResizeObserver(() => pooledChart.resize()).observe(el('chart'));
 
-/* ROUND 9, FINDING 5 — THE CHART HEADER RAIL'S TWO NEW TENANTS.
+/* ROUND 9, FINDING 5 — THE CHART HEADER RAIL'S CAPTION TENANT.
  *
- * The keys are the shipped chart's own legend `data`, in the shipped order, read
- * back off its option by pooled.js — so the rail can only ever name series the
- * chart actually drew, and a series the shipped renderer drops (the day trace
- * with nothing selected, the occurrence scatter at the queue root) drops out of
- * the rail with it. The caption is the window markArea's own label, unwrapped
- * from its rich-text tags, prefixed onto the window meta that was already there.
- *
- * The mark is a CSS square keyed on the series name, which is what the shipped
- * ECharts legend was drawing too; nothing here invents a swatch for a series it
- * cannot see. Returns the instance so the call sites read as one expression. */
-function paintHeadKeys({ chart, keys, caption }) {
-  el('dw-key').innerHTML = keys
-    .map((k) => `<span class="k" data-series="${k.name}"><i aria-hidden="true"></i>${k.name}</span>`)
-    .join('');
+ * The caption is the window markArea's own label, unwrapped from its
+ * rich-text tags, prefixed onto the window meta that was already there.
+ * Returns the instance so the call sites read as one expression. */
+function paintWindowCaption({ chart, caption }) {
   /* The caption joins the window meta rather than taking a line of its own: they
      are two readings of the same window, and `paintPooled` has just written the
      second one, so this prefixes rather than replaces. */
@@ -295,7 +288,7 @@ function paintPooledCanvas() {
   const active = frame();
   const dots = active?.clock?.occurrences || [];
   const drill = highlighted ? data.clockDrills[highlighted] : null;
-  paintHeadKeys(paintPooled({
+  paintWindowCaption(paintPooled({
     ...pooledHosts,
     occurrences: dots,
     trace: drill ? data.dayTraces[drill.day] : null,
@@ -342,7 +335,15 @@ function selectedKey() {
  * Skipped entirely at the queue root, where nothing is selected — an appended
  * series there would show up as drift against the app's own pooled chart.
  * `renderCanvas` sets its option with `notMerge`, so every repaint clears this
- * layer and it is re-appended from the current state, or not at all. */
+ * layer and it is re-appended from the current state, or not at all.
+ *
+ * RETIRED, NOT RENAMED — read as history, not as a live mechanism. 16cfbda7
+ * (#229) dropped the whole `Occurrences` scatter out of `renderCanvas` in the
+ * same pass that dropped the meal markers pooled.js used to read
+ * (`markersFromPooled`); no successor series carries occurrence dots in the
+ * shipped option any more. `index` below is permanently -1, so every call is
+ * the early return — this function has drawn nothing since #229, and there is
+ * no shipped scatter left underneath it to overlay a countable dot onto. */
 function markCanvas(dots) {
   if (!scene()) return;
   const option = pooledChart.getOption();

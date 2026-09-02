@@ -23,8 +23,10 @@ analyzer family plus its emitted parameter key: basal clock-slot label, ISF
 segment, or I:C block. `ExpectedAnalyzerRow` records the exact `safety_status`,
 direction when applicable, `asserts_move`, and
 `omitted: frozenset[str]`: the serialized field names expected absent or `None`,
-compared exactly. For example, basal no-baseline uses `omitted={"current"}` and
-ISF direction-only uses `omitted={"recommended"}`. `QaExpectation` gains
+compared exactly. I:C rows also record exact `days_observed`, so block maturity is
+asserted rather than inferred from fixture depth. For example, basal no-baseline
+uses `omitted={"current"}` and ISF direction-only uses
+`omitted={"recommended"}`. `QaExpectation` gains
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
 `absent_analyzer_rows`. Every case runs full `analyze`
 (`scripts/qa_e2e_cases.py:162-168`). The family under test pins its full emitted
@@ -52,17 +54,24 @@ register, queue row, priority, or rank.
 ## Coverage-case isolated-store spans
 
 Span is the inclusive calendar-day write depth from the earliest basal, CGM, or
-bolus event row through the case's `now`; settings snapshots are excluded. New
-coverage cases declare a span and `materialize_case` writes exactly that depth.
+bolus event row through the case's `now`; settings snapshots are excluded. The
+analyzer rules below are stated as days back from `now`. For an end-of-day `now`,
+the catalog's inclusive declaration is days back plus one. New coverage cases
+declare a span and `materialize_case` writes exactly that depth.
 For each of the three existing cases, a test asserts the declaration against the
 recipe's actual earliest event and `now`. The catalog imports the constants rather
 than repeating their values:
 
-| Family | Declared source span | Why |
-| --- | --- | --- |
-| Basal | `window_days`, plus `_BOLUS_LEADIN` when the recipe places boluses | The 30-day production request needs the bolus-only IOB lead-in only when bolus rows exist. |
-| ISF | `window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` | The prior-decision replay reads seven days before the current request (`analyze.py:90,317-330`). |
-| I:C | `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN` | Block observation age and meal-run evidence read the fixed I:C history span (`analyze.py:438-457`). |
+| Family | Earliest event required | Inclusive declaration | Why |
+| --- | --- | --- | --- |
+| Basal | At least `window_days + _BOLUS_LEADIN` = 31 days back | At least 32 days | The 30-day segment lane reads the bolus-only IOB lead-in when coverage recipes place boluses (`analyze.py:395,405`). |
+| ISF | At least `window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` = 38 days back | At least 39 days | The prior-decision replay reads from `prior_isf_start - _BOLUS_LEADIN` (`analyze.py:90,322,328-330`). |
+| I:C | At least `BLOCK_WINDOW_DAYS` = 90 days back | At least 91 days | Block maturity is `now - insulin_history_start >= BLOCK_WINDOW_DAYS`; the block lane starts at `ic_start = window_start` and does not read the segment lane's bolus lead-in (`analyze.py:250,438-441`). |
+
+Because `observed_days` floors elapsed seconds, each coverage recipe anchors its
+earliest event at or before `now`'s time of day. The exact I:C
+`ExpectedAnalyzerRow.days_observed` comparison fails loudly if that boundary is
+short.
 
 The three existing cases receive literal declarations matching their current
 recipe extents rather than family-derived policy: `showcase` declares span 30 at
@@ -97,8 +106,8 @@ condition; it never permits writing the condition into a fixture.
 | ISF strengthen | Fully observed rescue history is silent, no correction harm exists, the band and vote support strengthen, and the signal held at the prior decision point (`analyzers/isf.py:509-525,611-622`). | Exact ranked `assert` with recommendation and `asserts_move=true`. |
 | ISF weaken / direction-only | Correction-caused lows or attributed rescues clear recurrence; the analyzer emits weaken without a recommendation (`analyzers/isf.py:528-591,818-827`). | Exact visible direction with `omitted={"recommended"}`, no queue rank, `asserts_move=false`. |
 | ISF held | An estimate is visible but no direction is owned because harm gates, observation is incomplete, evidence is wide, current is confirmed, or persistence is absent (`analyzers/isf.py:593-628`). | Exact `held` row and analyzer-owned reason. |
-| I:C collecting | A 30-day store leaves `observed_days < BLOCK_WINDOW_DAYS`, which forces every block to `collecting` (`analyze.py:438-457`; `analyzers/ic.py:2429-2430`). | Exact collecting analyzer row and absence from `QaCase.scoped_windows`/global queues. |
-| I:C raise / lower | `observed_days` reaches `BLOCK_WINDOW_DAYS`; at least eight effective closed meal runs produce a non-wide, band-excluding, regime-supported recommendation different from current (`analyzers/ic.py:120-163,1449-1472,2429-2438,2503-2523`). | Exact `assert`, direction, support count, and `asserts_move=true`. |
+| I:C collecting | A 30-day store leaves `days_observed < BLOCK_WINDOW_DAYS`, which forces every block to `collecting` (`analyze.py:438-441`; `analyzers/ic.py:2429-2430`). | Exact collecting analyzer row including `days_observed`, and absence from `QaCase.scoped_windows`/global queues. |
+| I:C raise / lower | `days_observed` reaches `BLOCK_WINDOW_DAYS`; at least eight effective closed meal runs produce a non-wide, band-excluding, regime-supported recommendation different from current (`analyzers/ic.py:120-163,1449-1472,2429-2438,2503-2523`). | Exact `assert`, direction, support count, `days_observed`, and `asserts_move=true`. |
 | I:C capped raise / lower | The same mature-span conditions hold and the half-gap exceeds the ±20% bound (`analyzers/ic.py:1449-1464`). | Exact `assert` and bounded recommendation. |
 | I:C held | The mature block names a move but the regime bracket straddles programmed or meal/pre-empted harm gates tightening (`analyzers/ic.py:2448-2501,2524-2526,2633-2643`). | Exact `held`, no global assert, `asserts_move=false`. |
 | I:C quiet | The mature block is below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise owns neither move nor held reason (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run case separately from collecting. | Exact analyzer block and explicit `QaCase.scoped_windows`/global absence. |
@@ -128,8 +137,9 @@ observed value changing. The committed database membership is exactly one case:
 
 The executed span probe and complete output in `generated-facts.md` demonstrate
 the boundary with existing recipes: the 30-day showcase is collecting at 29
-observed days, while the imported-constant long store reaches 90 observed days
-and a numeric I:C state. The same 30-day store still emits one ISF row, but the
+observed days, while its 91-inclusive-calendar-day long store places its earliest
+event at least 90 days back, reaches 90 observed days, and produces a numeric I:C
+state. The same 30-day store still emits one ISF row, but the
 family span is required for prior-decision outcomes. This probe is frozen evidence
 of the pre-change tree at `origin/main` `6defd69`; it is not re-run after chunk 1,
 and no chunk repairs it.
@@ -138,9 +148,11 @@ and no chunk repairs it.
 
 `scripts/gen_qa_e2e_db.py --case <name> --out <path>` materializes exactly one
 catalog case into a provenance-stamped SQLite store through the same public
-materializer used by tests. `--out` is mandatory whenever `--case` is present;
-`--case` and `--check` are mutually exclusive. A missing output fails without
-writing anything, and an unknown case fails while naming the available catalog.
+materializer used by tests. The parser changes `--out` to `default=None`; without
+`--case`, `None` resolves to `DEFAULT_OUTPUT`, preserving the documented bare
+generator and `--check`. With `--case`, an unsupplied `--out` is an argument
+error that writes nothing. `--case` and `--check` are mutually exclusive, and an
+unknown case fails while naming the available catalog.
 The output is scratch data and is never committed. A one-line `AGENTS.md`
 amendment permits it through the existing mandatory copy-then-serve, `--no-fetch`
 workflow by substituting the emitted path for the committed path. The generator's
@@ -163,15 +175,19 @@ queue, each explicit absence, support values, and staging values. Tests perturb
 one expected value in each class and require failure. No subset assertion
 satisfies the contract.
 
-Every committed artifact is generator-built and provenance-stamped. Each era's
-literal 48-slot half-hour basal series (`findings_projection.py:75`) is hoisted to
-its own module-level constant directly below a
-`# SYNTHETIC-FIXTURE: <reason>` marker, never inline in `QA_CASES`. Exact analyzer
+Every committed artifact is generator-built and provenance-stamped. Every literal
+series of 20 or more ascending clock-time values paired with numbers is hoisted
+to its own module-level constant directly below a
+`# SYNTHETIC-FIXTURE: <reason>` marker, which exempts that one top-level
+assignment (`scan_public_tree.py:72`); such a series is never inline in
+`QA_CASES`. Exact analyzer
 prose containing dose or ratio units such as `U/h` and `g/U` is accepted only
 through the generated dose-ratio baseline. For Python files the scan reads only
 comment text (`scan_public_tree.py:540-561`), so its printed delta may be empty;
-an empty delta needs no re-record. When the delta is non-empty, confirm every
-addition is manufactured catalog data, then re-record with
+an empty delta needs no re-record. The baseline is line-number keyed
+(`scan_public_tree.py:264,790-800`), so line churn can produce expected removals
+and additions without new prose. When the delta is non-empty, confirm every new
+manufactured value is not real-shaped, then re-record with
 `python3 scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`; never
 hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
 `tconnect-data/`, live fetch, or normal serve enters this work.

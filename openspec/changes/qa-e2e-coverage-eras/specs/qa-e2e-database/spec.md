@@ -10,7 +10,8 @@ emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
 applicable, `asserts_move`, and `omitted: frozenset[str]`, compared exactly as the
 serialized field names expected absent or `None`; basal no-baseline SHALL use
 `omitted={"current"}` and ISF direction-only SHALL use
-`omitted={"recommended"}`.
+`omitted={"recommended"}`. I:C rows SHALL also contain exact `days_observed`, so
+block maturity is asserted rather than assumed from fixture depth.
 `QaExpectation` SHALL gain
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
 `absent_analyzer_rows`. Each case's target family SHALL pin its full emitted key
@@ -43,12 +44,20 @@ condition in the design matrix.
 
 Span SHALL mean inclusive calendar-day write depth from the earliest written
 basal, CGM, or bolus event row through the case's `now`; settings snapshots SHALL
-be excluded. Each new coverage case SHALL declare its source span and
-`materialize_case` SHALL write exactly that depth. Basal spans SHALL
-derive from the production request and SHALL add imported `_BOLUS_LEADIN` when a
-recipe places boluses; ISF spans SHALL also include imported
-`_ISF_DECISION_INTERVAL`; I:C spans SHALL derive from imported
-`BLOCK_WINDOW_DAYS` plus `_BOLUS_LEADIN`. `showcase` SHALL declare span 30 at its
+be excluded. Analyzer depth SHALL be stated as days back from `now`; for an
+end-of-day `now`, inclusive calendar days SHALL equal days back plus one. Each new
+coverage case SHALL declare its source span and `materialize_case` SHALL write
+exactly that depth. Basal coverage SHALL reach at least
+`window_days + _BOLUS_LEADIN` = 31 days back for the segment lane, 32 inclusive;
+ISF coverage SHALL reach at least
+`window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` = 38 days back, 39
+inclusive; and I:C coverage SHALL reach at least `BLOCK_WINDOW_DAYS` = 90 days
+back, 91 inclusive, because block maturity is
+`now - earliest basal/CGM/bolus event >= BLOCK_WINDOW_DAYS` and that block lane
+does not read `_BOLUS_LEADIN`. Because `observed_days` floors elapsed seconds,
+coverage recipes SHALL anchor their earliest event at or before `now`'s time of
+day, and exact I:C `days_observed` expectations SHALL fail when the depth is
+short. `showcase` SHALL declare span 30 at its
 existing anchor. The committed database bytes, showcase recipe, and its produced
 rows SHALL remain unchanged; its expectation SHALL be re-expressed in the
 extended contract with no observed value changing. `setting-recommendation`
@@ -63,10 +72,11 @@ and store-derived `now`.
 
 `scripts/gen_qa_e2e_db.py --case <name> --out <path>` SHALL emit one named case as
 a provenance-stamped, uncommitted SQLite store through the catalog materializer.
-`--out` SHALL be mandatory with `--case`, and `--case` with `--check` SHALL be an
-argument error. A test SHALL prove that `--case <name>` without `--out` exits
-nonzero and writes nothing; an unknown name SHALL exit nonzero while naming the
-available catalog.
+The parser's `--out` SHALL use `default=None`; without `--case`, `None` SHALL
+resolve to `DEFAULT_OUTPUT`, preserving the bare generator and `--check`, while
+`--case <name>` without `--out` SHALL be an argument error that exits nonzero and
+writes nothing. `--case` with `--check` SHALL be an argument error; an unknown
+name SHALL exit nonzero while naming the available catalog.
 The default generator and `--check` SHALL continue to materialize and compare only
 `showcase`. The committed database bytes, showcase recipe, and showcase-produced
 rows SHALL remain unchanged; the expectation SHALL be re-expressed in the
@@ -91,8 +101,9 @@ prove the committed store's bytes were untouched.
 #### Scenario: Family constants determine source depth
 
 - **WHEN** new basal, ISF, and I:C coverage cases are materialized
-- **THEN** their source spans derive from the imported family constants in the
-  design without repeated numeric policy literals
+- **THEN** their earliest events meet the imported family-specific days-back
+  rules in the design without repeated numeric policy literals
+- **AND** every I:C row exactly asserts analyzer-produced `days_observed`
 - **AND** each case runs using only its own rows and snapshots
 
 #### Scenario: A named case can be emitted for no-fetch UI work
@@ -136,11 +147,11 @@ rest windows, and one keyed I:C history series per active identity.
 #### Scenario: I:C observation age is analyzer-produced
 
 - **GIVEN** a 30-day I:C case and a mature I:C case whose span derives from
-  `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN`
+  `BLOCK_WINDOW_DAYS` days back, or 91 inclusive calendar days
 - **WHEN** production analysis runs
-- **THEN** the 30-day case is exactly `collecting`
-- **AND** the mature case reaches `BLOCK_WINDOW_DAYS` and may produce the matrix's
-  non-collecting states
+- **THEN** the 30-day case exactly asserts its `days_observed` and `collecting`
+- **AND** the mature case exactly asserts `days_observed == BLOCK_WINDOW_DAYS`
+  and may produce the matrix's non-collecting states
 
 #### Scenario: The eight-run I:C floor is data-produced
 

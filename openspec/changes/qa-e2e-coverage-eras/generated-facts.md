@@ -21,10 +21,14 @@ long-span showcase observed_days: [90]
 long-span showcase I:C states: [('All day', 'numeric')]
 ```
 
-The probe materializes `showcase` unchanged, then materializes it again with the
-same dense recipe extended backward to `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN`. Both
-use production `analyze`. The short store is forced to collecting; the long store
-reaches the analyzer's full observation age and a numeric state. The short store's
+The frozen probe materializes `showcase` unchanged, then materializes it again
+with the same dense recipe extended to 91 inclusive calendar days. Its pre-change
+implementation spelled that extension as `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN`;
+the current contract instead states the analyzer rule directly: the earliest
+event is at least `BLOCK_WINDOW_DAYS` (90 days) back from `now`, with no I:C block-
+lane lead-in. Both use production `analyze`. The short store is forced to
+collecting; the long store reaches the analyzer's full observation age and a
+numeric state. The short store's
 single ISF row also shows that row presence alone does not exercise the prior-
 decision replay that requires the ISF family span.
 

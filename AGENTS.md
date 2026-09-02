@@ -178,7 +178,7 @@ your own database — never a published one, and never a live pull.**
   plain `Store.open` writes WAL sidecars and migration DDL into it.
 - **Never run normal `harmonic serve` or any `harmonic fetch` in automated
   work.** Normal startup fires a live OAuth login against the vendor (possibly
-  2FA) and pulls real data; it cannot be exercised headless. There are exactly
+  2FA) and pulls real data; it cannot be exercised headless. There is exactly
   one permitted offline serve: the QA copy-then-serve command below for UI
   design and replay. `--no-fetch` and the empty token are mandatory. The QA
   database is generated entirely by `scripts/gen_qa_e2e_db.py`:
@@ -190,8 +190,7 @@ your own database — never a published one, and never a live pull.**
   uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
   ```
 
-  The same copy-then-serve command may serve an emitted case by substituting either its `$TMPDIR` scratch path or the already-pinned committed path for the `cp` source.
-
+  
   Exercise every other model path through tests and fixtures instead.
 
   For chart-level UI revision rounds, the preferred safe surface is the
@@ -215,15 +214,15 @@ When an analyzer state or Finding changes:
 
 1. Start with a manufactured `QaCase` recipe in `scripts/qa_e2e_cases.py`.
 2. Materialize it and run `execute_case`; copy its complete serialized analyzer,
-   queue, support, rest-window, history, behavioral, verdict-tally, and
-   uncaused-high row dump into literal `QaExpectation` values. Never derive an
+   queue, support, rest-window, history, behavioral, verdict-tally,
+   finding-title, and uncaused-high row dump into literal `QaExpectation` values. Never derive an
    expected row or verdict from analyzer or projection output at assertion time.
 3. Run the catalog-generated `test_case_<case name with hyphens replaced by
    underscores>` test.
 4. Re-measure all five existing budgets without raising their limits: committed
    showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤90 s,
    slowest generated case ≤15 s, and full pytest ≤2.5× the recorded chunk-1
-   baseline. A breach stops the work without changing the committed showcase.
+   baseline (`openspec/changes/qa-e2e-coverage-eras/coverage-appendix.md`). A breach stops the work without changing the committed showcase.
 
 To inspect one case through the production APIs, emit its uncommitted case store:
 

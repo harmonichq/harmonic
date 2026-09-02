@@ -28,20 +28,27 @@ empty set. Non-active identities remain available through
 never accept or write a verdict, status, direction, held reason, lifecycle,
 register, queue row, priority, or rank.
 
-## Per-family isolated-store spans
+## Coverage-case isolated-store spans
 
-Each `QaCase` declares a source span in days, and `materialize_case` writes that
-many manufactured days ending at the case's `now`. The catalog imports the
+New coverage cases declare a source span in days, and `materialize_case` writes
+that many manufactured days ending at the case's `now`. The catalog imports the
 constants rather than repeating their values:
 
 | Family | Declared source span | Why |
 | --- | --- | --- |
-| Basal | `window_days + _BOLUS_LEADIN` | The 30-day production request plus bolus IOB lead-in. |
+| Basal | `window_days`, plus `_BOLUS_LEADIN` when the recipe places boluses | The 30-day production request needs the bolus-only IOB lead-in only when bolus rows exist. |
 | ISF | `window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` | The prior-decision replay reads seven days before the current request (`analyze.py:90,317-330`). |
 | I:C | `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN` | Block observation age and meal-run evidence read the fixed I:C history span (`analyze.py:438-457`). |
 
-`window_days` remains 30 and production still derives `now` from the store's latest
-basal/CGM event. `_BOLUS_LEADIN` and `_ISF_DECISION_INTERVAL` come from
+The three existing cases receive literal declarations matching their current
+recipe extents rather than family-derived policy: `showcase` declares span 30 at
+its existing anchor and keeps its recipe, rows, and expectation byte-identical;
+`setting-recommendation` declares span 12 and keeps its bolus-free recipe without
+a lead-in; `behavioral-precedence` declares span 30 and keeps its current recipe
+shape. The latter two derive any new exact expectation fields from analyzer
+output. `window_days` remains
+30 and production still derives `now` from the store's latest basal/CGM event.
+`_BOLUS_LEADIN` and `_ISF_DECISION_INTERVAL` come from
 `ciq_autotune.analyze`; `BLOCK_WINDOW_DAYS` comes from
 `ciq_autotune.analyzers.ic`. No test-only clock seam or continuous IOB is added.
 
@@ -78,8 +85,9 @@ derives `span_start` and `insulin_history_start` store-wide
 (`analyze.py:174-176,200-206`), caps I:C `observed_days` from that earliest history
 (`analyze.py:438-441`), and I:C forces blocks to collecting below
 `BLOCK_WINDOW_DAYS` (`analyzers/ic.py:2429-2430`). ISF also needs its prior
-decision replay (`analyze.py:90,317-330`). Coverage therefore runs only in one
-isolated store per case with the family span above.
+decision replay (`analyze.py:90,317-330`). Each new coverage case therefore runs
+in its own store with the applicable family span above; existing catalog recipes
+retain the shapes recorded in the preceding section.
 
 This supersedes ADR 190's coverage-membership clause. ADR 190's other rulings stay
 in force. `mockups/qa-e2e.synthetic/harmonic.sqlite`, its showcase expectation,
@@ -96,11 +104,13 @@ family span is required for prior-decision outcomes.
 
 `scripts/gen_qa_e2e_db.py --case <name> --out <path>` materializes exactly one
 catalog case into a provenance-stamped SQLite store through the same public
-materializer used by tests. The output is scratch data and is never committed.
-It can be copied and served with the existing mandatory `--no-fetch` workflow.
-The generator's default mode and `--check` remain showcase-only. The follow-on
-task documents named-case emission and its use for UI decisions in `AGENTS.md`
-and `CONTEXT.md`.
+materializer used by tests. `--out` is mandatory whenever `--case` is present;
+`--case` and `--check` are mutually exclusive. A missing output fails without
+writing anything, and an unknown case fails while naming the available catalog.
+The output is scratch data and is never committed. It can be copied and served
+with the existing mandatory `--no-fetch` workflow. The generator's default mode
+and `--check` remain showcase-only. The follow-on task documents named-case
+emission and its use for UI decisions in `AGENTS.md` and `CONTEXT.md`.
 
 ## Exactness, public-tree scan, and provenance
 
@@ -112,10 +122,10 @@ satisfies the contract.
 Every committed artifact is generator-built and provenance-stamped. Each era's
 literal 48-slot half-hour basal series (`findings_projection.py:75`) is hoisted to
 its own module-level constant directly below a
-`# SYNTHETIC-FIXTURE: <reason>` marker, never inline in `QA_CASES`. Rule-5
-dose-ratio strings are accepted only through the generated baseline: run the
-public-tree scan, inspect its printed delta, confirm every addition is manufactured
-catalog data, then re-record with
+`# SYNTHETIC-FIXTURE: <reason>` marker, never inline in `QA_CASES`. Exact analyzer
+prose containing dose or ratio units such as `U/h` and `g/U` is accepted only
+through the generated dose-ratio baseline: run the public-tree scan, inspect its
+printed delta, confirm every addition is manufactured catalog data, then re-record with
 `python3 scripts/scan_public_tree.py <tree> --accept-dose-ratio-baseline`; never
 hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
 `tconnect-data/`, live fetch, or normal serve enters this work.
@@ -124,8 +134,12 @@ hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
 
 The budget record binds five measurements: committed showcase size ≤25 MiB,
 showcase drift ≤30 s, focused QA suite ≤90 s, each isolated case ≤15 s, and whole
-pytest ≤2.5× the recorded local baseline. The committed showcase bytes are not
-replaced in either chunk.
+pytest ≤2.5× that chunk's own pre-change local baseline, measured on its worker's
+machine at session start. The recorded 137.69 s local measurement and CI's 2 min
+57 s are references only. The committed showcase bytes are not replaced in either
+chunk. Task 1 raises the `pytest (backend)` job timeout from 10 to 15 minutes so
+the expanded suite retains CI headroom; that one line is the only permitted CI
+workflow edit.
 
 On a budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch

@@ -25,23 +25,37 @@ condition in the design matrix.
 
 ### Requirement: Isolated stores use family spans and leave showcase unchanged
 
-Each catalog case SHALL declare its source span and `materialize_case` SHALL write
-that many manufactured days ending at the case's `now`. Basal spans SHALL derive
-from the production request plus imported `_BOLUS_LEADIN`; ISF spans SHALL also
-include imported `_ISF_DECISION_INTERVAL`; I:C spans SHALL derive from imported
-`BLOCK_WINDOW_DAYS` plus `_BOLUS_LEADIN`. Production composition SHALL retain
-`window_days=30` and store-derived `now`.
+Each new coverage case SHALL declare its source span and `materialize_case` SHALL
+write that many manufactured days ending at the case's `now`. Basal spans SHALL
+derive from the production request and SHALL add imported `_BOLUS_LEADIN` when a
+recipe places boluses; ISF spans SHALL also include imported
+`_ISF_DECISION_INTERVAL`; I:C spans SHALL derive from imported
+`BLOCK_WINDOW_DAYS` plus `_BOLUS_LEADIN`. `showcase` SHALL declare span 30 at its
+existing anchor and SHALL retain its recipe, rows, and expectation
+byte-identically. `setting-recommendation` SHALL declare span 12 and retain its
+bolus-free recipe without a lead-in; `behavioral-precedence` SHALL declare span 30
+and retain its current recipe shape. The latter two SHALL derive new exact
+expectation fields from analyzer output.
+Production composition SHALL retain `window_days=30`
+and store-derived `now`.
 
 `scripts/gen_qa_e2e_db.py --case <name> --out <path>` SHALL emit one named case as
 a provenance-stamped, uncommitted SQLite store through the catalog materializer.
+`--out` SHALL be mandatory with `--case`, and `--case` with `--check` SHALL be an
+argument error. A test SHALL prove that `--case <name>` without `--out` exits
+nonzero and writes nothing; an unknown name SHALL exit nonzero while naming the
+available catalog.
 The default generator and `--check` SHALL continue to materialize and compare only
 `showcase`; the committed database and showcase expectation SHALL remain
 byte-identical. One generated test method per catalog case SHALL make
-`--durations=0` report each case independently.
+`--durations=0` report each case independently. Tests SHALL assert that the set of
+generated per-case method names equals `{case.name for case in QA_CASES}` and
+SHALL retain the exact catalog-tuple assertion so a dropped or misnamed case fails
+closed.
 
 #### Scenario: Family constants determine source depth
 
-- **WHEN** basal, ISF, and I:C cases are materialized
+- **WHEN** new basal, ISF, and I:C coverage cases are materialized
 - **THEN** their source spans derive from the imported family constants in the
   design without repeated numeric policy literals
 - **AND** each case runs using only its own rows and snapshots
@@ -52,6 +66,13 @@ byte-identical. One generated test method per catalog case SHALL make
   output path through `--out`
 - **THEN** it writes only that case with the standard synthetic provenance stamp
 - **AND** no named case store becomes a committed artifact
+
+#### Scenario: Unsafe named-case invocations fail closed
+
+- **WHEN** `--case` is given without `--out`, with `--check`, or with an unknown
+  name
+- **THEN** the command exits nonzero without writing the committed database
+- **AND** the unknown-name error identifies the available catalog
 
 #### Scenario: The committed database remains showcase-only
 

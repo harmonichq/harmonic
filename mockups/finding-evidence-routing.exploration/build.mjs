@@ -1034,7 +1034,7 @@ async function main() {
         + 'the capture\'s `routes`: a low is claimed when some factor routes it to `fired`.',
       queue_canvas: 'mockups/diagnose-workstation.synthetic/payload.json (evidence.pooled, analyze.basal, '
         + 'evidence.target_range) — handed across RAW. The surface runs the shipped envelopeFromPooled / '
-        + 'markersFromPooled / windowStats / buildSlotLane / renderCanvas over it in the browser, which is the '
+        + 'windowStats / buildSlotLane / stripGlucoseRange / renderCanvas over it in the browser, which is the '
         + 'app\'s own path from its API response. This is a THIRD synthetic fixture, disjoint from the other '
         + 'two again: its 3 captured CGM days and 48 basal slots are not the lens capture\'s 20 lows and not '
         + 'the projection\'s 30-day window. Nothing on the queue root reconciles them, and nothing tries to.',
@@ -1149,10 +1149,10 @@ async function main() {
       ],
       /* ---------- ROUND 5, WORKSTREAM A: the queue root's canvas ----------
          THE POOLED GLUCOSE CHART, from the workstation payload fixture. Nothing
-         is derived here: the surface runs `envelopeFromPooled`,
-         `markersFromPooled`, `windowStats`, `buildSlotLane` and `renderCanvas`
-         — all shipped — over exactly these two raw sub-objects, which is the
-         same path frontend/diagnose-workstation.js takes from its API response.
+         is derived here: the surface runs `envelopeFromPooled`, `windowStats`,
+         `buildSlotLane`, `stripGlucoseRange` and `renderCanvas` — all shipped —
+         over exactly these two raw sub-objects, which is the same path
+         frontend/diagnose-workstation.js takes from its API response.
 
          Round 4 collapsed this pane on the grounds that the queue level had
          nothing to answer with. That was true of round 3's MOCK, which put a

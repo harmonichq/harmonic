@@ -47,6 +47,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openApp, openerProblems } from '../../frontend/diagnose-workstation-behavior.replay.mjs';
+import { openApp as openComparisonApp } from '../../frontend/diagnose-event-comparison-behavior.replay.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -607,29 +608,19 @@ async function probeApp(browser, findingsInputs) {
   }
   await ws.close();
 
-  const lensPage = await openApp(browser, { viewport: VIEWPORT });
   /* #181/#135 retired the standalone lens route this used to reach by pushing
      `/?view=lows&factor=…` — there is no global mode switch left to push a URL
-     at. frontend/diagnose-event-comparison-behavior.replay.mjs (S40) reaches
-     the same comparison chart the way a reader does now: land on the 24 h
-     unscoped queue, then promote the finding's dock mini onto the stage. That
-     single click both opens the case detail AND seats the chart at
-     `#tile-focal`, where `renderBehavioralFullscreen` is the app's one
-     remaining caller of `renderEventSurface` — `.ec-chart-key`/`.ec-key-item`
-     render only there now, so the wait below is unambiguous. */
-  const lensPressed = await lensPage.evaluate(() => {
-    const button = [...document.querySelectorAll('#seg-window button')]
-      .find((b) => b.textContent.trim() === '24 h');
-    if (!button) return false;
-    button.click();
-    return true;
+     at. A hand-rolled dock-mini click reached `#tile-focal` but never mounted
+     `#ec-chart`: the real drill also raises the dock, settles it back down
+     past `#tile-field[data-raised]`, and only THEN clicks
+     `#tile-focal .tile-fullscreen` to mount the chart — steps a single click
+     skips. frontend/diagnose-event-comparison-behavior.replay.mjs's `openApp`
+     is that exact drill (its own suite reaches `#tile-focal #ec-chart` green
+     against this same server), so this mirrors it by calling it rather than
+     re-deriving the sequence. */
+  const lensPage = await openComparisonApp(browser, {
+    viewport: VIEWPORT, finding: 'finding:over_treated_low',
   });
-  if (!lensPressed) throw new Error('the app has no "24 h" window preset to press for the lens comparison');
-  await lensPage.waitForTimeout(400);
-  await lensPage.locator(
-    '#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body',
-  ).click();
-  await lensPage.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await lensPage.waitForSelector('.ec-chart-key .ec-key-item');
   await lensPage.waitForTimeout(700);
   const lensProbe = await lensPage.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });

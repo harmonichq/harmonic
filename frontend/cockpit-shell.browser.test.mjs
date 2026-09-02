@@ -674,32 +674,33 @@ async function assertChromeSurfaces(page) {
       footerRule: getComputedStyle(document.querySelector('.cockpit-footer')).borderTopWidth,
     };
   });
-  /* #736 re-settled the count from two to three — desk, bar, control — but that
-     third material was a LIGHT-only truth, and it retired with Light (ADR 304).
-     On the shipped Dark surface the chrome bar's `--ck-ground` resolves to the
-     same `--wk-canvas` as the desk the stage sits on (theme.css's chrome-bar
-     role block), so there are TWO grounds, not three: the desk that the shell,
-     stage, top bar and footer all share, and the control ground the scope chip
-     and Log carbs share. The bar keeps its own token SET on that shared ground —
-     that is what the "chrome bar" role is for — and it is deliberately not
-     ruled off the desk: `shell.css` sets `border: 0` on both bars, which the two
-     hairline pins below have always asserted and still do, unchanged.
+  /* #736 re-settled the count from two to three — desk, bar, control — and
+     #304 re-based it to two when Light retired, because on the shipped Dark
+     surface the bar's `--ck-ground` was the desk's own `--wk-canvas`. #317
+     moved the bar one step up the ladder by operator sanction (ADR 317,
+     2026-09-02: "The slightly lighter one looks better I guess"): the chrome-bar
+     role block in theme.css now re-declares `--ck-ground` as the well
+     (`--wk-surface-sunken`, #14120f), so there are THREE grounds again — the
+     desk the shell and stage share, the bar the top bar and footer share, and
+     the control ground the scope chip and Log carbs share. The bar is pinned to
+     the sanctioned literal and held off the desk; the desk itself never moves.
+     It is still deliberately not ruled off the desk by a line: `shell.css`
+     sets `border: 0` on both bars, which the two hairline pins below have
+     always asserted and still do, unchanged.
 
-     This assertion never ran against Dark before: openApp() defaulted to Light
-     and every caller took the default, so the three-material count was only ever
-     measured on the retired ground. It is re-based to the Dark relationship
-     rather than satisfied by moving a Dark value, and it is still the guard the
-     two-surface rule was written to be — a third ground anywhere in the chrome,
-     or a bar that drifts off the desk, fails it. */
+     A fourth ground anywhere in the chrome, a bar back on the desk, or a bar
+     on any shade but the sanctioned one, fails it. */
   const { shell, desk, bar, footer, control } = material.surfaces;
   assert.equal(shell, desk, 'the shell and the stage are one desk, not two');
   assert.equal(footer, bar, 'the footer and the top bar are one bar ground, not two');
-  assert.equal(bar, desk,
-    `the chrome bar shares the desk ground: bar ${bar}, desk ${desk}`);
+  assert.equal(bar, 'rgb(20, 18, 15)',
+    `the chrome bar sits on the well, the sanctioned #14120f (ADR 317): bar ${bar}`);
+  assert.notEqual(bar, desk,
+    `the chrome bar is its own ground, not the desk: bar ${bar}, desk ${desk}`);
   assert.notEqual(control, desk,
     `the control ground stays distinct from the desk: ${control}`);
-  assert.equal(material.backgrounds.length, 2,
-    `chrome surfaces: ${material.backgrounds.join(', ')}`);
+  assert.equal(material.backgrounds.length, 3,
+    `chrome surfaces — desk, bar, control: ${material.backgrounds.join(', ')}`);
   assert.equal(material.topRule, '0px', 'no chrome-to-chrome hairline under the top bar');
   assert.equal(material.footerRule, '0px', 'no chrome-to-chrome hairline over the footer');
 }
@@ -1236,7 +1237,7 @@ test('Log carbs speaks the chrome control vocabulary and stays readable', async 
   } finally { await page.close(); }
 });
 
-test('cockpit chrome uses only the locked type ranks and two grounds', async () => {
+test('cockpit chrome uses only the locked type ranks and three grounds', async () => {
   const browser = await launch();
   let page;
   try {
@@ -1448,13 +1449,13 @@ test('each cockpit lock assertion proves red under deliberate mutation and resto
       () => assertTypeRanks(page),
       style('.cockpit-scope-label', 'font-size', '16px'));
 
-    // Term 27 — a bar that drifts off the desk ground, and a chrome-to-chrome
-    // hairline. The first mutation used to prove "a third surface"; on the one
-    // shipped ground it proves the bar cannot leave the desk, which is the same
-    // guard read off the Dark relationship (ADR 304).
-    await proveRedOnce('diagnose-workstation:27 (two grounds)',
+    // Term 27 — a bar that leaves its sanctioned ground, and a chrome-to-chrome
+    // hairline. The first mutation puts the bar back on the desk, the exact
+    // state #317 ruled away: the pinned literal and `bar !== desk` both go red
+    // (ADR 317).
+    await proveRedOnce('diagnose-workstation:27 (three grounds)',
       () => assertChromeSurfaces(page),
-      style('.cockpit-topbar', 'background-color', 'rgb(120, 20, 20)'));
+      style('.cockpit-topbar', 'background-color', 'rgb(15, 13, 11)'));
     await proveRedOnce('diagnose-workstation:27 (no hairlines)',
       () => assertChromeSurfaces(page), async () => {
         const footer = page.locator('.cockpit-footer');

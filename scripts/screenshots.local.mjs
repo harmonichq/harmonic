@@ -2,17 +2,18 @@
 /**
  * Repository-local screenshot wrapper: the canonical harness in
  * scripts/screenshots.mjs does the capturing; this file contributes only the
- * three concerns that are genuinely this repo's —
+ * two concerns that are genuinely this repo's —
  *
- *   1. Theme: the app themes on a `.dark` class on <html> (frontend/theme.css),
- *      not on data-theme alone, and its chart layouts re-measure on a window
- *      resize event. The harness default would render a "dark" shot light.
- *   2. Vendored CDN assets: with VENDOR_DIR set, the serve hook answers the
+ *   1. Vendored CDN assets: with VENDOR_DIR set, the serve hook answers the
  *      app's two exact Vue/ECharts CDN URLs from disk.
- *   3. fetchStubFiles: fixture-backed fetch stubs — { "<url-substr>":
+ *   2. fetchStubFiles: fixture-backed fetch stubs — { "<url-substr>":
  *      { "file": "fixture.json", "key": "nested.value" } } (or a bare file
  *      path) — expanded into the harness's inline fetchStub, so a 100 KB
  *      payload never has to be inlined in a config.
+ *
+ * #304 retired the app's Light theme and the `.dark` class it toggled, so
+ * this wrapper no longer overrides the harness's theme hook — Harmonic ships
+ * one theme, and a shot config has nothing left to select.
  *
  * Usage (unchanged):
  *   node scripts/screenshots.local.mjs <config.json>
@@ -43,14 +44,6 @@ function serveVendored(url) {
   return { body: readFileSync(join(vendor, file)), contentType: 'text/javascript' };
 }
 
-async function applyTheme(page, theme) {
-  await page.evaluate(function (t) {
-    document.documentElement.dataset.theme = t;
-    document.documentElement.classList.toggle('dark', t === 'dark');
-    window.dispatchEvent(new Event('resize'));
-  }, theme);
-}
-
 // Resolve one fetchStubFiles entry to its JSON value, failing loudly when the
 // fixture file or the dotted key inside it is absent.
 function fixtureValue(spec) {
@@ -75,7 +68,7 @@ function expandFetchStubFiles(shot) {
   return { ...rest, fetchStub: { ...rest.fetchStub, ...expanded } };
 }
 
-const options = { serve: serveVendored, applyTheme };
+const options = { serve: serveVendored };
 
 const args = process.argv.slice(2);
 if (args[0] && args[0] !== '--self-check') {

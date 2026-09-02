@@ -11,7 +11,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Exercise the CLI with the first Playwright candidate it discovers from a temporary
 // checkout. The mock makes the route fail unless stripPrefix finds fixture/payload.json,
 // so this covers the public wrapper path without requiring Chromium in the Node test job.
-test('wrapper serves a stripPrefix fixture, fixture-backed stubs, and the dark class', () => {
+//
+// #304 retired the app's Light theme and the `.dark` class it toggled, so the wrapper
+// no longer overrides the harness's theme hook (below, `screenshots.local.mjs`'s own
+// `options` carries no `applyTheme`). The shot config still names `theme: 'dark'` —
+// screenshots.mjs's own generic field, unrelated to this repo's wrapper — so the mock's
+// `evaluate` step still fires; it asserts the DOM shim's `classList` is never touched,
+// which fails closed if a wrapper ever resurrects a `.dark`-class override.
+test('wrapper serves a stripPrefix fixture and fixture-backed stubs, and applies no theme', () => {
   const work = mkdtempSync(join(tmpdir(), 'screenshots-local-test-'));
   try {
     const runtime = join(work, '.agents', 'skills', 'drive-local-webapp', 'node_modules', 'playwright');
@@ -39,24 +46,25 @@ export const chromium = {
       async setViewportSize() {},
       async waitForTimeout() {},
       // The theme step is the one page.evaluate that carries an argument. Run it
-      // against a DOM shim and require the app's actual theming marker — the
-      // .dark class — so a wrapper that falls back to the harness's default
-      // (data-theme only) fails here instead of shipping light "dark" shots.
+      // against a DOM shim that records every classList touch — this repo's app
+      // has no theme class to set any more, so a wrapper that still toggles one
+      // (a resurrected .dark override) fails this check.
       async evaluate(fn, arg) {
         if (arg !== 'dark') return;
-        const classes = new Set();
+        const classTouches = [];
         globalThis.document = { documentElement: {
           dataset: {},
           classList: {
-            add: (c) => classes.add(c),
-            toggle: (c, on) => { on ? classes.add(c) : classes.delete(c); },
+            add: (c) => classTouches.push(['add', c]),
+            toggle: (c, on) => classTouches.push(['toggle', c, on]),
           },
         } };
         globalThis.Event = class {};
         globalThis.window = { dispatchEvent() {} };
         fn(arg);
-        if (!classes.has('dark') || globalThis.document.documentElement.dataset.theme !== 'dark') {
-          throw new Error('dark theme step did not set the .dark class and data-theme');
+        if (classTouches.length) {
+          throw new Error('theme step touched classList ' + JSON.stringify(classTouches)
+            + ' — the app ships one theme and has no class left to toggle');
         }
       },
       async screenshot({ path }) { writeFileSync(path, 'mock png'); },
@@ -104,4 +112,15 @@ export const chromium = {
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
+});
+
+// Fail-closed regression guard: if a future edit resurrects a theme-application hook
+// in the wrapper (e.g. re-adds `applyTheme` to `options`, or reads `.dark`/`dataset.theme`
+// again), this catches it even before the behavioral test above would notice.
+test('the wrapper defines no theme-application hook', () => {
+  const source = readFileSync(join(ROOT, 'scripts', 'screenshots.local.mjs'), 'utf8');
+  assert.doesNotMatch(source, /applyTheme/,
+    'the wrapper no longer overrides the harness theme hook — the app ships one theme');
+  assert.doesNotMatch(source, /classList/,
+    'the wrapper touches no class — the retired .dark toggle does not belong here');
 });

@@ -304,14 +304,13 @@ const chartColors = (root) => {
      faithful translation is to read each workstation token from .dw, the
      element that declares it, rather than the app document root. */
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
-  /* THEME DEVIATION (#736): additive tint on the dark field and subtractive
-     tint on the light field need different envelope mixes. The explicit
-     percentile rails carry the graphical-object boundary; these fills retain
-     the two nested measured regions without competing with those rails or the
-     median. Read the live color-scheme rather than restating a theme class. */
-  const dark = getComputedStyle(root).colorScheme === 'dark';
-  const bandOuterMix = dark ? '22%' : '14%';
-  const bandInnerMix = dark ? '26%' : '34%';
+  /* Additive tint on the dark field (#736): the explicit percentile rails carry
+     the graphical-object boundary; these fills retain the two nested measured
+     regions without competing with those rails or the median. The mixes were
+     selected by the live color-scheme until #304 retired the light theme; the
+     Dark arm is inlined so no branch survives. */
+  const bandOuterMix = '22%';
+  const bandInnerMix = '26%';
   return {
     ...c,
     surface2: c['surface-2'],
@@ -323,18 +322,17 @@ const chartColors = (root) => {
     bandOuter: `color-mix(in srgb, ${c.primary} ${bandOuterMix}, transparent)`,
     bandInner: `color-mix(in srgb, ${c.primary} ${bandInnerMix}, transparent)`,
     /* The median is the primary reading, so it must be the clearest continuous
-       data mark (#258). In Light, primary-600 is the deep forest ink and leads
-       already. In Dark, primary-600 resolves into the warm-grey text family —
+       data mark (#258). primary-600 resolves into the warm-grey text family —
        outside the forest data family the bands draw in — and bare primary
        composits to ~2.7:1 against the inner band fill, under the 3:1 non-text
        floor. Lightened primary stays in the family and clears the floor over
        both the fill and the scrimmed fill. */
-    median: dark ? `color-mix(in srgb, ${c.primary} 62%, #fff)` : (c['primary-600'] || c.primary),
+    median: `color-mix(in srgb, ${c.primary} 62%, #fff)`,
     /* The ink for text sitting ON the median fill — the axis-riding value tag
        (term 25). It was read as `colors.onAccent` and never defined anywhere:
        not by resolveColors(), not here. ECharts fell back to the option's
-       textStyle colour, so the tag drew MUTED GREY on the primary plate in
-       both themes (#651). The token exists; it just was not passed. */
+       textStyle colour, so the tag drew MUTED GREY on the primary plate
+       (#651). The token exists; it just was not passed. */
     onAccent: css('--mk-on-primary'),
     meal: css('--ck-meal'),
     mealEdge: c.surface,
@@ -344,7 +342,7 @@ const chartColors = (root) => {
     /* Slice 4 — the drawn window is the BRIGHT region; the remainder of the
        band takes this ground-colour scrim (the panel ground at part strength),
        so the data outside the gates washes toward the panel rather than being
-       tinted a second hue. Theme-aware through the rail token itself. */
+       tinted a second hue. It follows the panel through the rail token. */
     /* A PLAIN rgba(), NEVER color-mix(): ECharts' markArea fill goes through
        zrender's own color parser, which silently drops a color-mix() string —
        the scrim was in the option and painted nothing, proven live by swapping
@@ -357,12 +355,12 @@ const chartColors = (root) => {
       const hex = css('--ck-rail').replace('#', '');
       const wide = hex.length === 3 ? [...hex].map((h) => h + h).join('') : hex;
       const [r, g, b] = [0, 2, 4].map((i) => parseInt(wide.slice(i, i + 2), 16));
-      /* #258 recompose: at 0.06 the Dark scrim measured only a ~5% composite
+      /* #258 recompose: at 0.06 the scrim measured only a ~5% composite
          shift — the plot stayed legible but the selected window did not read
          at all. 0.28 dims the remainder decisively while the rails and fills
          beneath stay above the non-text floor (the browser suite's composite
-         audit measures both). Light keeps its original restraint. */
-      return `rgba(${r},${g},${b},${dark ? '0.28' : '0.10'})`;
+         audit measures both). */
+      return `rgba(${r},${g},${b},0.28)`;
     })(),
     windowEdge: `color-mix(in srgb, ${c.primary} 72%, transparent)`,
   };

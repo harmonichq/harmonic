@@ -8,18 +8,21 @@
  *               drilled into `finding:over_treated_low` (crumb, level, clock,
  *               evidence table, dock) and the Lows lens (canvas head, legend,
  *               judgment block) — plus the lens chart's live `getOption()`.
- *   3. DIFF      the mock against that probe, IN BOTH THEMES: computed styles +
- *               bounding rects on shared selectors, and the chart option key by
- *               key. The computed-style diff is the fidelity gate; the option
- *               diff is the only audit that can see canvas-painted furniture.
+ *   3. DIFF      the mock against that probe: computed styles + bounding rects
+ *               on shared selectors, and the chart option key by key. The
+ *               computed-style diff is the fidelity gate; the option diff is the
+ *               only audit that can see canvas-painted furniture.
  *
- *               BOTH themes, because one theme is not a check. The first run of
- *               this harness passed dark 73/73 while the mock's light `:root`
- *               token block was not applying at all — the app-base extractor had
- *               begun its capture inside an HTML comment containing the text
- *               `<style>`. Dark passed because `html.dark` survived the same
- *               corruption. Only a populated LIGHT render exposed it, which is
- *               the lesson frontend/theme.css's own header records.
+ *               This used to run in BOTH themes, because one theme was not a
+ *               check: the first run passed dark 73/73 while the mock's light
+ *               `:root` token block was not applying at all — the app-base
+ *               extractor had begun its capture inside an HTML comment
+ *               containing the text `<style>`, and the dark block survived the
+ *               same corruption. ADR 304 retired light, so the second render
+ *               cannot be the thing that catches that any more. What replaces
+ *               it is the unresolved-token check below, which fails the run
+ *               outright when the extraction stops applying — a direct test of
+ *               the corruption rather than a render that happened to expose it.
  *   4. SHOOT     the arrival as a SEQUENCE — queue level, drilled finding,
  *               row-hover single trace, inspector column, drilled population —
  *               every frame reached through the surface's own routing, so no
@@ -44,6 +47,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openApp, openerProblems } from '../../frontend/diagnose-workstation-behavior.replay.mjs';
+import { openApp as openComparisonApp } from '../../frontend/diagnose-event-comparison-behavior.replay.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -276,9 +280,12 @@ const EXPECTED = {
     + 'dark), which is the same step the two in-body routes take, so every accent-inked string in this column '
     + 'reads at one value.',
   '.qrow .go|color': 'F7: ditto — the queue row\'s chevron is the same `--ck-accent` at the same 3.95:1.',
-  '.ev-row .arrow|color': 'F7: the production table\'s `→` is `--mk-muted` at 70%, which measures 3.21:1 light '
-    + 'and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It '
-    + 'takes this surface\'s one dim-meta ink instead.',
+  /* `.ev-row .arrow|color` RETIRED — the `→` it named went with the rest of
+     the dual-reading roster (be9a4093, #87; see DELIBERATELY_ABSENT_BOTH
+     below). Kept as history, unreachable: F7 measured the production table's
+     `→` at `--mk-muted` 70%, 3.21:1 light / 3.42:1 dark — failing in BOTH
+     themes, which is why it was not fixed by a light-only override, and took
+     this surface's one dim-meta ink instead. */
   '.crumb .trail .chev|color': 'F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the '
     + 'worst text pair on the surface and failing in both themes. Same dim-meta ink.',
   '.crumb .trail button|color': 'F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column\'s '
@@ -290,11 +297,13 @@ const EXPECTED = {
  *
  * `border-*-color` defaults to `currentColor`, so on an element that paints no
  * border at all the probe reads the element's TEXT ink back under a second name.
- * Five of the six inks F7 moves sit on such elements, which is why one ink
- * change surfaced as eleven rows: two per element, plus `.more`'s top edge —
- * `.more` paints a real bottom border with an explicit colour, and that one is
- * still compared, because a fix that stopped comparing it would be the
- * loosening this table exists to avoid.
+ * Four of the five inks F7 moves sit on such elements (a fifth, `.ev-row
+ * .arrow`, retired with the dual-reading roster — be9a4093, #87 — and came
+ * out of this loop with it), which is why one ink change surfaced as nine
+ * rows: two per element, plus `.more`'s top edge — `.more` paints a real
+ * bottom border with an explicit colour, and that one is still compared,
+ * because a fix that stopped comparing it would be the loosening this table
+ * exists to avoid.
  *
  * The harness already names this exact artifact once, on `.watch|border-top-color`
  * ("the app declares no top border at all, so its 'colour' is the inherited text
@@ -306,7 +315,6 @@ for (const [selector, edges] of [
   ['.crumb .trail .chev', ['border-top-color', 'border-bottom-color']],
   ['.qrow .go', ['border-top-color', 'border-bottom-color']],
   ['.linkbtn', ['border-top-color', 'border-bottom-color']],
-  ['.ev-row .arrow', ['border-top-color', 'border-bottom-color']],
   ['.more', ['border-top-color']],
 ]) {
   for (const edge of edges) {
@@ -484,23 +492,30 @@ const POOLED_READER = () => JSON.parse(JSON.stringify((() => {
 const WINDOW_READER = () => JSON.parse(JSON.stringify((() => {
   const o = window.__ferPooled.getOption();
   const context = o.series.find((s) => s.name === '__context');
-  const area = context.markArea.data.find((d) => d[0].xAxis !== undefined);
+  /* `context.markArea` is guarded, not assumed — the same shape pooled.js
+     guards its own `__context` patch against. `renderCanvas` structures it
+     unconditionally in the option it SETS (diagnose-workstation-chart.js:817);
+     this reads what `chart.getOption()` reports back after the browser's
+     ECharts instance has been reused across several prior
+     `setOption(option, true)` calls, which is not always the same shape the
+     last call set. */
+  const area = context.markArea?.data?.find((d) => d[0].xAxis !== undefined);
   const axis = o.xAxis[0].data;
   return {
-    windowFrom: area[0].xAxis,
-    windowTo: area[1].xAxis,
-    windowLabel: area[0].label?.formatter ?? null,
+    windowFrom: area?.[0]?.xAxis ?? null,
+    windowTo: area?.[1]?.xAxis ?? null,
+    windowLabel: area?.[0]?.label?.formatter ?? null,
     parkedLabel: context.markPoint?.data?.[0]?.label?.formatter ?? null,
     xExtent: [axis[0], axis[axis.length - 1]],
     xBins: axis.length,
   };
 })()));
 
-/** Probe the running app, in one theme, across both shipped surfaces. */
-async function probeApp(browser, theme, findingsInputs, { writeChrome = false } = {}) {
+/** Probe the running app across both shipped surfaces. */
+async function probeApp(browser, findingsInputs) {
   const app = {};
 
-  const ws = await openApp(browser, { theme, viewport: VIEWPORT });
+  const ws = await openApp(browser, { viewport: VIEWPORT });
 
   /* LEVEL 1 FIRST. Drilling replaces the queue, and the queue is where the
      `.q` / `.qrow` grammar the mock re-uses for its finding header actually
@@ -532,7 +547,7 @@ async function probeApp(browser, theme, findingsInputs, { writeChrome = false } 
      fixture-only queue to compare the ranked row grammar against the frozen
      global projection, then keep every other selector on the normal surface. */
   const rankedPage = await openApp(browser, {
-    state: 'dense', theme, viewport: VIEWPORT, findingsInputs,
+    state: 'dense', viewport: VIEWPORT, findingsInputs,
   });
   const rankedQueueProbe = await rankedPage.evaluate(probeScript, {
     props: PROPS, selectors: RANKED_QUEUE_SELECTORS,
@@ -547,19 +562,21 @@ async function probeApp(browser, theme, findingsInputs, { writeChrome = false } 
   });
   if (!drilled) throw new Error('the app queue has no finding:over_treated_low row to drill');
   await ws.waitForTimeout(700);
-  if (writeChrome) {
-    const chromeHtml = await ws.evaluate(() => [
-      document.querySelector('.cockpit-topbar')?.outerHTML || '',
-      document.querySelector('.cockpit-footer')?.outerHTML || '',
-    ].join('\n'));
-    if (!chromeHtml.includes('cockpit-topbar')) throw new Error('no cockpit chrome found in the running app');
-    await writeFile(join(HERE, 'chrome.extracted.html'),
-      '<!-- EXTRACTED VERBATIM from the RUNNING app\'s DOM (frontend/index.html booted\n'
-      + '     through the browser gates\' own fixture-only opener) by harness.mjs.\n'
-      + '     Do not edit — re-run the harness. Vue bindings are already resolved, so\n'
-      + '     this is the chrome the reader actually sees, not its template. -->\n'
-      + `${chromeHtml}\n`);
-  }
+  /* Written on the one pass this harness now makes. It used to be guarded by a
+     `writeChrome` flag so that only the dark pass wrote it — the two passes saw
+     the same DOM, and writing it twice was waste. With one surface there is one
+     pass, and the guard has nothing left to choose between. */
+  const chromeHtml = await ws.evaluate(() => [
+    document.querySelector('.cockpit-topbar')?.outerHTML || '',
+    document.querySelector('.cockpit-footer')?.outerHTML || '',
+  ].join('\n'));
+  if (!chromeHtml.includes('cockpit-topbar')) throw new Error('no cockpit chrome found in the running app');
+  await writeFile(join(HERE, 'chrome.extracted.html'),
+    '<!-- EXTRACTED VERBATIM from the RUNNING app\'s DOM (frontend/index.html booted\n'
+    + '     through the browser gates\' own fixture-only opener) by harness.mjs.\n'
+    + '     Do not edit — re-run the harness. Vue bindings are already resolved, so\n'
+    + '     this is the chrome the reader actually sees, not its template. -->\n'
+    + `${chromeHtml}\n`);
   Object.assign(app, await ws.evaluate(probeScript, { props: PROPS, selectors: SELECTORS }));
 
   /* A PARAMETER level too, for `.slot-say` — the shipped sentence class the mock
@@ -602,12 +619,18 @@ async function probeApp(browser, theme, findingsInputs, { writeChrome = false } 
   }
   await ws.close();
 
-  const lensPage = await openApp(browser, { theme, viewport: VIEWPORT });
-  await lensPage.evaluate(() => {
-    // #62 — the anchor-time block coordinate retired; the whole day is the
-    // absence of a clock window, so this probe carries no time coordinate.
-    history.pushState(null, '', '/?view=lows&factor=over_treated_low');
-    dispatchEvent(new PopStateEvent('popstate'));
+  /* #181/#135 retired the standalone lens route this used to reach by pushing
+     `/?view=lows&factor=…` — there is no global mode switch left to push a URL
+     at. A hand-rolled dock-mini click reached `#tile-focal` but never mounted
+     `#ec-chart`: the real drill also raises the dock, settles it back down
+     past `#tile-field[data-raised]`, and only THEN clicks
+     `#tile-focal .tile-fullscreen` to mount the chart — steps a single click
+     skips. frontend/diagnose-event-comparison-behavior.replay.mjs's `openApp`
+     is that exact drill (its own suite reaches `#tile-focal #ec-chart` green
+     against this same server), so this mirrors it by calling it rather than
+     re-deriving the sequence. */
+  const lensPage = await openComparisonApp(browser, {
+    viewport: VIEWPORT, finding: 'finding:over_treated_low',
   });
   await lensPage.waitForSelector('.ec-chart-key .ec-key-item');
   await lensPage.waitForTimeout(700);
@@ -624,18 +647,14 @@ async function probeApp(browser, theme, findingsInputs, { writeChrome = false } 
   return { app, option, pooledOption };
 }
 
-/** Open the mock in one theme, on a fail-closed static route. */
-async function openMock(browser, theme, problems) {
+/** Open the mock on a fail-closed static route. */
+async function openMock(browser, problems) {
   const page = await browser.newPage({ viewport: VIEWPORT });
   /* The STACK, not just the message. A boot failure inside a lifted shipped
      module says nothing useful without one — "Cannot read properties of
      undefined" is true of a hundred lines. */
-  page.on('pageerror', (e) => problems.push(`pageerror(mock ${theme}): ${e.stack || e}`));
-  page.on('console', (m) => { if (m.type() === 'error') problems.push(`console(mock ${theme}): ${m.text()}`); });
-  await page.addInitScript((t) => {
-    if (t === 'dark') localStorage.setItem('theme', 'dark');
-    else localStorage.removeItem('theme');
-  }, theme);
+  page.on('pageerror', (e) => problems.push(`pageerror(mock): ${e.stack || e}`));
+  page.on('console', (m) => { if (m.type() === 'error') problems.push(`console(mock): ${m.text()}`); });
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
@@ -643,7 +662,7 @@ async function openMock(browser, theme, problems) {
       return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
     }
     if (url.hostname !== 'mock.local') {
-      problems.push(`unrouted ${url.href} (${theme})`);
+      problems.push(`unrouted ${url.href}`);
       return route.fulfill({ status: 404, body: 'not routed' });
     }
     try {
@@ -652,14 +671,14 @@ async function openMock(browser, theme, problems) {
         contentType: MIME[extname(url.pathname)] || 'text/plain',
       });
     } catch {
-      problems.push(`missing asset ${url.pathname} (${theme})`);
+      problems.push(`missing asset ${url.pathname}`);
       return route.fulfill({ status: 404, body: 'missing' });
     }
   });
   await page.goto(MOCK_URL);
   try { await page.waitForFunction(() => window.__ferReady === true); }
   catch (e) {
-    process.stderr.write(`mock (${theme}) never became ready:\n  - ${problems.join('\n  - ') || '(no errors captured)'}\n`);
+    process.stderr.write(`mock never became ready:\n  - ${problems.join('\n  - ') || '(no errors captured)'}\n`);
     throw e;
   }
   await page.waitForTimeout(700);
@@ -723,6 +742,43 @@ const laidOut = (entry) => entry && (entry.rect.w !== 0 || entry.rect.h !== 0);
    permitted when a future deliberate removal records its reason here; otherwise
    the harness fails instead of certifying an empty assertion. */
 const DELIBERATELY_ABSENT_BOTH = {
+  /* 9553bbcc "Render case-file event comparisons" replaced the standalone
+     lens's own `.ec-title-context` factor label with `.canvas-head .persist`
+     (already its own entry above) when the header became case-file-shaped;
+     neither the app nor the mock has emitted `.ec-title-context` since. */
+  '.ec-title-context': 'retired for .canvas-head .persist (9553bbcc)',
+  /* 1d065305 (#41), re-asserted at #181, retired the inspector's own
+     `.ec-boundary-note` hedge line entirely — the app's own S5 replay story
+     asserts its count is 0 in every state. The mock retired it the same
+     round (build.mjs, ROUND 5 BLOCK 6): the hedge now hangs off the canvas
+     legend's Near-rule key as a sub-line instead. Not state-scoped — neither
+     side has anywhere left that emits it. */
+  '.ec-boundary-note': 'retired; the hedge moved onto the Near-rule legend key (1d065305, #41/#181)',
+  /* be9a4093 (#87) collapsed the dual-reading roster (entry → worst · Δ) to
+     the single-value `.only` + `.tier` cells the current roster still uses —
+     the same retirement the contrast-audit.mjs pairs for these four columns
+     already name. All four columns went together, in the one commit. */
+  '.ev-row .entry': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .arrow': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .worst': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .delta': 'retired with the dual-reading roster (be9a4093, #87)',
+  /* 087cbf17 "refine evidence row drill affordance" dropped the row's own
+     `<span class="chev">›</span>` — the row selects, it does not route, and
+     no glyph promising a destination replaced it. */
+  '.ev-row .chev': 'retired; the row selects rather than routes (087cbf17)',
+  /* NOT a retirement — app-only-by-design, unlike the five above. `.slotlink`
+     still renders in `renderCaseHead` (frontend/diagnose-workstation.js) for
+     any CLOCK-aligned finding case file (finding-case-files.json carries
+     several, e.g. finding:carb_undercount's `clock` entry) — the mock never
+     builds it on purpose (ROUND 6, SEND-BACK 6: the coincidence routes take
+     block 6's own right-aligned action form instead). It lands here only
+     because no state this harness currently opens drills a clock-aligned
+     finding on the APP side either — `ws`'s own basal-slot drill
+     (`slotProbe`) goes through the settings drill panel, not
+     `renderCaseHead`, so it never reaches it. The honest fix is a state the
+     harness should open, not a permanent exemption; flagged rather than
+     silently folded into the four true retirements above. */
+  '.slotlink': 'unreached by any currently-probed state; the app still builds it for a clock-aligned finding',
   '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
     'the queue flavor tag prints its word without the retired decorative glyph',
   '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',
@@ -860,367 +916,336 @@ async function main() {
     join(ROOT, 'frontend', '__fixtures__', 'findings-projection.json'), 'utf8',
   )).inputs;
 
-  for (const theme of ['dark', 'light']) {
-    /* The chrome partial is written once, from the dark pass; it is the same DOM
-       in both themes (the theme is a class on <html>, not different markup). */
-    const { app, option, pooledOption } = await probeApp(
-      browser, theme, findingsInputs, { writeChrome: theme === 'dark' },
-    );
-    const page = await openMock(browser, theme, problems);
-    const mock = await probeMock(page);
-    /* ROUND 5 — the QUEUE ROOT's chart, read where it stands. */
-    await gotoLevel(page, null);
-    const mockPooled = await page.evaluate(POOLED_READER);
-    if (!mockPooled) throw new Error('the mock published no pooled-chart getOption() at the queue root');
-    /* The lens chart option is read from the FINDING scene — the filtered lens,
-       which is the shipped lens's own coordinate set. */
-    await gotoLevel(page, 'finding:over_treated_low');
-    const mockOption = await page.evaluate(OPTION_READER);
+  const { app, option, pooledOption } = await probeApp(browser, findingsInputs);
+  const page = await openMock(browser, problems);
+  const mock = await probeMock(page);
+  /* ROUND 5 — the QUEUE ROOT's chart, read where it stands. */
+  await gotoLevel(page, null);
+  const mockPooled = await page.evaluate(POOLED_READER);
+  if (!mockPooled) throw new Error('the mock published no pooled-chart getOption() at the queue root');
+  /* The lens chart option is read from the FINDING scene — the filtered lens,
+     which is the shipped lens's own coordinate set. */
+  await gotoLevel(page, 'finding:over_treated_low');
+  const mockOption = await page.evaluate(OPTION_READER);
 
-    /* Lock term 1's clause, checked rather than assumed, plus the thing a
-       token-resolution failure shows up as. */
-    const geometry = await page.evaluate(() => {
-      const level = document.querySelector('#level');
-      const trail = document.querySelector('.crumb .trail');
-      const root = getComputedStyle(document.documentElement);
-      return {
-        pageScrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        pageScrollY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
-        levelScrollsInternally: level.scrollHeight > level.clientHeight,
-        breadcrumbClipped: trail.scrollWidth > trail.clientWidth,
-        unresolvedTokens: ['--surface-2', '--primary', '--text', '--line']
-          .filter((t) => root.getPropertyValue(t).trim() === ''),
-      };
-    });
-    if (geometry.unresolvedTokens.length) {
-      throw new Error(`mock (${theme}) has unresolved app tokens: ${geometry.unresolvedTokens.join(', ')} `
-        + '— the app-base extraction is corrupt');
-    }
-
-    results[theme] = {
-      computedStyleDiff: diffStyles(app, mock),
-      chartOptionDiff: diffOption(option, mockOption),
-      pooledOptionDiff: diffPooledOption(pooledOption, mockPooled),
-      /* `JSON.stringify` drops a property hung off an array, so the two named-
-         deviation lists are carried into fidelity-report.json in their own
-         fields rather than silently vanishing from the record. */
-      get chartOptionExpected() { return this.chartOptionDiff.expected || []; },
-      get pooledOptionExpected() { return this.pooledOptionDiff.expected || []; },
-      geometry,
+  /* Lock term 1's clause, checked rather than assumed, plus the thing a
+     token-resolution failure shows up as. */
+  const geometry = await page.evaluate(() => {
+    const level = document.querySelector('#level');
+    const trail = document.querySelector('.crumb .trail');
+    const root = getComputedStyle(document.documentElement);
+    return {
+      pageScrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      pageScrollY: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+      levelScrollsInternally: level.scrollHeight > level.clientHeight,
+      breadcrumbClipped: trail.scrollWidth > trail.clientWidth,
+      unresolvedTokens: ['--surface-2', '--primary', '--text', '--line']
+        .filter((t) => root.getPropertyValue(t).trim() === ''),
     };
-
-    /* THE ARRIVAL, SHOT AS A SEQUENCE. Every frame below is REACHED through the
-       surface's own routing — `__ferGo` is the same call a click makes — so no
-       capture shows a state a reader could not walk to. */
-    const data = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8'));
-    /* ROUND 6 — the probe above walks BOTH projections, and the surface keeps
-       whichever it was left in (switching projection is not supposed to reset
-       anything). So the capture sequence states the projection it wants rather
-       than inheriting the probe's last one — the first cut of this did inherit
-       it, and every frame labelled `by clock` came out drawn by event. */
-    await page.evaluate(() => window.__ferProject('clock'));
-    if (theme === 'dark') {
-      await gotoLevel(page, null);
-      await page.screenshot({ path: join(SHOTS, 'queue-level-1440x900.png') });
-
-      /* ROUND 6, FORM 3 — THE FINDING SCENE IN BOTH PROJECTIONS, and the drilled
-         row in both. `By clock` is the rest state: the pooled envelope with the
-         finding's events on it, and — once a row is picked — that event's day
-         over the envelope inside the window brace. `By event` is the lens the
-         mock has had since round 1. The toggle is pressed through the surface's
-         own handler, which is the call the head's button makes. */
-      await gotoLevel(page, 'finding:over_treated_low');
-      await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
-      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
-
-      /* ROUND 7, ITEM 3 — THE SAME ROW, HOVERED AND THEN SELECTED, as two frames
-         of one sequence. The hover is a REAL pointer hover, not a synthetic
-         call, because what is being proved is what the pointer alone does: the
-         canvas must be identical to the frame above it — no day trace, no window
-         brace, no verdict tooltip — and the row must not read as selected. Then
-         the same row is CLICKED, and the trace and the brace arrive. Anything
-         the hover frame shows that `scene-1440x900.png` does not is the bug. */
-      const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
-      const row = page.locator(`.ev-row[data-id="${rowId}"]`);
-      await row.hover();
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: join(SHOTS, 'row-hovered-canvas-unchanged.png') });
-      results.hover = await page.evaluate(() => ({
-        selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
-        rowsCarryingATitleAttribute: [...document.querySelectorAll('.ev-row[title]')].length,
-      }));
-
-      /* ROUND 8, ITEM 2 — THE WINDOW, BEFORE AND AFTER THE CLICK. Both frames
-         are captured as well as both readings, because the failure this guards
-         is a visible one: a brace that jumps to the picked event. */
-      const windowBefore = await page.evaluate(WINDOW_READER);
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(250);
-      await page.screenshot({ path: join(SHOTS, 'selection-window-before.png') });
-
-      await row.click();
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: join(SHOTS, 'row-selected-day-trace-by-clock.png') });
-      const windowAfter = await page.evaluate(WINDOW_READER);
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(250);
-      await page.screenshot({ path: join(SHOTS, 'selection-window-after.png') });
-      const windowUnchanged = JSON.stringify(windowBefore) === JSON.stringify(windowAfter);
-      results.windowUnchanged = { unchanged: windowUnchanged, before: windowBefore, after: windowAfter };
-      if (!windowUnchanged) {
-        problems.push('SELECTION MOVED THE CLOCK WINDOW — occurrence selection is evidence-only and must '
-          + `never mutate it (data.json terms.selection_never_moves_the_window). before ${JSON.stringify(windowBefore)} `
-          + `after ${JSON.stringify(windowAfter)}`);
-      }
-      results.highlightedRow = rowId;
-      results.selected = await page.evaluate(() => ({
-        selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
-      }));
-
-      await page.evaluate(() => window.__ferProject('event'));
-      await page.waitForTimeout(450);
-      await page.screenshot({ path: join(SHOTS, 'row-selected-linked-trace-by-event.png') });
-      await page.evaluate((id) => window.__ferSelect(id), null);
-      await page.waitForTimeout(350);
-      await page.screenshot({ path: join(SHOTS, 'scene-by-event-1440x900.png') });
-      await page.evaluate(() => window.__ferProject('clock'));
-      await page.waitForTimeout(400);
-
-      /* THE POPULATION CASE FILE, AS A SEQUENCE OF FRAMES (round 3). It opens on
-         the largest claiming factor; a second claim line reframes both panes; a
-         row overlays one trace on whichever comparison is drawn. Every frame is
-         reached through the surface's own selector — `__ferFrame` is the call the
-         claim row's click makes — so nothing here is a state a reader cannot walk
-         to, and the flat all-cohorts draw round 2 arrived at does not exist. */
-      const population = data.scenes['population:lows'];
-      await gotoLevel(page, 'population:lows');
-      await page.screenshot({ path: join(SHOTS, 'population-all-lows-1440x900.png') });
-      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-inspector-column.png') });
-      results.populationDefaultFrame = population.defaultFactor;
-
-      /* ROUND 6, FORM 1 — THE DROPDOWN, EXPANDED, over the ledger it does not
-         push. Shot on the column so the two states can be laid side by side:
-         the rows and the dock are in the identical place in both. */
-      await page.evaluate(() => window.__ferFactorOpen(true));
-      await page.waitForTimeout(300);
-      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'factor-dropdown-open.png') });
-      await page.screenshot({ path: join(SHOTS, 'factor-dropdown-open-1440x900.png') });
-      await page.evaluate(() => window.__ferFactorOpen(false));
-      await page.waitForTimeout(250);
-
-      const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].occurrences[1].id;
-      await page.evaluate((id) => window.__ferSelect(id), populationRow);
-      await page.waitForTimeout(400);
-      await page.screenshot({ path: join(SHOTS, 'population-row-trace-1440x900.png') });
-      results.populationHighlightedRow = populationRow;
-
-      /* EVERY SEGMENT, INCLUDING UNCLAIMED (round 5, block 2). Two of the three
-         reframe the lens at another factor's coordinates; the third has no
-         comparison to draw and its capture is the whole point of the frame's
-         return — the honest empty canvas, shot rather than described. */
-      for (const key of Object.keys(population.frames).filter((k) => k !== population.defaultFactor)) {
-        await page.evaluate((k) => window.__ferFrame(k), key);
-        await page.waitForTimeout(450);
-        await page.screenshot({ path: join(SHOTS, `population-frame-${key}-1440x900.png`) });
-        await page.locator('.pane.inspector')
-          .screenshot({ path: join(SHOTS, `population-frame-${key}-inspector.png`) });
-      }
-
-      /* THE HONEST EMPTY CANVAS still lives in the EVENT projection, and only
-         there: `By clock` can draw the unclaimed lows as dots on the pooled
-         envelope (a low that no rule claims still happened at a time), while a
-         cohort comparison for a frame with no rule has nothing to draw. Both
-         answers are true and the pair is the evidence. */
-      await page.evaluate((k) => window.__ferFrame(k), 'unclaimed');
-      await page.evaluate(() => window.__ferProject('event'));
-      await page.waitForTimeout(450);
-      await page.screenshot({ path: join(SHOTS, 'population-frame-unclaimed-by-event-1440x900.png') });
-      await page.evaluate(() => window.__ferProject('clock'));
-      await page.waitForTimeout(300);
-
-
-      /* ROUND 8, ITEM 1 — THE VERDICT BAND (wireframe H3), AT REST AND DRILLED.
-         Resting is `Rule matched`; drilled here is `Near rule`, which is the
-         verdict the operator named as the one worth reaching. The pair proves
-         the settled rule as well as the form: the roster below shortens to one
-         verdict, and the canvas keeps every occurrence drawn — the drilled
-         verdict's dots are emphasised, the other two verdicts' stay as context.
-         Shot on the whole surface, because the claim is about both panes. */
-      await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
-      await page.evaluate((id) => window.__ferSelect(id), null);
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(450);
-      await page.screenshot({ path: join(SHOTS, 'verdict-band-rest-1440x900.png') });
-      await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'verdict-band-rest-inspector.png') });
-      results.verdictBand = await page.evaluate(() => ({
-        segments: [...document.querySelectorAll('.fer-band .seg')].map((n) => n.dataset.verdict),
-        pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
-        rosterRows: document.querySelectorAll('.ev-row').length,
-        dotsDrawn: window.__ferPooled.getOption().series
-          .find((x) => x.name === 'Occurrences').data.length,
-      }));
-      await page.evaluate(() => window.__ferVerdict('near_rule'));
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: join(SHOTS, 'verdict-band-near-rule-1440x900.png') });
-      await page.locator('.pane.inspector')
-        .screenshot({ path: join(SHOTS, 'verdict-band-near-rule-inspector.png') });
-      results.verdictBandDrilled = await page.evaluate(() => ({
-        pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
-        rosterRows: document.querySelectorAll('.ev-row').length,
-        dotsDrawn: window.__ferPooled.getOption().series
-          .find((x) => x.name === 'Occurrences').data.length,
-      }));
-      await page.evaluate(() => window.__ferVerdict('fired'));
-      await page.waitForTimeout(300);
-
-      /* Back to the default frame, expanded: the production table's own two-way
-         expander, on the roster it caps. */
-      await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
-      await page.waitForTimeout(450);
-      /* ROUND 5, BLOCK 9 — the expander is now conditional on GENUINE overflow,
-         so this leg reports whether there was one rather than assuming it. */
-      const expander = await page.$('.level .more');
-      results.populationExpanderPresent = Boolean(expander);
-      if (expander) {
-        await expander.click();
-        /* The pointer lands on whatever the expander pushed under it, and a hover
-           wash in a capture reads as a selection that is not there. */
-        await page.mouse.move(0, 0);
-        await page.waitForTimeout(350);
-        await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-expanded-inspector.png') });
-      }
-    } else {
-      await gotoLevel(page, null);
-      await page.screenshot({ path: join(SHOTS, 'queue-level-light-1440x900.png') });
-      await gotoLevel(page, 'finding:over_treated_low');
-      await page.screenshot({ path: join(SHOTS, 'scene-light-1440x900.png') });
-      /* ROUND 5 — the Lows frame on parchment. The segmented control's only
-         inks are the primary rule and two text opacities, and a light ground is
-         where an underline-not-fill control either holds or disappears. */
-      await gotoLevel(page, 'population:lows');
-      await page.screenshot({ path: join(SHOTS, 'population-lows-light-1440x900.png') });
-      await page.locator('.pane.inspector')
-        .screenshot({ path: join(SHOTS, 'population-lows-light-inspector.png') });
-      /* ROUND 6 — the two new forms on parchment. The dropdown's expanded list
-         is the only overlay on this surface, and a light ground is where an
-         overlay either separates from the column beneath it or does not. */
-      await page.evaluate(() => window.__ferFactorOpen(true));
-      await page.waitForTimeout(300);
-      await page.locator('.pane.inspector')
-        .screenshot({ path: join(SHOTS, 'factor-dropdown-open-light.png') });
-      await page.evaluate(() => window.__ferFactorOpen(false));
-      /* ROUND 8, ITEM 1 — the band on bone. Its one saturated ink is the accent
-         on the pressed segment, and a light ground is where a 10px coloured bar
-         either reads as a figure or reads as debris. */
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(350);
-      await page.screenshot({ path: join(SHOTS, 'verdict-band-rest-light-1440x900.png') });
-      await page.locator('.pane.inspector')
-        .screenshot({ path: join(SHOTS, 'verdict-band-rest-light-inspector.png') });
-      await page.evaluate(() => window.__ferVerdict('near_rule'));
-      await page.mouse.move(0, 0);
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: join(SHOTS, 'verdict-band-near-rule-light-1440x900.png') });
-      await page.evaluate(() => window.__ferVerdict('fired'));
-      await page.evaluate(() => window.__ferProject('event'));
-      await page.waitForTimeout(400);
-      await page.screenshot({ path: join(SHOTS, 'population-lows-light-by-event.png') });
-    }
-    /* ================= ROUND 9 — THE SAME SIX FRAMES IN BOTH THEMES =================
-     * Round 8 shot most states in one theme each, which is the wrong split for
-     * a round whose findings are largely about the two grounds disagreeing:
-     * finding 10 (a strip that is the loudest ink in light and the quietest in
-     * dark), 17 (a band that reads as three scopes in dark and as a progress bar
-     * in light), 18 (a dot hierarchy that inverts between them). None of those
-     * can be judged from one capture. Every frame below is reached through the
-     * surface's own routing, as every other capture here is. */
-    const t = theme;
-    await page.evaluate(() => window.__ferProject('clock'));
-    await gotoLevel(page, null);
-    await page.waitForTimeout(400);
-    /* FINDING 11 — the requeued queue: tier eyebrows over the ranked runs, the
-       Watching cap where the orphan sentence was. FINDING 10 — and the basal
-       strip under the axis, in the theme it was drawn wrong in. */
-    await page.screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}.png`) });
-    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}-column.png`) });
-    /* FINDING 5 — the chart, on its own, at rest: one ladder, no marquee, no
-       dotted value rules, the legend and the window caption in the head rail. */
-    await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-${t}.png`) });
-
-    await gotoLevel(page, 'finding:over_treated_low');
-    await page.waitForTimeout(400);
-    /* FINDING 4 — the case file drawing all three verdicts, the matched set
-       accented. FINDING 8 — the band with its meta and no manual. FINDING 13 —
-       the residue above the expander. FINDINGS 9 + 12 — one noun on the band and
-       the group rule, and no verdict column restating it once per row. */
-    await page.screenshot({ path: join(SHOTS, `r9-case-file-${t}.png`) });
-    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-case-file-${t}-column.png`) });
-    await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-case-file-${t}.png`) });
-
-    /* FINDINGS 2, 6 AND 7 — A SELECTION, UNDER EACH PROJECTION. The dots sit at
-       their own worst value, both projections name the selected day by its date,
-       the cohort's whiskers are still drawn, and the row's chevron is gone with
-       one `Open … in Day ›` in its place. */
-    const shot = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
-    await page.evaluate((id) => window.__ferSelect(id), shot);
-    await page.waitForTimeout(500);
-    await page.mouse.move(0, 0);
-    await page.screenshot({ path: join(SHOTS, `r9-selection-by-clock-${t}.png`) });
-    await page.evaluate(() => window.__ferProject('event'));
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: join(SHOTS, `r9-selection-by-event-${t}.png`) });
-    await page.evaluate(() => window.__ferProject('clock'));
-
-    /* FINDINGS 8 + 17 — THE BAND, AT REST AND DRILLED, IN BOTH THEMES. The
-       population case file is where it has three segments to state. */
-    await gotoLevel(page, 'population:lows');
-    await page.waitForTimeout(450);
-    await page.mouse.move(0, 0);
-    await page.screenshot({ path: join(SHOTS, `r9-band-rest-${t}.png`) });
-    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-rest-${t}-column.png`) });
-    await page.evaluate(() => window.__ferVerdict('near_rule'));
-    await page.waitForTimeout(500);
-    await page.mouse.move(0, 0);
-    await page.screenshot({ path: join(SHOTS, `r9-band-drilled-${t}.png`) });
-    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-drilled-${t}-column.png`) });
-
-    await page.close();
+  });
+  if (geometry.unresolvedTokens.length) {
+    throw new Error(`the mock has unresolved app tokens: ${geometry.unresolvedTokens.join(', ')} `
+      + '— the app-base extraction is corrupt');
   }
+
+  results.dark = {
+    computedStyleDiff: diffStyles(app, mock),
+    chartOptionDiff: diffOption(option, mockOption),
+    pooledOptionDiff: diffPooledOption(pooledOption, mockPooled),
+    /* `JSON.stringify` drops a property hung off an array, so the two named-
+       deviation lists are carried into fidelity-report.json in their own
+       fields rather than silently vanishing from the record. */
+    get chartOptionExpected() { return this.chartOptionDiff.expected || []; },
+    get pooledOptionExpected() { return this.pooledOptionDiff.expected || []; },
+    geometry,
+  };
+
+  /* THE ARRIVAL, SHOT AS A SEQUENCE. Every frame below is REACHED through the
+     surface's own routing — `__ferGo` is the same call a click makes — so no
+     capture shows a state a reader could not walk to. */
+  const data = JSON.parse(await readFile(join(HERE, 'data.json'), 'utf8'));
+  /* ROUND 6 — the probe above walks BOTH projections, and the surface keeps
+     whichever it was left in (switching projection is not supposed to reset
+     anything). So the capture sequence states the projection it wants rather
+     than inheriting the probe's last one — the first cut of this did inherit
+     it, and every frame labelled `by clock` came out drawn by event. */
+  await page.evaluate(() => window.__ferProject('clock'));
+  await gotoLevel(page, null);
+  await page.screenshot({ path: join(SHOTS, 'queue-level-1440x900.png') });
+
+  /* ROUND 6, FORM 3 — THE FINDING SCENE IN BOTH PROJECTIONS, and the drilled
+     row in both. `By clock` is the rest state: the pooled envelope with the
+     finding's events on it, and — once a row is picked — that event's day
+     over the envelope inside the window brace. `By event` is the lens the
+     mock has had since round 1. The toggle is pressed through the surface's
+     own handler, which is the call the head's button makes. */
+  await gotoLevel(page, 'finding:over_treated_low');
+  await page.screenshot({ path: join(SHOTS, 'scene-1440x900.png') });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'inspector-column.png') });
+
+  /* ROUND 7, ITEM 3 — THE SAME ROW, HOVERED AND THEN SELECTED, as two frames
+     of one sequence. The hover is a REAL pointer hover, not a synthetic
+     call, because what is being proved is what the pointer alone does: the
+     canvas must be identical to the frame above it — no day trace, no window
+     brace, no verdict tooltip — and the row must not read as selected. Then
+     the same row is CLICKED, and the trace and the brace arrive. Anything
+     the hover frame shows that `scene-1440x900.png` does not is the bug. */
+  const rowId = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
+  const row = page.locator(`.ev-row[data-id="${rowId}"]`);
+  await row.hover();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(SHOTS, 'row-hovered-canvas-unchanged.png') });
+  results.hover = await page.evaluate(() => ({
+    selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
+    rowsCarryingATitleAttribute: [...document.querySelectorAll('.ev-row[title]')].length,
+  }));
+
+  /* ROUND 8, ITEM 2 — THE WINDOW, BEFORE AND AFTER THE CLICK. Both frames
+     are captured as well as both readings, because the failure this guards
+     is a visible one: a brace that jumps to the picked event. */
+  const windowBefore = await page.evaluate(WINDOW_READER);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: join(SHOTS, 'selection-window-before.png') });
+
+  await row.click();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(SHOTS, 'row-selected-day-trace-by-clock.png') });
+  const windowAfter = await page.evaluate(WINDOW_READER);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: join(SHOTS, 'selection-window-after.png') });
+  const windowUnchanged = JSON.stringify(windowBefore) === JSON.stringify(windowAfter);
+  results.windowUnchanged = { unchanged: windowUnchanged, before: windowBefore, after: windowAfter };
+  if (!windowUnchanged) {
+    problems.push('SELECTION MOVED THE CLOCK WINDOW — occurrence selection is evidence-only and must '
+      + `never mutate it (data.json terms.selection_never_moves_the_window). before ${JSON.stringify(windowBefore)} `
+      + `after ${JSON.stringify(windowAfter)}`);
+  }
+  results.highlightedRow = rowId;
+  results.selected = await page.evaluate(() => ({
+    selectedRows: document.querySelectorAll('.ev-row[data-selected="true"]').length,
+  }));
+
+  await page.evaluate(() => window.__ferProject('event'));
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: join(SHOTS, 'row-selected-linked-trace-by-event.png') });
+  await page.evaluate((id) => window.__ferSelect(id), null);
+  await page.waitForTimeout(350);
+  await page.screenshot({ path: join(SHOTS, 'scene-by-event-1440x900.png') });
+  await page.evaluate(() => window.__ferProject('clock'));
+  await page.waitForTimeout(400);
+
+  /* THE POPULATION CASE FILE, AS A SEQUENCE OF FRAMES (round 3). It opens on
+     the largest claiming factor; a second claim line reframes both panes; a
+     row overlays one trace on whichever comparison is drawn. Every frame is
+     reached through the surface's own selector — `__ferFrame` is the call the
+     claim row's click makes — so nothing here is a state a reader cannot walk
+     to, and the flat all-cohorts draw round 2 arrived at does not exist. */
+  const population = data.scenes['population:lows'];
+  await gotoLevel(page, 'population:lows');
+  await page.screenshot({ path: join(SHOTS, 'population-all-lows-1440x900.png') });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-inspector-column.png') });
+  results.populationDefaultFrame = population.defaultFactor;
+
+  /* ROUND 6, FORM 1 — THE DROPDOWN, EXPANDED, over the ledger it does not
+     push. Shot on the column so the two states can be laid side by side:
+     the rows and the dock are in the identical place in both. */
+  await page.evaluate(() => window.__ferFactorOpen(true));
+  await page.waitForTimeout(300);
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'factor-dropdown-open.png') });
+  await page.screenshot({ path: join(SHOTS, 'factor-dropdown-open-1440x900.png') });
+  await page.evaluate(() => window.__ferFactorOpen(false));
+  await page.waitForTimeout(250);
+
+  const populationRow = population.frames[population.defaultFactor].occurrences.groups[0].occurrences[1].id;
+  await page.evaluate((id) => window.__ferSelect(id), populationRow);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: join(SHOTS, 'population-row-trace-1440x900.png') });
+  results.populationHighlightedRow = populationRow;
+
+  /* EVERY SEGMENT, INCLUDING UNCLAIMED (round 5, block 2). Two of the three
+     reframe the lens at another factor's coordinates; the third has no
+     comparison to draw and its capture is the whole point of the frame's
+     return — the honest empty canvas, shot rather than described. */
+  for (const key of Object.keys(population.frames).filter((k) => k !== population.defaultFactor)) {
+    await page.evaluate((k) => window.__ferFrame(k), key);
+    await page.waitForTimeout(450);
+    await page.screenshot({ path: join(SHOTS, `population-frame-${key}-1440x900.png`) });
+    await page.locator('.pane.inspector')
+      .screenshot({ path: join(SHOTS, `population-frame-${key}-inspector.png`) });
+  }
+
+  /* THE HONEST EMPTY CANVAS still lives in the EVENT projection, and only
+     there: `By clock` can draw the unclaimed lows as dots on the pooled
+     envelope (a low that no rule claims still happened at a time), while a
+     cohort comparison for a frame with no rule has nothing to draw. Both
+     answers are true and the pair is the evidence. */
+  await page.evaluate((k) => window.__ferFrame(k), 'unclaimed');
+  await page.evaluate(() => window.__ferProject('event'));
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: join(SHOTS, 'population-frame-unclaimed-by-event-1440x900.png') });
+  await page.evaluate(() => window.__ferProject('clock'));
+  await page.waitForTimeout(300);
+
+
+  /* ROUND 8, ITEM 1 — THE VERDICT BAND (wireframe H3), AT REST AND DRILLED.
+     Resting is `Rule matched`; drilled here is `Near rule`, which is the
+     verdict the operator named as the one worth reaching. The pair proves
+     the settled rule as well as the form: the roster below shortens to one
+     verdict, and the canvas keeps every occurrence drawn — the drilled
+     verdict's dots are emphasised, the other two verdicts' stay as context.
+     Shot on the whole surface, because the claim is about both panes. */
+  await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
+  await page.evaluate((id) => window.__ferSelect(id), null);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: join(SHOTS, 'verdict-band-rest-1440x900.png') });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'verdict-band-rest-inspector.png') });
+  results.verdictBand = await page.evaluate(() => ({
+    segments: [...document.querySelectorAll('.fer-band .seg')].map((n) => n.dataset.verdict),
+    pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
+    rosterRows: document.querySelectorAll('.ev-row').length,
+    /* No series named 'Occurrences' has existed since 16cfbda7 (#229) dropped
+       the whole occurrence scatter from `renderCanvas` along with the meal
+       markers — `markCanvas` (surface.js) already no-ops on the same absence.
+       null, not 0: there is nothing left to count, not a count of zero. */
+    dotsDrawn: window.__ferPooled.getOption().series
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
+  }));
+  await page.evaluate(() => window.__ferVerdict('near_rule'));
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(SHOTS, 'verdict-band-near-rule-1440x900.png') });
+  await page.locator('.pane.inspector')
+    .screenshot({ path: join(SHOTS, 'verdict-band-near-rule-inspector.png') });
+  results.verdictBandDrilled = await page.evaluate(() => ({
+    pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
+    rosterRows: document.querySelectorAll('.ev-row').length,
+    /* Same absence as results.verdictBand above. */
+    dotsDrawn: window.__ferPooled.getOption().series
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
+  }));
+  await page.evaluate(() => window.__ferVerdict('fired'));
+  await page.waitForTimeout(300);
+
+  /* Back to the default frame, expanded: the production table's own two-way
+     expander, on the roster it caps. */
+  await page.evaluate((k) => window.__ferFrame(k), population.defaultFactor);
+  await page.waitForTimeout(450);
+  /* ROUND 5, BLOCK 9 — the expander is now conditional on GENUINE overflow,
+     so this leg reports whether there was one rather than assuming it. */
+  const expander = await page.$('.level .more');
+  results.populationExpanderPresent = Boolean(expander);
+  if (expander) {
+    await expander.click();
+    /* The pointer lands on whatever the expander pushed under it, and a hover
+       wash in a capture reads as a selection that is not there. */
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(350);
+    await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, 'population-expanded-inspector.png') });
+  }
+  /* ================= ROUND 9 — THE SAME SIX FRAMES =================
+   * Round 8 shot most states in one theme each, which was the wrong split for
+   * a round whose findings were largely about the two grounds disagreeing:
+   * finding 10 (a strip that was the loudest ink in light and the quietest in
+   * dark), 17 (a band that read as three scopes in dark and as a progress bar
+   * in light), 18 (a dot hierarchy that inverted between them). ADR 304
+   * retired light, so those three findings are settled by the one ground that
+   * ships and each frame below is shot once.
+   *
+   * `t` IS A FILENAME TOKEN AND NOTHING ELSE — it selects no theme and is read
+   * by no assertion. It stays `'dark'` because ten `r9-*-dark.png` captures are
+   * committed under screenshots/ and every round note cites them by name;
+   * dropping the suffix would orphan all ten and write ten new files in a
+   * directory this change does not regenerate. The `-light` captures that sat
+   * beside them were removed with the light theme (#313).
+   *
+   * Every frame is reached through the surface's own routing, as every other
+   * capture here is. */
+  const t = 'dark';
+  await page.evaluate(() => window.__ferProject('clock'));
+  await gotoLevel(page, null);
+  await page.waitForTimeout(400);
+  /* FINDING 11 — the requeued queue: tier eyebrows over the ranked runs, the
+     Watching cap where the orphan sentence was. FINDING 10 — and the basal
+     strip under the axis, on the ground it was drawn wrong on. */
+  await page.screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}.png`) });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-queue-tiers-${t}-column.png`) });
+  /* FINDING 5 — the chart, on its own, at rest: one ladder, no marquee, no
+     dotted value rules, the legend and the window caption in the head rail. */
+  await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-${t}.png`) });
+
+  await gotoLevel(page, 'finding:over_treated_low');
+  await page.waitForTimeout(400);
+  /* FINDING 4 — the case file drawing all three verdicts, the matched set
+     accented. FINDING 8 — the band with its meta and no manual. FINDING 13 —
+     the residue above the expander. FINDINGS 9 + 12 — one noun on the band and
+     the group rule, and no verdict column restating it once per row. */
+  await page.screenshot({ path: join(SHOTS, `r9-case-file-${t}.png`) });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-case-file-${t}-column.png`) });
+  await page.locator('.dw-canvas').screenshot({ path: join(SHOTS, `r9-chart-case-file-${t}.png`) });
+
+  /* FINDINGS 2, 6 AND 7 — A SELECTION, UNDER EACH PROJECTION. The dots sit at
+     their own worst value, both projections name the selected day by its date,
+     the cohort's whiskers are still drawn, and the row's chevron is gone with
+     one `Open … in Day ›` in its place. */
+  const shot = data.scenes['finding:over_treated_low'].occurrences.groups[0].occurrences[2].id;
+  await page.evaluate((id) => window.__ferSelect(id), shot);
+  await page.waitForTimeout(500);
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: join(SHOTS, `r9-selection-by-clock-${t}.png`) });
+  await page.evaluate(() => window.__ferProject('event'));
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: join(SHOTS, `r9-selection-by-event-${t}.png`) });
+  await page.evaluate(() => window.__ferProject('clock'));
+
+  /* FINDINGS 8 + 17 — THE BAND, AT REST AND DRILLED. The population case file
+     is where it has three segments to state. */
+  await gotoLevel(page, 'population:lows');
+  await page.waitForTimeout(450);
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: join(SHOTS, `r9-band-rest-${t}.png`) });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-rest-${t}-column.png`) });
+  await page.evaluate(() => window.__ferVerdict('near_rule'));
+  await page.waitForTimeout(500);
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: join(SHOTS, `r9-band-drilled-${t}.png`) });
+  await page.locator('.pane.inspector').screenshot({ path: join(SHOTS, `r9-band-drilled-${t}-column.png`) });
+
+  await page.close();
 
   await browser.close();
 
   const out = { viewport: VIEWPORT, ...results, mockProblems: problems, openerProblems: openerProblems() };
   await writeFile(join(HERE, 'fidelity-report.json'), `${JSON.stringify(out, null, 1)}\n`);
 
-  for (const theme of ['dark', 'light']) {
-    const r = results[theme];
-    const d = r.computedStyleDiff;
-    process.stdout.write(
-      `\n[${theme}] computed-style diff — ${d.matched}/${d.checked} shared selectors identical, `
-      + `${d.mismatches.length} unexplained, ${d.expected.length} named deviation(s), `
-      + `${d.absentInApp.length} not laid out in the app, `
-      + `${d.absentInMock.length} not laid out in the mock, `
-      + `${d.absentBoth.length} deliberately absent on both sides, `
-      + `${d.contentResolved.length} track(s) resolved against different content\n`
-      + `[${theme}] lens chart-option diff — ${r.chartOptionDiff.length} difference(s), `
-      + `${(r.chartOptionDiff.expected || []).length} named deviation(s)\n`
-      + `[${theme}] queue-root pooled chart-option diff — ${r.pooledOptionDiff.length} difference(s), `
-      + `${(r.pooledOptionDiff.expected || []).length} named deviation(s)\n`
-      + `[${theme}] page scroll x ${r.geometry.pageScrollX}px / y ${r.geometry.pageScrollY}px; `
-      + `breadcrumb clipped: ${r.geometry.breadcrumbClipped}; `
-      + `level scrolls internally: ${r.geometry.levelScrollsInternally}\n`,
-    );
-    for (const e of d.expected) process.stdout.write(`  = ${e}\n`);
-    for (const m of d.mismatches) {
-      process.stdout.write(`  ! ${m.selector} (app <${m.appTag}> / mock <${m.mockTag}>)\n`);
-      for (const b of m.bad) process.stdout.write(`      ${b}\n`);
-    }
-    for (const o of r.chartOptionDiff.expected || []) process.stdout.write(`  ~= ${o}\n`);
-    for (const o of r.chartOptionDiff) process.stdout.write(`  ~ ${o}\n`);
-    for (const o of r.pooledOptionDiff.expected || []) process.stdout.write(`  ≈= ${o}\n`);
-    for (const o of r.pooledOptionDiff) process.stdout.write(`  ≈ ${o}\n`);
+  const r = results.dark;
+  const d = r.computedStyleDiff;
+  process.stdout.write(
+    `\ncomputed-style diff — ${d.matched}/${d.checked} shared selectors identical, `
+    + `${d.mismatches.length} unexplained, ${d.expected.length} named deviation(s), `
+    + `${d.absentInApp.length} not laid out in the app, `
+    + `${d.absentInMock.length} not laid out in the mock, `
+    + `${d.absentBoth.length} deliberately absent on both sides, `
+    + `${d.contentResolved.length} track(s) resolved against different content\n`
+    + `lens chart-option diff — ${r.chartOptionDiff.length} difference(s), `
+    + `${(r.chartOptionDiff.expected || []).length} named deviation(s)\n`
+    + `queue-root pooled chart-option diff — ${r.pooledOptionDiff.length} difference(s), `
+    + `${(r.pooledOptionDiff.expected || []).length} named deviation(s)\n`
+    + `page scroll x ${r.geometry.pageScrollX}px / y ${r.geometry.pageScrollY}px; `
+    + `breadcrumb clipped: ${r.geometry.breadcrumbClipped}; `
+    + `level scrolls internally: ${r.geometry.levelScrollsInternally}\n`,
+  );
+  for (const e of d.expected) process.stdout.write(`  = ${e}\n`);
+  for (const m of d.mismatches) {
+    process.stdout.write(`  ! ${m.selector} (app <${m.appTag}> / mock <${m.mockTag}>)\n`);
+    for (const b of m.bad) process.stdout.write(`      ${b}\n`);
   }
+  for (const o of r.chartOptionDiff.expected || []) process.stdout.write(`  ~= ${o}\n`);
+  for (const o of r.chartOptionDiff) process.stdout.write(`  ~ ${o}\n`);
+  for (const o of r.pooledOptionDiff.expected || []) process.stdout.write(`  ≈= ${o}\n`);
+  for (const o of r.pooledOptionDiff) process.stdout.write(`  ≈ ${o}\n`);
   process.stdout.write(`\nmock console/page errors — ${problems.length}\n`);
   for (const p of problems) process.stdout.write(`  x ${p}\n`);
 }

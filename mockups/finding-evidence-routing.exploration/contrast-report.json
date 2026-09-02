@@ -1,1633 +1,777 @@
 {
  "pairs": {
-  "F7 .qrow .go chevron · light": {
-   "ratio": 7.13,
-   "ink": "#87401a",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-dock-line · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .qrow .tag habit · light": {
-   "ratio": 6.02,
-   "ink": "#6a5d4e",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-tier eyebrow · light": {
-   "ratio": 6.66,
-   "ink": "#4d5c53",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-tier noted · light": {
-   "ratio": 7.37,
-   "ink": "#3d5848",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F5 .lane button vs the strip · light": {
-   "ratio": 3.63,
-   "ink": "#757773",
-   "ground": "#e8e6e2",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F5 .lane strip vs the pane · light": {
-   "ratio": 1.17,
-   "ink": "#e8e6e2",
-   "ground": "#faf8f4",
-   "floor": 1.05,
-   "ceiling": 2
-  },
-  "F7 .fer-coincide .linkbtn · light": {
-   "ratio": 7.13,
-   "ink": "#87401a",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .more expander · light": {
-   "ratio": 7.13,
-   "ink": "#87401a",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ev-row .when · light": {
-   "ratio": 7.37,
-   "ink": "#3d5848",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .lvl-cap section spine · light": {
-   "ratio": 6.66,
-   "ink": "#4d5c53",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .ec-key-item small · light": {
-   "ratio": 7.37,
-   "ink": "#3d5848",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F6 --ec-near at limited alpha · light": {
-   "ratio": 3.41,
-   "ink": "#9f816d",
-   "ground": "#faf8f4",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F7 .fer-open route · light": {
-   "ratio": 7.13,
-   "ink": "#87401a",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-residue · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-band .cap .meta · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-count crumb count · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-sel .ct factor count · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 crumb root button · light": {
-   "ratio": 7.37,
-   "ink": "#3d5848",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .crumb .chev · light": {
-   "ratio": 5.54,
-   "ink": "#626561",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-sel .chev · light": {
-   "ratio": 7.37,
-   "ink": "#3d5848",
-   "ground": "#faf8f4",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-head-key legend text · light": {
-   "ratio": 6.73,
-   "ink": "#3d5848",
-   "ground": "#f0eee8",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F2 band inactive segment · light": {
-   "ratio": 3.82,
-   "ink": "#7e7f78",
-   "ground": "#faf8f4",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F2 band active segment · light": {
-   "ratio": 5.17,
-   "ink": "#a94f21",
-   "ground": "#faf8f4",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch 10-90th · light": {
-   "ratio": 6.09,
-   "ink": "#4d5c53",
-   "ground": "#f0eee8",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch 25-75th · light": {
-   "ratio": 6.09,
-   "ink": "#4d5c53",
-   "ground": "#f0eee8",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Meal boluses · light": {
-   "ratio": 6.09,
-   "ink": "#4d5c53",
-   "ground": "#f0eee8",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Occurrences · light": {
-   "ratio": 6.09,
-   "ink": "#4d5c53",
-   "ground": "#f0eee8",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Median · light": {
-   "ratio": 6.09,
-   "ink": "#4d5c53",
-   "ground": "#f0eee8",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F4 --fer-dot on the pane ground · light": {
-   "ratio": 3.82,
-   "ink": "#5c8494",
-   "ground": "#faf8f4",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F7 .fer-sel-opt .tick · light": {
-   "ratio": 6.4,
-   "ink": "#87401a",
-   "ground": "#efece6",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .fer-sel-opt .ct · light": {
-   "ratio": 5.3,
-   "ink": "#5e615c",
-   "ground": "#efece6",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F7 .qrow .go chevron · dark": {
-   "ratio": 6.79,
+  "F7 .qrow .go chevron": {
+   "ratio": 7.45,
    "ink": "#ef9459",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-dock-line · dark": {
-   "ratio": 5.26,
-   "ink": "#ada59b",
-   "ground": "#38312a",
+  "F7 .fer-dock-line": {
+   "ratio": 6.39,
+   "ink": "#a19d95",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .qrow .tag habit · dark": {
-   "ratio": 6.46,
+  "F7 .qrow .tag habit": {
+   "ratio": 7.67,
    "ink": "#b3a48d",
-   "ground": "#262220",
+   "ground": "#14120f",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-tier eyebrow · dark": {
-   "ratio": 5.72,
+  "F7 .fer-tier eyebrow": {
+   "ratio": 6.27,
    "ink": "#a89a85",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-tier noted · dark": {
-   "ratio": 5.47,
-   "ink": "#a3968a",
-   "ground": "#262220",
+  "F7 .fer-tier noted": {
+   "ratio": 6.37,
+   "ink": "#a49c90",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F5 .lane button vs the strip · dark": {
-   "ratio": 4.39,
-   "ink": "#9e978f",
-   "ground": "#37322f",
+  "F5 .lane button vs the strip": {
+   "ratio": 4.54,
+   "ink": "#9b968e",
+   "ground": "#332f2b",
    "floor": 3,
    "ceiling": null
   },
-  "F5 .lane strip vs the pane · dark": {
-   "ratio": 1.47,
-   "ink": "#37322f",
-   "ground": "#151311",
+  "F5 .lane strip vs the pane": {
+   "ratio": 1.29,
+   "ink": "#332f2b",
+   "ground": "#1e1a17",
    "floor": 1.05,
    "ceiling": 2
   },
-  "F7 .fer-coincide .linkbtn · dark": {
-   "ratio": 6.79,
+  "F7 .fer-coincide .linkbtn": {
+   "ratio": 7.45,
    "ink": "#ef9459",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .more expander · dark": {
-   "ratio": 6.79,
+  "F7 .more expander": {
+   "ratio": 7.45,
    "ink": "#ef9459",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .ev-row .when · dark": {
-   "ratio": 5.47,
-   "ink": "#a3968a",
-   "ground": "#262220",
+  "F7 .ev-row .when": {
+   "ratio": 6.37,
+   "ink": "#a49c90",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .lvl-cap section spine · dark": {
-   "ratio": 5.72,
+  "F7 .lvl-cap section spine": {
+   "ratio": 6.27,
    "ink": "#a89a85",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .ec-key-item small · dark": {
-   "ratio": 6.43,
-   "ink": "#a3968a",
-   "ground": "#151311",
+  "F7 .ec-key-item small": {
+   "ratio": 6.37,
+   "ink": "#a49c90",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F6 --ec-near at limited alpha · dark": {
-   "ratio": 3.34,
-   "ink": "#84613f",
-   "ground": "#151311",
+  "F6 --ec-near at limited alpha": {
+   "ratio": 3.26,
+   "ink": "#886441",
+   "ground": "#1e1a17",
    "floor": 3,
    "ceiling": null
   },
-  "F7 .fer-open route · dark": {
-   "ratio": 6.79,
+  "F7 .fer-open route": {
+   "ratio": 7.45,
    "ink": "#ef9459",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-residue · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
+  "F7 .fer-residue": {
+   "ratio": 6.39,
+   "ink": "#a19d95",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-band .cap .meta · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
+  "F7 .fer-band .cap .meta": {
+   "ratio": 6.39,
+   "ink": "#a19d95",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-count crumb count · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
+  "F7 .fer-count crumb count": {
+   "ratio": 6.39,
+   "ink": "#a19d95",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-sel .ct factor count · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
+  "F7 .fer-sel .ct factor count": {
+   "ratio": 6.65,
+   "ink": "#9e9a92",
+   "ground": "#14120f",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 crumb root button · dark": {
-   "ratio": 5.47,
-   "ink": "#a3968a",
-   "ground": "#262220",
+  "F7 crumb root button": {
+   "ratio": 6.37,
+   "ink": "#a49c90",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .crumb .chev · dark": {
-   "ratio": 6.04,
-   "ink": "#a69f97",
-   "ground": "#262220",
+  "F7 .crumb .chev": {
+   "ratio": 6.39,
+   "ink": "#a19d95",
+   "ground": "#1e1a17",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-sel .chev · dark": {
-   "ratio": 5.47,
-   "ink": "#a3968a",
-   "ground": "#262220",
+  "F7 .fer-sel .chev": {
+   "ratio": 6.89,
+   "ink": "#a49c90",
+   "ground": "#14120f",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-head-key legend text · dark": {
-   "ratio": 6.15,
-   "ink": "#a3968a",
-   "ground": "#1a1815",
-   "floor": 4.5,
-   "ceiling": null
-  },
-  "F2 band inactive segment · dark": {
-   "ratio": 3.36,
-   "ink": "#79736d",
-   "ground": "#262220",
+  "F2 band inactive segment": {
+   "ratio": 3.43,
+   "ink": "#736e68",
+   "ground": "#1e1a17",
    "floor": 3,
    "ceiling": null
   },
-  "F2 band active segment · dark": {
-   "ratio": 5.46,
+  "F2 band active segment": {
+   "ratio": 5.99,
    "ink": "#e07f3f",
-   "ground": "#262220",
+   "ground": "#1e1a17",
    "floor": 3,
    "ceiling": null
   },
-  "F3 legend swatch 10-90th · dark": {
-   "ratio": 6.43,
-   "ink": "#a89a85",
-   "ground": "#1a1815",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch 25-75th · dark": {
-   "ratio": 6.43,
-   "ink": "#a89a85",
-   "ground": "#1a1815",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Meal boluses · dark": {
-   "ratio": 6.43,
-   "ink": "#a89a85",
-   "ground": "#1a1815",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Occurrences · dark": {
-   "ratio": 6.43,
-   "ink": "#a89a85",
-   "ground": "#1a1815",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F3 legend swatch Median · dark": {
-   "ratio": 6.43,
-   "ink": "#a89a85",
-   "ground": "#1a1815",
-   "floor": 3,
-   "ceiling": null
-  },
-  "F4 --fer-dot on the pane ground · dark": {
-   "ratio": 3.81,
+  "F4 --fer-dot on the pane ground": {
+   "ratio": 3.55,
    "ink": "#4d7789",
-   "ground": "#151311",
+   "ground": "#1e1a17",
    "floor": 3,
    "ceiling": null
   },
-  "F7 .fer-sel-opt .tick · dark": {
-   "ratio": 4.83,
+  "F7 .fer-sel-opt .tick": {
+   "ratio": 7.71,
    "ink": "#ef9459",
-   "ground": "#403a33",
+   "ground": "#1a1714",
    "floor": 4.5,
    "ceiling": null
   },
-  "F7 .fer-sel-opt .ct · dark": {
-   "ratio": 4.79,
-   "ink": "#b0a89e",
-   "ground": "#403a33",
+  "F7 .fer-sel-opt .ct": {
+   "ratio": 6.51,
+   "ink": "#a09c94",
+   "ground": "#1a1714",
    "floor": 4.5,
    "ceiling": null
   }
  },
  "targets": {
-  "F8 toolbar .seg button · light 1280x800": {
+  "F8 toolbar .seg button · 1280x800": {
    "w": 73.8,
    "h": 24
   },
-  "F8 .fer-coincide .linkbtn · light 1280x800": {
+  "F8 .fer-coincide .linkbtn · 1280x800": {
    "w": 180.1,
    "h": 25
   },
-  "F8 .more expander · light 1280x800": {
+  "F8 .more expander · 1280x800": {
    "w": 429,
    "h": 32
   },
-  "F8 .ev-row · light 1280x800": {
+  "F8 .ev-row · 1280x800": {
    "w": 429,
    "h": 24
   },
-  "F8 .fer-band .seg · light 1280x800": {
+  "F8 .fer-band .seg · 1280x800": {
    "w": 165.1,
    "h": 24
   },
-  "F8 .fer-band .key · light 1280x800": {
+  "F8 .fer-band .key · 1280x800": {
    "w": 405,
    "h": 24
   },
-  "F8 .fer-open route · light 1280x800": {
+  "F8 .fer-open route · 1280x800": {
    "w": 92.7,
    "h": 25
   },
-  "F8 crumb root button · light 1280x800": {
+  "F8 crumb root button · 1280x800": {
    "w": 47.8,
    "h": 24
   },
-  "F8 .fer-sel rest line · light 1280x800": {
+  "F8 .fer-sel rest line · 1280x800": {
    "w": 429,
    "h": 32
   },
-  "F8 .fer-sel-opt · light 1280x800": {
+  "F8 .fer-sel-opt · 1280x800": {
    "w": 429,
    "h": 30
   },
-  "F8 toolbar .seg button · light 1440x900": {
+  "F8 toolbar .seg button · 1440x900": {
    "w": 73.8,
    "h": 24
   },
-  "F8 .fer-coincide .linkbtn · light 1440x900": {
+  "F8 .fer-coincide .linkbtn · 1440x900": {
    "w": 180.1,
    "h": 25
   },
-  "F8 .more expander · light 1440x900": {
+  "F8 .more expander · 1440x900": {
    "w": 429,
    "h": 32
   },
-  "F8 .ev-row · light 1440x900": {
+  "F8 .ev-row · 1440x900": {
    "w": 429,
    "h": 24
   },
-  "F8 .fer-band .seg · light 1440x900": {
+  "F8 .fer-band .seg · 1440x900": {
    "w": 165.1,
    "h": 24
   },
-  "F8 .fer-band .key · light 1440x900": {
+  "F8 .fer-band .key · 1440x900": {
    "w": 405,
    "h": 24
   },
-  "F8 .fer-open route · light 1440x900": {
+  "F8 .fer-open route · 1440x900": {
    "w": 92.7,
    "h": 25
   },
-  "F8 crumb root button · light 1440x900": {
+  "F8 crumb root button · 1440x900": {
    "w": 47.8,
    "h": 24
   },
-  "F8 .fer-sel rest line · light 1440x900": {
+  "F8 .fer-sel rest line · 1440x900": {
    "w": 429,
    "h": 32
   },
-  "F8 .fer-sel-opt · light 1440x900": {
-   "w": 429,
-   "h": 30
-  },
-  "F8 toolbar .seg button · dark 1280x800": {
-   "w": 73.8,
-   "h": 24
-  },
-  "F8 .fer-coincide .linkbtn · dark 1280x800": {
-   "w": 180.1,
-   "h": 25
-  },
-  "F8 .more expander · dark 1280x800": {
-   "w": 429,
-   "h": 32
-  },
-  "F8 .ev-row · dark 1280x800": {
-   "w": 429,
-   "h": 24
-  },
-  "F8 .fer-band .seg · dark 1280x800": {
-   "w": 165.1,
-   "h": 24
-  },
-  "F8 .fer-band .key · dark 1280x800": {
-   "w": 405,
-   "h": 24
-  },
-  "F8 .fer-open route · dark 1280x800": {
-   "w": 92.7,
-   "h": 25
-  },
-  "F8 crumb root button · dark 1280x800": {
-   "w": 47.8,
-   "h": 24
-  },
-  "F8 .fer-sel rest line · dark 1280x800": {
-   "w": 429,
-   "h": 32
-  },
-  "F8 .fer-sel-opt · dark 1280x800": {
-   "w": 429,
-   "h": 30
-  },
-  "F8 toolbar .seg button · dark 1440x900": {
-   "w": 73.8,
-   "h": 24
-  },
-  "F8 .fer-coincide .linkbtn · dark 1440x900": {
-   "w": 180.1,
-   "h": 25
-  },
-  "F8 .more expander · dark 1440x900": {
-   "w": 429,
-   "h": 32
-  },
-  "F8 .ev-row · dark 1440x900": {
-   "w": 429,
-   "h": 24
-  },
-  "F8 .fer-band .seg · dark 1440x900": {
-   "w": 165.1,
-   "h": 24
-  },
-  "F8 .fer-band .key · dark 1440x900": {
-   "w": 405,
-   "h": 24
-  },
-  "F8 .fer-open route · dark 1440x900": {
-   "w": 92.7,
-   "h": 25
-  },
-  "F8 crumb root button · dark 1440x900": {
-   "w": 47.8,
-   "h": 24
-  },
-  "F8 .fer-sel rest line · dark 1440x900": {
-   "w": 429,
-   "h": 32
-  },
-  "F8 .fer-sel-opt · dark 1440x900": {
+  "F8 .fer-sel-opt · 1440x900": {
    "w": 429,
    "h": 30
   }
  },
  "overflow": {
-  "light 1280x800 · queue": {
-   "level": 144,
+  "1280x800 · queue": {
+   "level": 234,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding": {
+  "1280x800 · finding": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · clock · selected": {
+  "1280x800 · finding · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · clock · expanded": {
+  "1280x800 · finding · fired · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · clock · expanded · selected": {
+  "1280x800 · finding · fired · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · lens": {
+  "1280x800 · lens": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · event · selected": {
+  "1280x800 · finding · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · event · expanded": {
+  "1280x800 · finding · fired · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · finding · fired · event · expanded · selected": {
+  "1280x800 · finding · fired · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population": {
+  "1280x800 · population": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · clock · selected": {
+  "1280x800 · population · over_treated_low · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · clock · expanded": {
+  "1280x800 · population · over_treated_low · fired · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · clock · expanded · selected": {
+  "1280x800 · population · over_treated_low · fired · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · event": {
+  "1280x800 · population · over_treated_low · fired · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · event · selected": {
+  "1280x800 · population · over_treated_low · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · event · expanded": {
+  "1280x800 · population · over_treated_low · fired · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · fired · event · expanded · selected": {
+  "1280x800 · population · over_treated_low · fired · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · near_rule · clock": {
+  "1280x800 · population · over_treated_low · near_rule · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · near_rule · clock · selected": {
+  "1280x800 · population · over_treated_low · near_rule · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · near_rule · event": {
+  "1280x800 · population · over_treated_low · near_rule · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · near_rule · event · selected": {
+  "1280x800 · population · over_treated_low · near_rule · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · clock": {
+  "1280x800 · population · over_treated_low · neutral · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · clock · selected": {
+  "1280x800 · population · over_treated_low · neutral · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · clock · expanded": {
+  "1280x800 · population · over_treated_low · neutral · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · clock · expanded · selected": {
+  "1280x800 · population · over_treated_low · neutral · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · event": {
+  "1280x800 · population · over_treated_low · neutral · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · event · selected": {
+  "1280x800 · population · over_treated_low · neutral · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · event · expanded": {
+  "1280x800 · population · over_treated_low · neutral · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · over_treated_low · neutral · event · expanded · selected": {
+  "1280x800 · population · over_treated_low · neutral · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · fired · clock": {
+  "1280x800 · population · correction_on_iob · fired · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · fired · clock · selected": {
+  "1280x800 · population · correction_on_iob · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · fired · event": {
+  "1280x800 · population · correction_on_iob · fired · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · fired · event · selected": {
+  "1280x800 · population · correction_on_iob · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · clock": {
+  "1280x800 · population · correction_on_iob · neutral · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · clock · selected": {
+  "1280x800 · population · correction_on_iob · neutral · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · clock · expanded": {
+  "1280x800 · population · correction_on_iob · neutral · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · clock · expanded · selected": {
+  "1280x800 · population · correction_on_iob · neutral · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · event": {
+  "1280x800 · population · correction_on_iob · neutral · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · event · selected": {
+  "1280x800 · population · correction_on_iob · neutral · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · event · expanded": {
+  "1280x800 · population · correction_on_iob · neutral · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · correction_on_iob · neutral · event · expanded · selected": {
+  "1280x800 · population · correction_on_iob · neutral · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · clock": {
+  "1280x800 · population · unclaimed · unclaimed · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · clock · selected": {
+  "1280x800 · population · unclaimed · unclaimed · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · clock · expanded": {
+  "1280x800 · population · unclaimed · unclaimed · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · clock · expanded · selected": {
+  "1280x800 · population · unclaimed · unclaimed · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · event": {
+  "1280x800 · population · unclaimed · unclaimed · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · event · selected": {
+  "1280x800 · population · unclaimed · unclaimed · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · event · expanded": {
+  "1280x800 · population · unclaimed · unclaimed · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · population · unclaimed · unclaimed · event · expanded · selected": {
+  "1280x800 · population · unclaimed · unclaimed · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · dropdown": {
+  "1280x800 · dropdown": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1280x800 · dropdown · event": {
+  "1280x800 · dropdown · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · queue": {
-   "level": 50,
+  "1440x900 · queue": {
+   "level": 140,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding": {
+  "1440x900 · finding": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · clock · selected": {
+  "1440x900 · finding · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · clock · expanded": {
+  "1440x900 · finding · fired · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · clock · expanded · selected": {
+  "1440x900 · finding · fired · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · lens": {
+  "1440x900 · lens": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · event · selected": {
+  "1440x900 · finding · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · event · expanded": {
+  "1440x900 · finding · fired · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · finding · fired · event · expanded · selected": {
+  "1440x900 · finding · fired · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population": {
+  "1440x900 · population": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · clock · selected": {
+  "1440x900 · population · over_treated_low · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · clock · expanded": {
+  "1440x900 · population · over_treated_low · fired · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · clock · expanded · selected": {
+  "1440x900 · population · over_treated_low · fired · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · event": {
+  "1440x900 · population · over_treated_low · fired · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · event · selected": {
+  "1440x900 · population · over_treated_low · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · event · expanded": {
+  "1440x900 · population · over_treated_low · fired · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · fired · event · expanded · selected": {
+  "1440x900 · population · over_treated_low · fired · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · near_rule · clock": {
+  "1440x900 · population · over_treated_low · near_rule · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · near_rule · clock · selected": {
+  "1440x900 · population · over_treated_low · near_rule · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · near_rule · event": {
+  "1440x900 · population · over_treated_low · near_rule · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · near_rule · event · selected": {
+  "1440x900 · population · over_treated_low · near_rule · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · clock": {
+  "1440x900 · population · over_treated_low · neutral · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · clock · selected": {
+  "1440x900 · population · over_treated_low · neutral · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · clock · expanded": {
+  "1440x900 · population · over_treated_low · neutral · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · clock · expanded · selected": {
+  "1440x900 · population · over_treated_low · neutral · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · event": {
+  "1440x900 · population · over_treated_low · neutral · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · event · selected": {
+  "1440x900 · population · over_treated_low · neutral · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · event · expanded": {
+  "1440x900 · population · over_treated_low · neutral · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · over_treated_low · neutral · event · expanded · selected": {
+  "1440x900 · population · over_treated_low · neutral · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · fired · clock": {
+  "1440x900 · population · correction_on_iob · fired · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · fired · clock · selected": {
+  "1440x900 · population · correction_on_iob · fired · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · fired · event": {
+  "1440x900 · population · correction_on_iob · fired · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · fired · event · selected": {
+  "1440x900 · population · correction_on_iob · fired · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · clock": {
+  "1440x900 · population · correction_on_iob · neutral · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · clock · selected": {
+  "1440x900 · population · correction_on_iob · neutral · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · clock · expanded": {
+  "1440x900 · population · correction_on_iob · neutral · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · clock · expanded · selected": {
+  "1440x900 · population · correction_on_iob · neutral · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · event": {
+  "1440x900 · population · correction_on_iob · neutral · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · event · selected": {
+  "1440x900 · population · correction_on_iob · neutral · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · event · expanded": {
+  "1440x900 · population · correction_on_iob · neutral · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · correction_on_iob · neutral · event · expanded · selected": {
+  "1440x900 · population · correction_on_iob · neutral · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · clock": {
+  "1440x900 · population · unclaimed · unclaimed · clock": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · clock · selected": {
+  "1440x900 · population · unclaimed · unclaimed · clock · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · clock · expanded": {
+  "1440x900 · population · unclaimed · unclaimed · clock · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · clock · expanded · selected": {
+  "1440x900 · population · unclaimed · unclaimed · clock · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · event": {
+  "1440x900 · population · unclaimed · unclaimed · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · event · selected": {
+  "1440x900 · population · unclaimed · unclaimed · event · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · event · expanded": {
+  "1440x900 · population · unclaimed · unclaimed · event · expanded": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · population · unclaimed · unclaimed · event · expanded · selected": {
+  "1440x900 · population · unclaimed · unclaimed · event · expanded · selected": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · dropdown": {
+  "1440x900 · dropdown": {
    "level": 0,
    "pageY": 0,
    "pageX": 0
   },
-  "light 1440x900 · dropdown · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · queue": {
-   "level": 144,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · lens": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · finding · fired · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · fired · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · near_rule · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · near_rule · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · near_rule · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · near_rule · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · over_treated_low · neutral · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · fired · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · fired · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · correction_on_iob · neutral · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · population · unclaimed · unclaimed · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · dropdown": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1280x800 · dropdown · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · queue": {
-   "level": 50,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · lens": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · finding · fired · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · fired · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · near_rule · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · near_rule · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · near_rule · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · near_rule · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · over_treated_low · neutral · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · fired · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · fired · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · fired · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · fired · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · correction_on_iob · neutral · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · clock": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · clock · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · clock · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · clock · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · event": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · event · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · event · expanded": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · population · unclaimed · unclaimed · event · expanded · selected": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · dropdown": {
-   "level": 0,
-   "pageY": 0,
-   "pageX": 0
-  },
-  "dark 1440x900 · dropdown · event": {
+  "1440x900 · dropdown · event": {
    "level": 0,
    "pageY": 0,
    "pageX": 0

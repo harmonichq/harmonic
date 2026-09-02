@@ -94,7 +94,7 @@ const RECOVERED_CARB_RATIO = {
 
 async function openCanvas(browser, { routes = null, ...options } = {}) {
   const page = await openApp(browser, {
-    appSource: 'fixture', theme: 'dark', findingsInputs: FINDINGS_INPUTS,
+    appSource: 'fixture', findingsInputs: FINDINGS_INPUTS,
     ...options,
   });
   const errors = [];
@@ -458,7 +458,7 @@ test('an in-flight history refresh cannot adopt findings for a window the reader
   let markAfternoonRequested;
   const afternoonRequested = new Promise((resolve) => { markAfternoonRequested = resolve; });
   const page = await openApp(browser, {
-    appSource: 'fixture', theme: 'dark', history: true, findingsInputs: FINDINGS_INPUTS,
+    appSource: 'fixture', history: true, findingsInputs: FINDINGS_INPUTS,
     findingsResponseBarrier: async ({ url }) => {
       if (url.pathname !== '/api/diagnose/findings') return;
       const window = [url.searchParams.get('start_min'), url.searchParams.get('end_min')];

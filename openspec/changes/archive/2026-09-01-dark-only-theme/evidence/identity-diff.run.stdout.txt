@@ -1,0 +1,652 @@
+#304 identity evidence — base vs revision computed style
+base     http://127.0.0.1:8766/   (localStorage theme='dark')
+revision http://127.0.0.1:8765/   (nothing stored)
+
+## shell @ 1440x900
+   elements compared 557 · properties compared 323540
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.109px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.117px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+
+## shell @ 1280x800
+   elements compared 557 · properties compared 323540
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.109px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.117px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+
+## shell @ 390x844
+   elements compared 509 · properties compared 294848
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+
+## shell-drawer @ 1440x900
+   note (base):     drawer trigger is display:none at this width — drawer left closed on both sides
+   note (revision): drawer trigger is display:none at this width — drawer left closed on both sides
+   elements compared 557 · properties compared 323540
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.109px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.117px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+
+## shell-drawer @ 1280x800
+   note (base):     drawer trigger is display:none at this width — drawer left closed on both sides
+   note (revision): drawer trigger is display:none at this width — drawer left closed on both sides
+   elements compared 557 · properties compared 323540
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.109px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.117px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+
+## shell-drawer @ 390x844
+   elements compared 509 · properties compared 294848
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body.drawer-open:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+
+## diagnose @ 1440x900
+   elements compared 561 · properties compared 325760
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.109px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.117px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+
+## diagnose @ 1280x800
+   elements compared 561 · properties compared 325760
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.109px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.117px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+
+## diagnose @ 390x844
+   elements compared 513 · properties compared 297068
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+
+## verify @ 1440x900
+   elements compared 317 · properties compared 179912
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.109px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.117px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+
+## verify @ 1280x800
+   elements compared 317 · properties compared 179912
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.109px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.117px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+
+## verify @ 390x844
+   elements compared 317 · properties compared 179912
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+
+## day @ 1440x900
+   elements compared 489 · properties compared 277561
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     479.984px
+             revision: 529.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.109px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     151.117px 12px
+             revision: 126.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     302.234px
+             revision: 252.656px
+
+## day @ 1280x800
+   elements compared 489 · properties compared 277561
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+   expected: Theme button container reflow — inline-size
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+   expected: Theme button container reflow — margin-inline-start
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — margin-left
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     343.984px
+             revision: 389.562px
+   expected: Theme button container reflow — perspective-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.109px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — transform-origin
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     143.117px 12px
+             revision: 120.328px 12px
+   expected: Theme button container reflow — width
+             rule:     the removed Theme button's container reflows (nav.cockpit-utilities, width/inline-size/margin-left/margin-inline-start/transform-origin/perspective-origin, only in a pair that also removed the footer Theme button)
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0
+             base:     286.234px
+             revision: 240.656px
+
+## day @ 390x844
+   elements compared 464 · properties compared 263386
+   expected: removed Theme control — button "Theme · Dark"
+             rule: navigation-drawer Theme button (drawer <button> labelled Theme)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>aside#navigation-drawer.cockpit-drawer:0>button:7
+   expected: removed Theme control — button#theme-menu-button.cockpit-theme "Theme"
+             rule: footer Theme button (button.cockpit-theme#theme-menu-button)
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>button#theme-menu-button.cockpit-theme:0
+   expected: removed Theme control — div.cockpit-utility-menu
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0
+   expected: removed Theme control — button "Light"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:0
+   expected: removed Theme control — button "Dark"
+             rule: footer Theme preference menu (div.cockpit-utility-menu) and its items
+             path: html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>footer.cockpit-footer.status:0>nav.cockpit-utilities:0>div.cockpit-utility-menu:0>button:1
+   expected: removed boot-time theme gate — script@czhabq
+             rule: boot-time theme gate script (head > script whose text contains localStorage.getItem('theme'))
+             path: html:0>head:0>script@czhabq:0
+             text: (function () { if (localStorage.getItem('theme') === 'dark') document.documentEl…
+
+## summary
+states × viewports        15
+elements compared         7274
+computed properties read  4190688
+sanctioned Theme removals 75
+sanctioned gate removals  15
+sanctioned reflow diffs   60
+unexplained differences   0
+states comparing nothing  0
+
+PASS: the Dark surface is identical apart from the removed Theme control.
+
+wrote /Users/connor/worktrees/harmonic/304-c3/openspec/changes/dark-only-theme/evidence/identity-diff.json
+wrote /Users/connor/worktrees/harmonic/304-c3/openspec/changes/dark-only-theme/evidence/identity-diff.report.txt

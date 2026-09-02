@@ -333,3 +333,14 @@ real 148.76
 user 77.74
 sys 68.83
 ```
+
+## Task 4 completion evidence (coordinator transcription, 2026-09-02)
+
+Migration and retirement (chunk 1, `7640a75`) and guidance (chunk 2, `6fc69ac`)
+merged. Coordinator re-run on the assembled branch: 2172 passed, 1 skipped;
+Node 563 pass, 0 fail; `gen_qa_e2e_db.py --check` current; committed showcase
+bytes identical to `origin/main`; strict OpenSpec 70 passed; public-tree links
+and scan 0 findings; retirement inventory over the closed executable surface
+returns no output (exit 1). The browser-gates server now serves a
+`$RUNNER_TEMP` copy of the showcase; its health poll is the browser proof and
+runs in CI. Budgets unchanged from task 3 (no catalog change in this task).

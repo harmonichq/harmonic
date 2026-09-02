@@ -55,8 +55,6 @@ jobs:
       - name: Check the QA E2E synthetic database is current
         timeout-minutes: 3
         run: uv run python scripts/gen_qa_e2e_db.py --check
-      - name: Check the revise E2E synthetic database is current
-        run: uv run python scripts/gen_revise_e2e_db.py --check
       # #730: the Diagnose findings queue is a server-owned projection, and its
       # fixture is that projection's own output over inputs run through the real
       # engines. A classification, merge, anchoring or ordering change that is not
@@ -304,7 +302,8 @@ jobs:
       - name: Start the declared synthetic no-fetch app server
         if: matrix.server
         run: |
-          uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
+          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
+          uv run harmonic serve --no-fetch --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
           for attempt in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8765/api/health && exit 0
             sleep 1

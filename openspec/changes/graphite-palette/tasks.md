@@ -34,7 +34,7 @@
       commit the chosen percentages
       in `frontend/verify-workstation.js` with the sanction appended to
       `design.md`.
-- [ ] Look at Plan and Day with the operator; move the chrome bar one step
+- [x] Look at Plan and Day with the operator; move the chrome bar one step
       only on the operator's ruling, editing the `--ck-ground` re-declaration
       inside `frontend/theme.css`'s chrome-bar role block only (`:root`'s
       `--ck-ground` in `frontend/shell.css` is the desk and does not move);
@@ -45,12 +45,12 @@
       ground drops below its recorded 6.08:1; amend the block's "never a
       black bar" comment to the ruled state. On no move, nothing in that block
       changes.
-- [ ] Regenerate the two verbatim extracts
+- [x] Regenerate the two verbatim extracts
       (`uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
       and `node mockups/finding-evidence-routing.exploration/build.mjs`) so
       both `--check` steps pass, and re-point `DESIGN.md`'s palette swatches
       and Data Semantics prose at the committed values.
-- [ ] Restore `mockups/revise-e2e.synthetic/harmonic.sqlite` to its committed
+- [x] Restore `mockups/revise-e2e.synthetic/harmonic.sqlite` to its committed
       bytes before every commit; stage by path; run the fast gate and require
       zero failures.
 

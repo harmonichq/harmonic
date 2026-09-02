@@ -35,7 +35,20 @@ design, and a worker cannot see what the eye rejects.
   mirrored Trial band, so the documented 32/18 step-up is retired as intent
   rather than adopted. The Trial band mixes `--mk-primary`, the chart's data
   green, not the action orange.
-- Chrome bar on Plan and Day: _pending_.
+- Chrome bar on Plan and Day: moves one step up, from the desk `#0f0d0b` to
+  the well `#14120f` (`--ck-ground` re-declared inside `frontend/theme.css`'s
+  chrome-bar role block as `var(--wk-surface-sunken)`; `:root`'s desk is
+  untouched). Connor Griffin · 2026-09-02 · "The slightly lighter one looks
+  better I guess", judged in the running app with the base and the revision
+  open side by side on Day. Re-measured on the moved ground (WCAG 2.x
+  relative luminance, the one formula this record names): `--ck-bar-signal`
+  `#dc7b42` reads 5.48:1 on `--ck-panel`, 6.19:1 on the well (6.42:1 on the
+  desk), `--ck-bar-on-signal` is the well and reads the same 6.19:1 on the
+  signal, and `--ck-bar-signal-well` holds `--ck-body` at 6.06:1. The three
+  figures previously beside those tokens (5.05, 6.08, 6.03) were measured by a
+  method the file never named and do not reproduce under WCAG on the desk
+  either; under the named formula the moved ground clears the recorded 6.08,
+  so the ruling was not returned.
 
 ## ADR 317 — Clinical attention and tappable affordance do not share a hue
 
@@ -86,6 +99,11 @@ differ between base and revision.
 
 - `--high` · before `#e07f3f` · after `#e2be4c` · high-glucose hue ruling,
   2026-09-02 (above).
+- `--ck-ground` on `.cockpit-topbar`, `.cockpit-footer` and their descendants
+  · before `#0f0d0b` · after `#14120f` · chrome bar ruling, 2026-09-02
+  (above). `:root`'s `--ck-ground` (the desk) does not move.
+- `--ck-bar-on-signal` on the same elements · before `#0f0d0b` · after
+  `#14120f` · follows `--ck-ground` through `var()`; chrome bar ruling.
 
 ### Derived colour pairs
 

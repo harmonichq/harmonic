@@ -181,3 +181,22 @@ transcribes them after the verified merge. Before authoring, chunk 2 re-projects
 from that total and those measured basal per-case times, then replaces the family
 proxies with its measured ISF and I:C representatives as they exist. A projected
 breach stops under the existing rule. The 90 s limit is not raised.
+
+## Chunk 1 measurements (coordinator transcription, 2026-09-02)
+
+Recorded from the chunk-1 worker report and re-run by the coordinator on the
+chunk branch at `a32664d`. Every value is inside its limit.
+
+| Budget | Measured | Limit |
+| --- | ---: | ---: |
+| Database size | 2 MiB (`du -m`) | 25 MiB |
+| Logical drift check | 0.17 s | 30 s |
+| Focused QA suite (29 tests) | 6.56 s (`real`) | 90 s |
+| Slowest `test_case_*` | 0.32 s wall (`test_case_basal_raise` alone); 0.03 s call duration in the suite | 15 s |
+| Whole pytest (`real`) | 60.71 s post-change; 62.93 s pre-change in-session baseline; ceiling 157.33 s (2.5×) | 2.5× baseline |
+
+Coordinator re-run: 2139 passed, 1 skipped; `git diff --quiet origin/main --
+mockups/qa-e2e.synthetic/harmonic.sqlite` exit 0; `scan-public-tree: 387
+file(s) scanned, 0 finding(s)`; Node runner 562 pass, 0 fail. Chunk 2's ceiling
+baseline is the 62.93 s figure above. Chunk 2's pre-authoring projection input:
+focused suite 6.56 s.

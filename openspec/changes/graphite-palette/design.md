@@ -34,15 +34,17 @@ design, and a worker cannot see what the eye rejects.
   or two units per channel on the Before band and is visible only on the
   mirrored Trial band, so the documented 32/18 step-up is retired as intent
   rather than adopted. The Trial band mixes `--mk-primary`, the chart's data
-  green, not the action orange. Chunk 3's ribbon renders are these exact
-  invocations from each worktree root, and nothing less (every input named is
-  required; the opener exits 1 without one):
-  `FRONTEND_ROOT=<root> RIBBON=20/20 TRIAL=Profile OUT=<png> node
-  openspec/changes/graphite-palette/evidence/verify-trial-opener.mjs` on the
-  base and on the revision (the sanctioned, shipped setting), plus on the base
-  only the retired candidate `RIBBON=32/18 TRIAL=Profile`, and both settings
-  again with `SWAP=1` labelled mirrored; each with `PLAYWRIGHT_MODULE` and
-  `VENDOR_DIR` set as the gates set them.
+  green, not the action orange. The lock's "once per worktree root" for chunk
+  3 resolves to this run set, each run one invocation of
+  `openspec/changes/graphite-palette/evidence/verify-trial-opener.mjs` with
+  `FRONTEND_ROOT=<root>`, `OUT=<png>`, `TRIAL=Profile` and the `RIBBON` named
+  (`FRONTEND_ROOT`, `OUT`, `RIBBON`, `PLAYWRIGHT_MODULE` and `VENDOR_DIR` are
+  required and the opener exits 1 without one; `TRIAL` and `SWAP` are
+  optional, and a run without `TRIAL=Profile` renders the default Trial, whose
+  ribbon has no area, so every run here names it): on the base root,
+  `RIBBON=20/20` and `RIBBON=32/18`, each as-is and again with `SWAP=1`
+  (four renders); on the revision root, `RIBBON=20/20` as-is and with
+  `SWAP=1` (two renders). Mirrored renders are labelled as such.
 - Chrome bar on Plan and Day: moves one step up, from the desk `#0f0d0b` to
   the well `#14120f` (`--ck-ground` re-declared inside `frontend/theme.css`'s
   chrome-bar role block as `var(--wk-surface-sunken)`; `:root`'s desk is

@@ -1,0 +1,32 @@
+# fail-closed mutation 2 — one colour changed on a token outside the moved-token list (--low)
+# revision-side edit, frontend/index.html: '--low:#ec6f55;' -> '--low:#ec6f56;' (reverted after the run)
+$ BASE_URL_BASE=http://127.0.0.1:8318 BASE_URL_REVISION=http://127.0.0.1:8317 OUT_DIR=<scratch> node openspec/changes/graphite-palette/evidence/palette-diff.mjs | sed -n '/^## summary/,$p'
+## summary
+states × viewports          18
+elements compared           8237
+computed properties read    4737084
+admitted colour differences 10450
+unexplained differences     8830
+base-check mismatches       0
+states comparing nothing    0
+
+FAIL: see the differences above.
+
+exit=1
+
+# first unexplained entries:
+   UNEXPLAINED difference — custom property outside the moved-token list
+             path:     html:0
+             property: --low
+             base:     #ec6f55
+             revision: #ec6f56
+   UNEXPLAINED difference — custom property outside the moved-token list
+             path:     html:0>head:0
+             property: --low
+             base:     #ec6f55
+             revision: #ec6f56
+   UNEXPLAINED difference — custom property outside the moved-token list
+             path:     html:0>head:0>meta:0
+             property: --low
+             base:     #ec6f55
+             revision: #ec6f56

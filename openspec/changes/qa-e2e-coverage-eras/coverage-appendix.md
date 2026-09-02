@@ -219,3 +219,117 @@ mature I:C representatives `2 × 1.40 + 7 × 0.20 + 6.56 = 10.76 s`. Coordinator
 re-run: 2153 passed, 1 skipped; store bytes unchanged against `origin/main`;
 `scan-public-tree: 0 finding(s)`; Node runner 562 pass, 0 fail; strict OpenSpec
 70 passed.
+
+## Task 3 measurements (worker capture, 2026-09-02)
+
+Every measured value remains inside the pinned limit. The first dense behavioral
+case remeasurement projects `17 × 0.80 + 11.38 = 24.98 s` against the unchanged
+90-second focused-suite limit. The focused suite's slowest generated
+`test_case_*` call was 1.48 s; the correction-stacking generated case, including
+its three perturbation subtests, was 1.37 s.
+
+The complete per-test duration block from the focused run was:
+
+```text
+============================== slowest durations ===============================
+3.88s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_showcase
+3.85s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_exact_rest_windows_and_history_series_are_load_bearing
+1.48s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_correction_on_iob
+1.47s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_strengthen
+1.47s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_held
+1.46s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_direction_only_isf_never_stages_or_ranks
+1.45s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_direction_only_weaken
+1.42s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_over_treated_low
+1.41s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_check_compares_a_generated_store_logically
+1.41s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_check_rejects_logical_database_drift
+1.37s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_correction_stacking
+0.74s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_bare_check_is_the_only_default_output_resolution
+0.73s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_cli_writes_stamped_showcase_only_store
+0.67s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_materializes_a_dense_thirty_day_source_window
+0.52s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meal_over_delivery
+0.51s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_undercount
+0.50s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meal_bolus_short
+0.50s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_missed_meal
+0.50s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_late_bolus
+0.16s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_post_meal_correction_burden
+0.16s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meals_start_high
+0.16s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_counting
+0.10s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_named_case_writes_only_that_stamped_scratch_store
+0.08s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_exact_expectation_classes_reject_perturbations
+0.08s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_a_literal_default_row_is_load_bearing
+0.08s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_lower
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_lower
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_gate
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_no_baseline
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_capped_raise
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_capped_lower
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_no_change
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_raise
+0.07s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_case_and_check_are_mutually_exclusive
+0.06s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_unknown_case_names_the_runtime_catalog
+0.06s call     tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest::test_named_case_requires_an_explicit_output_and_writes_nothing
+0.06s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_capped_and_uncapped_ic_recommendations_are_distinct
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_preempted_detector
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_existing_cases_reject_an_extra_behavioral_summary_expectation
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_precedence
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_log_fasting_exclusion
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_setting_recommendation
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_lone_correction_clean
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_carb_log_fasting_exclusion_changes_isf_support
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_insufficient_unsupported_sign
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_history_register
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_insufficient_seven_night
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_collecting
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_held
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_capped_raise
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_raise
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_capped_lower
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_lower
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_quiet_seven_run
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_uncaused_highs
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_low_no_suppressed
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_false_low_suppressed
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_no_clean_median
+
+(143 durations < 0.005s hidden.  Use -vv to show these durations.)
+```
+
+| Budget | Measured | Limit |
+| --- | ---: | ---: |
+| Database size | 2 MiB (`du -m`) | 25 MiB |
+| Logical drift check | 0.73 s | 30 s |
+| Focused QA suite (62 tests) | 27.69 s (`real`) | 90 s |
+| Slowest `test_case_*` | 1.48 s call (`test_case_behavioral_correction_on_iob`) | 15 s |
+| Whole pytest (`real`) | 148.76 s against the chunk-1 baseline 62.93 s; ceiling 157.33 s | 2.5× baseline |
+
+The budget-relevant command output was:
+
+```text
+$ du -m mockups/qa-e2e.synthetic/harmonic.sqlite
+2\tmockups/qa-e2e.synthetic/harmonic.sqlite
+
+$ /usr/bin/time -p uv run python scripts/gen_qa_e2e_db.py --check
+qa-e2e database: current (/Users/connor/worktrees/harmonic/193/mockups/qa-e2e.synthetic/harmonic.sqlite)
+real 0.73
+user 0.20
+sys 0.51
+
+$ /usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_undercount -q -p no:cacheprovider
+.                                                                        [100%]
+1 passed in 0.58s
+real 0.80
+user 0.40
+sys 0.30
+
+$ /usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py tests/test_gen_qa_e2e_db.py --durations=0 -p no:cacheprovider
+======================= 62 passed, 6 warnings in 27.47s ========================
+real 27.69
+user 17.30
+sys 10.12
+
+$ /usr/bin/time -p uv run python -m pytest
+========== 2171 passed, 1 skipped, 187 warnings in 148.40s (0:02:28) ===========
+real 148.76
+user 77.74
+sys 68.83
+```

@@ -267,3 +267,57 @@ Review rounds on the #192 draft lock (the coordinator fills this table):
 
 Rounds 5+ verify the clean rewrite.
 Round 5 regrounded the pivot premise cleanly.
+
+## #193 triage
+
+The existing active `qa-e2e-coverage-eras` change remains the record home. Task 3
+owns #193 and requirement 4 is its acceptance anchor; tasks 1, 2, and 4 retain
+their text. The authoritative #189 risk contract, ADR 190, ADR 194, and ADR 192
+continue to bind the work: source rows are manufactured, every case executes the
+production composition in an isolated store, the committed database remains
+showcase-only and byte-identical, no continuous IOB or injected judgment is
+allowed, and budget breach is a hard stop.
+
+The unconditional `/scope` pass found no genuine uncertainty. Operator rulings
+already settle the active change, selected task and anchor, literal-only
+expectations, exact per-family denominator contract, negative cases, model rung,
+review depth, verification, and closed diff. The design table records 17 isolated
+eras: 12 positive detector/output cases and five suppression or negative guards.
+
+Flat order. No slicing trait fires: one repository and environment, one fixture
+catalog/generator/test boundary, no live run, no rendered surface, no cross-trust
+write, and no unchecked lockstep copy. All cases share
+`scripts/qa_e2e_cases.py`, `tests/test_qa_e2e_cases.py`, the public-scan baseline,
+and one task/budget record, so slicing would serialize collisions without creating
+independent capability ownership. The nearby reviewer-memory multi-boundary
+anchors do not match; its exact-fixture guidance does, and is carried as literal
+whole-set rows, literal per-family tallies, perturbation tests, generator-owned
+provenance, and drift checks. Review depth is Full because the fixture exercises
+dosing-advisory evidence and must fail closed against silently injected or
+under-asserted judgments. `AGENTS.md` declares no `Harden:` line, so the profile is
+none. Surface lifecycle is none.
+
+The carb-log negative case is retained and re-targeted to a production observable
+that the existing execution seam already publishes: the exact Fasting ISF
+`n_steps` support value from `analyze(..., carb_entries=...)`. Removing the entry
+must change that literal value while leaving behavioral rows unchanged. The
+original meal-denominator claim is dropped because `build_exposures` never reads
+the Carb log.
+
+The first representative scenario-Lever case is measured before the other 16 are
+authored. It is a 30-day dense-store case in the dense-showcase cost class
+(approximately 2.4 seconds, not the 0.32-second sparse class). Its projected
+focused-suite cost is `17 × representative + 11.38 s` against the existing
+90-second limit. Task 3 records all five post-change budgets in
+`coverage-appendix.md` against the existing 62.93 s whole-pytest baseline and
+157.33 s ceiling. A breach follows the existing stop rule and is reported on #193.
+
+Review rounds on the #193 draft lock:
+
+| round | blockers | authoring | injected |
+| --- | ---: | ---: | ---: |
+| 1 | 3 | 3 | 0 |
+
+Round 1 also carried two notes: correct the projection multiplier and declare each
+case's source span/density. The coordinator owns the review and posts the amended
+lock as-is after this only fix round.

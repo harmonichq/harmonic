@@ -18,7 +18,11 @@ from ciq_autotune.analyzers.ic import BLOCK_WINDOW_DAYS
 from ciq_autotune.analyzers.scenario import build_scenarios
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.explore_exposures import build_exposures
-from ciq_autotune.findings_projection import WindowQuery, prepare_findings_projection
+from ciq_autotune.findings_projection import (
+    FINDING_VERDICTS,
+    WindowQuery,
+    prepare_findings_projection,
+)
 from ciq_autotune.ic_history_events import prepare_ic_history_events
 from ciq_autotune.insulin import InsulinActivity
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
@@ -103,6 +107,12 @@ class ExpectedQueueRow:
 
 
 @dataclass(frozen=True)
+class ExpectedVerdictTally:
+    denominator: int
+    counts: Mapping[str, int]
+
+
+@dataclass(frozen=True)
 class QaExpectation:
     """The complete rows this case must publish, plus the rows it must omit."""
 
@@ -114,6 +124,10 @@ class QaExpectation:
     history_series: Mapping[str, tuple[dict, ...]]
     behavioral_rows: frozenset[tuple[str, str, str]]
     finding_titles: frozenset[str]
+    verdict_tallies: Mapping[tuple[str, str], ExpectedVerdictTally] = field(
+        default_factory=dict,
+    )
+    uncaused_highs: int = 0
 
 
 @dataclass(frozen=True)
@@ -213,6 +227,608 @@ def _setting_recommendation_recipe(store) -> None:
 
 def _behavioral_precedence_recipe(store) -> None:
     _materialize_behavioral_precedence(store)
+
+
+def _materialize_behavioral_background(store, *, span_days: int) -> date:
+    """Write a dense, flat manufactured lane ending before July 2025."""
+    first = date(2024, 5, 1)
+    cgm = []
+    for offset in range(span_days):
+        current = first + timedelta(days=offset)
+        for minute in range(0, 24 * 60, 5):
+            stamp = f"{current.isoformat()} {minute // 60:02d}:{minute % 60:02d}:00"
+            cgm.append({
+                "EventDateTime": stamp,
+                "Readings (CGM / BGM)": 120.0,
+                "Description": "Synthetic EGV",
+            })
+    store.upsert_cgm(cgm)
+    store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings(5.0))
+    return first
+
+
+def _materialize_behavioral_carb_undercount(store) -> None:
+    """Write every reachable carb-undercount verdict band across six meals."""
+    first = _materialize_behavioral_background(store, span_days=30)
+    bolus = []
+    cgm = []
+    basal = []
+
+    def add_trace(offset: int, values: tuple[float, ...], *, carbs: float,
+                  insulin: float, carb_ratio: float | None) -> None:
+        start = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        start = start.replace(hour=11, minute=40)
+        cgm.extend((start + timedelta(minutes=5 * index), value)
+                   for index, value in enumerate(values))
+        meal_at = start + timedelta(minutes=25)
+        basal.extend({
+            "seq_num": 100_000 + offset * 100 + index,
+            "time": (start + timedelta(minutes=5 * index)).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+            "delivery_type": "algorithmDelivery",
+            "duration_mins": 5,
+            "basal_rate": 0.6,
+            "profile_basal_rate": 0.6,
+        } for index in range(19))
+        bolus.append({
+            "seq_num": 90_000 + offset,
+            "request_time": meal_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": insulin,
+            "requested_insulin": insulin,
+            "carbs": carbs,
+            "carb_ratio": carb_ratio,
+            "isf": 32.0,
+            "target_bg": 110.0,
+        })
+
+    runaway = (145, 145, 145, 145, 145, 145, 170, 220, 280, 330, 360, 355, 340)
+    add_trace(23, runaway, carbs=30.0, insulin=6.0, carb_ratio=5.0)
+    add_trace(24, runaway, carbs=30.0, insulin=6.0, carb_ratio=5.0)
+    add_trace(
+        25,
+        (100, 110, 120, 130, 140, 150, 160, 170, 180, 175, 165, 150, 135),
+        carbs=45.0,
+        insulin=9.0,
+        carb_ratio=5.0,
+    )
+    add_trace(
+        26,
+        (120, 120, 120, 120, 120, 120, 140, 175, 210, 230, 220, 200, 175),
+        carbs=60.0,
+        insulin=12.0,
+        carb_ratio=5.0,
+    )
+    add_trace(
+        27,
+        (120, 120, 120, 120, 120, 120, 130, 140, 150, 145, 135, 125, 120),
+        carbs=30.0,
+        insulin=6.0,
+        carb_ratio=None,
+    )
+    add_trace(
+        28,
+        (110, 110, 110, 110, 110, 110, 120, 135, 150, 145, 130, 120, 115),
+        carbs=45.0,
+        insulin=9.0,
+        carb_ratio=5.0,
+    )
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+    store.upsert_basal(basal)
+    store.upsert_bolus(bolus)
+
+
+def _materialize_behavioral_late_bolus(store) -> None:
+    """Write every reachable late-bolus verdict band across six meals."""
+    first = _materialize_behavioral_background(store, span_days=30)
+    bolus = []
+    cgm = []
+
+    def add_trace(offset: int, values: tuple[float, ...], *, hour: int = 11,
+                  minute: int = 40, meal_offset: int = 25,
+                  carbs: float = 45.0, insulin: float = 9.0) -> None:
+        start = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        start = start.replace(hour=hour, minute=minute)
+        cgm.extend((start + timedelta(minutes=5 * index), value)
+                   for index, value in enumerate(values))
+        meal_at = start + timedelta(minutes=meal_offset)
+        bolus.append({
+            "seq_num": 110_000 + offset,
+            "request_time": meal_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": insulin,
+            "requested_insulin": insulin,
+            "carbs": carbs,
+            "carb_ratio": 5.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        })
+
+    add_trace(0, (120, 130, 140, 150), hour=0, minute=0, meal_offset=0)
+    rising = (100, 110, 120, 130, 140, 150, 160, 170, 180, 175, 165, 150, 135)
+    add_trace(23, rising)
+    add_trace(24, rising)
+    add_trace(
+        25,
+        (145, 145, 145, 145, 145, 145, 170, 220, 280, 330, 360, 355, 340),
+        carbs=30.0,
+        insulin=6.0,
+    )
+    add_trace(26, (65, 75, 85, 95, 105, 115, 130, 145, 150, 145, 135, 125))
+    add_trace(27, (110, 110, 110, 110, 110, 110, 120, 135, 150, 145, 130, 120))
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+    store.upsert_bolus(bolus)
+
+
+def _materialize_behavioral_uncaused_highs(store) -> None:
+    """Write two clean high Occurrences with one wholly unexplained Episode."""
+    day = date(2024, 5, 2)
+    base = datetime.combine(day, datetime.min.time())
+    corners = (
+        (360, 110.0), (480, 112.0), (500, 220.0), (570, 255.0),
+        (600, 200.0), (605, 230.0), (645, 265.0), (690, 200.0),
+    )
+    cgm = [(base - timedelta(days=1), 110.0)]
+    for (start_min, start_bg), (end_min, end_bg) in zip(corners, corners[1:]):
+        steps = (end_min - start_min) // 5
+        cgm.extend((
+            base + timedelta(minutes=start_min + 5 * step),
+            start_bg + (end_bg - start_bg) * step / steps,
+        ) for step in range(steps))
+    cgm.extend(((base + timedelta(minutes=corners[-1][0]), corners[-1][1]),
+                (base + timedelta(hours=23, minutes=59), 110.0)))
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+
+
+def _materialize_behavioral_compression_low(store, *, answer: str) -> None:
+    """Write one compression-shaped low and its manufactured prompt answer."""
+    first = datetime(2024, 5, 1)
+    day = first + timedelta(days=1)
+    readings = [(first, 110.0), (day.replace(hour=23, minute=59), 110.0)]
+    readings.extend(
+        (day + timedelta(minutes=minute), bg)
+        for minute, bg in (
+            (0, 110), (60, 110), (120, 110), (150, 108), (155, 95),
+            (160, 80), (165, 66), (170, 55), (175, 49), (185, 47),
+            (190, 47), (195, 70), (200, 110), (205, 150), (210, 186),
+            (215, 150), (220, 130), (225, 118), (230, 112), (240, 110),
+            (300, 110), (360, 110),
+        )
+    )
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in readings
+    ])
+    anchor = day.replace(hour=3, minute=5)
+    store.record_prompt_response(
+        detector="low", anchor_t=anchor, answer=answer, answered_at=anchor,
+    )
+
+
+def _materialize_behavioral_lone_correction(store) -> None:
+    day = datetime(2024, 5, 1)
+    store.upsert_cgm([
+        {
+            "EventDateTime": (day + timedelta(minutes=minute)).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+            "Readings (CGM / BGM)": 120.0,
+            "Description": "Synthetic EGV",
+        }
+        for minute in range(0, 24 * 60, 5)
+    ])
+    store.upsert_bolus([{
+        "seq_num": 130_000,
+        "request_time": "2024-05-01 12:00:00",
+        "description": "Synthetic correction",
+        "completion": "Completed",
+        "insulin": 2.0,
+        "requested_insulin": 2.0,
+        "carbs": None,
+        "isf": 40.0,
+        "target_bg": 110.0,
+    }])
+
+
+def _materialize_behavioral_meals_start_high(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=8)
+    cgm = []
+    meals = []
+    for offset in range(8):
+        current = first + timedelta(days=offset)
+        start = datetime.combine(current, datetime.min.time()).replace(
+            hour=11, minute=20,
+        )
+        cgm.extend((start + timedelta(minutes=5 * step), 150.0)
+                   for step in range(69))
+        meal_at = start + timedelta(minutes=40)
+        meals.append({
+            "seq_num": 140_000 + offset,
+            "request_time": meal_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": 6.0,
+            "requested_insulin": 6.0,
+            "carbs": 60.0,
+            "carb_ratio": 10.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        })
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+    store.upsert_bolus(meals)
+
+
+def _materialize_behavioral_ic_finding(store, *, correction_burden: bool) -> None:
+    """Write eight closed meal ledgers for one pooled I:C finding."""
+    first = _materialize_behavioral_background(store, span_days=8)
+    cgm = []
+    bolus = []
+    doses = (2.0, 3.0, 4.0, 5.0, 8.0, 10.0, 12.0, 15.0)
+    for offset in range(8):
+        current = first + timedelta(days=offset)
+        start = datetime.combine(current, datetime.min.time()).replace(
+            hour=11, minute=20,
+        )
+        cgm.extend((start + timedelta(minutes=5 * step), 110.0)
+                   for step in range(69))
+        meal_at = start + timedelta(minutes=40)
+        dose = 6.0 if correction_burden else doses[offset]
+        bolus.append({
+            "seq_num": 150_000 + offset * 2,
+            "request_time": meal_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "description": "Synthetic meal bolus",
+            "completion": "Completed",
+            "insulin": dose,
+            "requested_insulin": dose,
+            "carbs": 60.0,
+            "carb_ratio": 10.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+            "bolus_options": 0,
+        })
+        if correction_burden:
+            correction_at = meal_at + timedelta(hours=2)
+            bolus.append({
+                "seq_num": 150_001 + offset * 2,
+                "request_time": correction_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "description": "Synthetic user correction",
+                "completion": "Completed",
+                "insulin": 2.0,
+                "requested_insulin": 2.0,
+                "carbs": None,
+                "isf": 40.0,
+                "target_bg": 110.0,
+                "bolus_options": 0,
+            })
+    store.upsert_cgm([
+        {
+            "EventDateTime": when.strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": bg,
+            "Description": "Synthetic EGV",
+        }
+        for when, bg in cgm
+    ])
+    store.upsert_bolus(bolus)
+
+
+def _materialize_behavioral_meal_over_delivery(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=30)
+    cgm = []
+    bolus = []
+    basal = []
+
+    def add_meal(offset: int, *, suspend_rows: int = 0,
+                 values: tuple[float, ...] = (120,) * 25,
+                 carbs: float = 50.0, dose: float = 5.0) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        meal_at = day.replace(hour=12)
+        cgm.extend((meal_at - timedelta(minutes=30) + timedelta(minutes=5 * i), bg)
+                   for i, bg in enumerate(values))
+        bolus.append({
+            "seq_num": 160_000 + offset, "request_time": meal_at.strftime("%F %T"),
+            "description": "Synthetic meal bolus", "completion": "Completed",
+            "insulin": dose, "requested_insulin": dose, "carbs": carbs,
+            "carb_ratio": 10.0, "isf": 40.0, "target_bg": 110.0,
+        })
+        basal.extend({
+            "seq_num": 170_000 + offset * 100 + i,
+            "time": (meal_at + timedelta(minutes=5 * i)).strftime("%F %T"),
+            "delivery_type": "algorithmDelivery (control-iq suspension)",
+            "duration_mins": 5, "basal_rate": 0.0, "profile_basal_rate": 0.9,
+        } for i in range(suspend_rows))
+
+    falling = (120,) * 17 + (110, 103, 96, 89, 82, 75, 68, 68)
+    add_meal(23, suspend_rows=12, values=falling)
+    add_meal(24, suspend_rows=12, values=falling)
+    add_meal(25, suspend_rows=3,
+             values=(145,) * 7 + (170, 220, 280, 330, 360, 350, 330),
+             carbs=30.0, dose=3.0)
+    add_meal(26, suspend_rows=4)
+    add_meal(27)
+    add_meal(28, suspend_rows=3, values=(120,) * 25)
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+    store.upsert_basal(basal)
+
+
+def _materialize_behavioral_correction_stacking(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=30)
+    cgm = []
+    bolus = []
+
+    def trace(offset: int, start_min: int, values: tuple[float, ...]) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        cgm.extend((day + timedelta(minutes=start_min + 5 * i), value)
+                   for i, value in enumerate(values))
+
+    def pair(offset: int, first_min: int, second_min: int) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        for index, minute in enumerate((first_min, second_min)):
+            bolus.append({
+                "seq_num": 180_000 + offset * 10 + index,
+                "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+                "description": "Synthetic user correction", "completion": "Completed",
+                "insulin": 3.0, "requested_insulin": 3.0, "carbs": None,
+                "isf": 40.0, "target_bg": 110.0,
+            })
+
+    falling = tuple(160.0 - 4.0 * i for i in range(26))
+    for offset in (23, 24):
+        trace(offset, 14 * 60, falling)
+        pair(offset, 14 * 60 + 10, 14 * 60 + 40)
+    trace(25, 10 * 60, tuple(160.0 - min(48.0, i) for i in range(49)))
+    pair(25, 10 * 60 + 10, 10 * 60 + 40)
+    trace(26, 19 * 60, tuple(145.0 + 10.0 * i for i in range(25)))
+    pair(26, 19 * 60 + 30, 20 * 60 + 10)
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+
+
+def _materialize_behavioral_over_treated_low(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=30)
+    cgm = []
+    bolus = []
+
+    def segment(offset: int, start_min: int, values: tuple[float, ...]) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        cgm.extend((day + timedelta(minutes=start_min + 5 * i), value)
+                   for i, value in enumerate(values))
+
+    def rebound(offset: int, start_min: int, nadir: float, peak: float) -> None:
+        down = tuple(100.0 - (100.0 - nadir) * i / 4 for i in range(5))
+        up = tuple(nadir + (peak - nadir) * i / 8 for i in range(1, 9))
+        segment(offset, start_min, (100.0,) * 5 + down[1:] + up)
+
+    rebound(22, 13 * 60 + 15, 48.0, 260.0)
+    rebound(23, 13 * 60 + 15, 48.0, 260.0)
+    rebound(24, 11 * 60 + 30, 60.0, 150.0)
+    rebound(25, 11 * 60 + 30, 60.0, 130.0)
+    segment(26, 15 * 60 + 30,
+            (100.0, 100.0, 100.0, 100.0, 100.0, 90.0, 80.0, 70.0, 60.0))
+    segment(27, 19 * 60 + 40, (238.0, 234.75, 231.5, 228.25, 225.0))
+    segment(27, 20 * 60 + 5,
+            tuple(221.0 - 7.25 * i for i in range(24)))
+    segment(27, 22 * 60 + 5, (60.0,) * 13)
+    day = datetime.combine(first + timedelta(days=27), datetime.min.time())
+    for seq, minute, insulin, carbs in (
+        (190_000, 19 * 60, 7.4, 52.0),
+        (190_001, 20 * 60, 4.2, None),
+    ):
+        bolus.append({
+            "seq_num": seq, "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+            "description": "Synthetic bolus", "completion": "Completed",
+            "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+            "carb_ratio": 10.0 if carbs else None, "isf": 40.0, "target_bg": 110.0,
+        })
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+
+
+def _materialize_behavioral_correction_on_iob(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=30)
+    cgm = []
+    bolus = []
+    basal = []
+
+    def segment(offset: int, start_min: int, values: tuple[float, ...]) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        cgm.extend((day + timedelta(minutes=start_min + 5 * i), value)
+                   for i, value in enumerate(values))
+
+    def dose(offset: int, minute: int, seq: int, insulin: float,
+             carbs: float | None) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        bolus.append({
+            "seq_num": seq, "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+            "description": "Synthetic bolus", "completion": "Completed",
+            "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+            "carb_ratio": 10.0 if carbs else None, "isf": 40.0, "target_bg": 110.0,
+        })
+
+    for offset in (23, 24):
+        segment(offset, 19 * 60 + 40, (238.0, 234.75, 231.5, 228.25, 225.0))
+        segment(offset, 20 * 60 + 5, tuple(221.0 - 7.25 * i for i in range(24)))
+        segment(offset, 22 * 60 + 5, (60.0,) * 13)
+        dose(offset, 19 * 60, 200_000 + offset * 10, 7.4, 52.0)
+        dose(offset, 20 * 60, 200_001 + offset * 10, 4.2, None)
+    down = tuple(100.0 - 10.0 * i for i in range(5))
+    up = tuple(60.0 + 25.0 * i for i in range(1, 9))
+    segment(25, 13 * 60 + 15, (100.0,) * 5 + down[1:] + up)
+    segment(26, 19 * 60 + 40, (238.0, 234.75, 231.5, 228.25, 225.0))
+    segment(26, 20 * 60 + 5, tuple(221.0 - 7.25 * i for i in range(24)))
+    segment(26, 22 * 60 + 5, (60.0,) * 13)
+    dose(26, 19 * 60, 200_260, 7.4, 52.0)
+    dose(26, 20 * 60, 200_261, 4.2, None)
+    suspend_day = datetime.combine(first + timedelta(days=26), datetime.min.time())
+    basal.extend({
+        "seq_num": 210_000 + i,
+        "time": (suspend_day + timedelta(minutes=19 * 60 + 15 + 5 * i)).strftime("%F %T"),
+        "delivery_type": "algorithmDelivery (control-iq suspension)",
+        "duration_mins": 5, "basal_rate": 0.0, "profile_basal_rate": 0.9,
+    } for i in range(6))
+    segment(27, 15 * 60 + 30,
+            (100.0, 100.0, 100.0, 100.0, 100.0, 90.0, 80.0, 70.0, 60.0))
+    segment(27, 16 * 60 + 15, (60.0,) * 13)
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+    store.upsert_basal(basal)
+
+
+def _materialize_behavioral_high_verdicts(store, *, meal_short: bool) -> None:
+    first = _materialize_behavioral_background(store, span_days=30)
+    cgm = []
+    bolus = []
+    basal = []
+
+    def trace(offset: int, values: tuple[float, ...], start_min: int = 12 * 60) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        cgm.extend((day + timedelta(minutes=start_min + 5 * i), value)
+                   for i, value in enumerate(values))
+
+    def dose(offset: int, minute: int, seq: int, *, meal: bool) -> None:
+        day = datetime.combine(first + timedelta(days=offset), datetime.min.time())
+        bolus.append({
+            "seq_num": seq, "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+            "description": "Synthetic bolus", "completion": "Completed",
+            "insulin": 20.0 if meal else 2.0,
+            "requested_insulin": 20.0 if meal else 2.0,
+            "carbs": 200.0 if meal else None,
+            "carb_ratio": 2.0 if meal else None, "isf": 40.0, "target_bg": 110.0,
+        })
+
+    rising = tuple(110.0 + 8.0 * i for i in range(31))
+    if meal_short:
+        for offset in (23, 24):
+            trace(offset, rising)
+            dose(offset, 12 * 60, 220_000 + offset * 10, meal=True)
+            dose(offset, 13 * 60 + 10, 220_001 + offset * 10, meal=False)
+        trace(25, rising)
+        trace(26, rising)
+        dose(26, 12 * 60, 220_260, meal=True)
+    else:
+        trace(23, rising)
+        trace(24, rising)
+        trace(25, rising)
+        dose(25, 12 * 60, 220_250, meal=True)
+        dose(25, 13 * 60 + 10, 220_251, meal=False)
+        trace(26, rising)
+        suspend_day = datetime.combine(first + timedelta(days=26), datetime.min.time())
+        basal.extend({
+            "seq_num": 230_000 + i,
+            "time": (suspend_day + timedelta(minutes=12 * 60 + 30 + 5 * i)).strftime("%F %T"),
+            "delivery_type": "algorithmDelivery (control-iq suspension)",
+            "duration_mins": 5, "basal_rate": 0.0, "profile_basal_rate": 0.9,
+        } for i in range(6))
+    trace(1, (250.0,), start_min=3 * 60)
+    trace(28, tuple(120.0 + 4.0 * i for i in range(49)), start_min=10 * 60)
+    dose(28, 10 * 60, 220_280, meal=True)
+    dose(28, 11 * 60 + 10, 220_281, meal=False)
+    # Remove overnight context so the first high anchor exercises no-data silence.
+    store.conn.execute(
+        "DELETE FROM cgm_readings WHERE t >= ? AND t <= ?",
+        ("2024-05-02 02:00:00", "2024-05-02 04:00:00"),
+    )
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus(bolus)
+    store.upsert_basal(basal)
+
+
+def _materialize_behavioral_missed_meal(store) -> None:
+    _materialize_behavioral_high_verdicts(store, meal_short=False)
+
+
+def _materialize_behavioral_meal_bolus_short(store) -> None:
+    _materialize_behavioral_high_verdicts(store, meal_short=True)
+
+
+def _materialize_behavioral_carb_log_fasting_exclusion(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=2)
+    logged_at = datetime.combine(first + timedelta(days=1), datetime.min.time()).replace(
+        hour=3,
+    )
+    store.upsert_carb_entry(CarbEntry(
+        t=logged_at, grams=20.0, certainty="estimate", source="manual",
+        note="Synthetic fasting exclusion", created_at=logged_at,
+    ))
+
+
+def _materialize_behavioral_preempted_detector(store) -> None:
+    first = _materialize_behavioral_background(store, span_days=2)
+    day = datetime.combine(first + timedelta(days=1), datetime.min.time())
+    cgm = []
+
+    def ramp(minute: int, initial: float, slope: float, duration: int) -> None:
+        cgm.extend((day + timedelta(minutes=minute + offset), initial + slope * offset)
+                   for offset in range(0, duration + 1, 5))
+
+    ramp(9 * 60, 110.0, 0.0, 180)
+    ramp(12 * 60, 112.0, 0.4, 20)
+    ramp(12 * 60 + 20, 120.0, 1.45, 100)
+    ramp(14 * 60, 265.0, -115.0 / 120, 120)
+    store.upsert_cgm([{
+        "EventDateTime": when.strftime("%F %T"),
+        "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV",
+    } for when, bg in cgm])
+    store.upsert_bolus([{
+        "seq_num": 240_000 + index,
+        "request_time": (day + timedelta(minutes=minute)).strftime("%F %T"),
+        "description": "Synthetic bolus", "completion": "Completed",
+        "insulin": insulin, "requested_insulin": insulin, "carbs": carbs,
+        "carb_ratio": ratio, "isf": 40.0, "target_bg": 110.0,
+    } for index, (minute, insulin, carbs, ratio) in enumerate((
+        (12 * 60, 5.0, 60.0, 12.0),
+        (13 * 60 + 40, 2.5, None, None),
+    ))])
 
 
 def _materialize_basal_coverage(
@@ -684,6 +1300,44 @@ _SHOWCASE_REST_WINDOWS = frozenset(
     for current in (date(2024, 6, 1) + timedelta(days=offset) for offset in range(29))
 )
 
+_BEHAVIORAL_30_DAY_REST_WINDOWS = frozenset(
+    (
+        current.isoformat(),
+        f"{current.isoformat()} 22:00:00",
+        f"{(current + timedelta(days=1)).isoformat()} 08:00:00",
+    )
+    for current in (date(2024, 5, 1) + timedelta(days=offset) for offset in range(29))
+)
+_BEHAVIORAL_8_DAY_REST_WINDOWS = frozenset(
+    (
+        current.isoformat(),
+        f"{current.isoformat()} 22:00:00",
+        f"{(current + timedelta(days=1)).isoformat()} 08:00:00",
+    )
+    for current in (date(2024, 5, 1) + timedelta(days=offset) for offset in range(7))
+)
+_BEHAVIORAL_8_MEAL_ROWS = frozenset(
+    ("meals", f"2024-05-{day:02d} 12:00:00", "no_data")
+    for day in range(1, 9)
+)
+_BEHAVIORAL_8_CORRECTION_ROWS = frozenset(
+    ("correction_clusters", f"2024-05-{day:02d} 14:00:00", "clean")
+    for day in range(1, 9)
+)
+
+
+def _verdict_tally(
+    denominator: int, *, fired: int, outranked: int, near_miss: int,
+    no_data: int, clean: int,
+) -> ExpectedVerdictTally:
+    return ExpectedVerdictTally(denominator, {
+        "fired": fired,
+        "outranked": outranked,
+        "near_miss": near_miss,
+        "no_data": no_data,
+        "clean": clean,
+    })
+
 _SHOWCASE_HISTORY_RUN_IDS = (
     "icr1_WyIyMDI0LTA2LTAyVDA4OjAwOjAwIl0",
     "icr1_WyIyMDI0LTA2LTAzVDA4OjAwOjAwIl0",
@@ -770,6 +1424,17 @@ QA_CASES = (
             {"ich1_WzAsMTQ0MCwiMTIiXQ": _showcase_history_series()},
             _SHOWCASE_BEHAVIORAL_ROWS,
             frozenset({"Basal 03:00 to 04:00 · lower", "Carb ratio All day. Past setting.", "Correction on active insulin", "Meal bolus fell short", "Over-treated low"}),
+            {
+                ("over_treated_low", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=0, no_data=0, clean=3,
+                ),
+                ("meal_bolus_short", "highs"): _verdict_tally(
+                    2, fired=1, outranked=0, near_miss=1, no_data=0, clean=0,
+                ),
+            },
         ),
         30,
     ),
@@ -789,6 +1454,7 @@ QA_CASES = (
             frozenset(), frozenset(), {},
             frozenset(),
             frozenset({"Basal 03:00 to 04:00 · lower"}),
+            {},
         ),
         12,
     ),
@@ -798,7 +1464,21 @@ QA_CASES = (
         QaExpectation(
             _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
             _BEHAVIORAL_ROWS,
-            frozenset({"Carb undercount", "Correction on active insulin", "Over-treated low"}),
+            frozenset({
+                "Carb undercount", "Correction on active insulin",
+                "Over-treated low", "meals-start-high",
+            }),
+            {
+                ("over_treated_low", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("carb_undercount", "meals"): _verdict_tally(
+                    2, fired=1, outranked=0, near_miss=0, no_data=0, clean=1,
+                ),
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=0, no_data=0, clean=3,
+                ),
+            },
         ),
         5,
     ),
@@ -1201,6 +1881,365 @@ QA_CASES = (
         IC_SOURCE_SPAN_DAYS,
         "ic",
     ),
+    QaCase(
+        "behavioral-carb-undercount",
+        _materialize_behavioral_carb_undercount,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("meals", "2024-05-24 12:05:00", "fired"),
+                ("meals", "2024-05-25 12:05:00", "fired"),
+                ("meals", "2024-05-26 12:05:00", "fired"),
+                ("meals", "2024-05-27 12:05:00", "near_miss"),
+                ("meals", "2024-05-28 12:05:00", "no_data"),
+                ("meals", "2024-05-29 12:05:00", "no_data"),
+                ("highs", "2024-05-24 12:30:00", "near_miss"),
+                ("highs", "2024-05-25 12:30:00", "near_miss"),
+            }),
+            frozenset({"Carb undercount", "Late bolus", "meals-start-high"}),
+            {
+                ("carb_undercount", "meals"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("late_bolus", "meals"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=0, clean=3,
+                ),
+            },
+            2,
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-late-bolus",
+        _materialize_behavioral_late_bolus,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("lows", "2024-05-27 11:40:00", "clean"),
+                ("meals", "2024-05-01 00:00:00", "no_data"),
+                ("meals", "2024-05-24 12:05:00", "fired"),
+                ("meals", "2024-05-25 12:05:00", "fired"),
+                ("meals", "2024-05-26 12:05:00", "fired"),
+                ("meals", "2024-05-27 12:05:00", "near_miss"),
+                ("meals", "2024-05-28 12:05:00", "no_data"),
+                ("highs", "2024-05-26 12:30:00", "near_miss"),
+            }),
+            frozenset({"Late bolus", "Carb undercount", "meals-start-high"}),
+            {
+                ("late_bolus", "meals"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("carb_undercount", "meals"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=0, clean=3,
+                ),
+            },
+            1,
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-uncaused-highs",
+        _materialize_behavioral_uncaused_highs,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
+            frozenset({
+                ("highs", "2024-05-02 09:30:00", "clean"),
+                ("highs", "2024-05-02 10:45:00", "clean"),
+            }),
+            frozenset(), {}, uncaused_highs=2,
+        ),
+        2,
+    ),
+    QaCase(
+        "behavioral-false-low-suppressed",
+        partial(_materialize_behavioral_compression_low, answer="false-low"),
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
+            frozenset(), frozenset(),
+        ),
+        2,
+    ),
+    QaCase(
+        "behavioral-low-no-suppressed",
+        partial(_materialize_behavioral_compression_low, answer="no"),
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
+            frozenset({
+                ("lows", "2024-05-02 03:05:00", "clean"),
+            }), frozenset(),
+        ),
+        2,
+    ),
+    QaCase(
+        "behavioral-lone-correction-clean",
+        _materialize_behavioral_lone_correction,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
+            frozenset({
+                ("correction_clusters", "2024-05-01 12:00:00", "clean"),
+            }), frozenset(),
+        ),
+        1,
+    ),
+    QaCase(
+        "behavioral-meals-start-high",
+        _materialize_behavioral_meals_start_high,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_8_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("meals", "2024-05-01 12:00:00", "no_data"),
+                ("meals", "2024-05-02 12:00:00", "no_data"),
+                ("meals", "2024-05-03 12:00:00", "no_data"),
+                ("meals", "2024-05-04 12:00:00", "no_data"),
+                ("meals", "2024-05-05 12:00:00", "no_data"),
+                ("meals", "2024-05-06 12:00:00", "no_data"),
+                ("meals", "2024-05-07 12:00:00", "no_data"),
+                ("meals", "2024-05-08 12:00:00", "no_data"),
+            }),
+            frozenset({"meals-start-high"}),
+        ),
+        8,
+    ),
+    QaCase(
+        "behavioral-carb-counting",
+        partial(_materialize_behavioral_ic_finding, correction_burden=False),
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_8_DAY_REST_WINDOWS, {}, _BEHAVIORAL_8_MEAL_ROWS,
+            frozenset({"carb-counting"}),
+        ),
+        8,
+    ),
+    QaCase(
+        "behavioral-post-meal-correction-burden",
+        partial(_materialize_behavioral_ic_finding, correction_burden=True),
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_8_DAY_REST_WINDOWS, {},
+            _BEHAVIORAL_8_MEAL_ROWS | _BEHAVIORAL_8_CORRECTION_ROWS,
+            frozenset({"post-meal-correction-burden"}),
+        ),
+        8,
+    ),
+    QaCase(
+        "behavioral-meal-over-delivery",
+        _materialize_behavioral_meal_over_delivery,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("lows", "2024-05-24 13:25:00", "clean"),
+                ("lows", "2024-05-25 13:25:00", "clean"),
+                ("meals", "2024-05-24 12:00:00", "fired"),
+                ("meals", "2024-05-25 12:00:00", "fired"),
+                ("meals", "2024-05-26 12:00:00", "fired"),
+                ("meals", "2024-05-27 12:00:00", "near_miss"),
+                ("meals", "2024-05-28 12:00:00", "no_data"),
+                ("meals", "2024-05-29 12:00:00", "clean"),
+                ("highs", "2024-05-26 12:25:00", "near_miss"),
+            }),
+            frozenset({
+                "Meal over-delivery", "Carb undercount", "meals-start-high",
+            }),
+            {
+                ("meal_over_delivery", "meals"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("carb_undercount", "meals"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=0, clean=3,
+                ),
+            },
+            1,
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-correction-stacking",
+        _materialize_behavioral_correction_stacking,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("correction_clusters", "2024-05-24 14:10:00", "clean"),
+                ("correction_clusters", "2024-05-24 14:40:00", "fired"),
+                ("lows", "2024-05-24 16:05:00", "no_data"),
+                ("correction_clusters", "2024-05-25 14:10:00", "clean"),
+                ("correction_clusters", "2024-05-25 14:40:00", "fired"),
+                ("lows", "2024-05-25 16:05:00", "no_data"),
+                ("correction_clusters", "2024-05-26 10:10:00", "clean"),
+                ("correction_clusters", "2024-05-26 10:40:00", "near_miss"),
+                ("correction_clusters", "2024-05-27 19:30:00", "clean"),
+                ("correction_clusters", "2024-05-27 20:10:00", "clean"),
+                ("highs", "2024-05-27 21:00:00", "fired"),
+            }),
+            frozenset({"Correction stacking", "Missed / unannounced meal"}),
+            {
+                ("correction_stacking", "correction_clusters"): _verdict_tally(
+                    8, fired=2, outranked=0, near_miss=1, no_data=4, clean=1,
+                ),
+                ("missed_meal", "highs"): _verdict_tally(
+                    1, fired=1, outranked=0, near_miss=0, no_data=0, clean=0,
+                ),
+            },
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-over-treated-low",
+        _materialize_behavioral_over_treated_low,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {},
+            frozenset({
+                ("lows", "2024-05-23 13:55:00", "fired"),
+                ("lows", "2024-05-24 13:55:00", "fired"),
+                ("lows", "2024-05-25 12:10:00", "near_miss"),
+                ("lows", "2024-05-26 12:10:00", "clean"),
+                ("lows", "2024-05-27 16:10:00", "no_data"),
+                ("lows", "2024-05-28 22:00:00", "fired"),
+                ("meals", "2024-05-28 19:00:00", "no_data"),
+                ("highs", "2024-05-23 14:35:00", "near_miss"),
+                ("highs", "2024-05-24 14:35:00", "near_miss"),
+                ("correction_clusters", "2024-05-28 20:00:00", "clean"),
+            }),
+            frozenset({"Over-treated low", "Correction on active insulin"}),
+            {
+                ("over_treated_low", "lows"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=0, clean=3,
+                ),
+            },
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-correction-on-iob",
+        _materialize_behavioral_correction_on_iob,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {}, frozenset({
+                ("lows", "2024-05-24 22:00:00", "fired"),
+                ("lows", "2024-05-25 22:00:00", "fired"),
+                ("lows", "2024-05-26 13:55:00", "fired"),
+                ("lows", "2024-05-27 22:00:00", "near_miss"),
+                ("lows", "2024-05-28 16:10:00", "clean"),
+                ("meals", "2024-05-24 19:00:00", "no_data"),
+                ("meals", "2024-05-25 19:00:00", "no_data"),
+                ("meals", "2024-05-27 19:00:00", "near_miss"),
+                ("highs", "2024-05-26 14:35:00", "near_miss"),
+                ("correction_clusters", "2024-05-24 20:00:00", "clean"),
+                ("correction_clusters", "2024-05-25 20:00:00", "clean"),
+                ("correction_clusters", "2024-05-27 20:00:00", "clean"),
+            }), frozenset({"Correction on active insulin", "Over-treated low"}),
+            {
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    5, fired=2, outranked=1, near_miss=1, no_data=0, clean=1,
+                ),
+                ("over_treated_low", "lows"): _verdict_tally(
+                    5, fired=1, outranked=2, near_miss=0, no_data=0, clean=2,
+                ),
+            },
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-missed-meal",
+        _materialize_behavioral_missed_meal,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {}, frozenset({
+                ("meals", "2024-05-26 12:00:00", "near_miss"),
+                ("meals", "2024-05-29 10:00:00", "near_miss"),
+                ("highs", "2024-05-02 03:00:00", "no_data"),
+                ("highs", "2024-05-24 14:30:00", "fired"),
+                ("highs", "2024-05-25 14:30:00", "fired"),
+                ("highs", "2024-05-26 14:30:00", "fired"),
+                ("highs", "2024-05-27 14:30:00", "near_miss"),
+                ("highs", "2024-05-29 14:00:00", "clean"),
+                ("correction_clusters", "2024-05-26 13:10:00", "clean"),
+                ("correction_clusters", "2024-05-29 11:10:00", "clean"),
+            }), frozenset({
+                "Missed / unannounced meal", "Meal bolus fell short", "meals-start-high",
+            }), {
+                ("missed_meal", "highs"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("meal_bolus_short", "highs"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=1, no_data=1, clean=1,
+                ),
+            }, 3,
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-meal-bolus-short",
+        _materialize_behavioral_meal_bolus_short,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            _BEHAVIORAL_30_DAY_REST_WINDOWS, {}, frozenset({
+                ("meals", "2024-05-24 12:00:00", "near_miss"),
+                ("meals", "2024-05-25 12:00:00", "near_miss"),
+                ("meals", "2024-05-27 12:00:00", "near_miss"),
+                ("meals", "2024-05-29 10:00:00", "near_miss"),
+                ("highs", "2024-05-02 03:00:00", "no_data"),
+                ("highs", "2024-05-24 14:30:00", "fired"),
+                ("highs", "2024-05-25 14:30:00", "fired"),
+                ("highs", "2024-05-26 14:30:00", "fired"),
+                ("highs", "2024-05-27 14:30:00", "near_miss"),
+                ("highs", "2024-05-29 14:00:00", "clean"),
+                ("correction_clusters", "2024-05-24 13:10:00", "clean"),
+                ("correction_clusters", "2024-05-25 13:10:00", "clean"),
+                ("correction_clusters", "2024-05-29 11:10:00", "clean"),
+            }), frozenset({"Meal bolus fell short", "Missed / unannounced meal"}), {
+                ("meal_bolus_short", "highs"): _verdict_tally(
+                    6, fired=2, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("missed_meal", "highs"): _verdict_tally(
+                    6, fired=1, outranked=2, near_miss=0, no_data=1, clean=2,
+                ),
+            }, 3,
+        ),
+        30,
+    ),
+    QaCase(
+        "behavioral-carb-log-fasting-exclusion",
+        _materialize_behavioral_carb_log_fasting_exclusion,
+        QaExpectation(
+            _isf_rows(ExpectedIsfRow(omitted=frozenset({"block_id", "recommended"}))),
+            {("isf", "Fasting"): ExpectedSupport(n_steps=102)},
+            {}, frozenset(),
+            frozenset({
+                ("2024-05-01", "2024-05-01 22:00:00", "2024-05-02 08:00:00"),
+            }),
+            {}, frozenset(), frozenset(),
+        ),
+        2,
+    ),
+    QaCase(
+        "behavioral-preempted-detector",
+        _materialize_behavioral_preempted_detector,
+        QaExpectation(
+            _explicit_rows({}), {}, {}, frozenset(),
+            frozenset({
+                ("2024-05-01", "2024-05-01 22:00:00", "2024-05-02 08:00:00"),
+            }),
+            {}, frozenset({
+                ("meals", "2024-05-02 12:00:00", "fired"),
+                ("highs", "2024-05-02 14:00:00", "outranked"),
+                ("correction_clusters", "2024-05-02 13:40:00", "clean"),
+            }), frozenset({"Carb undercount", "meals-start-high"}), {
+                ("carb_undercount", "meals"): _verdict_tally(
+                    1, fired=1, outranked=0, near_miss=0, no_data=0, clean=0,
+                ),
+            },
+        ),
+        2,
+    ),
 )
 
 
@@ -1343,9 +2382,10 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
     payloads = (("basal", "basal"), ("isf", "isf"), ("ic", "ic_blocks"))
     for family, payload_name in payloads:
         for row in execution.analysis[payload_name]:
-            if family != case.target_family and _quiet(family, row):
-                continue
             key = _analyzer_key(family, row)
+            if (family != case.target_family and _quiet(family, row)
+                    and key not in case.expectation.analyzer_rows):
+                continue
             observed_analyzer_rows[key] = _expected_row(family, row)
             observed_support[key] = _support(family, row)
     observed_rows = frozenset(
@@ -1354,7 +2394,10 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         for occurrence in family["occurrences"]
     )
     whole_day = execution.findings["whole_day"]
-    observed_titles = frozenset(row["title"] for row in whole_day["rows"])
+    observed_titles = frozenset(
+        [row["title"] for row in whole_day["rows"]]
+        + [row["detector"] for row in execution.analysis["behavioral"]]
+    )
     observed_queue_rows = {
         (window, key): ExpectedQueueRow(
             row["register"], row.get("direction"), row.get("asserts_move"),
@@ -1376,6 +2419,38 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         identity: tuple(payload["series"])
         for identity, payload in execution.ic_history.items()
     }
+    finding_rows = {
+        row["lever"]: row
+        for row in whole_day["rows"]
+        if row.get("lever") is not None
+    }
+    observed_tally_keys = {
+        (lever, family)
+        for lever, row in finding_rows.items()
+        for family in row["verdict_counts_by_family"]
+    }
+    assert observed_tally_keys == set(case.expectation.verdict_tallies), (
+        observed_tally_keys
+    )
+    for key, expected in case.expectation.verdict_tallies.items():
+        lever, family = key
+        assert tuple(expected.counts) == FINDING_VERDICTS, expected.counts
+        assert all(
+            type(value) is int and value >= 0
+            for value in expected.counts.values()
+        ), expected.counts
+        assert sum(expected.counts.values()) == expected.denominator, expected
+        assert expected.denominator == execution.exposures["exposures"][family]["n"]
+        row = finding_rows[lever]
+        assert row["verdict_counts_by_family"][family] == dict(expected.counts)
+        aggregate = {
+            verdict: sum(
+                counts[verdict]
+                for counts in row["verdict_counts_by_family"].values()
+            )
+            for verdict in FINDING_VERDICTS
+        }
+        assert row["verdict_counts"] == aggregate
     assert observed_analyzer_rows == dict(
         case.expectation.analyzer_rows
     ), observed_analyzer_rows
@@ -1387,6 +2462,7 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
     assert observed_titles == case.expectation.finding_titles, observed_titles
     assert observed_rest_windows == case.expectation.rest_windows, observed_rest_windows
     assert observed_history_series == case.expectation.history_series, observed_history_series
+    assert whole_day["uncaused_highs"]["count"] == case.expectation.uncaused_highs
 
 
 def _settings(carb_ratio: float = 10.0) -> PumpSettings:

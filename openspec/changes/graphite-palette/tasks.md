@@ -2,7 +2,7 @@
 
 ## 1. Settle the values at the running app and land them (attended)
 
-- [ ] Look before asking: serve the ticket worktree through the declared
+- [x] Look before asking: serve the ticket worktree through the declared
       safe entrypoint and inspect shell, Diagnose, Verify, Day and Plan in a
       real browser at 1440×900 and 390×844 yourself, noting where each
       collision the change names actually renders; no question goes to the

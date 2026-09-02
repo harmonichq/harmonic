@@ -86,8 +86,13 @@ unexplained difference and fails the run.
 Recorded by the executing session before the first value moves, read by the
 gate re-base as the counts every leg must still report.
 
-- `frontend/cockpit-shell.browser.test.mjs` on the base: _pending_.
-- `frontend/diagnose-workstation-behavior.replay.mjs` on the base: _pending_.
+- `frontend/cockpit-shell.browser.test.mjs` on the base: 16 tests, 14 pass,
+  0 fail, 2 skipped (the two `COCKPIT_SHOTS`-gated render tests, skipped
+  whenever that variable is unset, as in CI). Run 2026-09-02 from the base
+  worktree at 34264622 with `COCKPIT_APP_ROOT` defaulting to that checkout.
+- `frontend/diagnose-workstation-behavior.replay.mjs` on the base: `app: 145
+  of 145 stories passed` (TARGET=app against the base worktree at 34264622
+  served with `--no-fetch` on the revise database, port 8318, 2026-09-02).
 
 ## Rulings that stay narrow
 

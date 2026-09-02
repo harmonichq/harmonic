@@ -139,6 +139,111 @@ all five row-relative bands through their emitted silences, conditional absence,
 and a co-Lever driver. The design's per-Lever table freezes those reachable bands
 and the literal co-Lever tallies that make each `outranked` count observable.
 
+## Correction-stacking production-band confirmation
+
+The smallest recipe that produces two `fired` correction-stacking episodes plus
+one `near_miss` and one `clean` episode is four isolated two-correction episodes.
+The episode classifier selects one pair and one matching second correction
+(`ciq_autotune/analyzers/scenario/attribute.py:483-509`;
+`ciq_autotune/analyzers/scenario/model_view.py:291-307`). A non-firing episode
+attaches its verdict only to its final correction; every first-in-pair anchor has
+no correction-stacking verdict and projects as `no_data`
+(`ciq_autotune/findings_projection.py:584-605`). Because the scenario builder
+slices boluses to the analysis window before episode construction, an
+out-of-window prior cannot remove one of those anchors from the denominator
+(`ciq_autotune/analyzers/scenario/engine.py:773-779`). The production tally is
+therefore denominator 8, not the projected denominator 7.
+
+Command:
+
+```sh
+uv run python - <<'PY'
+import json
+import tempfile
+from ciq_autotune.store import Store
+from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+case = next(case for case in QA_CASES if case.name == "behavioral-correction-stacking")
+with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+    with Store.open(database.name) as store:
+        materialize_case(store, case)
+    with Store.open_readonly(database.name) as store:
+        execution = execute_case(store, case)
+family = execution.exposures["exposures"]["correction_clusters"]
+row = next(row for row in execution.findings["whole_day"]["rows"]
+           if row.get("lever") == "correction_stacking")
+print(json.dumps({
+    "case": case.name,
+    "denominator": family["n"],
+    "occurrences": [
+        {"t": item["t"], "state": item["state"],
+         "has_correction_stacking_verdict": any(
+             verdict["classifier"] == "correction_stacking"
+             for verdict in item["verdicts"])}
+        for item in family["occurrences"]
+    ],
+    "verdict_counts": row["verdict_counts_by_family"]["correction_clusters"],
+}, indent=2))
+PY
+```
+
+Complete output:
+
+```text
+{
+  "case": "behavioral-correction-stacking",
+  "denominator": 8,
+  "occurrences": [
+    {
+      "t": "2024-05-24 14:10:00",
+      "state": "clean",
+      "has_correction_stacking_verdict": false
+    },
+    {
+      "t": "2024-05-24 14:40:00",
+      "state": "fired",
+      "has_correction_stacking_verdict": true
+    },
+    {
+      "t": "2024-05-25 14:10:00",
+      "state": "clean",
+      "has_correction_stacking_verdict": false
+    },
+    {
+      "t": "2024-05-25 14:40:00",
+      "state": "fired",
+      "has_correction_stacking_verdict": true
+    },
+    {
+      "t": "2024-05-26 10:10:00",
+      "state": "clean",
+      "has_correction_stacking_verdict": false
+    },
+    {
+      "t": "2024-05-26 10:40:00",
+      "state": "near_miss",
+      "has_correction_stacking_verdict": true
+    },
+    {
+      "t": "2024-05-27 19:30:00",
+      "state": "clean",
+      "has_correction_stacking_verdict": false
+    },
+    {
+      "t": "2024-05-27 20:10:00",
+      "state": "clean",
+      "has_correction_stacking_verdict": true
+    }
+  ],
+  "verdict_counts": {
+    "fired": 2,
+    "outranked": 0,
+    "near_miss": 1,
+    "no_data": 4,
+    "clean": 1
+  }
+}
+```
+
 ## Closed document inventory
 
 Command:

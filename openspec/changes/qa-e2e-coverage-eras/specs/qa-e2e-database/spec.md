@@ -270,13 +270,22 @@ literal:
 | `behavioral-late-bolus` | `(late_bolus, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
 | `behavioral-meal-over-delivery` | `(meal_over_delivery, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
 | `behavioral-over-treated-low` | `(over_treated_low, lows)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(correction_on_iob, lows)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
-| `behavioral-correction-stacking` | `(correction_stacking, correction_clusters)` = `2 / 0 / 1 / 1 / 1`, denominator 5 | none; a driver correction necessarily carries the matching stacking verdict |
+| `behavioral-correction-stacking` | `(correction_stacking, correction_clusters)` = `2 / 0 / 1 / 4 / 1`, denominator 8 | none; a driver correction necessarily carries the matching stacking verdict |
 | `behavioral-correction-on-iob` | `(correction_on_iob, lows)` = `2 / 1 / 1 / 0 / 1`, denominator 5 | `(over_treated_low, lows)` = `1 / 2 / 0 / 0 / 2`, denominator 5 |
 | `behavioral-missed-meal` | `(missed_meal, highs)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(meal_bolus_short, highs)` = `1 / 2 / 1 / 1 / 1`, denominator 6 |
 | `behavioral-meal-bolus-short` | `(meal_bolus_short, highs)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(missed_meal, highs)` = `1 / 2 / 0 / 1 / 2`, denominator 6 |
 
 Each target and co-Lever tally SHALL preserve the denominator, count-sum,
 `verdict_counts_by_family`, and aggregate reconciliation invariants above. The
+correction-stacking tally SHALL come from four two-correction episodes: the
+episode classifier selects one stacking pair (`ciq_autotune/analyzers/scenario/attribute.py:483-509`),
+model-view appends the match only to that pair's second correction or a non-match
+only to a non-firing episode's final correction
+(`ciq_autotune/analyzers/scenario/model_view.py:291-307`), and the four remaining
+anchors therefore project as `no_data`
+(`ciq_autotune/findings_projection.py:584-605`). The scenario builder's analysis-window
+slice occurs before episode construction, so an earlier prior correction cannot
+serve as hidden context (`ciq_autotune/analyzers/scenario/engine.py:773-779`). The
 meal-bolus-short recurrence appearance SHALL retain its separately policy-owned
 completed-meal denominator. At least one generated case test SHALL independently
 perturb a literal state, a literal denominator, and a zero-valued verdict count

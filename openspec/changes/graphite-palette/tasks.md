@@ -70,7 +70,7 @@
       against the regenerated extract and commit its regenerated
       `contrast-report.json`; any pair that fails a floor returns to the
       operator under ADR 317 (floor wins unless sanctioned).
-- [ ] Run the fast gate and all ten browser legs locally against the no-fetch
+- [x] Run the fast gate and all ten browser legs locally against the no-fetch
       server; require zero failures and no skipped story; record each leg's
       applicable story count in the commit message.
 

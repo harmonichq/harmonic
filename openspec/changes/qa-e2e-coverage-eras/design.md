@@ -274,6 +274,87 @@ catalog-tuple test remains a separate drop guard. These generated methods replac
 `test_setting_recommendation_case_runs_the_real_producer_composition`; the tuple
 guard and decoded-name-set pin are the only retained execution-free tests.
 
+## #193 eras
+
+Task 3 keeps the #192 case interface and adds 17 isolated behavioral cases. The
+three analyzer findings and the unexplained-highs projection are not scenario
+Levers; they prove their own production output and still pin the complete
+`behavioral_rows` set. The eight scenario-Lever cases additionally pin the
+server's row-relative verdict band. Each such case writes exactly six target-family
+Occurrences: two `fired`, one `outranked`, one `near_miss`, one `no_data`, and one
+`clean`. The literal per-family denominator is therefore six, and the literal
+counts are `{fired: 2, outranked: 1, near_miss: 1, no_data: 1, clean: 1}`. This
+meets the engine's two-occurrence pattern floor while exercising every member of
+`FINDING_VERDICTS` (`analyzers/scenario_config.py:137-144`;
+`findings_projection.py:135-138,565-605,608-644`).
+
+`QaExpectation` gains
+`verdict_tallies: Mapping[tuple[str, str], ExpectedVerdictTally]`, keyed by
+`(lever, family)`. `ExpectedVerdictTally` contains a literal `denominator` and a
+literal five-key `counts` mapping in `FINDING_VERDICTS` order. The comparison
+requires exact key-set equality, non-negative integer values, all five keys, the
+sum of counts equal to the denominator, the denominator equal to
+`execution.exposures["exposures"][family]["n"]`, and equality with the matching
+finding row's `verdict_counts_by_family[family]`. It also requires aggregate
+`verdict_counts` to equal the per-family sum. No value may be built from
+`QaExecution`, `execute_case`, analyzer output, or projection output at assertion
+time. At least one generated `test_case_*` perturbs a literal state, a literal
+denominator, and one zero-valued count, and each perturbation must fail. This is a
+new expectation field because `behavioral_rows` pins `(family, t, state)` but
+cannot carry the per-finding, per-family denominator
+(`scripts/qa_e2e_cases.py:105-128,1339-1387`;
+`findings_projection.py:526-552`).
+
+The unexplained-highs case also adds one literal `uncaused_highs` expectation,
+compared with the whole-window projection value. It distinguishes a high whose
+anchor did not drive from a high whose whole Episode drew no Lever: two high
+Occurrences are clean at the family level, exactly one is uncaused
+(`explore_exposures.py:57-75,176-181`; `findings_projection.py:261-280`;
+`tests/test_meal_bolus_short_attribution.py:416-435`). The existing three cases'
+new fields use empty/default values and retain every observed value unchanged.
+
+“Produce” below always means manufactured source rows drive the production
+analyzer, exposure builder, scenario engine, and findings projection. A recipe
+never accepts or writes an anchor state, classifier verdict, finding, attribution,
+rank, denominator, or projected row. `iob_events` stays empty; all active insulin
+comes from the bolus log through the accounting-DIA reconstruction.
+
+| Case name | Detector / output | Source condition proved | Expected states and denominator |
+| --- | --- | --- | --- |
+| `behavioral-meals-start-high` | `analyzers/ic.py::_meals_start_high_finding` | At least the pooled meal-list floor has readable starts whose median is above target (`analyzers/ic.py:1382-1434`). | Exact finding-title set and complete `behavioral_rows`; no scenario-verdict tally. |
+| `behavioral-carb-counting` | `analyzers/ic.py::analyze_ic` | At least `min_runs` closed meals yield a wide pooled I:C interval (`analyzers/ic.py:1802-1833`). | Exact finding-title set and complete meal Occurrence states; no scenario-verdict tally. |
+| `behavioral-post-meal-correction-burden` | `analyzers/ic.py::analyze_ic` | At least `min_meals` pooled meals accumulate known-provenance post-meal correction insulin at or above the configured floor (`analyzers/ic.py:1837-1891`). | Exact finding-title set and complete meal Occurrence states; no scenario-verdict tally. |
+| `behavioral-carb-undercount` | `classifiers/carb_undercount.py::classify_carb_undercount` | Meal dose plus outcome implies the classifier's quantified carb shortfall, without injecting an I:C verdict (`analyzers/scenario/model_view.py:151-191`; `analyzers/scenario/attribute.py:389-405`). | `(carb_undercount, meals)`: six = 2 fired + 1 each other state. |
+| `behavioral-late-bolus` | `classifiers/late_bolus.py::classify_late_bolus` | A meal bolus lands in a qualifying from-flat rise not owned by a prior bolus or upstream recovery cause (`analyzers/scenario/model_view.py:151-191`; `analyzers/scenario/attribute.py:389-405`). | `(late_bolus, meals)`: six = 2 fired + 1 each other state. |
+| `behavioral-meal-over-delivery` | `scenario/meal_suspend.py::classify_meal_owned_suspend` | A meal-owned suspend and low outcome select meal over-delivery after earlier meal classifiers remain silent (`analyzers/scenario/model_view.py:151-191`; `analyzers/scenario/attribute.py:389-405`). | `(meal_over_delivery, meals)`: six = 2 fired + 1 each other state. |
+| `behavioral-over-treated-low` | `scenario/attribute.py::over_treated_rebound_judgment` | A printed low rebounds past the treatment bar and is not refuted or owned by an announced meal (`analyzers/scenario/model_view.py:194-225`; `analyzers/scenario/attribute.py:443-478`). | `(over_treated_low, lows)`: six = 2 fired + 1 each other state. |
+| `behavioral-correction-stacking` | `classifiers/correction_stacking.py::classify_correction_stacking` | A qualifying correction pair acts before the first dose clears and overshoots low (`analyzers/scenario/model_view.py:291-307`; `analyzers/scenario/attribute.py:482-514`). | `(correction_stacking, correction_clusters)`: six = 2 fired + 1 each other state. |
+| `behavioral-correction-on-iob` | `classifiers/correction_on_iob.py::classify_correction_on_iob` | A correction lands on reconstructed bolus-only IOB and the combined action reaches a low (`analyzers/scenario/model_view.py:194-225`; `analyzers/scenario/attribute.py:443-478`). | `(correction_on_iob, lows)`: six = 2 fired + 1 each other state. |
+| `behavioral-missed-meal` | `classifiers/missed_meal.py::classify_missed_meal` | A from-flat meal-shaped high has no qualifying bolus and no upstream recovery cause (`analyzers/scenario/model_view.py:228-263`; `analyzers/scenario/attribute.py:544-588`). | `(missed_meal, highs)`: six = 2 fired + 1 each other state. |
+| `behavioral-meal-bolus-short` | `classifiers/meal_bolus_short.py::classify_meal_bolus_short` | A completed carb-bolus meal is followed by a high and a qualifying cleanup correction; occurrence identity remains the implicated meal (`analyzers/scenario/model_view.py:228-263`; `analyzers/scenario/evidence_population.py:169-177`). | `(meal_bolus_short, highs)`: six = 2 fired + 1 each other state; its recurrence appearance retains the policy-owned meal denominator separately. |
+| `behavioral-uncaused-highs` | `explore_exposures.py::build_exposures` | Two highs do not drive their Episodes, but exactly one Episode draws no Lever anywhere (`explore_exposures.py:57-75,176-181`). | High family denominator two, both anchor rows `clean`, `uncaused_highs == 1`; no finding row. |
+| `behavioral-false-low-suppressed` | false-low preprocessing | A `false-low` response removes the complete flagged excursion before anchors are collected (`analyzers/scenario/engine.py:780-789`; `explore_exposures.py:95-103`). | Exact whole-set rows exclude the flagged low and its rebound; no low denominator is inflated. |
+| `behavioral-low-no-suppressed` | over-treated-low prompt gate | A `low:no` answer refutes over-treated-low attribution at the matching printed low (`analyzers/scenario/model_view.py:203-224`). | The low remains in the exact roster, but `over_treated_low` is absent/fails to fire and the literal low-family tally reconciles. |
+| `behavioral-unbolused-carb-excluded` | Carb-log exclusion path | A separate unbolused Carb-log entry masks its window without becoming a meal, bolus, or modeling input (`analyzers/scenario/model_view.py:44-45,151-191`). | Exact whole-set rows and titles omit the masked behavioral claim; meal denominator excludes the Carb-log entry. |
+| `behavioral-lone-correction-clean` | `classifiers/correction_stacking.py::classify_correction_stacking` | One correction without a qualifying pair cannot become correction stacking (`analyzers/scenario/engine.py:97-108`; `analyzers/scenario/model_view.py:291-307`). | No correction-stacking finding; correction-cluster denominator is zero and the exact roster contains no manufactured pair. |
+| `behavioral-preempted-detector` | attribution precedence | Two target matches surface the earlier actionable driver while a later detector's matching anchor is retained as `outranked` (`analyzers/scenario/model_view.py:18-26,311-321`; `analyzers/scenario/attribute.py:389-405`). | Exact whole-set rows include the named `outranked` anchor; only the winning Lever owns attribution and each affected literal tally reconciles. |
+
+All 17 names are added to the existing literal catalog tuple and therefore gain
+generated `test_case_*` methods. Dates remain before 2025-07-01. Each recipe
+declares and proves its exact `source_span_days`; `target_family` remains `None`
+because these cases target the behavioral layer rather than a tuning analyzer.
+No new family value is introduced. The committed showcase recipe, produced rows,
+and SQLite bytes remain unchanged.
+
+Before authoring the remaining 16 cases, task 3 measures one representative
+scenario-Lever case and projects `16 × representative case time + 11.38 s`, where
+11.38 s is task 2's recorded focused-suite total. A result above 90 seconds stops
+the phase. Task 3 records the same five post-change budgets as tasks 1 and 2 in
+`coverage-appendix.md`: committed showcase size, showcase drift, focused suite,
+slowest generated case, and whole pytest against the recorded 62.93 s baseline
+and 157.33 s ceiling. No budget is raised. The existing budget-breach stop rule
+applies, with the report posted on #193 rather than #192.
+
 ## Exactness, public-tree scan, and provenance
 
 Expectation comparison is whole-set equality for analyzer rows, each queried

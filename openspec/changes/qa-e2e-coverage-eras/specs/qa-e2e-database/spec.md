@@ -223,3 +223,97 @@ identity.
 - **THEN** asserting, held, blind, quiet or absent, direction-only non-stageable,
   and active history outcomes match their exact expected rows and absences
 - **AND** direction-only ISF weaken never gains a recommendation, rank, or move
+
+### Requirement: Behavioral eras prove occurrence states and verdict denominators exactly
+
+Task 3 SHALL add exactly the 17 isolated cases in the design's `#193 eras`
+table: 12 positive behavioral/output cases and five suppression or negative
+guards. Each SHALL use the existing `QaCase.recipe`, `source_span_days`,
+production composition, literal exact catalog tuple, and generated
+`test_case_*` contract. Each SHALL set `target_family=None`; no new analyzer-family
+value SHALL be introduced. Dates SHALL precede 2025-07-01. The committed showcase
+recipe, produced rows, and SQLite bytes SHALL remain unchanged.
+
+The three I:C behavioral findings SHALL be produced by `analyze_ic`; the eight
+scenario Levers SHALL be produced by their production classifiers and attribution;
+and unexplained highs SHALL be produced by exposures and findings projection.
+Fixture recipes SHALL NOT accept or write an anchor state, classifier verdict,
+finding, attribution, rank, denominator, projected row, analyzer verdict, or
+continuous IOB. `iob_events` SHALL remain empty; any active insulin SHALL be
+reconstructed from bolus events.
+
+Every case SHALL continue to compare the complete literal `behavioral_rows` and
+finding-title sets. `QaExpectation` SHALL gain
+`verdict_tallies: Mapping[tuple[str, str], ExpectedVerdictTally]`, keyed by
+`(lever, family)`, with defaults that leave the existing cases unchanged.
+`ExpectedVerdictTally` SHALL contain a literal denominator and a literal counts
+mapping with exactly the five `FINDING_VERDICTS` keys. Assertion SHALL require
+exact tally key-set equality; non-negative integer counts; all five keys; counts
+summing to the denominator; the denominator equaling the exact
+`exposures[family]["n"]`; equality with the matching finding row's
+`verdict_counts_by_family[family]`; and aggregate `verdict_counts` equal to the
+sum of its per-family tallies. No expected state, count, or denominator SHALL be
+constructed from `QaExecution`, `execute_case`, analyzer output, exposure output,
+or projection output at assertion time.
+
+Each of the eight scenario-Lever cases SHALL contain exactly six target-family
+Occurrences and SHALL literally expect two `fired` plus one `outranked`, one
+`near_miss`, one `no_data`, and one `clean`. Its `(lever, family)` denominator
+SHALL therefore be six with exact counts `{fired: 2, outranked: 1, near_miss: 1,
+no_data: 1, clean: 1}`. The meal-bolus-short recurrence appearance SHALL retain
+its separately policy-owned completed-meal denominator. At least one generated
+case test SHALL independently perturb a literal state, a literal denominator,
+and a zero-valued verdict count and SHALL fail for each mutation.
+
+`QaExpectation` SHALL also gain an exact whole-window `uncaused_highs` value,
+defaulted so existing cases retain their output. The `behavioral-uncaused-highs`
+case SHALL produce two high Occurrences that are both non-driver/clean at the
+family level while exactly one whole Episode has no Lever; it SHALL pin
+`uncaused_highs == 1`. The five negative cases SHALL prove, through exact whole-set
+rows, titles, tallies, and denominators, that a false-low excursion is removed, a
+`low:no` answer suppresses over-treated-low attribution without deleting the
+printed low, an unbolused Carb-log entry is exclusion-only and never a meal, one
+correction creates no correction cluster, and precedence retains an outranked
+anchor while only the earlier driver owns attribution.
+
+Before the remaining 16 cases are authored, the first representative
+scenario-Lever case SHALL be timed and task 3 SHALL project
+`16 × representative case time + 11.38 s` against the unchanged 90-second focused
+suite limit. Any projected or measured budget breach SHALL invoke the existing
+stop rule and SHALL be reported on #193. Task 3 SHALL record literal output for
+the same five budgets in `coverage-appendix.md`, using task 2's 11.38 s focused
+suite as the projection input and the recorded 62.93 s whole-pytest baseline /
+157.33 s ceiling. No budget SHALL be raised.
+
+#### Scenario: The closed occurrence vocabulary is analyzer-produced
+
+- **WHEN** every generated behavioral case runs through production analysis,
+  exposures, scenarios, and findings projection
+- **THEN** the complete Occurrence-row set contains only `fired`, `outranked`,
+  `near_miss`, `no_data`, and `clean`
+- **AND** every required positive, negative, silence, and precedence condition in
+  the design table matches its literal whole-set expectation
+
+#### Scenario: Every Lever band shares its exact family denominator
+
+- **GIVEN** each scenario-Lever case's six target-family Occurrences
+- **WHEN** its finding row is projected
+- **THEN** its five literal counts are `2, 1, 1, 1, 1` in
+  `FINDING_VERDICTS` order and sum to six
+- **AND** six equals both the target exposure family's `n` and the matching
+  `verdict_counts_by_family` denominator
+- **AND** aggregate counts equal the sum of the exact per-family tallies
+
+#### Scenario: Negative evidence cannot become a finding
+
+- **WHEN** the five named negative cases execute
+- **THEN** false-low, `low:no`, unbolused-carb, lone-correction, and preempted
+  conditions retain exactly the rows and absences named by the design
+- **AND** no recipe injects the verdict or attribution that the assertion expects
+
+#### Scenario: Behavioral coverage leaves the showcase and budgets fixed
+
+- **WHEN** task 3 completes or stops on a budget breach
+- **THEN** the committed showcase drift check remains current and its bytes remain
+  unchanged against `origin/main`
+- **AND** the five measured budgets are recorded without raising a limit

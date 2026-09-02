@@ -1450,12 +1450,23 @@ test('each cockpit lock assertion proves red under deliberate mutation and resto
       style('.cockpit-scope-label', 'font-size', '16px'));
 
     // Term 27 — a bar that leaves its sanctioned ground, and a chrome-to-chrome
-    // hairline. The first mutation puts the bar back on the desk, the exact
-    // state #317 ruled away: the pinned literal and `bar !== desk` both go red
-    // (ADR 317).
+    // hairline. Both bar mutations move BOTH bars together, so `footer === bar`
+    // keeps holding and the proof reaches the pins #317 added (ADR 317);
+    // moving the top bar alone trips `footer === bar` first and proves nothing
+    // about them. The first puts the bars back on the desk, the exact state the
+    // ruling retired: `bar !== desk` goes red, and the grounds count with it.
+    // The second moves them to a shade no ruling sanctioned, which leaves the
+    // count at three and `bar !== desk` true, so only the pinned literal can
+    // catch it — that is the mutation that proves the literal pin is live.
+    const bothBars = (value) => async () => {
+      const bars = page.locator('.cockpit-topbar, .cockpit-footer');
+      await bars.evaluateAll((nodes, next) => nodes.forEach((node) => node.style.setProperty('background-color', next)), value);
+      return () => bars.evaluateAll((nodes) => nodes.forEach((node) => node.style.removeProperty('background-color')));
+    };
     await proveRedOnce('diagnose-workstation:27 (three grounds)',
-      () => assertChromeSurfaces(page),
-      style('.cockpit-topbar', 'background-color', 'rgb(15, 13, 11)'));
+      () => assertChromeSurfaces(page), bothBars('rgb(15, 13, 11)'));
+    await proveRedOnce('diagnose-workstation:27 (sanctioned shade)',
+      () => assertChromeSurfaces(page), bothBars('rgb(30, 26, 23)'));
     await proveRedOnce('diagnose-workstation:27 (no hairlines)',
       () => assertChromeSurfaces(page), async () => {
         const footer = page.locator('.cockpit-footer');

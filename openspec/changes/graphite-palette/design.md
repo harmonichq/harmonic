@@ -7,7 +7,9 @@ executing session serves the app through the declared safe entrypoint and
 iterates it with the operator in UI Craft revise rounds; each ruling is
 recorded below as a dated sanction (`Connor Griffin · <date> · "<quoted
 reason>"`) before the value is committed. A value without its sanction entry is
-a defect, not a draft.
+a defect, not a draft. The executing session looks first and asks second: it
+serves the app and inspects every surface itself before its first question,
+and every question it does ask is rendered live as options with stated costs.
 
 **Why.** #304's triage settled (Q1) that the finished palette is the operator's
 call on the running app: the prototype was flagged as far from finished

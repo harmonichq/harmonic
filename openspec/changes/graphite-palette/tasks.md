@@ -2,10 +2,15 @@
 
 ## 1. Settle the values at the running app and land them (attended)
 
-- [ ] Record the base: the ticket branch's merge-base with `origin/main`;
-      spin a second worktree at that commit and serve it on a distinct port
-      with the revise database; replay `frontend/cockpit-shell.browser.test.mjs`
-      and `frontend/diagnose-workstation-behavior.replay.mjs` against it and
+- [ ] Look before asking: serve the ticket worktree through the declared
+      safe entrypoint and inspect shell, Diagnose, Verify, Day and Plan in a
+      real browser at 1440×900 and 390×844 yourself, noting where each
+      collision the change names actually renders; no question goes to the
+      operator that a look at the running app could have answered. Then record
+      the base: the ticket branch's merge-base with `origin/main`; spin a
+      second worktree at that commit and serve it on a distinct port with the
+      revise database; replay `frontend/cockpit-shell.browser.test.mjs` and
+      `frontend/diagnose-workstation-behavior.replay.mjs` against it and
       record their applicable story counts.
 - [ ] Inventory every reader of `--high` (`frontend/index.html`,
       `frontend/nav-chart.js`, `frontend/diagnose-evidence-charts.js`,

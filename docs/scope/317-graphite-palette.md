@@ -74,6 +74,8 @@ Ticket: #317 (second half of #304; ordinary ticket, no epic parent)
   with a dated operator sanction recorded in the change design record; pinned
   literals re-base freely. Why: operator answer "my eyeballs win"; UI Craft
   revise lets the eye outrank a metric that measures the wrong thing. → ADR
+- Operator ruling 2026-09-02: the executing session serves and inspects the
+  app itself before asking the operator anything (task 1.1, ADR 317). inline
 - Live look, 2026-09-02, no-fetch server at :8317 from this worktree: Day shows
   high-glucose dots, the highs count, the active-step pill, the month picker and
   the Log carbs plus in one orange (Q2 collision in one screen).

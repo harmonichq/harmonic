@@ -57,6 +57,10 @@ any.
 ## Moved tokens
 
 The closed list of custom properties whose computed value differs between
+base and revision. Filled by the executing session as each ruling lands and
+extended by the evidence chunk only for a refusal a moved token explains at
+runtime (an inline custom property, an alpha wash), each addition quoting the
+ruling. Every entry names a custom property whose computed value differs between
 base and revision, including tokens derived through `var()` from a moved one
 (`--ck-bar-on-signal` follows `--ck-ground`, for instance); before and after
 are the computed hexes. Filled by
@@ -92,9 +96,10 @@ gate re-base as the counts every leg must still report.
   Plan and Day, where cards sit on the page directly and the bar is flush with
   it, and moves the bar one step only if that reads wrong to the operator. If
   it moves, cockpit S6 amends with the sanction in the same commit; if it does
-  not, S6 and its gate stay byte-identical and the "three materials" term in
-  `frontend/theme.css` is amended to say the step is carried by the
-  workstation. If the bar moves, the cockpit gate's chrome-surface check
+  not, S6, its gate and `frontend/theme.css`'s chrome-bar role block stay
+  byte-identical. The bar's ground is the `--ck-ground` re-declaration inside
+  that role block; `:root`'s `--ck-ground` in `frontend/shell.css` is the desk
+  and never moves. If the bar moves, the cockpit gate's chrome-surface check
   (`assertChromeSurfaces` in `frontend/cockpit-shell.browser.test.mjs`)
   keeps `shell === desk`, `footer === bar` and `control !== desk` unchanged,
   replaces `bar === desk` with `bar` pinned to the sanctioned literal and

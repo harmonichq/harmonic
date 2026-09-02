@@ -20,21 +20,31 @@
       (hero chart, navigator, highs count, legend), Diagnose and the scenario
       screen with the operator, checking each candidate at a glance against
       the tokens ADR 317 names; commit the chosen value in the `:root` block
-      with its sanction appended to `design.md`.
+      with its sanction appended to `design.md`, and in the same commit sweep
+      `frontend/theme.css`'s flavour-tag rationale (the sentence saying
+      `--primary` is byte-identical to `--high`) to describe the ruled state.
 - [ ] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
       on the same Trial through the Verify gate's fixture payload
       (`mockups/verify-660-story.synthetic/payload.json`, stubbed the way
       `frontend/verify-660-story-behavior.replay.mjs` stubs it) from a
       committed opener, `evidence/verify-trial-opener.mjs`, that serves one
-      URL with a `RIBBON=32/18|20/20` switch so the same Trial renders both
-      ways and chunk 3 can capture it again; commit the chosen percentages
+      URL with a `RIBBON=32/18|20/20` switch and a `FRONTEND_ROOT=<checkout>`
+      input naming the checkout whose `frontend/` it serves, so the same Trial
+      renders both ways from either worktree and chunk 3 can capture it again;
+      commit the chosen percentages
       in `frontend/verify-workstation.js` with the sanction appended to
       `design.md`.
 - [ ] Look at Plan and Day with the operator; move the chrome bar one step
-      only on the operator's ruling, editing `--ck-ground` in
-      `frontend/shell.css` and `frontend/theme.css` together; either way,
-      append the ruling to `design.md` and amend the "three materials"
-      paragraph in `frontend/theme.css` to match.
+      only on the operator's ruling, editing the `--ck-ground` re-declaration
+      inside `frontend/theme.css`'s chrome-bar role block only (`:root`'s
+      `--ck-ground` in `frontend/shell.css` is the desk and does not move);
+      append the ruling to `design.md` either way. On a move, also re-measure
+      and update the three contrast ratios recorded beside `--ck-bar-signal`,
+      `--ck-bar-signal-well` and `--ck-bar-on-signal` in that block, and
+      return the ruling to the operator if `--ck-bar-on-signal` on the moved
+      ground drops below its recorded 6.08:1; amend the block's "never a
+      black bar" comment to the ruled state. On no move, nothing in that block
+      changes.
 - [ ] Regenerate the two verbatim extracts
       (`uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
       and `node mockups/finding-evidence-routing.exploration/build.mjs`) so
@@ -72,7 +82,12 @@
       seeding and its Theme-control base check, and make
       `evidence/palette-rule.mjs`'s `admits` the only sanction rule, fed the
       moved-token list and the colour-pair table (each moved token's computed
-      before/after plus `design.md`'s derived pairs). The base check becomes: every moved
+      before/after plus `design.md`'s derived pairs). A refused difference
+      that a moved token explains at runtime (an inline custom property such
+      as the navigator tiles' `--sev`, which resolves to `--high` on high days,
+      or an alpha wash of a moved token) is added to `design.md`'s Moved
+      tokens or Derived colour pairs list with the ruling that explains it;
+      any other refusal goes back to the coordinator. The base check becomes: every moved
       token resolves on the base side to the before-value the list records,
       and on the revision side to the after-value; otherwise the run fails as
       "not the ticket base". Add `plan` (`/plan`, ready `.active-profile-ref`, which the

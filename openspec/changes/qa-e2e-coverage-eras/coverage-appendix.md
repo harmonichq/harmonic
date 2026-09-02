@@ -25,9 +25,10 @@ uv run python -m pytest tests/test_qa_e2e_cases.py --durations=0 -p no:cacheprov
 /usr/bin/time -p uv run python -m pytest
 ```
 
-`tests/test_qa_e2e_cases.py` generates one named test method per `QA_CASES` entry,
-so the slowest `--durations=0` call is the single-case measurement rather than a
-shared catalog loop. At the start of each chunk session, before edits, its worker
+`tests/test_qa_e2e_cases.py` generates one named test method per `QA_CASES` entry.
+Those methods replace both catalog execution loops; the tuple and decoded-name-set
+pins are execution-free. Therefore the slowest `--durations=0` call is the
+single-case measurement. At the start of each chunk session, before edits, its worker
 runs the whole-suite timing command on that machine, records the `real` line, and
 uses 2.5× that in-session value as the chunk's limit. The 2026-09-01 measurement
 on this machine—2120 passed, 1 skipped, 185 warnings; `real 137.69`—is a reference
@@ -45,3 +46,7 @@ five measurements or stopping point on #192, and stops. The unchanged
 showcase-only drift check remains green. Only a newer lock on #192 may resume the
 chunk. No measurement budget is raised in this phase; the CI job timeout change
 above supplies execution headroom without changing an acceptance limit.
+
+Before sub-order 2 authors the remaining I:C eras, it builds one mature 91-day
+I:C case and records literal output for all five measurements. If any limit is
+exceeded, it posts the measurements on #192 and stops under the same rule.

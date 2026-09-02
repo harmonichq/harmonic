@@ -21,16 +21,21 @@ count (`scripts/qa_e2e_cases.py:187-210`).
 Task 1 keeps that public fixture language and defines `AnalyzerRowKey` as the
 analyzer family plus its emitted parameter key: basal clock-slot label, ISF
 segment, or I:C block. `ExpectedAnalyzerRow` records the exact `safety_status`,
-direction when applicable, `asserts_move`, and whether the value is expected to
-be omitted. `QaExpectation` gains
+direction when applicable, `asserts_move`, and
+`omitted: frozenset[str]`: the serialized field names expected absent or `None`,
+compared exactly. For example, basal no-baseline uses `omitted={"current"}` and
+ISF direction-only uses `omitted={"recommended"}`. `QaExpectation` gains
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
-`absent_analyzer_rows`. Every case pins all three analyzer families over the
-full emitted key set because every case runs full `analyze`
-(`scripts/qa_e2e_cases.py:162-168`); the compact row shape makes that exhaustive
-contract tractable and makes a stray stageable move in a non-target family fail
-closed.
+`absent_analyzer_rows`. Every case runs full `analyze`
+(`scripts/qa_e2e_cases.py:162-168`). The family under test pins its full emitted
+key set. Each non-target family pins the exact set of keys whose `asserts_move`
+is true or whose `safety_status` differs from that analyzer's quiet/no-change
+status; that set is expected empty in nearly every case. This keeps stray moves
+fail-closed at a fraction of the all-family literal volume.
 
-`QaCase` also gains
+`QaCase` also gains a `recipe` callable. A name-to-recipe registry replaces the
+`if`/`elif` dispatch in `materialize_case` (`scripts/qa_e2e_cases.py:147-157`),
+and sub-order 2 only registers cases through that task-1 contract. `QaCase` gains
 `scoped_windows: tuple[tuple[int, int], ...]`, expressed as clock minutes and
 empty by default. `execute_case` keeps `whole_day()` and additionally projects
 each declared window through `WindowQuery.clock`
@@ -46,9 +51,12 @@ register, queue row, priority, or rank.
 
 ## Coverage-case isolated-store spans
 
-New coverage cases declare a source span in days, and `materialize_case` writes
-that many manufactured days ending at the case's `now`. The catalog imports the
-constants rather than repeating their values:
+Span is the inclusive calendar-day write depth from the earliest basal, CGM, or
+bolus event row through the case's `now`; settings snapshots are excluded. New
+coverage cases declare a span and `materialize_case` writes exactly that depth.
+For each of the three existing cases, a test asserts the declaration against the
+recipe's actual earliest event and `now`. The catalog imports the constants rather
+than repeating their values:
 
 | Family | Declared source span | Why |
 | --- | --- | --- |
@@ -62,9 +70,10 @@ its existing anchor; the committed database bytes, showcase recipe, and produced
 rows remain unchanged, while its expectation is re-expressed in the extended
 contract with no observed value changing;
 `setting-recommendation` declares span 12 and keeps its bolus-free recipe without
-a lead-in; `behavioral-precedence` declares span 30 and keeps its current recipe
-shape. The latter two derive any new exact expectation fields from analyzer
-output. `window_days` remains
+a lead-in; `behavioral-precedence` declares span 5 because its unchanged recipe
+writes events from 2024-06-25 through its 2024-06-29 `now`. The latter two derive
+any new exact expectation fields from analyzer output. The materialized min/max
+query and complete output are recorded in `generated-facts.md`. `window_days` remains
 30 and production still derives `now` from the store's latest basal/CGM event.
 `_BOLUS_LEADIN` and `_ISF_DECISION_INTERVAL` come from
 `ciq_autotune.analyze`; `BLOCK_WINDOW_DAYS` comes from
@@ -81,12 +90,12 @@ condition; it never permits writing the condition into a fixture.
 | Basal capped raise / lower | The supported condition holds and the uncapped target exceeds the ±20% step (`safety.py:143-148,200-226`). | Exact `assert` row with cap status and bounded recommendation. |
 | Basal insufficient | A visible estimate differs from current but has no supported matching sign, including a seven-night below-floor case (`safety.py:63-71,192-222`; `analyzers/basal.py:503-509,562-564`). | Exact analyzer/support row, `QaCase.scoped_windows` `held`, no global assert, `asserts_move=false`. |
 | Basal blind | No clean day yields an estimate (`safety.py:197-204`; `analyzers/basal.py:499-509`). | Exact `QaCase.scoped_windows` `blind` row and no global row. |
-| Basal no baseline | A clean estimate exists without a programmed current value (`safety.py:200-204`; `result.py:156-166`). | Exact `QaCase.scoped_windows` `held`, missing current value, no global assert. |
+| Basal no baseline | A clean estimate exists without a programmed current value (`safety.py:200-204`; `result.py:156-166`). | Exact `QaCase.scoped_windows` `held` with `omitted={"current"}`, no global assert. |
 | Basal no change | The bounded estimate is within 0.05 U/h of current (`safety.py:143-148,212-214`). | Exact analyzer row and absence from `QaCase.scoped_windows`/global queues. |
 | Basal recurring-low lower | Recurring basal-attributed lows move the safe direction lower, including the zero-clean-day variant (`safety.py:229-279`; `analyzers/basal.py:510-522`). | Exact lower `assert`, `asserts_move=true`; never blind. |
 | Basal recurring-low gate | A low gates a raise or recurring lows meet a median at/above current (`safety.py:238-260,268-283`). | Exact `QaCase.scoped_windows` `held`, no global assert, `asserts_move=false`. |
 | ISF strengthen | Fully observed rescue history is silent, no correction harm exists, the band and vote support strengthen, and the signal held at the prior decision point (`analyzers/isf.py:509-525,611-622`). | Exact ranked `assert` with recommendation and `asserts_move=true`. |
-| ISF weaken / direction-only | Correction-caused lows or attributed rescues clear recurrence; the analyzer emits weaken without a recommendation (`analyzers/isf.py:528-591,818-827`). | Exact visible direction, no queue rank or recommendation, `asserts_move=false`. |
+| ISF weaken / direction-only | Correction-caused lows or attributed rescues clear recurrence; the analyzer emits weaken without a recommendation (`analyzers/isf.py:528-591,818-827`). | Exact visible direction with `omitted={"recommended"}`, no queue rank, `asserts_move=false`. |
 | ISF held | An estimate is visible but no direction is owned because harm gates, observation is incomplete, evidence is wide, current is confirmed, or persistence is absent (`analyzers/isf.py:593-628`). | Exact `held` row and analyzer-owned reason. |
 | I:C collecting | A 30-day store leaves `observed_days < BLOCK_WINDOW_DAYS`, which forces every block to `collecting` (`analyze.py:438-457`; `analyzers/ic.py:2429-2430`). | Exact collecting analyzer row and absence from `QaCase.scoped_windows`/global queues. |
 | I:C raise / lower | `observed_days` reaches `BLOCK_WINDOW_DAYS`; at least eight effective closed meal runs produce a non-wide, band-excluding, regime-supported recommendation different from current (`analyzers/ic.py:120-163,1449-1472,2429-2438,2503-2523`). | Exact `assert`, direction, support count, and `asserts_move=true`. |
@@ -109,7 +118,10 @@ retain the shapes recorded in the preceding section.
 
 This supersedes ADR 190's coverage-membership clause. ADR 190's other rulings stay
 in force. The bytes of `mockups/qa-e2e.synthetic/harmonic.sqlite`, the showcase
-recipe and its produced rows, and `gen_qa_e2e_db.py --check` remain unchanged.
+recipe and its produced rows remain unchanged. `gen_qa_e2e_db.py --check`
+reports its logical contents current, while
+`git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` proves its bytes
+were untouched.
 The showcase expectation is re-expressed in the extended contract with no
 observed value changing. The committed database membership is exactly one case:
 `showcase`.
@@ -118,7 +130,9 @@ The executed span probe and complete output in `generated-facts.md` demonstrate
 the boundary with existing recipes: the 30-day showcase is collecting at 29
 observed days, while the imported-constant long store reaches 90 observed days
 and a numeric I:C state. The same 30-day store still emits one ISF row, but the
-family span is required for prior-decision outcomes.
+family span is required for prior-decision outcomes. This probe is frozen evidence
+of the pre-change tree at `origin/main` `6defd69`; it is not re-run after chunk 1,
+and no chunk repairs it.
 
 ## Per-case emission for UI work
 
@@ -137,7 +151,10 @@ the complete named-case and UI-decision guidance in `AGENTS.md` and `CONTEXT.md`
 `test_case_<name with '-' replaced by '_'>` for every catalog case. Each method
 carries its original case name. A guard decodes those methods back to case names
 and compares the set with `{case.name for case in QA_CASES}`; the literal exact
-catalog-tuple test remains a separate drop guard.
+catalog-tuple test remains a separate drop guard. These generated methods replace
+`test_each_catalog_case_runs_the_real_producer_composition` and
+`test_setting_recommendation_case_runs_the_real_producer_composition`; the tuple
+guard and decoded-name-set pin are the only retained execution-free tests.
 
 ## Exactness, public-tree scan, and provenance
 

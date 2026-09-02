@@ -2,6 +2,9 @@
 
 ## Isolated-span probe
 
+`evidence/span-probe.py` is frozen evidence of the pre-change tree at
+`origin/main` `6defd69`. It is not re-run after chunk 1, and no chunk repairs it.
+
 Command:
 
 ```sh
@@ -24,6 +27,25 @@ use production `analyze`. The short store is forced to collecting; the long stor
 reaches the analyzer's full observation age and a numeric state. The short store's
 single ISF row also shows that row presence alone does not exercise the prior-
 decision replay that requires the ISF family span.
+
+## Existing behavioral-precedence depth
+
+Command:
+
+```sh
+env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python -c 'import sqlite3,tempfile; from pathlib import Path; from datetime import datetime; from ciq_autotune.store import Store; from scripts.qa_e2e_cases import QA_CASES,materialize_case; p=Path(tempfile.mkdtemp())/"case.sqlite"; c=next(x for x in QA_CASES if x.name=="behavioral-precedence"); s=Store.open(str(p)); materialize_case(s,c); s.close(); q=sqlite3.connect(p); rows=q.execute("SELECT MIN(t), MAX(t) FROM (SELECT t FROM cgm_readings UNION ALL SELECT t FROM bolus_events UNION ALL SELECT t FROM basal_events)").fetchone(); print(f"earliest={rows[0]}"); print(f"latest={rows[1]}"); print(f"inclusive_calendar_days={(datetime.fromisoformat(rows[1]).date()-datetime.fromisoformat(rows[0]).date()).days+1}")'
+```
+
+Complete output:
+
+```text
+earliest=2024-06-25 09:00:00
+latest=2024-06-29 22:10:00
+inclusive_calendar_days=5
+```
+
+The union excludes `profile_settings`, so the earlier settings snapshot does not
+inflate the declared span.
 
 ## Closed document inventory
 

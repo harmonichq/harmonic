@@ -7,12 +7,17 @@ isolated store and SHALL run production analysis, exposure, scenario, findings,
 and I:C-history composition. `AnalyzerRowKey` SHALL be analyzer family plus its
 emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
 `ExpectedAnalyzerRow` SHALL contain exact `safety_status`, direction when
-applicable, `asserts_move`, and whether the value is expected omitted.
+applicable, `asserts_move`, and `omitted: frozenset[str]`, compared exactly as the
+serialized field names expected absent or `None`; basal no-baseline SHALL use
+`omitted={"current"}` and ISF direction-only SHALL use
+`omitted={"recommended"}`.
 `QaExpectation` SHALL gain
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
-`absent_analyzer_rows`. Each case SHALL pin all three analyzer families over the
-full emitted key set so any stray stageable move outside the target family fails
-closed. `QaCase` SHALL gain
+`absent_analyzer_rows`. Each case's target family SHALL pin its full emitted key
+set. Each non-target family SHALL pin the exact set of keys whose `asserts_move`
+is true or whose `safety_status` is not that analyzer's quiet/no-change status;
+the expected set SHALL be empty when no such row exists, so stray moves fail
+closed without repeating every quiet row. `QaCase` SHALL gain
 `scoped_windows: tuple[tuple[int, int], ...]`, expressed in clock minutes and
 empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
@@ -36,8 +41,10 @@ condition in the design matrix.
 
 ### Requirement: Isolated stores use family spans and leave showcase unchanged
 
-Each new coverage case SHALL declare its source span and `materialize_case` SHALL
-write that many manufactured days ending at the case's `now`. Basal spans SHALL
+Span SHALL mean inclusive calendar-day write depth from the earliest written
+basal, CGM, or bolus event row through the case's `now`; settings snapshots SHALL
+be excluded. Each new coverage case SHALL declare its source span and
+`materialize_case` SHALL write exactly that depth. Basal spans SHALL
 derive from the production request and SHALL add imported `_BOLUS_LEADIN` when a
 recipe places boluses; ISF spans SHALL also include imported
 `_ISF_DECISION_INTERVAL`; I:C spans SHALL derive from imported
@@ -46,8 +53,10 @@ existing anchor. The committed database bytes, showcase recipe, and its produced
 rows SHALL remain unchanged; its expectation SHALL be re-expressed in the
 extended contract with no observed value changing. `setting-recommendation`
 SHALL declare span 12 and retain its
-bolus-free recipe without a lead-in; `behavioral-precedence` SHALL declare span 30
-and retain its current recipe shape. The latter two SHALL derive new exact
+bolus-free recipe without a lead-in; `behavioral-precedence` SHALL declare span 5
+for its unchanged 2024-06-25 through 2024-06-29 recipe. Tests SHALL assert all
+three existing declarations against their recipes' actual event depth. The latter
+two SHALL derive new exact
 expectation fields from analyzer output.
 Production composition SHALL retain `window_days=30`
 and store-derived `now`.
@@ -61,13 +70,23 @@ available catalog.
 The default generator and `--check` SHALL continue to materialize and compare only
 `showcase`. The committed database bytes, showcase recipe, and showcase-produced
 rows SHALL remain unchanged; the expectation SHALL be re-expressed in the
-extended contract without changing any observed value. One unittest method named
+extended contract without changing any observed value. `QaCase` SHALL gain a
+`recipe` callable, and a name-to-recipe registry SHALL replace the current
+`if`/`elif` materializer dispatch. One unittest method named
 `test_case_<name with '-' replaced by '_'>` per catalog case SHALL make
 `--durations=0` report each case independently, and each generated method SHALL
 carry the original case name. Tests SHALL decode those method names and assert
 that the resulting case-name set equals `{case.name for case in QA_CASES}`. They
 SHALL retain the literal exact catalog-tuple assertion so a dropped or misnamed
-case fails closed.
+case fails closed. The generated methods SHALL replace
+`test_each_catalog_case_runs_the_real_producer_composition` and
+`test_setting_recommendation_case_runs_the_real_producer_composition`; the exact
+catalog-tuple and decoded-name-set tests SHALL be the only retained
+execution-free catalog tests.
+
+`gen_qa_e2e_db.py --check` SHALL report the showcase's logical contents current.
+`git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to
+prove the committed store's bytes were untouched.
 
 #### Scenario: Family constants determine source depth
 
@@ -95,6 +114,7 @@ case fails closed.
 - **WHEN** either #192 task completes or stops early
 - **THEN** the committed database bytes remain unchanged
 - **AND** the existing showcase-only `--check` reports current
+- **AND** `git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` exits 0
 
 #### Scenario: Fixed budgets stop the phase
 

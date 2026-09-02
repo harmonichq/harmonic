@@ -20,7 +20,7 @@ observation age and ISF replay eligibility from the full store, so one fixed
   basal, ISF, and I:C cases, including explicit collecting and history cases.
 - Add generator support for emitting any named case to an uncommitted,
   provenance-stamped store for no-fetch UI work.
-- Keep the committed QA database showcase-only and byte-identical while recording
+- Keep the committed QA database showcase-only with its bytes untouched while recording
   fixed size and runtime budgets for the expanded isolated suite.
 
 ## What stays out

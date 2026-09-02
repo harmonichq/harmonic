@@ -13,16 +13,23 @@ from datetime import date, datetime, timedelta
 from functools import partial
 from typing import Callable, Literal, TypeAlias
 
-from ciq_autotune.analyze import _BOLUS_LEADIN, analyze
+from ciq_autotune.analyze import _BOLUS_LEADIN, _ISF_DECISION_INTERVAL, analyze
+from ciq_autotune.analyzers.ic import BLOCK_WINDOW_DAYS
 from ciq_autotune.analyzers.scenario import build_scenarios
+from ciq_autotune.events import CarbEntry
 from ciq_autotune.explore_exposures import build_exposures
 from ciq_autotune.findings_projection import WindowQuery, prepare_findings_projection
 from ciq_autotune.ic_history_events import prepare_ic_history_events
+from ciq_autotune.insulin import InsulinActivity
 from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings
 
 
 WINDOW_DAYS = 30
 BASAL_SOURCE_SPAN_DAYS = WINDOW_DAYS + _BOLUS_LEADIN.days + 1
+ISF_SOURCE_SPAN_DAYS = (
+    WINDOW_DAYS + _ISF_DECISION_INTERVAL.days + _BOLUS_LEADIN.days + 1
+)
+IC_SOURCE_SPAN_DAYS = BLOCK_WINDOW_DAYS + 1
 AnalyzerFamily: TypeAlias = Literal["basal", "isf", "ic"]
 AnalyzerRowKey: TypeAlias = tuple[AnalyzerFamily, str]
 WindowKey: TypeAlias = Literal["whole_day"] | tuple[int, int]
@@ -163,6 +170,36 @@ _BASAL_HARM_LOWER = ExpectedBasalRow(
     safety_status="lower (recurring lows)", direction="lower", asserts_move=True,
 )
 _BASAL_HARM_GATED = ExpectedBasalRow(safety_status="held (recurring-low gate)")
+_ISF_STRENGTHEN = ExpectedIsfRow(
+    direction="strengthen", asserts_move=True, omitted=frozenset({"block_id"}),
+)
+_ISF_DIRECTION_ONLY_WEAKEN = ExpectedIsfRow(
+    direction="weaken",
+    omitted=frozenset({"block_id", "recommended"}),
+)
+_ISF_HELD = ExpectedIsfRow(
+    omitted=frozenset({"block_id", "recommended"}),
+)
+_IC_COLLECTING = ExpectedIcRow(state="collecting", days_observed=29)
+_IC_RAISE = ExpectedIcRow(
+    state="numeric", direction="raise", asserts_move=True, days_observed=90,
+    omitted=frozenset({"days_needed"}),
+)
+_IC_LOWER = ExpectedIcRow(
+    state="numeric", direction="lower", asserts_move=True, days_observed=90,
+    omitted=frozenset({"days_needed"}),
+)
+_IC_HELD = ExpectedIcRow(
+    state="numeric", held_reason="pre-empted low; held at current",
+    omitted=frozenset({"days_needed", "days_observed"}),
+)
+_IC_QUIET = ExpectedIcRow(
+    state="below-floor",
+    omitted=frozenset({"days_needed", "days_observed"}),
+)
+_IC_HISTORY_CURRENT = ExpectedIcRow(
+    state="numeric", omitted=frozenset({"days_needed", "days_observed"}),
+)
 
 
 def _showcase_recipe(store) -> None:
@@ -249,6 +286,335 @@ def _materialize_basal_coverage(
     store.upsert_basal(basal)
     if include_settings:
         store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings())
+
+
+_ISF_CORRECTION_PLANS = (
+    ((1, 0, 0.75),),
+    ((1, 30, 1.0),),
+    ((2, 0, 1.25),),
+    ((2, 30, 1.5),),
+    ((3, 0, 1.75),),
+    ((3, 30, 2.0),),
+    ((4, 0, 2.25),),
+    ((4, 30, 2.5),),
+)
+
+# SYNTHETIC-FIXTURE: Exact detected rest windows for manufactured ISF nights.
+_ISF_REST_WINDOWS = frozenset({
+    ("2024-05-10", "2024-05-10 22:00:00", "2024-05-11 08:00:00"),
+    ("2024-05-11", "2024-05-11 22:00:00", "2024-05-12 08:00:00"),
+    ("2024-05-12", "2024-05-12 22:00:00", "2024-05-13 08:00:00"),
+    ("2024-05-13", "2024-05-13 22:00:00", "2024-05-14 08:00:00"),
+    ("2024-05-14", "2024-05-14 22:00:00", "2024-05-15 08:00:00"),
+    ("2024-05-15", "2024-05-15 22:00:00", "2024-05-16 08:00:00"),
+    ("2024-05-16", "2024-05-16 22:00:00", "2024-05-17 08:00:00"),
+    ("2024-05-17", "2024-05-17 22:00:00", "2024-05-18 08:00:00"),
+    ("2024-05-18", "2024-05-18 22:00:00", "2024-05-19 08:00:00"),
+    ("2024-05-19", "2024-05-19 22:00:00", "2024-05-20 08:00:00"),
+    ("2024-05-20", "2024-05-20 22:00:00", "2024-05-21 08:00:00"),
+    ("2024-05-21", "2024-05-21 22:00:00", "2024-05-22 08:00:00"),
+    ("2024-05-22", "2024-05-22 22:00:00", "2024-05-23 08:00:00"),
+    ("2024-05-23", "2024-05-23 22:00:00", "2024-05-24 08:00:00"),
+    ("2024-05-24", "2024-05-24 22:00:00", "2024-05-25 08:00:00"),
+    ("2024-05-25", "2024-05-25 22:00:00", "2024-05-26 08:00:00"),
+    ("2024-05-26", "2024-05-26 22:00:00", "2024-05-27 08:00:00"),
+    ("2024-05-27", "2024-05-27 22:00:00", "2024-05-28 08:00:00"),
+    ("2024-05-28", "2024-05-28 22:00:00", "2024-05-29 08:00:00"),
+    ("2024-05-29", "2024-05-29 22:00:00", "2024-05-30 08:00:00"),
+    ("2024-05-30", "2024-05-30 22:00:00", "2024-05-31 08:00:00"),
+    ("2024-05-31", "2024-05-31 22:00:00", "2024-06-01 08:00:00"),
+    ("2024-06-01", "2024-06-01 22:00:00", "2024-06-02 08:00:00"),
+    ("2024-06-02", "2024-06-02 22:00:00", "2024-06-03 08:00:00"),
+    ("2024-06-03", "2024-06-03 22:00:00", "2024-06-04 08:00:00"),
+    ("2024-06-04", "2024-06-04 22:00:00", "2024-06-05 08:00:00"),
+    ("2024-06-05", "2024-06-05 22:00:00", "2024-06-06 08:00:00"),
+    ("2024-06-06", "2024-06-06 22:00:00", "2024-06-07 08:00:00"),
+    ("2024-06-07", "2024-06-07 22:00:00", "2024-06-08 08:00:00"),
+})
+
+# SYNTHETIC-FIXTURE: Exact correction occurrences from manufactured ISF nights.
+_ISF_CORRECTION_ROWS = frozenset({
+    ("correction_clusters", "2024-05-10 23:30:00", "clean"),
+    ("correction_clusters", "2024-05-12 00:00:00", "clean"),
+    ("correction_clusters", "2024-05-13 00:30:00", "clean"),
+    ("correction_clusters", "2024-05-14 01:00:00", "clean"),
+    ("correction_clusters", "2024-05-15 01:30:00", "clean"),
+    ("correction_clusters", "2024-05-16 02:00:00", "clean"),
+    ("correction_clusters", "2024-05-17 02:30:00", "clean"),
+    ("correction_clusters", "2024-05-18 23:30:00", "clean"),
+    ("correction_clusters", "2024-05-20 00:00:00", "clean"),
+    ("correction_clusters", "2024-05-21 00:30:00", "clean"),
+    ("correction_clusters", "2024-05-22 01:00:00", "clean"),
+    ("correction_clusters", "2024-05-23 01:30:00", "clean"),
+    ("correction_clusters", "2024-05-24 02:00:00", "clean"),
+    ("correction_clusters", "2024-05-25 02:30:00", "clean"),
+    ("correction_clusters", "2024-05-26 23:30:00", "clean"),
+    ("correction_clusters", "2024-05-28 00:00:00", "clean"),
+    ("correction_clusters", "2024-05-29 00:30:00", "clean"),
+    ("correction_clusters", "2024-05-30 01:00:00", "clean"),
+    ("correction_clusters", "2024-05-31 01:30:00", "clean"),
+    ("correction_clusters", "2024-06-01 02:00:00", "clean"),
+    ("correction_clusters", "2024-06-02 02:30:00", "clean"),
+    ("correction_clusters", "2024-06-03 23:30:00", "clean"),
+    ("correction_clusters", "2024-06-05 00:00:00", "clean"),
+    ("correction_clusters", "2024-06-06 00:30:00", "clean"),
+    ("correction_clusters", "2024-06-07 01:00:00", "clean"),
+    ("correction_clusters", "2024-06-08 01:30:00", "clean"),
+})
+
+_IC_EIGHT_MEAL_ROWS = frozenset({
+    ("meals", "2024-05-17 09:00:00", "no_data"),
+    ("meals", "2024-05-18 09:00:00", "no_data"),
+    ("meals", "2024-05-19 09:00:00", "no_data"),
+    ("meals", "2024-05-20 09:00:00", "no_data"),
+    ("meals", "2024-05-21 09:00:00", "no_data"),
+    ("meals", "2024-05-22 09:00:00", "no_data"),
+    ("meals", "2024-05-23 09:00:00", "no_data"),
+    ("meals", "2024-05-24 09:00:00", "no_data"),
+})
+
+_IC_NINE_MEAL_ROWS = frozenset({
+    ("meals", "2024-05-16 09:00:00", "no_data"),
+    ("meals", "2024-05-17 09:00:00", "no_data"),
+    ("meals", "2024-05-18 09:00:00", "no_data"),
+    ("meals", "2024-05-19 09:00:00", "no_data"),
+    ("meals", "2024-05-20 09:00:00", "no_data"),
+    ("meals", "2024-05-21 09:00:00", "no_data"),
+    ("meals", "2024-05-22 09:00:00", "no_data"),
+    ("meals", "2024-05-23 09:00:00", "no_data"),
+    ("meals", "2024-05-24 09:00:00", "no_data"),
+})
+
+_IC_SEVEN_MEAL_ROWS = frozenset({
+    ("meals", "2024-05-18 09:00:00", "no_data"),
+    ("meals", "2024-05-19 09:00:00", "no_data"),
+    ("meals", "2024-05-20 09:00:00", "no_data"),
+    ("meals", "2024-05-21 09:00:00", "no_data"),
+    ("meals", "2024-05-22 09:00:00", "no_data"),
+    ("meals", "2024-05-23 09:00:00", "no_data"),
+    ("meals", "2024-05-24 09:00:00", "no_data"),
+})
+
+_IC_COLLECTING_MEAL_ROWS = frozenset({
+    ("meals", "2024-03-17 09:00:00", "no_data"),
+    ("meals", "2024-03-18 09:00:00", "no_data"),
+    ("meals", "2024-03-19 09:00:00", "no_data"),
+    ("meals", "2024-03-20 09:00:00", "no_data"),
+    ("meals", "2024-03-21 09:00:00", "no_data"),
+    ("meals", "2024-03-22 09:00:00", "no_data"),
+    ("meals", "2024-03-23 09:00:00", "no_data"),
+    ("meals", "2024-03-24 09:00:00", "no_data"),
+})
+
+_IC_HISTORY_MEAL_ROWS = frozenset({
+    ("meals", "2024-05-02 09:00:00", "no_data"),
+    ("meals", "2024-05-03 09:00:00", "no_data"),
+    ("meals", "2024-05-04 09:00:00", "no_data"),
+    ("meals", "2024-05-05 09:00:00", "no_data"),
+    ("meals", "2024-05-12 09:00:00", "no_data"),
+    ("meals", "2024-05-13 09:00:00", "no_data"),
+    ("meals", "2024-05-14 09:00:00", "no_data"),
+    ("meals", "2024-05-15 09:00:00", "no_data"),
+    ("meals", "2024-05-16 09:00:00", "no_data"),
+    ("meals", "2024-05-17 09:00:00", "no_data"),
+    ("meals", "2024-05-18 09:00:00", "no_data"),
+    ("meals", "2024-05-19 09:00:00", "no_data"),
+})
+
+_IC_HISTORY_SERIES = ({
+    "run_id": "icr1_WyIyMDI0LTA1LTAyVDA5OjAwOjAwIl0",
+    "first_member_at": "2024-05-02T09:00:00",
+    "last_member_at": "2024-05-02T09:00:00",
+    "member_offsets_min": [0.0], "cgm_start_min": -10.0,
+    "cgm_end_min": 315.0, "outcome_min": 300.0,
+    "meal_at": "2024-05-02T09:00:00", "points": [],
+}, {
+    "run_id": "icr1_WyIyMDI0LTA1LTAzVDA5OjAwOjAwIl0",
+    "first_member_at": "2024-05-03T09:00:00",
+    "last_member_at": "2024-05-03T09:00:00",
+    "member_offsets_min": [0.0], "cgm_start_min": -10.0,
+    "cgm_end_min": 315.0, "outcome_min": 300.0,
+    "meal_at": "2024-05-03T09:00:00", "points": [],
+}, {
+    "run_id": "icr1_WyIyMDI0LTA1LTA0VDA5OjAwOjAwIl0",
+    "first_member_at": "2024-05-04T09:00:00",
+    "last_member_at": "2024-05-04T09:00:00",
+    "member_offsets_min": [0.0], "cgm_start_min": -10.0,
+    "cgm_end_min": 315.0, "outcome_min": 300.0,
+    "meal_at": "2024-05-04T09:00:00", "points": [],
+}, {
+    "run_id": "icr1_WyIyMDI0LTA1LTA1VDA5OjAwOjAwIl0",
+    "first_member_at": "2024-05-05T09:00:00",
+    "last_member_at": "2024-05-05T09:00:00",
+    "member_offsets_min": [0.0], "cgm_start_min": -10.0,
+    "cgm_end_min": 315.0, "outcome_min": 300.0,
+    "meal_at": "2024-05-05T09:00:00", "points": [],
+})
+
+
+def _materialize_isf_coverage(
+    store, *, true_isf: float, rescue_offsets: tuple[int, ...] = (),
+) -> None:
+    """Write two analyzer-visible ISF decision windows over manufactured nights."""
+    first = date(2024, 5, 1)
+    cgm, bolus = [], []
+    seq_num = 40_000
+    for offset in range(ISF_SOURCE_SPAN_DAYS - 1):
+        current = first + timedelta(days=offset)
+        start = datetime.combine(current, datetime.min.time()).replace(hour=22)
+        plan = _ISF_CORRECTION_PLANS[offset % len(_ISF_CORRECTION_PLANS)]
+        correction_times = [
+            (start + timedelta(hours=hour, minutes=minute), units)
+            for hour, minute, units in plan
+        ]
+        activity = InsulinActivity(
+            correction_times, 75, 300,
+        )
+        bg = 140.0
+        times = [start + timedelta(minutes=5 * step) for step in range(97)]
+        cgm.append({
+            "EventDateTime": times[0].strftime("%Y-%m-%d %H:%M:%S"),
+            "Readings (CGM / BGM)": round(bg, 1),
+            "Description": "Synthetic EGV",
+        })
+        for left, right in zip(times, times[1:]):
+            bg = bg - true_isf * activity.acted(left, right) + 0.4
+            cgm.append({
+                "EventDateTime": right.strftime("%Y-%m-%d %H:%M:%S"),
+                "Readings (CGM / BGM)": round(bg, 1),
+                "Description": "Synthetic EGV",
+            })
+        for when, units in correction_times:
+            bolus.append({
+                "seq_num": seq_num,
+                "request_time": when.strftime("%Y-%m-%d %H:%M:%S"),
+                "description": "Synthetic fasting correction",
+                "completion": "Completed",
+                "insulin": units,
+                "requested_insulin": units,
+                "isf": 40.0,
+            })
+            seq_num += 1
+    last = first + timedelta(days=ISF_SOURCE_SPAN_DAYS - 1)
+    cgm.append({
+        "EventDateTime": f"{last.isoformat()} 23:59:00",
+        "Readings (CGM / BGM)": 170.0,
+        "Description": "Synthetic EGV",
+    })
+    store.upsert_cgm(cgm)
+    store.upsert_bolus(bolus)
+    store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings())
+    observed_at = datetime.combine(first, datetime.min.time())
+    store.record_prompt_response(
+        detector="low", anchor_t=observed_at, answer="no", answered_at=observed_at,
+    )
+    for offset in rescue_offsets:
+        current = first + timedelta(days=offset)
+        plan = _ISF_CORRECTION_PLANS[offset % len(_ISF_CORRECTION_PLANS)]
+        rescue_at = (
+            datetime.combine(current, datetime.min.time()).replace(hour=22)
+            + timedelta(hours=plan[0][0], minutes=plan[0][1] + 120)
+        )
+        store.upsert_carb_entry(CarbEntry(
+            t=rescue_at, grams=16.0, certainty="estimate", source="manual",
+            note="Synthetic correction rescue", created_at=rescue_at,
+        ))
+
+
+def _materialize_ic_coverage(
+    store, *, measured_ratio: float, run_count: int = 8,
+    source_span_days: int = IC_SOURCE_SPAN_DAYS, rescue_hold: bool = False,
+) -> None:
+    """Write one manufactured all-day I:C meal-run lane."""
+    first = date(2024, 3, 1)
+    last = first + timedelta(days=source_span_days - 1)
+    cgm = [
+        {
+            "EventDateTime": f"{first.isoformat()} 00:00:00",
+            "Readings (CGM / BGM)": 120.0,
+            "Description": "Synthetic EGV",
+        },
+        {
+            "EventDateTime": f"{last.isoformat()} 23:59:00",
+            "Readings (CGM / BGM)": 120.0,
+            "Description": "Synthetic EGV",
+        },
+    ]
+    meals = []
+    for index in range(run_count):
+        current = last - timedelta(days=run_count + 5 - index)
+        meals.append({
+            "seq_num": 60_000 + index,
+            "request_time": f"{current.isoformat()} 09:00:00",
+            "description": "Synthetic closed meal run",
+            "completion": "Completed",
+            "insulin": 60.0 / measured_ratio,
+            "requested_insulin": 60.0 / measured_ratio,
+            "carbs": 60.0,
+            "carb_ratio": 10.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        })
+    store.upsert_cgm(cgm)
+    store.upsert_bolus(meals)
+    store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings())
+    if rescue_hold:
+        rescue_at = datetime.fromisoformat(meals[2]["request_time"]) + timedelta(hours=2)
+        store.upsert_carb_entry(CarbEntry(
+            t=rescue_at, grams=16.0, certainty="estimate", source="manual",
+            note="Synthetic pre-empted low rescue", created_at=rescue_at,
+        ))
+
+
+def _materialize_ic_history_register(store) -> None:
+    """Write one active retired I:C identity beside a quiet current block."""
+    first = date(2024, 3, 1)
+    last = first + timedelta(days=IC_SOURCE_SPAN_DAYS - 1)
+    changed = last - timedelta(days=20)
+    store.upsert_cgm([
+        {
+            "EventDateTime": f"{first.isoformat()} 00:00:00",
+            "Readings (CGM / BGM)": 120.0,
+            "Description": "Synthetic EGV",
+        },
+        {
+            "EventDateTime": f"{last.isoformat()} 23:59:00",
+            "Readings (CGM / BGM)": 120.0,
+            "Description": "Synthetic EGV",
+        },
+    ])
+    meals = []
+    for index in range(4):
+        current = changed - timedelta(days=8 - index)
+        meals.append({
+            "seq_num": 70_000 + index,
+            "request_time": f"{current.isoformat()} 09:00:00",
+            "description": "Synthetic retired-ratio meal run",
+            "completion": "Completed",
+            "insulin": 5.0,
+            "requested_insulin": 5.0,
+            "carbs": 60.0,
+            "carb_ratio": 12.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        })
+    for index in range(8):
+        current = changed + timedelta(days=2 + index)
+        meals.append({
+            "seq_num": 70_100 + index,
+            "request_time": f"{current.isoformat()} 09:00:00",
+            "description": "Synthetic current-ratio meal run",
+            "completion": "Completed",
+            "insulin": 6.0,
+            "requested_insulin": 6.0,
+            "carbs": 60.0,
+            "carb_ratio": 10.0,
+            "isf": 40.0,
+            "target_bg": 110.0,
+        })
+    store.upsert_bolus(meals)
+    store.upsert_settings_snapshot(f"{first.isoformat()} 00:00:00", _settings(12.0))
+    store.upsert_settings_snapshot(f"{changed.isoformat()} 00:00:00", _settings())
 
 
 _BEHAVIORAL_ROWS = frozenset({
@@ -366,6 +732,14 @@ def _basal_rows(
     default: ExpectedAnalyzerRow = _BASAL_NO_DATA,
 ) -> ExpectedAnalyzerRows:
     return ExpectedAnalyzerRows(_BASAL_SLOT_KEYS, default, overrides)
+
+
+def _isf_rows(default: ExpectedIsfRow) -> ExpectedAnalyzerRows:
+    return ExpectedAnalyzerRows((("isf", "Fasting"),), default)
+
+
+def _ic_rows(default: ExpectedIcRow) -> ExpectedAnalyzerRows:
+    return ExpectedAnalyzerRows((("ic", "All day"),), default)
 
 
 def _basal_support(target: str, count: int) -> Mapping[AnalyzerRowKey, ExpectedSupport]:
@@ -608,6 +982,224 @@ QA_CASES = (
             }),
             frozenset(),
         ), BASAL_SOURCE_SPAN_DAYS, "basal", ((180, 240),),
+    ),
+    QaCase(
+        "isf-strengthen",
+        partial(_materialize_isf_coverage, true_isf=24.0),
+        QaExpectation(
+            _isf_rows(_ISF_STRENGTHEN),
+            {("isf", "Fasting"): ExpectedSupport(n_steps=2784)},
+            {
+                ("whole_day", ("isf", "Fasting")):
+                    ExpectedQueueRow("assert", "strengthen", True),
+            },
+            frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
+            frozenset({"ISF · strengthen"}),
+        ),
+        ISF_SOURCE_SPAN_DAYS,
+        "isf",
+    ),
+    QaCase(
+        "isf-direction-only-weaken",
+        partial(
+            _materialize_isf_coverage, true_isf=24.0,
+            rescue_offsets=(12, 18, 24, 30),
+        ),
+        QaExpectation(
+            _isf_rows(_ISF_DIRECTION_ONLY_WEAKEN),
+            {("isf", "Fasting"): ExpectedSupport(n_steps=2716)},
+            {
+                ("whole_day", ("isf", "Fasting")):
+                    ExpectedQueueRow("assert", "weaken", False),
+            },
+            frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
+            frozenset({"ISF · weaken"}),
+        ),
+        ISF_SOURCE_SPAN_DAYS,
+        "isf",
+    ),
+    QaCase(
+        "isf-held",
+        partial(_materialize_isf_coverage, true_isf=24.0, rescue_offsets=(24,)),
+        QaExpectation(
+            _isf_rows(_ISF_HELD),
+            {("isf", "Fasting"): ExpectedSupport(n_steps=2767)},
+            {}, frozenset({("whole_day", ("isf", "Fasting"))}),
+            _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS, frozenset(),
+        ),
+        ISF_SOURCE_SPAN_DAYS,
+        "isf",
+    ),
+    QaCase(
+        "ic-collecting",
+        partial(
+            _materialize_ic_coverage, measured_ratio=12.0,
+            source_span_days=30,
+        ),
+        QaExpectation(
+            _ic_rows(_IC_COLLECTING),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ((0, 720), ("basal", "00:00")):
+                    ExpectedQueueRow("blind", None, None),
+            },
+            frozenset({
+                ("whole_day", ("ic", "All day")),
+                ((0, 720), ("ic", "All day")),
+            }),
+            frozenset(), {}, _IC_COLLECTING_MEAL_ROWS, frozenset(),
+        ),
+        30,
+        "ic",
+        ((0, 720),),
+    ),
+    QaCase(
+        "ic-raise",
+        partial(_materialize_ic_coverage, measured_ratio=12.0),
+        QaExpectation(
+            _ic_rows(_IC_RAISE),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ("whole_day", ("ic", "All day")):
+                    ExpectedQueueRow("assert", "raise", None),
+            },
+            frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
+            frozenset({"I:C 00:00 to 24:00 · raise"}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+    ),
+    QaCase(
+        "ic-lower",
+        partial(_materialize_ic_coverage, measured_ratio=8.0),
+        QaExpectation(
+            _ic_rows(_IC_LOWER),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ("whole_day", ("ic", "All day")):
+                    ExpectedQueueRow("assert", "lower", None),
+            },
+            frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
+            frozenset({"I:C 00:00 to 24:00 · lower"}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+    ),
+    QaCase(
+        "ic-capped-raise",
+        partial(_materialize_ic_coverage, measured_ratio=20.0),
+        QaExpectation(
+            _ic_rows(_IC_RAISE),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ("whole_day", ("ic", "All day")):
+                    ExpectedQueueRow("assert", "raise", None),
+            },
+            frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
+            frozenset({"I:C 00:00 to 24:00 · raise"}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+    ),
+    QaCase(
+        "ic-capped-lower",
+        partial(_materialize_ic_coverage, measured_ratio=4.0),
+        QaExpectation(
+            _ic_rows(_IC_LOWER),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ("whole_day", ("ic", "All day")):
+                    ExpectedQueueRow("assert", "lower", None),
+            },
+            frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
+            frozenset({"I:C 00:00 to 24:00 · lower"}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+    ),
+    QaCase(
+        "ic-held",
+        partial(
+            _materialize_ic_coverage, measured_ratio=8.0, run_count=9,
+            rescue_hold=True,
+        ),
+        QaExpectation(
+            _ic_rows(_IC_HELD),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ((0, 720), ("ic", "All day")):
+                    ExpectedQueueRow("held", None, None),
+                ((0, 720), ("basal", "00:00")):
+                    ExpectedQueueRow("blind", None, None),
+            },
+            frozenset({("whole_day", ("ic", "All day"))}),
+            frozenset(), {}, _IC_NINE_MEAL_ROWS, frozenset(),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+        ((0, 720),),
+    ),
+    QaCase(
+        "ic-quiet-seven-run",
+        partial(_materialize_ic_coverage, measured_ratio=12.0, run_count=7),
+        QaExpectation(
+            _ic_rows(_IC_QUIET),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=7, effective_run_count=7.0),
+            },
+            {
+                ((0, 720), ("basal", "00:00")):
+                    ExpectedQueueRow("blind", None, None),
+            },
+            frozenset({
+                ("whole_day", ("ic", "All day")),
+                ((0, 720), ("ic", "All day")),
+            }),
+            frozenset(), {}, _IC_SEVEN_MEAL_ROWS, frozenset(),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
+        ((0, 720),),
+    ),
+    QaCase(
+        "ic-history-register",
+        _materialize_ic_history_register,
+        QaExpectation(
+            _ic_rows(_IC_HISTORY_CURRENT),
+            {
+                ("ic", "All day"):
+                    ExpectedSupport(n_runs=8, effective_run_count=8.0),
+            },
+            {
+                ("whole_day", ("ic", "All day")):
+                    ExpectedQueueRow("history", None, None),
+            },
+            frozenset(), frozenset(),
+            {"ich1_WzAsMTQ0MCwiMTIiXQ": _IC_HISTORY_SERIES},
+            _IC_HISTORY_MEAL_ROWS,
+            frozenset({"Carb ratio All day. Past setting."}),
+        ),
+        IC_SOURCE_SPAN_DAYS,
+        "ic",
     ),
 )
 

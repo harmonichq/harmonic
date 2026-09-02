@@ -9,7 +9,7 @@
 //
 //   PLAYWRIGHT_MODULE=<playwright dir> VENDOR_DIR=<echarts+vue dir> \
 //   FRONTEND_ROOT=<checkout> RIBBON=32/18|20/20 OUT=<png> \
-//   [PAYLOAD=<payload.json>] [VIEWPORT=1440x900] [STATE=complete] [TRIAL=<label substring>] \
+//   [PAYLOAD=<payload.json>] [VIEWPORT=1440x900] [STATE=complete] [TRIAL=<label substring>] [SWAP=1] \
 //   node openspec/changes/graphite-palette/evidence/verify-trial-opener.mjs
 //
 // FRONTEND_ROOT names the checkout whose `frontend/` is served; PAYLOAD
@@ -18,7 +18,12 @@
 // Trial ribbon and of `--mk-muted` into the Before ribbon. TRIAL picks a Trial
 // other than the one the state opens on, by a substring of its picker label
 // (`Profile` selects the fixture's profile Trial, the one whose Before and
-// Trial medians diverge enough to give the ribbon an area). The script fails
+// Trial medians diverge enough to give the ribbon an area). SWAP=1 serves
+// that payload with every Trial's Before and Trial periods exchanged: the
+// fixture's Trials all run below Before, which is the grey (`mutedSoft`) band,
+// so the mirrored serve is the only way the fixture shows the orange
+// (`accentSoft`) band the ruling is about. A SWAP render is labelled as such
+// in the evidence and is never the shipped Trial. The script fails
 // closed: a missing driver, vendored asset, payload, or a served module whose
 // mix line no longer matches the pattern below exits nonzero naming it.
 import { createRequire } from 'node:module';
@@ -39,6 +44,7 @@ const payloadPath = process.env.PAYLOAD || join(ROOT, 'mockups/verify-660-story.
 const [vw, vh] = (process.env.VIEWPORT || '1440x900').split('x').map(Number);
 const state = process.env.STATE || 'complete';
 const trial = process.env.TRIAL || null;
+const swap = process.env.SWAP === '1';
 
 // The shipped mix line, whatever percentages the checkout carries.
 const MIX_LINE = /accentSoft: mix\(v\('--mk-primary'\), \d+\), mutedSoft: mix\(v\('--mk-muted'\), \d+\)/;
@@ -46,6 +52,14 @@ const MIX_LINE = /accentSoft: mix\(v\('--mk-primary'\), \d+\), mutedSoft: mix\(v
 const { chromium } = require(env('PLAYWRIGHT_MODULE'));
 const vendored = (name) => readFile(join(env('VENDOR_DIR'), name));
 const payload = JSON.parse(await readFile(payloadPath, 'utf8').catch(() => fail(`payload unreadable: ${payloadPath}`)));
+if (swap) {
+  for (const detail of Object.values(payload.details)) {
+    for (const family of ['envelopes', 'meal_arcs']) {
+      const src = detail.selected?.[family];
+      if (src && src.before_period && src.trial_period) [src.before_period, src.trial_period] = [src.trial_period, src.before_period];
+    }
+  }
+}
 
 const apiPattern = (path) => new RegExp(`^/api${path}`);
 const STUBS = [
@@ -119,5 +133,5 @@ await page.waitForTimeout(1200);
 if (!rewrote) fail('verify-workstation.js was never served, so the ribbon setting was not applied');
 if (problems.length) fail(problems.join('\n'));
 await page.screenshot({ path: OUT });
-console.log(`verify-trial-opener: ${OUT} — ${ROOT} · ribbon ${accentPct}/${mutedPct} · ${vw}x${vh} · state ${state}${trial ? ` · trial ${trial}` : ''}`);
+console.log(`verify-trial-opener: ${OUT} — ${ROOT} · ribbon ${accentPct}/${mutedPct} · ${vw}x${vh} · state ${state}${trial ? ` · trial ${trial}` : ''}${swap ? ' · SWAP (Before/Trial mirrored)' : ''}`);
 await browser.close();

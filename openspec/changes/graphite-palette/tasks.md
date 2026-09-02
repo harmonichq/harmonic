@@ -23,7 +23,7 @@
       with its sanction appended to `design.md`, and in the same commit sweep
       `frontend/theme.css`'s flavour-tag rationale (the sentence saying
       `--primary` is byte-identical to `--high`) to describe the ruled state.
-- [ ] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
+- [x] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
       on the same Trial through the Verify gate's fixture payload
       (`mockups/verify-660-story.synthetic/payload.json`, stubbed the way
       `frontend/verify-660-story-behavior.replay.mjs` stubs it) from a

@@ -25,7 +25,16 @@ design, and a worker cannot see what the eye rejects.
   (yellow high, red low) and is tellable at a glance from the action orange,
   low, in-range and every amber; its nearest neighbour is the chrome's
   `--ck-manual` `#d9b568`, which never shares a surface with a high mark.
-- Verify ribbon tints: _pending_.
+- Verify ribbon tints: hold at 20%/20%; `frontend/verify-workstation.js` is
+  unchanged. Connor Griffin · 2026-09-02 · "Why are we bothering to spend
+  tokens and energy on a change that doesn't actually change anything?" Both
+  settings were rendered on the fixture's profile Trial through
+  `evidence/verify-trial-opener.mjs` (as-is, and with Before/Trial mirrored
+  via `SWAP=1` so the Trial band has area); 32/18 versus 20/20 differs by one
+  or two units per channel on the Before band and is visible only on the
+  mirrored Trial band, so the documented 32/18 step-up is retired as intent
+  rather than adopted. The Trial band mixes `--mk-primary`, the chart's data
+  green, not the action orange.
 - Chrome bar on Plan and Day: _pending_.
 
 ## ADR 317 — Clinical attention and tappable affordance do not share a hue

@@ -382,8 +382,8 @@ def _materialize_behavioral_uncaused_highs(store) -> None:
     day = date(2024, 5, 2)
     base = datetime.combine(day, datetime.min.time())
     corners = (
-        (360, 110.0), (480, 112.0), (500, 125.0), (570, 255.0),
-        (660, 118.0), (690, 120.0), (810, 265.0), (930, 140.0),
+        (360, 110.0), (480, 112.0), (500, 220.0), (570, 255.0),
+        (600, 200.0), (605, 230.0), (645, 265.0), (690, 200.0),
     )
     cgm = [(base - timedelta(days=1), 110.0)]
     for (start_min, start_bg), (end_min, end_bg) in zip(corners, corners[1:]):
@@ -402,28 +402,6 @@ def _materialize_behavioral_uncaused_highs(store) -> None:
         }
         for when, bg in cgm
     ])
-    store.upsert_bolus([
-        {
-            "seq_num": 120_000 + index,
-            "request_time": (base + timedelta(minutes=minute)).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            ),
-            "description": "Synthetic bolus",
-            "completion": "Completed",
-            "insulin": insulin,
-            "requested_insulin": insulin,
-            "carbs": carbs,
-            "carb_ratio": ratio,
-            "isf": 40.0,
-            "target_bg": 110.0,
-        }
-        for index, (minute, insulin, carbs, ratio) in enumerate((
-            (480, 6.0, 85.0, 12.0),
-            (710, 5.0, 70.0, 12.0),
-            (780, 2.5, None, None),
-        ))
-    ])
-    store.upsert_settings_snapshot("2024-05-01 00:00:00", _settings(12.0))
 
 
 def _materialize_behavioral_compression_low(store, *, answer: str) -> None:
@@ -792,6 +770,7 @@ def _materialize_behavioral_high_verdicts(store, *, meal_short: bool) -> None:
     trace(28, tuple(120.0 + 4.0 * i for i in range(49)), start_min=10 * 60)
     dose(28, 10 * 60, 220_280, meal=True)
     dose(28, 11 * 60 + 10, 220_281, meal=False)
+    # Remove overnight context so the first high anchor exercises no-data silence.
     store.conn.execute(
         "DELETE FROM cgm_readings WHERE t >= ? AND t <= ?",
         ("2024-05-02 02:00:00", "2024-05-02 04:00:00"),
@@ -1445,6 +1424,17 @@ QA_CASES = (
             {"ich1_WzAsMTQ0MCwiMTIiXQ": _showcase_history_series()},
             _SHOWCASE_BEHAVIORAL_ROWS,
             frozenset({"Basal 03:00 to 04:00 · lower", "Carb ratio All day. Past setting.", "Correction on active insulin", "Meal bolus fell short", "Over-treated low"}),
+            {
+                ("over_treated_low", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=0, no_data=0, clean=3,
+                ),
+                ("meal_bolus_short", "highs"): _verdict_tally(
+                    2, fired=1, outranked=0, near_miss=1, no_data=0, clean=0,
+                ),
+            },
         ),
         30,
     ),
@@ -1464,6 +1454,7 @@ QA_CASES = (
             frozenset(), frozenset(), {},
             frozenset(),
             frozenset({"Basal 03:00 to 04:00 · lower"}),
+            {},
         ),
         12,
     ),
@@ -1477,6 +1468,17 @@ QA_CASES = (
                 "Carb undercount", "Correction on active insulin",
                 "Over-treated low", "meals-start-high",
             }),
+            {
+                ("over_treated_low", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=1, no_data=1, clean=1,
+                ),
+                ("carb_undercount", "meals"): _verdict_tally(
+                    2, fired=1, outranked=0, near_miss=0, no_data=0, clean=1,
+                ),
+                ("correction_on_iob", "lows"): _verdict_tally(
+                    5, fired=1, outranked=1, near_miss=0, no_data=0, clean=3,
+                ),
+            },
         ),
         5,
     ),
@@ -1943,13 +1945,10 @@ QA_CASES = (
         QaExpectation(
             _explicit_rows({}), {}, {}, frozenset(), frozenset(), {},
             frozenset({
-                ("meals", "2024-05-02 08:00:00", "near_miss"),
-                ("meals", "2024-05-02 11:50:00", "fired"),
-                ("highs", "2024-05-02 09:30:00", "near_miss"),
-                ("highs", "2024-05-02 13:30:00", "outranked"),
-                ("correction_clusters", "2024-05-02 13:00:00", "clean"),
+                ("highs", "2024-05-02 09:30:00", "clean"),
+                ("highs", "2024-05-02 10:45:00", "clean"),
             }),
-            frozenset({"Late bolus", "meals-start-high"}), uncaused_highs=1,
+            frozenset(), {}, uncaused_highs=2,
         ),
         2,
     ),
@@ -2420,39 +2419,38 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
         identity: tuple(payload["series"])
         for identity, payload in execution.ic_history.items()
     }
-    if case.expectation.verdict_tallies:
-        finding_rows = {
-            row["lever"]: row
-            for row in whole_day["rows"]
-            if row.get("lever") is not None
+    finding_rows = {
+        row["lever"]: row
+        for row in whole_day["rows"]
+        if row.get("lever") is not None
+    }
+    observed_tally_keys = {
+        (lever, family)
+        for lever, row in finding_rows.items()
+        for family in row["verdict_counts_by_family"]
+    }
+    assert observed_tally_keys == set(case.expectation.verdict_tallies), (
+        observed_tally_keys
+    )
+    for key, expected in case.expectation.verdict_tallies.items():
+        lever, family = key
+        assert tuple(expected.counts) == FINDING_VERDICTS, expected.counts
+        assert all(
+            type(value) is int and value >= 0
+            for value in expected.counts.values()
+        ), expected.counts
+        assert sum(expected.counts.values()) == expected.denominator, expected
+        assert expected.denominator == execution.exposures["exposures"][family]["n"]
+        row = finding_rows[lever]
+        assert row["verdict_counts_by_family"][family] == dict(expected.counts)
+        aggregate = {
+            verdict: sum(
+                counts[verdict]
+                for counts in row["verdict_counts_by_family"].values()
+            )
+            for verdict in FINDING_VERDICTS
         }
-        observed_tally_keys = {
-            (lever, family)
-            for lever, row in finding_rows.items()
-            for family in row["verdict_counts_by_family"]
-        }
-        assert observed_tally_keys == set(case.expectation.verdict_tallies), (
-            observed_tally_keys
-        )
-        for key, expected in case.expectation.verdict_tallies.items():
-            lever, family = key
-            assert tuple(expected.counts) == FINDING_VERDICTS, expected.counts
-            assert all(
-                type(value) is int and value >= 0
-                for value in expected.counts.values()
-            ), expected.counts
-            assert sum(expected.counts.values()) == expected.denominator, expected
-            assert expected.denominator == execution.exposures["exposures"][family]["n"]
-            row = finding_rows[lever]
-            assert row["verdict_counts_by_family"][family] == dict(expected.counts)
-            aggregate = {
-                verdict: sum(
-                    counts[verdict]
-                    for counts in row["verdict_counts_by_family"].values()
-                )
-                for verdict in FINDING_VERDICTS
-            }
-            assert row["verdict_counts"] == aggregate
+        assert row["verdict_counts"] == aggregate
     assert observed_analyzer_rows == dict(
         case.expectation.analyzer_rows
     ), observed_analyzer_rows

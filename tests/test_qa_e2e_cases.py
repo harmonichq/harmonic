@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from dataclasses import replace
 from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from ciq_autotune.store import Store
 
@@ -77,9 +78,8 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
-    def test_existing_cases_default_behavioral_summary_expectations(self):
+    def test_existing_cases_reject_an_extra_behavioral_summary_expectation(self):
         case = next(case for case in QA_CASES if case.name == "behavioral-precedence")
-        self.assertEqual(case.expectation.verdict_tallies, {})
         self.assertEqual(case.expectation.uncaused_highs, 0)
         execution = _execution(case)
         with self.assertRaises(AssertionError):
@@ -101,6 +101,25 @@ class QaE2ECasesTest(unittest.TestCase):
                     },
                 ),
             ), execution)
+
+    def test_carb_log_fasting_exclusion_changes_isf_support(self):
+        case = next(
+            case for case in QA_CASES
+            if case.name == "behavioral-carb-log-fasting-exclusion"
+        )
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                with patch.object(
+                    Store, "upsert_carb_entry", autospec=True,
+                ) as upsert_carb_entry:
+                    materialize_case(store, case)
+                upsert_carb_entry.assert_called_once()
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, case)
+        fasting = next(
+            row for row in execution.analysis["isf"] if row["label"] == "Fasting"
+        )
+        self.assertNotEqual(fasting["evidence"]["n_steps"], 102)
 
     def test_catalog_names_every_declared_coverage_case(self):
         self.assertEqual(tuple(case.name for case in QA_CASES), EXPECTED_CASE_NAMES)

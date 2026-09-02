@@ -488,12 +488,19 @@ const POOLED_READER = () => JSON.parse(JSON.stringify((() => {
 const WINDOW_READER = () => JSON.parse(JSON.stringify((() => {
   const o = window.__ferPooled.getOption();
   const context = o.series.find((s) => s.name === '__context');
-  const area = context.markArea.data.find((d) => d[0].xAxis !== undefined);
+  /* `context.markArea` is guarded, not assumed — the same shape pooled.js
+     guards its own `__context` patch against. `renderCanvas` structures it
+     unconditionally in the option it SETS (diagnose-workstation-chart.js:817);
+     this reads what `chart.getOption()` reports back after the browser's
+     ECharts instance has been reused across several prior
+     `setOption(option, true)` calls, which is not always the same shape the
+     last call set. */
+  const area = context.markArea?.data?.find((d) => d[0].xAxis !== undefined);
   const axis = o.xAxis[0].data;
   return {
-    windowFrom: area[0].xAxis,
-    windowTo: area[1].xAxis,
-    windowLabel: area[0].label?.formatter ?? null,
+    windowFrom: area?.[0]?.xAxis ?? null,
+    windowTo: area?.[1]?.xAxis ?? null,
+    windowLabel: area?.[0]?.label?.formatter ?? null,
     parkedLabel: context.markPoint?.data?.[0]?.label?.formatter ?? null,
     xExtent: [axis[0], axis[axis.length - 1]],
     xBins: axis.length,
@@ -1070,8 +1077,12 @@ async function main() {
     segments: [...document.querySelectorAll('.fer-band .seg')].map((n) => n.dataset.verdict),
     pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
     rosterRows: document.querySelectorAll('.ev-row').length,
+    /* No series named 'Occurrences' has existed since 16cfbda7 (#229) dropped
+       the whole occurrence scatter from `renderCanvas` along with the meal
+       markers — `markCanvas` (surface.js) already no-ops on the same absence.
+       null, not 0: there is nothing left to count, not a count of zero. */
     dotsDrawn: window.__ferPooled.getOption().series
-      .find((x) => x.name === 'Occurrences').data.length,
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
   }));
   await page.evaluate(() => window.__ferVerdict('near_rule'));
   await page.mouse.move(0, 0);
@@ -1082,8 +1093,9 @@ async function main() {
   results.verdictBandDrilled = await page.evaluate(() => ({
     pressed: document.querySelector('.fer-band .seg[aria-pressed="true"]')?.dataset.verdict ?? null,
     rosterRows: document.querySelectorAll('.ev-row').length,
+    /* Same absence as results.verdictBand above. */
     dotsDrawn: window.__ferPooled.getOption().series
-      .find((x) => x.name === 'Occurrences').data.length,
+      .find((x) => x.name === 'Occurrences')?.data.length ?? null,
   }));
   await page.evaluate(() => window.__ferVerdict('fired'));
   await page.waitForTimeout(300);

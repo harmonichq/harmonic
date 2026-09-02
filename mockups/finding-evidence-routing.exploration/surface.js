@@ -335,7 +335,15 @@ function selectedKey() {
  * Skipped entirely at the queue root, where nothing is selected — an appended
  * series there would show up as drift against the app's own pooled chart.
  * `renderCanvas` sets its option with `notMerge`, so every repaint clears this
- * layer and it is re-appended from the current state, or not at all. */
+ * layer and it is re-appended from the current state, or not at all.
+ *
+ * RETIRED, NOT RENAMED — read as history, not as a live mechanism. 16cfbda7
+ * (#229) dropped the whole `Occurrences` scatter out of `renderCanvas` in the
+ * same pass that dropped the meal markers pooled.js used to read
+ * (`markersFromPooled`); no successor series carries occurrence dots in the
+ * shipped option any more. `index` below is permanently -1, so every call is
+ * the early return — this function has drawn nothing since #229, and there is
+ * no shipped scatter left underneath it to overlay a countable dot onto. */
 function markCanvas(dots) {
   if (!scene()) return;
   const option = pooledChart.getOption();

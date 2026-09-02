@@ -13,7 +13,8 @@
  *       markArea and its fitted rich-text label, both envelope band pairs, the
  *       hairline p25/p75 edges, the median and its axis-riding value tags, the
  *       occurrence scatter, and the docked-readout wiring.
- *   frontend/diagnose-workstation-chart.js  windowStats, buildSlotLane
+ *   frontend/diagnose-workstation-chart.js  windowStats, buildSlotLane,
+ *       stripGlucoseRange
  *   frontend/diagnose-workstation-data.js   envelopeFromPooled
  *   frontend/diagnose-workstation.js        resolveColors
  *
@@ -54,7 +55,7 @@
  *       a divergence from the shipped two-row stack and is reported as one.
  */
 import {
-  renderCanvas, windowStats, buildSlotLane,
+  renderCanvas, windowStats, buildSlotLane, stripGlucoseRange,
 } from '../../frontend/diagnose-workstation-chart.js';
 import {
   envelopeFromPooled,
@@ -243,6 +244,7 @@ export function paintPooled({
     envelope,
     colors,
     stats,
+    range: stripGlucoseRange(envelope),
     // Private fixture mirror of the API's served basal_support_floor.
     supportFloor: 8,
     /* No `target`: the shipped workstation passes none and lets `renderCanvas`

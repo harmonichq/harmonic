@@ -608,12 +608,28 @@ async function probeApp(browser, findingsInputs) {
   await ws.close();
 
   const lensPage = await openApp(browser, { viewport: VIEWPORT });
-  await lensPage.evaluate(() => {
-    // #62 — the anchor-time block coordinate retired; the whole day is the
-    // absence of a clock window, so this probe carries no time coordinate.
-    history.pushState(null, '', '/?view=lows&factor=over_treated_low');
-    dispatchEvent(new PopStateEvent('popstate'));
+  /* #181/#135 retired the standalone lens route this used to reach by pushing
+     `/?view=lows&factor=…` — there is no global mode switch left to push a URL
+     at. frontend/diagnose-event-comparison-behavior.replay.mjs (S40) reaches
+     the same comparison chart the way a reader does now: land on the 24 h
+     unscoped queue, then promote the finding's dock mini onto the stage. That
+     single click both opens the case detail AND seats the chart at
+     `#tile-focal`, where `renderBehavioralFullscreen` is the app's one
+     remaining caller of `renderEventSurface` — `.ec-chart-key`/`.ec-key-item`
+     render only there now, so the wait below is unambiguous. */
+  const lensPressed = await lensPage.evaluate(() => {
+    const button = [...document.querySelectorAll('#seg-window button')]
+      .find((b) => b.textContent.trim() === '24 h');
+    if (!button) return false;
+    button.click();
+    return true;
   });
+  if (!lensPressed) throw new Error('the app has no "24 h" window preset to press for the lens comparison');
+  await lensPage.waitForTimeout(400);
+  await lensPage.locator(
+    '#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body',
+  ).click();
+  await lensPage.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await lensPage.waitForSelector('.ec-chart-key .ec-key-item');
   await lensPage.waitForTimeout(700);
   const lensProbe = await lensPage.evaluate(probeScript, { props: PROPS, selectors: SELECTORS });

@@ -82,7 +82,7 @@ the cockpit breakpoint the drawer trigger is `display: none`; `shell-drawer`
 records that on both sides and leaves the drawer closed, so the pair stays
 comparable rather than failing. The router canonicalises `/` to Diagnose, so
 `shell` is the Diagnose page reached by the shell gate's own address, and at
-the two desktop viewports its renders are byte-identical to `diagnose`'s; the
+all three viewports its renders are byte-identical to `diagnose`'s; the
 states are kept separate because each is reached the way its own gate reaches
 it.
 

@@ -456,17 +456,18 @@ committed output remain unchanged. Only a newer lock on #192 resumes the chunk.
 
 This change remains active after tasks 1 and 2. Task 3 adds #193's behavioral and
 verdict-band eras. Task 4 completes the remaining migration and evidence-based
-revise-e2e retirement, adds agent guidance, and archives the change.
+revise-e2e retirement and adds agent guidance; `/ticket finalize` archives the
+change only after a human merges #319.
 
 ## #319 migration
 
-The pre-implementation `rg` inventory in `generated-facts.md` finds 78 files that
-name `revise-e2e`, `revise_e2e`, or `gen_revise_e2e_db`. Eight are live
-executable or agent-instruction files. The other 70 are non-executable scope,
-design, evidence, behavior-ledger, and active-change records; they remain as an
-accurate history of the source used by those completed runs. The archived
-migration checklist names 14 executable consumers: ten direct consumers and four
-browser consumers that inherit their database from the CI server. The harness
+The pre-implementation executable-surface `rg` inventory in
+`generated-facts.md` finds 21 matching lines. The archived checklist resolves to
+11 executable consumers: ten direct consumers and the Diagnose workstation
+behavior ledger, which is the only browser leg marked `server: true`. The three
+other browser rows stub their own data and are not database consumers. Historical
+scope, design, evidence, and Markdown behavior-ledger records remain accurate
+records of completed runs and are excluded from the executable scan. The harness
 README is an additional already-migrated guidance consumer that #319 verifies.
 
 The implementation follows this closed migration table. “Proof” is the
@@ -475,29 +476,35 @@ public-interface check that must remain after the old source is removed.
 | Consumer | Current evidence | New source | Proof |
 | --- | --- | --- | --- |
 | Fixture generator | `scripts/gen_revise_e2e_db.py:8-33,201-215` | None; `scripts/gen_qa_e2e_db.py` is the sole QA-store generator. | Delete the old generator only after its production-composition coverage is present in `tests/test_gen_qa_e2e_db.py` and `tests/test_qa_e2e_cases.py`. |
-| Generator public-interface/drift test | `tests/test_gen_revise_e2e_db.py:18,22-91` | QA showcase and isolated case stores. | Delete the old test; the QA tests retain CLI generation, logical drift, production `analyze`, exposures, scenarios, findings projection, and I:C history coverage. |
+| Generator public-interface/drift test | `tests/test_gen_revise_e2e_db.py:18,22-91` | QA showcase and isolated case stores. | Delete the old test; the QA tests retain CLI generation, logical drift, production `analyze`, exposures, scenarios, findings projection, and I:C history coverage. Port the assertions that CLI output has no adjacent `-wal`/`-shm` sidecars and that the committed showcase's `store.get_credentials()` is `None` into `tests/test_gen_qa_e2e_db.py`. |
 | CI drift check | `.github/workflows/ci.yml:55-59` | `scripts/gen_qa_e2e_db.py --check` only. | The backend job retains the QA check and removes the revise-E2E step. |
 | Permitted offline command | `AGENTS.md:55-73,142-145,183-200` | A scratch copy of `mockups/qa-e2e.synthetic/harmonic.sqlite`, or a named case store emitted to scratch. | The documented command retains `--no-fetch`, removes the second permitted revise-E2E serve and its restore command, and names no retired path. |
-| Local launch entry | `.claude/launch.json:23-29` | Already uses a scratch copy of the QA showcase. | Retain the entry byte-for-byte unless its source/consumer wiring must change; the executable-retirement test scans this hidden path. |
-| Browser-gates server | `.github/workflows/ci.yml:304-313` | A scratch copy of the QA showcase. | Retain `--no-fetch`, tokenless/offline startup, health polling, failure-log output, and the existing server lifecycle; CI supplies the browser proof. |
-| Diagnose workstation replay | `.github/workflows/ci.yml:244-247`; `frontend/diagnose-workstation-behavior.replay.mjs:494-506` | The migrated CI server through localhost `BASE_URL`. | Retain the replay and its server-only localhost guard; the browser-gate leg passes in CI. |
-| Diagnose event-comparison replay | `.github/workflows/ci.yml:255-257`; `frontend/diagnose-event-comparison-behavior.replay.mjs:1-18` | The migrated CI server through the app opener. | Retain the replay; its browser-gate leg passes in CI. |
-| Diagnose comparison support audit | `.github/workflows/ci.yml:258-260`; `mockups/diagnose-event-comparison-support-audit.mjs:1-31` | The migrated CI server through the event-comparison app opener. | Retain the audit and its `TARGET=app` fail-closed guard; its browser-gate leg passes in CI. |
-| Verify behavior replay | `.github/workflows/ci.yml:266-268`; `frontend/verify-660-story-behavior.replay.mjs:67-77` | The migrated CI server for the built app, with its existing payload stubs. | Retain the replay; its browser-gate leg passes in CI. |
-| Route-level fixture copy | `tests/test_finding_case_file_api.py:459-472` | The committed QA showcase copied to a temporary SQLite file. | Preserve every route-level assertion and prove the populated route through the API test. |
+| Local launch entry | `.claude/launch.json:23-29` | Already uses a scratch copy of the QA showcase. | Retain the entry byte-for-byte unless its source/consumer wiring must change; `tests/test_revise_e2e_retired.py` scans this hidden path. |
+| Browser-gates server | `.github/workflows/ci.yml:304-313` | Copy `mockups/qa-e2e.synthetic/harmonic.sqlite` to `$RUNNER_TEMP/harmonic-qa.sqlite`, then serve only that copy with `--no-fetch`. | The server never opens the committed path; `/api/health` answers inside the existing 30-attempt poll, which is the single database-backed browser proof. |
+| Diagnose workstation behavior ledger | `.github/workflows/ci.yml:244-247`; `frontend/diagnose-workstation-behavior.replay.mjs:494-506` | The migrated CI server through localhost `BASE_URL`; this is the only replay row with `server: true`. | The QA scratch-copy server starts and `/api/health` answers inside the existing 30-attempt poll before the replay runs. |
+| Diagnose event-comparison replay | `.github/workflows/ci.yml:255-257`; `frontend/diagnose-event-comparison-behavior.replay.mjs:1-18` | Not a database consumer; its app opener stubs the data it uses. | No migration or database proof is owed; retain the replay unchanged. |
+| Diagnose comparison support audit | `.github/workflows/ci.yml:258-260`; `mockups/diagnose-event-comparison-support-audit.mjs:1-31` | Not a database consumer; it consumes the event-comparison opener's stubbed case files. | No migration or database proof is owed; retain the audit unchanged. |
+| Verify behavior replay | `.github/workflows/ci.yml:266-268`; `frontend/verify-660-story-behavior.replay.mjs:67-77` | Not a database consumer; it reads its required payload and stubs API routes. | No migration or database proof is owed; retain the replay unchanged. |
+| Route-level fixture copy | `tests/test_finding_case_file_api.py:459-472,678-708` | The committed QA showcase copied to a temporary SQLite file; select `finding:over_treated_low`. | Preserve the public preparation/case routes and pin the measured successor literals: summary `{"claimed": 1, "denominator": 5, "noun": "lows"}`, verdict-count sum `5`, and occurrence count `5`. |
 | Public-link path pin | `scripts/check_public_links.py:132-145` | The existing QA-only `AGENTS.md`/`CLAUDE.md` pin. | Remove the revise-E2E pin and retain the QA pin plus its agent-instructions-only scope. |
 | Public-link pin test | `tests/test_check_public_links.py:124-144` | The QA path. | Delete the revise-E2E case and retain the QA positive and non-agent-document negative assertions. |
 | Public-tree binary policy test | `tests/test_check_public_allowlist.py:149-155` | `mockups/qa-e2e.synthetic/harmonic.sqlite`. | Rename/repoint the exact-path assertion while retaining the generic `.sqlite` denial from `scripts/public_allowlist.txt`. |
 
 `harness/README.md:14-24` and `.claude/launch.json:23-29` already describe the
-QA scratch-copy path and remain part of the executable retirement scan. After
-both serial chunks land, the coordinator repeats the executable-only `rg` command
-recorded in `generated-facts.md` across `AGENTS.md`, `.claude/`, `.github/`,
-`harness/`, `scripts/`, `tests/`, `frontend/`, and executable JavaScript under
-`mockups/`. The command names every path explicitly, including the hidden paths,
-and succeeds only with no output. `docs/scope/`, `openspec/changes/`, and the
-frozen behavior ledger are deliberately outside this executable scan and stay
-unchanged.
+QA scratch-copy path and remain part of the executable retirement scan. Chunk 1
+adds `tests/test_revise_e2e_retired.py`, which scans this closed executable
+surface and fails on any retired-name hit; it separately asserts that
+`scripts/gen_revise_e2e_db.py` and `mockups/revise-e2e.synthetic/` are absent.
+After both serial chunks land, the coordinator repeats the same command:
+
+```sh
+rg -n --hidden 'revise-e2e|revise_e2e|gen_revise_e2e_db' AGENTS.md .claude .github harness scripts tests frontend mockups --glob 'AGENTS.md' --glob '.claude/**' --glob '.github/**' --glob 'harness/**' --glob 'scripts/**' --glob 'tests/**' --glob 'frontend/**' --glob 'mockups/**/*.mjs'
+```
+
+The post-migration expectation is no output and exit 1. Positive globs enumerate
+every executable/documentation root and admit only executable `.mjs` files under
+`mockups/`; `docs/`, `openspec/`, and `mockups/*.md` are excluded because they
+are historical records that must remain unchanged.
 
 The committed QA showcase is an input, not an implementation output. Before and
 after the migration, `git diff --quiet origin/main --

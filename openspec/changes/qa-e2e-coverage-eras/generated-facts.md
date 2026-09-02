@@ -452,12 +452,14 @@ tests/test_finding_case_file_api.py
 tests/test_gen_revise_e2e_db.py
 ```
 
-The executable-only inventory command includes paths with zero matches so absence
-in the already-migrated launch, harness, QA test, and indirect browser consumers
-is captured by the same run:
+The deletion-safe executable-only inventory scopes whole directories rather than
+naming files that retirement removes. Positive globs keep every executable root
+in scope while admitting only `.mjs` files under `mockups/`; this excludes
+`docs/`, `openspec/`, and Markdown mockups because they are historical records
+that remain unchanged:
 
 ```sh
-rg -n --hidden 'revise-e2e|revise_e2e|gen_revise_e2e_db' AGENTS.md .claude/launch.json .github/workflows/ci.yml harness/README.md scripts/check_public_links.py scripts/gen_revise_e2e_db.py tests/test_check_public_allowlist.py tests/test_check_public_links.py tests/test_finding_case_file_api.py tests/test_gen_qa_e2e_db.py tests/test_gen_revise_e2e_db.py frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-event-comparison-behavior.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs frontend/verify-660-story-behavior.replay.mjs
+rg -n --hidden 'revise-e2e|revise_e2e|gen_revise_e2e_db' AGENTS.md .claude .github harness scripts tests frontend mockups --glob 'AGENTS.md' --glob '.claude/**' --glob '.github/**' --glob 'harness/**' --glob 'scripts/**' --glob 'tests/**' --glob 'frontend/**' --glob 'mockups/**/*.mjs'
 ```
 
 Complete output:
@@ -484,4 +486,30 @@ scripts/check_public_links.py:144:    ("CLAUDE.md", "mockups/revise-e2e.syntheti
 tests/test_finding_case_file_api.py:466:                  / "mockups" / "revise-e2e.synthetic" / "harmonic.sqlite")
 tests/test_gen_revise_e2e_db.py:18:_GENERATOR = _REPO_ROOT / "scripts" / "gen_revise_e2e_db.py"
 tests/test_gen_revise_e2e_db.py:86:            self.assertEqual(row[0], "scripts/gen_revise_e2e_db.py")
+```
+
+Post-migration expectation: no output, exit 1.
+
+## #319 route-test successor measurement
+
+The measurement copied the committed showcase to a temporary SQLite path, built
+the app with `enable_fetch_loop=False`, requested the public preparation route,
+then requested the event-aligned case-file route for
+`finding:over_treated_low` using that preparation's projection ID:
+
+```console
+$ HARMONIC_319_UV_CACHE=/private/tmp/harmonic-319-uv-cache; UV_CACHE_DIR="$HARMONIC_319_UV_CACHE" uv run python -c 'import json, shutil, tempfile; from pathlib import Path; from fastapi.testclient import TestClient; from ciq_autotune.api import create_app; tmp=tempfile.NamedTemporaryFile(suffix=".sqlite"); shutil.copyfile(Path("mockups/qa-e2e.synthetic/harmonic.sqlite"), tmp.name); client=TestClient(create_app(db_path=tmp.name, token=None, enable_fetch_loop=False)); prepared=client.get("/api/diagnose/finding-case-file-preparation"); print("preparation_status", prepared.status_code); payload=prepared.json(); print("finding_ids", json.dumps([r["id"] for r in payload["findings"]["rows"] if r.get("register")=="finding"])); case=client.get("/api/diagnose/finding-case-file", params={"projection_id": payload["projection_id"], "finding_id":"finding:over_treated_low", "alignment":"event"}); print("case_status", case.status_code); body=case.json(); print("summary", json.dumps(body["summary"], sort_keys=True)); print("verdict_count_sum", sum(body["verdict_counts"].values())); print("occurrence_count", len(body["occurrences"])); client.close(); tmp.close()'
+```
+
+Complete output:
+
+```text
+/Users/connor/worktrees/harmonic/319/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+preparation_status 200
+finding_ids ["finding:over_treated_low", "finding:correction_on_iob", "finding:meal_bolus_short"]
+case_status 200
+summary {"claimed": 1, "denominator": 5, "noun": "lows"}
+verdict_count_sum 5
+occurrence_count 5
 ```

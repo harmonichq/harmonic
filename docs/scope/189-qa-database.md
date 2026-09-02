@@ -333,7 +333,7 @@ produced through the production composition; and the committed showcase stays
 byte-identical.
 
 The unconditional `/scope` pass found no genuine uncertainty. Operator rulings
-already settle the 14-row archived executable-consumer checklist, the additional
+already settle the 11 executable consumers resolved from the archived checklist, the additional
 already-migrated harness guidance, the historical-record exclusions, short
 agent-facing guidance, the model rung, verification, review cap, and archive
 boundary. The implementation leaves the active change in place; `/ticket
@@ -362,3 +362,10 @@ Review rounds on the #319 draft lock (the coordinator fills this table):
 
 | round | blockers | authoring | injected |
 | --- | ---: | ---: | ---: |
+| 1 | 5 | 5 | 0 |
+
+Round 1 also carried two notes. The only browser row that consumes the no-fetch
+server is the Diagnose workstation behavior ledger; the other three stub their
+data and owe no database migration. The CI replacement copies the showcase to
+`$RUNNER_TEMP/harmonic-qa.sqlite` before serving it, and the lock does not pin a
+hand-counted OpenSpec-item total.

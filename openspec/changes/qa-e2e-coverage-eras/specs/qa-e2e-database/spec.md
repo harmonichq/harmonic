@@ -356,34 +356,47 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 
 ### Requirement: Remaining consumers migrate before revise-E2E retires
 
-The 14 executable consumers in the archived migration checklist SHALL be
+The 11 executable consumers resolved from the archived migration checklist SHALL be
 accounted for by the `#319 migration` table in `design.md`. The CI drift step,
 browser-gates server, route-level fixture copy, public-link pin and test, public
 binary-policy test, agent instructions, and every direct database reference SHALL
-use the QA showcase or an explicitly emitted named case store. The four browser
-replays/audits SHALL remain wired to the browser-gates server through their
-existing app-openers and localhost contract. The already-migrated
+use the QA showcase or an explicitly emitted named case store. Only the Diagnose
+workstation behavior ledger is a database-backed browser consumer: its CI matrix
+row has `server: true`. The event-comparison replay, comparison support audit, and
+Verify behavior replay stub their own data, are not database consumers, and owe no
+migration or database proof. The already-migrated
 `harmonic-nofetch` launch entry and harness instructions SHALL remain on the QA
 scratch-copy workflow.
 
-The CI server and documented local serve SHALL retain `--no-fetch`, tokenless
-operation, scratch-copy isolation, health/failure behavior, and the existing
-browser-leg lifecycle. The route test SHALL copy the committed QA showcase into a
-temporary path and retain its route-level assertions. The QA generator and case
+The CI server SHALL first copy `mockups/qa-e2e.synthetic/harmonic.sqlite` to
+`$RUNNER_TEMP/harmonic-qa.sqlite` and SHALL serve only that copy with
+`--no-fetch`; it SHALL never serve the committed path. `/api/health` SHALL answer
+inside the existing 30-attempt poll. The documented local serve SHALL retain
+tokenless operation, scratch-copy isolation, and `--no-fetch`. The route test
+SHALL copy the committed QA showcase into a temporary path, select
+`finding:over_treated_low`, and pin summary `{"claimed": 1, "denominator": 5,
+"noun": "lows"}`, verdict-count sum `5`, and occurrence count `5`. The QA generator and case
 tests SHALL retain the old generator test's public production-composition proof:
 analysis, exposures, scenarios, findings projection, and I:C history. The QA drift
-step SHALL remain fail-closed.
+step SHALL remain fail-closed. `tests/test_gen_qa_e2e_db.py` SHALL also port the
+old data-boundary assertions that CLI output leaves no adjacent `-wal` or `-shm`
+sidecar and that `store.get_credentials()` is `None` on the committed showcase.
 
 Only after those replacements are proved SHALL the implementation delete
 `scripts/gen_revise_e2e_db.py`, `tests/test_gen_revise_e2e_db.py`,
-`mockups/revise-e2e.synthetic/`, and the old CI drift step. After both serial
-chunks land, the coordinator SHALL repeat the exact `rg` completion check from
-`generated-facts.md` against the closed executable surface—`AGENTS.md`,
-`.claude/`, `.github/`, `harness/`, `scripts/`, `tests/`, `frontend/`, and
-executable JavaScript under `mockups/`—for `revise-e2e`, `revise_e2e`, and
-`gen_revise_e2e_db`. The check SHALL explicitly include hidden paths and SHALL
-produce no output. Historical records under `docs/scope/` and
-`openspec/changes/`, plus the frozen behavior ledger, SHALL remain unchanged.
+`mockups/revise-e2e.synthetic/`, and the old CI drift step.
+`tests/test_revise_e2e_retired.py` SHALL fail closed on any hit from this exact
+closed-surface command and SHALL separately require the generator file and fixture
+directory to be absent:
+
+```sh
+rg -n --hidden 'revise-e2e|revise_e2e|gen_revise_e2e_db' AGENTS.md .claude .github harness scripts tests frontend mockups --glob 'AGENTS.md' --glob '.claude/**' --glob '.github/**' --glob 'harness/**' --glob 'scripts/**' --glob 'tests/**' --glob 'frontend/**' --glob 'mockups/**/*.mjs'
+```
+
+After both serial chunks land, the coordinator SHALL repeat that same command;
+the expectation is no output and exit 1. `docs/`, `openspec/`, and
+`mockups/*.md` are excluded because they are historical records that SHALL remain
+unchanged.
 
 The committed QA showcase SHALL remain byte-identical to `origin/main`. The
 implementation SHALL leave this active change unarchived; `/ticket finalize`
@@ -393,24 +406,28 @@ owns archival after a human merges the implementation pull request.
 
 - **WHEN** the migration completes
 - **THEN** the QA drift check is the only QA-database drift step
-- **AND** the browser server and route-level API test consume a scratch copy of
-  the committed showcase
+- **AND** the browser server copies the committed showcase to
+  `$RUNNER_TEMP/harmonic-qa.sqlite` before serving, while the route-level API test
+  uses its own temporary copy and the measured over-treated-low literals
 - **AND** the QA-only public-link pin and binary-denial assertion remain
 - **AND** launch and harness entrypoints remain on the QA scratch workflow
 
-#### Scenario: Indirect browser consumers prove the migrated server
+#### Scenario: The one database-backed browser consumer proves the migrated server
 
 - **WHEN** the browser-gates job starts its declared synthetic server
-- **THEN** the four retained app replays and audits consume that server through
-  their existing localhost/app-opener wiring
-- **AND** every browser leg remains fail-closed in CI
+- **THEN** it serves `$RUNNER_TEMP/harmonic-qa.sqlite` with `--no-fetch`
+- **AND** `/api/health` answers inside the existing 30-attempt poll before the
+  Diagnose workstation behavior ledger runs
+- **AND** the three stub-backed browser rows owe no database migration or proof
 
 #### Scenario: Retirement is evidence-based
 
-- **WHEN** the completion check runs against the closed executable surface,
+- **WHEN** the committed retirement test and completion command run against the closed executable surface,
   including `.claude/` and `.github/`
 - **THEN** any retired spelling produces a match and blocks completion
-- **AND** when the command produces no output, the old generator, test, fixture directory, and
+- **AND** the test separately requires the old generator and fixture directory to
+  be absent
+- **AND** when the command produces no output and exits 1, the old generator, test, fixture directory, and
   CI step are absent while historical evidence remains intact
 
 #### Scenario: The showcase and active record do not move

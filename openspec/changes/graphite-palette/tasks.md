@@ -56,7 +56,7 @@
 
 ## 2. Re-base the gates and the audit
 
-- [ ] Re-base every fast-gate and browser-gate pin that names a moved value
+- [x] Re-base every fast-gate and browser-gate pin that names a moved value
       (`frontend/index.test.js`, `frontend/cockpit-shell.browser.test.mjs`,
       `frontend/diagnose-workstation.browser.test.mjs`,
       `frontend/diagnose-canvas-composition.browser.test.mjs`) to the
@@ -66,11 +66,11 @@
       the shape `design.md`'s bar ruling records (pinned literal plus
       `bar !== desk`, mutation re-pointed); no other structural change to any
       gate.
-- [ ] Re-run `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
+- [x] Re-run `mockups/finding-evidence-routing.exploration/contrast-audit.mjs`
       against the regenerated extract and commit its regenerated
       `contrast-report.json`; any pair that fails a floor returns to the
       operator under ADR 317 (floor wins unless sanctioned).
-- [ ] Run the fast gate and all ten browser legs locally against the no-fetch
+- [x] Run the fast gate and all ten browser legs locally against the no-fetch
       server; require zero failures and no skipped story; record each leg's
       applicable story count in the commit message.
 

@@ -312,6 +312,23 @@ function diffPair(baseDump, revisionDump) {
   return { removed, added, admitted, refused };
 }
 
+/** Admitted differences are the sanctioned bulk (thousands of elements re-inking
+    from one token), so the JSON carries them aggregated by property and
+    before → after pair with a count, not element by element; every refused,
+    added or removed entry is still listed in full, because those are the
+    findings. */
+function summarise(admitted) {
+  const groups = new Map();
+  for (const entry of admitted) {
+    const key = `${entry.property}\u0000${entry.base}\u0000${entry.revision}\u0000${entry.why}`;
+    groups.set(key, (groups.get(key) || 0) + 1);
+  }
+  return [...groups].map(([key, count]) => {
+    const [property, base, revision, why] = key.split('\u0000');
+    return { property, base, revision, why, count };
+  }).sort((x, y) => y.count - x.count);
+}
+
 /** The base check: the record's before-values on the base, after-values on the revision. */
 function checkTokens(side, tokens, expectKey) {
   const bad = [];
@@ -393,7 +410,9 @@ try {
       say('');
       results.push({ state: state.id, viewport, notes: { base: base.note, revision: revision.note },
         elementsCompared: shared.length, propertiesCompared: propsHere,
-        tokens: { base: base.tokens, revision: revision.tokens }, ...diff });
+        tokens: { base: base.tokens, revision: revision.tokens },
+        removed: diff.removed, added: diff.added, refused: diff.refused,
+        admitted: summarise(diff.admitted) });
     }
   }
 } finally {

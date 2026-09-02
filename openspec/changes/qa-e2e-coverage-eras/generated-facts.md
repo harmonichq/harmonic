@@ -32,12 +32,42 @@ numeric state. The short store's
 single ISF row also shows that row presence alone does not exercise the prior-
 decision replay that requires the ISF family span.
 
+## Serialized analyzer-row shapes
+
+`evidence/row-shape-probe.py` is frozen evidence from the pre-implementation
+tree at `f934a4a1f0ebd8e76bcd936b5b9a4518123105d0`. It materializes the existing
+showcase and the same 91-inclusive-day dense store as the span probe, then runs
+the catalog's public `execute_case` production composition.
+
+Command:
+
+```sh
+env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python openspec/changes/qa-e2e-coverage-eras/evidence/row-shape-probe.py
+```
+
+Complete output:
+
+```text
+30-day showcase basal row keys: ["annotation", "asserts_move", "current", "days", "direction", "estimate", "evidence", "label", "recommended", "safety_status", "slot"]
+30-day showcase basal safety_status histogram: [{"count": 2, "values": ["lower"]}, {"count": 41, "values": ["no change"]}, {"count": 5, "values": ["no data"]}]
+30-day showcase ISF row keys: ["annotation", "asserts_move", "block_id", "current", "estimate", "evidence", "label", "parameter", "recommended", "start_min"]
+30-day showcase ISF direction/asserts_move histogram: [{"count": 1, "values": [null, false]}]
+30-day showcase I:C row keys: ["annotation", "asserts_move", "block_id", "current_values", "days_needed", "days_observed", "direction", "end_min", "estimate", "evidence", "harm", "held_reason", "impact_u_day", "label", "member_start_mins", "n_meals", "n_runs", "priority", "recommended", "recurrence", "recurrence_channel", "regime", "start_min", "state"]
+30-day showcase I:C state/direction/held_reason/asserts_move/days_observed-presence histogram: [{"count": 1, "values": ["collecting", null, null, false, true]}]
+91-day showcase basal row keys: ["annotation", "asserts_move", "current", "days", "direction", "estimate", "evidence", "label", "recommended", "safety_status", "slot"]
+91-day showcase basal safety_status histogram: [{"count": 2, "values": ["lower"]}, {"count": 41, "values": ["no change"]}, {"count": 5, "values": ["no data"]}]
+91-day showcase ISF row keys: ["annotation", "asserts_move", "block_id", "current", "estimate", "evidence", "label", "parameter", "recommended", "start_min"]
+91-day showcase ISF direction/asserts_move histogram: [{"count": 1, "values": [null, false]}]
+91-day showcase I:C row keys: ["annotation", "asserts_move", "block_id", "current_values", "direction", "end_min", "estimate", "evidence", "harm", "held_reason", "impact_u_day", "label", "member_start_mins", "n_meals", "n_runs", "priority", "recommended", "recurrence", "recurrence_channel", "regime", "start_min", "state"]
+91-day showcase I:C state/direction/held_reason/asserts_move/days_observed-presence histogram: [{"count": 1, "values": ["numeric", null, null, false, false]}]
+```
+
 ## Existing behavioral-precedence depth
 
 Command:
 
 ```sh
-env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python -c 'import sqlite3,tempfile; from pathlib import Path; from datetime import datetime; from ciq_autotune.store import Store; from scripts.qa_e2e_cases import QA_CASES,materialize_case; p=Path(tempfile.mkdtemp())/"case.sqlite"; c=next(x for x in QA_CASES if x.name=="behavioral-precedence"); s=Store.open(str(p)); materialize_case(s,c); s.close(); q=sqlite3.connect(p); rows=q.execute("SELECT MIN(t), MAX(t) FROM (SELECT t FROM cgm_readings UNION ALL SELECT t FROM bolus_events UNION ALL SELECT t FROM basal_events)").fetchone(); print(f"earliest={rows[0]}"); print(f"latest={rows[1]}"); print(f"inclusive_calendar_days={(datetime.fromisoformat(rows[1]).date()-datetime.fromisoformat(rows[0]).date()).days+1}")'
+env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python -c 'import sqlite3,tempfile; from pathlib import Path; from datetime import datetime; from ciq_autotune.store import Store; from scripts.qa_e2e_cases import QA_CASES,materialize_case; p=Path(tempfile.mkdtemp())/"case.sqlite"; c=next(x for x in QA_CASES if x.name=="behavioral-precedence"); s=Store.open(str(p)); materialize_case(s,c); s.close(); q=sqlite3.connect(p); start=q.execute("SELECT MIN(t) FROM (SELECT t FROM cgm_readings UNION ALL SELECT t FROM bolus_events UNION ALL SELECT t FROM basal_events)").fetchone()[0]; end=q.execute("SELECT MAX(t) FROM (SELECT t FROM cgm_readings UNION ALL SELECT t FROM basal_events)").fetchone()[0]; print(f"earliest={start}"); print(f"latest={end}"); print(f"inclusive_calendar_days={(datetime.fromisoformat(end).date()-datetime.fromisoformat(start).date()).days+1}")'
 ```
 
 Complete output:
@@ -48,8 +78,9 @@ latest=2024-06-29 22:10:00
 inclusive_calendar_days=5
 ```
 
-The union excludes `profile_settings`, so the earlier settings snapshot does not
-inflate the declared span.
+The start union includes basal, CGM, and bolus events. The end union includes only
+basal and CGM, matching production's store-derived `now`; `profile_settings` is
+excluded from both, so the earlier settings snapshot does not inflate the span.
 
 ## Closed document inventory
 
@@ -126,6 +157,7 @@ openspec/changes/pane-header-single-seam/design.md
 openspec/changes/preserve-diagnose-theme-context/design.md
 openspec/changes/qa-e2e-coverage-eras/coverage-appendix.md
 openspec/changes/qa-e2e-coverage-eras/design.md
+openspec/changes/qa-e2e-coverage-eras/evidence/row-shape-probe.py
 openspec/changes/qa-e2e-coverage-eras/evidence/span-probe.py
 openspec/changes/qa-e2e-coverage-eras/generated-facts.md
 openspec/changes/qa-e2e-coverage-eras/proposal.md

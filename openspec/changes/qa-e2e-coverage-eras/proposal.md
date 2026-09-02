@@ -13,9 +13,10 @@ observation age and ISF replay eligibility from the full store, so one fixed
 
 ## What changes
 
-- Extend the catalog expectation contract to exact analyzer rows, queue rows and
-  absences, support values, staging verdicts, all-row ISF rest windows, and one
-  projected history series per active I:C identity.
+- Extend the catalog expectation contract to family-specific exact serialized
+  analyzer rows, queue rows and absences, support values, staging verdicts, the
+  single Fasting ISF row's keyed rest windows, and one projected history series
+  per active I:C identity.
 - Give each case an imported-constant-derived source span and add analyzer-fed
   basal, ISF, and I:C cases, including explicit collecting and history cases.
 - Add generator support for emitting any named case to an uncommitted,

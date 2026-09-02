@@ -20,20 +20,39 @@ count (`scripts/qa_e2e_cases.py:187-210`).
 
 Task 1 keeps that public fixture language and defines `AnalyzerRowKey` as the
 analyzer family plus its emitted parameter key: basal clock-slot label, ISF
-segment, or I:C block. `ExpectedAnalyzerRow` records the exact `safety_status`,
-direction when applicable, `asserts_move`, and
-`omitted: frozenset[str]`: the serialized field names expected absent or `None`,
-compared exactly. I:C rows also record exact `days_observed`, so block maturity is
-asserted rather than inferred from fixture depth. For example, basal no-baseline
-uses `omitted={"current"}` and ISF direction-only uses
-`omitted={"recommended"}`. `QaExpectation` gains
+segment, or I:C block. The executed serialized-row dump in `generated-facts.md`
+pins `ExpectedAnalyzerRow` as a family-discriminated contract:
+
+| Family | Exact expected fields |
+| --- | --- |
+| Basal | `safety_status`, top-level `direction`, `asserts_move`, and `omitted: frozenset[str]` |
+| ISF | `asserts_move`, `direction` read from `evidence["direction"]`, and `omitted` |
+| I:C | `state`, `direction`, `held_reason`, `asserts_move`, conditionally present `days_observed`, and `omitted` |
+
+`omitted` is compared exactly as the serialized field names expected absent or
+`None`. Basal no-baseline uses `omitted={"current"}` and ISF direction-only uses
+`omitted={"recommended"}`. I:C collecting and asserting blocks pin the exact
+serialized `days_observed`; every other I:C block includes `days_observed` in
+`omitted`. A non-collecting span is guarded by its exact `state`, not by a field
+the serializer omits. `QaExpectation` gains
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
 `absent_analyzer_rows`. Every case runs full `analyze`
 (`scripts/qa_e2e_cases.py:162-168`). The family under test pins its full emitted
-key set. Each non-target family pins the exact set of keys whose `asserts_move`
-is true or whose `safety_status` differs from that analyzer's quiet/no-change
-status; that set is expected empty in nearly every case. This keeps stray moves
-fail-closed at a fraction of the all-family literal volume.
+key set. Each non-target family pins the exact set of keys outside its measured
+quiet predicate:
+
+* basal quiet is `safety_status` in `{NO_CHANGE, NO_DATA, None}`; `NO_DATA`
+  projects a blind row, but the slot has no estimate and cannot hide a move;
+* ISF quiet is `asserts_move == false` with no `evidence["direction"]`;
+* I:C quiet is `state` in `collecting`, `below-floor`, or `unmeasured-alone`, or
+  `state == "numeric"` with `asserts_move == false` and no `held_reason`.
+
+The probe measured 48 basal slots as 41 no-change, five no-data, and two lower in
+both stores; one directionless, non-asserting Fasting ISF row; and one collecting
+short-span versus one directionless, non-asserting numeric mature I:C block. The
+non-target set is measured from the exact complement of the predicates above; it
+is never assumed empty. This keeps stray states fail-closed at a fraction of the
+all-family literal volume.
 
 `QaCase` also gains a `recipe` callable. A name-to-recipe registry replaces the
 `if`/`elif` dispatch in `materialize_case` (`scripts/qa_e2e_cases.py:147-157`),
@@ -43,8 +62,8 @@ empty by default. `execute_case` keeps `whole_day()` and additionally projects
 each declared window through `WindowQuery.clock`
 (`window_membership.py:47-60`). Queue expectations and absences are keyed by
 `(window | "whole_day", row key)`. Task 1 further extends the expectation to
-support values; ISF rest-window rows keyed by ISF row identity plus
-`(date, start, end)` across every ISF row, including an empty ISF list; and one
+support values; the single Fasting ISF row's rest-window set keyed by
+`(date, start, end)`; and one
 projected I:C history series per active identity keyed by identity, including an
 empty set. Non-active identities remain available through
 `PreparedFindings.history_catalog` (`findings_projection.py:169-171`). Recipes
@@ -54,7 +73,9 @@ register, queue row, priority, or rank.
 ## Coverage-case isolated-store spans
 
 Span is the inclusive calendar-day write depth from the earliest basal, CGM, or
-bolus event row through the case's `now`; settings snapshots are excluded. The
+bolus event row through the latest basal or CGM event, which is the case's
+store-derived `now`; bolus participates in the start only, and settings snapshots
+are excluded (`analyze.py:200-206`). The
 analyzer rules below are stated as days back from `now`. For an end-of-day `now`,
 the catalog's inclusive declaration is days back plus one. New coverage cases
 declare a span and `materialize_case` writes exactly that depth.
@@ -69,9 +90,10 @@ than repeating their values:
 | I:C | At least `BLOCK_WINDOW_DAYS` = 90 days back | At least 91 days | The block lane uses `block_start = now - BLOCK_WINDOW_DAYS` and all block inputs through `now` (`analyze.py:422,443-454`); maturity is `now - insulin_history_start >= BLOCK_WINDOW_DAYS` (`analyze.py:438-441`), with no segment-lane bolus lead-in. |
 
 Because `observed_days` floors elapsed seconds, each coverage recipe anchors its
-earliest event at or before `now`'s time of day. The exact I:C
-`ExpectedAnalyzerRow.days_observed` comparison fails loudly if that boundary is
-short.
+earliest event at or before `now`'s time of day. Collecting and asserting I:C rows
+pin emitted `days_observed`; every other non-collecting row pins `state` and
+requires `omitted` to contain `days_observed`, so a short maturity boundary still
+fails loudly without expecting a field the serializer does not emit.
 
 The three existing cases receive literal declarations matching their current
 recipe extents rather than family-derived policy: `showcase` declares span 30 at
@@ -82,7 +104,8 @@ contract with no observed value changing;
 a lead-in; `behavioral-precedence` declares span 5 because its unchanged recipe
 writes events from 2024-06-25 through its 2024-06-29 `now`. The latter two derive
 any new exact expectation fields from analyzer output. The materialized min/max
-query and complete output are recorded in `generated-facts.md`. `window_days` remains
+query—minimum over basal/CGM/bolus, maximum over basal/CGM—and complete output are
+recorded in `generated-facts.md`. `window_days` remains
 30 and production still derives `now` from the store's latest basal/CGM event.
 `_BOLUS_LEADIN` and `_ISF_DECISION_INTERVAL` come from
 `ciq_autotune.analyze`; `BLOCK_WINDOW_DAYS` comes from
@@ -108,9 +131,9 @@ condition; it never permits writing the condition into a fixture.
 | ISF held | An estimate is visible but no direction is owned because harm gates, observation is incomplete, evidence is wide, current is confirmed, or persistence is absent (`analyzers/isf.py:593-628`). | Exact `held` row and analyzer-owned reason. |
 | I:C collecting | A 30-day store leaves `days_observed < BLOCK_WINDOW_DAYS`, which forces every block to `collecting` (`analyze.py:438-441`; `analyzers/ic.py:2429-2430`). | Exact collecting analyzer row including `days_observed`, and absence from `QaCase.scoped_windows`/global queues. |
 | I:C raise / lower | `days_observed` reaches `BLOCK_WINDOW_DAYS`; at least eight effective closed meal runs produce a non-wide, band-excluding, regime-supported recommendation different from current (`analyzers/ic.py:120-163,1449-1472,2429-2438,2503-2523`). | Exact `assert`, direction, support count, `days_observed`, and `asserts_move=true`. |
-| I:C capped raise / lower | The same mature-span conditions hold and the half-gap exceeds the ±20% bound (`analyzers/ic.py:1449-1464`). | Exact `assert` and bounded recommendation. |
-| I:C held | The mature block names a move but the regime bracket straddles programmed or meal/pre-empted harm gates tightening (`analyzers/ic.py:2448-2501,2524-2526,2633-2643`). | Exact `held`, no global assert, `asserts_move=false`. |
-| I:C quiet | The mature block is below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise owns neither move nor held reason (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run case separately from collecting. | Exact analyzer block and explicit `QaCase.scoped_windows`/global absence. |
+| I:C capped raise / lower | The same mature-span conditions hold and the half-gap exceeds the ±20% bound (`analyzers/ic.py:1449-1464`). | Exact `assert`, bounded recommendation, and emitted `days_observed`. |
+| I:C held | The mature block names a move but the regime bracket straddles programmed or meal/pre-empted harm gates tightening (`analyzers/ic.py:2448-2501,2524-2526,2633-2643`). | Exact `held`, no global assert, `asserts_move=false`, and `omitted` containing `days_observed`. |
+| I:C quiet | The mature block is below the eight-run floor, unmeasured alone, agrees with programmed, or otherwise owns neither move nor held reason (`analyzers/ic.py:2430-2446,2638-2643`). Include a seven-run case separately from collecting. | Exact analyzer block with `omitted` containing `days_observed`, plus explicit `QaCase.scoped_windows`/global absence. |
 | I:C history register | A snapshot-proven past block identity differs from current, is ever publishable, and has enough in-window runs for an active measurement (`analyzers/ic.py:2198-2278`). | Exact active history row and one exact projected series per active identity. |
 
 ## ADR 192 — Isolated coverage stores, showcase-only committed database
@@ -211,6 +234,11 @@ local measurement and CI's 2 min 57 s are references only. The committed showcas
 chunk. Task 1 raises the `pytest (backend)` job timeout from 10 to 15 minutes so
 the expanded suite retains CI headroom; that one line is the only permitted CI
 workflow edit.
+
+Before authoring the remaining I:C cases, sub-order 2 times one mature case and
+computes `measured single-case time × planned I:C case count + current focused-suite
+total`. A result above the 90-second focused-suite limit triggers the same stop
+rule before the remaining I:C recipes are authored.
 
 On a budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch

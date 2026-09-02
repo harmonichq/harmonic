@@ -6,26 +6,35 @@ Each basal coverage case SHALL materialize manufactured source rows into one
 isolated store and SHALL run production analysis, exposure, scenario, findings,
 and I:C-history composition. `AnalyzerRowKey` SHALL be analyzer family plus its
 emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
-`ExpectedAnalyzerRow` SHALL contain exact `safety_status`, direction when
-applicable, `asserts_move`, and `omitted: frozenset[str]`, compared exactly as the
-serialized field names expected absent or `None`; basal no-baseline SHALL use
+`ExpectedAnalyzerRow` SHALL be family-discriminated from the serialized-row dump:
+basal SHALL contain exact `safety_status`, top-level `direction`, `asserts_move`,
+and `omitted: frozenset[str]`; ISF SHALL contain exact `asserts_move`, `direction`
+read from `evidence["direction"]`, and `omitted`; I:C SHALL contain exact `state`,
+`direction`, `held_reason`, `asserts_move`, conditionally present
+`days_observed`, and `omitted`. `omitted` SHALL compare exactly the serialized
+field names expected absent or `None`; basal no-baseline SHALL use
 `omitted={"current"}` and ISF direction-only SHALL use
-`omitted={"recommended"}`. I:C rows SHALL also contain exact `days_observed`, so
-block maturity is asserted rather than assumed from fixture depth.
+`omitted={"recommended"}`. I:C collecting and asserting rows SHALL pin exact
+emitted `days_observed`; every other I:C row SHALL include `days_observed` in
+`omitted`, and its non-collecting span guard SHALL be exact `state`.
 `QaExpectation` SHALL gain
 `analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
 `absent_analyzer_rows`. Each case's target family SHALL pin its full emitted key
-set. Each non-target family SHALL pin the exact set of keys whose `asserts_move`
-is true or whose `safety_status` is not that analyzer's quiet/no-change status;
-the expected set SHALL be empty when no such row exists, so stray moves fail
-closed without repeating every quiet row. `QaCase` SHALL gain
+set. Each non-target family SHALL pin the exact set of keys outside its measured
+quiet predicate: basal quiet SHALL mean `safety_status` in
+`{NO_CHANGE, NO_DATA, None}` (a `NO_DATA` blind slot has no estimate and cannot
+hide a move); ISF quiet SHALL mean `asserts_move == false` with no
+`evidence["direction"]`; I:C quiet SHALL mean `state` in `collecting`,
+`below-floor`, or `unmeasured-alone`, or `state == "numeric"` with
+`asserts_move == false` and no `held_reason`. The non-target set SHALL be the
+exact measured complement of those predicates, never an assumed-empty set, so
+stray states fail closed without repeating every quiet row. `QaCase` SHALL gain
 `scoped_windows: tuple[tuple[int, int], ...]`, expressed in clock minutes and
 empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
 `(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
-values exactly. ISF rest windows SHALL be keyed by ISF row
-identity plus `(date, start, end)`, observed across every ISF row, and SHALL
-express an empty ISF list. Projected I:C history series SHALL contain one series
+values exactly. The single Fasting ISF row's rest windows SHALL be an exact set
+keyed by `(date, start, end)`. Projected I:C history series SHALL contain one series
 per active identity keyed by identity; no active identity SHALL expect an empty
 set. Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
 registers, ranks, or queue rows. Perturbing any expected row, absence, support
@@ -43,8 +52,9 @@ condition in the design matrix.
 ### Requirement: Isolated stores use family spans and leave showcase unchanged
 
 Span SHALL mean inclusive calendar-day write depth from the earliest written
-basal, CGM, or bolus event row through the case's `now`; settings snapshots SHALL
-be excluded. Analyzer depth SHALL be stated as days back from `now`; for an
+basal, CGM, or bolus event row through the latest basal or CGM event row, which
+sets the case's store-derived `now`; bolus participates in the start only and
+settings snapshots SHALL be excluded. Analyzer depth SHALL be stated as days back from `now`; for an
 end-of-day `now`, inclusive calendar days SHALL equal days back plus one. Each new
 coverage case SHALL declare its source span and `materialize_case` SHALL write
 exactly that depth. Basal coverage SHALL reach at least
@@ -56,8 +66,9 @@ back, 91 inclusive, because block maturity is
 `now - earliest basal/CGM/bolus event >= BLOCK_WINDOW_DAYS` and that block lane
 does not read `_BOLUS_LEADIN`. Because `observed_days` floors elapsed seconds,
 coverage recipes SHALL anchor their earliest event at or before `now`'s time of
-day, and exact I:C `days_observed` expectations SHALL fail when the depth is
-short. `showcase` SHALL declare span 30 at its
+day. Collecting and asserting I:C rows SHALL pin exact emitted `days_observed`;
+other non-collecting rows SHALL pin exact `state` and omit `days_observed`, so a
+short depth still fails closed. `showcase` SHALL declare span 30 at its
 existing anchor. The committed database bytes, showcase recipe, and its produced
 rows SHALL remain unchanged; its expectation SHALL be re-expressed in the
 extended contract with no observed value changing. `setting-recommendation`
@@ -105,7 +116,8 @@ prove the committed store's bytes were untouched.
 - **WHEN** new basal, ISF, and I:C coverage cases are materialized
 - **THEN** their earliest events meet the imported family-specific days-back
   rules in the design without repeated numeric policy literals
-- **AND** every I:C row exactly asserts analyzer-produced `days_observed`
+- **AND** collecting and asserting I:C rows pin emitted `days_observed`, while
+  every other I:C row pins its exact state and omits that field
 - **AND** each case runs using only its own rows and snapshots
 
 #### Scenario: A named case can be emitted for no-fetch UI work
@@ -143,8 +155,9 @@ Each ISF and I:C case SHALL use the shared expectation contract and its declared
 family span. Cases SHALL cover every ISF and I:C condition in the design matrix,
 including direction-only non-stageable ISF, explicit 30-day I:C collecting, quiet
 I:C, and the history register. Their isolated executions SHALL compare exact
-analyzer rows, queue rows and absences, support values, staging values, all-row ISF
-rest windows, and one keyed I:C history series per active identity.
+analyzer rows, queue rows and absences, support values, staging values, the single
+Fasting ISF row's keyed rest windows, and one keyed I:C history series per active
+identity.
 
 #### Scenario: I:C observation age is analyzer-produced
 
@@ -152,8 +165,8 @@ rest windows, and one keyed I:C history series per active identity.
   `BLOCK_WINDOW_DAYS` days back, or 91 inclusive calendar days
 - **WHEN** production analysis runs
 - **THEN** the 30-day case exactly asserts its `days_observed` and `collecting`
-- **AND** the mature case exactly asserts `days_observed == BLOCK_WINDOW_DAYS`
-  and may produce the matrix's non-collecting states
+- **AND** the mature case asserts a non-collecting state; an asserting block pins
+  `days_observed == BLOCK_WINDOW_DAYS`, while another mature state omits the field
 
 #### Scenario: The eight-run I:C floor is data-produced
 

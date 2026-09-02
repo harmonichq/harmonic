@@ -156,7 +156,7 @@ path. Named-case tests SHALL retain the valid scratch-emission and failure-mode
 coverage above.
 
 `gen_qa_e2e_db.py --check` SHALL report the showcase's logical contents current.
-`git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to
+`git diff --quiet origin/main -- the committed QA showcase database` SHALL exit 0 to
 prove the committed store's bytes were untouched.
 
 #### Scenario: Pinned maturity determines source depth
@@ -190,7 +190,7 @@ prove the committed store's bytes were untouched.
 - **WHEN** either #192 task completes or stops early
 - **THEN** the committed database bytes remain unchanged
 - **AND** the existing showcase-only `--check` reports current
-- **AND** `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` exits 0
+- **AND** `git diff --quiet origin/main -- the committed QA showcase database` exits 0
 
 #### Scenario: Fixed budgets stop the phase
 
@@ -380,7 +380,7 @@ migration or database proof. The already-migrated
 `harmonic-nofetch` launch entry and harness instructions SHALL remain on the QA
 scratch-copy workflow.
 
-The CI server SHALL first copy `mockups/qa-e2e.synthetic/harmonic.sqlite` to
+The CI server SHALL first copy the committed QA showcase database to
 `$RUNNER_TEMP/harmonic-qa.sqlite` and SHALL serve only that copy with
 `--no-fetch`; it SHALL never serve the committed path. `/api/health` SHALL answer
 inside the existing 30-attempt poll. The documented local serve SHALL retain
@@ -445,7 +445,7 @@ owns archival after a human merges the implementation pull request.
 #### Scenario: The showcase and active record do not move
 
 - **WHEN** task 4 reaches the pull-request boundary
-- **THEN** `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite`
+- **THEN** `git diff --quiet origin/main -- the committed QA showcase database`
   exits zero
 - **AND** the active change remains under `openspec/changes/qa-e2e-coverage-eras/`
   for post-merge finalization to archive

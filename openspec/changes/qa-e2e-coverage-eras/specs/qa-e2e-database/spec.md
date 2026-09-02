@@ -85,7 +85,7 @@ catalog-tuple and decoded-name-set tests SHALL be the only retained
 execution-free catalog tests.
 
 `gen_qa_e2e_db.py --check` SHALL report the showcase's logical contents current.
-`git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to
+`git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to
 prove the committed store's bytes were untouched.
 
 #### Scenario: Family constants determine source depth
@@ -114,7 +114,7 @@ prove the committed store's bytes were untouched.
 - **WHEN** either #192 task completes or stops early
 - **THEN** the committed database bytes remain unchanged
 - **AND** the existing showcase-only `--check` reports current
-- **AND** `git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` exits 0
+- **AND** `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` exits 0
 
 #### Scenario: Fixed budgets stop the phase
 

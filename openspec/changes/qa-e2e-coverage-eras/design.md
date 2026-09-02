@@ -120,7 +120,7 @@ This supersedes ADR 190's coverage-membership clause. ADR 190's other rulings st
 in force. The bytes of `mockups/qa-e2e.synthetic/harmonic.sqlite`, the showcase
 recipe and its produced rows remain unchanged. `gen_qa_e2e_db.py --check`
 reports its logical contents current, while
-`git diff --quiet -- mockups/qa-e2e.synthetic/harmonic.sqlite` proves its bytes
+`git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` proves its bytes
 were untouched.
 The showcase expectation is re-expressed in the extended contract with no
 observed value changing. The committed database membership is exactly one case:

@@ -52,6 +52,15 @@ ruled re-settlement from a quiet weakening.
 **Sanctioned floor changes.** None yet; appended by the executing session if
 any.
 
+## Moved tokens
+
+The closed list of custom properties whose value this change moves, filled by
+the executing session as each ruling lands and read by the gate re-base and the
+palette-only diff as their only authority. A token not listed here may not
+differ between base and revision.
+
+- _none yet_
+
 ## Rulings that stay narrow
 
 - The chrome bar: on Diagnose and Verify the workstation's panes cover the

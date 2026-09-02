@@ -29,7 +29,8 @@ const OUT_DIR = env('OUT_DIR');
 const sides = { base: env('BASE_URL_BASE'), revision: env('BASE_URL_REVISION') };
 for (const [side, raw] of Object.entries(sides)) {
   if (!raw) continue;
-  const url = new URL(raw);
+  let url;
+  try { url = new URL(raw); } catch { missing.push(`BASE_URL_${side.toUpperCase()}=${raw} is not a URL`); continue; }
   if (!['127.0.0.1', 'localhost'].includes(url.hostname)) missing.push(`BASE_URL_${side.toUpperCase()} must name localhost`);
 }
 if (VENDOR_DIR) for (const asset of ['vue.esm-browser.js', 'echarts.min.js']) {

@@ -111,6 +111,6 @@
 
 ## 4. Close (coordinator)
 
-- [ ] Tick each task above only when implemented and verified; run `/review`
+- [x] Tick each task above only when implemented and verified; run `/review`
       at Full depth and resolve every blocking finding before opening one pull
       request. Do not merge.

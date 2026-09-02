@@ -61,7 +61,15 @@ the executing session as each ruling lands and read by the gate re-base and the
 palette-only diff as their only authority. A token not listed here may not
 differ between base and revision.
 
-- _none yet_
+- _none yet_ (each entry: `--token · before `#xxxxxx` · after `#yyyyyy` · ruling`)
+
+## Base story counts
+
+Recorded by the executing session before the first value moves, read by the
+gate re-base as the counts every leg must still report.
+
+- `frontend/cockpit-shell.browser.test.mjs` on the base: _pending_.
+- `frontend/diagnose-workstation-behavior.replay.mjs` on the base: _pending_.
 
 ## Rulings that stay narrow
 
@@ -76,7 +84,11 @@ differ between base and revision.
 - The Verify ribbon: 32%/18% and 20%/20% are rendered side by side on the
   same Trial and the operator picks; 32/18 is shown first as the documented
   intent. Neither committed synthetic database carries a Trial, so the render
-  uses the Verify gate's fixture payload through the replay's request stub.
+  uses the Verify gate's fixture payload through the replay's request stub,
+  from the committed opener `evidence/verify-trial-opener.mjs`, so the
+  ribbon's before/after renders are evidence of record like every other
+  ruling's. The ribbon fills are canvas, so the computed-style diff cannot see
+  them; the renders and the Verify replay leg are their evidence.
 
 ## Safe start (UI Craft revise)
 

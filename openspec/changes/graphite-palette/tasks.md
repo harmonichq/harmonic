@@ -11,7 +11,8 @@
       second worktree at that commit and serve it on a distinct port with the
       revise database; replay `frontend/cockpit-shell.browser.test.mjs` and
       `frontend/diagnose-workstation-behavior.replay.mjs` against it and
-      record their applicable story counts.
+      record their applicable story counts under `## Base story counts` in
+      `design.md`.
 - [ ] Inventory every reader of `--high` (`frontend/index.html`,
       `frontend/nav-chart.js`, `frontend/diagnose-evidence-charts.js`,
       `frontend/scenario.css`) and every surface that renders one beside an
@@ -23,8 +24,10 @@
 - [ ] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
       on the same Trial through the Verify gate's fixture payload
       (`mockups/verify-660-story.synthetic/payload.json`, stubbed the way
-      `frontend/verify-660-story-behavior.replay.mjs` stubs it; the opener is
-      session scratch and is never committed); commit the chosen percentages
+      `frontend/verify-660-story-behavior.replay.mjs` stubs it) from a
+      committed opener, `evidence/verify-trial-opener.mjs`, that serves one
+      URL with a `RIBBON=32/18|20/20` switch so the same Trial renders both
+      ways and chunk 3 can capture it again; commit the chosen percentages
       in `frontend/verify-workstation.js` with the sanction appended to
       `design.md`.
 - [ ] Look at Plan and Day with the operator; move the chrome bar one step
@@ -61,21 +64,29 @@
 ## 3. Evidence of record
 
 - [ ] Copy `openspec/changes/archive/2026-09-01-dark-only-theme/evidence/identity-diff.mjs`
-      to `openspec/changes/graphite-palette/evidence/palette-diff.mjs` and
-      replace its sanction rules with the palette rule: a difference is
-      admitted only when it is a colour-valued property, or a custom property
-      named in the moved-token list, whose revision value resolves from a
-      moved token; any element added or removed, any layout or typographic
-      property that differs, and any state comparing nothing fails the run.
-      Serve base and revision from two worktrees on distinct ports with the
-      same revise database and record the exact commands and complete output
-      under that evidence directory.
-- [ ] Capture before/after renders of shell, Diagnose, Verify, Day and Plan at
-      1440×900, 1280×800 and 390×844 from both worktrees into the evidence
-      directory, and write the evidence README naming provenance and the
-      moved-token list.
+      to `openspec/changes/graphite-palette/evidence/palette-diff.mjs`; delete
+      its four `REMOVAL_RULES`, its `REFLOW_RULE`, its `theme` localStorage
+      seeding and its Theme-control base check, and make
+      `evidence/palette-rule.mjs`'s `admits` the only sanction rule, fed the
+      moved-token list from `design.md`. The base check becomes: every moved
+      token resolves on the base side to the before-value the list records,
+      and on the revision side to the after-value; otherwise the run fails as
+      "not the ticket base". Add `plan` (`/plan`, ready `.plan-root` or the
+      selector the surface actually mounts) to the states. Any element added or
+      removed, any refused difference, and any state comparing nothing fails
+      the run. Serve base and revision from two worktrees on distinct ports
+      with the same revise database and record the exact commands and complete
+      output under the evidence directory.
+- [ ] Capture before/after renders of shell, Diagnose, Verify (through
+      `evidence/verify-trial-opener.mjs`, both ribbon settings on the base and
+      the sanctioned one on the revision), Day and Plan at 1440×900, 1280×800
+      and 390×844 from both worktrees into the evidence directory, and write the
+      evidence README naming provenance and the moved-token list.
 - [ ] Update `mockups/INDEX.md` with the #317 revision, the rulings and the
       evidence path.
+
+## 4. Close (coordinator)
+
 - [ ] Tick each task above only when implemented and verified; run `/review`
       at Full depth and resolve every blocking finding before opening one pull
       request. Do not merge.

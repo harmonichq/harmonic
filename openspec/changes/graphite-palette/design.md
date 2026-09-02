@@ -56,7 +56,10 @@ any.
 
 ## Moved tokens
 
-The closed list of custom properties whose value this change moves, filled by
+The closed list of custom properties whose computed value differs between
+base and revision, including tokens derived through `var()` from a moved one
+(`--ck-bar-on-signal` follows `--ck-ground`, for instance); before and after
+are the computed hexes. Filled by
 the executing session as each ruling lands and read by the gate re-base and the
 palette-only diff as their only authority. A token not listed here may not
 differ between base and revision.

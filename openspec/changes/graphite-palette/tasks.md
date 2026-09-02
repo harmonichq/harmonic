@@ -71,8 +71,9 @@
       moved-token list from `design.md`. The base check becomes: every moved
       token resolves on the base side to the before-value the list records,
       and on the revision side to the after-value; otherwise the run fails as
-      "not the ticket base". Add `plan` (`/plan`, ready `.plan-root` or the
-      selector the surface actually mounts) to the states. Any element added or
+      "not the ticket base". Add `plan` (`/plan`, ready `.active-profile-ref`, which the
+      Plan pane renders once pump settings are configured, as they are on the
+      revise database) to the states. Any element added or
       removed, any refused difference, and any state comparing nothing fails
       the run. Serve base and revision from two worktrees on distinct ports
       with the same revise database and record the exact commands and complete

@@ -246,6 +246,9 @@ Every case SHALL continue to compare the complete literal `behavioral_rows` and
 finding-title sets. `QaExpectation` SHALL gain
 `verdict_tallies: Mapping[tuple[str, str], ExpectedVerdictTally]`, keyed by
 `(lever, family)`, with defaults that leave the existing cases unchanged.
+Its key set SHALL equal the whole-day projection's complete flattened
+`(lever, family)` set across every finding row's `verdict_counts_by_family`;
+no projected pair may be omitted and no extra expectation key may be present.
 `ExpectedVerdictTally` SHALL contain a literal denominator and a literal counts
 mapping with exactly the five `FINDING_VERDICTS` keys. Assertion SHALL require
 exact tally key-set equality; non-negative integer counts; all five keys; counts
@@ -256,14 +259,28 @@ sum of its per-family tallies. No expected state, count, or denominator SHALL be
 constructed from `QaExecution`, `execute_case`, analyzer output, exposure output,
 or projection output at assertion time.
 
-Each of the eight scenario-Lever cases SHALL contain exactly six target-family
-Occurrences and SHALL literally expect two `fired` plus one `outranked`, one
-`near_miss`, one `no_data`, and one `clean`. Its `(lever, family)` denominator
-SHALL therefore be six with exact counts `{fired: 2, outranked: 1, near_miss: 1,
-no_data: 1, clean: 1}`. The meal-bolus-short recurrence appearance SHALL retain
-its separately policy-owned completed-meal denominator. At least one generated
-case test SHALL independently perturb a literal state, a literal denominator,
-and a zero-valued verdict count and SHALL fail for each mutation.
+Each scenario-Lever case SHALL cover every row-relative band its own production
+classifier path can emit, as measured by the design's source probe. Counts below
+are in `fired / outranked / near_miss / no_data / clean` order and SHALL be
+literal:
+
+| Lever case | Target tally | Co-Lever tally required by target `outranked` |
+| --- | --- | --- |
+| `behavioral-carb-undercount` | `(carb_undercount, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(late_bolus, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
+| `behavioral-late-bolus` | `(late_bolus, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
+| `behavioral-meal-over-delivery` | `(meal_over_delivery, meals)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(carb_undercount, meals)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
+| `behavioral-over-treated-low` | `(over_treated_low, lows)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(correction_on_iob, lows)` = `1 / 2 / 0 / 0 / 3`, denominator 6 |
+| `behavioral-correction-stacking` | `(correction_stacking, correction_clusters)` = `2 / 0 / 1 / 1 / 1`, denominator 5 | none; a driver correction necessarily carries the matching stacking verdict |
+| `behavioral-correction-on-iob` | `(correction_on_iob, lows)` = `2 / 1 / 1 / 0 / 1`, denominator 5 | `(over_treated_low, lows)` = `1 / 2 / 0 / 0 / 2`, denominator 5 |
+| `behavioral-missed-meal` | `(missed_meal, highs)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(meal_bolus_short, highs)` = `1 / 2 / 1 / 1 / 1`, denominator 6 |
+| `behavioral-meal-bolus-short` | `(meal_bolus_short, highs)` = `2 / 1 / 1 / 1 / 1`, denominator 6 | `(missed_meal, highs)` = `1 / 2 / 0 / 1 / 2`, denominator 6 |
+
+Each target and co-Lever tally SHALL preserve the denominator, count-sum,
+`verdict_counts_by_family`, and aggregate reconciliation invariants above. The
+meal-bolus-short recurrence appearance SHALL retain its separately policy-owned
+completed-meal denominator. At least one generated case test SHALL independently
+perturb a literal state, a literal denominator, and a zero-valued verdict count
+and SHALL fail for each mutation.
 
 `QaExpectation` SHALL also gain an exact whole-window `uncaused_highs` value,
 defaulted so existing cases retain their output. The `behavioral-uncaused-highs`
@@ -272,13 +289,21 @@ family level while exactly one whole Episode has no Lever; it SHALL pin
 `uncaused_highs == 1`. The five negative cases SHALL prove, through exact whole-set
 rows, titles, tallies, and denominators, that a false-low excursion is removed, a
 `low:no` answer suppresses over-treated-low attribution without deleting the
-printed low, an unbolused Carb-log entry is exclusion-only and never a meal, one
-correction creates no correction cluster, and precedence retains an outranked
-anchor while only the earlier driver owns attribution.
+printed low, an unbolused Carb-log entry reduces the exact Fasting ISF `n_steps`
+support value without changing behavioral rows, one correction creates no
+correction cluster, and precedence retains an outranked anchor while only the
+earlier driver owns attribution. Removing the Carb-log entry SHALL change the
+literal `n_steps` value, proving that case's expectation is load-bearing through
+the current `QaExecution.analysis` surface.
 
-Before the remaining 16 cases are authored, the first representative
+Every case SHALL declare the exact `source_span_days` shown in the design table.
+The six-Occurrence Lever cases and both five-Occurrence Lever cases SHALL use the
+declared 30-day dense-store class; sparse negative cases SHALL not substitute for
+the representative timing.
+
+Before the remaining 16 cases are authored, the first representative 30-day dense
 scenario-Lever case SHALL be timed and task 3 SHALL project
-`16 × representative case time + 11.38 s` against the unchanged 90-second focused
+`17 × representative case time + 11.38 s` against the unchanged 90-second focused
 suite limit. Any projected or measured budget breach SHALL invoke the existing
 stop rule and SHALL be reported on #193. Task 3 SHALL record literal output for
 the same five budgets in `coverage-appendix.md`, using task 2's 11.38 s focused
@@ -294,20 +319,21 @@ suite as the projection input and the recorded 62.93 s whole-pytest baseline /
 - **AND** every required positive, negative, silence, and precedence condition in
   the design table matches its literal whole-set expectation
 
-#### Scenario: Every Lever band shares its exact family denominator
+#### Scenario: Every Lever covers its reachable bands and exact family denominator
 
-- **GIVEN** each scenario-Lever case's six target-family Occurrences
+- **GIVEN** each scenario-Lever case's literal target and required co-Lever tallies
 - **WHEN** its finding row is projected
-- **THEN** its five literal counts are `2, 1, 1, 1, 1` in
-  `FINDING_VERDICTS` order and sum to six
-- **AND** six equals both the target exposure family's `n` and the matching
-  `verdict_counts_by_family` denominator
+- **THEN** the target covers every reachable band in the per-Lever table and keeps
+  unreachable bands at literal zero
+- **AND** every tally's count sum equals both its exposure family's `n` and the
+  matching `verdict_counts_by_family` denominator
 - **AND** aggregate counts equal the sum of the exact per-family tallies
+- **AND** tally keys equal the projection's complete `(lever, family)` set
 
 #### Scenario: Negative evidence cannot become a finding
 
 - **WHEN** the five named negative cases execute
-- **THEN** false-low, `low:no`, unbolused-carb, lone-correction, and preempted
+- **THEN** false-low, `low:no`, Carb-log fasting exclusion, lone-correction, and preempted
   conditions retain exactly the rows and absences named by the design
 - **AND** no recipe injects the verdict or attribution that the assertion expects
 

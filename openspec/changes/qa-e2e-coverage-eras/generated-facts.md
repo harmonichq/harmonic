@@ -103,6 +103,42 @@ The start union includes basal, CGM, and bolus events. The end union includes on
 basal and CGM, matching production's store-derived `now`; `profile_settings` is
 excluded from both, so the earlier settings snapshot does not inflate the span.
 
+## Scenario-Lever silence taxonomy
+
+`evidence/silence-taxonomy-probe.py` parses the production classifier functions,
+checks that every member of the closed `Lever` enum is dispositioned exactly once,
+and records whether model-view appends that classifier on every relevant anchor.
+
+Command:
+
+```sh
+UV_CACHE_DIR=/tmp/harmonic-193-uv-cache uv run python openspec/changes/qa-e2e-coverage-eras/evidence/silence-taxonomy-probe.py
+```
+
+Complete output:
+
+```text
+lever | silence_reasons | appended_unconditionally | append_scope
+carb_undercount | insufficient_data,no_trigger,under_threshold,upstream_cause | yes | every meal anchor
+late_bolus | insufficient_data,no_trigger,upstream_cause,prior_high_baseline,owned_by_prior_bolus | yes | every meal anchor
+meal_over_delivery | insufficient_data,no_trigger,horizon_expired | yes | every meal anchor
+over_treated_low | insufficient_data,no_trigger,under_threshold,owned_by_announced_meal | no | omitted for a refuted or split-off low anchor
+correction_stacking | no_trigger,upstream_cause,horizon_expired | no | appended only for the matching or last correction anchor
+correction_on_iob | no_trigger,upstream_cause | yes | every low anchor
+missed_meal | insufficient_data,no_trigger,upstream_cause | no | omitted for a split rebound-high anchor
+meal_bolus_short | insufficient_data,no_trigger,upstream_cause,horizon_expired | no | omitted for a split rebound-high anchor
+```
+
+`findings_projection._occurrence_verdict` maps an absent classifier verdict to
+`no_data` unless the occurrence itself is a driver, and maps a calm non-match on a
+driver to `outranked`. Consequently correction stacking cannot produce
+`outranked`: only a matching stacking correction can be the driver. Correction on
+active insulin cannot produce `no_data`: its verdict is unconditional on every low
+and its classifier emits no `insufficient_data`. The other six paths can produce
+all five row-relative bands through their emitted silences, conditional absence,
+and a co-Lever driver. The design's per-Lever table freezes those reachable bands
+and the literal co-Lever tallies that make each `outranked` count observable.
+
 ## Closed document inventory
 
 Command:

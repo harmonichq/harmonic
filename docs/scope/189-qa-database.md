@@ -297,10 +297,27 @@ dosing-advisory evidence and must fail closed against silently injected or
 under-asserted judgments. `AGENTS.md` declares no `Harden:` line, so the profile is
 none. Surface lifecycle is none.
 
+The carb-log negative case is retained and re-targeted to a production observable
+that the existing execution seam already publishes: the exact Fasting ISF
+`n_steps` support value from `analyze(..., carb_entries=...)`. Removing the entry
+must change that literal value while leaving behavioral rows unchanged. The
+original meal-denominator claim is dropped because `build_exposures` never reads
+the Carb log.
+
 The first representative scenario-Lever case is measured before the other 16 are
-authored. Its projected focused-suite cost is `16 × representative + 11.38 s`
-against the existing 90-second limit. Task 3 records all five post-change budgets
-in `coverage-appendix.md` against the existing 62.93 s whole-pytest baseline and
+authored. It is a 30-day dense-store case in the dense-showcase cost class
+(approximately 2.4 seconds, not the 0.32-second sparse class). Its projected
+focused-suite cost is `17 × representative + 11.38 s` against the existing
+90-second limit. Task 3 records all five post-change budgets in
+`coverage-appendix.md` against the existing 62.93 s whole-pytest baseline and
 157.33 s ceiling. A breach follows the existing stop rule and is reported on #193.
-The coordinator owns the single cold review round and will append its verified
-review instrumentation here after this worker returns the pinned draft.
+
+Review rounds on the #193 draft lock:
+
+| round | blockers | authoring | injected |
+| --- | ---: | ---: | ---: |
+| 1 | 3 | 3 | 0 |
+
+Round 1 also carried two notes: correct the projection multiplier and declare each
+case's source span/density. The coordinator owns the review and posts the amended
+lock as-is after this only fix round.

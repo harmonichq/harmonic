@@ -34,7 +34,15 @@ design, and a worker cannot see what the eye rejects.
   or two units per channel on the Before band and is visible only on the
   mirrored Trial band, so the documented 32/18 step-up is retired as intent
   rather than adopted. The Trial band mixes `--mk-primary`, the chart's data
-  green, not the action orange.
+  green, not the action orange. Chunk 3's ribbon renders are these exact
+  invocations from each worktree root, and nothing less (every input named is
+  required; the opener exits 1 without one):
+  `FRONTEND_ROOT=<root> RIBBON=20/20 TRIAL=Profile OUT=<png> node
+  openspec/changes/graphite-palette/evidence/verify-trial-opener.mjs` on the
+  base and on the revision (the sanctioned, shipped setting), plus on the base
+  only the retired candidate `RIBBON=32/18 TRIAL=Profile`, and both settings
+  again with `SWAP=1` labelled mirrored; each with `PLAYWRIGHT_MODULE` and
+  `VENDOR_DIR` set as the gates set them.
 - Chrome bar on Plan and Day: moves one step up, from the desk `#0f0d0b` to
   the well `#14120f` (`--ck-ground` re-declared inside `frontend/theme.css`'s
   chrome-bar role block as `var(--wk-surface-sunken)`; `:root`'s desk is
@@ -48,7 +56,11 @@ design, and a worker cannot see what the eye rejects.
   figures previously beside those tokens (5.05, 6.08, 6.03) were measured by a
   method the file never named and do not reproduce under WCAG on the desk
   either; under the named formula the moved ground clears the recorded 6.08,
-  so the ruling was not returned.
+  so the ruling was not returned. Cockpit S6 and its gate amend together in
+  the gate re-base commit (sub-order 2 owns every ledger and suite), quoting
+  this sanction; the value commit above carries no ledger edit by that
+  ownership, which is what "in the same commit" under Rulings that stay
+  narrow refers to.
 
 ## ADR 317 — Clinical attention and tappable affordance do not share a hue
 

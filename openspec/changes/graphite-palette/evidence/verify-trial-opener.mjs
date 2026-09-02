@@ -21,8 +21,9 @@
 // Trial medians diverge enough to give the ribbon an area). SWAP=1 serves
 // that payload with every Trial's Before and Trial periods exchanged: the
 // fixture's Trials all run below Before, which is the grey (`mutedSoft`) band,
-// so the mirrored serve is the only way the fixture shows the orange
-// (`accentSoft`) band the ruling is about. A SWAP render is labelled as such
+// so the mirrored serve is the only way the fixture shows the Trial
+// (`accentSoft`) band the ruling is about — a wash of `--mk-primary`, the
+// chart's data green, not the action orange. A SWAP render is labelled as such
 // in the evidence and is never the shipped Trial. The script fails
 // closed: a missing driver, vendored asset, payload, or a served module whose
 // mix line no longer matches the pattern below exits nonzero naming it.

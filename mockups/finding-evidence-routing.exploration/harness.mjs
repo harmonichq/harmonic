@@ -280,9 +280,12 @@ const EXPECTED = {
     + 'dark), which is the same step the two in-body routes take, so every accent-inked string in this column '
     + 'reads at one value.',
   '.qrow .go|color': 'F7: ditto — the queue row\'s chevron is the same `--ck-accent` at the same 3.95:1.',
-  '.ev-row .arrow|color': 'F7: the production table\'s `→` is `--mk-muted` at 70%, which measures 3.21:1 light '
-    + 'and 3.42:1 dark — it fails in BOTH themes, which is why it is not fixed by a light-only override. It '
-    + 'takes this surface\'s one dim-meta ink instead.',
+  /* `.ev-row .arrow|color` RETIRED — the `→` it named went with the rest of
+     the dual-reading roster (be9a4093, #87; see DELIBERATELY_ABSENT_BOTH
+     below). Kept as history, unreachable: F7 measured the production table's
+     `→` at `--mk-muted` 70%, 3.21:1 light / 3.42:1 dark — failing in BOTH
+     themes, which is why it was not fixed by a light-only override, and took
+     this surface's one dim-meta ink instead. */
   '.crumb .trail .chev|color': 'F7: the crumb separator is `--mk-text` at 35% — 2.10:1 light / 2.90:1 dark, the '
     + 'worst text pair on the surface and failing in both themes. Same dim-meta ink.',
   '.crumb .trail button|color': 'F7: the crumb root is `--mk-text` at 55%, 3.56:1 in light. It is the column\'s '
@@ -294,11 +297,13 @@ const EXPECTED = {
  *
  * `border-*-color` defaults to `currentColor`, so on an element that paints no
  * border at all the probe reads the element's TEXT ink back under a second name.
- * Five of the six inks F7 moves sit on such elements, which is why one ink
- * change surfaced as eleven rows: two per element, plus `.more`'s top edge —
- * `.more` paints a real bottom border with an explicit colour, and that one is
- * still compared, because a fix that stopped comparing it would be the
- * loosening this table exists to avoid.
+ * Four of the five inks F7 moves sit on such elements (a fifth, `.ev-row
+ * .arrow`, retired with the dual-reading roster — be9a4093, #87 — and came
+ * out of this loop with it), which is why one ink change surfaced as nine
+ * rows: two per element, plus `.more`'s top edge — `.more` paints a real
+ * bottom border with an explicit colour, and that one is still compared,
+ * because a fix that stopped comparing it would be the loosening this table
+ * exists to avoid.
  *
  * The harness already names this exact artifact once, on `.watch|border-top-color`
  * ("the app declares no top border at all, so its 'colour' is the inherited text
@@ -310,7 +315,6 @@ for (const [selector, edges] of [
   ['.crumb .trail .chev', ['border-top-color', 'border-bottom-color']],
   ['.qrow .go', ['border-top-color', 'border-bottom-color']],
   ['.linkbtn', ['border-top-color', 'border-bottom-color']],
-  ['.ev-row .arrow', ['border-top-color', 'border-bottom-color']],
   ['.more', ['border-top-color']],
 ]) {
   for (const edge of edges) {
@@ -750,6 +754,31 @@ const DELIBERATELY_ABSENT_BOTH = {
      legend's Near-rule key as a sub-line instead. Not state-scoped — neither
      side has anywhere left that emits it. */
   '.ec-boundary-note': 'retired; the hedge moved onto the Near-rule legend key (1d065305, #41/#181)',
+  /* be9a4093 (#87) collapsed the dual-reading roster (entry → worst · Δ) to
+     the single-value `.only` + `.tier` cells the current roster still uses —
+     the same retirement the contrast-audit.mjs pairs for these four columns
+     already name. All four columns went together, in the one commit. */
+  '.ev-row .entry': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .arrow': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .worst': 'retired with the dual-reading roster (be9a4093, #87)',
+  '.ev-row .delta': 'retired with the dual-reading roster (be9a4093, #87)',
+  /* 087cbf17 "refine evidence row drill affordance" dropped the row's own
+     `<span class="chev">›</span>` — the row selects, it does not route, and
+     no glyph promising a destination replaced it. */
+  '.ev-row .chev': 'retired; the row selects rather than routes (087cbf17)',
+  /* NOT a retirement — app-only-by-design, unlike the five above. `.slotlink`
+     still renders in `renderCaseHead` (frontend/diagnose-workstation.js) for
+     any CLOCK-aligned finding case file (finding-case-files.json carries
+     several, e.g. finding:carb_undercount's `clock` entry) — the mock never
+     builds it on purpose (ROUND 6, SEND-BACK 6: the coincidence routes take
+     block 6's own right-aligned action form instead). It lands here only
+     because no state this harness currently opens drills a clock-aligned
+     finding on the APP side either — `ws`'s own basal-slot drill
+     (`slotProbe`) goes through the settings drill panel, not
+     `renderCaseHead`, so it never reaches it. The honest fix is a state the
+     harness should open, not a permanent exemption; flagged rather than
+     silently folded into the four true retirements above. */
+  '.slotlink': 'unreached by any currently-probed state; the app still builds it for a clock-aligned finding',
   '.qrow:is([data-tier="next_in_line"], [data-tier="worth_a_look"]) .tag .gly':
     'the queue flavor tag prints its word without the retired decorative glyph',
   '.tailnote': 'the mock replaces the tail sentence with its Watching section cap',

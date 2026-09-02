@@ -52,9 +52,9 @@ python3 scripts/check_owned_identifiers.py # product-name guard
 python3 scripts/check_public_allowlist.py  # publishable-tree guard
 ```
 
-The backend job also runs thirteen **drift checks**, so a committed
+The backend job also runs twelve **drift checks**, so a committed
 generator-authored artifact can never silently diverge from its generator.
-Twelve are listed below; the thirteenth is the evidence-canvas exploration's
+Eleven are listed below; the twelfth is the evidence-canvas exploration's
 generator — a private design artifact the public tree excludes, so its
 `--check` command lives in `.github/workflows/ci.yml`:
 
@@ -64,7 +64,6 @@ uv run python scripts/gen_annotation_fixtures.py --check
 uv run python scripts/gen_chart_builder_fixtures.py --check
 uv run python scripts/check_demo_fixtures.py   # the committed synthetic demo sets
 uv run python scripts/gen_qa_e2e_db.py --check
-uv run python scripts/gen_revise_e2e_db.py --check
 uv run python scripts/gen_findings_projection_fixtures.py --check
 uv run python scripts/gen_ic_history_event_fixtures.py --check
 uv run python scripts/gen_ic_block_evidence_fixtures.py --check
@@ -139,10 +138,7 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=moc
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
-# In another terminal, start the exact no-fetch server CI still runs:
-#   uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
-# After reproducing the gates, restore that tracked store:
-#   uv run python scripts/gen_revise_e2e_db.py
+# In another terminal, start the QA copy-then-serve command documented below.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
@@ -183,10 +179,9 @@ your own database — never a published one, and never a live pull.**
 - **Never run normal `harmonic serve` or any `harmonic fetch` in automated
   work.** Normal startup fires a live OAuth login against the vendor (possibly
   2FA) and pulls real data; it cannot be exercised headless. There are exactly
-  two permitted offline serves: the QA copy-then-serve command below for UI
-  design and replay, and the revise-E2E server printed in the browser-gates
-  reproduction block above. `--no-fetch` is mandatory for both. The QA database
-  is generated entirely by `scripts/gen_qa_e2e_db.py`:
+  one permitted offline serve: the QA copy-then-serve command below for UI
+  design and replay. `--no-fetch` and the empty token are mandatory. The QA
+  database is generated entirely by `scripts/gen_qa_e2e_db.py`:
 
   ```sh
   scratch="${TMPDIR:-/tmp}/harmonic-qa-e2e.sqlite"
@@ -213,6 +208,35 @@ your own database — never a published one, and never a live pull.**
   provenance stamp saying so. Do not hand-write a fixture out of real data, and
   do not paste real values into a test.
 - CI logs are public. Anything a gate prints, it prints to the world.
+
+### Maintaining QA coverage eras
+
+When an analyzer state or Finding changes:
+
+1. Start with a manufactured `QaCase` recipe in `scripts/qa_e2e_cases.py`.
+2. Materialize it and run `execute_case`; copy its complete serialized analyzer,
+   queue, support, rest-window, history, behavioral, verdict-tally, and
+   uncaused-high row dump into literal `QaExpectation` values. Never derive an
+   expected row or verdict from analyzer or projection output at assertion time.
+3. Run the catalog-generated `test_case_<case name with hyphens replaced by
+   underscores>` test.
+4. Re-measure all five existing budgets without raising their limits: committed
+   showcase size ≤25 MiB, showcase drift ≤30 s, focused QA suite ≤90 s,
+   slowest generated case ≤15 s, and full pytest ≤2.5× the recorded chunk-1
+   baseline. A breach stops the work without changing the committed showcase.
+
+To inspect one case through the production APIs, emit its uncommitted case store:
+
+```sh
+uv run python scripts/gen_qa_e2e_db.py --case <name> --out <scratch path>
+```
+
+Use that path as the `cp` source in the QA copy-then-serve command above; keep
+`--no-fetch` and `--token ''`. Never commit an emitted case store. Use the
+showcase for whole-app layout, dense chronology, navigation, and mixed-state
+composition. Use a named case store for one exact analyzer or Finding state.
+For isolated chart layout or interaction, start with the component harness's
+manufactured stories, then use the full no-fetch app as the integration proof.
 
 ## Layout
 

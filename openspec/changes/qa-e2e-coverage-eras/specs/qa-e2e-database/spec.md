@@ -42,9 +42,9 @@ empty by default; `execute_case` SHALL project `whole_day()` and every declared
 window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
 `(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
 values exactly. The single Fasting ISF row's rest windows SHALL be an exact set
-keyed by `(date, start, end)`. Projected I:C history series SHALL contain one series
-per active identity keyed by identity; no active identity SHALL expect an empty
-set. Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
+keyed by `(date, start, end)`. Projected I:C history series SHALL contain one
+non-empty series per active identity keyed by identity; the mapping SHALL be empty
+when no identity is active. Fixture inputs SHALL NOT set analyzer verdicts, directions, held reasons,
 registers, ranks, or queue rows. Perturbing any expected row, absence, support
 value, or staging value SHALL fail. The basal cases SHALL cover every basal
 condition in the design matrix.
@@ -65,11 +65,16 @@ sets the case's store-derived `now`; bolus participates in the start only and
 settings snapshots SHALL be excluded. Analyzer depth SHALL be stated as days back from `now`; for an
 end-of-day `now`, inclusive calendar days SHALL equal days back plus one. Each new
 coverage case SHALL declare its source span and `materialize_case` SHALL write
-exactly that depth. Basal coverage SHALL reach at least
+exactly that depth. The family days-back rule SHALL be a minimum only when the
+case's pinned expectation requires family maturity. A case MAY declare a shorter
+span when its pinned I:C `state` is `collecting` with exact emitted
+`days_observed`, or when its pinned ISF outcome does not require the prior-decision
+window. Task 1 SHALL assert declaration against recipe depth and SHALL NOT apply a
+family floor independently of the pinned expectation. Mature basal coverage SHALL reach at least
 `window_days + _BOLUS_LEADIN` = 31 days back for the segment lane, 32 inclusive;
-ISF coverage SHALL reach at least
+ISF coverage whose outcome needs the prior-decision window SHALL reach at least
 `window_days + _ISF_DECISION_INTERVAL + _BOLUS_LEADIN` = 38 days back, 39
-inclusive; and I:C coverage SHALL reach at least `BLOCK_WINDOW_DAYS` = 90 days
+inclusive; and mature I:C coverage SHALL reach at least `BLOCK_WINDOW_DAYS` = 90 days
 back, 91 inclusive, because block maturity is
 `now - earliest basal/CGM/bolus event >= BLOCK_WINDOW_DAYS` and that block lane
 does not read `_BOLUS_LEADIN`. Because `observed_days` floors elapsed seconds,
@@ -123,11 +128,14 @@ coverage above.
 `git diff --quiet origin/main -- mockups/qa-e2e.synthetic/harmonic.sqlite` SHALL exit 0 to
 prove the committed store's bytes were untouched.
 
-#### Scenario: Family constants determine source depth
+#### Scenario: Pinned maturity determines source depth
 
 - **WHEN** new basal, ISF, and I:C coverage cases are materialized
-- **THEN** their earliest events meet the imported family-specific days-back
-  rules in the design without repeated numeric policy literals
+- **THEN** each declaration exactly matches its recipe's event depth
+- **AND** a case whose pinned expectation requires family maturity meets the
+  imported family-specific minimum without repeated numeric policy literals
+- **AND** a collecting I:C case or an ISF case that does not need prior-decision
+  replay may declare a shorter depth
 - **AND** collecting and asserting I:C rows pin emitted `days_observed`, while
   every other I:C row pins its exact state and omits that field
 - **AND** each case runs using only its own rows and snapshots
@@ -164,7 +172,7 @@ prove the committed store's bytes were untouched.
 ### Requirement: ISF and I:C eras prove analyzer-owned states exactly
 
 Each ISF and I:C case SHALL use the shared expectation contract and its declared
-family span. Cases SHALL cover every ISF and I:C condition in the design matrix,
+span. Cases SHALL cover every ISF and I:C condition in the design matrix,
 including direction-only non-stageable ISF, explicit 30-day I:C collecting, quiet
 I:C, and the history register. Their isolated executions SHALL compare exact
 analyzer rows, queue rows and absences, support values, staging values, the single

@@ -70,9 +70,10 @@ each declared window through `WindowQuery.clock`
 (`window_membership.py:47-60`). Queue expectations and absences are keyed by
 `(window | "whole_day", row key)`. Task 1 further extends the expectation to
 support values; the single Fasting ISF row's rest-window set keyed by
-`(date, start, end)`; and one
-projected I:C history series per active identity keyed by identity, including an
-empty set. Non-active identities remain available through
+`(date, start, end)`; and one projected I:C history series per active identity
+keyed by identity. The mapping is empty when no identity is active; an active
+identity's expected series is never empty. Non-active identities remain available
+through
 `PreparedFindings.history_catalog` (`findings_projection.py:169-171`). Recipes
 never accept or write a verdict, status, direction, held reason, lifecycle,
 register, queue row, priority, or rank.
@@ -82,10 +83,15 @@ register, queue row, priority, or rank.
 Span is the inclusive calendar-day write depth from the earliest basal, CGM, or
 bolus event row through the latest basal or CGM event, which is the case's
 store-derived `now`; bolus participates in the start only, and settings snapshots
-are excluded (`analyze.py:200-206`). The
-analyzer rules below are stated as days back from `now`. For an end-of-day `now`,
-the catalog's inclusive declaration is days back plus one. New coverage cases
-declare a span and `materialize_case` writes exactly that depth.
+are excluded (`analyze.py:200-206`). The analyzer rules below are stated as days
+back from `now`. For an end-of-day `now`, the catalog's inclusive declaration is
+days back plus one. They are minimums only when a case's pinned expectation
+requires that family's maturity. An I:C case may declare a shorter span when it
+pins `state="collecting"` and exact emitted `days_observed`; an ISF case may be
+shorter when its pinned outcome does not need the prior-decision window. Every
+new coverage case declares a span and `materialize_case` writes exactly that
+depth. Task 1 asserts declared depth against recipe depth; it never applies a
+family floor independently of the pinned expectation.
 For each of the three existing cases, a test asserts the declaration against the
 recipe's actual earliest event and `now`. The catalog imports the constants rather
 than repeating their values:
@@ -127,11 +133,13 @@ condition; it never permits writing the condition into a fixture.
 | --- | --- | --- |
 | Basal raise / lower | At least eight informative non-tie nights on the same side of programmed basal survive the family-corrected sign test, and the median differs from current beyond the noise floor (`safety.py:32-39,63-106,206-226`; `analyzers/basal.py:348-374,499-509`). | Exact `assert` row with matching direction and `asserts_move=true`. |
 | Basal capped raise / lower | The supported condition holds and the uncapped target exceeds the ±20% step (`safety.py:143-148,200-226`). | Exact `assert` row with cap status and bounded recommendation. |
-| Basal insufficient | A visible estimate differs from current but has no supported matching sign, including a seven-night below-floor case (`safety.py:63-71,192-222`; `analyzers/basal.py:503-509,562-564`). | Exact analyzer/support row, `QaCase.scoped_windows` `held`, no global assert, `asserts_move=false`. |
+| Basal insufficient — seven-night floor | A visible estimate differs from current but seven informative nights exit below `_MIN_SUPPORTED_NIGHTS` (`safety.py:63-71,192-222`; `analyzers/basal.py:503-509,562-564`). | Exact analyzer/support row, `QaCase.scoped_windows` `held`, no global assert, `asserts_move=false`. |
+| Basal insufficient — unsupported sign | At least eight informative nights produce a visible estimate, but their sign hypothesis fails the Benjamini–Hochberg family cutoff (`safety.py:74-106,192-222`; `analyzers/basal.py:503-509,562-564`). | Exact analyzer/support row distinct from the seven-night floor, scoped `held`, no global assert, `asserts_move=false`. |
 | Basal blind | No clean day yields an estimate (`safety.py:197-204`; `analyzers/basal.py:499-509`). | Exact `QaCase.scoped_windows` `blind` row and no global row. |
 | Basal no baseline | A clean estimate exists without a programmed current value (`safety.py:200-204`; `result.py:156-166`). | Exact `QaCase.scoped_windows` `held` with `omitted={"current"}`, no global assert. |
 | Basal no change | The bounded estimate is within 0.05 U/h of current (`safety.py:143-148,212-214`). | Exact analyzer row and absence from `QaCase.scoped_windows`/global queues. |
-| Basal recurring-low lower | Recurring basal-attributed lows move the safe direction lower, including the zero-clean-day variant (`safety.py:229-279`; `analyzers/basal.py:510-522`). | Exact lower `assert`, `asserts_move=true`; never blind. |
+| Basal recurring-low lower | Recurring basal-attributed lows and a clean median below current move the safe direction lower (`safety.py:229-279`; `analyzers/basal.py:510-522`). | Exact lower `assert`, `asserts_move=true`; never blind. |
+| Basal recurring-low no-clean median | Recurring basal-attributed lows with `median is None` take the explicit full-step `HARM_LOWER` branch (`safety.py:257-260,268-273`; `analyzers/basal.py:510-522`). | Exact lower `assert` from the no-clean-median harm branch, distinct from the median-below-current branch; never blind. |
 | Basal recurring-low gate | A low gates a raise or recurring lows meet a median at/above current (`safety.py:238-260,268-283`). | Exact `QaCase.scoped_windows` `held`, no global assert, `asserts_move=false`. |
 | ISF strengthen | Fully observed rescue history is silent, no correction harm exists, the band and vote support strengthen, and the signal held at the prior decision point (`analyzers/isf.py:509-525,611-622`). | Exact ranked `assert` with recommendation and `asserts_move=true`. |
 | ISF weaken / direction-only | Correction-caused lows or attributed rescues clear recurrence; the analyzer emits weaken without a recommendation (`analyzers/isf.py:528-591,818-827`). | Exact visible direction with `omitted={"recommended"}`, no queue rank, `asserts_move=false`. |
@@ -158,10 +166,12 @@ generated unittest method is mechanically `test_case_<name with '-' replaced by
 | `basal-capped-raise` | basal | 32 | — | Basal capped raise |
 | `basal-capped-lower` | basal | 32 | — | Basal capped lower |
 | `basal-insufficient-seven-night` | basal | 32 | `(180, 240)` | Basal insufficient at the seven-night floor |
+| `basal-insufficient-unsupported-sign` | basal | 32 | `(180, 240)` | Basal insufficient with ≥8 nights but no family-corrected sign support |
 | `basal-blind` | basal | 32 | `(180, 240)` | Basal blind |
 | `basal-no-baseline` | basal | 32 | `(180, 240)` | Basal no baseline |
 | `basal-no-change` | basal | 32 | `(180, 240)` | Basal no change |
 | `basal-recurring-low-lower` | basal | 32 | — | Basal recurring-low lower |
+| `basal-recurring-low-no-clean-median` | basal | 32 | — | Basal recurring-low lower with no clean median |
 | `basal-recurring-low-gate` | basal | 32 | `(180, 240)` | Basal recurring-low gate |
 | `isf-strengthen` | isf | 39 | — | ISF strengthen |
 | `isf-direction-only-weaken` | isf | 39 | — | ISF weaken / direction-only non-stageable |
@@ -175,7 +185,7 @@ generated unittest method is mechanically `test_case_<name with '-' replaced by
 | `ic-quiet-seven-run` | ic | 91 | `(0, 720)` | I:C quiet at the seven-run floor |
 | `ic-history-register` | ic | 91 | — | I:C history register |
 
-Task 1 therefore adds 10 basal cases. Task 2 adds 3 ISF and 8 I:C cases. Those
+Task 1 therefore adds 12 basal cases. Task 2 adds 3 ISF and 8 I:C cases. Those
 counts are load-bearing inputs to the pre-authoring runtime projections below;
 the generated test-name guard derives from this same closed table.
 
@@ -188,7 +198,7 @@ derives `span_start` and `insulin_history_start` store-wide
 (`analyze.py:438-441`), and I:C forces blocks to collecting below
 `BLOCK_WINDOW_DAYS` (`analyzers/ic.py:2429-2430`). ISF also needs its prior
 decision replay (`analyze.py:90,317-330`). Each new coverage case therefore runs
-in its own store with the applicable family span above; existing catalog recipes
+in its own store with its declared span above; existing catalog recipes
 retain the shapes recorded in the preceding section.
 
 This supersedes ADR 190's coverage-membership clause. ADR 190's other rulings stay
@@ -257,8 +267,9 @@ to its own module-level constant directly below a
 assignment (`scan_public_tree.py:72`); such a series is never inline in
 `QA_CASES`. Exact analyzer
 prose containing dose or ratio units such as `U/h` and `g/U` is accepted only
-through the generated dose-ratio baseline. For Python files the scan reads only
-comment text (`scan_public_tree.py:540-561`), so its printed delta may be empty;
+through the generated dose-ratio baseline. For Python files the scan reads
+comment and docstring text (`scan_public_tree.py:552-570`), so its printed delta
+may be empty;
 an empty delta needs no re-record. The baseline is keyed on `(path, matched
 text)` (`scan_public_tree.py:755-766,788-800`); line numbers are retained only for
 audit output (`scan_public_tree.py:745-752`), so line churn alone produces no
@@ -272,20 +283,25 @@ hand-edit `scripts/public_scan_config.txt`. No real snapshot, `.env`,
 
 Each chunk records literal command output for all five measurements in
 `coverage-appendix.md`; the coordinator transcribes it from the chunk report.
-The budget record binds committed showcase size ≤25 MiB,
-showcase drift ≤30 s, focused QA suite ≤90 s, each isolated case ≤15 s, and whole
+The captured record reports 2 MiB for the committed showcase, `real 0.15` s for
+showcase drift, `real 5.92` s for the focused suite, and `real 3.04` s for the
+91-inclusive-day mature-store representative. It binds committed showcase size
+≤25 MiB, showcase drift ≤30 s, focused QA suite ≤90 s, each isolated case ≤15 s, and whole
 pytest in both chunks ≤2.5× chunk 1's pre-change local baseline, measured on its
 worker's machine at session start. Chunk 2 reuses that recorded figure without
-compounding it. The single-case measurement is the slowest `test_case_*` entry in
-the focused suite's `--durations=0` output, not the slowest entry overall; the
-showcase-materialization and perturbation tests remain. The recorded 137.69 s
-local measurement and CI's 2 min 57 s are references only. The committed showcase bytes are not replaced in either
-chunk. Task 1 raises the `pytest (backend)` job timeout from 10 to 15 minutes so
-the expanded suite retains CI headroom; that one line is the only permitted CI
-workflow edit.
+compounding it. Today no `test_case_*` method exists: the slowest focused-suite
+entry is the 2.41 s showcase-bearing catalog execution test, while the 3.04 s
+span-probe run is the mature-case representative. Once generated methods exist,
+the slowest `test_case_*` entry is the post-change single-case measurement. The
+recorded 137.69 s local measurement and CI's 2 min 57 s are references only. The
+committed showcase bytes are not replaced in either chunk. Task 1 derives the
+`pytest (backend)` timeout from the same 2.5× rule applied to CI's 2 min 57 s
+reference: 7 min 23 s for pytest plus 3 min for other steps yields 11 min, rounded
+up from 10 to 12 minutes. That one line is the only permitted CI workflow edit;
+a backend-job timeout on the ticket pull request is a budget breach.
 
 After the first representative basal case and before the remaining basal cases,
-sub-order 1 computes the sum of the representative time for each of its 9
+sub-order 1 computes the sum of the representative time for each of its 11
 remaining named basal cases plus the current focused-suite total. Sub-order 2
 does the same by family after one representative ISF case and one mature I:C case:
 3 ISF and 8 I:C cases total, subtracting the representatives already measured.
@@ -293,6 +309,12 @@ Each projection is `Σ over remaining planned cases of (measured representative
 single-case time for that family) + current focused-suite total`. A result above
 the 90-second focused-suite limit triggers the stop rule before the remaining
 recipes are authored.
+
+The captured pre-authoring proxy for chunk 2 is
+`11 × 3.04 s + 5.92 s = 39.36 s`, using the mature-store representative for all
+3 ISF and 8 I:C cases until family representatives exist. It is below 90 s with
+50.64 s headroom. The implementation gate keeps the 90 s limit and replaces this
+proxy with the measured representative for each family.
 
 On a budget breach, or whenever a worker session ends before its sub-order's
 Done-when, the worker commits source and tests on the chunk branch, does not touch

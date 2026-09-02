@@ -321,3 +321,51 @@ Review rounds on the #193 draft lock:
 Round 1 also carried two notes: correct the projection multiplier and declare each
 case's source span/density. The coordinator owns the review and posts the amended
 lock as-is after this only fix round.
+
+## #319 triage
+
+The active `qa-e2e-coverage-eras` change remains the record home. Task 4 owns
+#319; requirements 5 and 6 are its acceptance anchors. Tasks 1–3 remain checked
+and unchanged. The #189 risk contract continues to bind the final migration:
+only manufactured, generator-owned data may enter the repository; retirement
+must fail closed on a missed executable consumer; analyzer judgments remain
+produced through the production composition; and the committed showcase stays
+byte-identical.
+
+The unconditional `/scope` pass found no genuine uncertainty. Operator rulings
+already settle the 11 executable consumers resolved from the archived checklist, the additional
+already-migrated harness guidance, the historical-record exclusions, short
+agent-facing guidance, the model rung, verification, review cap, and archive
+boundary. The implementation leaves the active change in place; `/ticket
+finalize` archives it after a human merges #319.
+
+Chunked order. Two slicing traits fire: multiple deliverable artifacts (CI,
+tests, fixture retirement, and agent guidance) and lockstep copies of the safe QA
+workflow across CI, launch, harness, `AGENTS.md`, and public-tree policy. The
+nearby reviewer-memory retirement anchor agrees with separation and warns that
+browser execution is a distinct unsandboxed boundary. Two serial chunks are the
+smallest pull-request-sized shape: migration/retirement first, then guidance and
+the final executable-reference sweep. Chunk 2 is serial because `AGENTS.md` owns
+both the last retired commands and the new procedure. The coordinator alone
+ticks task 4 and records the unchanged showcase proof in
+`coverage-appendix.md`.
+
+Review depth is Full for both chunks and the whole diff: the stores and route
+tests exercise dosing-advisory QA, while CI is the only available proof for the
+Chromium legs. Workers run the fast gate and drift checks locally; they do not
+interpret sandboxed Chromium launch denial as a product failure. `AGENTS.md`
+declares no `Harden:` line, so the profile is none. No rendered surface changes,
+so the surface lifecycle is none. The review cap is one cold round, owned by the
+coordinator after this worker returns the draft.
+
+Review rounds on the #319 draft lock (the coordinator fills this table):
+
+| round | blockers | authoring | injected |
+| --- | ---: | ---: | ---: |
+| 1 | 5 | 5 | 0 |
+
+Round 1 also carried two notes. The only browser row that consumes the no-fetch
+server is the Diagnose workstation behavior ledger; the other three stub their
+data and owe no database migration. The CI replacement copies the showcase to
+`$RUNNER_TEMP/harmonic-qa.sqlite` before serving it, and the lock does not pin a
+hand-counted OpenSpec-item total.

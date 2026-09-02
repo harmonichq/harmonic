@@ -195,6 +195,8 @@ your own database — never a published one, and never a live pull.**
   uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
   ```
 
+  The same copy-then-serve command may serve an emitted case by substituting either its `$TMPDIR` scratch path or the already-pinned committed path for the `cp` source.
+
   Exercise every other model path through tests and fixtures instead.
 
   For chart-level UI revision rounds, the preferred safe surface is the

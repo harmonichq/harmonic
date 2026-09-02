@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 from ciq_autotune.store import Store
-from qa_e2e_cases import QA_CASES, materialize_case
+from qa_e2e_cases import QA_CASES, QaCase, materialize_case
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -18,12 +18,12 @@ GENERATED_BY = "scripts/gen_qa_e2e_db.py"
 NOTE = "SYNTHETIC. Manufactured QA E2E source rows; no real records."
 
 
-def generate(output: Path) -> None:
+def generate(output: Path, case: QaCase | None = None) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
-    showcase = next(case for case in QA_CASES if case.name == "showcase")
+    selected = case or next(case for case in QA_CASES if case.name == "showcase")
     with Store.open(str(output)) as store:
-        materialize_case(store, showcase)
+        materialize_case(store, selected)
         with store.conn:
             store.conn.execute(
                 "CREATE TABLE synthetic_fixture_provenance (id INTEGER PRIMARY KEY "
@@ -32,7 +32,10 @@ def generate(output: Path) -> None:
             )
             store.conn.execute(
                 "INSERT INTO synthetic_fixture_provenance VALUES (1, ?, ?, 1)",
-                (GENERATED_BY, NOTE),
+                (
+                    GENERATED_BY,
+                    NOTE if case is None else f"{NOTE} Case: {selected.name}.",
+                ),
             )
     with sqlite3.connect(output) as conn:
         conn.execute("PRAGMA journal_mode = DELETE")
@@ -62,13 +65,21 @@ def check(output: Path) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--out", type=Path, default=None)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true")
+    mode.add_argument("--case", choices=tuple(case.name for case in QA_CASES))
     args = parser.parse_args(argv)
-    output = args.out.resolve()
+    if args.case is not None and args.out is None:
+        parser.error("--case requires an explicit --out scratch path")
+    output = (args.out or DEFAULT_OUTPUT).resolve()
     if args.check:
         return 0 if check(output) else 1
-    generate(output)
+    selected = (
+        next(case for case in QA_CASES if case.name == args.case)
+        if args.case is not None else None
+    )
+    generate(output, selected)
     print(f"wrote {output}")
     return 0
 

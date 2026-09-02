@@ -219,3 +219,51 @@ mature I:C representatives `2 × 1.40 + 7 × 0.20 + 6.56 = 10.76 s`. Coordinator
 re-run: 2153 passed, 1 skipped; store bytes unchanged against `origin/main`;
 `scan-public-tree: 0 finding(s)`; Node runner 562 pass, 0 fail; strict OpenSpec
 70 passed.
+
+## Task 3 measurements (worker capture, 2026-09-02)
+
+Every measured value remains inside the pinned limit. The first dense behavioral
+case remeasurement projects `17 × 0.80 + 11.38 = 24.98 s` against the unchanged
+90-second focused-suite limit. The focused suite's slowest generated
+`test_case_*` call was 1.47 s; the correction-stacking generated case, including
+its three perturbation subtests, was 1.35 s.
+
+| Budget | Measured | Limit |
+| --- | ---: | ---: |
+| Database size | 2 MiB (`du -m`) | 25 MiB |
+| Logical drift check | 0.73 s | 30 s |
+| Focused QA suite (61 tests) | 27.51 s (`real`) | 90 s |
+| Slowest `test_case_*` | 1.47 s call (`test_case_isf_held` and `test_case_behavioral_correction_on_iob`) | 15 s |
+| Whole pytest (`real`) | 148.76 s against the chunk-1 baseline 62.93 s; ceiling 157.33 s | 2.5× baseline |
+
+The budget-relevant command output was:
+
+```text
+$ du -m mockups/qa-e2e.synthetic/harmonic.sqlite
+2\tmockups/qa-e2e.synthetic/harmonic.sqlite
+
+$ /usr/bin/time -p uv run python scripts/gen_qa_e2e_db.py --check
+qa-e2e database: current (/Users/connor/worktrees/harmonic/193/mockups/qa-e2e.synthetic/harmonic.sqlite)
+real 0.73
+user 0.20
+sys 0.51
+
+$ /usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_undercount -q -p no:cacheprovider
+.                                                                        [100%]
+1 passed in 0.58s
+real 0.80
+user 0.40
+sys 0.30
+
+$ /usr/bin/time -p uv run python -m pytest tests/test_qa_e2e_cases.py tests/test_gen_qa_e2e_db.py --durations=0 -p no:cacheprovider
+======================= 61 passed, 6 warnings in 27.33s ========================
+real 27.51
+user 17.07
+sys 10.25
+
+$ /usr/bin/time -p uv run python -m pytest
+========== 2171 passed, 1 skipped, 187 warnings in 148.40s (0:02:28) ===========
+real 148.76
+user 77.74
+sys 68.83
+```

@@ -17,6 +17,7 @@ from scripts.qa_e2e_cases import (
     ExpectedAnalyzerRows,
     ExpectedQueueRow,
     ExpectedSupport,
+    ExpectedVerdictTally,
     assert_expectation,
     execute_case,
     materialize_case,
@@ -35,6 +36,20 @@ EXPECTED_CASE_NAMES = (
     "ic-collecting", "ic-raise", "ic-lower", "ic-capped-raise",
     "ic-capped-lower", "ic-held", "ic-quiet-seven-run",
     "ic-history-register",
+    "behavioral-carb-undercount",
+    "behavioral-late-bolus",
+    "behavioral-uncaused-highs",
+    "behavioral-false-low-suppressed", "behavioral-low-no-suppressed",
+    "behavioral-lone-correction-clean",
+    "behavioral-meals-start-high",
+    "behavioral-carb-counting", "behavioral-post-meal-correction-burden",
+    "behavioral-meal-over-delivery",
+    "behavioral-correction-stacking",
+    "behavioral-over-treated-low",
+    "behavioral-correction-on-iob",
+    "behavioral-missed-meal", "behavioral-meal-bolus-short",
+    "behavioral-carb-log-fasting-exclusion",
+    "behavioral-preempted-detector",
 )
 
 
@@ -62,6 +77,31 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
+    def test_existing_cases_default_behavioral_summary_expectations(self):
+        case = next(case for case in QA_CASES if case.name == "behavioral-precedence")
+        self.assertEqual(case.expectation.verdict_tallies, {})
+        self.assertEqual(case.expectation.uncaused_highs, 0)
+        execution = _execution(case)
+        with self.assertRaises(AssertionError):
+            assert_expectation(replace(
+                case,
+                expectation=replace(
+                    case.expectation,
+                    verdict_tallies={
+                        ("carb_undercount", "meals"): ExpectedVerdictTally(
+                            denominator=0,
+                            counts={
+                                "fired": 0,
+                                "outranked": 0,
+                                "near_miss": 0,
+                                "no_data": 0,
+                                "clean": 0,
+                            },
+                        ),
+                    },
+                ),
+            ), execution)
+
     def test_catalog_names_every_declared_coverage_case(self):
         self.assertEqual(tuple(case.name for case in QA_CASES), EXPECTED_CASE_NAMES)
 
@@ -214,6 +254,46 @@ def _case_test(case):
         execution, source_span = _execution_and_span(case)
         self.assertEqual(source_span, case.source_span_days)
         assert_expectation(case, execution)
+        if case.name == "behavioral-correction-stacking":
+            target_key = ("correction_stacking", "correction_clusters")
+            target_tally = case.expectation.verdict_tallies[target_key]
+            state_row = (
+                "correction_clusters", "2024-05-24 14:40:00", "fired",
+            )
+            perturbations = (
+                replace(
+                    case.expectation,
+                    behavioral_rows=(
+                        case.expectation.behavioral_rows - {state_row}
+                    ) | {
+                        ("correction_clusters", "2024-05-24 14:40:00", "clean"),
+                    },
+                ),
+                replace(
+                    case.expectation,
+                    verdict_tallies={
+                        **case.expectation.verdict_tallies,
+                        target_key: replace(target_tally, denominator=7),
+                    },
+                ),
+                replace(
+                    case.expectation,
+                    verdict_tallies={
+                        **case.expectation.verdict_tallies,
+                        target_key: replace(target_tally, counts={
+                            **target_tally.counts,
+                            "outranked": 1,
+                            "no_data": 3,
+                        }),
+                    },
+                ),
+            )
+            for expectation in perturbations:
+                with self.subTest(expectation=expectation):
+                    with self.assertRaises(AssertionError):
+                        assert_expectation(
+                            replace(case, expectation=expectation), execution,
+                        )
 
     test.__name__ = f"test_case_{case.name.replace('-', '_')}"
     test._qa_case_name = case.name

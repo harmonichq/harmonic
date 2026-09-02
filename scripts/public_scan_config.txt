@@ -144,9 +144,9 @@ dose-ratio-baseline 171 db648ba975d4fa1b77ca49d1375ffdfb61a7f375d20306d99268853b
 dose-ratio-ack CONTEXT.md:445 | 0.2 U
 dose-ratio-ack CONTEXT.md:65 | 1 U : 36 mg/dL
 dose-ratio-ack CONTEXT.md:87 | 0.5 U
-dose-ratio-ack DESIGN.md:152 | 1 U : 36 mg/dL
-dose-ratio-ack DESIGN.md:170 | 1.23 U
-dose-ratio-ack DESIGN.md:172 | 1.23 U
+dose-ratio-ack DESIGN.md:157 | 1 U : 36 mg/dL
+dose-ratio-ack DESIGN.md:175 | 1.23 U
+dose-ratio-ack DESIGN.md:177 | 1.23 U
 dose-ratio-ack ciq_autotune/analyzers/classifiers/evidence.py:6 | 10 U
 dose-ratio-ack ciq_autotune/analyzers/ic.py:184 | 0.5 U
 dose-ratio-ack ciq_autotune/analyzers/ic.py:195 | 0.0 U
@@ -203,16 +203,16 @@ dose-ratio-ack frontend/kb.test.js:206 | 0.5 U
 dose-ratio-ack frontend/plan.js:665 | 0.001 U
 dose-ratio-ack frontend/plan.js:667 | 0.1 g/U
 dose-ratio-ack mockups/diagnose-workstation.synthetic/ic-history-events.capture.json:2288 | 6 g/U
-dose-ratio-ack openspec/specs/behavioral-layer/spec.md:19 | 0.3 U
-dose-ratio-ack openspec/specs/behavioral-layer/spec.md:95 | 10 U
-dose-ratio-ack openspec/specs/safety/spec.md:28 | 0.1 U
-dose-ratio-ack openspec/specs/safety/spec.md:29 | 3.0 U
-dose-ratio-ack openspec/specs/safety/spec.md:66 | 0.05 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:133 | 10 U
+dose-ratio-ack openspec/specs/behavioral-layer/spec.md:33 | 0.3 U
+dose-ratio-ack openspec/specs/safety/spec.md:30 | 0.1 U
+dose-ratio-ack openspec/specs/safety/spec.md:31 | 3.0 U
+dose-ratio-ack openspec/specs/safety/spec.md:72 | 0.05 U
 dose-ratio-ack scripts/gen_chart_builder_fixtures.py:163 | 0.04 U
+dose-ratio-ack tests/test_analyzer_basal.py:1006 | 0.30 U
+dose-ratio-ack tests/test_analyzer_basal.py:1007 | 0.80 U
+dose-ratio-ack tests/test_analyzer_basal.py:1010 | 0.30 U
 dose-ratio-ack tests/test_analyzer_basal.py:109 | 0.9 U
-dose-ratio-ack tests/test_analyzer_basal.py:901 | 0.30 U
-dose-ratio-ack tests/test_analyzer_basal.py:902 | 0.80 U
-dose-ratio-ack tests/test_analyzer_basal.py:905 | 0.30 U
 dose-ratio-ack tests/test_analyzer_coverage.py:437 | 0.6 U
 dose-ratio-ack tests/test_analyzer_coverage.py:752 | 6 g/U
 dose-ratio-ack tests/test_analyzer_ic.py:1019 | 10U
@@ -268,10 +268,10 @@ dose-ratio-ack tests/test_model.py:214 | 0.09U
 dose-ratio-ack tests/test_model.py:215 | 0.1U
 dose-ratio-ack tests/test_model.py:71 | 5U
 dose-ratio-ack tests/test_preempted_lows.py:97 | 0.06 U
-dose-ratio-ack tests/test_safety_backtest.py:403 | 4U
-dose-ratio-ack tests/test_safety_backtest.py:405 | 2U
-dose-ratio-ack tests/test_safety_backtest.py:416 | 2U
-dose-ratio-ack tests/test_safety_backtest.py:424 | 5U
+dose-ratio-ack tests/test_safety_backtest.py:385 | 4U
+dose-ratio-ack tests/test_safety_backtest.py:387 | 2U
+dose-ratio-ack tests/test_safety_backtest.py:398 | 2U
+dose-ratio-ack tests/test_safety_backtest.py:406 | 5U
 dose-ratio-ack tests/test_scenario_engine.py:1044 | 6 U
 dose-ratio-ack tests/test_scenario_engine.py:1045 | 4 U
 dose-ratio-ack tests/test_scenario_engine.py:1108 | 8 U

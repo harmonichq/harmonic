@@ -68,8 +68,9 @@
    of the sheet's ground. */
 .cockpit-topbar,
 .cockpit-footer {
-  /* the same desk, one step deeper — never a black bar */
-  --ck-ground: var(--wk-canvas);
+  /* one step up from the desk — the well — so the frame reads as its own
+     material where cards sit on the page directly (ADR 317); never a black bar */
+  --ck-ground: var(--wk-surface-sunken);
   --ck-panel: var(--wk-surface);
   --ck-text: var(--wk-ink);
   --ck-body: var(--wk-ink-body);
@@ -81,9 +82,9 @@
      4.5:1 as TEXT on --ck-panel above, which is the heaviest job it has (the
      Log carbs `+`, the checked theme name). Every other use is a 3:1 mark and
      follows for free. */
-  --ck-bar-signal: #dc7b42;       /* L .2960 — 5.05:1 on --ck-panel, 6.08:1 on --ck-ground */
-  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.03:1, sits 3.33:1 under the signal */
-  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.08:1 */
+  --ck-bar-signal: #dc7b42;       /* L .2977 — 5.48:1 on --ck-panel, 6.19:1 on --ck-ground (WCAG 2.x, re-measured #317) */
+  --ck-bar-signal-well: #64361e;  /* L .0550 — holds --ck-body at 6.06:1, sits 3.33:1 under the signal */
+  --ck-bar-on-signal: var(--ck-ground);  /* ink ON the signal is the bar's own ground: 6.19:1 */
   --ck-accent: var(--ck-bar-signal);
   --ck-accent-soft: var(--ck-bar-signal-well);
   background: var(--ck-ground);
@@ -329,10 +330,11 @@
 /* ---- findings-queue flavour tags (#662 term 36) --------------------------
    Markup owned by the queue build; the ink is a theme decision, so it is
    recorded here rather than left to be re-derived. The tag names a KIND of
-   finding, not a state: under Harmonic `--primary` is byte-identical to
-   `--high`, so a tag on the accent would read as clinical attention — the exact
-   collision term 36 forbids. Warm graphite is on-theme and is shared with no
-   chart mark and no clinical token; the glyph carries the differentiation. */
+   finding, not a state: `--primary` is the action orange and `--high` the
+   gold of a high reading (ADR 317), so a tag on either would read as a control
+   or as clinical attention — the exact collision term 36 forbids. Warm
+   graphite is on-theme and is shared with no chart mark and no clinical token;
+   the glyph carries the differentiation. */
 :is(.dw, .vw) .qrow .tag.setting,
 :is(.dw, .vw) .qrow .tag.habit { color: #b3a48d; }
 :is(.dw, .vw) .qrow[data-tier="noted"] .tag.setting,

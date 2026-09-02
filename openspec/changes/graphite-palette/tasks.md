@@ -2,7 +2,7 @@
 
 ## 1. Settle the values at the running app and land them (attended)
 
-- [ ] Look before asking: serve the ticket worktree through the declared
+- [x] Look before asking: serve the ticket worktree through the declared
       safe entrypoint and inspect shell, Diagnose, Verify, Day and Plan in a
       real browser at 1440×900 and 390×844 yourself, noting where each
       collision the change names actually renders; no question goes to the
@@ -13,7 +13,7 @@
       `frontend/diagnose-workstation-behavior.replay.mjs` against it and
       record their applicable story counts under `## Base story counts` in
       `design.md`.
-- [ ] Inventory every reader of `--high` (`frontend/index.html`,
+- [x] Inventory every reader of `--high` (`frontend/index.html`,
       `frontend/nav-chart.js`, `frontend/diagnose-evidence-charts.js`,
       `frontend/scenario.css`) and every surface that renders one beside an
       action control; render two or three candidate hues for `--high` on Day
@@ -23,7 +23,7 @@
       with its sanction appended to `design.md`, and in the same commit sweep
       `frontend/theme.css`'s flavour-tag rationale (the sentence saying
       `--primary` is byte-identical to `--high`) to describe the ruled state.
-- [ ] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
+- [x] Render the Verify trial ribbon at 32%/18% and at 20%/20% side by side
       on the same Trial through the Verify gate's fixture payload
       (`mockups/verify-660-story.synthetic/payload.json`, stubbed the way
       `frontend/verify-660-story-behavior.replay.mjs` stubs it) from a
@@ -34,7 +34,7 @@
       commit the chosen percentages
       in `frontend/verify-workstation.js` with the sanction appended to
       `design.md`.
-- [ ] Look at Plan and Day with the operator; move the chrome bar one step
+- [x] Look at Plan and Day with the operator; move the chrome bar one step
       only on the operator's ruling, editing the `--ck-ground` re-declaration
       inside `frontend/theme.css`'s chrome-bar role block only (`:root`'s
       `--ck-ground` in `frontend/shell.css` is the desk and does not move);
@@ -45,12 +45,12 @@
       ground drops below its recorded 6.08:1; amend the block's "never a
       black bar" comment to the ruled state. On no move, nothing in that block
       changes.
-- [ ] Regenerate the two verbatim extracts
+- [x] Regenerate the two verbatim extracts
       (`uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
       and `node mockups/finding-evidence-routing.exploration/build.mjs`) so
       both `--check` steps pass, and re-point `DESIGN.md`'s palette swatches
       and Data Semantics prose at the committed values.
-- [ ] Restore `mockups/revise-e2e.synthetic/harmonic.sqlite` to its committed
+- [x] Restore `mockups/revise-e2e.synthetic/harmonic.sqlite` to its committed
       bytes before every commit; stage by path; run the fast gate and require
       zero failures.
 

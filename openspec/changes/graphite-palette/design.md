@@ -17,9 +17,52 @@ design, and a worker cannot see what the eye rejects.
 
 **Sanctions.** Appended by the executing session, one entry per ruling:
 
-- High-glucose hue: _pending_.
-- Verify ribbon tints: _pending_.
-- Chrome bar on Plan and Day: _pending_.
+- High-glucose hue: `--high` `#e07f3f` → `#e2be4c` (gold). Connor Griffin ·
+  2026-09-02 · "Lavender looks good but I hear you on the cool tones thing. I
+  guess gold then." Rendered live on Day (1440×900, 390×844), the Diagnose
+  chart strip and the Guide worked-example peak against gold `#e2be4c`,
+  lavender `#b4a1e0` and straw `#e4cf8e`; gold follows the CGM convention
+  (yellow high, red low) and is tellable at a glance from the action orange,
+  low, in-range and every amber; its nearest neighbour is the chrome's
+  `--ck-manual` `#d9b568`, which never shares a surface with a high mark.
+- Verify ribbon tints: hold at 20%/20%; `frontend/verify-workstation.js` is
+  unchanged. Connor Griffin · 2026-09-02 · "Why are we bothering to spend
+  tokens and energy on a change that doesn't actually change anything?" Both
+  settings were rendered on the fixture's profile Trial through
+  `evidence/verify-trial-opener.mjs` (as-is, and with Before/Trial mirrored
+  via `SWAP=1` so the Trial band has area); 32/18 versus 20/20 differs by one
+  or two units per channel on the Before band and is visible only on the
+  mirrored Trial band, so the documented 32/18 step-up is retired as intent
+  rather than adopted. The Trial band mixes `--mk-primary`, the chart's data
+  green, not the action orange. The lock's "once per worktree root" for chunk
+  3 resolves to this run set, each run one invocation of
+  `openspec/changes/graphite-palette/evidence/verify-trial-opener.mjs` with
+  `FRONTEND_ROOT=<root>`, `OUT=<png>`, `TRIAL=Profile` and the `RIBBON` named
+  (`FRONTEND_ROOT`, `OUT`, `RIBBON`, `PLAYWRIGHT_MODULE` and `VENDOR_DIR` are
+  required and the opener exits 1 without one; `TRIAL` and `SWAP` are
+  optional, and a run without `TRIAL=Profile` renders the default Trial, whose
+  ribbon has no area, so every run here names it): on the base root,
+  `RIBBON=20/20` and `RIBBON=32/18`, each as-is and again with `SWAP=1`
+  (four renders); on the revision root, `RIBBON=20/20` as-is and with
+  `SWAP=1` (two renders). Mirrored renders are labelled as such.
+- Chrome bar on Plan and Day: moves one step up, from the desk `#0f0d0b` to
+  the well `#14120f` (`--ck-ground` re-declared inside `frontend/theme.css`'s
+  chrome-bar role block as `var(--wk-surface-sunken)`; `:root`'s desk is
+  untouched). Connor Griffin · 2026-09-02 · "The slightly lighter one looks
+  better I guess", judged in the running app with the base and the revision
+  open side by side on Day. Re-measured on the moved ground (WCAG 2.x
+  relative luminance, the one formula this record names): `--ck-bar-signal`
+  `#dc7b42` reads 5.48:1 on `--ck-panel`, 6.19:1 on the well (6.42:1 on the
+  desk), `--ck-bar-on-signal` is the well and reads the same 6.19:1 on the
+  signal, and `--ck-bar-signal-well` holds `--ck-body` at 6.06:1. The three
+  figures previously beside those tokens (5.05, 6.08, 6.03) were measured by a
+  method the file never named and do not reproduce under WCAG on the desk
+  either; under the named formula the moved ground clears the recorded 6.08,
+  so the ruling was not returned. Cockpit S6 and its gate amend together in
+  the gate re-base commit (sub-order 2 owns every ledger and suite), quoting
+  this sanction; the value commit above carries no ledger edit by that
+  ownership, which is what "in the same commit" under Rulings that stay
+  narrow refers to.
 
 ## ADR 317 — Clinical attention and tappable affordance do not share a hue
 
@@ -68,7 +111,13 @@ the executing session as each ruling lands and read by the gate re-base and the
 palette-only diff as their only authority. A token not listed here may not
 differ between base and revision.
 
-- _none yet_ (each entry: `--token · before `#xxxxxx` · after `#yyyyyy` · ruling`)
+- `--high` · before `#e07f3f` · after `#e2be4c` · high-glucose hue ruling,
+  2026-09-02 (above).
+- `--ck-ground` on `.cockpit-topbar`, `.cockpit-footer` and their descendants
+  · before `#0f0d0b` · after `#14120f` · chrome bar ruling, 2026-09-02
+  (above). `:root`'s `--ck-ground` (the desk) does not move.
+- `--ck-bar-on-signal` on the same elements · before `#0f0d0b` · after
+  `#14120f` · follows `--ck-ground` through `var()`; chrome bar ruling.
 
 ### Derived colour pairs
 
@@ -86,8 +135,13 @@ unexplained difference and fails the run.
 Recorded by the executing session before the first value moves, read by the
 gate re-base as the counts every leg must still report.
 
-- `frontend/cockpit-shell.browser.test.mjs` on the base: _pending_.
-- `frontend/diagnose-workstation-behavior.replay.mjs` on the base: _pending_.
+- `frontend/cockpit-shell.browser.test.mjs` on the base: 16 tests, 14 pass,
+  0 fail, 2 skipped (the two `COCKPIT_SHOTS`-gated render tests, skipped
+  whenever that variable is unset, as in CI). Run 2026-09-02 from the base
+  worktree at 34264622 with `COCKPIT_APP_ROOT` defaulting to that checkout.
+- `frontend/diagnose-workstation-behavior.replay.mjs` on the base: `app: 145
+  of 145 stories passed` (TARGET=app against the base worktree at 34264622
+  served with `--no-fetch` on the revise database, port 8318, 2026-09-02).
 
 ## Rulings that stay narrow
 

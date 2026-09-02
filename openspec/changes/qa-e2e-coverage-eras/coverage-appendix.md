@@ -1,8 +1,11 @@
 # QA E2E coverage-era budgets
 
-Tasks 1 and 2 record all five measurements before their coordinator ticks the
-task. The committed-size and drift measurements apply only to the unchanged
-showcase store.
+Tasks 1 and 2 record literal command output for all five measurements before
+their coordinator ticks the task; the coordinator transcribes that output from
+each chunk report into this file. The committed-size and drift measurements apply
+only to the unchanged showcase store. Every baseline figure in the table is
+reference-only. Only the whole-pytest baseline measured in-session, before that
+chunk's edits, is load-bearing.
 
 | Budget | Baseline measured | Limit |
 | --- | ---: | ---: |

@@ -4,9 +4,20 @@
 
 Each basal coverage case SHALL materialize manufactured source rows into one
 isolated store and SHALL run production analysis, exposure, scenario, findings,
-and I:C-history composition. `QaExpectation` SHALL compare exact whole sets of
-analyzer rows and absences, scoped and unscoped queue rows and absences, support
-values, and `asserts_move` values. ISF rest windows SHALL be keyed by ISF row
+and I:C-history composition. `AnalyzerRowKey` SHALL be analyzer family plus its
+emitted parameter key: basal clock-slot label, ISF segment, or I:C block.
+`ExpectedAnalyzerRow` SHALL contain exact `safety_status`, direction when
+applicable, `asserts_move`, and whether the value is expected omitted.
+`QaExpectation` SHALL gain
+`analyzer_rows: Mapping[AnalyzerRowKey, ExpectedAnalyzerRow]` and
+`absent_analyzer_rows`. Each case SHALL pin all three analyzer families over the
+full emitted key set so any stray stageable move outside the target family fails
+closed. `QaCase` SHALL gain
+`scoped_windows: tuple[tuple[int, int], ...]`, expressed in clock minutes and
+empty by default; `execute_case` SHALL project `whole_day()` and every declared
+window through `WindowQuery.clock`. Queue rows and absences SHALL be keyed by
+`(window | "whole_day", row key)`. `QaExpectation` SHALL also compare support
+values exactly. ISF rest windows SHALL be keyed by ISF row
 identity plus `(date, start, end)`, observed across every ISF row, and SHALL
 express an empty ISF list. Projected I:C history series SHALL contain one series
 per active identity keyed by identity; no active identity SHALL expect an empty
@@ -31,8 +42,10 @@ derive from the production request and SHALL add imported `_BOLUS_LEADIN` when a
 recipe places boluses; ISF spans SHALL also include imported
 `_ISF_DECISION_INTERVAL`; I:C spans SHALL derive from imported
 `BLOCK_WINDOW_DAYS` plus `_BOLUS_LEADIN`. `showcase` SHALL declare span 30 at its
-existing anchor and SHALL retain its recipe, rows, and expectation
-byte-identically. `setting-recommendation` SHALL declare span 12 and retain its
+existing anchor. The committed database bytes, showcase recipe, and its produced
+rows SHALL remain unchanged; its expectation SHALL be re-expressed in the
+extended contract with no observed value changing. `setting-recommendation`
+SHALL declare span 12 and retain its
 bolus-free recipe without a lead-in; `behavioral-precedence` SHALL declare span 30
 and retain its current recipe shape. The latter two SHALL derive new exact
 expectation fields from analyzer output.
@@ -46,12 +59,15 @@ argument error. A test SHALL prove that `--case <name>` without `--out` exits
 nonzero and writes nothing; an unknown name SHALL exit nonzero while naming the
 available catalog.
 The default generator and `--check` SHALL continue to materialize and compare only
-`showcase`; the committed database and showcase expectation SHALL remain
-byte-identical. One generated test method per catalog case SHALL make
-`--durations=0` report each case independently. Tests SHALL assert that the set of
-generated per-case method names equals `{case.name for case in QA_CASES}` and
-SHALL retain the exact catalog-tuple assertion so a dropped or misnamed case fails
-closed.
+`showcase`. The committed database bytes, showcase recipe, and showcase-produced
+rows SHALL remain unchanged; the expectation SHALL be re-expressed in the
+extended contract without changing any observed value. One unittest method named
+`test_case_<name with '-' replaced by '_'>` per catalog case SHALL make
+`--durations=0` report each case independently, and each generated method SHALL
+carry the original case name. Tests SHALL decode those method names and assert
+that the resulting case-name set equals `{case.name for case in QA_CASES}`. They
+SHALL retain the literal exact catalog-tuple assertion so a dropped or misnamed
+case fails closed.
 
 #### Scenario: Family constants determine source depth
 
@@ -117,8 +133,8 @@ rest windows, and one keyed I:C history series per active identity.
 
 #### Scenario: Held, blind, quiet, direction-only, and history remain distinct
 
-- **WHEN** isolated ISF and I:C cases run the unscoped whole-day and named scoped
-  projections
+- **WHEN** isolated ISF and I:C cases run the whole-day projection and the clock
+  windows named by `QaCase.scoped_windows`
 - **THEN** asserting, held, blind, quiet or absent, direction-only non-stageable,
   and active history outcomes match their exact expected rows and absences
 - **AND** direction-only ISF weaken never gains a recommendation, rank, or move

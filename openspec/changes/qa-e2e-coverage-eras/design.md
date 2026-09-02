@@ -324,12 +324,11 @@ cannot carry the per-finding, per-family denominator
 `findings_projection.py:526-552`).
 
 The unexplained-highs case also adds one literal `uncaused_highs` expectation,
-compared with the whole-window projection value. It distinguishes a high whose
-anchor did not drive from a high whose whole Episode drew no Lever: two high
-Occurrences are clean at the family level, exactly one is uncaused
-(`explore_exposures.py:57-75,176-181`; `findings_projection.py:261-280`;
-`tests/test_meal_bolus_short_attribution.py:416-435`). The existing three cases'
-new fields use empty/default values and retain every observed value unchanged.
+compared with the whole-window projection value. Both high Occurrences are clean
+at the family level and share one Episode that draws no Lever; production counts
+each uncaused high anchor, so the projected value is two
+(`ciq_autotune/explore_exposures.py:139-140`; `findings_projection.py:261-280`).
+The existing three cases' new fields retain every observed value unchanged.
 
 “Produce” below always means manufactured source rows drive the production
 analyzer, exposure builder, scenario engine, and findings projection. A recipe
@@ -350,7 +349,7 @@ comes from the bolus log through the accounting-DIA reconstruction.
 | `behavioral-correction-on-iob` | 30 | dense | `classifiers/correction_on_iob.py::classify_correction_on_iob` | A correction lands on reconstructed bolus-only IOB and the combined action reaches a low (`analyzers/scenario/model_view.py:194-225`; `analyzers/scenario/attribute.py:443-478`). | Five = 2 fired + 1 outranked + 1 near-miss + 1 clean; no-data is literal zero, plus the co-Lever tally. |
 | `behavioral-missed-meal` | 30 | dense | `classifiers/missed_meal.py::classify_missed_meal` | A from-flat meal-shaped high has no qualifying bolus and no upstream recovery cause (`analyzers/scenario/model_view.py:228-263`; `analyzers/scenario/attribute.py:544-588`). | Exact target and co-Lever six-Occurrence tallies in the reachable-band table. |
 | `behavioral-meal-bolus-short` | 30 | dense | `classifiers/meal_bolus_short.py::classify_meal_bolus_short` | A completed carb-bolus meal is followed by a high and a qualifying cleanup correction; occurrence identity remains the implicated meal (`analyzers/scenario/model_view.py:228-263`; `analyzers/scenario/evidence_population.py:169-177`). | Exact target and co-Lever six-Occurrence tallies in the reachable-band table; recurrence retains its policy-owned meal denominator separately. |
-| `behavioral-uncaused-highs` | 2 | sparse | `explore_exposures.py::build_exposures` | Two highs do not drive their Episodes, but exactly one Episode draws no Lever anywhere (`explore_exposures.py:57-75,176-181`). | High family denominator two, both anchor rows `clean`, `uncaused_highs == 1`; no finding row. |
+| `behavioral-uncaused-highs` | 2 | sparse | `explore_exposures.py::build_exposures` | Two highs do not drive their shared Episode, and that Episode draws no Lever anywhere (`explore_exposures.py:57-75,135-140`). | High family denominator two, both anchor rows `clean`, `uncaused_highs == 2` (counted per high anchor, `ciq_autotune/explore_exposures.py:139-140`); no finding row. |
 | `behavioral-false-low-suppressed` | 2 | sparse | false-low preprocessing | A `false-low` response removes the complete flagged excursion before anchors are collected (`analyzers/scenario/engine.py:780-789`; `explore_exposures.py:95-103`). | Exact whole-set rows exclude the flagged low and its rebound; no low denominator is inflated. |
 | `behavioral-low-no-suppressed` | 2 | sparse | over-treated-low prompt gate | A `low:no` answer refutes over-treated-low attribution at the matching printed low (`analyzers/scenario/model_view.py:203-224`). | The low remains in the exact roster, but `over_treated_low` is absent/fails to fire and the literal low-family tally reconciles. |
 | `behavioral-carb-log-fasting-exclusion` | 2 | dense | Fasting ISF exclusion | A separate unbolused Carb-log entry excludes its production fasting steps without becoming a meal, bolus, or modeling input (`scripts/qa_e2e_cases.py:1213-1221`; `analyzers/isf.py:218-267`). | Exact Fasting ISF row/support pins `n_steps`; removing the entry changes that literal support value while behavioral rows remain unchanged. |

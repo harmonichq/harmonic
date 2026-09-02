@@ -294,8 +294,9 @@ and SHALL fail for each mutation.
 `QaExpectation` SHALL also gain an exact whole-window `uncaused_highs` value,
 defaulted so existing cases retain their output. The `behavioral-uncaused-highs`
 case SHALL produce two high Occurrences that are both non-driver/clean at the
-family level while exactly one whole Episode has no Lever; it SHALL pin
-`uncaused_highs == 1`. The five negative cases SHALL prove, through exact whole-set
+family level in one whole Episode with no Lever; it SHALL pin
+`uncaused_highs == 2`, counted once per high anchor by
+`ciq_autotune/explore_exposures.py:139-140`. The five negative cases SHALL prove, through exact whole-set
 rows, titles, tallies, and denominators, that a false-low excursion is removed, a
 `low:no` answer suppresses over-treated-low attribution without deleting the
 printed low, an unbolused Carb-log entry reduces the exact Fasting ISF `n_steps`

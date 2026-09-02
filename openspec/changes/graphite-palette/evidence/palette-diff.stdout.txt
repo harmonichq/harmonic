@@ -1,0 +1,78 @@
+#317 palette-only evidence — base vs revision computed style
+base     http://127.0.0.1:8318/
+revision http://127.0.0.1:8317/
+moved tokens   --high, --ck-ground, --ck-bar-on-signal
+colour pairs   #e07f3f → #e2be4c · #0f0d0b → #14120f · #0f0d0b → #14120f
+
+## shell @ 1440x900
+   elements compared 557 · properties compared 323540 · admitted colour differences 677
+
+## shell @ 1280x800
+   elements compared 557 · properties compared 323540 · admitted colour differences 677
+
+## shell @ 390x844
+   elements compared 509 · properties compared 294848 · admitted colour differences 629
+
+## shell-drawer @ 1440x900
+   note (base):     drawer trigger is display:none at this width — drawer left closed on both sides
+   note (revision): drawer trigger is display:none at this width — drawer left closed on both sides
+   elements compared 557 · properties compared 323540 · admitted colour differences 677
+
+## shell-drawer @ 1280x800
+   note (base):     drawer trigger is display:none at this width — drawer left closed on both sides
+   note (revision): drawer trigger is display:none at this width — drawer left closed on both sides
+   elements compared 557 · properties compared 323540 · admitted colour differences 677
+
+## shell-drawer @ 390x844
+   elements compared 509 · properties compared 294848 · admitted colour differences 629
+
+## diagnose @ 1440x900
+   elements compared 561 · properties compared 325760 · admitted colour differences 681
+
+## diagnose @ 1280x800
+   elements compared 561 · properties compared 325760 · admitted colour differences 681
+
+## diagnose @ 390x844
+   elements compared 513 · properties compared 297068 · admitted colour differences 633
+
+## verify @ 1440x900
+   elements compared 317 · properties compared 179912 · admitted colour differences 437
+
+## verify @ 1280x800
+   elements compared 317 · properties compared 179912 · admitted colour differences 437
+
+## verify @ 390x844
+   elements compared 317 · properties compared 179912 · admitted colour differences 437
+
+## day @ 1440x900
+   elements compared 489 · properties compared 277561 · admitted colour differences 627
+
+## day @ 1280x800
+   elements compared 489 · properties compared 277561 · admitted colour differences 627
+
+## day @ 390x844
+   elements compared 464 · properties compared 263386 · admitted colour differences 601
+
+## plan @ 1440x900
+   elements compared 321 · properties compared 182132 · admitted colour differences 441
+
+## plan @ 1280x800
+   elements compared 321 · properties compared 182132 · admitted colour differences 441
+
+## plan @ 390x844
+   elements compared 321 · properties compared 182132 · admitted colour differences 441
+
+## summary
+states × viewports          18
+elements compared           8237
+computed properties read    4737084
+admitted colour differences 10450
+unexplained differences     0
+base-check mismatches       0
+states comparing nothing    0
+
+PASS: only sanctioned colour differs between base and revision.
+
+wrote /Users/connor/worktrees/harmonic/317-c3/openspec/changes/graphite-palette/evidence/palette-diff.json
+wrote /Users/connor/worktrees/harmonic/317-c3/openspec/changes/graphite-palette/evidence/palette-diff.report.txt
+exit=0

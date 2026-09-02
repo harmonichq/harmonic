@@ -23,7 +23,7 @@ colors:
   warn: "#C98A4E"
   warn-bg: "#3A2B1B"
   in-range: "#86AD78"
-  high: "#E07F3F"
+  high: "#E2BE4C"
   low: "#EC6F55"
   on-target: "#86AD78"
   on-target-soft: "#2F3A2C"
@@ -188,7 +188,7 @@ Two committed brand colors (primary, accent) carry identity; a much larger set o
 - **Warm Grey** (`--secondary`, `#A89A85`): a quieter secondary text/icon tone, used far less than `--muted` — reserve for de-emphasized-but-not-disabled content.
 
 ### Tertiary
-- **Terracotta** (`--accent`, `#D08150`): the interaction accent — bolus markers, near-miss highlights, CIQ-added indicators, and reject actions. High glucose is `--high` (see Data Semantics below), which shares `--primary`'s hex, not this token's.
+- **Terracotta** (`--accent`, `#D08150`): the interaction accent — bolus markers, near-miss highlights, CIQ-added indicators, and reject actions. High glucose is `--high` (see Data Semantics below), a gold of its own, never this token or `--primary`.
 
 ### Neutral
 - **Background** (`--bg`, `#0F0D0B`): page background — ADR 255's desk.
@@ -209,7 +209,7 @@ to data marks and burnt orange to interaction.
 ### Data Semantics (domain-specific, not brand)
 These encode meaning in glucose/insulin charts and are never used decoratively:
 - **In-range** (`--in-range`, `#86AD78`): glucose within target band.
-- **High** (`--high`, `#E07F3F`, shares Primary) / **Low** (`--low`, `#EC6F55`): glucose excursions. Distinguished from each other by hue, not just lightness.
+- **High** (`--high`, `#E2BE4C`, gold) / **Low** (`--low`, `#EC6F55`): glucose excursions. Distinguished from each other by hue, not just lightness. High takes a hue no control uses, so a high reading never looks tappable (ADR 317); the CGM convention of yellow-high, red-low is what it follows.
 - **On-target** (`--on-target`, `#86AD78`): a separate token reserved for "hit the target exactly" — currently the same shipped value as `--in-range`, so it is always paired with a shape or label per the Color-Never-Alone Rule below, never told apart from in-range by hue alone.
 - **Manual Carb** (`--manual-carb`, `#D2743E`): the user-entered carb-log token, kept visually distinct from pump-sourced bolus-carb grey by design (CONTEXT.md: Carb log vs. bolus-carbs are unrelated streams).
 - **Observed / Inferred / Not-in-data** (`--observed`, `#86AD78` / `--inferred`, `#B08858` / `--notindata`, `#8D8579`): the evidence-tier vocabulary for the scenario/walkthrough views — always paired with a shape or label, never color alone (accessibility requirement).

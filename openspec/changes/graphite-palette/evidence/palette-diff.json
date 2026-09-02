@@ -1,0 +1,5953 @@
+{
+  "base": "http://127.0.0.1:8318/",
+  "revision": "http://127.0.0.1:8317/",
+  "movedTokens": [
+    "--high",
+    "--ck-ground",
+    "--ck-bar-on-signal"
+  ],
+  "colourPairs": [
+    [
+      "#e07f3f",
+      "#e2be4c"
+    ],
+    [
+      "#0f0d0b",
+      "#14120f"
+    ],
+    [
+      "#0f0d0b",
+      "#14120f"
+    ]
+  ],
+  "elementsCompared": 8237,
+  "propertiesCompared": 4737084,
+  "admitted": 10450,
+  "unexplained": 0,
+  "baseMismatches": [],
+  "emptyComparisons": [],
+  "pass": true,
+  "results": [
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 557,
+      "propertiesCompared": 323540,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 557
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 557,
+      "propertiesCompared": 323540,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 557
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "shell",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 509,
+      "propertiesCompared": 294848,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 509
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": "drawer trigger is display:none at this width — drawer left closed on both sides",
+        "revision": "drawer trigger is display:none at this width — drawer left closed on both sides"
+      },
+      "elementsCompared": 557,
+      "propertiesCompared": 323540,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 557
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": "drawer trigger is display:none at this width — drawer left closed on both sides",
+        "revision": "drawer trigger is display:none at this width — drawer left closed on both sides"
+      },
+      "elementsCompared": 557,
+      "propertiesCompared": 323540,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 557
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "shell-drawer",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 509,
+      "propertiesCompared": 294848,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 509
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 561,
+      "propertiesCompared": 325760,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 561
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 561,
+      "propertiesCompared": 325760,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 561
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "diagnose",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 513,
+      "propertiesCompared": 297068,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 513
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "propertiesCompared": 179912,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 317
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "propertiesCompared": 179912,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 317
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 317,
+      "propertiesCompared": 179912,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 317
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 489,
+      "propertiesCompared": 277561,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 489
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "fill",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 9
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 489,
+      "propertiesCompared": 277561,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 489
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "fill",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 9
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "day",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 464,
+      "propertiesCompared": 263386,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 464
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "fill",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 9
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "plan",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 321,
+      "propertiesCompared": 182132,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 321
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "plan",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 321,
+      "propertiesCompared": 182132,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 321
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "state": "plan",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "notes": {
+        "base": null,
+        "revision": null
+      },
+      "elementsCompared": 321,
+      "propertiesCompared": 182132,
+      "tokens": {
+        "base": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e07f3f"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#0f0d0b"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#0f0d0b"
+          }
+        ],
+        "revision": [
+          {
+            "token": "--high",
+            "selector": null,
+            "value": "#e2be4c"
+          },
+          {
+            "token": "--ck-ground",
+            "selector": ".cockpit-topbar",
+            "value": "#14120f"
+          },
+          {
+            "token": "--ck-bar-on-signal",
+            "selector": null,
+            "value": "#14120f"
+          }
+        ]
+      },
+      "removed": [],
+      "added": [],
+      "refused": [],
+      "admitted": [
+        {
+          "property": "--high",
+          "base": "#e07f3f",
+          "revision": "#e2be4c",
+          "why": "moved token",
+          "count": 321
+        },
+        {
+          "property": "--ck-bar-on-signal",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "--ck-ground",
+          "base": "#0f0d0b",
+          "revision": "#14120f",
+          "why": "moved token",
+          "count": 37
+        },
+        {
+          "property": "background-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 2
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(15, 13, 11)",
+          "revision": "rgb(20, 18, 15)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "box-shadow",
+          "base": "rgb(15, 13, 11) 0px 0px 0px 1.5px",
+          "revision": "rgb(20, 18, 15) 0px 0px 0px 1.5px",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-block-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-bottom-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-end-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-inline-start-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-left-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-right-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "border-top-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "caret-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "column-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "outline-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "row-rule-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-decoration-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "text-emphasis-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-fill-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        },
+        {
+          "property": "-webkit-text-stroke-color",
+          "base": "rgb(224, 127, 63)",
+          "revision": "rgb(226, 190, 76)",
+          "why": "only listed colour pairs differ",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

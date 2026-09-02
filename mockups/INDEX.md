@@ -79,6 +79,26 @@ the removed Theme control, the boot-time gate that read the retired key, and the
 footer utilities nav reflowing around the button's absent box (ADR 304 ×3 in
 `openspec/changes/dark-only-theme/design.md`).
 
+Issue [#317](https://github.com/harmonichq/harmonic/issues/317) finishes the
+graphite palette on the running app, in an attended UI Craft revise round on
+the shipped Cockpit shell and Finding → evidence routing surfaces, with three
+operator rulings recorded as dated sanctions (ADR 317 in
+`openspec/changes/graphite-palette/design.md`): high-glucose marks leave the
+action orange for a gold of their own (`--high` `#e07f3f` → `#e2be4c`), so a
+high reading never looks tappable; the Verify trial ribbon holds at 20%/20%,
+the documented 32%/18% step-up retired as intent after both were rendered on
+one synthetic Trial and told apart by a hair; and the chrome bar moves one step
+up the ladder, from the desk to the well (`#0f0d0b` → `#14120f`), so the frame
+reads as its own material where cards sit on the page directly. Cockpit S6 is
+amended back to three grounds — desk, bar, control — with its gate pinning the
+bar to the sanctioned literal and holding it off the desk. Palette-only
+evidence — a full `getComputedStyle` diff of the ticket base against the
+revision across shell, Diagnose, Verify, Day and Plan at three viewports over
+the generated synthetic database, admitting a difference only through the
+moved-token list and colour pairs the design record names, plus before/after
+renders and the ribbon renders through the committed Trial opener — is stored
+under `openspec/changes/graphite-palette/evidence/`.
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

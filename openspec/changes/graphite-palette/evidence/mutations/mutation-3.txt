@@ -1,0 +1,34 @@
+# fail-closed mutation 3 — one hardcoded colour literal no token owns changed (the dock-floor #36312e in theme.css)
+# revision-side edit, frontend/theme.css: 'background: #36312e; }' -> 'background: #36312f; }' (reverted after the run)
+$ BASE_URL_BASE=http://127.0.0.1:8318 BASE_URL_REVISION=http://127.0.0.1:8317 OUT_DIR=<scratch> node openspec/changes/graphite-palette/evidence/palette-diff.mjs | sed -n '/^## summary/,$p'
+## summary
+states × viewports          18
+elements compared           8237
+computed properties read    4737084
+admitted colour differences 10450
+unexplained differences     9
+base-check mismatches       0
+states comparing nothing    0
+
+FAIL: see the differences above.
+
+exit=1
+
+# first unexplained entries:
+   UNEXPLAINED difference — colour pair rgb(54,49,46) → rgb(54,49,47) is not explained by a moved token
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>main.cockpit-stage:0>div.main-content:0>div:0>div:0>div.dw:0>main.panes:0>section.inspector.pane:0>div#watch-dock.watch:0
+             property: background-color
+             base:     rgb(54, 49, 46)
+             revision: rgb(54, 49, 47)
+--
+   UNEXPLAINED difference — colour pair rgb(54,49,46) → rgb(54,49,47) is not explained by a moved token
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>main.cockpit-stage:0>div.main-content:0>div:0>div:0>div.dw:0>main.panes:0>section.inspector.pane:0>div#watch-dock.watch:0
+             property: background-color
+             base:     rgb(54, 49, 46)
+             revision: rgb(54, 49, 47)
+--
+   UNEXPLAINED difference — colour pair rgb(54,49,46) → rgb(54,49,47) is not explained by a moved token
+             path:     html:0>body:0>div#app:0>div.cockpit.cockpit-shell:0>main.cockpit-stage:0>div.main-content:0>div:0>div:0>div.dw:0>main.panes:0>section.inspector.pane:0>div#watch-dock.watch:0
+             property: background-color
+             base:     rgb(54, 49, 46)
+             revision: rgb(54, 49, 47)

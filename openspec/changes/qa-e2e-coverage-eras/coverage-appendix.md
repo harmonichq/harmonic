@@ -200,3 +200,22 @@ mockups/qa-e2e.synthetic/harmonic.sqlite` exit 0; `scan-public-tree: 387
 file(s) scanned, 0 finding(s)`; Node runner 562 pass, 0 fail. Chunk 2's ceiling
 baseline is the 62.93 s figure above. Chunk 2's pre-authoring projection input:
 focused suite 6.56 s.
+
+## Chunk 2 measurements (coordinator transcription, 2026-09-02)
+
+Recorded from the chunk-2 worker report and re-run by the coordinator on the
+chunk branch at `f7e2574`. Every value is inside its limit.
+
+| Budget | Measured | Limit |
+| --- | ---: | ---: |
+| Database size | 2 MiB (`du -m`) | 25 MiB |
+| Logical drift check | 0.15 s | 30 s |
+| Focused QA suite (43 tests) | 11.38 s (`real`) | 90 s |
+| Slowest `test_case_*` | 1.19 s call (`test_case_isf_strengthen`) | 15 s |
+| Whole pytest (`real`) | 66.55 s against the chunk-1 baseline 62.93 s; ceiling 157.33 s | 2.5× baseline |
+
+Pre-authoring projections: `11 × 0.32 + 6.56 = 10.08 s`; after the ISF and
+mature I:C representatives `2 × 1.40 + 7 × 0.20 + 6.56 = 10.76 s`. Coordinator
+re-run: 2153 passed, 1 skipped; store bytes unchanged against `origin/main`;
+`scan-public-tree: 0 finding(s)`; Node runner 562 pass, 0 fail; strict OpenSpec
+70 passed.

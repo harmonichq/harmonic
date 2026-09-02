@@ -92,3 +92,4 @@ None.
 
 | Round | Blocking objections entering | Authoring change | Injected ground truth | Verdict |
 |---|---|---|---|---|
+| 1 | — | Initial chunked draft (pin 6bdb064) | Reviewer (Opus, cold, read-only): stale pin after the look-first amendment; #304-specific base check kept; four-not-five removal rules plus an un-named layout rule; base counts with no home; chunk 3 owning the review/PR task; ribbon ruling with no evidence of record (all `authoring`); notes on leg count and chrome.extracted.html | OBJECT (6 block, 2 note) |

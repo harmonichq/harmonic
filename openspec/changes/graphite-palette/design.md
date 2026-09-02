@@ -62,7 +62,15 @@ design, and a worker cannot see what the eye rejects.
   the gate re-base commit (sub-order 2 owns every ledger and suite), quoting
   this sanction; the value commit above carries no ledger edit by that
   ownership, which is what "in the same commit" under Rulings that stay
-  narrow refers to.
+  narrow refers to. Executing-session addendum, 2026-09-02: the gate's term-27
+  proof carries two mutations rather than the one re-point the shape below
+  names, both moving the top bar and footer together (the shape's re-pointed
+  mutation, styled on the top bar alone, tripped `footer === bar` first and
+  proved nothing about the new pins). The first puts both bars back on the
+  desk; the second moves them to a shade no ruling sanctioned, which is the
+  only mutation that isolates the literal pin. The gate asserts strictly more
+  than the shape names and removes nothing, so this is an addition to the
+  authorised shape, recorded here rather than folded into it.
 
 ## ADR 317 — Clinical attention and tappable affordance do not share a hue
 

@@ -17,8 +17,8 @@
  *          and nothing on this surface qualifies as large text.
  *   MARKS  3.0:1 — WCAG 1.4.11, for non-text marks and control boundaries: the
  *          verdict band (which IS the split figure and is also a control), the
- *          legend swatches, the occurrence dot token, the basal strip's cell
- *          boundaries, and the near-rule cohort ink at its shipped alpha.
+ *          occurrence dot token, the basal strip's cell boundaries, and the
+ *          near-rule cohort ink at its shipped alpha.
  *   TARGET 24x24 — WCAG 2.2 AA 2.5.8, on every control class this surface owns
  *          except the 48 basal cells, which the operator ruled stay as they are
  *          and which the manifest states as a constraint rather than a defect.
@@ -243,17 +243,22 @@ const PAIRS = [
   { id: 'F7 crumb root button', kind: 'text', state: 'population', selector: '.crumb .trail button' },
   /* ---- F7 root C: glyphs and shipped-table cells ---- */
   { id: 'F7 .crumb .chev', kind: 'text', state: 'population', selector: '.crumb .trail .chev' },
-  { id: 'F7 .ev-row .arrow', kind: 'text', state: 'finding', selector: '.ev-row .arrow' },
+  /* `.ev-row .arrow` / `.entry` / `.delta` RETIRED — be9a4093 collapsed the
+     dual-reading roster (entry → worst · Δ) to the single-value `.only` +
+     `.tier` cells below; no successor pair replaces them. */
   { id: 'F7 .ev-row .when', kind: 'text', state: 'finding', selector: '.ev-row .when' },
-  { id: 'F7 .ev-row .entry', kind: 'text', state: 'finding', selector: '.ev-row .entry' },
-  { id: 'F7 .ev-row .delta', kind: 'text', state: 'finding', selector: '.ev-row .delta' },
   { id: 'F7 .qrow .tag habit', kind: 'text', state: 'queue', selector: '.qrow .tag' },
   { id: 'F7 .fer-tier eyebrow', kind: 'text', state: 'queue', selector: '.fer-tier:not([data-tier="noted"])' },
   { id: 'F7 .fer-tier noted', kind: 'text', state: 'queue', selector: '.fer-tier[data-tier="noted"]' },
   { id: 'F7 .fer-sel .chev', kind: 'text', state: 'population', selector: '.fer-sel .chev' },
   { id: 'F7 .fer-sel-opt .ct', kind: 'text', state: 'dropdown', selector: '.fer-sel-opt .ct' },
   { id: 'F7 .ec-key-item small', kind: 'text', state: 'lens', selector: '.ec-key-item small' },
-  { id: 'F7 .fer-head-key legend text', kind: 'text', state: 'population', selector: '.fer-head-key .k' },
+  /* `.fer-head-key legend text` RETIRED — 5bc3020f/d72f5775 (#204/#258)
+     removed the ECharts legend from the shipped `renderCanvas` entirely
+     ("with the legend retired…") and the app's own head-rail legend markup
+     with it. pooled.js's `keys` (read off `chart.getOption().legend[0].data`)
+     is empty on every call now, so `.fer-head-key` never gets a `.k` child —
+     no successor pair replaces this one. */
   { id: 'F7 .lvl-cap section spine', kind: 'text', state: 'finding', selector: '.lvl-cap' },
 
   /* ---- F2: the verdict band's inactive segments ---- */
@@ -268,12 +273,11 @@ const PAIRS = [
      3:1, and forcing one would have meant a legend that lies about how soft the
      band it names is. A
      legend mark is not the plot: its 1px stroke is what identifies it, and that
-     is what is asserted. */
-  { id: 'F3 legend swatch 10-90th', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="10–90th"] i' },
-  { id: 'F3 legend swatch 25-75th', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="25–75th"] i' },
-  { id: 'F3 legend swatch Meal boluses', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="Meal boluses"] i' },
-  { id: 'F3 legend swatch Occurrences', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="Occurrences"] i' },
-  { id: 'F3 legend swatch Median', kind: 'border', state: 'population', selector: '.fer-head-key .k[data-series="Median"] i' },
+     is what is asserted.
+     RETIRED — same root cause as `.fer-head-key legend text` above
+     (5bc3020f/d72f5775, #204/#258): the legend these swatches lived in never
+     gets a child any more, so there is nothing left to measure the boundary
+     of. No successor pair replaces these five. */
 
   /* ---- F4: the occurrence dot, which is painted to a canvas ---- */
   { id: 'F4 --fer-dot on the pane ground', kind: 'token', state: 'population',

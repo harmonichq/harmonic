@@ -601,68 +601,47 @@
 .fer-coincide .linkbtn:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 /* ---------- FINDING 10 / ROUND 11, F5: the strip AND its ground ----------
-   `.lane button`'s fill is `var(--cell, var(--ck-inset))` and `.lane`'s own
-   ground is `--ck-inset` outright — a near-black in BOTH themes. Round 9 re-tuned
-   the CELLS and left the strip, which is why the two ends of the pair came out
-   inverted: on bone a black slab under the chart with bone cells punched out of
-   it (14.51:1 strip against the pane), and on the desk a strip that vanished into
-   the pane with its cells 1.37:1 above it — at which no reader can see the 48
-   cell boundaries at all. The strip's `gap: 1px` means the STRIP IS the boundary
-   between cells, so that pair is a 1.4.11 mark, not a matter of taste.
+   `.lane button`'s fill is `var(--cell, var(--ck-inset))` in the shipped app,
+   on `.lane-cell` — but the mock's `renderLane` (pooled.js, T3) never stamps
+   that class onto the buttons it builds, so the shipped `.lane-cell` rule
+   never matches here and the verdict tints (`up` / `down` / `hold` /
+   `insufficient` / `nodata`) it carries don't reach the mock's strip either;
+   every cell renders the browser's native dark-mode button fill instead,
+   measuring 2.50:1 against the strip below the 3:1 floor.
+   `.lane`'s own ground used to be `--ck-inset` outright — a near-black in the
+   since-retired light theme too. Round 9 re-tuned the CELLS and left the
+   strip, which is why the two ends of the pair came out inverted; the strip's
+   `gap: 1px` means the STRIP IS the boundary between cells, so that pair is a
+   1.4.11 mark, not a matter of taste.
 
-   One declaration each, both themes measured, both derived from the column's own
-   ink and surface so the relationship — a recessive track with legible ticks in
-   it — resolves the same way on either ground:
-     strip  `--mk-text` 8%  into `--mk-surface`  -> 1.17:1 light / 1.47:1 dark
-                                                   against the pane (recessive)
-     cell   `--mk-text` 58% into `--mk-surface`  -> 3.63:1 light / 4.39:1 dark
-                                                   against that strip
-   The verdict tints (`up` / `down` / `hold` / `insufficient` / `nodata`) are
-   shipped rules and still override `--cell`, so they stay the loudest thing in
-   the strip — which is the whole point of quieting the default cell. */
+   FIX: declare `background` directly rather than through the unconsumed
+   `--cell` custom property — no other rule in this mock ever reads `--cell`,
+   so setting it alone painted nothing. The construction is unchanged (still
+   `--mk-text` mixed into `--mk-surface`), and at the current token values it
+   already clears the floor with room:
+     strip  `--mk-text` 8%  into `--mk-surface`  -> #332f2b
+     cell   `--mk-text` 58% into `--mk-surface`  -> #9b968e, 4.54:1 against
+                                                   that strip
+   The mock's cells still don't verdict-tint (that needs `.lane-cell`, which
+   is the shipped app's class, out of bounds here) — reported as a known,
+   unchanged limitation, not fixed by this pass. */
 .fer-surface .lane { background: color-mix(in srgb, var(--mk-text) 8%, var(--mk-surface)); }
-.fer-surface .lane button { --cell: color-mix(in srgb, var(--mk-text) 58%, var(--mk-surface)); }
+.fer-surface .lane button { background: color-mix(in srgb, var(--mk-text) 58%, var(--mk-surface)); }
 .fer-surface .lane button:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 1px; }
 
-/* ---------- FINDING 5: the chart's legend and window caption, in the head ----------
-   Both used to float over the plot. The keys take the head rail beside the title
-   at the meta rank the rail already spends on `#dw-scope` and `#dw-pool`; the
-   caption is prefixed onto `#dw-scope` in surface.js, because it and the reading
-   count are two readings of one window. The swatch is a 7px square, which is the
-   ECharts legend's own `itemHeight` on this chart. */
-.fer-head-key {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px;
-  min-width: 0; flex: 1 1 auto;
-  font-size: var(--ck-micro); color: var(--mk-muted);
-}
-/* The rail is three tenants on one line — title, window meta, keys — and the
-   title is the one that must not break: it is the pane's name. It keeps its
-   words together and the keys, which are a list and wrap gracefully, take the
-   slack. Without this the h2 broke across two lines to make room for a legend,
-   which is the wrong thing giving way. */
+/* ---------- FINDING 5: the window caption, in the head ----------
+   Used to float over the plot; now prefixed onto `#dw-scope` in surface.js,
+   because it and the reading count are two readings of one window.
+   RETIRED HALF: this rail used to also carry the shipped chart's legend as
+   `.fer-head-key` chips beside the title — 5bc3020f/d72f5775 (#204/#258)
+   retired that legend from the shipped `renderCanvas` itself, so
+   `.fer-head-key` and everything scoped under it (the ROUND 11, F3 swatch
+   boundary rules among them) are gone: no element ever rendered into it. */
+/* The title must not break: it is the pane's name. It keeps its words together
+   and the window meta shrinks to give it room. Without this the h2 broke
+   across two lines. */
 .fer-surface .dw-canvas .head-rest h2 { white-space: nowrap; }
 .fer-surface .dw-canvas .head-rest #dw-scope { flex: 0 1 auto; min-width: 0; }
-.fer-head-key:empty { display: none; }
-.fer-head-key .k { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-/* ROUND 11, F3 — THE SWATCHES GET A BOUNDARY, AND KEEP THEIR FILLS.
-   Four of the five keys were between 1.23:1 and 2.84:1 against the head rail —
-   the percentile swatches inherit the PLOT's own fill alphas (18% and 38% of
-   `--primary`), and on this ground even a solid `--primary` only reaches 4.73:1
-   in light, so no alpha exists that would carry a percentile swatch to 3:1. But
-   a legend mark is not the plot: what has to clear 1.4.11 is the mark's
-   BOUNDARY, and a 1px stroke does that without touching the softness of the
-   bands the chart actually draws. `--mk-secondary` measures 6.09:1 light /
-   6.43:1 dark on the rail, and it is applied to all five keys so the rail reads
-   as one set of marks rather than two. */
-.fer-head-key .k i {
-  width: 7px; height: 7px; border-radius: 1px; box-sizing: border-box;
-  border: 1px solid var(--mk-secondary);
-  background: color-mix(in srgb, var(--mk-text) 34%, transparent);
-}
-.fer-head-key .k[data-series="Median"] i { background: var(--primary); }
-.fer-head-key .k[data-series="Occurrences"] i { background: var(--fer-dot); border-radius: 50%; }
-.fer-head-key .k[data-series="10–90th"] i { background: color-mix(in srgb, var(--primary) 18%, transparent); }
-.fer-head-key .k[data-series="25–75th"] i { background: color-mix(in srgb, var(--primary) 38%, transparent); }
 
 /* ---------- FINDING 18: one token pair for the two dot states ----------
    The shipped scatter draws at `--primary-600`, so `--fer-dot` is the recessive

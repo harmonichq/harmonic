@@ -1,45 +1,29 @@
 # Generated facts — QA E2E coverage eras
 
-## Concatenation probe
+## Isolated-span probe
 
 Command:
 
 ```sh
-env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python openspec/changes/qa-e2e-coverage-eras/evidence/concat-probe.py
+env UV_CACHE_DIR=/tmp/harmonic-192-uv-cache uv run python openspec/changes/qa-e2e-coverage-eras/evidence/span-probe.py
 ```
 
 Complete output:
 
 ```text
-recipe row counts:
-  basal_events: combined=8640 expected_sum=8640 earlier=0 showcase=8640
-  bolus_events: combined=66 expected_sum=66 earlier=32 showcase=34
-  cgm_readings: combined=17280 expected_sum=17280 earlier=8640 showcase=8640
-  profile_settings: combined=4 expected_sum=4 earlier=1 showcase=3
-isolated showcase I:C projection ids: {'assert': [], 'held': [], 'history': ['ich1_WzAsMTQ0MCwiMTIiXQ']}
-concatenated showcase I:C projection ids: {'assert': [], 'held': [], 'history': ['ich1_WzAsMTQ0MCwiMTIiXQ']}
-isolated showcase full I:C catalog: {'ich1_WzAsMTQ0MCwiMTIiXQ': 'active'}
-concatenated showcase full I:C catalog: {'ich1_WzAsMTQ0MCwiMTQiXQ': 'aged_out', 'ich1_WzAsMTQ0MCwiMTIiXQ': 'active'}
-extra full-catalog identities: {'ich1_WzAsMTQ0MCwiMTQiXQ': 'aged_out'}
-seq_num overlap: {'basal_events': [], 'bolus_events': []}
-probe measurements:
-  database_size_mib=1.80 appendix_comparable=True
-  rebuild_plus_two_compositions_seconds=9.36 appendix_comparable=False logical_match=True
-  two_cases_in_process_seconds=4.09 appendix_comparable=False
-  single_isolated_case_seconds=0.03 appendix_comparable=True
+30-day showcase observed_days: [29]
+30-day showcase I:C states: [('All day', 'collecting')]
+30-day showcase ISF row count: 1
+long-span showcase observed_days: [90]
+long-span showcase I:C states: [('All day', 'numeric')]
 ```
 
-The probe shifts a re-keyed copy of showcase's 32 carb-bearing boluses, CGM
-background, and one carb-ratio snapshot 150 days earlier. It assigns the earlier
-snapshot and dose stamps a distinct ratio of 14 g/U. Projection remains unchanged,
-but the concatenated full analyzer catalog gains an aged-out identity, reproducing
-the leakage that active-only `history_row_ids` cannot see.
-
-The probe is feasibility evidence, not the implementation's budget run. Its
-rebuild timing includes two complete `execute_case` compositions, not the
-generator's `--check`; its two-case timing invokes cases in-process, not through
-the appendix's pytest command. Only database size and the isolated-case timing are
-comparable to the appendix baselines.
+The probe materializes `showcase` unchanged, then materializes it again with the
+same dense recipe extended backward to `BLOCK_WINDOW_DAYS + _BOLUS_LEADIN`. Both
+use production `analyze`. The short store is forced to collecting; the long store
+reaches the analyzer's full observation age and a numeric state. The short store's
+single ISF row also shows that row presence alone does not exercise the prior-
+decision replay that requires the ISF family span.
 
 ## Closed document inventory
 
@@ -116,9 +100,10 @@ openspec/changes/pane-header-single-seam/design.md
 openspec/changes/preserve-diagnose-theme-context/design.md
 openspec/changes/qa-e2e-coverage-eras/coverage-appendix.md
 openspec/changes/qa-e2e-coverage-eras/design.md
-openspec/changes/qa-e2e-coverage-eras/evidence/concat-probe.py
+openspec/changes/qa-e2e-coverage-eras/evidence/span-probe.py
 openspec/changes/qa-e2e-coverage-eras/generated-facts.md
 openspec/changes/qa-e2e-coverage-eras/proposal.md
+openspec/changes/qa-e2e-coverage-eras/specs/qa-e2e-database/spec.md
 openspec/changes/qa-e2e-coverage-eras/tasks.md
 openspec/changes/retire-legacy-basal-ribbon/design.md
 openspec/changes/retire-legacy-occurrences-popup/design.md

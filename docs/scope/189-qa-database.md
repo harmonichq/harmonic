@@ -232,11 +232,12 @@ flat call on the same catalog/generator shape) agrees flat.
 The original `qa-e2e-database` change was archived by PR #312, so #192 opens
 `openspec/changes/qa-e2e-coverage-eras/` as the active successor while citing
 archived ADR 190 and ADR 194 as standing authority. The operator's 2026-09-01
-rulings settle the remaining scope: this new change is the record home; the last
-#194 cut is replaced by a follow-on ticket that owns the remaining migration,
-retirement, and agent-facing guidance; and #192 concatenates its coverage eras
-into the committed QA database while retaining isolated per-case stores. No
-genuine uncertainty remains for a `/scope` interview.
+rulings settle the remaining scope: this new change is the record home, and the
+last #194 cut is replaced by a follow-on ticket that owns the remaining migration,
+retirement, and agent-facing guidance. Round 4 reversed Q-B on analyzer evidence:
+#192 does not concatenate coverage eras; ADR 192 supersedes that clause of ADR 190,
+keeps the committed database showcase-only, and gives every coverage case its own
+family-depth store. No genuine uncertainty remains for a `/scope` interview.
 
 Chunked order. Trait fired: many analyzer-tuned artifacts in one fixture boundary;
 the roughly twenty eras exceed one implementation session even though they share
@@ -253,6 +254,6 @@ Review rounds on the #192 draft lock (the coordinator fills this table):
 | 1 | 7 | 7 | 0 |
 | 2 | 4 | 2 | 2 |
 | 3 | 5 | 1 | 4 |
+| 4 | 7 | 2 | 5 |
 
-The cap was reached with unsettled decisions, which the coordinator settled under
-operator delegation (D1–D5); one further fresh cold pass verifies the rewrite.
+Rounds 5+ verify the clean rewrite.

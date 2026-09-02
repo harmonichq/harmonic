@@ -2,28 +2,29 @@
 
 ## Why
 
-The committed QA database now supplies a dense showcase for supervised no-fetch
-UI work, but it does not yet prove the basal, ISF, and I:C states that make an
-advisory settings row actionable, held, blind, quiet, or historical. The current
-catalog also exercises scenario and I:C-history producers without describing all
-of their output row for row.
+The QA database has a dense, servable showcase, but its three-case catalog does
+not prove the analyzer states that may act, hold, remain quiet, or appear in
+history. Thin fixtures can hide safety failures by writing verdicts directly or
+checking only a subset of produced rows.
+
+Coverage cases also need family-correct history depth. The analyzer derives I:C
+observation age and ISF replay eligibility from the full store, so one fixed
+30-day source span cannot reach the required states honestly.
 
 ## What changes
 
-- Append isolated basal, ISF, and I:C coverage eras to the generator-owned QA
-  database while keeping the showcase era newest and app-visible.
-- Expand the case expectation contract to compare exact analyzer rows, scoped and
-  unscoped queue rows and required absences, support-floor evidence, and the
-  analyzer-owned `asserts_move` verdict.
-- Preserve each case as a runnable temporary store using the production analysis
-  composition and record the measured size and runtime after concatenation.
-- Keep this change active for the sibling behavioral-coverage phase and the final
-  migration, retirement, and agent-guidance phase.
+- Extend the catalog expectation contract to exact analyzer rows, queue rows and
+  absences, support values, staging verdicts, all-row ISF rest windows, and one
+  projected history series per active I:C identity.
+- Give each case an imported-constant-derived source span and add analyzer-fed
+  basal, ISF, and I:C cases, including explicit collecting and history cases.
+- Add generator support for emitting any named case to an uncommitted,
+  provenance-stamped store for no-fetch UI work.
+- Keep the committed QA database showcase-only and byte-identical while recording
+  fixed size and runtime budgets for the expanded isolated suite.
 
-## Boundaries
+## What stays out
 
-This change adds manufactured fixture recipes, expectations, generator
-invariants, and their tests. It does not alter production analyzers, safety
-policy, findings projection, the fixed production windows, browser surfaces, or
-the no-fetch server. It does not retire revise-e2e or migrate its remaining
-consumers.
+#193 owns behavioral and verdict-band eras. A follow-on ticket owns the remaining
+migration, revise-e2e retirement, and agent guidance for maintaining eras and using
+case stores during UI decisions.

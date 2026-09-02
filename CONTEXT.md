@@ -17,6 +17,18 @@ The backend platform this project pulls a user's pump/CGM history from. The only
 data source — no Tidepool, no Nightscout.
 _Avoid_: t:connect (that's the consumer app, not the data feed), reportsfacade, BFF.
 
+## Synthetic QA evidence
+
+**Coverage era**:
+One named manufactured case recipe and its literal analyzer-produced expectation.
+
+**Case store**:
+The uncommitted, isolated SQLite output for one coverage era.
+
+**Showcase**:
+The one committed, dense QA database whose recent 30-day view supports whole-app
+UI exploration.
+
 ## Basal (the tunable schedule)
 
 **Basal profile**:

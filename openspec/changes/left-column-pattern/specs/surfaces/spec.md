@@ -24,7 +24,7 @@ as the marked current frame.
 ### Requirement: The charts drawer is a picker that opens minimized
 
 The charts drawer SHALL open hidden and SHALL never return on its own; a field
-shrinking past the dock floor MAY hide it, and a field growing back SHALL NOT
+shrinking past the dock floor SHALL hide it, and a field growing back SHALL NOT
 re-dock it. Picking a chart from the drawer — by cell click, by Enter on a
 cell, from a Watching tail cell, or from the explorer — SHALL seat and drill
 that chart and put the drawer away. The bring-up control, the show-every-chart
@@ -47,17 +47,28 @@ control and chart fullscreen SHALL remain.
 ### Requirement: Every findings row carries one served headline
 
 Every row the findings projection publishes, in every register, SHALL carry a
-`headline`: a factual sentence composed only from facts the row carries or the
-analyzer output its evidence endpoint reads, never stating a count, direction
-or verdict the analyzer did not publish, and identical across reruns of the
-same window. The Diagnose stage card's title SHALL render that headline
-verbatim and SHALL be its only home: the chart SHALL NOT draw it, drawer cells
-SHALL keep the short nameplate, and no drill level SHALL repeat it.
+`headline`: a factual sentence composed only from the row's own fields or from
+the evidence its chart's endpoint serves, read through the same module
+functions that endpoint calls inside the cached projection, never stating a
+count, direction or verdict the analyzer did not publish, and identical across
+reruns of the same window.
 
 #### Scenario: A held slot's headline names the withheld move
 
 - **WHEN** the projection publishes a basal row in the `held` register
 - **THEN** its headline states that no change is recommended for the slot and why, from the served hold reason
+
+#### Scenario: Every register carries a headline
+
+- **WHEN** the projection publishes rows in the `assert`, `finding`, `held`, `blind` and `history` registers
+- **THEN** every row carries a non-empty headline drawn from served facts only
+
+### Requirement: The stage card's title is the headline's only home
+
+The Diagnose stage card's title SHALL render the active row's served headline
+verbatim and SHALL be its only home on the surface: the chart SHALL NOT draw
+it, drawer and explorer cells SHALL keep the short nameplate, and no drill
+level SHALL repeat it.
 
 #### Scenario: The stage title is the headline's only home
 

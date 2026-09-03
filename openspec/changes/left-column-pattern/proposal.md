@@ -9,8 +9,7 @@ the rank-1 chart there, but three clauses of the composition still read the
 other way on the running app:
 
 - backing out of a drill leaves the last drilled chart on the stage instead of
-  returning the rank-1 finding's chart, and an explorer pick moves the stage
-  without opening its finding;
+  returning the rank-1 finding's chart;
 - the basal card's headline sentence is drawn inside the chart as a 21px
   graphic while the card's own title is a 10px micro-caps nameplate, and no
   other family has a sentence at all;
@@ -27,8 +26,8 @@ register rather than templated by an agent.
 
 - The stage holds the active finding's chart: rank-1 while the findings queue
   shows, the drilled finding while drilled, and back to rank-1 when the reader
-  leaves the drill. An explorer pick opens that finding's drill; no reader
-  override of the rule survives. The stage chart keeps its drawer cell as the
+  leaves the drill. Every chart pick, the explorer's included, opens that
+  finding's drill; no reader override of the rule survives. The stage chart keeps its drawer cell as the
   marked current frame (ADR 215 stands).
 - The charts drawer is a picker: it opens minimized, it never comes back up on
   its own (the grow-back re-dock is retired), and picking a chart from it —

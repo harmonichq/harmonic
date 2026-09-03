@@ -22,8 +22,9 @@
       register, tier, priority, direction, `asserts_move`, support, span,
       window, annotation or hold reason, the tile's direction counts and
       exclusions, the case file's claimed-of-denominator and consequence
-      facts. Stamp it `_generated_by` + `_note` as synthetic; hand the operator
-      the same rows as a spreadsheet outside the repo (never committed).
+      facts. Stamp it `_generated_by` + `_note` as synthetic provenance; hand
+      the operator the same rows as a spreadsheet outside the repo (never
+      committed).
 - [ ] The operator writes an example headline per row in the sheet; commit the
       returned sheet as `evidence/headlines.authored.csv`, and from it record
       under `## Headline templates` in `design.md` one dated sanction per
@@ -31,17 +32,22 @@
       naming its template with slots that name served fields only. Iterate
       until basal, correction factor, carb ratio and event comparison each
       have a ruled template for every register they publish (`assert`,
-      `finding`, `held`, `blind`, `history`), and the shape rule in ADR 306
+      `finding`, `held`, `blind`, `history` — history sentences are consumed
+      by #302's queue rows, never by the stage), and the shape rule in ADR 306
       (headlines) holds for each.
 
 ## 2. Serve the headline
 
 - [ ] `FindingsProjection.project` stamps `headline` on every row from the
       templates recorded under `## Headline templates` in `design.md`,
-      composed only from facts the row already carries or the same analyzer
-      output the row's evidence endpoint reads (counts, sign, support, hold
-      reason); nothing here recounts raw records or re-derives a direction,
-      floor or threshold. Add `headline` to `ExpectedQueueRow` in
+      composed only from the row's own fields or from the evidence its
+      chart's endpoint serves, read through the same functions those endpoints
+      call in `ciq_autotune/basal_night_evidence.py`,
+      `ciq_autotune/isf_rest_window_evidence.py`,
+      `ciq_autotune/ic_block_evidence.py` and
+      `ciq_autotune/finding_case_file.py`, inside the cached projection with
+      no second cache; nothing here recounts raw records or re-derives a
+      direction, floor or threshold. Add `headline` to `ExpectedQueueRow` in
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
       must fail first on the missing field.
@@ -56,17 +62,19 @@
       `frontend/findings-projection-mirror.test.js` deep-compares clean,
       regenerate `mockups/diagnose-workstation.synthetic/` through
       `.claude/qa/gen_synthetic_fixtures.py` so `scripts/check_demo_fixtures.py`
-      passes, and run `node mockups/finding-evidence-routing.exploration/build.mjs --check`,
-      regenerating its `data.json` if the queue rows moved it.
+      passes, regenerate the two explorations that read those fixtures
+      (`node mockups/finding-evidence-routing.exploration/build.mjs` for its
+      `data.json`; `uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
+      for its `index.html`) and run both `--check`s.
 - [ ] Fast gate and every `--check` green on the chunk branch; stage by path.
 
 ## 3. The left-column pattern in the shipped app
 
 - [ ] Stage rule: leaving a drill for the findings queue re-seats the rank-1
       chart (`popTo` seats through the same resolution the reconcile uses —
-      the rank-1 event chart, else the first ranked candidate); an explorer
-      pick routes through `chartClickRoute` and so drills its finding, closing
-      the explorer. Node tests in `frontend/diagnose-canvas-state.test.js`
+      the rank-1 event chart, else the first ranked candidate). An explorer
+      pick already drills through `showChartInspector`; its redundant
+      `focusChart` goes. Node tests in `frontend/diagnose-canvas-state.test.js`
       fail first on today's behavior (stage keeps the drilled chart after pop).
 - [ ] Drawer as picker: `dockWant` boots `'hidden'`; the resize crossing rule
       only hides (shrinking past `DOCK_FLOOR` hides, growing back never

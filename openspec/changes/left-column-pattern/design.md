@@ -49,10 +49,15 @@ publishes, every register included (`assert`, `finding`, `held`, `blind`,
 `history`). The frontend renders it verbatim and composes no sentence of its
 own: the stage card's title is the headline's only home, the basal chart deck
 loses the headline it drew, drawer cells keep the short nameplate, and no
-drill level repeats it. A headline is composed only from facts the row already
-carries or the same analyzer output its evidence endpoint reads; it never
-recounts raw records and never states a count, direction or verdict the
-analyzer did not publish.
+drill level repeats it. A headline is composed only from the row's own fields or
+from the evidence its chart's endpoint serves — basal night evidence, ISF
+rest-window evidence, I:C block evidence, the Finding case file — read through
+the same module functions those endpoints call, inside the cached projection
+(no second cache, no recount of raw records); it never states a count,
+direction or verdict the analyzer did not publish. A template's slots name
+those served facts and nothing else. `history` rows are authored and served
+like every other register: the stage never shows one (a history row publishes
+no chart), and their consumer is #302's queue rows, which read the same field.
 
 The sentences are the operator's, not an agent's. Before any template is
 written, the executing session generates a facts sheet over the QA showcase

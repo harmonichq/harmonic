@@ -2580,9 +2580,14 @@ function boot(root, data, callbacks, signal) {
         ...(canvasLayout.focalId ? [canvasLayout.focalId] : [])])], canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
     /* THE DOCK'S STATE IS RESOLVED, NEVER STORED. `dockWant` is what the reader
-       asked for; the measured field decides what that can mean right now, so a
-       viewport that forced the dock away gives it back on its own. Fullscreen
-       is a state of its own and outranks all three. */
+       asked for; the measured field only decides what a docked want can mean
+       right now — floating over the spotlight where the field is short. It
+       never gives a forced-away dock back on its own (ADR 306): a resize
+       crossing below the dock floor drops `dockWant` itself to `'hidden'`
+       before this call, and growing back past the floor leaves it there.
+       Operator, 2026-09-02, on the drawer that used to grow back: "It opens
+       minimized. It never comes back up on its own. That path is archived.
+       It's gone." Fullscreen is a state of its own and outranks all three. */
     const dock = dockView(fieldHeight, dockWant);
     /* CHART FULLSCREEN OUTRANKS THE EXPLORER: it is opened FROM it, and two big
        states cannot both hold the pane. */

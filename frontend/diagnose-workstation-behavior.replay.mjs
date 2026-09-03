@@ -3620,7 +3620,7 @@ export const S130 = async (page) => {
   const focal = await focalId(page);
   ok(focal, 'S130 the stage holds a chart while the queue shows');
   is(await page.locator(`#level .qrow[data-id="${rows[0].id}"]`).count(), 1, 'S130 the rank-1 row is listed');
-  is(focal, rows[0].event_chart ? `finding:${rows[0].event_chart.lever}` : focal,
+  is(focal, rows[0].event_chart ? `finding:${rows[0].event_chart.lever}` : rows[0].id,
     'S130 the stage holds the rank-1 finding\'s chart');
 };
 

@@ -1,0 +1,53 @@
+_generated_by,openspec/changes/left-column-pattern/evidence/headline-facts.py (facts) · headlines ruled by Connor Griffin in the attended round of 2026-09-03
+_note,synthetic — rows are the served QA stores in headline-facts.csv; the example_headline column is the operator-ruled template rendered against each row from the row's own served fields
+source,window_key,id,register,parameter,kind,tier,example_headline
+showcase,overnight,basal:180-240,assert,basal_rate,setting,next_in_line,Delivered below the programmed rate across 30 steady nights. One cautious step down is supported at this time.
+showcase,overnight,isf,held,isf,setting,noted,"29 fasting nights measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover this window. No direction is called."
+showcase,overnight,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
+showcase,morning,isf,held,isf,setting,noted,"29 fasting nights measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover this window. No direction is called."
+showcase,morning,basal:480-630,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+showcase,morning,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
+showcase,afternoon,finding:over_treated_low,finding,,habit,worth_a_look,"Showed up in 1 of 4 lows in this window, and ranks."
+showcase,afternoon,finding:meal_bolus_short,finding,,habit,noted,"Showed up in 1 of 32 meals in this window, not often enough to rank yet."
+showcase,afternoon,isf,held,isf,setting,noted,"29 fasting nights measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover this window. No direction is called."
+showcase,afternoon,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
+showcase,evening,finding:correction_on_iob,finding,,habit,noted,"Showed up in 1 of 1 lows in this window, not often enough to rank yet."
+showcase,evening,isf,held,isf,setting,noted,"29 fasting nights measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover this window. No direction is called."
+showcase,evening,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
+showcase,all,basal:180-240,assert,basal_rate,setting,next_in_line,Delivered below the programmed rate across 30 steady nights. One cautious step down is supported at this time.
+showcase,all,finding:over_treated_low,finding,,habit,worth_a_look,"Showed up in 1 of 5 lows in this window, and ranks."
+showcase,all,finding:correction_on_iob,finding,,habit,noted,"Showed up in 1 of 5 lows in this window, not often enough to rank yet."
+showcase,all,finding:meal_bolus_short,finding,,habit,noted,"Showed up in 1 of 32 meals in this window, not often enough to rank yet."
+showcase,all,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
+basal-insufficient-seven-night,overnight,basal:180-210,held,basal_rate,setting,noted,Delivered 0.48 U/h across 7 steady nights against 0.60 programmed. Not enough nights of steady data yet to point one way.
+basal-insufficient-seven-night,overnight,basal:0-180,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+basal-insufficient-seven-night,overnight,basal:210-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+basal-insufficient-seven-night,morning,basal:210-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+basal-insufficient-seven-night,afternoon,basal:210-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+basal-insufficient-seven-night,evening,basal:210-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+isf-strengthen,overnight,isf,assert,isf,setting,next_in_line,"Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."
+isf-strengthen,overnight,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+isf-strengthen,morning,isf,assert,isf,setting,next_in_line,"Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."
+isf-strengthen,morning,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+isf-strengthen,afternoon,isf,assert,isf,setting,next_in_line,"Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."
+isf-strengthen,afternoon,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+isf-strengthen,evening,isf,assert,isf,setting,next_in_line,"Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."
+isf-strengthen,evening,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+isf-strengthen,all,isf,assert,isf,setting,next_in_line,"Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."
+ic-raise,overnight,ic:0,assert,carb_ratio,setting,next_in_line,Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.
+ic-raise,overnight,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-raise,morning,ic:0,assert,carb_ratio,setting,next_in_line,Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.
+ic-raise,morning,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-raise,afternoon,ic:0,assert,carb_ratio,setting,next_in_line,Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.
+ic-raise,afternoon,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-raise,evening,ic:0,assert,carb_ratio,setting,next_in_line,Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.
+ic-raise,evening,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-raise,all,ic:0,assert,carb_ratio,setting,next_in_line,Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.
+ic-held,overnight,ic:0,held,carb_ratio,setting,noted,Measured 8 g/U across 8 meal runs against 10 programmed. Held at current: pre-empted low.
+ic-held,overnight,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-held,morning,ic:0,held,carb_ratio,setting,noted,Measured 8 g/U across 8 meal runs against 10 programmed. Held at current: pre-empted low.
+ic-held,morning,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-held,afternoon,ic:0,held,carb_ratio,setting,noted,Measured 8 g/U across 8 meal runs against 10 programmed. Held at current: pre-empted low.
+ic-held,afternoon,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
+ic-held,evening,ic:0,held,carb_ratio,setting,noted,Measured 8 g/U across 8 meal runs against 10 programmed. Held at current: pre-empted low.
+ic-held,evening,basal:0-1440,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."

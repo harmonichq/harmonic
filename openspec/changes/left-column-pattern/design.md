@@ -140,7 +140,13 @@ Griffin · 2026-09-03):
   run ("a merged run names no single programmed rate"), so the basal templates
   read the row's own values, never the first member's evidence, and a row whose
   `current` is null takes the rate-free form below, which states only the served
-  direction or lean and the steady-night count.
+  direction or lean and the steady-night count. The same form applies when the
+  row's `estimate.value` is null with `current` set — a harm-forced move on
+  zero clean nights (`HARM_LOWER`) publishes a programmed rate but no delivered
+  estimate, so there is no delivered value to set against it (sub-order 2 found
+  the state in the QA catalog's `basal-recurring-low-gate` shape; recorded here
+  under the operator's 2026-09-03 delegation, "I'll take your recommendations
+  going forth").
 
 - basal · assert — Connor Griffin · 2026-09-03 · "Delivered 0.48 U/h across 30
   steady nights against 0.60 programmed. One cautious step down is supported at

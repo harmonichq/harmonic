@@ -3667,13 +3667,25 @@ export const S132 = async (page) => {
     await queueRow.click();
     await settle(page, 450);
     is(await focalId(page), id, `S132 drilling ${id} seats its chart`);
-    is((await page.locator('#tile-focal .tile-head h3').textContent()).trim(), row.headline,
-      `S132 the stage title is ${id}'s served headline, verbatim`);
+    /* The stage card styles the served headline's first sentence as the title
+       and the rest as the subtitle (nameplate ruling, 2026-09-03); the two
+       together are the served string verbatim, and the slot nameplate is the
+       card's kicker. */
+    const stageText = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+      kicker: node.querySelector('.tile-kicker')?.textContent.trim() ?? null,
+      title: node.querySelector('h3')?.textContent.trim() ?? '',
+      sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+    }));
+    is([stageText.title, stageText.sub].filter(Boolean).join(' '), row.headline,
+      `S132 the stage title and subtitle together are ${id}'s served headline, verbatim`);
+    ok(stageText.kicker && stageText.kicker !== row.headline,
+      `S132 ${id}'s stage kicker is the short nameplate, not the headline`);
     ok(!(await page.locator('#level').innerText()).includes(row.headline),
       `S132 no drill level repeats ${id}'s headline`);
     await raiseDock(page);
     const cellTitle = (await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-head h3`).textContent()).trim();
     ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s drawer cell keeps the short nameplate`);
+    is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s drawer cell carry the same short nameplate`);
     await page.locator('#tile-focal .tile-fullscreen').click();
     await page.waitForSelector('#tile-field[data-fullscreen-tile]');
     is((await page.locator('#full-title').textContent()).trim(), cellTitle,

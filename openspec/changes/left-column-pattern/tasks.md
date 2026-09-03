@@ -67,7 +67,7 @@
       thin-read sentence, never a failed projection. Sweep the
       `ciq_autotune/api.py` comment (near "findings never reads the key")
       that says the findings projection never reads the retained steps. The
-      catalog dump is 31 `ExpectedQueueRow` literals; nothing here recounts raw records or re-derives a
+      catalog dump is 31 `ExpectedQueueRow` literals. Nothing here recounts raw records or re-derives a
       direction, floor or threshold. Add `headline` to `ExpectedQueueRow` in
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
@@ -120,15 +120,20 @@
 - [ ] Stage nameplate: descriptors gain a `headline` beside `title`, never
       in place of it; the focal tile's `.tile-head h3` renders `headline`
       verbatim while `mini` and `grid` cells and the fullscreen header
-      (`#full-title`) keep `title`, `nameFor`'s short name. Sweep the two
-      comments that narrate the retired grow-back rule
-      (`frontend/diagnose-workstation.js` at the `dockWant` declaration and
-      the resize observer). Delete the basal option builder's local headline
+      (`#full-title`) keep `title`, `nameFor`'s short name. Sweep the three
+      comments that state a rule this change reverses
+      (`frontend/diagnose-workstation.js` at the `dockWant` declaration, the
+      resize observer, and the mini-click clause inside `activateTile`),
+      quoting the operator's picker sanction from `design.md` in their
+      place. Delete the basal option builder's local headline
       composition and the deck graphic that drew it, reclaiming the deck's
       vertical budget for the plot, and keep the middle rank's compact verdict
       and tally lines; `frontend/diagnose-evidence-charts.test.js` pins the
       deck without a headline. No drill level renders the headline.
-- [ ] Fast gate green; `node mockups/finding-evidence-routing.exploration/build.mjs --check`
+- [ ] Fast gate green; the four blocks `build.mjs` extracts from
+      `diagnose-workstation.js` (`WINDOWS`, `fmtDate`, `VERDICT_BAND_KEY`,
+      `VERDICT_RESIDUE_KEY`) untouched;
+      `node mockups/finding-evidence-routing.exploration/build.mjs --check`
       and `uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check`
       still pass.
 

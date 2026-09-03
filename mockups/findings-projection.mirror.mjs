@@ -586,8 +586,8 @@ function basalHeadline(r) {
   const current = r.current;
   const estimateValue = (r.estimate || {}).value;
   if (current != null && estimateValue != null) {
-    return `Delivered ${fmtUh(estimateValue)} U/h across ${supportN} steady `
-      + `nights against ${fmtUh(current)} programmed. ${annotation}.`;
+    return `${annotation}. Delivered ${fmtUh(estimateValue)} U/h across `
+      + `${supportN} steady nights against ${fmtUh(current)} programmed.`;
   }
   // A merged run names no single programmed rate, and a slot with no
   // delivered estimate (a harm-forced move on zero clean nights) has nothing
@@ -595,16 +595,16 @@ function basalHeadline(r) {
   // served direction or lean and the steady-night count.
   if (r.register === 'assert') {
     const word = belowAbove(r.direction);
-    return `Delivered ${word} the programmed rate across ${supportN} steady `
-      + `nights. ${annotation}.`;
+    return `${annotation}. Delivered ${word} the programmed rate across `
+      + `${supportN} steady nights.`;
   }
   const lean = r.lean;
   if (lean == null) {
-    return `${supportN} steady nights delivered so far. ${annotation}.`;
+    return `${annotation}. ${supportN} steady nights delivered so far.`;
   }
   const word = belowAbove(lean);
-  return `Delivered ${word} the programmed rate across ${supportN} steady `
-    + `nights. ${annotation}.`;
+  return `${annotation}. Delivered ${word} the programmed rate across `
+    + `${supportN} steady nights.`;
 }
 
 function isfHeadline(r) {
@@ -616,12 +616,12 @@ function isfHeadline(r) {
   if (r.register === 'assert') {
     const estimateValue = fmtPrecision((r.estimate || {}).value);
     const annotation = sentenceCase(r.annotation || '');
-    return `Measured 1 U : ${estimateValue} mg/dL across ${supportN} fasting `
-      + `nights against 1 U : ${current} mg/dL programmed. ${annotation}.`;
+    return `${annotation}. Measured 1 U : ${estimateValue} mg/dL across `
+      + `${supportN} fasting nights against 1 U : ${current} mg/dL programmed.`;
   }
   const reason = r.reason || '';
-  return `${supportN} fasting nights measured against 1 U : ${current} `
-    + `mg/dL programmed, but ${reason}. No direction is called.`;
+  return `No direction is called: ${reason}. ${supportN} fasting nights `
+    + `measured against 1 U : ${current} mg/dL programmed.`;
 }
 
 function icHeadline(r) {
@@ -630,14 +630,14 @@ function icHeadline(r) {
   const estimateValue = fmtPrecision((r.estimate || {}).value);
   if (r.register === 'assert') {
     const annotation = sentenceCase(r.annotation || '');
-    return `Measured ${estimateValue} g/U across ${supportN} meal runs `
-      + `against ${current} programmed. ${annotation}.`;
+    return `${annotation}. Measured ${estimateValue} g/U across ${supportN} `
+      + `meal runs against ${current} programmed.`;
   }
   const rawReason = r.reason || '';
   const reason = rawReason.endsWith(HELD_AT_CURRENT_SUFFIX)
     ? rawReason.slice(0, -HELD_AT_CURRENT_SUFFIX.length) : rawReason;
-  return `Measured ${estimateValue} g/U across ${supportN} meal runs `
-    + `against ${current} programmed. Held at current: ${reason}.`;
+  return `Held at current: ${reason}. Measured ${estimateValue} g/U across `
+    + `${supportN} meal runs against ${current} programmed.`;
 }
 
 function findingHeadline(r) {
@@ -645,10 +645,10 @@ function findingHeadline(r) {
   // (transcribed from `_finding_rows`'s `by_lever` construction), so this
   // is never null.
   const appearance = r.appearances[0];
-  const rankClause = RANKING_TIERS.has(r.tier)
-    ? ', and ranks' : ', not often enough to rank yet';
-  return `Showed up in ${appearance.n} of ${appearance.m} ${appearance.noun} `
-    + `in this window${rankClause}.`;
+  const verdict = RANKING_TIERS.has(r.tier)
+    ? "Ranks among this window's findings" : 'Not ranked in this window yet';
+  return `${verdict}. Showed up in ${appearance.n} of ${appearance.m} `
+    + `${appearance.noun} in this window.`;
 }
 
 function historyHeadline(r) {
@@ -658,9 +658,9 @@ function historyHeadline(r) {
   const programmedNow = fmtPrecision(r.programmed_now);
   const regimeEnd = r.regime_end;
   const regimeEndDate = regimeEnd ? regimeEnd.split('T')[0] : regimeEnd;
-  return `Measured ${estimateValue} g/U across ${support} meal runs while `
-    + `${pastSetting} was programmed, until ${regimeEndDate}. Programmed `
-    + `now: ${programmedNow}.`;
+  return `Past setting, no change suggested. Measured ${estimateValue} g/U `
+    + `across ${support} meal runs while ${pastSetting} was programmed, `
+    + `until ${regimeEndDate}. Programmed now: ${programmedNow}.`;
 }
 
 function headlineFor(r) {

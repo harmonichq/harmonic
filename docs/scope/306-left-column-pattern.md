@@ -213,4 +213,8 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   history templates have no renderer here; two comments narrate the retired
   rule and DESIGN.md's no-hero wording; `data-tail-head` is an attribute, and
   the event-comparison replay breaks on the put-away not the boot. All
-  eleven reproduced; fixed in the pinned source and the order. Injected: 0.
+  eleven reproduced; fixed in the pinned source (6911d946) and the order.
+  Injected: 0. Panel 2's re-check was lost: the coordinator's order rewrite
+  aborted on a string mismatch, the reviewer was resumed against the stale
+  order and stopped, and the adapter refuses to resume a stopped worker. The
+  next fresh cold pass is panel 3, the cap.

@@ -2747,19 +2747,38 @@ function boot(root, data, callbacks, signal) {
          header below — keeps `descriptor.title`, `nameFor`'s short name; only
          the focal seat renders the served headline verbatim. */
       const editorial = seat.seat === 'focal' && Boolean(descriptor.headline);
-      title.textContent = editorial ? descriptor.headline : descriptor.title;
       if (editorial) {
-        /* IDENTITY FIRST, THEN THE ASSESSMENT (nameplate ruling, Connor
-           Griffin · 2026-09-03: "the facts are the most important part. The
-           graph supports the facts, the sentence embellishes them"). The short
-           nameplate leads the stage card as its kicker; the sentence follows
-           one step down; the chart's own subtitle (`tile-meta`) is not drawn
-           here, because the plot's axis labels and legend already carry it. */
+        /* THE SLOT NAME IS FURNITURE, AND THE HEADLINE'S OWN FIRST SENTENCE IS
+           THE TITLE (nameplate ruling, Connor Griffin · 2026-09-03: "the user
+           has picked that slot … it needs to not be the star of the show …
+           flip the order of the sentences to have the second sentence lead").
+           The short nameplate stays at the top-left as a label, the headline's
+           first sentence takes Title rank, and the remainder follows at Body
+           rank. The chart's own subtitle (`tile-meta`) is not drawn here,
+           because the plot's axis labels and legend already carry it.
+
+           THE SPLIT IS PRESENTATION OVER A VERBATIM SERVED STRING (ADR 306):
+           the frontend composes no sentence, reorders nothing and rewords
+           nothing — it cuts the served headline at its first sentence end and
+           sets the two halves at two ranks. Which half is the verdict is the
+           server's business; when a headline is one sentence there is no
+           subtitle at all. */
+        const cut = descriptor.headline.indexOf('. ');
+        const lead = cut === -1 ? descriptor.headline : descriptor.headline.slice(0, cut + 1);
+        const rest = cut === -1 ? '' : descriptor.headline.slice(cut + 2).trim();
+        title.textContent = lead;
         const kicker = document.createElement('span');
         kicker.className = 'tile-kicker';
         kicker.textContent = descriptor.title;
         id.append(kicker, title);
+        if (rest) {
+          const sub = document.createElement('span');
+          sub.className = 'tile-sub';
+          sub.textContent = rest;
+          id.append(sub);
+        }
       } else {
+        title.textContent = descriptor.title;
         const meta = document.createElement('span');
         meta.className = 'tile-meta';
         meta.textContent = descriptor.meta || entry.meta(descriptor.mode);

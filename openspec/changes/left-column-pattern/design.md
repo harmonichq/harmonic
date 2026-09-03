@@ -234,15 +234,35 @@ lands) drawing the concepts at the 1440 and 1280 card widths:
   outranks identity, meta repeats the plot), B (one micro-caps line runs long
   on other families), C (chip). Cost accepted: none of the plot; the bar is
   66px at 1440 against the first pass's 59px.
-- Round 2 · the typography — (pending: options K-a/K-b/K-c drawn in
-  `wireframe/nameplate.html`; recommended K-a). Round 1 ruled which line leads;
-  round 2 rules how far apart the two lines sit, after the first pass set them
-  less than a pixel and one weight step apart. K-a puts the identity at the
-  Stat tier (1.4rem/800, tabular, at the 1.5rem cap) and the sentence at Body
-  (.9rem/400, muted); K-b keeps the sentence largest and leads with a stamped
-  micro-caps plate over a hairline; K-c runs the sentence in after the identity
-  as a headword on one baseline. The CSS in the tree carries K-a pending the
-  ruling.
+- Round 2 · the typography — Connor Griffin · 2026-09-03 · "the user has picked
+  that slot. You do not need to then make the title the most important thing …
+  the name of the slot is more important than anything else — it's not right.
+  It needs to be like furniture, like a chip or a tile on the card, something
+  like that … it needs to not be the star of the show. I think we need to flip
+  the order of the sentences to have the second sentence lead. So bigger text,
+  stronger font … Title is 'one cautious step down and supported at this time'.
+  And the subtitle would be 'delivered below the programmed rate across 30'."
+  The stage card's head is three ranks, top to bottom: the slot nameplate
+  (`descriptor.title`) as furniture in the app's own Label style (700,
+  `--ck-micro`, `--ck-track`, uppercase, `--mk-muted`) — no border, no chip,
+  because a chip was already declined in round 1; the served headline's first
+  sentence as the card title at Title rank (1.14rem/700, -.01em, `--mk-text`,
+  wrapping); the remainder of that same headline as the subtitle at Body rank
+  (.9rem/400, line-height 1.45, `--mk-muted`, wrapping), omitted entirely when
+  the headline is one sentence. The chart's `tile-meta` stays off the stage,
+  round 1's ruling standing. The frontend cuts the served string at its first
+  sentence end and composes nothing: which sentence carries the verdict is the
+  server's business, and the flip to verdict-first is recorded under
+  "## Headline templates" by the coordinator. Computed bar ≈ 72px at the 1440
+  focal width with a one-line title and subtitle, ≈ 96px at 1280 where the
+  correction-factor title takes a second line, ≈ 48px for a one-sentence
+  headline. Rejected this round: K-a (identity at Stat rank — makes the slot
+  name the star), K-b (identity as a stamped plate over a hairline — still
+  spends the head's structure on the slot name), K-c (identity as a headword
+  leading the sentence — same fault on one baseline). Rejected in round 1: A
+  (meta repeats the plot), B (one micro-caps line runs long on other families),
+  C (chip). This ruling supersedes round 1's rank ordering: identity no longer
+  leads the head, it furnishes it, and the assessment is the title.
 
 ## QA budgets
 

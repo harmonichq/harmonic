@@ -411,42 +411,40 @@
   > .tile-focal > .evidence-tile > .tile-rail {
   grid-row: 2;
 }
-/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306), AND THE
-   IDENTITY LEADS IT. Nameplate ruling, Connor Griffin · 2026-09-03 (recorded
-   under `## Nameplate rulings` in the change's design.md): the short nameplate
-   is the card's kicker and the served sentence follows it, wrapping; the
-   chart's subtitle is not drawn on the stage. The distance between the two
-   lines is round 2 of the same revise round and is not yet sanctioned — what
-   stands below is the recommended concept (K-a, the identity at Stat rank and
-   the sentence at Body rank), drawn against K-b and K-c in the change's
-   throwaway `wireframe/nameplate.html`. Mini, grid and the
-   fullscreen header (`#full-title`) keep `descriptor.title` in the one-line
-   micro-caps nameplate, unchanged. Both lines sit under the No-Hero Rule's
-   1.5rem ceiling (DESIGN.md). */
+/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306), AND THE SLOT
+   NAME IS FURNITURE. Nameplate ruling, Connor Griffin · 2026-09-03 (recorded
+   under `## Nameplate rulings` in the change's design.md): the user picked the
+   slot from the queue, so its name is not the star of the show — it stays at
+   the head's top-left in the app's own Label style, borrowing the same
+   `--ck-micro` / `--ck-track` / `--mk-muted` the workstation's other labels
+   wear rather than restating a size. The headline's first sentence takes Title
+   rank under it and the remainder follows at Body rank; the chart's subtitle
+   is not drawn on the stage. Mini, grid and the fullscreen header
+   (`#full-title`) keep `descriptor.title` in the one-line micro-caps
+   nameplate, unchanged. Every line here sits under the No-Hero Rule's 1.5rem
+   ceiling (DESIGN.md), and the title is a card title, never a page headline. */
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-id {
-  display: flex; flex-direction: column; gap: 3px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-kicker {
-  /* THE IDENTITY IS THE CARD'S STAT. One step and one weight apart, the two
-     lines read as one block with a bolder first line; the rank has to be
-     visible from across the desk, so the nameplate takes the Stat tier the
-     system already reserves for the one thing a card is about — at the
-     No-Hero Rule's 1.5rem ceiling, never over it. Tabular figures because a
-     slot name is half clock ("Basal 03:00 to 04:00"). */
-  color: var(--mk-text); font-size: 1.4rem; font-weight: 800; line-height: 1.15;
-  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+  color: var(--mk-muted); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; line-height: 1.2;
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-head h3 {
   overflow: visible; text-overflow: clip; white-space: normal;
-  text-transform: none; letter-spacing: normal; text-shadow: none;
-  /* THE ASSESSMENT IS PROSE, AND PROSE HAS A RANK HERE. It is not shrunk to
-     make room for the plate; it is set at the Body rank every other sentence
-     in the app wears, one ink step back, so the facts lead and the sentence
-     still reads as a sentence. */
-  color: var(--mk-muted); font-size: .9rem; font-weight: 400; line-height: 1.5;
+  text-transform: none; letter-spacing: -.01em; text-shadow: none;
+  color: var(--mk-text); font-size: 1.14rem; font-weight: 700; line-height: 1.3;
+}
+/* THE REST OF THE SERVED SENTENCE, AT THE RANK PROSE HAS HERE. It is the same
+   string, cut at its first sentence end, so it is set as prose and not as a
+   caption: Body rank, muted, wrapping. */
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile .tile-sub {
+  color: var(--mk-muted); font-size: .9rem; font-weight: 400; line-height: 1.45;
+  white-space: normal;
 }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) { padding: 0; }
 .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile > .tile-head {

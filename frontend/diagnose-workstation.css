@@ -414,9 +414,12 @@
 /* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306), AND THE
    IDENTITY LEADS IT. Nameplate ruling, Connor Griffin · 2026-09-03 (recorded
    under `## Nameplate rulings` in the change's design.md): the short nameplate
-   is the card's kicker at the app's Title style — the same style every card
-   header wears — and the served sentence follows one step down, full ink,
-   wrapping; the chart's subtitle is not drawn on the stage. Mini, grid and the
+   is the card's kicker and the served sentence follows it, wrapping; the
+   chart's subtitle is not drawn on the stage. The distance between the two
+   lines is round 2 of the same revise round and is not yet sanctioned — what
+   stands below is the recommended concept (K-a, the identity at Stat rank and
+   the sentence at Body rank), drawn against K-b and K-c in the change's
+   throwaway `wireframe/nameplate.html`. Mini, grid and the
    fullscreen header (`#full-title`) keep `descriptor.title` in the one-line
    micro-caps nameplate, unchanged. Both lines sit under the No-Hero Rule's
    1.5rem ceiling (DESIGN.md). */
@@ -426,14 +429,24 @@
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-kicker {
-  color: var(--mk-text); font-size: 1.02rem; font-weight: 700; line-height: 1.2;
-  letter-spacing: -.01em;
+  /* THE IDENTITY IS THE CARD'S STAT. One step and one weight apart, the two
+     lines read as one block with a bolder first line; the rank has to be
+     visible from across the desk, so the nameplate takes the Stat tier the
+     system already reserves for the one thing a card is about — at the
+     No-Hero Rule's 1.5rem ceiling, never over it. Tabular figures because a
+     slot name is half clock ("Basal 03:00 to 04:00"). */
+  color: var(--mk-text); font-size: 1.4rem; font-weight: 800; line-height: 1.15;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
 }
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-head h3 {
   overflow: visible; text-overflow: clip; white-space: normal;
   text-transform: none; letter-spacing: normal; text-shadow: none;
-  color: var(--mk-text); font-size: 17px; font-weight: 500; line-height: 1.3;
+  /* THE ASSESSMENT IS PROSE, AND PROSE HAS A RANK HERE. It is not shrunk to
+     make room for the plate; it is set at the Body rank every other sentence
+     in the app wears, one ink step back, so the facts lead and the sentence
+     still reads as a sentence. */
+  color: var(--mk-muted); font-size: .9rem; font-weight: 400; line-height: 1.5;
 }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) { padding: 0; }
 .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile > .tile-head {

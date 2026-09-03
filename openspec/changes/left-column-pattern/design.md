@@ -234,6 +234,15 @@ lands) drawing the concepts at the 1440 and 1280 card widths:
   outranks identity, meta repeats the plot), B (one micro-caps line runs long
   on other families), C (chip). Cost accepted: none of the plot; the bar is
   66px at 1440 against the first pass's 59px.
+- Round 2 · the typography — (pending: options K-a/K-b/K-c drawn in
+  `wireframe/nameplate.html`; recommended K-a). Round 1 ruled which line leads;
+  round 2 rules how far apart the two lines sit, after the first pass set them
+  less than a pixel and one weight step apart. K-a puts the identity at the
+  Stat tier (1.4rem/800, tabular, at the 1.5rem cap) and the sentence at Body
+  (.9rem/400, muted); K-b keeps the sentence largest and leads with a stamped
+  micro-caps plate over a hairline; K-c runs the sentence in after the identity
+  as a headword on one baseline. The CSS in the tree carries K-a pending the
+  ruling.
 
 ## QA budgets
 

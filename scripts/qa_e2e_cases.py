@@ -1671,7 +1671,7 @@ QA_CASES = (
             _isf_rows(_ISF_STRENGTHEN),
             {("isf", "Fasting"): ExpectedSupport(n_steps=2784)},
             {
-                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "strengthen", True, "This slot doesn't have enough evidence to recommend a change either way."),
+                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "strengthen", True, "Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."),
             },
             frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
             frozenset({"ISF · strengthen"}),
@@ -1689,7 +1689,7 @@ QA_CASES = (
             _isf_rows(_ISF_DIRECTION_ONLY_WEAKEN),
             {("isf", "Fasting"): ExpectedSupport(n_steps=2716)},
             {
-                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "weaken", False, "This slot doesn't have enough evidence to recommend a change either way."),
+                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "weaken", False, "Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Fasting data points toward stronger corrections, but recurring correction-linked lows call for weaker corrections."),
             },
             frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
             frozenset({"ISF · weaken"}),

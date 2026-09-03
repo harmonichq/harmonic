@@ -222,9 +222,9 @@ showcase drift (≤30 s), focused QA suite (≤90 s), slowest generated case
 | --- | ---: | ---: |
 | Committed showcase database size | 2 MiB (`du -m`) | 25 MiB |
 | Showcase logical drift check | 0.15 s (`gen_qa_e2e_db.py --check`) | 30 s |
-| Focused QA suite (63 tests, `test_qa_e2e_cases.py` + `test_gen_qa_e2e_db.py`) | 15.83 s (`real`) | 90 s |
+| Focused QA suite (63 tests, `test_qa_e2e_cases.py` + `test_gen_qa_e2e_db.py`) | 15.71 s (`real`) | 90 s |
 | Slowest `test_case_*`/catalog call | 2.41 s call (`test_showcase_exact_rest_windows_and_history_series_are_load_bearing`) | 15 s |
-| Whole pytest (`real`) | 67.09 s against the chunk-1 baseline 62.93 s; ceiling 157.33 s (2190 passed, 1 skipped) | 2.5× baseline |
+| Whole pytest (`real`) | 65.66 s against the chunk-1 baseline 62.93 s; ceiling 157.33 s (2187 passed, 1 skipped) | 2.5× baseline |
 
 Every value is inside its limit; none raised.
 

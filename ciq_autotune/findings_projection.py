@@ -63,7 +63,6 @@ from .ic_history import decode_history_id
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
-from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -181,7 +180,7 @@ class FindingsProjection:
         rows.sort(key=_sort_key)
         _assign_tiers(rows)
         for row in rows:
-            row["headline"] = _headline_for(row, self._analysis)
+            row["headline"] = _headline_for(row)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
@@ -690,14 +689,10 @@ def _title(name: str, register: str, direction: Optional[str]) -> str:
 #
 # Templates are the operator's, ruled in the attended round of 2026-09-03 and
 # recorded under `## Headline templates` in `design.md`. A slot names only a
-# served row field (or, for correction factor, the ISF rest-window evidence used
-# purely as a coherence check — never as a slot source, per that ADR). Nothing
-# here recounts raw records or re-derives a direction, floor, threshold or
-# priority; a held or blind sentence reads the served hold reason verbatim.
-
-ISF_THIN_READ_HEADLINE = (
-    "This slot doesn't have enough evidence to recommend a change either way."
-)
+# served row field — every family's, correction factor included: the ISF
+# rest-window evidence is never a source. Nothing here recounts raw records or
+# re-derives a direction, floor, threshold or priority; a held or blind
+# sentence reads the served hold reason verbatim.
 
 _BASAL_BLIND_HEADLINE = (
     "No steady nights delivered against the programmed rate here, "
@@ -768,23 +763,11 @@ def _basal_headline(row: dict) -> str:
             f"steady nights. {annotation}.")
 
 
-def _isf_headline(row: dict, analysis: dict) -> str:
-    """Correction factor's headline, gated on the ISF rest-window evidence read.
-
-    The rendered sentence is composed entirely from the row's own served fields
-    (never a slot from the evidence payload itself); the read exists to prove the
-    retained analysis this row came from is still coherent —
-    :func:`~ciq_autotune.isf_rest_window_evidence.prepare_isf_rest_window_evidence`
-    raises on a missing ISF row and on a retained step/window count that
-    disagrees with the analyzer's own counts, which a crashed cache rebuild or an
-    upgrade can leave behind. Any such failure falls back to the thin-read
-    sentence rather than composing a headline the retained payload can no
-    longer support.
-    """
-    try:
-        prepare_isf_rest_window_evidence(analysis)
-    except Exception:
-        return ISF_THIN_READ_HEADLINE
+def _isf_headline(row: dict) -> str:
+    """Correction factor's headline: every slot is a row field (`support.n`,
+    `current`, `estimate.value`, `annotation`, `reason`) — the ISF rest-window
+    evidence is never a source, so this reads only the row, like every other
+    family."""
     support_n = (row.get("support") or {}).get("n")
     current = _fmt_precision(row.get("current"))
     if row["register"] == "assert":
@@ -811,11 +794,12 @@ def _ic_headline(row: dict) -> str:
             f"against {current} programmed. Held at current: {reason}.")
 
 
-def _finding_headline(row: dict) -> Optional[str]:
-    appearances = row.get("appearances") or []
-    if not appearances:
-        return None
-    appearance = appearances[0]
+def _finding_headline(row: dict) -> str:
+    # `_finding_rows` never publishes a row without one: `by_lever[lever]` is
+    # only created in the same iteration that appends its first appearance
+    # (`findings_projection.py`'s `_finding_rows`), and the recurrence branch
+    # replaces the list with exactly one element, never empties it.
+    appearance = row["appearances"][0]
     rank_clause = (", and ranks" if row.get("tier") in _RANKING_TIERS
                    else ", not often enough to rank yet")
     return (f"Showed up in {appearance['n']} of {appearance['m']} "
@@ -834,7 +818,7 @@ def _history_headline(row: dict) -> str:
             f"Programmed now: {programmed_now}.")
 
 
-def _headline_for(row: dict, analysis: dict) -> Optional[str]:
+def _headline_for(row: dict) -> str:
     """The one served sentence for this row's own family and register."""
     if row["kind"] == "habit":
         return _finding_headline(row)
@@ -844,7 +828,7 @@ def _headline_for(row: dict, analysis: dict) -> Optional[str]:
     if parameter == "basal_rate":
         return _basal_headline(row)
     if parameter == "isf":
-        return _isf_headline(row, analysis)
+        return _isf_headline(row)
     if parameter == "carb_ratio":
         return _ic_headline(row)
     raise ValueError(f"no headline template for parameter {parameter!r}")  # pragma: no cover

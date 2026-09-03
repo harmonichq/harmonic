@@ -25,7 +25,6 @@ from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _EVENT_CHART_FAMILIES,
-    ISF_THIN_READ_HEADLINE,
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
@@ -1297,7 +1296,7 @@ class HeadlineTest(unittest.TestCase):
 
     # --- correction factor (ISF) --------------------------------------------
 
-    def _isf_analysis(self, *, register, retained_steps=True, mismatched=False):
+    def _isf_analysis(self, *, register):
         direction = "strengthen" if register == "assert" else None
         row = {
             "parameter": "isf", "current": 40.0, "recommended": 24.0,
@@ -1315,16 +1314,14 @@ class HeadlineTest(unittest.TestCase):
                 "rescue-carb history doesn't cover this window"
             ),
         }
-        analysis = {"window_days": 30, "basal": [], "ic_blocks": [], "isf": [row]}
-        if retained_steps:
-            n_steps = 1 if mismatched else 2
-            analysis["_isf_rest_window_steps"] = [
-                {"insulin_acted": 0.1, "dbg": 1.0, "window_id": "rest:2026-06-01"}
-                for _ in range(n_steps)
-            ]
-        return analysis
+        # No `_isf_rest_window_steps`: the harness shape. `execute_case` and
+        # `scripts/gen_findings_projection_fixtures.py` never stamp that key —
+        # only the live `/api/analyze` path does (`ciq_autotune/api.py`'s
+        # `canonical_pooled_analysis`) — and the ISF templates below read no
+        # slot from it, so its absence must never change the served sentence.
+        return {"window_days": 30, "basal": [], "ic_blocks": [], "isf": [row]}
 
-    def test_correction_factor_assert_headline_with_coherent_evidence(self):
+    def test_correction_factor_assert_headline_with_no_retained_steps(self):
         row = self._project(self._isf_analysis(register="assert"))[0]
         self.assertEqual(row["register"], "assert")
         self.assertEqual(
@@ -1342,38 +1339,6 @@ class HeadlineTest(unittest.TestCase):
             "0 fasting nights measured against 1 U : 40 mg/dL programmed, "
             "but rescue-carb history doesn't cover this window. No "
             "direction is called.")
-
-    def test_correction_factor_falls_back_to_thin_read_when_steps_are_absent(self):
-        analysis = self._isf_analysis(register="assert", retained_steps=False)
-        rows = self._project(analysis)
-        self.assertEqual(rows[0]["headline"],
-                         "This slot doesn't have enough evidence to "
-                         "recommend a change either way.")
-
-    def test_correction_factor_falls_back_to_thin_read_when_steps_disagree(self):
-        analysis = self._isf_analysis(register="held", mismatched=True)
-        rows = self._project(analysis)
-        self.assertEqual(rows[0]["headline"],
-                         "This slot doesn't have enough evidence to "
-                         "recommend a change either way.")
-
-    def test_isf_thin_read_never_fails_the_whole_projection(self):
-        # A retained findings-history artifact whose ISF evidence disagrees with
-        # the analyzer's counts must not crash /api/diagnose/findings — only
-        # the ISF row's own headline degrades.
-        analysis = self._isf_analysis(register="assert", retained_steps=False)
-        analysis["basal"] = [{
-            "slot": 0, "asserts_move": True, "direction": "lower",
-            "current": 0.60, "recommended": 0.48,
-            "estimate": {"value": 0.48}, "days": 30,
-            "annotation": "one cautious step down is supported at this time",
-        }]
-        rows = self._project(analysis)
-        isf_row = next(row for row in rows if row["parameter"] == "isf")
-        basal_row = next(row for row in rows if row["parameter"] == "basal_rate")
-        self.assertEqual(isf_row["headline"], ISF_THIN_READ_HEADLINE)
-        self.assertTrue(basal_row["headline"])
-        self.assertNotEqual(basal_row["headline"], ISF_THIN_READ_HEADLINE)
 
     # --- carb ratio (I:C) ----------------------------------------------------
 
@@ -1462,8 +1427,6 @@ class HeadlineTest(unittest.TestCase):
             "ic_blocks": [ic_assert, ic_held],
             "isf": self._isf_analysis(register="assert")["isf"],
         }
-        analysis["_isf_rest_window_steps"] = self._isf_analysis(
-            register="assert")["_isf_rest_window_steps"]
         projection, _history = _with_history(
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
                                _scenarios=gen.scenarios()))

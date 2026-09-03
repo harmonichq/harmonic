@@ -508,44 +508,41 @@ function historyRows(analysis, query) {
 // --- headlines: one served sentence per row (#306 ADR "Every findings row
 // carries one served headline"), transcribed from
 // ciq_autotune/findings_projection.py's own headline templates — never
-// re-invented here. A slot names only a served row field (or, for correction
-// factor, the ISF rest-window evidence coherence check below, never a slot
-// source).
+// re-invented here. A slot names only a served row field — every family's,
+// correction factor included: the ISF rest-window evidence is never a
+// source.
 
-const ISF_THIN_READ_HEADLINE = "This slot doesn't have enough evidence to "
-  + 'recommend a change either way.';
 const BASAL_BLIND_HEADLINE = 'No steady nights delivered against the '
   + 'programmed rate here, so nothing to say either way.';
 const HELD_AT_CURRENT_SUFFIX = '; held at current';
 const RANKING_TIERS = new Set(['next_in_line', 'worth_a_look']);
 
-const fmtUh = (value) => (value == null ? null : value.toFixed(2));
+/** Python's `f"{value:.{digits}f}"` rounds half to even at the printed
+    digit; `Number.prototype.toFixed` rounds half away from zero, so a
+    naive transcription would silently disagree with the app on exact
+    midpoints (0.25 at one decimal: app "0.2", `toFixed` "0.3"). This
+    rounds in the same round-half-even mode before formatting. */
+function roundHalfEven(value, digits) {
+  const factor = 10 ** digits;
+  const scaled = value * factor;
+  const floor = Math.floor(scaled);
+  const diff = scaled - floor;
+  const EPSILON = 1e-9;
+  let rounded;
+  if (Math.abs(diff - 0.5) < EPSILON) {
+    rounded = floor % 2 === 0 ? floor : floor + 1;
+  } else {
+    rounded = Math.round(scaled);
+  }
+  return rounded / factor;
+}
+const fmtUh = (value) => (value == null ? null : roundHalfEven(value, 2).toFixed(2));
 const fmtPrecision = (value) => {
   if (value == null) return null;
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  return Number.isInteger(value) ? String(value) : roundHalfEven(value, 1).toFixed(1);
 };
 const belowAbove = (word) => (word == null ? null : (word === 'raise' ? 'above' : 'below'));
 const sentenceCase = (text) => (text ? text[0].toUpperCase() + text.slice(1) : text);
-
-/** ciq_autotune.isf_rest_window_evidence.prepare_isf_rest_window_evidence,
-    transcribed as a boolean coherence check: true only when the retained
-    `_isf_rest_window_steps` agree with the analyzer's own published counts.
-    Any disagreement (or a missing ISF row) means the retained analysis this
-    row came from is no longer trustworthy, so the headline falls back to the
-    thin-read sentence rather than composing one from it. */
-function isfRestWindowEvidenceCoherent(analysis) {
-  const isfRows = analysis.isf;
-  if (!Array.isArray(isfRows)) return false;
-  const row = isfRows.find((r) => r.parameter === 'isf');
-  if (!row) return false;
-  const evidence = row.evidence || {};
-  const steps = analysis._isf_rest_window_steps || [];
-  const qualifyingSteps = evidence.n_steps ?? 0;
-  if (qualifyingSteps !== steps.length) return false;
-  const qualifyingWindows = (row.estimate || {}).n_clusters ?? 0;
-  const windowIds = new Set(steps.map((step) => step.window_id));
-  return qualifyingWindows === windowIds.size;
-}
 
 function basalHeadline(r) {
   if (r.register === 'blind') return BASAL_BLIND_HEADLINE;
@@ -575,8 +572,10 @@ function basalHeadline(r) {
     + `nights. ${annotation}.`;
 }
 
-function isfHeadline(r, analysis) {
-  if (!isfRestWindowEvidenceCoherent(analysis)) return ISF_THIN_READ_HEADLINE;
+function isfHeadline(r) {
+  // Every slot is a row field (`support.n`, `current`, `estimate.value`,
+  // `annotation`, `reason`) — the ISF rest-window evidence is never a
+  // source, so this reads only the row, like every other family.
   const supportN = (r.support || {}).n;
   const current = fmtPrecision(r.current);
   if (r.register === 'assert') {
@@ -607,9 +606,10 @@ function icHeadline(r) {
 }
 
 function findingHeadline(r) {
-  const appearances = r.appearances || [];
-  if (!appearances.length) return null;
-  const appearance = appearances[0];
+  // findRows in this mirror never publishes a row without an appearance
+  // (transcribed from `_finding_rows`'s `by_lever` construction), so this
+  // is never null.
+  const appearance = r.appearances[0];
   const rankClause = RANKING_TIERS.has(r.tier)
     ? ', and ranks' : ', not often enough to rank yet';
   return `Showed up in ${appearance.n} of ${appearance.m} ${appearance.noun} `
@@ -628,11 +628,11 @@ function historyHeadline(r) {
     + `now: ${programmedNow}.`;
 }
 
-function headlineFor(r, analysis) {
+function headlineFor(r) {
   if (r.kind === 'habit') return findingHeadline(r);
   if (r.register === 'history') return historyHeadline(r);
   if (r.parameter === 'basal_rate') return basalHeadline(r);
-  if (r.parameter === 'isf') return isfHeadline(r, analysis);
+  if (r.parameter === 'isf') return isfHeadline(r);
   if (r.parameter === 'carb_ratio') return icHeadline(r);
   throw new Error(`no headline template for parameter ${r.parameter}`);
 }
@@ -707,7 +707,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     else row.tier = 'worth_a_look';
   }
   for (const row of rows) {
-    row.headline = headlineFor(row, analysis);
+    row.headline = headlineFor(row);
   }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };

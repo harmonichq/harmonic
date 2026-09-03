@@ -227,9 +227,64 @@ that it lives in, and since we're giving the spotlight more space, we have
 room for that now." #317 set the precedent that a look-and-feel ruling is the
 operator's on the running app.
 
-**Nameplate rulings.** Appended by the executing session:
+**Nameplate rulings.** Appended by the executing session from the attended
+revise round of 2026-09-03, run on the base (port 8307) and the revision (port
+8308) served side by side from the same synthetic showcase, with a throwaway
+wireframe under `wireframe/` (marked not lockable, deleted when the change
+lands) drawing the concepts at the 1440 and 1280 card widths:
 
-- (pending the attended revise round)
+- Round 1 · the bar the headline lives in — Connor Griffin · 2026-09-03 · ruled
+  A′, "identity first": "I like A, but … the kicker should take priority in the
+  sentence because the kicker is factual … the sentence is more of the
+  assessment"; "the facts are the most important part. The graph supports the
+  facts, the sentence embellishes them." The short nameplate (`descriptor.title`)
+  leads the stage card as a kicker at the app's Title style (700, 1.02rem,
+  -.01em), the served sentence follows at 17px/500 in full ink, wrapping under
+  the 1.5rem cap; the chart's subtitle (`tile-meta`) is dropped from the stage
+  bar — "What is the meta doing? Is it doing anything that just reading the
+  chart wouldn't do?" — because the plot's axis labels and legend already carry
+  it, and the tile rule is one fact in one place. The slot-as-chip concept was
+  declined ("overuse of chips feels cheap"), and the sentence keeps its weight
+  by rank, not size: "I don't necessarily think the sentence loses the weight.
+  I just think we're redistributing the weight." Rejected: A (assessment
+  outranks identity, meta repeats the plot), B (one micro-caps line runs long
+  on other families), C (chip). Cost accepted: none of the plot; the bar is
+  66px at 1440 against the first pass's 59px.
+- Round 2 · the typography — Connor Griffin · 2026-09-03 · "the user has picked
+  that slot. You do not need to then make the title the most important thing …
+  the name of the slot is more important than anything else — it's not right.
+  It needs to be like furniture, like a chip or a tile on the card, something
+  like that … it needs to not be the star of the show. I think we need to flip
+  the order of the sentences to have the second sentence lead. So bigger text,
+  stronger font … Title is 'one cautious step down and supported at this time'.
+  And the subtitle would be 'delivered below the programmed rate across 30'."
+  The stage card's head is three ranks, top to bottom: the slot nameplate
+  (`descriptor.title`) as furniture in the app's own Label style (700,
+  `--ck-micro`, `--ck-track`, uppercase, `--mk-muted`) — no border, no chip,
+  because a chip was already declined in round 1; the served headline's first
+  sentence as the card title at Title rank (1.14rem/700, -.01em, `--mk-text`,
+  wrapping); the remainder of that same headline as the subtitle at Body rank
+  (.9rem/400, line-height 1.45, `--mk-muted`, wrapping), omitted entirely when
+  the headline is one sentence. The chart's `tile-meta` stays off the stage,
+  round 1's ruling standing. The frontend cuts the served string at its first
+  sentence end and composes nothing: which sentence carries the verdict is the
+  server's business, and the flip to verdict-first is recorded under
+  "## Headline templates" by the coordinator. Computed bar ≈ 72px at the 1440
+  focal width with a one-line title and subtitle, ≈ 96px at 1280 where the
+  correction-factor title takes a second line, ≈ 48px for a one-sentence
+  headline. Rejected this round: K-a (identity at Stat rank — makes the slot
+  name the star), K-b (identity as a stamped plate over a hairline — still
+  spends the head's structure on the slot name), K-c (identity as a headword
+  leading the sentence — same fault on one baseline). Rejected in round 1: A
+  (meta repeats the plot), B (one micro-caps line runs long on other families),
+  C (chip). This ruling supersedes round 1's rank ordering: identity no longer
+  leads the head, it furnishes it, and the assessment is the title.
+
+- Round 3 · the fullscreen control — Connor Griffin · 2026-09-03 · "The
+  maximize button on the header should still live where it was living." The
+  focal head aligns its items to the top, so the control sits at the far end
+  of the first line exactly where the one-line bar kept it, rather than
+  centring in the two-line bar.
 
 ## QA budgets
 

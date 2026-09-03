@@ -179,9 +179,20 @@ export async function openApp(browser, options = {}) {
   const dockMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
   if (!(await dockMini.isVisible())) {
     await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
+    await page.waitForSelector('#tile-field[data-dock="docked"]', { timeout: 15000 });
   }
   try {
     await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    /* A freshly raised strip mounts its minis' charts a paint after the
+       canvas appears; read the option only once the instance exists. */
+    await page.waitForFunction((id) => {
+      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+      return Boolean(host && window.echarts.getInstanceByDom(host));
+    }, findingId, { timeout: 15000 });
+    /* The raise repaints the strip once more after the instance first appears;
+       settle so the snapshot below reads the surviving instance, not one the
+       repaint disposed. */
+    await settle(page, 700);
   } catch {
     const boxes = await dockMini.evaluate((element) => Object.fromEntries(
       [['tile', element], ['body', element.querySelector('.tile-body')],
@@ -215,7 +226,17 @@ export async function openApp(browser, options = {}) {
     page.__selectedComparison = servedByFinding.get(findingId);
     page.__spotlightComparison = await spotlightRendered(page, findingId);
     await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+    /* The cell pick put the drawer away (ADR 306); Back lands on that state,
+       so the mini is read after bringing the strip up again. */
+    if (!(await dockMini.isVisible())) {
+      await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
+    }
     await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    await page.waitForFunction((id) => {
+      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+      return Boolean(host && window.echarts.getInstanceByDom(host));
+    }, findingId, { timeout: 15000 });
+    await settle(page, 700);
     page.__dockMiniComparison = await dockMiniRendered(page, findingId);
   }
   return page;

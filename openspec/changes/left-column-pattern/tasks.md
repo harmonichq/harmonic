@@ -97,7 +97,7 @@
 
 ## 3. The left-column pattern in the shipped app
 
-- [ ] Stage rule: leaving a drill for the findings queue re-seats the rank-1
+- [x] Stage rule: leaving a drill for the findings queue re-seats the rank-1
       chart through a pure resolver in `frontend/diagnose-canvas-state.js`
       that the reconcile and `popTo` both call — the rank-1 event chart
       (`recommendedFocalId`), else the first ranked candidate, else the first
@@ -105,7 +105,7 @@
       drills through `showChartInspector`; its redundant `focusChart` goes.
       Node tests in `frontend/diagnose-canvas-state.test.js` fail first on
       today's behavior (stage keeps the drilled chart after pop).
-- [ ] Drawer as picker, owned by pure functions in
+- [x] Drawer as picker, owned by pure functions in
       `frontend/diagnose-canvas-state.js` that the workstation calls: one
       exported boot default (`'hidden'`, also `dockView`'s default want); a
       resize transition that returns `'hidden'` on a crossing below
@@ -117,7 +117,7 @@
       "Bring the charts up", "show every chart", the handle's toggle and
       fullscreen are unchanged. Node tests for the three transitions fail
       first; the wiring is proven by the replay in section 4.
-- [ ] Stage nameplate: descriptors gain a `headline` beside `title`, never
+- [x] Stage nameplate: descriptors gain a `headline` beside `title`, never
       in place of it; the focal tile's `.tile-head h3` renders `headline`
       verbatim while `mini` and `grid` cells and the fullscreen header
       (`#full-title`) keep `title`, `nameFor`'s short name. Sweep the three
@@ -130,7 +130,7 @@
       vertical budget for the plot, and keep the middle rank's compact verdict
       and tally lines; `frontend/diagnose-evidence-charts.test.js` pins the
       deck without a headline. No drill level renders the headline.
-- [ ] Fast gate green; the four blocks `build.mjs` extracts from
+- [x] Fast gate green; the four blocks `build.mjs` extracts from
       `diagnose-workstation.js` (`WINDOWS`, `fmtDate`, `VERDICT_BAND_KEY`,
       `VERDICT_RESIDUE_KEY`) untouched;
       `node mockups/finding-evidence-routing.exploration/build.mjs --check`

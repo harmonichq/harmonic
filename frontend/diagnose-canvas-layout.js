@@ -101,6 +101,11 @@ export function descriptorsFromFindings(findings, registry) {
       chartId: row.id,
       kind: entry.kind,
       title: named?.title ?? entry.name,
+      /* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306). Carried
+         beside `title`, never in place of it: the focal tile renders this
+         verbatim, and every other seat — mini, grid, fullscreen — keeps the
+         short nameplate `title` already was. */
+      headline: row.headline ?? null,
       meta: named?.meta ?? null,
       mode: entry.modes?.[0] ?? null,
       coordinates: entry.coordinates(row, findings),

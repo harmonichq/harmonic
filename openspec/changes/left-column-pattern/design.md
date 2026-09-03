@@ -153,17 +153,17 @@ Griffin · 2026-09-03):
   steady nights against 0.60 programmed. Not enough nights of steady data yet to
   point one way."
   `Delivered {estimate.value} U/h across {support.n} steady nights against {current} programmed. {annotation}.`
-  merged (`current` null): `Delivered {below|above by lean} the programmed rate across {support.n} steady nights. {annotation}.`; a held run with no lean drops the direction clause: `Delivered across {support.n} steady nights. {annotation}.`
+  merged (`current` null): `Delivered {below|above by lean} the programmed rate across {support.n} steady nights. {annotation}.`; a held run with no lean (`lean` null: its estimate sits at the programmed rate, or is absent) states only the count: `{support.n} steady nights delivered so far. {annotation}.`
 - basal · blind — Connor Griffin · 2026-09-03 · "No steady nights delivered
   against the programmed rate here, so nothing to say either way." (rate-free
   for single and merged rows alike: a blind row has no delivered value to set
   against it)
   `No steady nights delivered against the programmed rate here, so nothing to say either way.`
 - correction factor · assert — Connor Griffin · 2026-09-03 · "Measured 1 U : 24.0
-  mg/dL across 29 fasting nights against 1 U : 40 programmed. Overnight you look more
+  mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more
   sensitive to insulin than the set value, so corrections can run a little
   stronger."
-  `Measured 1 U : {estimate.value} mg/dL across {support.n} fasting nights against 1 U : {current} programmed. {annotation}.`
+  `Measured 1 U : {estimate.value} mg/dL across {support.n} fasting nights against 1 U : {current} mg/dL programmed. {annotation}.`
 - correction factor · held — Connor Griffin · 2026-09-03 · "29 fasting nights
   measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover
   this window. No direction is called." (the held sentence prints no estimate:

@@ -45,8 +45,10 @@ rule are one behavior, so both land in this ticket rather than a follow-up.
 ## ADR 306 — Every findings row carries one served headline, authored with the operator
 
 **Decision.** The findings projection stamps `headline` on every row it
-publishes, every register included (`assert`, `finding`, `held`, `blind`,
-`history`). The frontend renders it verbatim and composes no sentence of its
+publishes: nine family-and-register pairs are reachable (basal `assert`,
+`held`, `blind`; carb ratio `assert`, `held`; correction factor `assert`,
+`held`; event comparison `finding`; past setting `history`), and each has its
+own ruled template. The frontend renders it verbatim and composes no sentence of its
 own: the stage card's title is the headline's only home, the basal chart deck
 loses the headline it drew, drawer cells keep the short nameplate, and no
 drill level repeats it. A headline is composed only from the row's own fields or
@@ -66,8 +68,13 @@ row's sentence therefore draws on the row's own served facts — its title, epis
 and window — and a consequence fact the case file alone carries is not a slot
 until the projection publishes it. A template's slots name those served facts
 and nothing else. `history` rows are authored and served
-like every other register: the stage never shows one (a history row publishes
-no chart), and their consumer is #302's queue rows, which read the same field.
+like every other pair: the stage never shows one (a history row publishes no
+chart), nothing in this ticket renders that sentence, and its consumer is
+#302's queue rows, which read the same field; that one pair is priced into
+the attended round knowingly, because the operator ruled that every finding
+gets a headline. A family's sentence reads only its own family's evidence and
+only when that payload is present; a missing payload yields the family's
+plain thin-read sentence, never a failed projection.
 
 The sentences are the operator's, not an agent's. Before any template is
 written, the executing session generates a facts sheet over the QA showcase
@@ -97,7 +104,9 @@ headline, and it's part of this ticket, not sub-tickets for each."
 ## ADR 306 — The nameplate's editorial treatment is settled at the running app
 
 **Decision.** The stage card's title gains editorial weight, so the bar it
-lives in changes with it; no value of that treatment is chosen headless. The
+lives in changes with it; no value of that treatment is chosen headless.
+DESIGN.md's no-hero rule stays the cap and gains the one sentence that names
+the stage card's headline as a card title under it, not a page headline. The
 executing session serves the base and the revision side by side on the same
 showcase copy and iterates the nameplate with the operator in UI Craft revise
 rounds, recording each ruling below as a dated sanction before the CSS lands.

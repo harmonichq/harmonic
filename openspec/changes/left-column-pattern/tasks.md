@@ -32,12 +32,16 @@
       naming its template with slots that name only row fields, the basal
       night roster, the ISF rest-window evidence, or the I:C blocks'
       published counts; tell the operator before they write that a Finding
-      case-file fact and the I:C block CGM series cannot be slots. Iterate
-      until basal, correction factor, carb ratio and event comparison each
-      have a ruled template for every register they publish (`assert`,
-      `finding`, `held`, `blind`, `history` — history sentences are consumed
-      by #302's queue rows, never by the stage), and the shape rule in ADR 306
-      (headlines) holds for each.
+      case-file fact and the I:C block CGM series cannot be slots. The closed
+      matrix is the nine family-and-register pairs the projection can publish
+      (`ciq_autotune/findings_projection.py`): basal `assert`, `held`,
+      `blind`; carb ratio `assert`, `held`; correction factor `assert`,
+      `held`; event comparison `finding`; past setting `history` (consumed by
+      #302's queue rows, never by the stage; served and tested here, rendered
+      by nothing in this ticket). Iterate until every pair has a ruled
+      template, emitting a named QA case store for any pair the showcase
+      does not publish, and the shape rule in ADR 306 (headlines) holds for
+      each.
 
 ## 2. Serve the headline
 
@@ -51,13 +55,17 @@
       `analysis["ic_blocks"]`, inside the cached projection
       (`/api/diagnose/findings`, `ciq_autotune/api.py:854`) with no second
       cache — never `ciq_autotune/finding_case_file.py` or
-      `prepare_ic_block_evidence`, each of which needs a store; nothing here recounts raw records or re-derives a
+      `prepare_ic_block_evidence`, each of which needs a store. A family's
+      headline reads only its own family's evidence and only when that
+      payload is present (`prepare_isf_rest_window_evidence` raises on an
+      analysis without an ISF row); a missing payload yields that family's
+      plain thin-read sentence, never a failed projection; nothing here recounts raw records or re-derives a
       direction, floor or threshold. Add `headline` to `ExpectedQueueRow` in
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
       must fail first on the missing field.
-- [ ] Tests in `tests/test_findings_projection.py` through `project()`: every
-      register of every family carries a non-empty headline; a held or blind
+- [ ] Tests in `tests/test_findings_projection.py` through `project()`: each
+      of the nine family-and-register pairs carries a non-empty headline; a held or blind
       row's sentence names the withheld move and its reason; a rerun of the
       same window yields the same sentence; no headline contains a value
       absent from the row or its evidence.
@@ -80,20 +88,32 @@
 ## 3. The left-column pattern in the shipped app
 
 - [ ] Stage rule: leaving a drill for the findings queue re-seats the rank-1
-      chart (`popTo` seats through the same resolution the reconcile uses —
-      the rank-1 event chart, else the first ranked candidate). An explorer
-      pick already drills through `showChartInspector`; its redundant
-      `focusChart` goes. Node tests in `frontend/diagnose-canvas-state.test.js`
-      fail first on today's behavior (stage keeps the drilled chart after pop).
-- [ ] Drawer as picker: `dockWant` boots `'hidden'`; the resize crossing rule
-      only hides (shrinking past `DOCK_FLOOR` hides, growing back never
-      re-docks); every pick from the drawer — cell click or Enter, a Watching
-      tail cell, an explorer pick — seats and drills, then sets the want to
-      hidden; "Bring the charts up", "show every chart" and fullscreen are
-      unchanged. Node tests for the resolved transitions fail first.
-- [ ] Stage nameplate: the focal tile's `.tile-head h3` renders the row's
-      served `headline` verbatim (drawer and explorer cells keep `nameFor`'s
-      short title); delete the basal option builder's local headline
+      chart through a pure resolver in `frontend/diagnose-canvas-state.js`
+      that the reconcile and `popTo` both call — the rank-1 event chart
+      (`recommendedFocalId`), else the first ranked candidate, else the first
+      pin, else none; never the chart just left. An explorer pick already
+      drills through `showChartInspector`; its redundant `focusChart` goes.
+      Node tests in `frontend/diagnose-canvas-state.test.js` fail first on
+      today's behavior (stage keeps the drilled chart after pop).
+- [ ] Drawer as picker, owned by pure functions in
+      `frontend/diagnose-canvas-state.js` that the workstation calls: one
+      exported boot default (`'hidden'`, also `dockView`'s default want); a
+      resize transition that returns `'hidden'` on a crossing below
+      `DOCK_FLOOR` and otherwise the want unchanged (growing back never
+      re-docks); a pick transition that returns `'hidden'` after any pick of
+      a `mini` or `grid` seat (cell click or Enter, Watching cells included,
+      explorer picks included). A queue-row drill keeps today's rule: a
+      raised drawer is put away, a docked one is left as the reader set it.
+      "Bring the charts up", "show every chart", the handle's toggle and
+      fullscreen are unchanged. Node tests for the three transitions fail
+      first; the wiring is proven by the replay in section 4.
+- [ ] Stage nameplate: descriptors gain a `headline` beside `title`, never
+      in place of it; the focal tile's `.tile-head h3` renders `headline`
+      verbatim while `mini` and `grid` cells and the fullscreen header
+      (`#full-title`) keep `title`, `nameFor`'s short name. Sweep the two
+      comments that narrate the retired grow-back rule
+      (`frontend/diagnose-workstation.js` at the `dockWant` declaration and
+      the resize observer). Delete the basal option builder's local headline
       composition and the deck graphic that drew it, reclaiming the deck's
       vertical budget for the plot, and keep the middle rank's compact verdict
       and tally lines; `frontend/diagnose-evidence-charts.test.js` pins the

@@ -48,10 +48,11 @@ control and chart fullscreen SHALL remain.
 
 Every row the findings projection publishes, in every register, SHALL carry a
 `headline`: a factual sentence composed only from the row's own fields or from
-the analyzer-payload evidence its chart's endpoint serves (basal night
-evidence, ISF rest-window evidence, I:C block evidence), read through the same
-module functions that endpoint calls inside the cached projection; a Finding
-case file is not a source, since it is prepared from the projection itself.
+the analyzer payload the projection already holds: the basal night roster
+and the ISF rest-window evidence through the same pure functions their
+endpoints call, and the I:C blocks' own published counts; neither a Finding
+case file nor the I:C block CGM series is a source, since each needs a store
+read the projection does not have.
 A headline never states a count, direction or verdict the analyzer did not
 publish, and is identical across reruns of the same window.
 

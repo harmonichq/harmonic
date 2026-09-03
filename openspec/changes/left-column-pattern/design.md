@@ -50,15 +50,19 @@ publishes, every register included (`assert`, `finding`, `held`, `blind`,
 own: the stage card's title is the headline's only home, the basal chart deck
 loses the headline it drew, drawer cells keep the short nameplate, and no
 drill level repeats it. A headline is composed only from the row's own fields or
-from the analyzer-payload evidence its chart's endpoint serves — basal night
-evidence, ISF rest-window evidence, I:C block evidence — read through the same
-module functions those endpoints call, inside the cached projection (no second
-cache, no recount of raw records); it never states a count, direction or
-verdict the analyzer did not publish. The Finding case file is not a source:
-`ciq_autotune/finding_case_file.py` is prepared from the projection itself
-(it imports `findings_projection` and calls `prepare_findings_projection`
-inside a store transaction), so a behavioral row's sentence draws on the row's
-own served facts — its title, episodes, evidence, verdict counts, appearances
+from the analyzer payload the projection already holds — the basal night
+roster through `prepare_basal_night_evidence(analysis)` and the ISF rest
+windows through `prepare_isf_rest_window_evidence(analysis)`, both pure
+functions of the analysis, and the I:C blocks' own published counts from
+`analysis["ic_blocks"]` — inside the cached projection (no second cache, no
+recount of raw records); it never states a count, direction or verdict the
+analyzer did not publish. Two things are not sources because each needs a
+store the projection does not have (`prepare_findings_projection` takes only
+`analysis`, `exposures`, `scenarios`): the Finding case file
+(`ciq_autotune/finding_case_file.py` imports the projection and prepares one
+inside a store transaction) and the I:C block CGM series
+(`prepare_ic_block_evidence(store, analysis)` reads CGM rows). A behavioral
+row's sentence therefore draws on the row's own served facts — its title, episodes, evidence, verdict counts, appearances
 and window — and a consequence fact the case file alone carries is not a slot
 until the projection publishes it. A template's slots name those served facts
 and nothing else. `history` rows are authored and served
@@ -114,8 +118,9 @@ operator's on the running app.
 Re-measured by sub-order 2 after the row change, per `AGENTS.md` "Maintaining
 QA coverage eras" step 4, none raised: committed showcase size (≤25 MiB),
 showcase drift (≤30 s), focused QA suite (≤90 s), slowest generated case
-(≤15 s), full pytest (≤2.5× the chunk-1 baseline recorded in the archived
-`qa-e2e-database` change):
+(≤15 s), full pytest (≤2.5× the chunk-1 baseline of 62.93 s, ceiling
+157.33 s, last measured at 148.76 s in
+`openspec/changes/archive/2026-09-02-qa-e2e-coverage-eras/coverage-appendix.md`):
 
 - (pending)
 

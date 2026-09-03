@@ -29,10 +29,10 @@
       returned sheet as `evidence/headlines.authored.csv`, and from it record
       under `## Headline templates` in `design.md` one dated sanction per
       family and register (`Connor Griffin · <date> · "<example>"`), each
-      naming its template with slots that name only row fields or the three
-      analyzer-payload evidence modules (basal night, ISF rest-window, I:C
-      block); tell the operator before they write that a Finding case-file
-      fact cannot be a slot. Iterate
+      naming its template with slots that name only row fields, the basal
+      night roster, the ISF rest-window evidence, or the I:C blocks'
+      published counts; tell the operator before they write that a Finding
+      case-file fact and the I:C block CGM series cannot be slots. Iterate
       until basal, correction factor, carb ratio and event comparison each
       have a ruled template for every register they publish (`assert`,
       `finding`, `held`, `blind`, `history` — history sentences are consumed
@@ -45,12 +45,13 @@
       templates recorded under `## Headline templates` in `design.md`,
       composed only from the row's own fields or from the evidence its
       chart's endpoint serves, read through the same functions those endpoints
-      call in `ciq_autotune/basal_night_evidence.py`,
-      `ciq_autotune/isf_rest_window_evidence.py` and
-      `ciq_autotune/ic_block_evidence.py`, inside the cached projection
+      call in `ciq_autotune/basal_night_evidence.py` and
+      `ciq_autotune/isf_rest_window_evidence.py` (pure functions of the
+      analysis) plus the I:C blocks' published counts in
+      `analysis["ic_blocks"]`, inside the cached projection
       (`/api/diagnose/findings`, `ciq_autotune/api.py:854`) with no second
-      cache — never `ciq_autotune/finding_case_file.py`, which is prepared
-      from the projection; nothing here recounts raw records or re-derives a
+      cache — never `ciq_autotune/finding_case_file.py` or
+      `prepare_ic_block_evidence`, each of which needs a store; nothing here recounts raw records or re-derives a
       direction, floor or threshold. Add `headline` to `ExpectedQueueRow` in
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
@@ -72,7 +73,8 @@
       for its `index.html`) and run both `--check`s.
 - [ ] Re-measure the five QA budgets per `AGENTS.md` "Maintaining QA coverage
       eras" step 4 without raising a limit and record the figures under
-      `## QA budgets` in `design.md`; a breach stops the work. Fast gate and
+      `## QA budgets` in `design.md` against the limits it names; a breach
+      stops the work. Fast gate and
       every `--check` green on the chunk branch; stage by path.
 
 ## 3. The left-column pattern in the shipped app

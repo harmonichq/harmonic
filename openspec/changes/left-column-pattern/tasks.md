@@ -41,7 +41,9 @@
       by nothing in this ticket). Iterate until every pair has a ruled
       template, emitting a named QA case store for any pair the showcase
       does not publish, and the shape rule in ADR 306 (headlines) holds for
-      each.
+      each; the event-comparison template's sanction records its rendering
+      against every lever the showcase publishes, since that family emits one
+      row per lever.
 
 ## 2. Serve the headline
 
@@ -58,8 +60,14 @@
       `prepare_ic_block_evidence`, each of which needs a store. A family's
       headline reads only its own family's evidence and only when that
       payload is present (`prepare_isf_rest_window_evidence` raises on an
-      analysis without an ISF row); a missing payload yields that family's
-      plain thin-read sentence, never a failed projection; nothing here recounts raw records or re-derives a
+      analysis without an ISF row, and raises two `ValueError`s when the
+      retained `_isf_rest_window_steps` disagree with the analyzer's counts —
+      a retained findings-history artifact can carry either state); wrap the
+      ISF slot fill so any exception from that function yields the ISF
+      thin-read sentence, never a failed projection. Sweep the
+      `ciq_autotune/api.py` comment (near "findings never reads the key")
+      that says the findings projection never reads the retained steps. The
+      catalog dump is 31 `ExpectedQueueRow` literals; nothing here recounts raw records or re-derives a
       direction, floor or threshold. Add `headline` to `ExpectedQueueRow` in
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
@@ -68,7 +76,9 @@
       of the nine family-and-register pairs carries a non-empty headline; a held or blind
       row's sentence names the withheld move and its reason; a rerun of the
       same window yields the same sentence; no headline contains a value
-      absent from the row or its evidence.
+      absent from the row or its evidence; an analysis carrying an ISF row
+      with no `_isf_rest_window_steps` projects every row with the ISF
+      thin-read sentence in place of a failure.
 - [ ] Regenerate `frontend/__fixtures__/findings-projection.json` with
       `scripts/gen_findings_projection_fixtures.py`, transcribe the field into
       `mockups/findings-projection.mirror.mjs` so

@@ -701,9 +701,11 @@ _BASAL_BLIND_HEADLINE = (
 
 _HELD_AT_CURRENT_SUFFIX = "; held at current"
 
-# The ranked-queue tiers whose event-comparison rows earn the "and ranks" clause
-# (ADR 41's closed tier vocabulary: every priced asserting row is `next_in_line`,
-# every other counted row is `worth_a_look`; only `noted` sits below the line).
+# The ranked-queue tiers whose event-comparison rows earn the "ranks among this
+# window's findings" verdict (ADR 41's closed tier vocabulary: every priced
+# asserting row is `next_in_line`, every other counted row is `worth_a_look`;
+# only `noted` sits below the line). The sentence states only the published
+# rank, never a recurrence frequency the analyzer does not publish.
 _RANKING_TIERS = frozenset({"next_in_line", "worth_a_look"})
 
 
@@ -742,25 +744,25 @@ def _basal_headline(row: dict) -> str:
     current = row.get("current")
     estimate_value = (row.get("estimate") or {}).get("value")
     if current is not None and estimate_value is not None:
-        return (f"Delivered {_fmt_uh(estimate_value)} U/h across {support_n} "
-                f"steady nights against {_fmt_uh(current)} programmed. "
-                f"{annotation}.")
+        return (f"{annotation}. Delivered {_fmt_uh(estimate_value)} U/h across "
+                f"{support_n} steady nights against {_fmt_uh(current)} "
+                f"programmed.")
     # A merged run names no single programmed rate, and a slot with no
     # delivered estimate (a harm-forced move on zero clean nights) has
     # nothing to set against the programmed rate either — both read only the
     # row's own served direction or lean and the steady-night count.
     if row["register"] == "assert":
         word = _below_above(row.get("direction"))
-        return (f"Delivered {word} the programmed rate across {support_n} "
-                f"steady nights. {annotation}.")
+        return (f"{annotation}. Delivered {word} the programmed rate across "
+                f"{support_n} steady nights.")
     lean = row.get("lean")
     if lean is None:
         # The held estimate sits at the programmed rate, or is absent: nothing
         # to lean the sentence on but the count.
-        return f"{support_n} steady nights delivered so far. {annotation}."
+        return f"{annotation}. {support_n} steady nights delivered so far."
     word = _below_above(lean)
-    return (f"Delivered {word} the programmed rate across {support_n} "
-            f"steady nights. {annotation}.")
+    return (f"{annotation}. Delivered {word} the programmed rate across "
+            f"{support_n} steady nights.")
 
 
 def _isf_headline(row: dict) -> str:
@@ -773,12 +775,12 @@ def _isf_headline(row: dict) -> str:
     if row["register"] == "assert":
         estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
         annotation = _sentence(row.get("annotation") or "")
-        return (f"Measured 1 U : {estimate_value} mg/dL across {support_n} "
-                f"fasting nights against 1 U : {current} mg/dL programmed. "
-                f"{annotation}.")
+        return (f"{annotation}. Measured 1 U : {estimate_value} mg/dL across "
+                f"{support_n} fasting nights against 1 U : {current} mg/dL "
+                f"programmed.")
     reason = row.get("reason") or ""
-    return (f"{support_n} fasting nights measured against 1 U : {current} "
-            f"mg/dL programmed, but {reason}. No direction is called.")
+    return (f"No direction is called: {reason}. {support_n} fasting nights "
+            f"measured against 1 U : {current} mg/dL programmed.")
 
 
 def _ic_headline(row: dict) -> str:
@@ -787,11 +789,11 @@ def _ic_headline(row: dict) -> str:
     estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
     if row["register"] == "assert":
         annotation = _sentence(row.get("annotation") or "")
-        return (f"Measured {estimate_value} g/U across {support_n} meal runs "
-                f"against {current} programmed. {annotation}.")
+        return (f"{annotation}. Measured {estimate_value} g/U across "
+                f"{support_n} meal runs against {current} programmed.")
     reason = (row.get("reason") or "").removesuffix(_HELD_AT_CURRENT_SUFFIX)
-    return (f"Measured {estimate_value} g/U across {support_n} meal runs "
-            f"against {current} programmed. Held at current: {reason}.")
+    return (f"Held at current: {reason}. Measured {estimate_value} g/U across "
+            f"{support_n} meal runs against {current} programmed.")
 
 
 def _finding_headline(row: dict) -> str:
@@ -800,10 +802,10 @@ def _finding_headline(row: dict) -> str:
     # (`findings_projection.py`'s `_finding_rows`), and the recurrence branch
     # replaces the list with exactly one element, never empties it.
     appearance = row["appearances"][0]
-    rank_clause = (", and ranks" if row.get("tier") in _RANKING_TIERS
-                   else ", not often enough to rank yet")
-    return (f"Showed up in {appearance['n']} of {appearance['m']} "
-            f"{appearance['noun']} in this window{rank_clause}.")
+    verdict = ("Ranks among this window's findings" if row.get("tier") in _RANKING_TIERS
+               else "Not ranked in this window yet")
+    return (f"{verdict}. Showed up in {appearance['n']} of {appearance['m']} "
+            f"{appearance['noun']} in this window.")
 
 
 def _history_headline(row: dict) -> str:
@@ -813,9 +815,9 @@ def _history_headline(row: dict) -> str:
     programmed_now = _fmt_precision(row.get("programmed_now"))
     regime_end = row.get("regime_end")
     regime_end_date = regime_end.split("T")[0] if regime_end else regime_end
-    return (f"Measured {estimate_value} g/U across {support} meal runs while "
-            f"{past_setting} was programmed, until {regime_end_date}. "
-            f"Programmed now: {programmed_now}.")
+    return (f"Past setting, no change suggested. Measured {estimate_value} g/U "
+            f"across {support} meal runs while {past_setting} was programmed, "
+            f"until {regime_end_date}. Programmed now: {programmed_now}.")
 
 
 def _headline_for(row: dict) -> str:

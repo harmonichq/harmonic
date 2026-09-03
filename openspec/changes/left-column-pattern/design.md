@@ -148,51 +148,67 @@ Griffin · 2026-09-03):
   under the operator's 2026-09-03 delegation, "I'll take your recommendations
   going forth").
 
-- basal · assert — Connor Griffin · 2026-09-03 · "Delivered 0.48 U/h across 30
-  steady nights against 0.60 programmed. One cautious step down is supported at
-  this time." (single-slot row); merged run, the showcase's `basal:180-240`:
-  "Delivered below the programmed rate across 30 steady nights. One cautious
-  step down is supported at this time."
-  `Delivered {estimate.value} U/h across {support.n} steady nights against {current} programmed. {annotation}.`
-  merged (`current` null): `Delivered {below|above by direction} the programmed rate across {support.n} steady nights. {annotation}.`
-- basal · held — Connor Griffin · 2026-09-03 · "Delivered 0.48 U/h across 7
-  steady nights against 0.60 programmed. Not enough nights of steady data yet to
-  point one way."
-  `Delivered {estimate.value} U/h across {support.n} steady nights against {current} programmed. {annotation}.`
-  merged (`current` null): `Delivered {below|above by lean} the programmed rate across {support.n} steady nights. {annotation}.`; a held run with no lean (`lean` null: its estimate sits at the programmed rate, or is absent) states only the count: `{support.n} steady nights delivered so far. {annotation}.`
+**Sentence order — verdict first (Connor Griffin · 2026-09-03).** The stage
+card renders the served headline verbatim and styles its first sentence as the
+title and the rest as the subtitle, so the templates below put the assessment
+first and the measured facts second: "I think we need to flip the order of the
+sentences to have the second sentence lead … Title is one cautious step down
+and supported at this time. And the subtitle would be delivered below the
+programmed rate across 30." The slot nameplate is furniture on the card, never
+the star: "the user has picked that slot … the name of the slot is more
+important than anything else — it's not right. It needs to be like furniture,
+like a chip or a tile on the card." The per-family orderings below were
+recorded under the operator's standing delegation ("I'll take your
+recommendations going forth"); every slot is unchanged from the 2026-09-03
+templates, only the order moves, and a one-sentence template (basal blind)
+is its own title with no subtitle.
+
+- basal · assert — Connor Griffin · 2026-09-03 · "One cautious step down is
+  supported at this time. Delivered 0.48 U/h across 30 steady nights against
+  0.60 programmed." (single-slot row); merged run, the showcase's
+  `basal:180-240`: "One cautious step down is supported at this time.
+  Delivered below the programmed rate across 30 steady nights."
+  `{annotation}. Delivered {estimate.value} U/h across {support.n} steady nights against {current} programmed.`
+  merged (`current` null) or no delivered estimate (`estimate.value` null): `{annotation}. Delivered {below|above by direction} the programmed rate across {support.n} steady nights.`
+- basal · held — Connor Griffin · 2026-09-03 · "Not enough nights of steady
+  data yet to point one way. Delivered 0.48 U/h across 7 steady nights against
+  0.60 programmed."
+  `{annotation}. Delivered {estimate.value} U/h across {support.n} steady nights against {current} programmed.`
+  merged (`current` null) or no delivered estimate: `{annotation}. Delivered {below|above by lean} the programmed rate across {support.n} steady nights.`; a held run with no lean (`lean` null: its estimate sits at the programmed rate, or is absent) states only the count: `{annotation}. {support.n} steady nights delivered so far.`
 - basal · blind — Connor Griffin · 2026-09-03 · "No steady nights delivered
-  against the programmed rate here, so nothing to say either way." (rate-free
-  for single and merged rows alike: a blind row has no delivered value to set
-  against it)
+  against the programmed rate here, so nothing to say either way." (one
+  sentence: the title, no subtitle)
   `No steady nights delivered against the programmed rate here, so nothing to say either way.`
-- correction factor · assert — Connor Griffin · 2026-09-03 · "Measured 1 U : 24.0
-  mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more
-  sensitive to insulin than the set value, so corrections can run a little
-  stronger."
-  `Measured 1 U : {estimate.value} mg/dL across {support.n} fasting nights against 1 U : {current} mg/dL programmed. {annotation}.`
-- correction factor · held — Connor Griffin · 2026-09-03 · "29 fasting nights
-  measured against 1 U : 40 mg/dL programmed, but rescue-carb history doesn't cover
-  this window. No direction is called." (the held sentence prints no estimate:
-  the showcase's held estimate is a fixture artifact of 0.0)
-  `{support.n} fasting nights measured against 1 U : {current} mg/dL programmed, but {reason}. No direction is called.`
-- carb ratio · assert — Connor Griffin · 2026-09-03 · "Measured 12 g/U across 8
-  meal runs against 10 programmed. Meals look slightly over-covered relative to
-  programmed I:C."
-  `Measured {estimate.value} g/U across {support.n} meal runs against {current} programmed. {annotation}.`
-- carb ratio · held — Connor Griffin · 2026-09-03 · "Measured 8 g/U across 8
-  meal runs against 10 programmed. Held at current: pre-empted low." (the served
-  hold reason `pre-empted low; held at current` reordered into a sentence, the
-  operator's pick over printing the fragment verbatim)
-  `Measured {estimate.value} g/U across {support.n} meal runs against {current} programmed. Held at current: {reason without its "; held at current" tail}.`
+- correction factor · assert — Connor Griffin · 2026-09-03 · "Overnight you
+  look more sensitive to insulin than the set value, so corrections can run a
+  little stronger. Measured 1 U : 24.0 mg/dL across 29 fasting nights against
+  1 U : 40 mg/dL programmed."
+  `{annotation}. Measured 1 U : {estimate.value} mg/dL across {support.n} fasting nights against 1 U : {current} mg/dL programmed.`
+- correction factor · held — Connor Griffin · 2026-09-03 · "No direction is
+  called: rescue-carb history doesn't cover this window. 29 fasting nights
+  measured against 1 U : 40 mg/dL programmed." (the held sentence prints no
+  estimate: the showcase's held estimate is a fixture artifact of 0.0)
+  `No direction is called: {reason}. {support.n} fasting nights measured against 1 U : {current} mg/dL programmed.`
+- carb ratio · assert — Connor Griffin · 2026-09-03 · "Meals look slightly
+  over-covered relative to programmed I:C. Measured 12 g/U across 8 meal runs
+  against 10 programmed."
+  `{annotation}. Measured {estimate.value} g/U across {support.n} meal runs against {current} programmed.`
+- carb ratio · held — Connor Griffin · 2026-09-03 · "Held at current:
+  pre-empted low. Measured 8 g/U across 8 meal runs against 10 programmed."
+  (the served hold reason `pre-empted low; held at current` reordered into a
+  sentence, the operator's pick over printing the fragment verbatim)
+  `Held at current: {reason without its "; held at current" tail}. Measured {estimate.value} g/U across {support.n} meal runs against {current} programmed.`
 - event comparison · finding — Connor Griffin · 2026-09-03 · rendered against
-  every lever the showcase publishes: "Showed up in 1 of 5 lows in this window,
-  and ranks." (over_treated_low) · "Showed up in 1 of 5 lows in this window, not
-  often enough to rank yet." (correction_on_iob) · "Showed up in 1 of 32 meals in
-  this window, not often enough to rank yet." (meal_bolus_short)
-  `Showed up in {appearances[0].n} of {appearances[0].m} {appearances[0].noun} in this window{, and ranks | , not often enough to rank yet}.` — the rank clause reads the served `tier`: `next_in_line` and `worth_a_look` rank, `noted` does not.
-- past setting · history — Connor Griffin · 2026-09-03 · "Measured 12 g/U across
-  14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
-  `Measured {estimate.value} g/U across {support} meal runs while {past_setting} was programmed, until {regime_end date}. Programmed now: {programmed_now}.`
+  every lever the showcase publishes: "Recurring often enough to rank. Showed
+  up in 1 of 5 lows in this window." (over_treated_low) · "Not often enough to
+  rank yet. Showed up in 1 of 5 lows in this window." (correction_on_iob) ·
+  "Not often enough to rank yet. Showed up in 1 of 32 meals in this window."
+  (meal_bolus_short)
+  `{Recurring often enough to rank | Not often enough to rank yet}. Showed up in {appearances[0].n} of {appearances[0].m} {appearances[0].noun} in this window.` — the verdict sentence reads the served `tier`: `next_in_line` and `worth_a_look` rank, `noted` does not.
+- past setting · history — Connor Griffin · 2026-09-03 · "Past setting, no
+  change suggested. Measured 12 g/U across 14 meal runs while 12 was
+  programmed, until 2024-06-16. Programmed now: 10."
+  `Past setting, no change suggested. Measured {estimate.value} g/U across {support} meal runs while {past_setting} was programmed, until {regime_end date}. Programmed now: {programmed_now}.`
 
 ## ADR 306 — The nameplate's editorial treatment is settled at the running app
 

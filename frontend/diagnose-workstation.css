@@ -411,19 +411,29 @@
   > .tile-focal > .evidence-tile > .tile-rail {
   grid-row: 2;
 }
-/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306). A headline is
-   a full sentence, so the focal seat wraps it instead of the one-line
-   ellipsis every other seat still keeps — mini, grid and the fullscreen
-   header (`#full-title`) all read `descriptor.title`, `nameFor`'s short name,
-   unchanged. First pass only: sized under the No-Hero Rule's 1.5rem ceiling
-   (DESIGN.md) at the weight and size the retired basal deck headline already
-   used, so the fast gate and a live look are both meaningful; the editorial
-   treatment itself is a later revise round's call. */
+/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306), AND THE
+   IDENTITY LEADS IT. Nameplate ruling, Connor Griffin · 2026-09-03 (recorded
+   under `## Nameplate rulings` in the change's design.md): the short nameplate
+   is the card's kicker at the app's Title style — the same style every card
+   header wears — and the served sentence follows one step down, full ink,
+   wrapping; the chart's subtitle is not drawn on the stage. Mini, grid and the
+   fullscreen header (`#full-title`) keep `descriptor.title` in the one-line
+   micro-caps nameplate, unchanged. Both lines sit under the No-Hero Rule's
+   1.5rem ceiling (DESIGN.md). */
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile .tile-id {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.tile-field:not([data-fullscreen-tile]):not([data-explorer])
+  > .tile-focal > .evidence-tile .tile-kicker {
+  color: var(--mk-text); font-size: 1.02rem; font-weight: 700; line-height: 1.2;
+  letter-spacing: -.01em;
+}
 .tile-field:not([data-fullscreen-tile]):not([data-explorer])
   > .tile-focal > .evidence-tile .tile-head h3 {
   overflow: visible; text-overflow: clip; white-space: normal;
   text-transform: none; letter-spacing: normal; text-shadow: none;
-  color: var(--mk-text); font-size: 21px; font-weight: 600; line-height: 1.2;
+  color: var(--mk-text); font-size: 17px; font-weight: 500; line-height: 1.3;
 }
 .tile-field:is([data-fullscreen-tile], [data-explorer]) { padding: 0; }
 .tile-field[data-fullscreen-tile] > .tile-focal > .evidence-tile > .tile-head {

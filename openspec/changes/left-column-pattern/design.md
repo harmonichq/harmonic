@@ -211,9 +211,29 @@ that it lives in, and since we're giving the spotlight more space, we have
 room for that now." #317 set the precedent that a look-and-feel ruling is the
 operator's on the running app.
 
-**Nameplate rulings.** Appended by the executing session:
+**Nameplate rulings.** Appended by the executing session from the attended
+revise round of 2026-09-03, run on the base (port 8307) and the revision (port
+8308) served side by side from the same synthetic showcase, with a throwaway
+wireframe under `wireframe/` (marked not lockable, deleted when the change
+lands) drawing the concepts at the 1440 and 1280 card widths:
 
-- (pending the attended revise round)
+- Round 1 · the bar the headline lives in — Connor Griffin · 2026-09-03 · ruled
+  A′, "identity first": "I like A, but … the kicker should take priority in the
+  sentence because the kicker is factual … the sentence is more of the
+  assessment"; "the facts are the most important part. The graph supports the
+  facts, the sentence embellishes them." The short nameplate (`descriptor.title`)
+  leads the stage card as a kicker at the app's Title style (700, 1.02rem,
+  -.01em), the served sentence follows at 17px/500 in full ink, wrapping under
+  the 1.5rem cap; the chart's subtitle (`tile-meta`) is dropped from the stage
+  bar — "What is the meta doing? Is it doing anything that just reading the
+  chart wouldn't do?" — because the plot's axis labels and legend already carry
+  it, and the tile rule is one fact in one place. The slot-as-chip concept was
+  declined ("overuse of chips feels cheap"), and the sentence keeps its weight
+  by rank, not size: "I don't necessarily think the sentence loses the weight.
+  I just think we're redistributing the weight." Rejected: A (assessment
+  outranks identity, meta repeats the plot), B (one micro-caps line runs long
+  on other families), C (chip). Cost accepted: none of the plot; the bar is
+  66px at 1440 against the first pass's 59px.
 
 ## QA budgets
 

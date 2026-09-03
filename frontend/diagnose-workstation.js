@@ -2746,12 +2746,25 @@ function boot(root, data, callbacks, signal) {
          other seat — the strip's minis, the explorer's grid, fullscreen's own
          header below — keeps `descriptor.title`, `nameFor`'s short name; only
          the focal seat renders the served headline verbatim. */
-      title.textContent = seat.seat === 'focal' && descriptor.headline
-        ? descriptor.headline : descriptor.title;
-      const meta = document.createElement('span');
-      meta.className = 'tile-meta';
-      meta.textContent = descriptor.meta || entry.meta(descriptor.mode);
-      id.append(title, meta);
+      const editorial = seat.seat === 'focal' && Boolean(descriptor.headline);
+      title.textContent = editorial ? descriptor.headline : descriptor.title;
+      if (editorial) {
+        /* IDENTITY FIRST, THEN THE ASSESSMENT (nameplate ruling, Connor
+           Griffin · 2026-09-03: "the facts are the most important part. The
+           graph supports the facts, the sentence embellishes them"). The short
+           nameplate leads the stage card as its kicker; the sentence follows
+           one step down; the chart's own subtitle (`tile-meta`) is not drawn
+           here, because the plot's axis labels and legend already carry it. */
+        const kicker = document.createElement('span');
+        kicker.className = 'tile-kicker';
+        kicker.textContent = descriptor.title;
+        id.append(kicker, title);
+      } else {
+        const meta = document.createElement('span');
+        meta.className = 'tile-meta';
+        meta.textContent = descriptor.meta || entry.meta(descriptor.mode);
+        id.append(title, meta);
+      }
       head.append(id);
       tile.append(head);
 

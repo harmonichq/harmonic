@@ -218,3 +218,14 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   aborted on a string mismatch, the reviewer was resumed against the stale
   order and stopped, and the adapter refuses to resume a stopped worker. The
   next fresh cold pass is panel 3, the cap.
+- Panel 3 (fresh cold, Opus, read-only, the cap): BLOCKED, 4 blockers + 4
+  notes, all `authoring` omissions rather than unsettled decisions: sub-order
+  2's allowlist lacked `design.md` (its own Done when writes it) and
+  `ciq_autotune/api.py` (a comment says findings never reads the retained
+  steps); the ISF evidence function raises four ways over a retained artifact
+  and the order named one; the explorer's mini-click comment states the
+  reversed rule. Notes: four extracted blocks, per-lever behavioral rendering,
+  31 catalog dumps, citation drift. All reproduced; applied as in-place
+  corrections (plan-review "mechanical fix in place") with the same reviewer
+  re-checking the bytes, since the cap forbids a fourth panel and none is a
+  decision for the operator. Injected: 0.

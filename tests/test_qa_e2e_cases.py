@@ -188,7 +188,11 @@ class QaE2ECasesTest(unittest.TestCase):
             }),
             replace(case.expectation, queue_rows={
                 **case.expectation.queue_rows,
-                ("whole_day", row_key): ExpectedQueueRow("held", "raise", None),
+                ("whole_day", row_key): ExpectedQueueRow(
+                    "held", "raise", None,
+                    "Delivered 0.66 U/h across 30 steady nights against 0.60 "
+                    "programmed. One cautious step up is supported at this time.",
+                ),
             }),
             replace(
                 case.expectation,

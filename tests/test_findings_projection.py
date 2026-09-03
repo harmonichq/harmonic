@@ -25,6 +25,7 @@ from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _EVENT_CHART_FAMILIES,
+    ISF_THIN_READ_HEADLINE,
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
@@ -39,6 +40,7 @@ from ciq_autotune.ic_history import (
 )
 from ciq_autotune.result import IcHistory, IcHistoryRunRecord
 from ciq_autotune.uncertainty import Estimate
+from ciq_autotune.window_membership import DAY_MINUTES
 from tests.test_analyzer_isf import ISF_36, rw, synth_night
 
 _GEN_PATH = (pathlib.Path(__file__).resolve().parents[1]
@@ -1175,6 +1177,324 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
+
+
+class HeadlineTest(unittest.TestCase):
+    """#306 ADR "Every findings row carries one served headline": every row
+    published from ``FindingsProjection.project`` carries a composed sentence
+    built only from the row's own served fields (or, for correction factor, the
+    ISF rest-window evidence used purely as a coherence check).
+    """
+
+    def _project(self, analysis, *, exposures=None, scenarios=None, window=None):
+        # A scoped window, never `whole_day()`: the unscoped GLOBAL queue is
+        # asserting-only (term 38) and would silently drop every held/blind
+        # fixture this test builds.
+        projection = FindingsProjection(
+            _analysis=analysis,
+            _exposures=exposures or {"exposures": {}},
+            _scenarios=scenarios or {"patterns": [], "low_confidence": []},
+        )
+        return projection.project(window or WindowQuery.clock(1, DAY_MINUTES))["rows"]
+
+    # --- basal --------------------------------------------------------------
+
+    def test_basal_assert_single_slot_headline(self):
+        analysis = {"window_days": 30, "basal": [{
+            "slot": 0, "asserts_move": True, "direction": "lower",
+            "current": 0.60, "recommended": 0.48,
+            "estimate": {"value": 0.48}, "days": 30,
+            "annotation": "one cautious step down is supported at this time",
+        }], "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertEqual(
+            row["headline"],
+            "Delivered 0.48 U/h across 30 steady nights against 0.60 "
+            "programmed. One cautious step down is supported at this time.")
+
+    def test_basal_assert_merged_headline_names_no_single_rate(self):
+        slot = lambda index, days: {
+            "slot": index, "asserts_move": True, "direction": "raise",
+            "current": 0.80, "recommended": 1.1, "estimate": {"value": 1.1},
+            "days": days,
+            "annotation": "a step up, limited to 20% above the set rate",
+        }
+        analysis = {"window_days": 30, "basal": [slot(10, 21), slot(11, 19)],
+                    "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertIsNone(row["current"])
+        self.assertEqual(
+            row["headline"],
+            "Delivered above the programmed rate across 19 steady nights. "
+            "A step up, limited to 20% above the set rate.")
+        self.assertNotIn("0.8", row["headline"])
+        self.assertNotIn("1.1", row["headline"])
+
+    def test_basal_held_single_slot_headline(self):
+        analysis = {"window_days": 30, "basal": [{
+            "slot": 0, "asserts_move": False,
+            "safety_status": str(Status.INSUFFICIENT),
+            "current": 0.60, "recommended": 0.48,
+            "estimate": {"value": 0.48}, "days": 7,
+            "annotation": "not enough nights of steady data yet to point one way",
+        }], "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertEqual(row["register"], "held")
+        self.assertEqual(
+            row["headline"],
+            "Delivered 0.48 U/h across 7 steady nights against 0.60 "
+            "programmed. Not enough nights of steady data yet to point "
+            "one way.")
+
+    def test_basal_held_merged_with_lean_headline(self):
+        slot = lambda index: {
+            "slot": index, "asserts_move": False,
+            "safety_status": str(Status.INSUFFICIENT),
+            "current": 1.10, "recommended": 0.95, "estimate": {"value": 0.95},
+            "days": 18,
+            "annotation": "not enough nights of steady data yet to point one way",
+        }
+        analysis = {"window_days": 30, "basal": [slot(25), slot(26)],
+                    "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertIsNone(row["current"])
+        self.assertEqual(row["lean"], "lower")
+        self.assertEqual(
+            row["headline"],
+            "Delivered below the programmed rate across 18 steady nights. "
+            "Not enough nights of steady data yet to point one way.")
+
+    def test_basal_held_merged_with_no_lean_states_only_the_count(self):
+        slot = lambda index: {
+            "slot": index, "asserts_move": False,
+            "safety_status": str(Status.NO_BASELINE),
+            "current": None, "recommended": 1.0, "estimate": {"value": 1.0},
+            "days": 10,
+            "annotation": "no set rate to step from, so only the measured range is shown",
+        }
+        analysis = {"window_days": 30, "basal": [slot(30), slot(31)],
+                    "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertIsNone(row["lean"])
+        self.assertEqual(
+            row["headline"],
+            "10 steady nights delivered so far. No set rate to step from, "
+            "so only the measured range is shown.")
+
+    def test_basal_blind_headline_names_the_withheld_move_and_its_reason(self):
+        analysis = {"window_days": 30, "basal": [{
+            "slot": 0, "asserts_move": False,
+            "safety_status": str(Status.NO_DATA),
+            "current": 1.0, "recommended": None, "estimate": {"value": None},
+            "days": 0, "annotation": "no nights of steady data at this time yet",
+        }], "isf": [], "ic_blocks": []}
+        row = self._project(analysis)[0]
+        self.assertEqual(row["register"], "blind")
+        self.assertEqual(
+            row["headline"],
+            "No steady nights delivered against the programmed rate here, "
+            "so nothing to say either way.")
+
+    # --- correction factor (ISF) --------------------------------------------
+
+    def _isf_analysis(self, *, register, retained_steps=True, mismatched=False):
+        direction = "strengthen" if register == "assert" else None
+        row = {
+            "parameter": "isf", "current": 40.0, "recommended": 24.0,
+            "estimate": {"value": 23.9974, "n_clusters": 1},
+            "asserts_move": register == "assert",
+            "evidence": {
+                "direction": direction,
+                "rest_windows": [{"date": "2026-06-01"}],
+                "n_steps": 2,
+            },
+            "annotation": (
+                "overnight you look more sensitive to insulin than the set "
+                "value, so corrections can run a little stronger"
+                if register == "assert" else
+                "rescue-carb history doesn't cover this window"
+            ),
+        }
+        analysis = {"window_days": 30, "basal": [], "ic_blocks": [], "isf": [row]}
+        if retained_steps:
+            n_steps = 1 if mismatched else 2
+            analysis["_isf_rest_window_steps"] = [
+                {"insulin_acted": 0.1, "dbg": 1.0, "window_id": "rest:2026-06-01"}
+                for _ in range(n_steps)
+            ]
+        return analysis
+
+    def test_correction_factor_assert_headline_with_coherent_evidence(self):
+        row = self._project(self._isf_analysis(register="assert"))[0]
+        self.assertEqual(row["register"], "assert")
+        self.assertEqual(
+            row["headline"],
+            "Measured 1 U : 24.0 mg/dL across 0 fasting nights against 1 U "
+            ": 40 mg/dL programmed. Overnight you look more sensitive to "
+            "insulin than the set value, so corrections can run a little "
+            "stronger.")
+
+    def test_correction_factor_held_headline(self):
+        row = self._project(self._isf_analysis(register="held"))[0]
+        self.assertEqual(row["register"], "held")
+        self.assertEqual(
+            row["headline"],
+            "0 fasting nights measured against 1 U : 40 mg/dL programmed, "
+            "but rescue-carb history doesn't cover this window. No "
+            "direction is called.")
+
+    def test_correction_factor_falls_back_to_thin_read_when_steps_are_absent(self):
+        analysis = self._isf_analysis(register="assert", retained_steps=False)
+        rows = self._project(analysis)
+        self.assertEqual(rows[0]["headline"],
+                         "This slot doesn't have enough evidence to "
+                         "recommend a change either way.")
+
+    def test_correction_factor_falls_back_to_thin_read_when_steps_disagree(self):
+        analysis = self._isf_analysis(register="held", mismatched=True)
+        rows = self._project(analysis)
+        self.assertEqual(rows[0]["headline"],
+                         "This slot doesn't have enough evidence to "
+                         "recommend a change either way.")
+
+    def test_isf_thin_read_never_fails_the_whole_projection(self):
+        # A retained findings-history artifact whose ISF evidence disagrees with
+        # the analyzer's counts must not crash /api/diagnose/findings — only
+        # the ISF row's own headline degrades.
+        analysis = self._isf_analysis(register="assert", retained_steps=False)
+        analysis["basal"] = [{
+            "slot": 0, "asserts_move": True, "direction": "lower",
+            "current": 0.60, "recommended": 0.48,
+            "estimate": {"value": 0.48}, "days": 30,
+            "annotation": "one cautious step down is supported at this time",
+        }]
+        rows = self._project(analysis)
+        isf_row = next(row for row in rows if row["parameter"] == "isf")
+        basal_row = next(row for row in rows if row["parameter"] == "basal_rate")
+        self.assertEqual(isf_row["headline"], ISF_THIN_READ_HEADLINE)
+        self.assertTrue(basal_row["headline"])
+        self.assertNotEqual(basal_row["headline"], ISF_THIN_READ_HEADLINE)
+
+    # --- carb ratio (I:C) ----------------------------------------------------
+
+    def test_carb_ratio_assert_headline(self):
+        analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
+            "block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
+            "asserts_move": True, "direction": "raise",
+            "current_values": [10], "recommended": 12, "estimate": {"value": 12},
+            "n_runs": 8,
+            "annotation": "meals look slightly over-covered relative to programmed I:C",
+        }]}
+        row = self._project(analysis)[0]
+        self.assertEqual(
+            row["headline"],
+            "Measured 12 g/U across 8 meal runs against 10 programmed. "
+            "Meals look slightly over-covered relative to programmed I:C.")
+
+    def test_carb_ratio_held_headline_strips_the_held_at_current_tail(self):
+        analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
+            "block_id": 0, "start_min": 0, "end_min": 60, "label": "Dinner",
+            "asserts_move": False, "held_reason": "pre-empted low; held at current",
+            "current_values": [10], "recommended": None, "estimate": {"value": 8},
+            "n_runs": 8, "annotation": None,
+        }]}
+        row = self._project(analysis)[0]
+        self.assertEqual(row["register"], "held")
+        self.assertEqual(
+            row["headline"],
+            "Measured 8 g/U across 8 meal runs against 10 programmed. "
+            "Held at current: pre-empted low.")
+
+    # --- event comparison (finding) ------------------------------------------
+
+    def test_event_comparison_headline_ranks_and_does_not_rank(self):
+        rows = gen.projection().project(WindowQuery.whole_day())["rows"]
+        ranking = _row(rows, "Over-treated low")
+        not_ranking = _row(rows, "Correction on active insulin")
+        self.assertEqual(ranking["tier"], "worth_a_look")
+        self.assertEqual(
+            ranking["headline"],
+            "Showed up in 1 of 5 lows in this window, and ranks.")
+        self.assertEqual(not_ranking["tier"], "noted")
+        self.assertEqual(
+            not_ranking["headline"],
+            "Showed up in 1 of 5 lows in this window, not often enough to "
+            "rank yet.")
+
+    # --- past setting (history) -----------------------------------------------
+
+    def test_past_setting_history_headline(self):
+        projection, history = _with_history(
+            gen.empty_projection(), regime_end="2026-08-01T12:00:00")
+        rows = projection.project(WindowQuery.whole_day())["rows"]
+        history_row = next(item for item in rows
+                           if item["id"] == history.history_id)
+        self.assertEqual(
+            history_row["headline"],
+            "Measured 4.6 g/U across 3 meal runs while 5 was programmed, "
+            "until 2026-08-01. Programmed now: 6.")
+
+    # --- coverage + determinism ------------------------------------------------
+
+    def test_nine_family_and_register_pairs_all_carry_a_non_empty_headline(self):
+        basal_assert = {"slot": 0, "asserts_move": True, "direction": "lower",
+                        "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
+                        "annotation": "one cautious step down is supported at this time"}
+        basal_held = {"slot": 1, "asserts_move": False,
+                      "safety_status": str(Status.INSUFFICIENT),
+                      "current": 1.10, "estimate": {"value": 1.26}, "days": 21,
+                      "annotation": "not enough nights of steady data yet to point one way"}
+        basal_blind = {"slot": 2, "asserts_move": False,
+                       "safety_status": str(Status.NO_DATA),
+                       "current": 1.0, "estimate": {"value": None}, "days": 0,
+                       "annotation": "no nights of steady data at this time yet"}
+        ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
+                    "asserts_move": True, "direction": "raise",
+                    "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
+                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+        ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
+                  "asserts_move": False, "held_reason": "pre-empted low; held at current",
+                  "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
+                  "annotation": None}
+        analysis = {
+            "window_days": 30,
+            "basal": [basal_assert, basal_held, basal_blind],
+            "ic_blocks": [ic_assert, ic_held],
+            "isf": self._isf_analysis(register="assert")["isf"],
+        }
+        analysis["_isf_rest_window_steps"] = self._isf_analysis(
+            register="assert")["_isf_rest_window_steps"]
+        projection, _history = _with_history(
+            FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
+                               _scenarios=gen.scenarios()))
+        rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
+        pairs = set()
+        for row in rows:
+            if row["kind"] == "habit":
+                pairs.add(("finding", "habit"))
+            else:
+                pairs.add((row["register"], row.get("parameter") or row["kind"]))
+        # ISF is one row for the whole day (term 31), so assert and held can never
+        # coexist in one analysis; `('held', 'isf')` is covered by
+        # `test_correction_factor_held_headline` instead. The other eight of the
+        # nine family-and-register pairs are exercised together here.
+        expected = {
+            ("assert", "basal_rate"), ("held", "basal_rate"), ("blind", "basal_rate"),
+            ("assert", "carb_ratio"), ("held", "carb_ratio"),
+            ("assert", "isf"),
+            ("finding", "habit"),
+            ("history", "carb_ratio"),
+        }
+        self.assertTrue(expected.issubset(pairs), pairs)
+        for row in rows:
+            self.assertTrue(row["headline"], row)
+
+    def test_rerun_of_the_same_window_yields_the_same_headline(self):
+        projection = gen.projection()
+        first = projection.project(WindowQuery.whole_day())["rows"]
+        second = projection.project(WindowQuery.whole_day())["rows"]
+        self.assertEqual([row["headline"] for row in first],
+                         [row["headline"] for row in second])
 
 
 if __name__ == "__main__":

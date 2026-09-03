@@ -241,11 +241,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             payload = _analysis_payload(payload)
             if len(captured) != 1:
                 raise ValueError("ISF analyzer did not retain fasting evidence")
-            # The retained rows are an internal fixed-artifact adjunct: only the
-            # ISF evidence projection reads them, and /api/analyze strips them.
+            # The retained rows are an internal fixed-artifact adjunct: /api/analyze
+            # strips them, and the ISF evidence projection reads them directly. The
+            # findings projection (#306) also reads them, but only as a coherence
+            # check on the correction-factor headline — it calls
+            # prepare_isf_rest_window_evidence(analysis) and falls back to the
+            # thin-read sentence on any disagreement, never as a headline slot.
             # They persist in analyze-v1 and, via dump_findings wholesale under
             # _analysis, in every retained findings-history-v1 revision (about
-            # 150–200 KB per real 30-day revision); findings never reads the key.
+            # 150–200 KB per real 30-day revision).
             payload["_isf_rest_window_steps"] = [
                 {"insulin_acted": round(step.insulin_acted, 4),
                  "dbg": round(step.dbg, 2),

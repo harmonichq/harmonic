@@ -47,7 +47,7 @@
 
 ## 2. Serve the headline
 
-- [ ] `FindingsProjection.project` stamps `headline` on every row from the
+- [x] `FindingsProjection.project` stamps `headline` on every row from the
       templates recorded under `## Headline templates` in `design.md`,
       composed only from the row's own fields or from the evidence its
       chart's endpoint serves, read through the same functions those endpoints
@@ -72,14 +72,14 @@
       `scripts/qa_e2e_cases.py` and dump the literal per case per
       `AGENTS.md` "Maintaining QA coverage eras"; the catalog-generated tests
       must fail first on the missing field.
-- [ ] Tests in `tests/test_findings_projection.py` through `project()`: each
+- [x] Tests in `tests/test_findings_projection.py` through `project()`: each
       of the nine family-and-register pairs carries a non-empty headline; a held or blind
       row's sentence names the withheld move and its reason; a rerun of the
       same window yields the same sentence; no headline contains a value
       absent from the row or its evidence; an analysis carrying an ISF row
       with no `_isf_rest_window_steps` projects every row with the ISF
       thin-read sentence in place of a failure.
-- [ ] Regenerate `frontend/__fixtures__/findings-projection.json` with
+- [x] Regenerate `frontend/__fixtures__/findings-projection.json` with
       `scripts/gen_findings_projection_fixtures.py`, transcribe the field into
       `mockups/findings-projection.mirror.mjs` so
       `frontend/findings-projection-mirror.test.js` deep-compares clean,
@@ -89,7 +89,7 @@
       (`node mockups/finding-evidence-routing.exploration/build.mjs` for its
       `data.json`; `uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
       for its `index.html`) and run both `--check`s.
-- [ ] Re-measure the five QA budgets per `AGENTS.md` "Maintaining QA coverage
+- [x] Re-measure the five QA budgets per `AGENTS.md` "Maintaining QA coverage
       eras" step 4 without raising a limit and record the figures under
       `## QA budgets` in `design.md` against the limits it names; a breach
       stops the work. Fast gate and

@@ -63,6 +63,7 @@ from .ic_history import decode_history_id
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
+from .isf_rest_window_evidence import prepare_isf_rest_window_evidence
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -179,6 +180,8 @@ class FindingsProjection:
         rows += self._history_rows(query)
         rows.sort(key=_sort_key)
         _assign_tiers(rows)
+        for row in rows:
+            row["headline"] = _headline_for(row, self._analysis)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
@@ -682,6 +685,171 @@ def _title(name: str, register: str, direction: Optional[str]) -> str:
     return f"{name} · {direction}"
 
 
+# --- headlines: one served sentence per row (#306 ADR "Every findings row carries
+# one served headline") -----------------------------------------------------------
+#
+# Templates are the operator's, ruled in the attended round of 2026-09-03 and
+# recorded under `## Headline templates` in `design.md`. A slot names only a
+# served row field (or, for correction factor, the ISF rest-window evidence used
+# purely as a coherence check — never as a slot source, per that ADR). Nothing
+# here recounts raw records or re-derives a direction, floor, threshold or
+# priority; a held or blind sentence reads the served hold reason verbatim.
+
+ISF_THIN_READ_HEADLINE = (
+    "This slot doesn't have enough evidence to recommend a change either way."
+)
+
+_BASAL_BLIND_HEADLINE = (
+    "No steady nights delivered against the programmed rate here, "
+    "so nothing to say either way."
+)
+
+_HELD_AT_CURRENT_SUFFIX = "; held at current"
+
+# The ranked-queue tiers whose event-comparison rows earn the "and ranks" clause
+# (ADR 41's closed tier vocabulary: every priced asserting row is `next_in_line`,
+# every other counted row is `worth_a_look`; only `noted` sits below the line).
+_RANKING_TIERS = frozenset({"next_in_line", "worth_a_look"})
+
+
+def _fmt_uh(value: Optional[float]) -> Optional[str]:
+    """Basal prints in U/h, always to two decimals (CONTEXT.md)."""
+    return None if value is None else f"{value:.2f}"
+
+
+def _fmt_precision(value: Optional[float]) -> Optional[str]:
+    """mg/dL and g/U print as a whole number when the served value is whole, and
+    to one decimal otherwise (`40`, `12`, but `24.0` for a served `23.9974`)."""
+    if value is None:
+        return None
+    return str(int(value)) if float(value).is_integer() else f"{value:.1f}"
+
+
+def _below_above(word: Optional[str]) -> Optional[str]:
+    """A basal direction or lean, spelled as the headline's own vocabulary."""
+    return None if word is None else {"raise": "above", "lower": "below"}[word]
+
+
+def _sentence(text: str) -> str:
+    """A served analyzer fragment (lowercase-initial user copy), capitalized to
+    open a new sentence — the fragment itself is never reworded (#306 ADR: "a
+    held's sentence reads the served hold reason verbatim")."""
+    return text[:1].upper() + text[1:] if text else text
+
+
+def _basal_headline(row: dict) -> str:
+    if row["register"] == "blind":
+        # Rate-free for single and merged rows alike: a blind row has no
+        # delivered value to set against it.
+        return _BASAL_BLIND_HEADLINE
+    support_n = (row.get("support") or {}).get("n")
+    annotation = _sentence(row.get("annotation") or "")
+    current = row.get("current")
+    estimate_value = (row.get("estimate") or {}).get("value")
+    if current is not None and estimate_value is not None:
+        return (f"Delivered {_fmt_uh(estimate_value)} U/h across {support_n} "
+                f"steady nights against {_fmt_uh(current)} programmed. "
+                f"{annotation}.")
+    # A merged run names no single programmed rate, and a slot with no
+    # delivered estimate (a harm-forced move on zero clean nights) has
+    # nothing to set against the programmed rate either — both read only the
+    # row's own served direction or lean and the steady-night count.
+    if row["register"] == "assert":
+        word = _below_above(row.get("direction"))
+        return (f"Delivered {word} the programmed rate across {support_n} "
+                f"steady nights. {annotation}.")
+    lean = row.get("lean")
+    if lean is None:
+        # The held estimate sits at the programmed rate, or is absent: nothing
+        # to lean the sentence on but the count.
+        return f"{support_n} steady nights delivered so far. {annotation}."
+    word = _below_above(lean)
+    return (f"Delivered {word} the programmed rate across {support_n} "
+            f"steady nights. {annotation}.")
+
+
+def _isf_headline(row: dict, analysis: dict) -> str:
+    """Correction factor's headline, gated on the ISF rest-window evidence read.
+
+    The rendered sentence is composed entirely from the row's own served fields
+    (never a slot from the evidence payload itself); the read exists to prove the
+    retained analysis this row came from is still coherent —
+    :func:`~ciq_autotune.isf_rest_window_evidence.prepare_isf_rest_window_evidence`
+    raises on a missing ISF row and on a retained step/window count that
+    disagrees with the analyzer's own counts, which a crashed cache rebuild or an
+    upgrade can leave behind. Any such failure falls back to the thin-read
+    sentence rather than composing a headline the retained payload can no
+    longer support.
+    """
+    try:
+        prepare_isf_rest_window_evidence(analysis)
+    except Exception:
+        return ISF_THIN_READ_HEADLINE
+    support_n = (row.get("support") or {}).get("n")
+    current = _fmt_precision(row.get("current"))
+    if row["register"] == "assert":
+        estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
+        annotation = _sentence(row.get("annotation") or "")
+        return (f"Measured 1 U : {estimate_value} mg/dL across {support_n} "
+                f"fasting nights against 1 U : {current} mg/dL programmed. "
+                f"{annotation}.")
+    reason = row.get("reason") or ""
+    return (f"{support_n} fasting nights measured against 1 U : {current} "
+            f"mg/dL programmed, but {reason}. No direction is called.")
+
+
+def _ic_headline(row: dict) -> str:
+    support_n = (row.get("support") or {}).get("n")
+    current = _fmt_precision(row.get("current"))
+    estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
+    if row["register"] == "assert":
+        annotation = _sentence(row.get("annotation") or "")
+        return (f"Measured {estimate_value} g/U across {support_n} meal runs "
+                f"against {current} programmed. {annotation}.")
+    reason = (row.get("reason") or "").removesuffix(_HELD_AT_CURRENT_SUFFIX)
+    return (f"Measured {estimate_value} g/U across {support_n} meal runs "
+            f"against {current} programmed. Held at current: {reason}.")
+
+
+def _finding_headline(row: dict) -> Optional[str]:
+    appearances = row.get("appearances") or []
+    if not appearances:
+        return None
+    appearance = appearances[0]
+    rank_clause = (", and ranks" if row.get("tier") in _RANKING_TIERS
+                   else ", not often enough to rank yet")
+    return (f"Showed up in {appearance['n']} of {appearance['m']} "
+            f"{appearance['noun']} in this window{rank_clause}.")
+
+
+def _history_headline(row: dict) -> str:
+    estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
+    support = row.get("support")
+    past_setting = _fmt_precision(row.get("past_setting"))
+    programmed_now = _fmt_precision(row.get("programmed_now"))
+    regime_end = row.get("regime_end")
+    regime_end_date = regime_end.split("T")[0] if regime_end else regime_end
+    return (f"Measured {estimate_value} g/U across {support} meal runs while "
+            f"{past_setting} was programmed, until {regime_end_date}. "
+            f"Programmed now: {programmed_now}.")
+
+
+def _headline_for(row: dict, analysis: dict) -> Optional[str]:
+    """The one served sentence for this row's own family and register."""
+    if row["kind"] == "habit":
+        return _finding_headline(row)
+    if row["register"] == "history":
+        return _history_headline(row)
+    parameter = row["parameter"]
+    if parameter == "basal_rate":
+        return _basal_headline(row)
+    if parameter == "isf":
+        return _isf_headline(row, analysis)
+    if parameter == "carb_ratio":
+        return _ic_headline(row)
+    raise ValueError(f"no headline template for parameter {parameter!r}")  # pragma: no cover
+
+
 # Carb ratio is grams per unit, so raising it removes insulin and answers lows.
 _SETTINGS_CHIPS = {
     ("basal_rate", "raise"): ("highs",),
@@ -718,7 +886,7 @@ def _row(**fields) -> dict:
     """One queue row, with every key present on every row (absent reads as null)."""
     row = {
         "id": None, "register": None, "kind": None, "title": None, "priority": None,
-        "tier": None,
+        "tier": None, "headline": None,
         "parameter": None, "label": None, "span": None, "direction": None,
         "asserts_move": None,
         "lean": None, "current": None, "recommended": None, "estimate": None,

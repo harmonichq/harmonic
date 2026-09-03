@@ -313,7 +313,7 @@ test('the editorial staircase counts the roster from the payload', () => {
     assert.equal(numeral.style.verticalAlign, 'middle');
     assert.equal(labels[index].style.verticalAlign, 'middle');
   }
-  assert.deepEqual(numerals.map(({ style }) => style.y), [118, 142, 166, 204],
+  assert.deepEqual(numerals.map(({ style }) => style.y), [114, 138, 162, 200],
     'one pitch down the tally, and the excluded row below its own rule');
   assert.ok(option.graphic.every(({ style }) => !/circle/.test(style?.text ?? '')));
   assert.equal(option.series.find(({ id }) => id === 'furniture')
@@ -358,6 +358,25 @@ test('the editorial staircase counts the roster from the payload', () => {
     'the cells reaching the programmed rule are the nights at or above it');
   assert.equal(cells.data.filter(({ value }) => value[0] >= option.xAxis.max).length, 0,
     'no night runs past this roster ceiling');
+});
+
+/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306): the deck no
+   longer composes or draws one, and the vertical room that reserved is given
+   back to the plot. */
+test('the full-rank basal deck draws no headline, and the plot reclaims its room', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find(({ kind }) => kind === 'basal');
+  const option = entry.option('editorial', {
+    data: { ...basal, estimate: { value: .74, lo: .6, hi: .92 } },
+  });
+
+  const texts = option.graphic.map(({ style }) => style?.text ?? '').join(' | ');
+  assert.doesNotMatch(texts, /Pump ran (above|below|at) the programmed rate/,
+    'the deck composes no headline sentence of its own');
+  assert.doesNotMatch(texts, /nights, counted by the rate the pump ran/);
+  assert.ok(option.graphic.every(({ style }) => !/21px/.test(style?.font ?? '')),
+    'no graphic element uses the retired headline type size');
+  assert.equal(option.grid.top, 76, 'the plot starts where the reclaimed deck budget now allows');
 });
 
 /* ONE BIG NIGHT MAY NOT SET THE SCALE, AND MAY NOT BE HIDDEN EITHER: the

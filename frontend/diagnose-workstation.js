@@ -38,11 +38,12 @@ import {
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
 import {
-  DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
-  dismissFullscreen, dismissRaisedDock, dockView, drilledChartIdForFrame,
-  enterFullscreen, isDrilledSpotlight,
+  DOCK_BOOT_WANT, DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
+  dismissFullscreen, dismissRaisedDock, dockPickTransition, dockResizeTransition,
+  dockView, drilledChartIdForFrame,
+  enterFullscreen, fallbackFocalId, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
-  recommendedFocalId, rosterChartIds, seatableChartIds, untraceDrill,
+  rosterChartIds, seatableChartIds, untraceDrill,
 } from './diagnose-canvas-state.js';
 import {
   assertMatchingFindingCasePreparation,
@@ -1082,11 +1083,14 @@ function boot(root, data, callbacks, signal) {
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
-  /* WHAT THE READER ASKED THE DOCK FOR, never what they got. The resolution is
-     re-run against the measured field on every paint, so a dock the viewport
-     forced away returns on its own when the room comes back and a reader who
-     asked for hidden on a phone still gets the row on a desktop. */
-  let dockWant = 'docked';
+  /* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Operator,
+     2026-09-02: "I really want it to be a picker … closed on default load and
+     something you can bring up ... but when you click on a chart, it goes
+     away." On the re-dock: "It opens minimized. It never comes back up on its
+     own. That path is archived. It's gone." `dockWant` only ever moves by a
+     reader act, or to `'hidden'` on dropping below the dock floor — nothing
+     here re-docks it on its own once the room comes back. */
+  let dockWant = DOCK_BOOT_WANT;
   let fieldHeight = Infinity;
   /* THE ROW IS DROPPED WHEN THE PANE CANNOT DRAW ONE LEGIBLE MINI, and it is the
      PANE's width that decides — at a 1440 viewport the canvas pane is 1010px
@@ -1443,8 +1447,8 @@ function boot(root, data, callbacks, signal) {
     canvasLayout = createCanvasLayout({
       focalId: available.has(canvasLayout.focalId)
         ? canvasLayout.focalId
-        : recommendedFocalId(findings, currentTileDescriptors())
-          || currentTileCandidates()[0] || canvasLayout.pins[0] || null,
+        : fallbackFocalId(findings, currentTileDescriptors(),
+          currentTileCandidates(), canvasLayout.pins),
       pins: canvasLayout.pins,
     });
     seatingPolicyKey = nextPolicyKey;
@@ -2087,6 +2091,16 @@ function boot(root, data, callbacks, signal) {
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
     seatDrill(popped.drilledChartId);
+    /* LEAVING A DRILL RE-SEATS THE ACTIVE FINDING'S CHART, NEVER THE CHART
+       JUST LEFT (ADR 306). `popped.drilledChartId` is null once the stack is
+       back at the queue — `seatDrill(null)` marks nothing drilled but also
+       moves nothing, which used to strand the stage on whatever chart the
+       drill had focused. The same fallback the reconcile falls back to
+       re-seats it here. */
+    if (!popped.drilledChartId && !fullscreen) {
+      focusChart(fallbackFocalId(findings, currentTileDescriptors(),
+        currentTileCandidates(), canvasLayout.pins));
+    }
     dir = 'pop'; paint();
   };
 
@@ -2566,9 +2580,14 @@ function boot(root, data, callbacks, signal) {
         ...(canvasLayout.focalId ? [canvasLayout.focalId] : [])])], canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
     /* THE DOCK'S STATE IS RESOLVED, NEVER STORED. `dockWant` is what the reader
-       asked for; the measured field decides what that can mean right now, so a
-       viewport that forced the dock away gives it back on its own. Fullscreen
-       is a state of its own and outranks all three. */
+       asked for; the measured field only decides what a docked want can mean
+       right now — floating over the spotlight where the field is short. It
+       never gives a forced-away dock back on its own (ADR 306): a resize
+       crossing below the dock floor drops `dockWant` itself to `'hidden'`
+       before this call, and growing back past the floor leaves it there.
+       Operator, 2026-09-02, on the drawer that used to grow back: "It opens
+       minimized. It never comes back up on its own. That path is archived.
+       It's gone." Fullscreen is a state of its own and outranks all three. */
     const dock = dockView(fieldHeight, dockWant);
     /* CHART FULLSCREEN OUTRANKS THE EXPLORER: it is opened FROM it, and two big
        states cannot both hold the pane. */
@@ -2723,7 +2742,12 @@ function boot(root, data, callbacks, signal) {
       const id = document.createElement('span');
       id.className = 'tile-id';
       const title = document.createElement('h3');
-      title.textContent = descriptor.title;
+      /* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306). Every
+         other seat — the strip's minis, the explorer's grid, fullscreen's own
+         header below — keeps `descriptor.title`, `nameFor`'s short name; only
+         the focal seat renders the served headline verbatim. */
+      title.textContent = seat.seat === 'focal' && descriptor.headline
+        ? descriptor.headline : descriptor.title;
       const meta = document.createElement('span');
       meta.className = 'tile-meta';
       meta.textContent = descriptor.meta || entry.meta(descriptor.mode);
@@ -2917,17 +2941,24 @@ function boot(root, data, callbacks, signal) {
         /* PICKING FROM THE EXPLORER IS WHAT CLOSES IT, landing the reader on
            the chart they picked. It makes open → find it → read it one gesture,
            and it is a second way out for a reader who never finds shrink.
+           `showChartInspector` already seats and drills the picked chart, so
+           there is no second focus call to make here.
 
-           CLICKING THE SPOTLIGHT PUTS A RAISED DOCK AWAY — attention has moved
-           off the dock — while clicking a mini in the raised row has not,
-           because reading the minis is what the raised dock is for. */
+           THE DRAWER IS A PICKER (ADR 306): "Picking a chart from the drawer
+           — a cell click or Enter, a Watching tail cell, or an explorer pick
+           — seats and drills that chart and puts the drawer away." Operator,
+           2026-09-02, on the click that does it: "it goes away." Clicking the
+           spotlight is not a pick from the drawer — it is already seated —
+           so `dockPickTransition` leaves it alone; only a raised dock is put
+           away there, because attention leaving a floating dock is ADR 215's
+           separate rule. */
         if (explorer) {
-          focusChart(descriptor.chartId);
           explorerOpen = false;
         } else if (dock.raised && seat.seat === 'focal') {
           dockWant = dismissRaisedDock(dockWant, fieldHeight);
         }
         showChartInspector(descriptor);
+        dockWant = dockPickTransition(dockWant, seat.seat);
         paintTiles();
         paintChart();
         paintBrace();
@@ -3837,18 +3868,21 @@ function boot(root, data, callbacks, signal) {
     const narrow = measureFieldNarrow();
     const height = measureFieldHeight();
     if (narrow === fieldNarrow && height === fieldHeight) return;
-    /* THE DOCK PUTS ITSELF AWAY WHEN THE SPOTLIGHT RUNS OUT OF ROOM, AND COMES
-       BACK WHEN THE ROOM DOES. Restored by the live-judging ruling: "we had a
-       rule in place that said that when the spotlight chart got to a certain
-       size, the chart dock would automatically hide. Can we bring that back."
+    /* THE DOCK PUTS ITSELF AWAY WHEN THE SPOTLIGHT RUNS OUT OF ROOM, AND NEVER
+       INVITES ITSELF BACK (ADR 306 retires the grow-back half of the
+       live-judging ruling this restored: "when the spotlight chart got to a
+       certain size, the chart dock would automatically hide" still holds, but
+       growing back past the floor no longer re-docks it — that path is one
+       more way the drawer used to come up on its own, and the picker rule
+       closes all of them).
 
        It fires on the CROSSING, not on every measurement, which is what keeps
        it from overruling the reader: below the floor they can still bring the
        dock up by hand, and it floats over the spotlight rather than squeezing
-       it. Only the field growing back or shrinking past the floor moves the
-       want on its own. */
+       it. Only the field shrinking past the floor moves the want on its own;
+       growing back leaves it exactly as the reader set it. */
     if (fieldHeight && (height < DOCK_FLOOR) !== (fieldHeight < DOCK_FLOOR)) {
-      dockWant = height < DOCK_FLOOR ? 'hidden' : 'docked';
+      dockWant = dockResizeTransition(dockWant, height);
     }
     fieldNarrow = narrow;
     fieldHeight = height;

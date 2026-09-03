@@ -229,3 +229,7 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   corrections (plan-review "mechanical fix in place") with the same reviewer
   re-checking the bytes, since the cap forbids a fourth panel and none is a
   decision for the operator. Injected: 0.
+- Panel 3 re-check (same reviewer): COUNTERSIGNED at pin b76f0f42, one note
+  (the four-extracted-blocks clause repeated in sub-order 4, order only).
+  Review closed: 3 panels, 4 pinned-source revisions, 22 objections in all,
+  3 injected by earlier fixes.

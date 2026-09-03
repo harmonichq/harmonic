@@ -171,4 +171,15 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
 
 ## Review rounds
 
-- (none yet)
+- Round 1 (cold, Opus, read-only, 2026-09-02): BLOCKED. Blockers, all
+  `authoring`: (1) the explorer pick already drills through
+  `showChartInspector`, so the order's fail-first claim was false; (2) three
+  browser legs read the dock strip (cockpit-shell suite, event-comparison
+  replay, support audit) and sat in no allowlist; (3) the served-headline
+  requirement carried stage clauses no single chunk could satisfy; (4) the
+  headline's fact source across the authoring→serving boundary was undefined.
+  Notes: the public scan never reads `openspec/changes/**`; history rows have
+  no stage card (consumer named as #302); the evidence-canvas exploration
+  reads the regenerated payload; `frontend/index.test.js:32` pins the dock
+  CSS order; the shrink-hides clause was a MAY. All nine reproduced; all
+  fixed in the pinned source (6b4c069b) and the order. Injected: 0.

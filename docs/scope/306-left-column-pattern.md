@@ -183,3 +183,12 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   reads the regenerated payload; `frontend/index.test.js:32` pins the dock
   CSS order; the shrink-hides clause was a MAY. All nine reproduced; all
   fixed in the pinned source (6b4c069b) and the order. Injected: 0.
+- Round 1 re-check (same reviewer): BLOCKED. `injected` (from the round-1
+  fact-source fix): the Finding case file cannot be read from inside the
+  projection (`finding_case_file.py` imports it and prepares one in a store
+  transaction), so the readable set is the three analyzer-payload evidence
+  modules and a case-file consequence fact is not a slot; sub-order 1's
+  anchor number was stale after the requirement split. `authoring`: no chunk
+  re-measured the QA budgets the row change triggers; the cached-projection
+  citation pointed at the sidecar recovery line. All five reproduced; fixed
+  in the pinned source and the order. Injected: 2 of 5.

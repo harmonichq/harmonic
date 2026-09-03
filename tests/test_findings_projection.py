@@ -1208,8 +1208,8 @@ class HeadlineTest(unittest.TestCase):
         row = self._project(analysis)[0]
         self.assertEqual(
             row["headline"],
-            "Delivered 0.48 U/h across 30 steady nights against 0.60 "
-            "programmed. One cautious step down is supported at this time.")
+            "One cautious step down is supported at this time. Delivered "
+            "0.48 U/h across 30 steady nights against 0.60 programmed.")
 
     def test_basal_assert_merged_headline_names_no_single_rate(self):
         slot = lambda index, days: {
@@ -1224,8 +1224,8 @@ class HeadlineTest(unittest.TestCase):
         self.assertIsNone(row["current"])
         self.assertEqual(
             row["headline"],
-            "Delivered above the programmed rate across 19 steady nights. "
-            "A step up, limited to 20% above the set rate.")
+            "A step up, limited to 20% above the set rate. Delivered above "
+            "the programmed rate across 19 steady nights.")
         self.assertNotIn("0.8", row["headline"])
         self.assertNotIn("1.1", row["headline"])
 
@@ -1241,9 +1241,9 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(row["register"], "held")
         self.assertEqual(
             row["headline"],
+            "Not enough nights of steady data yet to point one way. "
             "Delivered 0.48 U/h across 7 steady nights against 0.60 "
-            "programmed. Not enough nights of steady data yet to point "
-            "one way.")
+            "programmed.")
 
     def test_basal_held_merged_with_lean_headline(self):
         slot = lambda index: {
@@ -1260,8 +1260,8 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(row["lean"], "lower")
         self.assertEqual(
             row["headline"],
-            "Delivered below the programmed rate across 18 steady nights. "
-            "Not enough nights of steady data yet to point one way.")
+            "Not enough nights of steady data yet to point one way. "
+            "Delivered below the programmed rate across 18 steady nights.")
 
     def test_basal_held_merged_with_no_lean_states_only_the_count(self):
         slot = lambda index: {
@@ -1277,8 +1277,8 @@ class HeadlineTest(unittest.TestCase):
         self.assertIsNone(row["lean"])
         self.assertEqual(
             row["headline"],
-            "10 steady nights delivered so far. No set rate to step from, "
-            "so only the measured range is shown.")
+            "No set rate to step from, so only the measured range is "
+            "shown. 10 steady nights delivered so far.")
 
     def test_basal_blind_headline_names_the_withheld_move_and_its_reason(self):
         analysis = {"window_days": 30, "basal": [{
@@ -1326,19 +1326,19 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(row["register"], "assert")
         self.assertEqual(
             row["headline"],
-            "Measured 1 U : 24.0 mg/dL across 0 fasting nights against 1 U "
-            ": 40 mg/dL programmed. Overnight you look more sensitive to "
-            "insulin than the set value, so corrections can run a little "
-            "stronger.")
+            "Overnight you look more sensitive to insulin than the set "
+            "value, so corrections can run a little stronger. Measured 1 U "
+            ": 24.0 mg/dL across 0 fasting nights against 1 U : 40 mg/dL "
+            "programmed.")
 
     def test_correction_factor_held_headline(self):
         row = self._project(self._isf_analysis(register="held"))[0]
         self.assertEqual(row["register"], "held")
         self.assertEqual(
             row["headline"],
-            "0 fasting nights measured against 1 U : 40 mg/dL programmed, "
-            "but rescue-carb history doesn't cover this window. No "
-            "direction is called.")
+            "No direction is called: rescue-carb history doesn't cover "
+            "this window. 0 fasting nights measured against 1 U : 40 "
+            "mg/dL programmed.")
 
     # --- carb ratio (I:C) ----------------------------------------------------
 
@@ -1353,8 +1353,8 @@ class HeadlineTest(unittest.TestCase):
         row = self._project(analysis)[0]
         self.assertEqual(
             row["headline"],
-            "Measured 12 g/U across 8 meal runs against 10 programmed. "
-            "Meals look slightly over-covered relative to programmed I:C.")
+            "Meals look slightly over-covered relative to programmed I:C. "
+            "Measured 12 g/U across 8 meal runs against 10 programmed.")
 
     def test_carb_ratio_held_headline_strips_the_held_at_current_tail(self):
         analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
@@ -1367,8 +1367,8 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(row["register"], "held")
         self.assertEqual(
             row["headline"],
-            "Measured 8 g/U across 8 meal runs against 10 programmed. "
-            "Held at current: pre-empted low.")
+            "Held at current: pre-empted low. Measured 8 g/U across 8 "
+            "meal runs against 10 programmed.")
 
     # --- event comparison (finding) ------------------------------------------
 
@@ -1379,12 +1379,13 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(ranking["tier"], "worth_a_look")
         self.assertEqual(
             ranking["headline"],
-            "Showed up in 1 of 5 lows in this window, and ranks.")
+            "Recurring often enough to rank. Showed up in 1 of 5 lows in "
+            "this window.")
         self.assertEqual(not_ranking["tier"], "noted")
         self.assertEqual(
             not_ranking["headline"],
-            "Showed up in 1 of 5 lows in this window, not often enough to "
-            "rank yet.")
+            "Not often enough to rank yet. Showed up in 1 of 5 lows in "
+            "this window.")
 
     # --- past setting (history) -----------------------------------------------
 
@@ -1396,8 +1397,9 @@ class HeadlineTest(unittest.TestCase):
                            if item["id"] == history.history_id)
         self.assertEqual(
             history_row["headline"],
-            "Measured 4.6 g/U across 3 meal runs while 5 was programmed, "
-            "until 2026-08-01. Programmed now: 6.")
+            "Past setting, no change suggested. Measured 4.6 g/U across 3 "
+            "meal runs while 5 was programmed, until 2026-08-01. "
+            "Programmed now: 6.")
 
     # --- coverage + determinism ------------------------------------------------
 
@@ -1451,6 +1453,54 @@ class HeadlineTest(unittest.TestCase):
         self.assertTrue(expected.issubset(pairs), pairs)
         for row in rows:
             self.assertTrue(row["headline"], row)
+
+    def test_every_headline_leads_with_its_verdict_sentence(self):
+        # basal assert/held/blind, carb ratio assert/held, correction factor
+        # assert — the eight non-ISF-held pairs the nine-pair test builds.
+        basal_assert = {"slot": 0, "asserts_move": True, "direction": "lower",
+                        "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
+                        "annotation": "one cautious step down is supported at this time"}
+        basal_held = {"slot": 1, "asserts_move": False,
+                      "safety_status": str(Status.INSUFFICIENT),
+                      "current": 1.10, "estimate": {"value": 1.26}, "days": 21,
+                      "annotation": "not enough nights of steady data yet to point one way"}
+        basal_blind = {"slot": 2, "asserts_move": False,
+                       "safety_status": str(Status.NO_DATA),
+                       "current": 1.0, "estimate": {"value": None}, "days": 0,
+                       "annotation": "no nights of steady data at this time yet"}
+        ic_assert = {"block_id": 0, "start_min": 0, "end_min": 60, "label": "Breakfast",
+                    "asserts_move": True, "direction": "raise",
+                    "current_values": [10], "estimate": {"value": 12}, "n_runs": 8,
+                    "annotation": "meals look slightly over-covered relative to programmed I:C"}
+        ic_held = {"block_id": 1, "start_min": 720, "end_min": 780, "label": "Dinner",
+                  "asserts_move": False, "held_reason": "pre-empted low; held at current",
+                  "current_values": [10], "estimate": {"value": 8}, "n_runs": 8,
+                  "annotation": None}
+        analysis = {
+            "window_days": 30,
+            "basal": [basal_assert, basal_held, basal_blind],
+            "ic_blocks": [ic_assert, ic_held],
+            "isf": self._isf_analysis(register="assert")["isf"],
+        }
+        projection, _history = _with_history(
+            FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
+                               _scenarios=gen.scenarios()))
+        rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
+        # Plus correction factor held, and the event-comparison finding pair.
+        rows += self._project(self._isf_analysis(register="held"))
+        rows += gen.projection().project(WindowQuery.whole_day())["rows"]
+
+        for row in rows:
+            headline = row["headline"]
+            first_sentence = headline.split(". ", 1)[0]
+            self.assertFalse(
+                first_sentence.startswith("Delivered"),
+                f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
+                f"{headline!r}")
+            self.assertFalse(
+                first_sentence.startswith("Measured"),
+                f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
+                f"{headline!r}")
 
     def test_rerun_of_the_same_window_yields_the_same_headline(self):
         projection = gen.projection()

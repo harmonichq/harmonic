@@ -620,6 +620,9 @@ function isfHeadline(r) {
       + `${supportN} fasting nights against 1 U : ${current} mg/dL programmed.`;
   }
   const reason = r.reason || '';
+  if (current === null) {
+    return `No direction is called: ${reason}. ${supportN} fasting nights measured.`;
+  }
   return `No direction is called: ${reason}. ${supportN} fasting nights `
     + `measured against 1 U : ${current} mg/dL programmed.`;
 }
@@ -628,16 +631,17 @@ function icHeadline(r) {
   const supportN = (r.support || {}).n;
   const current = fmtPrecision(r.current);
   const estimateValue = fmtPrecision((r.estimate || {}).value);
+  const againstCurrent = current !== null ? ` against ${current} programmed` : '';
   if (r.register === 'assert') {
     const annotation = sentenceCase(r.annotation || '');
     return `${annotation}. Measured ${estimateValue} g/U across ${supportN} `
-      + `meal runs against ${current} programmed.`;
+      + `meal runs${againstCurrent}.`;
   }
   const rawReason = r.reason || '';
   const reason = rawReason.endsWith(HELD_AT_CURRENT_SUFFIX)
     ? rawReason.slice(0, -HELD_AT_CURRENT_SUFFIX.length) : rawReason;
   return `Held at current: ${reason}. Measured ${estimateValue} g/U across `
-    + `${supportN} meal runs against ${current} programmed.`;
+    + `${supportN} meal runs${againstCurrent}.`;
 }
 
 function findingHeadline(r) {

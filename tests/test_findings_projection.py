@@ -8,6 +8,7 @@ wrong).
 """
 
 import importlib.util
+import json
 import pathlib
 import random
 import tempfile
@@ -1340,6 +1341,22 @@ class HeadlineTest(unittest.TestCase):
             "this window. 0 fasting nights measured against 1 U : 40 "
             "mg/dL programmed.")
 
+    def test_correction_factor_held_headline_with_no_programmed_value(self):
+        """No current, no "None" (must-prevent). ``analyzers/isf.py`` returns
+        direction ``None`` with annotation "measured; no set value to compare"
+        when the programmed value is ``None``; the served headline must drop
+        the "against ... programmed" clause rather than print "None"."""
+        analysis = self._isf_analysis(register="held")
+        analysis["isf"][0]["current"] = None
+        analysis["isf"][0]["annotation"] = "measured; no set value to compare"
+        row = self._project(analysis)[0]
+        self.assertEqual(row["register"], "held")
+        self.assertNotIn("None", row["headline"])
+        self.assertEqual(
+            row["headline"],
+            "No direction is called: measured; no set value to compare. "
+            "0 fasting nights measured.")
+
     # --- carb ratio (I:C) ----------------------------------------------------
 
     def test_carb_ratio_assert_headline(self):
@@ -1369,6 +1386,23 @@ class HeadlineTest(unittest.TestCase):
             row["headline"],
             "Held at current: pre-empted low. Measured 8 g/U across 8 "
             "meal runs against 10 programmed.")
+
+    def test_carb_ratio_held_headline_with_no_current_values(self):
+        """No `current_values`, no "None" (must-prevent): the held sentence
+        drops the "against ... programmed" clause rather than print "None"."""
+        analysis = {"window_days": 30, "basal": [], "isf": [], "ic_blocks": [{
+            "block_id": 0, "start_min": 0, "end_min": 60, "label": "Dinner",
+            "asserts_move": False, "held_reason": "pre-empted low; held at current",
+            "current_values": [], "recommended": None, "estimate": {"value": 8},
+            "n_runs": 8, "annotation": None,
+        }]}
+        row = self._project(analysis)[0]
+        self.assertEqual(row["register"], "held")
+        self.assertNotIn("None", row["headline"])
+        self.assertEqual(
+            row["headline"],
+            "Held at current: pre-empted low. Measured 8 g/U across 8 "
+            "meal runs.")
 
     # --- event comparison (finding) ------------------------------------------
 
@@ -1559,6 +1593,32 @@ class HeadlineTest(unittest.TestCase):
         second = projection.project(WindowQuery.whole_day())["rows"]
         self.assertEqual([row["headline"] for row in first],
                          [row["headline"] for row in second])
+
+    def test_no_committed_fixture_headline_prints_the_string_none(self):
+        """A blanket sweep over the committed fixture set: no served headline,
+        in any window or case the generator built, ever prints the string
+        "None" — the same must-prevent the two targeted tests above cover for
+        a null-programmed-value ISF or carb-ratio held row, checked here
+        against everything actually shipped."""
+        fixture_path = (pathlib.Path(__file__).resolve().parents[1]
+                         / "frontend" / "__fixtures__" / "findings-projection.json")
+        fixture = json.loads(fixture_path.read_text())
+
+        def headlines(node):
+            if isinstance(node, dict):
+                headline = node.get("headline")
+                if isinstance(headline, str):
+                    yield headline
+                for value in node.values():
+                    yield from headlines(value)
+            elif isinstance(node, list):
+                for item in node:
+                    yield from headlines(item)
+
+        found = list(headlines(fixture))
+        self.assertGreater(len(found), 0)
+        for headline in found:
+            self.assertNotIn("None", headline)
 
 
 if __name__ == "__main__":

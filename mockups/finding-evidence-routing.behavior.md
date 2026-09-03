@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**146 issued executable IDs:** S01–S126, C41–C57, and D1–D3
-**Active executable IDs:** S01–S116, S118–S126, C41–C57, and D1–D3
+**152 issued executable IDs:** S01–S132, C41–C57, and D1–D3
+**Active executable IDs:** S01–S116, S118–S132, C41–C57, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -2813,6 +2813,109 @@ stage affordance. Opening it preserves the analyzer's two-signal explanation: th
 fasting fit agrees with the current setting, while recurring correction-linked lows
 own the weaker-corrections direction. The frontend adds only that no new number is
 available, so there is nothing to stage. Evidence: replay S121.
+
+## Revision — 2026-09-03, base `112ea3a694a28b6549f32708074973cd586d190e` (issue #306: the left-column pattern)
+
+Before product code changes, `app: 145 of 145 stories passed` against exact
+base `112ea3a694a28b6549f32708074973cd586d190e` (the ticket branch's
+merge-base with `origin/main`) through the declared no-fetch server, served at
+a second port from a separate worktree cut at that commit, from its own scratch
+copy of `mockups/qa-e2e.synthetic/harmonic.sqlite` (generated in full by
+`scripts/gen_qa_e2e_db.py`), and the committed Diagnose payload. Every issued
+story passed; the retired stories S33, S34, S35, S37, S38, S112 and S113
+printed their sanctions. Data provenance: every render and replay in this
+revision reads the committed synthetic payload and the generated QA showcase;
+no real patient data.
+
+**Fail-first.** With the revision's product code in place and this ledger and
+replay untouched, the frozen replay reported `app: 131 of 145 stories
+passed`. The fourteen failures — S40, S102, S104, S106, S108, S114, S115,
+S119, S120, S122, S123, S124, S125, S126 — all fail through one of the two
+behaviors this revision changes: the drawer boots hidden, so a story that read
+`#tile-row` on a fresh visit found no strip (S40, S102, S104, S106, S108,
+S119, S120, S122–S126), and a pick from the strip puts it away, so a story that
+read the strip after promoting a cell found it gone (S114, S115). The complete
+output of that run is `openspec/changes/left-column-pattern/evidence/replay.pre.stdout.txt`.
+
+**Behavior changed — the drawer opens minimized, and a pick puts it away
+(ADR 306).** Twelve stories that read the strip are amended to bring it up
+first through the reader's own control (`Bring the charts up`), exactly as the
+reader would; `raiseDock` in the replay is that one step, and every story that
+reads the strip again after a pick calls it again. S114 and S115 are amended
+to assert the put-away: selecting a Watching tail cell (S114) and Enter on a
+mini (S115) both leave `#tile-field[data-dock="hidden"]`, and S114's strip
+clauses hold once the reader brings the strip back up. S108 snapshots the
+state fullscreen leaves — drawer hidden after the pick — and asserts Back
+restores exactly that. Sanction: Connor Griffin · 2026-09-02 · "I really want
+it to be a picker … closed on default load and something you can bring up,
+that you can scroll through, you can still bring it up full screen if you
+want, but when you click on a chart, it goes away."
+
+**RETIRED — the dock-floor rule's grow-back half (S127).** ADR 215's floor
+rule hid the strip when the field shrank past `DOCK_FLOOR` and re-docked it
+when the field grew back. The first half stands; the second is retired. The
+behaviour had no story of its own — it lived in the resize observer and its
+comment — so its retirement takes a new executable ID rather than amending one.
+  predecessor: `frontend/diagnose-workstation.js` resize observer, shipped app
+  verdict:  retired
+  sanction: Connor Griffin · 2026-09-02 · "It opens minimized. It never comes
+            back up on its own. That path is archived. It's gone."
+  premise:  shrinking the field past the dock floor still hides the strip
+  replay:   fn S127 asserts the premise and the absence (growing back leaves
+            the strip hidden), and prints this sanction line on every run
+  status:   retired (permanent)
+
+**Behavior added.**
+
+```
+S128 · Leaving a drill returns the rank-1 chart to the stage: drilling a
+       lower-ranked chart seats it, and Findings › back re-seats the rank-1
+       chart, never the chart just left; the drilled chart's strip cell is no
+       longer the current frame and the rank-1 cell is.
+S129 · An explorer pick drills: picking a finding chart from Show every
+       chart closes the explorer, seats that chart, opens its finding's drill,
+       and leaves the drawer away.
+S130 · The drawer opens hidden on a fresh visit, and the stage holds the
+       rank-1 finding's chart while the queue shows.
+S131 · A pick from the drawer seats and drills that chart and puts the
+       drawer away.
+S132 · The stage card's title is the served headline's only home: for basal,
+       carb ratio, correction factor and an event comparison, drilling the row
+       seats its chart and the stage title equals the row's served `headline`
+       verbatim; no drill level repeats it; the drawer cell and the fullscreen
+       header keep the short nameplate.
+```
+
+Evidence: replay S127–S132 (app, pass); the complete output of the amended
+replay against the revision is
+`openspec/changes/left-column-pattern/evidence/replay.stdout.txt`
+(`app: <N> of <N> stories passed`). The replay's own opener serves frontend
+modules from its own checkout, so S128–S132 cannot be pointed at the base app
+for a red run without mixing the two trees (the #294 entry records that
+failure mode); in place of a fail-first run for the added stories, the paired
+before/after renders under `openspec/changes/left-column-pattern/evidence/renders/`
+show the base stranding the drilled chart on the stage, booting the drawer
+docked, and drawing the basal headline inside the chart, and the revision
+doing none of the three.
+
+**Other legs re-based for the hidden boot and the put-away**, each re-read
+for intent rather than find-and-replaced: `frontend/diagnose-workstation.browser.test.mjs`
+#215 brings the strip up before picking a cell and expects Back to land on
+the hidden state the pick left; `frontend/diagnose-canvas-composition.browser.test.mjs`'s
+opener brings the strip up once, since every composition story reads it;
+`frontend/cockpit-shell.browser.test.mjs`'s event-comparison test brings the
+strip up before locating the mini and asserts the put-away after the click in
+place of the mini's visibility; `frontend/diagnose-event-comparison-behavior.replay.mjs`
+brings the strip up again after `Back to the dock` before reading the mini,
+and `mockups/diagnose-event-comparison-support-audit.mjs` keeps reading the
+mini snapshot that opener captures. `frontend/diagnose-behavior-ledger-parity.test.js`
+pins the S01–S132 inventory.
+
+**Nameplate.** The stage card's title bar is settled with the operator at the
+running app in this revision's attended round; the rulings are recorded under
+`## Nameplate rulings` in `openspec/changes/left-column-pattern/design.md`,
+and DESIGN.md's No-Hero Rule now names the stage card's headline as a card
+title under its 1.5rem cap.
 
 ## Revision — 2026-08-31, base `b4b8a786825251b094c5168a4559ec0212dab8e2` (issue #294: one drill-down for every settings chart)
 

@@ -1,0 +1,193 @@
+RETIRED S33 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S34 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S35 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S37 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S38 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S49 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S50 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S51 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S52 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S57 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S58 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S59 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S60 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S61 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S62 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S65 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S66 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S67 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S69 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S70 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S71 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S72 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S77 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S80 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S90 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+S92 retired by the ADR 215 dock amendment
+S93 retired by the ADR 215 dock amendment
+S94 retired by the ADR 215 dock amendment
+S95 retired by the ADR 215 dock amendment
+S96 retired by the ADR 215 dock amendment
+S97 retired by the ADR 215 dock amendment
+S98 retired by the ADR 215 dock amendment
+S99 retired by the ADR 215 dock amendment
+S100 retired by the ADR 215 dock amendment
+S101 retired by the ADR 215 dock amendment
+S109 retired by the ADR 215 dock amendment
+S112 retired by the ADR 215 dock amendment
+S113 retired by the ADR 215 dock amendment
+RETIRED C46 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C47 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C48 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C49 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C50 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C51 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C52 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+  ok S01
+  ok S02
+  ok S03
+  ok S04
+  ok S05
+  ok S06
+  ok S07
+  ok S08
+  ok S09
+  ok S10
+  ok S11
+  ok S12 — RETIRED — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
+  ok S13
+  ok S14
+  ok S15
+  ok S16
+  ok S17 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  ok S18
+  ok S19
+  ok S20
+  ok S21
+  ok S22
+  ok S23
+  ok S24
+  ok S25
+  ok S26 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  ok S27
+  ok S28
+  ok S29
+  ok S30
+  ok S31
+  ok S32
+  ok S33
+  ok S34
+  ok S35
+  ok S36
+  ok S37
+  ok S38
+  ok S39
+  ok S40
+  ok S41
+  ok S42
+  ok S43
+  ok S44
+  ok S45
+  ok S46
+  ok S47
+  ok S48
+  ok S49
+  ok S50
+  ok S51
+  ok S52
+  ok S53
+  ok S54
+  ok S55
+  ok S56
+  ok S57
+  ok S58
+  ok S59
+  ok S60
+  ok S61
+  ok S62
+  ok S63
+  ok S64
+  ok S65
+  ok S66
+  ok S67
+  ok S68
+  ok S69
+  ok S70
+  ok S71
+  ok S72
+  ok S73
+  ok S74
+  ok S75
+  ok S76
+  ok S77
+  ok S78
+  ok S79
+  ok S80
+  ok S81
+  ok S82
+  ok S83
+  ok S84
+  ok S85
+  ok S86
+  ok S87
+  ok S88
+  ok S89
+  ok S90
+  ok S91
+  ok S92
+  ok S93
+  ok S94
+  ok S95
+  ok S96
+  ok S97
+  ok S98
+  ok S99
+  ok S100
+  ok S101
+  ok S102
+  ok S103
+  ok S104
+  ok S105
+  ok S106
+  ok S107
+  ok S108
+  ok S109
+  ok S110
+  ok S111
+  ok S112
+  ok S113
+  ok S114
+  ok S115
+  ok S116
+  ok S118
+  ok S119
+  ok S120
+  ok S121
+  ok S122
+  ok S123
+  ok S124
+  ok S125
+  ok S126
+  ok C41
+  ok C42
+  ok C43
+  ok C44
+  ok C45
+  ok C46
+  ok C47
+  ok C48
+  ok C49
+  ok C50
+  ok C51
+  ok C52
+  ok C53
+  ok C54
+  ok C55
+  ok C56
+  ok C57
+  ok D1
+  ok D2
+  ok D3
+
+app: 145 of 145 stories passed

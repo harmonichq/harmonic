@@ -1539,6 +1539,10 @@ test('event comparisons render the served case-file cohorts and retain no standa
     // one place every Finding the window holds is listed.
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
     await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
+    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring it up before reading the
+       mini, and expect the pick to put it away again. */
+    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+    await page.locator('#tile-field[data-dock="docked"]').waitFor();
     const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
     await tile.locator('.tile-body').click();
     await page.locator('[data-comparison-cohort]').first().waitFor();
@@ -1551,7 +1555,8 @@ test('event comparisons render the served case-file cohorts and retain no standa
     }
     // The case file owns all three names and counts; the successor UI renders
     // them in the drilled inspector while its owning registry tile stays drawn.
-    assert.ok(await tile.isVisible(), 'the row-derived tile is not seated');
+    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+      'the pick put the drawer away (ADR 306)');
     // The stage carries the mark, never the registry echo (operator ruling,
     // 2026-08-27: "the only chart that needs to be displaying any kind of
     // drill down ... is the spotlight"). The clicked chart is promoted onto

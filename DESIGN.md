@@ -122,7 +122,7 @@ components:
 
 **Creative North Star: "The Diagnostic Instrument"**
 
-Harmonic reads like a piece of clinical equipment a technically literate patient trusts, not a consumer wellness app trying to be liked. There is no hero typography, no marketing voice, no gamification — the largest text on the page is a numeric stat (1.4–1.5rem), never a headline. Every visual decision serves one goal: let a single self-hosted user read their own glucose/insulin data and trust a specific number enough to bring it to their clinician. The system is calm, precise, and evidence-first — color and shape encode meaning (glucose state, evidence tier, bolus kind), never decoration for its own sake.
+Harmonic reads like a piece of clinical equipment a technically literate patient trusts, not a consumer wellness app trying to be liked. There is no hero typography, no marketing voice, no gamification — the largest text on the page is a numeric stat (1.4–1.5rem), never a headline. The Diagnose stage card's served headline sentence is a card title under that cap, not a page headline. Every visual decision serves one goal: let a single self-hosted user read their own glucose/insulin data and trust a specific number enough to bring it to their clinician. The system is calm, precise, and evidence-first — color and shape encode meaning (glucose state, evidence tier, bolus kind), never decoration for its own sake.
 
 This system explicitly rejects **consumer health/wellness app** conventions (Apple Health, MyFitnessPal): no badges, streaks, mascots, or congratulatory copy. It also rejects the **generic SaaS analytics dashboard**: no hero-KPI-tile templates, no gradient accent cards, no stock chart-library defaults dropped in unmodified.
 
@@ -233,7 +233,7 @@ These encode meaning in glucose/insulin charts and are never used decoratively:
 - **Label** (700, .72–.76rem, .05–.1em tracking, uppercase): section eyebrows, form labels, table headers. Used for structural labeling, not as a decorative kicker — see Do's and Don'ts.
 
 ### Named Rules
-**The No-Hero Rule.** No heading in this system exceeds 1.5rem. If a screen seems to need a bigger number, it should be a Stat-style tabular-nums figure inside a card, not a page-level display headline — this is a clinical instrument, not a landing page.
+**The No-Hero Rule.** No heading in this system exceeds 1.5rem. If a screen seems to need a bigger number, it should be a Stat-style tabular-nums figure inside a card, not a page-level display headline — this is a clinical instrument, not a landing page. The Diagnose stage card's headline (ADR 306) is a card title that lives under this cap; it is the one sentence-length title in the system, and it never becomes a page headline.
 
 ## 4. Elevation
 

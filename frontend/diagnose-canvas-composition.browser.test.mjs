@@ -104,6 +104,11 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
      chart list — enough charts to fill the cap. */
   await page.getByRole('button', { name: '24 h' }).click();
   await page.waitForTimeout(1200);
+  /* THE DRAWER OPENS MINIMIZED (ADR 306). Every composition story below reads
+     the strip, so the opener brings it up through the reader's own control. */
+  await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+  await page.locator('#tile-field[data-dock="docked"]').waitFor();
+  await page.waitForTimeout(300);
   return { page, errors };
 }
 
@@ -220,6 +225,13 @@ test('selecting any visible filmstrip cell changes only the spotlight mark', asy
 
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
       await page.waitForTimeout(350);
+      /* The pick puts the drawer away (ADR 306); the strip clauses below read
+         it after the reader brings it back up. */
+      assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+        `cell ${sourceIndex + 1}'s pick puts the drawer away`);
+      await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+      await page.locator('#tile-field[data-dock="docked"]').waitFor();
+      await page.waitForTimeout(350);
       const focused = await readField(page);
       assert.equal(focused.focal, source.chartId, `cell ${sourceIndex + 1} becomes the spotlight`);
       assert.deepEqual(focused.row.map(({ chartId }) => chartId), order,
@@ -318,6 +330,9 @@ test('an occurrence selection stays in the spotlight while the dock mini stays s
       '.ec-key-item[data-cohort="matched"]',
     ).getAttribute('data-selected-cohort');
     await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+    /* The cell pick put the drawer away (ADR 306); Back lands on that state. */
+    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+    await page.locator('#tile-field[data-dock="docked"]').waitFor();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
     await page.waitForFunction((id) => {
       const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-chart`);
@@ -769,6 +784,10 @@ test('Backspace return restores provenance to the chart owning the finding frame
     assert.equal(await page.locator('#drill-provenance').count(), 0,
       'RETIRED — the provenance readout must not return');
 
+    /* The finding click put the drawer away (ADR 306); the basal cell is
+       read after bringing the strip back up. */
+    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
+    await page.locator('#tile-field[data-dock="docked"]').waitFor();
     const basalId = await page.locator('.evidence-tile[data-chart-id^="basal:"]').first()
       .getAttribute('data-chart-id');
     const basalSlot = Number(basalId.split(':')[1].split('-')[0]) / 30;

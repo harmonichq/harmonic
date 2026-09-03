@@ -201,3 +201,16 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   the order. Injected: 1 of 2.
 - Round 1 third re-check (same reviewer): COUNTERSIGNED, no remaining
   objections. Panel 1 closed at pin 957b4723.
+- Panel 2 (fresh cold, Opus, read-only): BLOCKED, 5 blockers + 6 notes, all
+  `authoring`: six dock-want writers where the order named three (the pick
+  rule had no seam); three fail-first tests with no node-reachable seam
+  (closure state); `frontend/index.test.js` pins the CSS and sat in no
+  allowlist; "headline nowhere else" unfalsifiable while cells and
+  `#full-title` share `descriptor.title`; the family×register matrix left to
+  the showcase (nine reachable pairs, derivable from code). Notes: the pop
+  resolver must use the tail of the reconcile expression; ISF evidence
+  raises without an ISF row; `dockView`'s default is a second boot copy;
+  history templates have no renderer here; two comments narrate the retired
+  rule and DESIGN.md's no-hero wording; `data-tail-head` is an attribute, and
+  the event-comparison replay breaks on the put-away not the boot. All
+  eleven reproduced; fixed in the pinned source and the order. Injected: 0.

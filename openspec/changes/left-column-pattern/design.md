@@ -199,12 +199,12 @@ is its own title with no subtitle.
   sentence, the operator's pick over printing the fragment verbatim)
   `Held at current: {reason without its "; held at current" tail}. Measured {estimate.value} g/U across {support.n} meal runs against {current} programmed.`
 - event comparison · finding — Connor Griffin · 2026-09-03 · rendered against
-  every lever the showcase publishes: "Recurring often enough to rank. Showed
-  up in 1 of 5 lows in this window." (over_treated_low) · "Not often enough to
-  rank yet. Showed up in 1 of 5 lows in this window." (correction_on_iob) ·
-  "Not often enough to rank yet. Showed up in 1 of 32 meals in this window."
+  every lever the showcase publishes: "Ranks among this window's findings.
+  Showed up in 1 of 5 lows in this window." (over_treated_low) · "Not ranked in
+  this window yet. Showed up in 1 of 5 lows in this window." (correction_on_iob)
+  · "Not ranked in this window yet. Showed up in 1 of 32 meals in this window."
   (meal_bolus_short)
-  `{Recurring often enough to rank | Not often enough to rank yet}. Showed up in {appearances[0].n} of {appearances[0].m} {appearances[0].noun} in this window.` — the verdict sentence reads the served `tier`: `next_in_line` and `worth_a_look` rank, `noted` does not.
+  `{Ranks among this window's findings | Not ranked in this window yet}. Showed up in {appearances[0].n} of {appearances[0].m} {appearances[0].noun} in this window.` — the verdict sentence reads the served `tier`: `next_in_line` and `worth_a_look` rank, `noted` does not. Amended by the coordinator on 2026-09-03 under the operator's delegation after the chunk-5 review: the earlier "Recurring often enough to rank" / "Not often enough to rank yet" stated a recurrence frequency the analyzer never published (a finding's tier is its scenario price, not a count), which the risk contract lists as must-prevent; the sentence now states only the published rank.
 - past setting · history — Connor Griffin · 2026-09-03 · "Past setting, no
   change suggested. Measured 12 g/U across 14 meal runs while 12 was
   programmed, until 2024-06-16. Programmed now: 10."

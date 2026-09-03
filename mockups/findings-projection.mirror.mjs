@@ -517,29 +517,64 @@ const BASAL_BLIND_HEADLINE = 'No steady nights delivered against the '
 const HELD_AT_CURRENT_SUFFIX = '; held at current';
 const RANKING_TIERS = new Set(['next_in_line', 'worth_a_look']);
 
-/** Python's `f"{value:.{digits}f}"` rounds half to even at the printed
-    digit; `Number.prototype.toFixed` rounds half away from zero, so a
-    naive transcription would silently disagree with the app on exact
-    midpoints (0.25 at one decimal: app "0.2", `toFixed` "0.3"). This
-    rounds in the same round-half-even mode before formatting. */
-function roundHalfEven(value, digits) {
-  const factor = 10 ** digits;
-  const scaled = value * factor;
-  const floor = Math.floor(scaled);
-  const diff = scaled - floor;
-  const EPSILON = 1e-9;
-  let rounded;
-  if (Math.abs(diff - 0.5) < EPSILON) {
-    rounded = floor % 2 === 0 ? floor : floor + 1;
+/** Python's `f"{value:.{digits}f}"` and `Number.prototype.toFixed` both round
+    the EXACT stored IEEE754 double (V8's `toFixed` is spec-correct, not a
+    naive scaled multiply) — the two runtimes disagree only in HOW they break
+    a genuine tie: Python to even, `toFixed` away from zero. A "genuine tie"
+    is rare and exact (0.125 at 2 decimals, 0.25 at 1: both dyadic fractions
+    the double stores exactly); a decimal literal that merely LOOKS like a
+    tie (0.15, 8.35, 0.45 — none of them exactly representable in binary) is
+    already off-centre once stored, so both runtimes round it the same way
+    with nothing to break. Scaling by `10**digits` in floating point cannot
+    tell these apart: `0.15 * 10 === 1.5` exactly in JS despite the stored
+    double for 0.15 being ~0.1499999999999999944, so a scaled-multiply check
+    (this function's first, wrong version) flags a tie that was never there.
+    This instead decodes the double's mantissa/exponent (`DataView` + BigInt)
+    and tests, in exact arbitrary-precision arithmetic, whether
+    `value * 2 * 10**digits` is an odd integer — the precise definition of an
+    exact tie — with no floating-point step anywhere in the test or, on a
+    genuine tie, in choosing the even neighbour. */
+function formatHalfEven(value, digits) {
+  const buf = new ArrayBuffer(8);
+  const view = new DataView(buf);
+  view.setFloat64(0, value);
+  const hi = view.getUint32(0);
+  const lo = view.getUint32(4);
+  const negative = hi >>> 31 === 1;
+  const biasedExp = (hi >>> 20) & 0x7ff;
+  const mantissaHi = hi & 0xfffff;
+  let mantissa = (BigInt(mantissaHi) << 32n) | BigInt(lo);
+  let exp2;
+  if (biasedExp === 0) {
+    exp2 = -1022 - 52; // subnormal: no implicit leading 1 bit
   } else {
-    rounded = Math.round(scaled);
+    mantissa |= (1n << 52n);
+    exp2 = (biasedExp - 1023) - 52;
   }
-  return rounded / factor;
+  // |value| = mantissa * 2^exp2, so |value| * 2 * 10^digits
+  //         = mantissa * 5^digits * 2^(exp2 + digits + 1)
+  const numerator = mantissa * (5n ** BigInt(digits));
+  const shift = exp2 + digits + 1;
+  let doubled;
+  if (shift >= 0) {
+    doubled = numerator << BigInt(shift);
+  } else {
+    const negShift = BigInt(-shift);
+    if ((numerator & ((1n << negShift) - 1n)) !== 0n) return value.toFixed(digits);
+    doubled = numerator >> negShift;
+  }
+  if ((doubled & 1n) === 0n) return value.toFixed(digits); // not an exact .5 tie
+
+  const lower = (doubled - 1n) / 2n; // |value| * 10^digits, floored — exact
+  const even = (lower % 2n === 0n) ? lower : lower + 1n;
+  const factor = 10n ** BigInt(digits);
+  const fracStr = (even % factor).toString().padStart(digits, '0');
+  return `${negative ? '-' : ''}${even / factor}.${fracStr}`;
 }
-const fmtUh = (value) => (value == null ? null : roundHalfEven(value, 2).toFixed(2));
+const fmtUh = (value) => (value == null ? null : formatHalfEven(value, 2));
 const fmtPrecision = (value) => {
   if (value == null) return null;
-  return Number.isInteger(value) ? String(value) : roundHalfEven(value, 1).toFixed(1);
+  return Number.isInteger(value) ? String(value) : formatHalfEven(value, 1);
 };
 const belowAbove = (word) => (word == null ? null : (word === 'raise' ? 'above' : 'below'));
 const sentenceCase = (text) => (text ? text[0].toUpperCase() + text.slice(1) : text);

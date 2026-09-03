@@ -9549,6 +9549,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -9625,6 +9626,7 @@
        "verdict": "no_data"
       }
      ],
+     "headline": "Showed up in 1 of 2 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -9700,6 +9702,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -9759,6 +9762,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -9797,6 +9801,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "No steady nights delivered against the programmed rate here, so nothing to say either way.",
      "id": "basal:1170-1260",
      "kind": "setting",
      "label": "19:30 to 21:00",
@@ -9931,6 +9936,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -9975,6 +9981,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -10058,6 +10065,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -10174,6 +10182,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -10303,6 +10312,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -10416,6 +10426,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -10491,6 +10502,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -10550,6 +10562,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -10597,6 +10610,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -10685,6 +10699,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -10738,6 +10753,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -10776,6 +10792,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered below the programmed rate across 18 steady nights. Not enough nights of steady data yet to point one way.",
      "id": "basal:750-840",
      "kind": "setting",
      "label": "12:30 to 14:00",
@@ -10909,6 +10926,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -10978,6 +10996,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -11024,6 +11043,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.26 U/h across 21 steady nights against 1.00 programmed. Not enough nights of steady data yet to point one way.",
      "id": "basal:390-420",
      "kind": "setting",
      "label": "06:30",
@@ -11091,6 +11111,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -11179,6 +11200,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -11223,6 +11245,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -11322,6 +11345,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -11381,6 +11405,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -11428,6 +11453,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -11516,6 +11542,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -11563,6 +11590,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -11651,6 +11679,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -11719,6 +11748,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -11794,6 +11824,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -11853,6 +11884,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 1 U : 37.6 mg/dL across 8 fasting nights against 1 U : 36 mg/dL programmed. Fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -20056,6 +20088,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -20100,6 +20133,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -20183,6 +20217,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -20299,6 +20334,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -20428,6 +20464,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -20541,6 +20578,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -20616,6 +20654,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -20714,6 +20753,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -20798,6 +20838,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 1 of 3 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -20846,6 +20887,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered below the programmed rate across 18 steady nights. Not enough nights of steady data yet to point one way.",
      "id": "basal:750-840",
      "kind": "setting",
      "label": "12:30 to 14:00",
@@ -20942,6 +20984,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -21030,6 +21073,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -21074,6 +21118,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -21157,6 +21202,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -21273,6 +21319,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -21402,6 +21449,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -21515,6 +21563,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -21590,6 +21639,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -21647,6 +21697,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -21739,6 +21790,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -21783,6 +21835,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -21866,6 +21919,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -21982,6 +22036,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -22111,6 +22166,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -22224,6 +22280,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -22299,6 +22356,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -52655,6 +52713,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 24 meal runs against 5 programmed. Meals look slightly over-covered relative to programmed I:C.",
      "id": "ic:0",
      "kind": "setting",
      "label": "Morning",
@@ -52708,6 +52767,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -52752,6 +52812,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -52835,6 +52896,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -52951,6 +53013,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -53080,6 +53143,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -53193,6 +53257,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -53268,6 +53333,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -53325,6 +53391,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -53415,6 +53482,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -53491,6 +53559,7 @@
        "verdict": "no_data"
       }
      ],
+     "headline": "Showed up in 1 of 2 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -53566,6 +53635,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -53622,6 +53692,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -53660,6 +53731,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "No steady nights delivered against the programmed rate here, so nothing to say either way.",
      "id": "basal:1170-1260",
      "kind": "setting",
      "label": "19:30 to 21:00",
@@ -53794,6 +53866,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -53838,6 +53911,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -53921,6 +53995,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -54037,6 +54112,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -54166,6 +54242,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Showed up in 2 of 4 highs in this window, and ranks.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -54279,6 +54356,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 5 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -54354,6 +54432,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -54411,6 +54490,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -54499,6 +54579,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -54541,6 +54622,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered below the programmed rate across 18 steady nights. Not enough nights of steady data yet to point one way.",
      "id": "basal:750-840",
      "kind": "setting",
      "label": "12:30 to 14:00",
@@ -54637,6 +54719,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -54720,6 +54803,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.00 U/h across 22 steady nights against 0.80 programmed. A step up, limited to 20% above the set rate.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -54786,6 +54870,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered 1.26 U/h across 21 steady nights against 1.00 programmed. Not enough nights of steady data yet to point one way.",
      "id": "basal:390-420",
      "kind": "setting",
      "label": "06:30",
@@ -54852,6 +54937,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -54899,6 +54985,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -54987,6 +55074,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -55031,6 +55119,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "Delivered above the programmed rate across 19 steady nights. A step up, limited to 20% above the set rate.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -55130,6 +55219,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 lows in this window, not often enough to rank yet.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -55186,6 +55276,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -55233,6 +55324,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -55318,6 +55410,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",
@@ -55365,6 +55458,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",
@@ -55453,6 +55547,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Measured 4.3 g/U across 24 meal runs against 5.7 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -55521,6 +55616,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 lows in this window, and ranks.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -55596,6 +55692,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Showed up in 1 of 1 correction clusters in this window, not often enough to rank yet.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -55652,6 +55749,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "5 fasting nights measured against 1 U : 36 mg/dL programmed, but fasting data agrees with the set factor. No direction is called.",
      "id": "isf",
      "kind": "setting",
      "label": "Fasting",

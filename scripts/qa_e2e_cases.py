@@ -104,6 +104,7 @@ class ExpectedQueueRow:
     register: str
     direction: str | None
     asserts_move: bool | None
+    headline: str | None
 
 
 @dataclass(frozen=True)
@@ -1416,8 +1417,8 @@ QA_CASES = (
                 ("basal", "03:30"): ExpectedSupport(directional_support_count=30),
             },
             {
-                ("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None),
-                ("whole_day", ("ic", "All day")): ExpectedQueueRow("history", None, None),
+                ("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered below the programmed rate across 30 steady nights. One cautious step down is supported at this time.'),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("history", None, None, 'Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10.'),
             },
             frozenset(),
             _SHOWCASE_REST_WINDOWS,
@@ -1450,7 +1451,7 @@ QA_CASES = (
                 ("basal", "03:00"): ExpectedSupport(directional_support_count=12),
                 ("basal", "03:30"): ExpectedSupport(directional_support_count=12),
             },
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered below the programmed rate across 12 steady nights. One cautious step down is supported at this time.')},
             frozenset(), frozenset(), {},
             frozenset(),
             frozenset({"Basal 03:00 to 04:00 · lower"}),
@@ -1488,7 +1489,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_RAISE}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "raise", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "raise", None, 'Delivered 0.66 U/h across 30 steady nights against 0.60 programmed. One cautious step up is supported at this time.')},
             frozenset(), frozenset(), {}, frozenset(),
             frozenset({"Basal 03:00 · raise"}),
         ),
@@ -1501,7 +1502,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_LOWER}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered 0.54 U/h across 30 steady nights against 0.60 programmed. One cautious step down is supported at this time.')},
             frozenset(), frozenset(), {}, frozenset(),
             frozenset({"Basal 03:00 · lower"}),
         ), BASAL_SOURCE_SPAN_DAYS, "basal",
@@ -1512,7 +1513,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_CAPPED_RAISE}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "raise", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "raise", None, 'Delivered 0.80 U/h across 30 steady nights against 0.60 programmed. A step up, limited to 20% above the set rate.')},
             frozenset(), frozenset(), {}, frozenset(),
             frozenset({"Basal 03:00 · raise"}),
         ), BASAL_SOURCE_SPAN_DAYS, "basal",
@@ -1523,7 +1524,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_CAPPED_LOWER}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered 0.40 U/h across 30 steady nights against 0.60 programmed. A step down, limited to 20% below the set rate.')},
             frozenset(), frozenset(), {}, frozenset(),
             frozenset({"Basal 03:00 · lower"}),
         ), BASAL_SOURCE_SPAN_DAYS, "basal",
@@ -1535,8 +1536,8 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_INSUFFICIENT}),
             _basal_support("03:00", 7),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'Delivered 0.48 U/h across 7 steady nights against 0.60 programmed. Not enough nights of steady data yet to point one way.'),
+                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset(),
@@ -1549,8 +1550,8 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_INSUFFICIENT}),
             _basal_support("03:00", 8),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'Delivered 0.48 U/h across 8 steady nights against 0.60 programmed. Not enough nights of steady data yet to point one way.'),
+                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset(),
@@ -1563,7 +1564,7 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_NO_DATA}),
             _basal_support("03:00", 0),
             {
-                ((180, 240), ("basal", "00:00")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("basal", "03:00")),
@@ -1588,8 +1589,8 @@ QA_CASES = (
             ),
             _basal_support("03:00", 0),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, '30 steady nights delivered so far. No set rate to step from, so only the measured range is shown.'),
+                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset(), frozenset(),
@@ -1601,7 +1602,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_NO_CHANGE}),
             _basal_support("03:00", 0), {
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("basal", "03:00")),
@@ -1618,7 +1619,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "03:00"): _BASAL_HARM_LOWER}),
             _basal_support("03:00", 30),
-            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None)},
+            {("whole_day", ("basal", "03:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered 0.54 U/h across 30 steady nights against 0.60 programmed. Lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most).')},
             frozenset(), frozenset(), {}, frozenset({
                 ("lows", "2024-05-30 03:00:00", "clean"),
                 ("lows", "2024-05-31 03:00:00", "clean"),
@@ -1635,7 +1636,7 @@ QA_CASES = (
         QaExpectation(
             _basal_rows({("basal", "05:00"): _BASAL_HARM_LOWER}),
             _basal_support("05:00", 0),
-            {("whole_day", ("basal", "05:00")): ExpectedQueueRow("assert", "lower", None)},
+            {("whole_day", ("basal", "05:00")): ExpectedQueueRow("assert", "lower", None, 'Delivered below the programmed rate across 0 steady nights. Lows keep happening at this hour, so the rate steps down toward the measured rate (20% at most).')},
             frozenset(), frozenset(), {}, frozenset({
                 ("lows", "2024-05-30 05:00:00", "clean"),
                 ("lows", "2024-05-31 05:00:00", "clean"),
@@ -1652,8 +1653,8 @@ QA_CASES = (
             _basal_rows({("basal", "03:00"): _BASAL_HARM_GATED}),
             _basal_support("03:00", 30),
             {
-                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None),
-                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None),
+                ((180, 240), ("basal", "03:00")): ExpectedQueueRow("held", None, None, 'Delivered 0.66 U/h across 30 steady nights against 0.60 programmed. A low printed at this hour, so a step up is withheld and the rate stays as it is.'),
+                ((180, 240), ("basal", "03:30")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("basal", "03:00"))}),
             frozenset(), {}, frozenset({
@@ -1670,8 +1671,7 @@ QA_CASES = (
             _isf_rows(_ISF_STRENGTHEN),
             {("isf", "Fasting"): ExpectedSupport(n_steps=2784)},
             {
-                ("whole_day", ("isf", "Fasting")):
-                    ExpectedQueueRow("assert", "strengthen", True),
+                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "strengthen", True, "Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Overnight you look more sensitive to insulin than the set value, so corrections can run a little stronger."),
             },
             frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
             frozenset({"ISF · strengthen"}),
@@ -1689,8 +1689,7 @@ QA_CASES = (
             _isf_rows(_ISF_DIRECTION_ONLY_WEAKEN),
             {("isf", "Fasting"): ExpectedSupport(n_steps=2716)},
             {
-                ("whole_day", ("isf", "Fasting")):
-                    ExpectedQueueRow("assert", "weaken", False),
+                ("whole_day", ("isf", "Fasting")): ExpectedQueueRow("assert", "weaken", False, "Measured 1 U : 24.0 mg/dL across 29 fasting nights against 1 U : 40 mg/dL programmed. Fasting data points toward stronger corrections, but recurring correction-linked lows call for weaker corrections."),
             },
             frozenset(), _ISF_REST_WINDOWS, {}, _ISF_CORRECTION_ROWS,
             frozenset({"ISF · weaken"}),
@@ -1723,8 +1722,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ((0, 720), ("basal", "00:00")):
-                    ExpectedQueueRow("blind", None, None),
+                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("ic", "All day")),
@@ -1746,8 +1744,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")):
-                    ExpectedQueueRow("assert", "raise", None),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("assert", "raise", None, 'Measured 12 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.'),
             },
             frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
             frozenset({"I:C 00:00 to 24:00 · raise"}),
@@ -1765,8 +1762,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")):
-                    ExpectedQueueRow("assert", "lower", None),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("assert", "lower", None, 'Measured 8 g/U across 8 meal runs against 10 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.'),
             },
             frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
             frozenset({"I:C 00:00 to 24:00 · lower"}),
@@ -1784,8 +1780,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")):
-                    ExpectedQueueRow("assert", "raise", None),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("assert", "raise", None, 'Measured 20 g/U across 8 meal runs against 10 programmed. Meals look slightly over-covered relative to programmed I:C.'),
             },
             frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
             frozenset({"I:C 00:00 to 24:00 · raise"}),
@@ -1803,8 +1798,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")):
-                    ExpectedQueueRow("assert", "lower", None),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("assert", "lower", None, 'Measured 4 g/U across 8 meal runs against 10 programmed. Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb.'),
             },
             frozenset(), frozenset(), {}, _IC_EIGHT_MEAL_ROWS,
             frozenset({"I:C 00:00 to 24:00 · lower"}),
@@ -1825,10 +1819,8 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ((0, 720), ("ic", "All day")):
-                    ExpectedQueueRow("held", None, None),
-                ((0, 720), ("basal", "00:00")):
-                    ExpectedQueueRow("blind", None, None),
+                ((0, 720), ("ic", "All day")): ExpectedQueueRow("held", None, None, 'Measured 8 g/U across 8 meal runs against 10 programmed. Held at current: pre-empted low.'),
+                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({("whole_day", ("ic", "All day"))}),
             frozenset(), {}, _IC_NINE_MEAL_ROWS, frozenset(),
@@ -1847,8 +1839,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=7, effective_run_count=7.0),
             },
             {
-                ((0, 720), ("basal", "00:00")):
-                    ExpectedQueueRow("blind", None, None),
+                ((0, 720), ("basal", "00:00")): ExpectedQueueRow("blind", None, None, 'No steady nights delivered against the programmed rate here, so nothing to say either way.'),
             },
             frozenset({
                 ("whole_day", ("ic", "All day")),
@@ -1870,8 +1861,7 @@ QA_CASES = (
                     ExpectedSupport(n_runs=8, effective_run_count=8.0),
             },
             {
-                ("whole_day", ("ic", "All day")):
-                    ExpectedQueueRow("history", None, None),
+                ("whole_day", ("ic", "All day")): ExpectedQueueRow("history", None, None, 'Measured 12 g/U across 4 meal runs while 12 was programmed, until 2024-05-10. Programmed now: 10.'),
             },
             frozenset(), frozenset(),
             {"ich1_WzAsMTQ0MCwiMTIiXQ": _IC_HISTORY_SERIES},
@@ -2401,6 +2391,7 @@ def assert_expectation(case: QaCase, execution: QaExecution) -> None:
     observed_queue_rows = {
         (window, key): ExpectedQueueRow(
             row["register"], row.get("direction"), row.get("asserts_move"),
+            row.get("headline"),
         )
         for window, projection in execution.findings.items()
         for row in projection["rows"]

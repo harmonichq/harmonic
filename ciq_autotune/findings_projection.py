@@ -779,6 +779,8 @@ def _isf_headline(row: dict) -> str:
                 f"{support_n} fasting nights against 1 U : {current} mg/dL "
                 f"programmed.")
     reason = row.get("reason") or ""
+    if current is None:
+        return f"No direction is called: {reason}. {support_n} fasting nights measured."
     return (f"No direction is called: {reason}. {support_n} fasting nights "
             f"measured against 1 U : {current} mg/dL programmed.")
 
@@ -787,13 +789,14 @@ def _ic_headline(row: dict) -> str:
     support_n = (row.get("support") or {}).get("n")
     current = _fmt_precision(row.get("current"))
     estimate_value = _fmt_precision((row.get("estimate") or {}).get("value"))
+    against_current = f" against {current} programmed" if current is not None else ""
     if row["register"] == "assert":
         annotation = _sentence(row.get("annotation") or "")
         return (f"{annotation}. Measured {estimate_value} g/U across "
-                f"{support_n} meal runs against {current} programmed.")
+                f"{support_n} meal runs{against_current}.")
     reason = (row.get("reason") or "").removesuffix(_HELD_AT_CURRENT_SUFFIX)
     return (f"Held at current: {reason}. Measured {estimate_value} g/U across "
-            f"{support_n} meal runs against {current} programmed.")
+            f"{support_n} meal runs{against_current}.")
 
 
 def _finding_headline(row: dict) -> str:

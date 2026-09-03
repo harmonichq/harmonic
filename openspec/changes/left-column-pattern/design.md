@@ -189,6 +189,7 @@ is its own title with no subtitle.
   measured against 1 U : 40 mg/dL programmed." (the held sentence prints no
   estimate: the showcase's held estimate is a fixture artifact of 0.0)
   `No direction is called: {reason}. {support.n} fasting nights measured against 1 U : {current} mg/dL programmed.`
+  no programmed value (`current` null — the analyzer's own "measured; no set value to compare" state): `No direction is called: {reason}. {support.n} fasting nights measured.` Amended by the coordinator on 2026-09-03 under the operator's delegation after the whole-diff review: the unguarded slot served "1 U : None mg/dL programmed", a programmed value the analyzer said does not exist (must-prevent). The same guard applies to the carb-ratio templates: a block with no `current` drops its "against {current} programmed" clause.
 - carb ratio · assert — Connor Griffin · 2026-09-03 · "Meals look slightly
   over-covered relative to programmed I:C. Measured 12 g/U across 8 meal runs
   against 10 programmed."

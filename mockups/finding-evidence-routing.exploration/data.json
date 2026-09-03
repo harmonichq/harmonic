@@ -308,7 +308,7 @@
        "verdict": "outranked"
       }
      ],
-     "headline": "Recurring often enough to rank. Showed up in 1 of 5 lows in this window.",
+     "headline": "Ranks among this window's findings. Showed up in 1 of 5 lows in this window.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -438,7 +438,7 @@
        "verdict": "clean"
       }
      ],
-     "headline": "Recurring often enough to rank. Showed up in 2 of 4 highs in this window.",
+     "headline": "Ranks among this window's findings. Showed up in 2 of 4 highs in this window.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -552,7 +552,7 @@
        "verdict": "fired"
       }
      ],
-     "headline": "Not often enough to rank yet. Showed up in 1 of 5 lows in this window.",
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -628,7 +628,7 @@
        "verdict": "fired"
       }
      ],
-     "headline": "Not often enough to rank yet. Showed up in 1 of 1 correction clusters in this window.",
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,

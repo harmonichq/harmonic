@@ -646,7 +646,7 @@ function findingHeadline(r) {
   // is never null.
   const appearance = r.appearances[0];
   const verdict = RANKING_TIERS.has(r.tier)
-    ? 'Recurring often enough to rank' : 'Not often enough to rank yet';
+    ? "Ranks among this window's findings" : 'Not ranked in this window yet';
   return `${verdict}. Showed up in ${appearance.n} of ${appearance.m} `
     + `${appearance.noun} in this window.`;
 }

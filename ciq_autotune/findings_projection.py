@@ -701,10 +701,11 @@ _BASAL_BLIND_HEADLINE = (
 
 _HELD_AT_CURRENT_SUFFIX = "; held at current"
 
-# The ranked-queue tiers whose event-comparison rows earn the "recurring often
-# enough to rank" verdict (ADR 41's closed tier vocabulary: every priced
+# The ranked-queue tiers whose event-comparison rows earn the "ranks among this
+# window's findings" verdict (ADR 41's closed tier vocabulary: every priced
 # asserting row is `next_in_line`, every other counted row is `worth_a_look`;
-# only `noted` sits below the line).
+# only `noted` sits below the line). The sentence states only the published
+# rank, never a recurrence frequency the analyzer does not publish.
 _RANKING_TIERS = frozenset({"next_in_line", "worth_a_look"})
 
 
@@ -801,8 +802,8 @@ def _finding_headline(row: dict) -> str:
     # (`findings_projection.py`'s `_finding_rows`), and the recurrence branch
     # replaces the list with exactly one element, never empties it.
     appearance = row["appearances"][0]
-    verdict = ("Recurring often enough to rank" if row.get("tier") in _RANKING_TIERS
-               else "Not often enough to rank yet")
+    verdict = ("Ranks among this window's findings" if row.get("tier") in _RANKING_TIERS
+               else "Not ranked in this window yet")
     return (f"{verdict}. Showed up in {appearance['n']} of {appearance['m']} "
             f"{appearance['noun']} in this window.")
 

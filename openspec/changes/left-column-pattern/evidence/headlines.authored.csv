@@ -7,17 +7,17 @@ showcase,overnight,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Pas
 showcase,morning,isf,held,isf,setting,noted,No direction is called: rescue-carb history doesn't cover this window. 29 fasting nights measured against 1 U : 40 mg/dL programmed.
 showcase,morning,basal:480-630,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."
 showcase,morning,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Past setting, no change suggested. Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
-showcase,afternoon,finding:over_treated_low,finding,,habit,worth_a_look,Recurring often enough to rank. Showed up in 1 of 4 lows in this window.
-showcase,afternoon,finding:meal_bolus_short,finding,,habit,noted,Not often enough to rank yet. Showed up in 1 of 32 meals in this window.
+showcase,afternoon,finding:over_treated_low,finding,,habit,worth_a_look,Ranks among this window's findings. Showed up in 1 of 4 lows in this window.
+showcase,afternoon,finding:meal_bolus_short,finding,,habit,noted,Not ranked in this window yet. Showed up in 1 of 32 meals in this window.
 showcase,afternoon,isf,held,isf,setting,noted,No direction is called: rescue-carb history doesn't cover this window. 29 fasting nights measured against 1 U : 40 mg/dL programmed.
 showcase,afternoon,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Past setting, no change suggested. Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
-showcase,evening,finding:correction_on_iob,finding,,habit,noted,Not often enough to rank yet. Showed up in 1 of 1 lows in this window.
+showcase,evening,finding:correction_on_iob,finding,,habit,noted,Not ranked in this window yet. Showed up in 1 of 1 lows in this window.
 showcase,evening,isf,held,isf,setting,noted,No direction is called: rescue-carb history doesn't cover this window. 29 fasting nights measured against 1 U : 40 mg/dL programmed.
 showcase,evening,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Past setting, no change suggested. Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
 showcase,all,basal:180-240,assert,basal_rate,setting,next_in_line,One cautious step down is supported at this time. Delivered below the programmed rate across 30 steady nights.
-showcase,all,finding:over_treated_low,finding,,habit,worth_a_look,Recurring often enough to rank. Showed up in 1 of 5 lows in this window.
-showcase,all,finding:correction_on_iob,finding,,habit,noted,Not often enough to rank yet. Showed up in 1 of 5 lows in this window.
-showcase,all,finding:meal_bolus_short,finding,,habit,noted,Not often enough to rank yet. Showed up in 1 of 32 meals in this window.
+showcase,all,finding:over_treated_low,finding,,habit,worth_a_look,Ranks among this window's findings. Showed up in 1 of 5 lows in this window.
+showcase,all,finding:correction_on_iob,finding,,habit,noted,Not ranked in this window yet. Showed up in 1 of 5 lows in this window.
+showcase,all,finding:meal_bolus_short,finding,,habit,noted,Not ranked in this window yet. Showed up in 1 of 32 meals in this window.
 showcase,all,ich1_WzAsMTQ0MCwiMTIiXQ,history,carb_ratio,setting,noted,"Past setting, no change suggested. Measured 12 g/U across 14 meal runs while 12 was programmed, until 2024-06-16. Programmed now: 10."
 basal-insufficient-seven-night,overnight,basal:180-210,held,basal_rate,setting,noted,Not enough nights of steady data yet to point one way. Delivered 0.48 U/h across 7 steady nights against 0.60 programmed.
 basal-insufficient-seven-night,overnight,basal:0-180,blind,basal_rate,setting,noted,"No steady nights delivered against the programmed rate here, so nothing to say either way."

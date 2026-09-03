@@ -1379,12 +1379,12 @@ class HeadlineTest(unittest.TestCase):
         self.assertEqual(ranking["tier"], "worth_a_look")
         self.assertEqual(
             ranking["headline"],
-            "Recurring often enough to rank. Showed up in 1 of 5 lows in "
-            "this window.")
+            "Ranks among this window's findings. Showed up in 1 of 5 lows "
+            "in this window.")
         self.assertEqual(not_ranking["tier"], "noted")
         self.assertEqual(
             not_ranking["headline"],
-            "Not often enough to rank yet. Showed up in 1 of 5 lows in "
+            "Not ranked in this window yet. Showed up in 1 of 5 lows in "
             "this window.")
 
     # --- past setting (history) -----------------------------------------------
@@ -1455,8 +1455,13 @@ class HeadlineTest(unittest.TestCase):
             self.assertTrue(row["headline"], row)
 
     def test_every_headline_leads_with_its_verdict_sentence(self):
-        # basal assert/held/blind, carb ratio assert/held, correction factor
-        # assert — the eight non-ISF-held pairs the nine-pair test builds.
+        # The nine family-and-register pairs' first sentence must BE the
+        # expected verdict/hold/rank/past-setting sentence — this test builds
+        # or reuses one row of every pair: basal assert/held/blind (3), carb
+        # ratio assert/held (2), correction factor assert/held (2, from two
+        # separate one-row-per-day analyses since assert and held can never
+        # coexist in a single ISF analysis), the event-comparison finding
+        # pair rendered both ways (2), and past setting/history (1).
         basal_assert = {"slot": 0, "asserts_move": True, "direction": "lower",
                         "current": 0.60, "estimate": {"value": 0.48}, "days": 30,
                         "annotation": "one cautious step down is supported at this time"}
@@ -1486,19 +1491,65 @@ class HeadlineTest(unittest.TestCase):
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
                                _scenarios=gen.scenarios()))
         rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
-        # Plus correction factor held, and the event-comparison finding pair.
-        rows += self._project(self._isf_analysis(register="held"))
-        rows += gen.projection().project(WindowQuery.whole_day())["rows"]
+        isf_held_row = self._project(self._isf_analysis(register="held"))[0]
+        finding_rows = gen.projection().project(WindowQuery.whole_day())["rows"]
+        ranking = _row(finding_rows, "Over-treated low")
+        not_ranking = _row(finding_rows, "Correction on active insulin")
 
+        def first_sentence(headline):
+            head, sep, _rest = headline.partition(". ")
+            return head + "." if sep else head
+
+        expected_by_key = {
+            ("assert", "basal_rate"):
+                "One cautious step down is supported at this time.",
+            ("held", "basal_rate"):
+                "Not enough nights of steady data yet to point one way.",
+            ("blind", "basal_rate"):
+                "No steady nights delivered against the programmed rate "
+                "here, so nothing to say either way.",
+            ("assert", "carb_ratio"):
+                "Meals look slightly over-covered relative to programmed I:C.",
+            ("held", "carb_ratio"): "Held at current: pre-empted low.",
+            ("assert", "isf"):
+                "Overnight you look more sensitive to insulin than the set "
+                "value, so corrections can run a little stronger.",
+        }
+        seen = set()
         for row in rows:
+            key = (row["register"], row.get("parameter") or row["kind"])
+            if key == ("history", "carb_ratio"):
+                self.assertEqual(
+                    first_sentence(row["headline"]),
+                    "Past setting, no change suggested.")
+                seen.add(key)
+                continue
+            if key not in expected_by_key:
+                continue
+            self.assertEqual(first_sentence(row["headline"]), expected_by_key[key])
+            seen.add(key)
+        self.assertEqual(seen, {*expected_by_key, ("history", "carb_ratio")})
+
+        self.assertEqual(
+            first_sentence(isf_held_row["headline"]),
+            "No direction is called: rescue-carb history doesn't cover "
+            "this window.")
+        self.assertEqual(
+            first_sentence(ranking["headline"]),
+            "Ranks among this window's findings.")
+        self.assertEqual(
+            first_sentence(not_ranking["headline"]),
+            "Not ranked in this window yet.")
+
+        for row in [*rows, isf_held_row, ranking, not_ranking]:
             headline = row["headline"]
-            first_sentence = headline.split(". ", 1)[0]
+            head = first_sentence(headline)
             self.assertFalse(
-                first_sentence.startswith("Delivered"),
+                head.startswith("Delivered"),
                 f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
                 f"{headline!r}")
             self.assertFalse(
-                first_sentence.startswith("Measured"),
+                head.startswith("Measured"),
                 f"{row.get('register')}/{row.get('parameter') or row['kind']}: "
                 f"{headline!r}")
 

@@ -192,3 +192,11 @@ discharged in `openspec/changes/left-column-pattern/design.md`; none → issue.
   re-measured the QA budgets the row change triggers; the cached-projection
   citation pointed at the sidecar recovery line. All five reproduced; fixed
   in the pinned source and the order. Injected: 2 of 5.
+- Round 1 second re-check (same reviewer): BLOCKED. `injected` (from the
+  readable-set fix): `prepare_ic_block_evidence` takes a store, so the I:C
+  slot facts come from the published block counts on the analysis payload.
+  `authoring`: the pytest budget cited an appendix without the ceiling; the
+  reviewer's claim that the 2026-09-01 appendix carries no whole-pytest line
+  was refuted (it does, at 66.55 s), the citation fix applied anyway since
+  the latest figure and the 157.33 s ceiling live in the coverage-eras
+  appendix. Fixed in the pinned source and the order. Injected: 1 of 2.

@@ -2,7 +2,7 @@
 
 ## 1. Author the headlines with the operator (attended)
 
-- [ ] Serve the ticket worktree through the declared QA copy-then-serve
+- [x] Serve the ticket worktree through the declared QA copy-then-serve
       command (`AGENTS.md` "The data boundary") and look at every chart family
       on the Diagnose stage yourself at 1440×900 and 390×844 — basal,
       correction factor, carb ratio, event comparison, and a promoted Watching
@@ -12,7 +12,7 @@
       showcase, replay `frontend/diagnose-workstation-behavior.replay.mjs`
       against it, and record its applicable story count under `## Base story
       counts` in `design.md`.
-- [ ] Write `openspec/changes/left-column-pattern/evidence/headline-facts.py`,
+- [x] Write `openspec/changes/left-column-pattern/evidence/headline-facts.py`,
       a generator that reads the served showcase through the production API
       (the findings projection for every window preset the app offers plus the
       whole-day read, and for each row the evidence endpoint its chart reads:
@@ -25,7 +25,7 @@
       case file's claimed-of-denominator and consequence facts. Stamp it `_generated_by` + `_note` as synthetic provenance; hand
       the operator the same rows as a spreadsheet outside the repo (never
       committed).
-- [ ] The operator writes an example headline per row in the sheet; commit the
+- [x] The operator writes an example headline per row in the sheet; commit the
       returned sheet as `evidence/headlines.authored.csv`, and from it record
       under `## Headline templates` in `design.md` one dated sanction per
       family and register (`Connor Griffin · <date> · "<example>"`), each

@@ -48,10 +48,12 @@ control and chart fullscreen SHALL remain.
 
 Every row the findings projection publishes, in every register, SHALL carry a
 `headline`: a factual sentence composed only from the row's own fields or from
-the evidence its chart's endpoint serves, read through the same module
-functions that endpoint calls inside the cached projection, never stating a
-count, direction or verdict the analyzer did not publish, and identical across
-reruns of the same window.
+the analyzer-payload evidence its chart's endpoint serves (basal night
+evidence, ISF rest-window evidence, I:C block evidence), read through the same
+module functions that endpoint calls inside the cached projection; a Finding
+case file is not a source, since it is prepared from the projection itself.
+A headline never states a count, direction or verdict the analyzer did not
+publish, and is identical across reruns of the same window.
 
 #### Scenario: A held slot's headline names the withheld move
 

@@ -50,12 +50,18 @@ publishes, every register included (`assert`, `finding`, `held`, `blind`,
 own: the stage card's title is the headline's only home, the basal chart deck
 loses the headline it drew, drawer cells keep the short nameplate, and no
 drill level repeats it. A headline is composed only from the row's own fields or
-from the evidence its chart's endpoint serves — basal night evidence, ISF
-rest-window evidence, I:C block evidence, the Finding case file — read through
-the same module functions those endpoints call, inside the cached projection
-(no second cache, no recount of raw records); it never states a count,
-direction or verdict the analyzer did not publish. A template's slots name
-those served facts and nothing else. `history` rows are authored and served
+from the analyzer-payload evidence its chart's endpoint serves — basal night
+evidence, ISF rest-window evidence, I:C block evidence — read through the same
+module functions those endpoints call, inside the cached projection (no second
+cache, no recount of raw records); it never states a count, direction or
+verdict the analyzer did not publish. The Finding case file is not a source:
+`ciq_autotune/finding_case_file.py` is prepared from the projection itself
+(it imports `findings_projection` and calls `prepare_findings_projection`
+inside a store transaction), so a behavioral row's sentence draws on the row's
+own served facts — its title, episodes, evidence, verdict counts, appearances
+and window — and a consequence fact the case file alone carries is not a slot
+until the projection publishes it. A template's slots name those served facts
+and nothing else. `history` rows are authored and served
 like every other register: the stage never shows one (a history row publishes
 no chart), and their consumer is #302's queue rows, which read the same field.
 
@@ -102,6 +108,16 @@ operator's on the running app.
 **Nameplate rulings.** Appended by the executing session:
 
 - (pending the attended revise round)
+
+## QA budgets
+
+Re-measured by sub-order 2 after the row change, per `AGENTS.md` "Maintaining
+QA coverage eras" step 4, none raised: committed showcase size (≤25 MiB),
+showcase drift (≤30 s), focused QA suite (≤90 s), slowest generated case
+(≤15 s), full pytest (≤2.5× the chunk-1 baseline recorded in the archived
+`qa-e2e-database` change):
+
+- (pending)
 
 ## Base story counts
 

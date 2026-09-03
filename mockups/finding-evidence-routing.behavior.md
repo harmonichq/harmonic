@@ -2889,7 +2889,7 @@ S132 · The stage card's title is the served headline's only home: for basal,
 Evidence: replay S127–S132 (app, pass); the complete output of the amended
 replay against the revision is
 `openspec/changes/left-column-pattern/evidence/replay.stdout.txt`
-(`app: <N> of <N> stories passed`). The replay's own opener serves frontend
+(`app: 151 of 151 stories passed`). The replay's own opener serves frontend
 modules from its own checkout, so S128–S132 cannot be pointed at the base app
 for a red run without mixing the two trees (the #294 entry records that
 failure mode); in place of a fail-first run for the added stories, the paired

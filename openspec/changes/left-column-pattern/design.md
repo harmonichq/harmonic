@@ -280,6 +280,12 @@ lands) drawing the concepts at the 1440 and 1280 card widths:
   C (chip). This ruling supersedes round 1's rank ordering: identity no longer
   leads the head, it furnishes it, and the assessment is the title.
 
+- Round 3 · the fullscreen control — Connor Griffin · 2026-09-03 · "The
+  maximize button on the header should still live where it was living." The
+  focal head aligns its items to the top, so the control sits at the far end
+  of the first line exactly where the one-line bar kept it, rather than
+  centring in the two-line bar.
+
 ## QA budgets
 
 Re-measured by sub-order 2 after the row change, per `AGENTS.md` "Maintaining

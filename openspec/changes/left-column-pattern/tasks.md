@@ -139,7 +139,7 @@
 
 ## 4. Attended revise round, ledger and evidence
 
-- [ ] Serve the revision and the base side by side on the same showcase copy;
+- [x] Serve the revision and the base side by side on the same showcase copy;
       run UI Craft revise rounds on the stage nameplate's editorial treatment
       (the bar it lives in, its height, type size under the 1.5rem no-hero
       cap, wrapping, the meta caption's place) per
@@ -148,7 +148,7 @@
       as a dated sanction under `## Nameplate rulings` in `design.md` and land
       the CSS in `frontend/diagnose-workstation.css`. Fold any correction the
       live run exposes back into `frontend/diagnose-workstation.js`.
-- [ ] Amend `mockups/finding-evidence-routing.behavior.md` and
+- [x] Amend `mockups/finding-evidence-routing.behavior.md` and
       `frontend/diagnose-workstation-behavior.replay.mjs` in one revision entry
       with base SHA and data provenance: new stories with replay functions for
       the stage returning to rank-1 on leaving a drill, the explorer pick
@@ -162,13 +162,13 @@
       re-read for the hidden default and the #215 fullscreen-from-dock test
       re-based; each changed story's old replay shown failing before the new
       one passes; `frontend/diagnose-behavior-ledger-parity.test.js` green.
-- [ ] Evidence under `openspec/changes/left-column-pattern/evidence/`:
+- [x] Evidence under `openspec/changes/left-column-pattern/evidence/`:
       before/after renders from both worktrees at 1440×900, 1280×800 and
       390×844 of the queue root, each family drilled, a promoted Watching read,
       the drawer hidden, brought up, and the explorer; the replay's complete
       output with its story count; a README naming provenance; the `#306` row
       in `mockups/INDEX.md`.
-- [ ] Fast gate and all ten browser legs green locally against the declared
+- [x] Fast gate and all ten browser legs green locally against the declared
       no-fetch server; zero failures and no skipped story; each leg's
       applicable story count in the commit message.
 

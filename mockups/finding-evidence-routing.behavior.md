@@ -3022,11 +3022,15 @@ port 8876 from a dedicated worktree and its own scratch copy of
 The raw output is
 `openspec/changes/basal-night-drill/evidence/replay.base.stdout.txt`.
 
-**Fail-first.** The six new stories ran through the amended replay driver
-against that base frontend and each failed waiting for the absent rendered
-night-roster group (`#level .ev-group`): S133–S138 therefore report `app: 0
-of 6 new stories passed`, rather than accepting an internal-state stand-in.
-The complete failure evidence is
+**Fail-first.** The real replay driver ran against the base frontend through:
+
+```sh
+PLAYWRIGHT_MODULE="$PLAYWRIGHT_MODULE" VENDOR_DIR="$VENDOR_DIR" BASE_URL=http://127.0.0.1:8876 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+```
+
+It reports `app: 151 of 157 stories passed`: exactly S133–S138 fail waiting for the absent rendered
+night-roster group (`#level .ev-group`), while the frozen contract keeps
+passing. The complete failure evidence is
 `openspec/changes/basal-night-drill/evidence/replay.fail-first.stdout.txt`.
 
 **Behavior added.**

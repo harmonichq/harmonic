@@ -3717,10 +3717,25 @@ const rosterGroups = (page) => page.evaluate(() => [...document.querySelectorAll
     })(),
   })));
 
+const syntheticNight = (night, date, values) => ({
+  ...night, ...values, date, t: `${date}T00:00:00`,
+  glucose_trace: night.glucose_trace.map((point) => {
+    const at = new Date(`${date}T00:00:00Z`);
+    at.setUTCMinutes(at.getUTCMinutes() + point.minute);
+    const stamp = [at.getUTCFullYear(), String(at.getUTCMonth() + 1).padStart(2, '0'), String(at.getUTCDate()).padStart(2, '0')].join('-');
+    return { ...point, t: `${stamp} ${String(at.getUTCHours()).padStart(2, '0')}:${String(at.getUTCMinutes()).padStart(2, '0')}:00` };
+  }),
+});
+
 const nightTrace = (page) => page.evaluate(() => {
   const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
-  return chart.getOption().series.find((series) => series.name === 'That day')?.data
-    .filter((value) => value !== '-' && value != null) || [];
+  const series = chart.getOption().series;
+  return {
+    trace: series.find((item) => item.name === 'That day')?.data
+      .filter((value) => value !== '-' && value != null) || [],
+    envelope: series.find((item) => item.name === 'Median')?.data
+      .filter((value) => value !== '-' && value != null) || [],
+  };
 });
 
 // STORY:finding-evidence-routing:S133
@@ -3737,7 +3752,8 @@ export const S133 = async (page) => {
 };
 
 // STORY:finding-evidence-routing:S134
-/** S134 · A served negative sign is a ran-below night, never folded into ran-as-set. */
+/** S134 · The frontend reads the served sign as-is and derives no direction of
+    its own: a coherent served negative-sign night is never folded into ran-as-set. */
 export const S134 = async (page) => {
   await openBasalNightRoster(page);
   is(await rosterGroups(page), [
@@ -3748,7 +3764,8 @@ export const S134 = async (page) => {
 };
 
 // STORY:finding-evidence-routing:S135
-/** S135 · A missing programmed rate has its own group even though its sign is null. */
+/** S135 · The frontend reads the served missing programmed rate as-is and derives
+    no direction of its own: it has its own group even when the sign is null. */
 export const S135 = async (page) => {
   await openBasalNightRoster(page);
   const groups = await rosterGroups(page);
@@ -3771,11 +3788,13 @@ export const S136 = async (page) => {
   is(selected.chip, before.chip, 'S136 selecting a night leaves the clock window in place');
   is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-01',
     'S136 exactly the selected night row presses');
-  ok((await nightTrace(page)).length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
+  const painted = await nightTrace(page);
+  ok(painted.trace.length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
+  ok(painted.envelope.length > 0, 'S136 the selected trace paints over the standing pooled envelope');
   await page.locator('#level .clear-trace').click();
   await settle(page, 200);
   is(await page.locator('#level .ev-row[aria-pressed="true"]').count(), 0, 'S136 Clear trace releases the row');
-  is(await nightTrace(page), [], 'S136 Clear trace removes the canvas trace');
+  is((await nightTrace(page)).trace, [], 'S136 Clear trace removes the canvas trace');
 };
 
 // STORY:finding-evidence-routing:S137
@@ -3791,6 +3810,7 @@ export const S137 = async (page) => {
   is((await page.locator('#level .occ-head .pos').innerText()).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
     'S137 the stepped detail names its position and arrow hint');
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]').click();
+  await settle(page, 200);
   const detail = (await page.locator('#level .occ-detail').innerText()).replace(/\s+/g, ' ').trim();
   ok(detail.includes('0.60 U/h delivered · 0.60 U/h programmed'), `S137 detail prints served delivered and programmed rates (${detail})`);
   ok(detail.includes('— mg/dL this night · 114 mg/dL roster mean'), 'S137 null served mean prints as a dash beside roster mean');
@@ -3819,7 +3839,9 @@ export const S138 = async (page) => {
     ok(box.left >= 0 && box.right <= box.viewport, `S138 ${box.selector} remains inside the tablet viewport`);
     ok(box.scroll <= box.client, `S138 ${box.selector} has no horizontal overflow`);
   }
-  ok((await nightTrace(page)).length > 0, 'S138 the selected tablet night still paints on the canvas');
+  const painted = await nightTrace(page);
+  ok(painted.trace.length > 0, 'S138 the selected tablet night still paints on the canvas');
+  ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
 };
 
 // STORY:finding-evidence-routing:C41
@@ -4968,12 +4990,12 @@ export const STORIES = [
   ['S133', S133, 'typical'],
   ['S134', S134, 'typical', { evidenceScenario: async ({ path, body }) => ({
     body: path === '/api/diagnose/basal-night-evidence'
-      ? { ...body, nights: [...body.nights, { ...body.nights[0], date: '2026-01-08', t: '2026-01-08T00:00:00', sign: -1 }] }
+      ? { ...body, nights: [...body.nights, syntheticNight(body.nights[0], '2026-01-08', { delivered_rate: 0.4, sign: -1 })] }
       : body,
   }) }],
   ['S135', S135, 'typical', { evidenceScenario: async ({ path, body }) => ({
     body: path === '/api/diagnose/basal-night-evidence'
-      ? { ...body, nights: [...body.nights, { ...body.nights[0], date: '2026-01-09', t: '2026-01-09T00:00:00', programmed_rate: null, sign: null }] }
+      ? { ...body, nights: [...body.nights, syntheticNight(body.nights[0], '2026-01-09', { programmed_rate: null, sign: null })] }
       : body,
   }) }],
   ['S136', S136, 'typical'], ['S137', S137, 'typical'],

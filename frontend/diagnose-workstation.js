@@ -33,14 +33,12 @@ import {
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
 import {
-  createCanvasLayout, descriptorsFromFindings, dockOrder, fieldRange,
+  createCanvasLayout, descriptorsFromFindings, fieldRange,
   optionForDescriptor, pinChart, placeSeats,
   tileStatePresentation, unpinChart,
 } from './diagnose-canvas-layout.js';
 import {
-  DOCK_BOOT_WANT, DOCK_FLOOR, chartClickRoute, chartFrameFindingIsLive,
-  dismissFullscreen, dismissRaisedDock, dockPickTransition, dockResizeTransition,
-  dockView, drilledChartIdForFrame,
+  chartClickRoute, chartFrameFindingIsLive, dismissFullscreen, drilledChartIdForFrame,
   enterFullscreen, fallbackFocalId, isDrilledSpotlight,
   popInspector, reconcileTileDescriptors as reconcileCanvasDescriptors,
   rosterChartIds, seatableChartIds, untraceDrill,
@@ -149,7 +147,6 @@ const MARKUP = `
         <!-- WORDS LEFT, CONTROLS RIGHT — the same order the fullscreen header
              uses, which is what makes the handle that header shrunk to what a
              19px edge can afford rather than a second piece of furniture. -->
-        <div class="dock-handle" id="dock-handle" data-state="docked"></div>
       </div>
     </section>
 
@@ -1178,21 +1175,6 @@ function boot(root, data, callbacks, signal) {
   let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
-  /* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Operator,
-     2026-09-02: "I really want it to be a picker … closed on default load and
-     something you can bring up ... but when you click on a chart, it goes
-     away." On the re-dock: "It opens minimized. It never comes back up on its
-     own. That path is archived. It's gone." `dockWant` only ever moves by a
-     reader act, or to `'hidden'` on dropping below the dock floor — nothing
-     here re-docks it on its own once the room comes back. */
-  let dockWant = DOCK_BOOT_WANT;
-  let fieldHeight = Infinity;
-  /* THE ROW IS DROPPED WHEN THE PANE CANNOT DRAW ONE LEGIBLE MINI, and it is the
-     PANE's width that decides — at a 1440 viewport the canvas pane is 1010px
-     because the inspector holds 430, so a viewport breakpoint answers this on
-     the wrong measurement. Measured by observer rather than by media query for
-     the same reason. */
-  let fieldNarrow = false;
   let fullscreen = null;
   /* THE EXPLORER — every chart at readable size, over the canvas (ADR 215
      amendment). Not a dock want: like chart fullscreen it is a temporary state
@@ -1521,18 +1503,6 @@ function boot(root, data, callbacks, signal) {
      there is no second half of this operation to keep in step. */
   function focusChart(chartId) {
     canvasLayout = createCanvasLayout({ focalId: chartId, pins: canvasLayout.pins });
-  }
-
-  /* THE DOCK'S TAIL — the Watching reads. A `held` or `blind` read is a
-     parameter in force with evidence to plot, so it rides at the END of the
-     dock past a divider and reaches a SEAT only by being pinned; rank cannot
-     carry it there, because the server does not rank it. With the roster
-     retired this is the one route to those charts, which is why the divider
-     and the retirement had to land together. */
-  function dockTailChartIds(seated) {
-    const held = new Set(seated);
-    return rosterChartIds(findings, currentTileDescriptors())
-      .filter((chartId) => !held.has(chartId));
   }
 
   function reconcileTileDescriptors({ skipLoadIds = new Set() } = {}) {
@@ -2164,7 +2134,6 @@ function boot(root, data, callbacks, signal) {
       guessed from a title. A row whose parameter this payload cannot show keeps its
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row) {
-    dockWant = dismissRaisedDock(dockWant, fieldHeight);
     if (row.register === 'history') {
       retirementNotice = null;
       push({
@@ -2614,10 +2583,8 @@ function boot(root, data, callbacks, signal) {
      is not a dock act at all — it is fullscreen's way back, drawn in the header
      fullscreen borrows. */
   const DOCK_ACTS = {
-    up: { label: 'Bring the charts up' },
-    shrink: { label: 'Back to the dock' },
-    hide: { label: 'Put the charts away' },
-    explore: { label: 'Show every chart' },
+    shrink: { label: 'Back to Diagnose' },
+    explore: { label: 'All charts' },
   };
 
   function dockFace(name) {
@@ -2655,8 +2622,7 @@ function boot(root, data, callbacks, signal) {
         paint();
         return;
       }
-      dockWant = act === 'up' ? 'docked' : 'hidden';
-      paintTiles();
+      return;
     };
     return button;
   }
@@ -2679,65 +2645,14 @@ function boot(root, data, callbacks, signal) {
      the word was inert and only two 44px cells were pressable. The lip is a
      single button the width of the pane; the knurl and the word are its face,
      and the glyph at the far end says which way it will go. */
-  function paintDock(view) {
-    const handle = el('dock-handle');
+  function paintChartActions(view) {
     const headActs = el('dock-headacts');
-    if (!handle || !headActs) return;
-    /* A RESIZE REPAINT MUST NOT ERASE THE EXPLORER'S RETURN FOCUS. Closing the
-       explorer restores focus after its opener has been rebuilt, but the field
-       ResizeObserver can immediately repaint the dock and replace that focused
-       button again. Carry focus across that replacement; once the reader moves
-       elsewhere, there is no focused opener to preserve. */
+    if (!headActs) return;
     const preserveExplorerFocus = document.activeElement?.id === 'explorer-trigger';
-    handle.innerHTML = '';
     headActs.innerHTML = '';
-    handle.dataset.state = view.state;
-    handle.hidden = view.state === 'fullscreen';
-    headActs.hidden = view.state !== 'fullscreen';
-    if (view.state === 'fullscreen') {
-      for (const act of view.acts) headActs.append(dockButton(act));
-      return;
-    }
-    /* THE CONTROLS SIT BESIDE THE WORD, NOT ACROSS THE PANE FROM IT. Drawn with
-       the grip at the far left and the acts at the far right, the lip made the
-       reader cross the whole canvas between two halves of one control.
-       Operator: "my mouse wants to go all the way to the left to bring it up,
-       and then if I want to full screen it or bring it down, I have to go all
-       the way to the right. It just feels a little disjointed." So grip, name
-       and both acts are one cluster at the left, and the lip's remaining width
-       is the grab surface it always was — pressing anywhere on it toggles.
-
-       The two acts are different kinds of thing and stay two cells: one is the
-       dock's own direction, the other opens the explorer wearing the tile
-       rail's `full` mark, which already means "make this big" everywhere else
-       here. Same mark, same meaning, one rank up: a chart, or the whole strip. */
-    /* NO KNURL. A grip texture promises a drag, and this rail does not drag —
-       it toggles on click. A mark that describes the wrong mechanic is worse
-       than no mark, and the word on the text spine already says what the rail
-       is. sanction: handoff · 2026-08-27 · "Remove the knurl completely. The
-       rail toggles on click and does not drag, so a grip texture communicates
-       the wrong mechanic." */
-    const word = document.createElement('span');
-    word.className = 'dock-word';
-    word.textContent = 'Charts';
-    handle.append(word);
-    /* BOTH ACTS BELONG TO THE LIP, and they can sit together now that they do
-       not look alike. Parked in the pane header instead, the explorer's opener
-       landed at the right end of the GLUCOSE chart's own rail and read as that
-       chart's fullscreen — a verb about the strip, drawn on a chart that has no
-       such verb. Operator, on realising what the glyph was: "Oh shit you're
-       right. That's fucking stupid." The explorer is the strip's view of
-       itself, so it sits with the thing it opens. */
-    for (const act of view.acts) handle.append(dockButton(act));
+    headActs.hidden = false;
+    for (const act of view.acts) headActs.append(dockButton(act));
     if (preserveExplorerFocus) el('explorer-trigger')?.focus();
-    /* THE WHOLE LIP IS STILL THE TARGET. The buttons are the explicit, keyboard
-       reachable cells; the surface around them carries the toggle so a reader
-       who grabs the edge anywhere gets what they reached for. */
-    handle.onclick = (event) => {
-      if (event.target.closest('button')) return;
-      dockWant = view.state === 'hidden' ? 'docked' : 'hidden';
-      paintTiles();
-    };
   }
 
   function paintTiles() {
@@ -2761,94 +2676,25 @@ function boot(root, data, callbacks, signal) {
       : placeSeats([...new Set([...currentTileCandidates(),
         ...(canvasLayout.focalId ? [canvasLayout.focalId] : [])])], canvasLayout))
       .filter(({ chartId }) => byId.has(chartId));
-    /* THE DOCK'S STATE IS RESOLVED, NEVER STORED. `dockWant` is what the reader
-       asked for; the measured field only decides what a docked want can mean
-       right now — floating over the spotlight where the field is short. It
-       never gives a forced-away dock back on its own (ADR 306): a resize
-       crossing below the dock floor drops `dockWant` itself to `'hidden'`
-       before this call, and growing back past the floor leaves it there.
-       Operator, 2026-09-02, on the drawer that used to grow back: "It opens
-       minimized. It never comes back up on its own. That path is archived.
-       It's gone." Fullscreen is a state of its own and outranks all three. */
-    const dock = dockView(fieldHeight, dockWant);
     /* CHART FULLSCREEN OUTRANKS THE EXPLORER: it is opened FROM it, and two big
        states cannot both hold the pane. */
     const explorer = explorerOpen && !fullscreen;
-    /* THE DOCK IS A FILMSTRIP, AND THE SPOTLIGHT IS ITS CURRENT FRAME. Every
-       chart keeps its cell in one order; the spotlighted one is marked rather
-       than removed, so clicking a cell moves the stage instead of re-forming
-       the row underneath it. */
-    const focalId = placed.find(({ seat }) => seat === 'focal')?.chartId || null;
-    /* THE ORDER COMES FROM THE CANDIDATES, NOT FROM `placed`. `placeSeats`
-       returns the focal chart FIRST, so feeding its output here hoisted the
-       spotlighted chart to the head of the strip — the exact "the chosen chart
-       moves left-most" the filmstrip exists to prevent. The candidate list is
-       the published rank plus any retained-live tail, untouched by what is on
-       stage or which charts are starred.
-
-       A PROMOTED WATCHING CHART JOINS THE ORDER; IT DOES NOT LEAVE IT. The
-       candidates are ranked charts followed by retained stars, so a Watching read the reader clicked
-       onto the stage held no cell here and vanished from the strip the moment
-       it was picked — which breaks the filmstrip's one rule, that the current
-       frame is MARKED rather than removed. `dockOrder` preserves that candidate
-       order; the seating pool below is the same list, so the strip
-       and the tail can never disagree about what is already drawn. */
-    const stripIds = dockOrder([...new Set([...currentTileCandidates(),
-      ...(focalId ? [focalId] : [])])].filter((chartId) => byId.has(chartId)),
-    canvasLayout);
-    const strip = stripIds
-      .map((chartId) => ({
-        chartId,
-        seat: 'mini',
-        pinned: canvasLayout.pins.includes(chartId),
-        selected: chartId === focalId,
-      }));
-    /* THE EXPLORER IS THE WHOLE STRIP AT FULL RANK. Its cells take the `grid`
-       seat rather than `mini`, which is the one thing that separates it from
-       the retired mounted grid: those were 148px thumbnails with the furniture
-       stripped, and this is every chart drawn the way the stage draws one. */
-    const seated = explorer
-      ? strip.map((seat) => ({ ...seat, seat: 'grid' }))
-      : fullscreen || dock.state === 'hidden' || fieldNarrow
-        ? placed.filter(({ seat }) => seat === 'focal')
-        : [...placed.filter(({ seat }) => seat === 'focal'), ...strip];
-    /* The tail rides the dock, so it is drawn wherever the dock is and nowhere
-       else: hidden shows the spotlight alone, and fullscreen is one tile.
-
-       THE EXPLORER IS THE ONE PLACE THE TAIL IS NOT OPTIONAL. It is the view
-       that answers "show me every chart", and the Watching reads are most of
-       what "every" means — a strip drawn without them shows only what the
-       server ranked, which is the one list the reader could already see. */
-    const tail = fullscreen || (!explorer && (dock.state === 'hidden' || fieldNarrow))
-      ? []
-      /* THE TAIL IS WHAT THE STRIP DOES NOT ALREADY HOLD. Excluding only the
-         charts in ROW cells left the focal one unsubtracted, so a spotlighted
-         ranked chart was drawn once by the strip and again by the tail — two
-         cells for one chart, which every seat-scoped selector on this surface
-         then resolved to twice. The strip's own id list is the one exclusion
-         that cannot drift from what was drawn. */
-      : dockTailChartIds(stripIds)
+    const seats = explorer
+      ? rosterChartIds(findings, currentTileDescriptors())
         .filter((chartId) => byId.has(chartId))
-        .map((chartId) => ({
-          chartId, seat: explorer ? 'grid' : 'mini', pinned: false, tail: true,
-          selected: chartId === focalId,
-        }));
-    const seats = [...seated, ...tail];
+        .map((chartId) => ({ chartId, seat: 'grid', pinned: canvasLayout.pins.includes(chartId) }))
+      : placed.filter(({ seat }) => seat === 'focal');
     /* THE RANGE SPANS THE WHOLE ROW, not the part of it currently scrolled into
        view: a range that changed as the row scrolled would redraw the focal
        chart's axis under a gesture that was only ever about the row. */
     sharedGlucoseRange = fieldRange(placed.map(({ chartId }) => ({
       ...byId.get(chartId), data: tileCaseFile(byId.get(chartId)),
     })), DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
-    host.toggleAttribute('data-narrow', fieldNarrow && !fullscreen);
     host.toggleAttribute('data-fullscreen-tile', Boolean(fullscreen));
     /* FULLSCREEN IS NOT A THIRD DOCK STATE. It is one temporary chart over
        whichever hidden or docked door opened it, so retaining a dock attribute
        here only makes unrelated dock furniture paint on that chart. */
     host.toggleAttribute('data-explorer', explorer);
-    if (fullscreen || explorer) delete host.dataset.dock;
-    else host.dataset.dock = dock.state;
-    host.toggleAttribute('data-raised', dock.raised && !fullscreen && !explorer);
     /* FULLSCREEN TAKES THE GLUCOSE STRIP'S ROW TOO, and names the chart it is
        showing there rather than growing a parallel header beside the one the
        reader already learned. This composition was mounted's; mounted is gone
@@ -2873,7 +2719,7 @@ function boot(root, data, callbacks, signal) {
        misread. `liveCount` goes with it; `paintDock` no longer takes one. */
     /* FULLSCREEN STATES ITS OWN VIEW rather than borrowing a dock want. It is
        not a dock state, and the only act it has is the way back. */
-    paintDock(big ? { state: 'fullscreen', acts: ['shrink'] } : dock);
+    paintChartActions(big ? { acts: ['shrink'] } : { acts: ['explore'] });
     focalHost.innerHTML = '';
     rowHost.innerHTML = '';
     if (!seats.length) {
@@ -3157,20 +3003,15 @@ function boot(root, data, callbacks, signal) {
            so `dockPickTransition` leaves it alone; only a raised dock is put
            away there, because attention leaving a floating dock is ADR 215's
            separate rule. */
-        if (explorer) {
-          explorerOpen = false;
-        } else if (dock.raised && seat.seat === 'focal') {
-          dockWant = dismissRaisedDock(dockWant, fieldHeight);
-        }
+        if (explorer) explorerOpen = false;
         showChartInspector(descriptor);
-        dockWant = dockPickTransition(dockWant, seat.seat);
         paintTiles();
         paintChart();
         paintBrace();
       };
       tile.onclick = activateTile;
       tile.onkeydown = (event) => {
-        if (event.target !== tile || seat.seat !== 'mini'
+        if (event.target !== tile || seat.seat !== 'grid'
           || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();
         activateTile();
@@ -4115,61 +3956,6 @@ function boot(root, data, callbacks, signal) {
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
-  /* THE PANE'S WIDTH DECIDES, MEASURED (ADR 215). 280px is the width below
-     which a mini's plot stops being legible — the figure the retired narrow
-     rule already used — and it is compared against the FIELD's inner width, not
-     the viewport's: at a 1440 viewport this pane is 1010px because the inspector
-     holds 430, so a media query answers this question on the wrong number.
-     The field is observed rather than the row, because a hidden row measures
-     zero and would flip the verdict straight back. */
-  const MIN_MINI_WIDTH = 280;
-  function measureFieldNarrow() {
-    const field = el('tile-field');
-    if (!field || !field.clientWidth) return fieldNarrow;
-    const style = getComputedStyle(field);
-    const inner = field.clientWidth
-      - parseFloat(style.paddingLeft || 0) - parseFloat(style.paddingRight || 0);
-    return inner < MIN_MINI_WIDTH;
-  }
-  /* THE DOCK'S FLOORS ARE HEIGHTS, so they are measured off the field's inner
-     HEIGHT and not off the viewport: the canvas pane is a row of a grid whose
-     other rows (the rail, the header, the glucose strip) take their own space,
-     so a viewport media query answers this question on the wrong number in
-     exactly the way the width rule above already documents. */
-  function measureFieldHeight() {
-    const field = el('tile-field');
-    if (!field || !field.clientHeight) return fieldHeight;
-    const style = getComputedStyle(field);
-    return field.clientHeight
-      - parseFloat(style.paddingTop || 0) - parseFloat(style.paddingBottom || 0);
-  }
-  const fieldWidthObserver = new ResizeObserver(() => {
-    const narrow = measureFieldNarrow();
-    const height = measureFieldHeight();
-    if (narrow === fieldNarrow && height === fieldHeight) return;
-    /* THE DOCK PUTS ITSELF AWAY WHEN THE SPOTLIGHT RUNS OUT OF ROOM, AND NEVER
-       INVITES ITSELF BACK (ADR 306 retires the grow-back half of the
-       live-judging ruling this restored: "when the spotlight chart got to a
-       certain size, the chart dock would automatically hide" still holds, but
-       growing back past the floor no longer re-docks it — that path is one
-       more way the drawer used to come up on its own, and the picker rule
-       closes all of them).
-
-       It fires on the CROSSING, not on every measurement, which is what keeps
-       it from overruling the reader: below the floor they can still bring the
-       dock up by hand, and it floats over the spotlight rather than squeezing
-       it. Only the field shrinking past the floor moves the want on its own;
-       growing back leaves it exactly as the reader set it. */
-    if (fieldHeight && (height < DOCK_FLOOR) !== (fieldHeight < DOCK_FLOOR)) {
-      dockWant = dockResizeTransition(dockWant, height);
-    }
-    fieldNarrow = narrow;
-    fieldHeight = height;
-    if (top().k === 'factors') paintLevel();
-    paintTiles();
-  });
-  fieldWidthObserver.observe(el('tile-field'));
-  signal.addEventListener('abort', () => fieldWidthObserver.disconnect());
   installDrag();
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && fullscreen) {

@@ -135,7 +135,7 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   assert.deepEqual(morning.map((row) => row.weight), ['hero']);
 });
 
-test('#302 · the painter returns compact-row mini slots without duplicating the drawer renderer', () => {
+test('#341 · every priced row, including rank one, receives the common mini mount slot', () => {
   class Node {
     constructor() { this.children = []; this.dataset = {}; this.className = ''; }
     append(...nodes) { this.children.push(...nodes); }
@@ -148,7 +148,7 @@ test('#302 · the painter returns compact-row mini slots without duplicating the
     const result = renderFindingsQueue(new Node(), W.global, () => {});
     assert.equal(result.rows.length, W.global.rows.length);
     assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
-      'basal:30-90', 'basal:330-360', 'finding:over_treated_low', 'finding:carb_undercount',
+      'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low', 'finding:carb_undercount',
     ]);
     assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
   } finally {
@@ -174,7 +174,7 @@ test('#302 · the hero announces its served tier word before its title, and it a
     assert.equal(hero.className, 'qrow hero');
     // the eyebrow is READ where it is seen: numeral, tier word, then the title
     assert.deepEqual(hero.children.map((child) => child.className),
-      ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums']);
+      ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums', 'mini']);
     assert.equal(hero.children[1].textContent, TIER.next_in_line);
     // no other weight prints one — a compact row's tier is the caption above it
     assert.ok(painted.slice(1).every((row) =>

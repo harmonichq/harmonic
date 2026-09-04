@@ -296,8 +296,9 @@
 }
 
 /* canvas pane */
-.canvas-pane { grid-template-rows: auto 210px minmax(0, 1fr); }
+.canvas-pane { grid-template-rows: auto minmax(260px, 1fr) 210px; }
 .canvas-pane > .body {
+  grid-row: 3;
   display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; min-height: 0;
   position: relative;   /* the brace overlay is measured against this box */
 }
@@ -335,6 +336,7 @@
    Nothing is inset, and no band of a fourth material is added to say what a
    rail already says. */
 .tile-field {
+  grid-row: 2;
   display: grid; gap: var(--ck-canvas-gap); padding: 0;
   min-width: 0; min-height: 0; overflow: hidden;
   background-color: var(--ck-field);

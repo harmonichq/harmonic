@@ -378,7 +378,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     if (detail && row.raw.window_scope === 'whole_day') {
       add(detail, 'scope-note', ' · Whole day');
     }
-    if (row.weight === 'compact') {
+    if (row.rank !== null) {
       const mini = document.createElement('span');
       mini.className = 'mini';
       node.append(mini);

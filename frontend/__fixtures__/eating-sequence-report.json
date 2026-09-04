@@ -24,47 +24,47 @@
   "comparisons": [
    {
     "high_cohort": "Q5",
-    "high_n": 8,
-    "mean_difference_mgdl": 110.39999999999999,
+    "high_n": 16,
+    "mean_difference_mgdl": 50.2,
     "period": "in_sequence",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 32,
+    "reference_n": 64,
     "scope": "pooled",
     "sd_difference_mgdl": 0.0,
     "status": "supported",
-    "tir_difference_pct_points": -100.0
+    "tir_difference_pct_points": -50.0
    },
    {
     "high_cohort": "Q5",
-    "high_n": 8,
-    "mean_difference_mgdl": 110.39999999999996,
+    "high_n": 16,
+    "mean_difference_mgdl": 50.199999999999974,
     "period": "post_4h",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 32,
+    "reference_n": 64,
     "scope": "pooled",
     "sd_difference_mgdl": 0.0,
     "status": "supported",
-    "tir_difference_pct_points": -100.0
+    "tir_difference_pct_points": -50.0
    },
    {
     "high_cohort": "Q5",
-    "high_n": 8,
-    "mean_difference_mgdl": 110.39999999999999,
+    "high_n": 16,
+    "mean_difference_mgdl": 50.2,
     "period": "post_6h",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 32,
+    "reference_n": 64,
     "scope": "pooled",
     "sd_difference_mgdl": 0.0,
     "status": "supported",
-    "tir_difference_pct_points": -100.0
+    "tir_difference_pct_points": -50.0
    },
    {
     "high_cohort": "Q5",
-    "high_n": 0,
+    "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 0,
+    "reference_n": 21,
     "scope": "evening",
     "sd_difference_mgdl": null,
     "status": "insufficient",
@@ -72,11 +72,11 @@
    },
    {
     "high_cohort": "Q5",
-    "high_n": 0,
+    "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "post_4h",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 0,
+    "reference_n": 21,
     "scope": "evening",
     "sd_difference_mgdl": null,
     "status": "insufficient",
@@ -84,11 +84,11 @@
    },
    {
     "high_cohort": "Q5",
-    "high_n": 0,
+    "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "post_6h",
     "reference_cohort": "Q1-Q4",
-    "reference_n": 0,
+    "reference_n": 21,
     "scope": "evening",
     "sd_difference_mgdl": null,
     "status": "insufficient",
@@ -103,21 +103,21 @@
   "finding": {
    "period": "in_sequence",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 0.0% of the in-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 50.0% of the in-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
   },
   "scopes": {
    "evening": {
     "boundaries_g": [
-     30.949999999999996,
      49.35,
-     67.75,
-     86.15
+     86.15,
+     122.94999999999999,
+     159.74999999999997
     ],
     "rows": [
      {
       "in_sequence": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -125,7 +125,7 @@
       },
       "post_4h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -133,19 +133,19 @@
       },
       "post_6h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
        "tir_pct": null
       },
       "quintile": 1,
-      "sequence_n": 0
+      "sequence_n": 5
      },
      {
       "in_sequence": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -153,7 +153,7 @@
       },
       "post_4h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -161,19 +161,19 @@
       },
       "post_6h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
        "tir_pct": null
       },
       "quintile": 2,
-      "sequence_n": 0
+      "sequence_n": 6
      },
      {
       "in_sequence": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -181,7 +181,7 @@
       },
       "post_4h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -189,19 +189,19 @@
       },
       "post_6h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
        "tir_pct": null
       },
       "quintile": 3,
-      "sequence_n": 0
+      "sequence_n": 5
      },
      {
       "in_sequence": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -209,7 +209,7 @@
       },
       "post_4h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -217,19 +217,19 @@
       },
       "post_6h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 5,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
        "tir_pct": null
       },
       "quintile": 4,
-      "sequence_n": 0
+      "sequence_n": 5
      },
      {
       "in_sequence": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -237,7 +237,7 @@
       },
       "post_4h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
@@ -245,164 +245,164 @@
       },
       "post_6h": {
        "mean_mgdl": null,
-       "n": 0,
+       "n": 6,
        "peak_mgdl": null,
        "sd_mgdl": null,
        "status": "insufficient",
        "tir_pct": null
       },
       "quintile": 5,
-      "sequence_n": 0
+      "sequence_n": 6
      }
     ]
    },
    "pooled": {
     "boundaries_g": [
-     30.949999999999996,
      49.35,
-     67.75,
-     86.15
+     86.15,
+     122.94999999999999,
+     159.74999999999997
     ],
     "rows": [
      {
       "in_sequence": {
-       "mean_mgdl": 101.3,
-       "n": 8,
-       "peak_mgdl": 101.3,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
        "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_4h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_6h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "quintile": 1,
-      "sequence_n": 8
+      "sequence_n": 16
      },
      {
       "in_sequence": {
-       "mean_mgdl": 101.3,
-       "n": 8,
-       "peak_mgdl": 101.3,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
        "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_4h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_6h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "quintile": 2,
-      "sequence_n": 8
+      "sequence_n": 16
      },
      {
       "in_sequence": {
-       "mean_mgdl": 101.3,
-       "n": 8,
-       "peak_mgdl": 101.3,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
        "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_4h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_6h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "quintile": 3,
-      "sequence_n": 8
+      "sequence_n": 16
      },
      {
       "in_sequence": {
-       "mean_mgdl": 101.3,
-       "n": 8,
-       "peak_mgdl": 101.3,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
        "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_4h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "post_6h": {
-       "mean_mgdl": 101.8,
-       "n": 8,
-       "peak_mgdl": 102.3,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 111.3,
+       "n": 16,
+       "peak_mgdl": 111.3,
+       "sd_mgdl": 0.0,
        "status": "supported",
        "tir_pct": 100.0
       },
       "quintile": 4,
-      "sequence_n": 8
+      "sequence_n": 16
      },
      {
       "in_sequence": {
-       "mean_mgdl": 211.7,
-       "n": 8,
-       "peak_mgdl": 211.7,
+       "mean_mgdl": 161.5,
+       "n": 16,
+       "peak_mgdl": 161.5,
        "sd_mgdl": 0.0,
        "status": "supported",
-       "tir_pct": 0.0
+       "tir_pct": 50.0
       },
       "post_4h": {
-       "mean_mgdl": 212.19999999999996,
-       "n": 8,
-       "peak_mgdl": 212.7,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 161.49999999999997,
+       "n": 16,
+       "peak_mgdl": 161.5,
+       "sd_mgdl": 0.0,
        "status": "supported",
-       "tir_pct": 0.0
+       "tir_pct": 50.0
       },
       "post_6h": {
-       "mean_mgdl": 212.2,
-       "n": 8,
-       "peak_mgdl": 212.7,
-       "sd_mgdl": 0.408248290463863,
+       "mean_mgdl": 161.5,
+       "n": 16,
+       "peak_mgdl": 161.5,
+       "sd_mgdl": 0.0,
        "status": "supported",
-       "tir_pct": 0.0
+       "tir_pct": 50.0
       },
       "quintile": 5,
-      "sequence_n": 8
+      "sequence_n": 16
      }
     ]
    }
@@ -416,7 +416,7 @@
     "mean_difference_mgdl": null,
     "period": "in_sequence",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -428,7 +428,7 @@
     "mean_difference_mgdl": null,
     "period": "post_4h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -440,7 +440,7 @@
     "mean_difference_mgdl": null,
     "period": "post_6h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -452,7 +452,7 @@
     "mean_difference_mgdl": null,
     "period": "in_sequence",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -464,7 +464,7 @@
     "mean_difference_mgdl": null,
     "period": "post_4h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -476,7 +476,7 @@
     "mean_difference_mgdl": null,
     "period": "post_6h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -488,7 +488,7 @@
     "mean_difference_mgdl": null,
     "period": "in_sequence",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -500,7 +500,7 @@
     "mean_difference_mgdl": null,
     "period": "post_4h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -512,7 +512,7 @@
     "mean_difference_mgdl": null,
     "period": "post_6h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -524,7 +524,7 @@
     "mean_difference_mgdl": null,
     "period": "in_sequence",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -536,7 +536,7 @@
     "mean_difference_mgdl": null,
     "period": "post_4h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -548,7 +548,7 @@
     "mean_difference_mgdl": null,
     "period": "post_6h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 16,
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -557,39 +557,39 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": null,
+    "mean_difference_mgdl": 100.39999999999999,
     "period": "in_sequence",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 8,
     "repeat_band": "3+",
-    "repeat_n": 0,
-    "sd_difference_mgdl": null,
-    "status": "insufficient",
-    "tir_difference_pct_points": null
+    "repeat_n": 8,
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": null,
+    "mean_difference_mgdl": 100.39999999999996,
     "period": "post_4h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 8,
     "repeat_band": "3+",
-    "repeat_n": 0,
-    "sd_difference_mgdl": null,
-    "status": "insufficient",
-    "tir_difference_pct_points": null
+    "repeat_n": 8,
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": null,
+    "mean_difference_mgdl": 100.39999999999999,
     "period": "post_6h",
     "reference_band": "1",
-    "reference_n": 0,
+    "reference_n": 8,
     "repeat_band": "3+",
-    "repeat_n": 0,
-    "sd_difference_mgdl": null,
-    "status": "insufficient",
-    "tir_difference_pct_points": null
+    "repeat_n": 8,
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
    }
   ],
   "exclusions": {
@@ -597,33 +597,37 @@
    "cgm_coverage": 0,
    "next_sequence_overlap": 0
   },
-  "finding": null,
+  "finding": {
+   "carb_quintile": 5,
+   "period": "post_4h",
+   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 0.0% of the four-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
+  },
   "matrix": [
    {
     "carb_quintile": 1,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "window_count_band": "1"
    },
@@ -686,28 +690,28 @@
    {
     "carb_quintile": 2,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "window_count_band": "1"
    },
@@ -770,28 +774,28 @@
    {
     "carb_quintile": 3,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "window_count_band": "1"
    },
@@ -854,28 +858,28 @@
    {
     "carb_quintile": 4,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "window_count_band": "1"
    },
@@ -938,28 +942,28 @@
    {
     "carb_quintile": 5,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
     },
     "window_count_band": "1"
    },
@@ -994,38 +998,38 @@
    {
     "carb_quintile": 5,
     "in_sequence": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 211.7,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
     },
     "post_4h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 211.69999999999996,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
     },
     "post_6h": {
-     "mean_mgdl": null,
-     "n": 0,
-     "peak_mgdl": null,
-     "sd_mgdl": null,
-     "status": "insufficient",
-     "tir_pct": null
+     "mean_mgdl": 211.7,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
     },
     "window_count_band": "3+"
    }
   ],
-  "status": "insufficient"
+  "status": "supported"
  },
  "schema": "eating-sequence-report-v1",
  "window": {
   "days": 30,
-  "end": "2040-01-21T06:00:00",
-  "start": "2039-12-22T06:00:00"
+  "end": "2040-01-28T03:00:00",
+  "start": "2039-12-29T03:00:00"
  }
 }

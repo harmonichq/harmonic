@@ -11,7 +11,7 @@ from ciq_autotune.analyzers.eating_sequences import (
     build_report,
     report_dict,
 )
-from tests.eating_sequence_streams import high_carb_stream
+from tests.eating_sequence_streams import repeat_eating_stream
 
 
 class EatingSequenceFixtureTest(unittest.TestCase):
@@ -21,7 +21,7 @@ class EatingSequenceFixtureTest(unittest.TestCase):
             root / "frontend/__fixtures__/eating-sequence-report.json"
         ).read_text())
 
-        boluses, cgm, carb_log, _ = high_carb_stream()
+        boluses, cgm, carb_log, _ = repeat_eating_stream()
         end = cgm[-1].t
         report = build_report(
             boluses, cgm, carb_log,
@@ -43,6 +43,12 @@ class EatingSequenceFixtureTest(unittest.TestCase):
             comparison["status"] == "supported"
             for comparison in fixture["high_carb_sequence"]["comparisons"]
         ))
+        repeat = fixture["repeat_eating_amplifier"]
+        self.assertIsNotNone(repeat["finding"])
+        self.assertTrue(any(
+            comparison["status"] == "supported"
+            for comparison in repeat["comparisons"]
+        ))
 
     def test_served_wrapper_reproduces_the_frozen_fixture(self):
         """The route builds through the store wrapper; the fixture must pin that path too."""
@@ -50,7 +56,7 @@ class EatingSequenceFixtureTest(unittest.TestCase):
         fixture = json.loads((
             root / "frontend/__fixtures__/eating-sequence-report.json"
         ).read_text())
-        boluses, cgm, carb_log, basal = high_carb_stream()
+        boluses, cgm, carb_log, basal = repeat_eating_stream()
 
         class Store:
             def basal_events(self): return basal

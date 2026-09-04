@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement 1: Repeat-eating amplifier compares matched carb cohorts
+### Requirement: Repeat-eating amplifier compares matched carb cohorts
 
 For every eligible sequence, the report SHALL band `EatingSequence.window_count`
 as `1`, `2`, or `3+`, and SHALL aggregate `in_sequence`, `post_4h`, and `post_6h`
@@ -57,7 +57,7 @@ supported comparison exists, status SHALL be `insufficient` and finding null.
 - **WHEN** the detector selects its headline
 - **THEN** its finding names `post_4h`
 
-### Requirement 2: Both detectors share eligibility and exclusions
+### Requirement: Both detectors share eligibility and exclusions
 
 The repeat-eating amplifier SHALL use the same pre-eligibility pooled quintile
 assignment and same `_metrics` eligibility output as the high-carb sequence detector.

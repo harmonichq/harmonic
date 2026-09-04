@@ -21,9 +21,9 @@ class EatingSequenceConfig:
     #: The only post-sequence horizons reported by the contract.
     post_horizons_hours: tuple[int, int] = (4, 6)
     #: Inclusive lower bound of the time-in-range convention.
-    tir_low_mgdl: float = 70.0
+    tir_low_mgdl: int = 70
     #: Inclusive upper bound of the time-in-range convention.
-    tir_high_mgdl: float = 180.0
+    tir_high_mgdl: int = 180
     #: Required occupied five-minute-slot fraction for an interval.
     cgm_coverage_floor: float = 0.7
     #: Smallest qualifying cohort that may support an aggregate.

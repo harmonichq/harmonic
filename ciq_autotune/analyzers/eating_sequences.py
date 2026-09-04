@@ -19,6 +19,18 @@ _SCOPES = ("pooled", "evening")
 
 
 @dataclass(frozen=True)
+class SourceWindow:
+    """The only source-window values an aggregate report may serialize."""
+
+    start: str
+    end: str
+    days: int
+
+    def to_dict(self) -> dict:
+        return {"start": self.start, "end": self.end, "days": self.days}
+
+
+@dataclass(frozen=True)
 class SequenceItem:
     """One caller-owned constructed sequence for empirical cohort assignment."""
 
@@ -178,11 +190,23 @@ class QuintileScope:
 
 
 @dataclass(frozen=True)
+class HighCarbFinding:
+    """The optional aggregate-only summary for a high-carb association."""
+
+    summary: str
+    scope: str
+    period: str
+
+    def to_dict(self) -> dict:
+        return {"summary": self.summary, "scope": self.scope, "period": self.period}
+
+
+@dataclass(frozen=True)
 class HighCarbSequenceReport:
     """Q5-versus-Q1–Q4 aggregate evidence, without a setting recommendation."""
 
     status: str
-    finding: Optional[dict]
+    finding: Optional[HighCarbFinding]
     pooled: QuintileScope
     evening: QuintileScope
     comparisons: tuple[HighCarbComparisonRow, ...]
@@ -191,10 +215,26 @@ class HighCarbSequenceReport:
     def to_dict(self) -> dict:
         return {
             "status": self.status,
-            "finding": dict(self.finding) if self.finding is not None else None,
+            "finding": self.finding.to_dict() if self.finding is not None else None,
             "scopes": {"pooled": self.pooled.to_dict(), "evening": self.evening.to_dict()},
             "comparisons": [row.to_dict() for row in self.comparisons],
             "exclusions": dict(self.exclusions),
+        }
+
+
+@dataclass(frozen=True)
+class RepeatEatingFinding:
+    """The optional aggregate-only summary for repeated eating evidence."""
+
+    summary: str
+    carb_quintile: int
+    period: str
+
+    def to_dict(self) -> dict:
+        return {
+            "summary": self.summary,
+            "carb_quintile": self.carb_quintile,
+            "period": self.period,
         }
 
 
@@ -203,7 +243,7 @@ class RepeatEatingAmplifierReport:
     """Repeated-window aggregate evidence, without a setting recommendation."""
 
     status: str
-    finding: Optional[dict]
+    finding: Optional[RepeatEatingFinding]
     matrix: tuple[MatrixRow, ...]
     comparisons: tuple[RepeatComparisonRow, ...]
     exclusions: Mapping[str, int]
@@ -211,7 +251,7 @@ class RepeatEatingAmplifierReport:
     def to_dict(self) -> dict:
         return {
             "status": self.status,
-            "finding": dict(self.finding) if self.finding is not None else None,
+            "finding": self.finding.to_dict() if self.finding is not None else None,
             "matrix": [row.to_dict() for row in self.matrix],
             "comparisons": [row.to_dict() for row in self.comparisons],
             "exclusions": dict(self.exclusions),
@@ -222,7 +262,7 @@ class RepeatEatingAmplifierReport:
 class EatingSequenceReport:
     """Complete aggregate-only report, separately versioned from ``AnalysisResult``."""
 
-    window: Mapping[str, object]
+    window: SourceWindow
     config: EatingSequenceConfig
     high_carb_sequence: HighCarbSequenceReport
     repeat_eating_amplifier: RepeatEatingAmplifierReport
@@ -230,7 +270,7 @@ class EatingSequenceReport:
     def to_dict(self) -> dict:
         return {
             "schema": REPORT_SCHEMA,
-            "window": dict(self.window),
+            "window": self.window.to_dict(),
             "definitions": _definitions_dict(self.config),
             "high_carb_sequence": self.high_carb_sequence.to_dict(),
             "repeat_eating_amplifier": self.repeat_eating_amplifier.to_dict(),
@@ -275,7 +315,7 @@ def aggregate_interval(metric_rows: Sequence[MetricRow], *, config: EatingSequen
     )
 
 
-def empty_report(window: Mapping[str, object], *, config: EatingSequenceConfig | None = None) -> EatingSequenceReport:
+def empty_report(window: SourceWindow, *, config: EatingSequenceConfig | None = None) -> EatingSequenceReport:
     """Return the complete all-insufficient report for an empty source window."""
     config = config or EatingSequenceConfig()
     aggregate = IntervalAggregate("insufficient", 0, None, None, None, None)
@@ -300,7 +340,7 @@ def empty_report(window: Mapping[str, object], *, config: EatingSequenceConfig |
         for period in _PERIODS
     )
     return EatingSequenceReport(
-        dict(window), config,
+        window, config,
         HighCarbSequenceReport("insufficient", None, scope, scope, high_comparisons, exclusions),
         RepeatEatingAmplifierReport("insufficient", None, matrix, repeat_comparisons, exclusions),
     )

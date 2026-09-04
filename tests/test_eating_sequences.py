@@ -9,6 +9,7 @@ from ciq_autotune.analyzers.eating_sequences import (
     REPORT_SCHEMA,
     MetricRow,
     SequenceItem,
+    SourceWindow,
     aggregate_interval,
     assign_quintiles,
     empty_report,
@@ -24,8 +25,10 @@ class EatingSequenceConfigTest(unittest.TestCase):
         self.assertEqual(config.sequence_gap_hours, 3.0)
         self.assertEqual(config.in_sequence_tail_minutes, 5.0)
         self.assertEqual(config.post_horizons_hours, (4, 6))
-        self.assertEqual(config.tir_low_mgdl, 70.0)
-        self.assertEqual(config.tir_high_mgdl, 180.0)
+        self.assertEqual(config.tir_low_mgdl, 70)
+        self.assertEqual(config.tir_high_mgdl, 180)
+        self.assertIsInstance(config.tir_low_mgdl, int)
+        self.assertIsInstance(config.tir_high_mgdl, int)
         self.assertEqual(config.cgm_coverage_floor, 0.7)
         self.assertEqual(config.minimum_bucket_n, 8)
         self.assertEqual(config.quintile_count, 5)
@@ -61,6 +64,16 @@ class QuintileAssignmentTest(unittest.TestCase):
         self.assertEqual([row.quintile for row in assigned.rows], [1, 2, 4])
         self.assertEqual(assigned.boundaries_g, (21.0, 21.0, 21.0, 21.0))
 
+    def test_non_divisible_population_uses_the_pinned_rank_and_boundary_formula(self):
+        items = [SequenceItem(carb_total=float(n * 10), sequence_start=f"s{n:02}")
+                 for n in range(13)]
+
+        assigned = assign_quintiles(items, config=EatingSequenceConfig())
+
+        self.assertEqual([row.quintile for row in assigned.rows],
+                         [1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 5, 5])
+        self.assertEqual(assigned.boundaries_g, (25.0, 55.0, 75.0, 105.0))
+
 
 class IntervalAggregateTest(unittest.TestCase):
     def test_thin_evidence_is_visible_but_non_concluding(self):
@@ -93,16 +106,17 @@ class IntervalAggregateTest(unittest.TestCase):
 
 class EmptyReportTest(unittest.TestCase):
     def test_empty_report_is_a_complete_aggregate_only_skeleton(self):
-        payload = report_dict(empty_report({
-            "start": "2040-01-01T00:00:00",
-            "end": "2040-01-31T00:00:00",
-            "days": 30,
-        }))
+        payload = report_dict(empty_report(SourceWindow(
+            start="2040-01-01T00:00:00",
+            end="2040-01-31T00:00:00",
+            days=30,
+        )))
 
         self.assertEqual(json.loads(json.dumps(payload))["schema"], REPORT_SCHEMA)
         self.assertEqual(set(payload), {"schema", "window", "definitions",
                                         "high_carb_sequence", "repeat_eating_amplifier"})
         self.assertEqual(set(payload["window"]), {"start", "end", "days"})
+        self.assertEqual(json.dumps(payload["definitions"]["tir_range_mgdl"]), "[70, 180]")
         self.assertEqual(len(payload["high_carb_sequence"]["comparisons"]), 6)
         self.assertEqual(len(payload["repeat_eating_amplifier"]["matrix"]), 15)
         self.assertEqual(len(payload["repeat_eating_amplifier"]["comparisons"]), 15)

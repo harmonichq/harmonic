@@ -88,7 +88,7 @@
       priced row in the fixture carries a `highs` chip; `ic:720`'s chips are
       `["highs"]`); `frontend/browser-fixture-population.test.js` keeps passing
       unchanged — its `queueMeta` string and its `queueRows` shown-row filter
-      are not disturbed by the added `weight`/`caption`/headline fields; the `morning`
+      are not disturbed by the added `weight`/`caption` fields; the `morning`
       window's single priced row is a hero with no compact rows.
 - [ ] `renderFindingsQueue` paints the three weights: the hero as a
       `button.qrow.hero` carrying kicker (flavor glyph+word, `TIER[row.tier]`),

@@ -795,6 +795,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(low_case["summary"], {
             "claimed": 4, "denominator": 4, "noun": "lows",
         })
+        self.assertEqual(low_case["projection"]["window_min"], [-60, 120])
+        self.assertTrue(all(
+            (cohort["points"][0]["minute"], cohort["points"][-1]["minute"])
+            == (-60, 120)
+            for cohort in low_case["projection"]["cohorts"]
+        ))
 
         correction_cgm = []
         corrections = []
@@ -812,6 +818,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(correction_case["summary"], {
             "claimed": 4, "denominator": 7, "noun": "correction clusters",
         })
+        self.assertEqual(correction_case["projection"]["window_min"], [-120, 180])
+        self.assertTrue(all(
+            (cohort["points"][0]["minute"], cohort["points"][-1]["minute"])
+            == (-120, 180)
+            for cohort in correction_case["projection"]["cohorts"]
+        ))
         fired = next(row for row in correction_case["occurrences"]
                      if row["verdict"] == "fired")
         self.assertEqual(fired["anchor"]["kind"], "correction")
@@ -830,7 +842,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         source_times = [datetime.strptime(row["t"], "%Y-%m-%d %H:%M:%S")
                         for row in sources]
         self.assertGreater((source_times[1] - source_times[0]).total_seconds(), 20 * 3600)
-        self.assertEqual(far_case["projection"]["window_min"], [-300, 180])
+        self.assertEqual(far_case["projection"]["window_min"], [-120, 180])
         self.assertNotIn(
             sources[0]["seq_num"],
             [marker.get("seq_num") for marker

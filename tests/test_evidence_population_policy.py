@@ -16,9 +16,9 @@ class EvidencePopulationPolicyContractTest(unittest.TestCase):
             Lever.CARB_UNDERCOUNT: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),
             Lever.LATE_BOLUS: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),
             Lever.MEAL_OVER_DELIVERY: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),
-            Lever.OVER_TREATED_LOW: (Exposure.LOWS, "lows", Exposure.LOWS, "Other low excursions", "excursion_nadir", (-300, 120), False, "episode-1"),
-            Lever.CORRECTION_ON_IOB: (Exposure.LOWS, "lows", Exposure.LOWS, "Other low excursions", "excursion_nadir", (-300, 120), False, "episode-1"),
-            Lever.CORRECTION_STACKING: (Exposure.CORRECTION_CLUSTERS, "correction_clusters", Exposure.CORRECTION_CLUSTERS, "Other back-to-back correction pairs", "correction_pair", (-300, 180), False, "episode-1"),
+            Lever.OVER_TREATED_LOW: (Exposure.LOWS, "lows", Exposure.LOWS, "Other low excursions", "excursion_nadir", (-60, 120), False, "episode-1"),
+            Lever.CORRECTION_ON_IOB: (Exposure.LOWS, "lows", Exposure.LOWS, "Other low excursions", "excursion_nadir", (-60, 120), False, "episode-1"),
+            Lever.CORRECTION_STACKING: (Exposure.CORRECTION_CLUSTERS, "correction_clusters", Exposure.CORRECTION_CLUSTERS, "Other back-to-back correction pairs", "correction_pair", (-120, 180), False, "episode-1"),
             Lever.MISSED_MEAL: (Exposure.HIGHS, "highs", None, "Completed carb-bolus meals", "completed_carb_bolus", (-60, 300), True, "episode-1"),
             Lever.MEAL_BOLUS_SHORT: (None, "meals", None, "Other completed carb-bolus meals", "completed_carb_bolus", (-60, 300), False, "meal-42"),
         }

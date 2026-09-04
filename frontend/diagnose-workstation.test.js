@@ -25,6 +25,41 @@ test('queryState reads Diagnose state from the canonical route query', () => {
   }
 });
 
+test('#302 · a settled tile refreshes the mounted findings-row mini', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  const fetchTile = source.match(/async function fetchTile\([\s\S]*?\n  \}/);
+  assert.ok(fetchTile, 'the workstation keeps one tile-fetch completion path');
+  assert.match(fetchTile[0], /descriptor\.state = descriptorHasData\(descriptor\) \? 'ok' : 'empty';[\s\S]*?\n      paint\(\);/,
+    'a fetched compact-row descriptor repaints the level, remounting its pending mini');
+});
+
+test('#302 · the rail mini defines every cohort ink the shared chart reads off it', () => {
+  /* The comparison builder resolves each cohort's colour with
+     `getComputedStyle(surface)`, and the workstation hands it the row's own
+     `.mini` element as that surface. A token the rail never defines resolves to
+     the empty string, which is not a failure the reader sees as missing ink —
+     ECharts silently substitutes its own default palette. That is how a stock
+     chart-library blue got drawn into the rail, so the coupling is pinned here
+     rather than left to a screenshot. */
+  const comparison = readFileSync(
+    new URL('./diagnose-event-comparison.js', import.meta.url), 'utf8');
+  const style = comparison.match(/^const STYLE = \{[\s\S]*?\n\};/m);
+  assert.ok(style, 'the comparison chart still declares its cohort styles in one map');
+  const tokens = [...style[0].matchAll(/color: '(--[a-z-]+)'/g)].map((match) => match[1]);
+  assert.ok(tokens.length >= 3, `every cohort names a colour token (${tokens})`);
+  const css = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+  const mini = css.match(/\.dw \.qrow \.mini \{[\s\S]*?\n\}/);
+  assert.ok(mini, 'the rail still styles the row mini in one block');
+  for (const token of tokens) {
+    // an ink weight may wrap the token, but the hue is always the app's own
+    assert.match(mini[0], new RegExp(`${token}:[^;]*var\\(--`),
+      `the rail mini defines ${token} on an app token, never on the chart library's default`);
+  }
+  // declarations only — a comment is free to cite an issue number
+  assert.doesNotMatch(mini[0].replace(/\/\*[\s\S]*?\*\//g, ''), /#[0-9a-fA-F]{3,8}\b/,
+    'the cell carries no colour literal where the theme already names the value');
+});
+
 test('selected detail describes its glucose trace in product language', () => {
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);

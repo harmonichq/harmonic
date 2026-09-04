@@ -339,9 +339,9 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         Lever.CARB_UNDERCOUNT: [-60, 300],
         Lever.LATE_BOLUS: [-60, 300],
         Lever.MEAL_OVER_DELIVERY: [-60, 300],
-        Lever.OVER_TREATED_LOW: [-300, 120],
-        Lever.CORRECTION_ON_IOB: [-300, 120],
-        Lever.CORRECTION_STACKING: [-300, 180],
+        Lever.OVER_TREATED_LOW: [-60, 120],
+        Lever.CORRECTION_ON_IOB: [-60, 120],
+        Lever.CORRECTION_STACKING: [-120, 180],
         Lever.MISSED_MEAL: [-60, 300],
         Lever.MEAL_BOLUS_SHORT: [-60, 300],
     }

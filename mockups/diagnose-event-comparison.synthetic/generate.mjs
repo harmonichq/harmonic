@@ -66,7 +66,7 @@ function traceIncludes(cohort, rank, minute, start, end) {
 }
 
 function cgm(view, index) {
-  const [start, end] = view === 'meals' ? [-60, 300] : [-300, 120];
+  const [start, end] = view === 'meals' ? [-60, 300] : [-60, 120];
   const cohort = plan[index];
   const rank = cohortRank(index);
   const spread = {
@@ -322,7 +322,7 @@ export function buildCapture(workstationExposures) {
         occurrences: plan.map((_, index) => occurrence('meals', index, meals[index])),
       }),
       lows: attachVisualSupport({
-        anchor: 'excursion nadir', window: [-300, 120],
+        anchor: 'excursion nadir', window: [-60, 120],
         factors: factors.lows, default_factor: 'over_treated_low',
         factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
         occurrences: plan.map((_, index) => occurrence('lows', index, lows[index])),

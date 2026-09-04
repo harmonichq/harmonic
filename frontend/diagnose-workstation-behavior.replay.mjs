@@ -27,6 +27,7 @@ import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingCasePreparation } from './browser-fixture-population.js';
+import { MIN_ROW_MINI_WIDTH, TIER } from './diagnose-findings-queue.js';
 import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
@@ -3849,6 +3850,120 @@ export const S138 = async (page) => {
   ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
 };
 
+/* ---- #302 · the tapered urgency queue ------------------------------------ */
+
+/** S139 · The first priced row is the hero. Its row title remains the served
+    short title while the served headline stays out of the rail, and its chart
+    occupies the stage rather than nesting inside the hero. */
+// STORY:finding-evidence-routing:S139
+export const S139 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const first = rows.find((row) => row.priority != null);
+  ok(first, 'S139 the served queue publishes a priced row');
+  const hero = page.locator('#level .qrow.hero');
+  is(await hero.count(), 1, 'S139 the rail paints one hero');
+  is(await hero.getAttribute('data-id'), first.id, 'S139 the first priced row is the hero');
+  is((await hero.locator('.lab').innerText()).trim(), first.title,
+    'S139 the hero title is the served short title');
+  ok(!(await page.locator('#level').innerText()).includes(first.headline),
+    'S139 the served headline stays out of the rail');
+  is(await hero.locator('canvas, svg, .mini').count(), 0,
+    'S139 no chart is nested inside the hero');
+  const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
+  is(await focalId(page), chartId, 'S139 the hero chart occupies the stage');
+};
+
+/** S140 · A compact row and its drawer cell draw the same mini option: the
+    series identities come from the one shared chart builder. */
+// STORY:finding-evidence-routing:S140
+export const S140 = async (page) => {
+  await openWholeDay(page);
+  const id = 'finding:over_treated_low';
+  const rowMini = page.locator(`#level .qrow.compact[data-id="${id}"] .mini`);
+  await rowMini.locator('canvas').waitFor();
+  await raiseDock(page);
+  const drawerMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+  await drawerMini.locator('canvas').waitFor();
+  const seriesIds = async (locator) => locator.evaluate((host) =>
+    window.echarts.getInstanceByDom(host).getOption().series.map((series) => series.id));
+  const rowIds = await seriesIds(rowMini);
+  const drawerIds = await seriesIds(drawerMini);
+  ok(rowIds.length > 0, 'S140 the compact row mini draws at least one series');
+  is(rowIds, drawerIds, 'S140 row and drawer minis draw identical series ids');
+};
+
+/** S141 · Every unpriced tail row is title-only and still drills through the
+    same queue-row route, seating its own chart on the stage. */
+// STORY:finding-evidence-routing:S141
+export const S141 = async (page) => {
+  await openWholeDay(page);
+  const ids = ['finding:correction_on_iob', 'finding:correction_stacking'];
+  let drilled = 0;
+  for (const id of ids) {
+    const row = page.locator(`#level .qrow.tail[data-id="${id}"]`);
+    is(await row.count(), 1, `S141 ${id} is a tail row`);
+    is(await row.locator('.sum, .den, .tag, .mini, .why').count(), 0,
+      `S141 ${id} is title-only`);
+    await row.click();
+    await settle(page, 450);
+    is(await focalId(page), id, `S141 drilling ${id} seats its chart`);
+    drilled += 1;
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    await settle(page, 450);
+  }
+  is(drilled, ids.length, 'S141 every title-only tail row drills');
+};
+
+/** S142 · Tier language appears only at priced-tier changes: the hero eyebrow
+    and the single compact-tier caption are values of the rail's TIER map, and
+    the retired Decide now wording never returns. */
+// STORY:finding-evidence-routing:S142
+export const S142 = async (page) => {
+  await openWholeDay(page);
+  const tierWords = await page.locator('#level .tier, #level .qtier').allTextContents();
+  is(tierWords, [TIER.next_in_line, TIER.worth_a_look],
+    'S142 tier words print once at each priced-tier change');
+  ok(tierWords.every((word) => Object.values(TIER).includes(word)),
+    'S142 every printed tier word comes from the TIER map');
+  ok(!(await page.locator('#level').innerText()).includes('Decide now'),
+    'S142 no retired Decide now tier appears anywhere in the rail');
+};
+
+/** S143 · Below the rail mini's measured width floor, the compact row remains
+    and the mini is omitted rather than mounting an unreadable chart. */
+// STORY:finding-evidence-routing:S143
+export const S143 = async (page) => {
+  await openWholeDay(page);
+  const row = page.locator('#level .qrow.compact[data-id="finding:over_treated_low"]');
+  is(await row.count(), 1, 'S143 the compact row survives the narrow inspector');
+  ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
+  is(await row.locator('.mini').count(), 0, 'S143 no sub-floor mini remains mounted');
+  is(await row.getAttribute('data-mini'), 'omitted',
+    'S143 the compact row records the sub-floor omission');
+};
+
+/** S144 · Sifting to Meals promotes Carb undercount from compact to hero and
+    moves its chart onto the stage without changing the server's row identity. */
+// STORY:finding-evidence-routing:S144
+export const S144 = async (page) => {
+  await openWholeDay(page);
+  is(await page.locator('#level .qrow.hero').getAttribute('data-id'), 'ic:720',
+    'S144 the unsifted fixture begins with the served I:C hero');
+  await page.getByRole('button', { name: /Filter/ }).click();
+  for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
+    await page.getByRole('menuitemcheckbox', { name }).click();
+  }
+  await page.keyboard.press('Escape');
+  await settle(page, 450);
+  const hero = page.locator('#level .qrow.hero');
+  is(await hero.count(), 1, 'S144 the meals-only sift paints one hero');
+  is((await hero.locator('.lab').innerText()).trim(), 'Carb undercount',
+    'S144 the promoted hero keeps the served title');
+  is(await focalId(page), 'finding:carb_undercount',
+    'S144 the promoted hero chart moves onto the stage');
+};
+
 // STORY:finding-evidence-routing:C41
 // STORY:finding-evidence-routing:C42
 // STORY:finding-evidence-routing:C43
@@ -4573,8 +4688,8 @@ export const S121 = async (page) => {
   is(rows[at].register, 'assert', 'S121 the warning remains asserted');
   is(rows[at].tier, 'noted', 'S121 the warning keeps the backend-owned noted tier');
   is(rows[at].rank, '', 'S121 the warning carries no rank numeral');
-  is(rows[at].summary, analyzer.annotation,
-    'S121 the queue transcribes the analyzer-owned two-signal explanation');
+  is(rows[at].summary, '',
+    'S121 the unpriced tail keeps the analyzer explanation out of its title-only row');
   await page.locator('#level .qrow').nth(at).scrollIntoViewIfNeeded();
   await settle(page, 100);
   await captureEvidence(page, 'S121-direction-only-queue');
@@ -4967,7 +5082,7 @@ export const STORIES = [
   ['S113', S113, 'typical'],
   ['S114', S114, 'typical'],
   ['S115', S115, 'typical'], ['S116', S116, 'typical'],
-  ['S118', S118, 'typical'],
+  ['S118', S118, 'typical', { history: true }],
   ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],
   ['S120', S120, 'typical', { findingsInputs: FINDINGS_PROJECTION.inputs,
     findingsProjectionInputs: withStarBecomingWatching }],
@@ -5005,6 +5120,12 @@ export const STORIES = [
   }) }],
   ['S136', S136, 'typical'], ['S137', S137, 'typical'],
   ['S138', S138, 'typical', { viewport: { width: 1024, height: 768 } }],
+  ['S139', S139, 'typical', { history: true }],
+  ['S140', S140, 'typical', { history: true }],
+  ['S141', S141, 'typical', { history: true }],
+  ['S142', S142, 'typical', { history: true }],
+  ['S143', S143, 'typical', { history: true, viewport: { width: 760, height: 900 } }],
+  ['S144', S144, 'typical', { history: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

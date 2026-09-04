@@ -1,6 +1,6 @@
 # Tasks — the basal slot panel drills into its nights (#291)
 
-- [ ] Render a night roster on the basal slot panel, beneath its existing
+- [x] Render a night roster on the basal slot panel, beneath its existing
   numbers-and-staging block, through the shared occurrence-roster mechanism
   (`frontend/occurrence-roster.js`): groups keyed on the served per-night facts —
   ran above (`sign` 1), ran below (`sign` -1), ran as set (`sign` null with a
@@ -30,7 +30,7 @@
   Finding roster's row geometry and type hierarchy, no new colour, no new
   component — and every row and control is a touch target the tablet width can
   hit (the shipped `.ev-row` button is the sibling to match exactly).
-- [ ] Wire night selection as select-in-place on the standing slot frame: a
+- [x] Wire night selection as select-in-place on the standing slot frame: a
   row click presses that row alone, pushes no level and moves neither the
   breadcrumb nor the clock window; Up/Down step within the selected night's
   group and keep focus on the newly selected row; "Clear trace" releases the
@@ -38,19 +38,19 @@
   on the factor frame. Add the clearing: the in-place swap in `pickCell` today
   overwrites only `cell` and `rowId`, so it must also clear the night selection,
   its trace and its detail block, and so must popping the frame.
-- [ ] Paint the selected night's served `glucose_trace` over the pooled envelope
+- [x] Paint the selected night's served `glucose_trace` over the pooled envelope
   on Glucose by time of day through the existing trace-over-envelope path
   (`envelope.labels` mapped by clock label), exactly as a selected Finding
   occurrence is painted, and remove it when the selection clears or the frame
   pops.
-- [ ] Render the selected night's detail block in the Finding selection
+- [x] Render the selected night's detail block in the Finding selection
   block's shape and classes: the date and slot span, delivered against
   programmed rate, that night's in-slot mean against the roster mean
   (`roster_glucose_mean`), entering to leaving glucose, `n of N` within its
   group with the Up/Down hint, "Clear trace", and "Open <date> in Day" routing
   through the existing Day callback with the night's `t`. A null served mean,
   entry or exit prints as `—`, never as a number or an empty slot.
-- [ ] Cover the new behaviour in Node through the public interface —
+- [x] Cover the new behaviour in Node through the public interface —
   `renderSlotLevel` in `frontend/diagnose-workstation.test.js` for the groups,
   counts, row text, excluded count line, pressed state and detail block, each
   test failing first against pre-change behaviour, plus cases for the in-place
@@ -64,14 +64,14 @@
   capped roster and its expansion, and for a lane slot with no published tile
   rendering the roster from the fetched payload,
   against the generated stub `frontend/__fixtures__/basal-night-evidence.json`.
-- [ ] Replay the frozen finding-evidence-routing ledger, unchanged, against the
+- [x] Replay the frozen finding-evidence-routing ledger, unchanged, against the
   exact merge-base with `origin/main` and again against the revision, each
   served through the declared no-fetch command on a scratch copy of the QA
   showcase, and record both counts and the printed retirement sanctions in the
   ledger's new revision entry. Both runs must report the same full count with
   zero failures: this revision adds behaviour and moves none, so a frozen story
   that fails against the revision is a moved behaviour and blocks.
-- [ ] Amend `mockups/finding-evidence-routing.behavior.md` with one dated
+- [x] Amend `mockups/finding-evidence-routing.behavior.md` with one dated
   revision entry for #291: new executable stories, numbered from the next
   unissued ID, for the roster's four groups and their served counts (the stub
   fixture holds no ran-below night and no night without a programmed rate, so
@@ -84,19 +84,19 @@
   the roster, the detail block and the canvas stay inside their panes without
   horizontal overflow; update the issued and active ID inventory lines so
   `frontend/diagnose-behavior-ledger-parity.test.js` passes; retire nothing.
-- [ ] Add the same stories to `frontend/diagnose-workstation-behavior.replay.mjs`
+- [x] Add the same stories to `frontend/diagnose-workstation-behavior.replay.mjs`
   against the route stubs it already serves for `/api/diagnose/basal-night-evidence`;
   run the amended replay first against the merge-base and record that every new
   story fails there for the right reason (no night roster exists), then against
   the revision, and iterate until it reports its full applicable count with zero
   failures and no skipped story.
-- [ ] Capture before/after renders of the basal drill — the roster at rest, one
+- [x] Capture before/after renders of the basal drill — the roster at rest, one
   night selected with its trace, and the detail block — from the merge-base and
   the revision served on the same scratch copy of the QA showcase, at 1440×900,
   1280×800, 1024×768 (tablet, landscape) and 390×844, into `openspec/changes/basal-night-drill/evidence/`,
   alongside the base, fail-first and final replay outputs; and add the #291
   revision clause to the Finding → evidence routing row of `mockups/INDEX.md`.
-- [ ] Fast gate, every generator drift check, and every app-targeted browser
+- [x] Fast gate, every generator drift check, and every app-targeted browser
   gate that loads the workstation module green on the merged ticket branch:
   `diagnose-workstation.browser.test.mjs`,
   `diagnose-canvas-composition.browser.test.mjs`, `cockpit-shell.browser.test.mjs`,

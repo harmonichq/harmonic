@@ -56,12 +56,12 @@ RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay 
   ok S09
   ok S10
   ok S11
-  ok S12
+  ok S12 — RETIRED — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
   ok S13
   ok S14
   ok S15
   ok S16
-  ok S17
+  ok S17 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
   ok S18
   ok S19
   ok S20
@@ -70,7 +70,7 @@ RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay 
   ok S23
   ok S24
   ok S25
-  ok S26
+  ok S26 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
   ok S27
   ok S28
   ok S29

@@ -190,11 +190,39 @@ replay.mjs` answers `/api/diagnose/findings` from the fixture-only mirror
 
 ## Live-round rulings
 
-Appended by the executing session, one dated entry per ruling on the hero's
-card treatment, type ranks and spacing, each within DESIGN.md's 1.5rem no-hero
-cap and the stage card's existing Label/Title/Body ranks.
+**2026-09-04 — hero card treatment.** Keep the hero as the rail's only raised
+card: `--mk-surface` on the field ground, one inset vessel edge and the system's
+single ambient shadow. The base's flat first row did not announce the change in
+urgency; making any compact or tail row a card would erase the distinction.
+
+**2026-09-04 — type ranks.** Keep the served tier as the hero's micro-caps
+eyebrow, its short title at 15px/700, and its annotation at the existing
+emphasis/body rank. Keep tier captions and the tail sentence at 11.5px/500.
+The hero remains well below DESIGN.md's 1.5rem no-hero cap and uses the stage
+card's existing Label/Title/Body ladder rather than inventing display type.
+
+**2026-09-04 — spacing.** Keep the hero's 6px outer inset, 13px/14px block
+padding and 10px release below; keep the 14px tier and tail pauses and the
+title-only tail's compact 30px desktop rhythm. At the mobile breakpoint tail
+rows return to 44px touch targets. The five-viewport matrix keeps the queue's
+title and flavor spines aligned while making each weight legible as one group.
+
+**2026-09-04 — row-mini floor.** Keep `MIN_ROW_MINI_WIDTH = 120`. The
+comparison traces remain legible at every matrix width where the two-column
+workstation stands, while the 760px narrow-inspector replay omits the mini and
+preserves the compact row. A smaller plot would spend ink without carrying a
+readable comparison; a larger floor would discard useful evidence at 768px.
 
 ## Base story counts
 
-Recorded by the executing session against the base worktree before any product
-code changes.
+Fresh `origin/main` resolved the ticket branch's merge-base to
+`ee1d46f0a309b38625c2f4eee0956f8d480468c3`. From the detached base worktree,
+the full frozen replay ran through the declared no-fetch server on port 8873
+against its own scratch copy of the generated QA showcase and reported:
+
+```
+app: 151 of 151 stories passed
+```
+
+There were zero failures, zero opener problems and no skipped story. Complete
+stdout is committed as `evidence/replay.base.stdout.txt`.

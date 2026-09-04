@@ -53,7 +53,7 @@ import {
 } from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
-  eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta,
+  eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
@@ -3136,6 +3136,16 @@ function boot(root, data, callbacks, signal) {
     if (next.has(key)) next.delete(key); else next.add(key);
     selectedChips = next.size === CHIP_LABELS.length ? null : next;
     collapsedFindingsExpanded = false;
+    /* THE HERO AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes which of the
+       server-ordered rows is first without changing the descriptor set, so the
+       ordinary canvas reconcile quite correctly preserves the still-live old
+       focal id. Ask the rail's one weight authority which visible row became
+       hero and seat that same id; do not re-rank the projection here. */
+    const hero = queueRows(findings, selectedChips)
+      .find((row) => row.weight === 'hero' && !row.hidden && !row.collapsed);
+    if (hero && currentTileDescriptors().some(({ chartId }) => chartId === hero.id)) {
+      focusChart(hero.id);
+    }
   }
 
   function closeFilter({ restoreFocus = false } = {}) {

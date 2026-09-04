@@ -35,16 +35,19 @@ response."
 Its `window` query parameter SHALL default to and accept only
 `findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other value SHALL return 400
 whose detail names that fixed window, matching basal-night evidence's refusal. It
-SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary with
-backend-owned `input_data_age` attached, from cache key `("eating-sequences", window)`
+SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary under
+the shared fixed-response semantics — no age field on fresh data, backend-owned
+`input_data_age` only when a labelled stale predecessor is served, which
+`serve_stale=False` here never does — from cache key `("eating-sequences", window)`
 with shape marker `"eating-sequences-v1"` and `serve_stale=False`. The fetch warm
 roster SHALL pre-warm this product.
 
-#### Scenario: A fixed-window request is served from the cache with input-data age
+#### Scenario: A fixed-window request is served fresh from the cache
 
 - **GIVEN** a request for the fixed Diagnose source window
 - **WHEN** the endpoint answers the report
-- **THEN** it returns the cache-backed report with backend-owned `input_data_age`
+- **THEN** it returns the cache-backed `eating-sequence-report-v1` dictionary
+- **AND** the fresh response carries no `input_data_age` field
 
 #### Scenario: A non-fixed window is refused
 

@@ -40,7 +40,7 @@ The implementation must prove, through `build_report` and builder-made streams:
   identically into evening rather than re-ranked;
 - supported and non-firing Q5 comparisons, withheld evening headlines when pooled is
   insufficient, and a complete zero-sequence skeleton with `n = 0`;
-- cache delivery with `input_data_age`, fixed-window refusal, generator parity and
+- fresh cache delivery under the shared fixed-response semantics, fixed-window refusal, generator parity and
   provenance, and a green `--check`.
 
 No test may hand-set an analyzer verdict: every asserted result is built from the

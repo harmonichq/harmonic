@@ -289,6 +289,66 @@ test('basal night roster caps and expands its served rows', () => {
   } finally { globalThis.document = originalDocument; }
 });
 
+/* The rail reads as sentences on screen, so the assertions below read the same
+   way the browser stories do — tags stripped, whitespace collapsed — rather than
+   pinning markup a purely visual edit would churn. */
+const sentences = (host) => host.children.map((child) => child.innerHTML)
+  .join('\n').replace(/<[^>]*>/g, '').replace(/[ \t\n]+/g, ' ').trim();
+
+test('basal night detail prints the served rates and glucose beside the roster mean', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, selectedId: '2026-01-01', shownCount: 5,
+    });
+
+    const detail = sentences(host);
+    assert.match(detail, /0\.80 U\/h delivered · 0\.60 U\/h programmed/,
+      'the detail prints both served rates as served');
+    assert.match(detail, /116 mg\/dL this night · 120 mg\/dL roster mean/,
+      'the detail prints the night mean beside the served roster mean');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('basal night detail prints every null served rate and mean as an em dash', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const noMean = new RosterElement();
+    renderSlotLevel(noMean, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, selectedId: '2026-01-03', shownCount: 5,
+    });
+    assert.match(sentences(noMean), /— mg\/dL this night · 120 mg\/dL roster mean/,
+      'a null served night mean prints as an em dash, not a blank or a zero');
+
+    const noProgrammed = new RosterElement();
+    renderSlotLevel(noProgrammed, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, selectedId: '2026-01-04', shownCount: 5,
+    });
+    assert.match(sentences(noProgrammed), /0\.60 U\/h delivered · — U\/h programmed/,
+      'a night with no programmed rate prints an em dash on the same spine');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('basal night detail names the group the served night was sorted into', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    for (const [date, label] of [['2026-01-01', 'Ran above'], ['2026-01-02', 'Ran below'],
+      ['2026-01-03', 'Ran as set'], ['2026-01-04', 'No programmed rate']]) {
+      const host = new RosterElement();
+      renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+        nightEvidence: nightPayload, selectedId: date, shownCount: 5,
+      });
+      const head = host.children.find((child) => child.className === 'inner occ-detail');
+      assert.match(head.innerHTML, new RegExp(`<span class="tag">${label}</span>`),
+        `the ${label} night carries its group as the sibling detail tag`);
+    }
+  } finally { globalThis.document = originalDocument; }
+});
+
 test('basal night roster preserves null served mean and exit as em dashes', () => {
   const originalDocument = globalThis.document;
   try {

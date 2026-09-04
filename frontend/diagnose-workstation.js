@@ -774,13 +774,28 @@ function nightGroup(night) {
   return 'set';
 }
 
+const NIGHT_GROUP_LABEL = {
+  above: 'Ran above', below: 'Ran below', set: 'Ran as set', unprogrammed: 'No programmed rate',
+};
+
+/* Every null in this block is one em dash, the Finding block's own null and the
+   roster row's own null. `u()` renders a missing rate as `--`, which is the
+   parameter panel's convention two blocks up and reads as a second mark beside
+   the em dashes on the lines below it. */
+const nightRate = (rate) => (rate == null ? '—' : u(rate));
+
 function renderSlotNightSelection(host, night, groupRows, rosterGlucoseMean, onClear, onDay) {
   if (!night) return;
   const at = groupRows.findIndex((row) => row.date === night.date);
   const box = document.createElement('div'); box.className = 'inner occ-detail';
+  /* The tag is the Finding block's own: a selected row's detail sits under
+     whichever group the roster scrolled to, so the block states which group
+     this night was served into rather than leaving the reader to find its
+     header again. It restates the served grouping, never a second reading. */
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)}</span>
+    <span class="tag">${NIGHT_GROUP_LABEL[nightGroup(night)]}</span>
     ${at >= 0 && groupRows.length > 1 ? `<span class="pos">${at + 1} of ${groupRows.length}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
-    <div class="occ-nums">${u(night.delivered_rate)} <span>U/h delivered</span> · ${u(night.programmed_rate)} <span>U/h programmed</span></div>
+    <div class="occ-nums">${nightRate(night.delivered_rate)} <span>U/h delivered</span> · ${nightRate(night.programmed_rate)} <span>U/h programmed</span></div>
     <div class="occ-nums">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}
       <span>mg/dL this night</span> · ${rosterGlucoseMean == null ? '—' : Math.round(rosterGlucoseMean)} <span>mg/dL roster mean</span></div>
     <div class="occ-nums">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}
@@ -838,20 +853,17 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     host.insertAdjacentHTML('beforeend', '<div class="empty">Night evidence unavailable.</div>');
     return;
   }
-  const labels = {
-    above: 'Ran above', below: 'Ran below', set: 'Ran as set', unprogrammed: 'No programmed rate',
-  };
   const groups = ['above', 'below', 'set', 'unprogrammed'].map((key) => {
     const rows = (evidence.nights || []).filter((night) => nightGroup(night) === key);
     return {
-      header: `<div class="ev-group"><b>${labels[key]}</b><span class="n"> · ${rows.length} night${rows.length === 1 ? '' : 's'}</span></div>`,
+      header: `<div class="ev-group"><b>${NIGHT_GROUP_LABEL[key]}</b><span class="n"> · ${rows.length} night${rows.length === 1 ? '' : 's'}</span></div>`,
       servedCount: rows.length,
       rows: rows.map((night) => ({
         id: night.date,
         html: `<span class="when">${fmtDate(night.date)}</span>
           <span class="entry">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}</span>
           <span class="arrow">→</span><span class="worst">${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}</span>
-          <span class="delta">${night.delivered_rate == null ? '—' : u(night.delivered_rate)}</span>`,
+          <span class="delta">${nightRate(night.delivered_rate)}</span>`,
       })),
     };
   }).filter((group) => group.servedCount > 0);
@@ -3388,6 +3400,17 @@ function boot(root, data, callbacks, signal) {
               : '';
   }
 
+  /* Selecting a roster row rebuilds the level, so the row the reader pressed is
+     a new element and focus would otherwise land on the document. The case file
+     has always put it back; the basal nights are the second roster to need it.
+     `preventScroll` is the point of the gesture: selection is evidence, not
+     navigation, so it never moves the reader's viewport. */
+  function focusOccurrenceRow(id) {
+    [...el('level').querySelectorAll('.case-occurrence')]
+      .find((button) => button.dataset.occurrenceId === id)
+      ?.focus({ preventScroll: true });
+  }
+
   /** Exactly one level renders into #level; the previous one is discarded. */
   function paintLevel() {
     const host = el('level');
@@ -3479,7 +3502,7 @@ function boot(root, data, callbacks, signal) {
       }, {
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
-        onSelect: (id) => { f.selectedId = id; paint(); },
+        onSelect: (id) => { f.selectedId = id; paint(); focusOccurrenceRow(id); },
         onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         onClear: () => { f.selectedId = null; paint(); },
         onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
@@ -3547,9 +3570,7 @@ function boot(root, data, callbacks, signal) {
     });
     appendCaseError(host);
     if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
-      const row = [...host.querySelectorAll('.case-occurrence')]
-        .find((button) => button.dataset.occurrenceId === occurrenceFocusId);
-      row?.focus({ preventScroll: true });
+      focusOccurrenceRow(occurrenceFocusId);
       occurrenceFocusId = null;
     }
   }

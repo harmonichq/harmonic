@@ -30,7 +30,11 @@ const states = {
     const row = page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]');
     if (await row.count()) {
       await row.click();
-      await page.locator('#level .occ-detail').scrollIntoViewIfNeeded();
+      // The block ends at its sibling `.occ-foot`, not at `.occ-detail`: scrolling
+      // only the detail into view left Clear trace and Open <date> in Day below the
+      // rail's visible bottom, so the detail evidence never showed the two controls
+      // it is the evidence for.
+      await page.locator('#level .occ-foot').scrollIntoViewIfNeeded();
     }
   },
 };

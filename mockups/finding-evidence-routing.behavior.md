@@ -3054,12 +3054,16 @@ Each of S133–S138 was also run deliberately red after reaching its real browse
 state; all six failed its sentinel, and S138 additionally exposed the stage
 remaining on `ic:720` after the Meals-only sift promoted Carb undercount.
 
-**Behavior changed — S118 and S121.** S118 now opens the pinned priced queue,
-where it continues to prove consecutive visible numerals and the asserting
-annotation. S121 keeps the direction-only Correction factor warning as an
-unpriced, title-only tail row; drilling it still reveals the analyzer-owned
-two-signal explanation verbatim and withholds staging. This changes no backend
-verdict and retires no behavior.
+**Behavior changed — S118 and S121.** S118 now opens the pinned priced input
+set, so its asserting-annotation assertion is proved against a different queue
+than before. S121's direction-only Correction factor warning no longer shows
+the analyzer explanation on its queue row. That queue-level behavior is retired
+by the pinned requirement that every shown unpriced ranked row render
+title-only, not by a choice made in this round. The explanation remains verbatim
+one drill down, proved by the assertion `S121 detail keeps the analyzer
+explanation verbatim`, and staging remains withheld. No backend verdict changes.
+This queue-level change is carried to the pull request for the operator to
+ratify, with no sanction quoted.
 
 **Behavior added.** The new executable stories are:
 

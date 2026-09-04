@@ -122,6 +122,12 @@ the exploration ticket at admission.
 - Round 1 re-check: 1 `injected` blocker — the new route requirement demanded
   `input_data_age` on a fresh fixed response. Mechanical wording fix in
   3e1102c. Countersigned; fresh cold pass owed (sub-order 1 is Full).
+- Fresh pass (panel 2, Terra): 3 blockers — warm roster contradicts the
+  scheduled-fetch contract (`authoring`; dropped, deferred to #277); stream
+  slicing to the window unspecified (`authoring`); 400 vs framework 422
+  (`authoring`). Re-check: 2 `injected` — half-open slice stated against an
+  inclusive `_slice`; stale warm sentence in the proposal. Mechanical fixes in
+  9e3499c. Countersigned; panel 3 fresh pass dispatched.
 
 ## Open questions
 

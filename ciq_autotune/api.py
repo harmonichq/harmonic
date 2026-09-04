@@ -32,6 +32,7 @@ from typing import Optional
 from . import credentials
 from .analyze import analyze
 from .analyzers.scenario.levers import Lever
+from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .config import resolve_runtime_configuration
 from .explore_exposures import build_exposures
 from .basal_night_evidence import (
@@ -955,6 +956,21 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=404, detail="basal slot was not found") from error
         except IncompleteBasalNightEvidence as error:
             raise HTTPException(status_code=500, detail="basal night evidence is incomplete") from error
+
+    @app.get("/api/diagnose/eating-sequences")
+    def diagnose_eating_sequences_endpoint(
+        window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        _: None = Depends(require_token),
+    ) -> dict:
+        """Aggregate-only high-carb sequence evidence for Diagnose."""
+        if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
+            raise HTTPException(status_code=400, detail=(
+                "eating sequences requires its fixed source window"))
+        return fixed_response(fixed(
+            ("eating-sequences", window), "eating-sequences-v1",
+            lambda store: report_dict(build_eating_sequence_report(store, window_days=window)),
+            serve_stale=False,
+        ))
 
     @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(

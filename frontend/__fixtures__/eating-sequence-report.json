@@ -1,0 +1,1031 @@
+{
+ "_generated_by": "scripts/gen_eating_sequence_fixtures.py",
+ "_note": "SYNTHETIC. Fixed invented eating sequences; no personal data.",
+ "definitions": {
+  "cgm_coverage_floor": 0.7,
+  "evening_hours": [
+   18,
+   24
+  ],
+  "in_sequence_tail_minutes": 5.0,
+  "minimum_bucket_n": 8,
+  "post_horizons_hours": [
+   4,
+   6
+  ],
+  "sequence_gap_hours": 3.0,
+  "tir_range_mgdl": [
+   70,
+   180
+  ],
+  "window_merge_minutes": 30.0
+ },
+ "high_carb_sequence": {
+  "comparisons": [
+   {
+    "high_cohort": "Q5",
+    "high_n": 8,
+    "mean_difference_mgdl": 110.39999999999999,
+    "period": "in_sequence",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 32,
+    "scope": "pooled",
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
+   },
+   {
+    "high_cohort": "Q5",
+    "high_n": 8,
+    "mean_difference_mgdl": 110.39999999999996,
+    "period": "post_4h",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 32,
+    "scope": "pooled",
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
+   },
+   {
+    "high_cohort": "Q5",
+    "high_n": 8,
+    "mean_difference_mgdl": 110.39999999999999,
+    "period": "post_6h",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 32,
+    "scope": "pooled",
+    "sd_difference_mgdl": 0.0,
+    "status": "supported",
+    "tir_difference_pct_points": -100.0
+   },
+   {
+    "high_cohort": "Q5",
+    "high_n": 0,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 0,
+    "scope": "evening",
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "high_cohort": "Q5",
+    "high_n": 0,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 0,
+    "scope": "evening",
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "high_cohort": "Q5",
+    "high_n": 0,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_cohort": "Q1-Q4",
+    "reference_n": 0,
+    "scope": "evening",
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   }
+  ],
+  "exclusions": {
+   "carb_log_contamination": 0,
+   "cgm_coverage": 0,
+   "next_sequence_overlap": 0
+  },
+  "finding": {
+   "period": "in_sequence",
+   "scope": "pooled",
+   "summary": "In pooled sequences, the highest-carb fifth spent 0.0% of the in-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+  },
+  "scopes": {
+   "evening": {
+    "boundaries_g": [
+     30.949999999999996,
+     49.35,
+     67.75,
+     86.15
+    ],
+    "rows": [
+     {
+      "in_sequence": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_4h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_6h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "quintile": 1,
+      "sequence_n": 0
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_4h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_6h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "quintile": 2,
+      "sequence_n": 0
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_4h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_6h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "quintile": 3,
+      "sequence_n": 0
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_4h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_6h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "quintile": 4,
+      "sequence_n": 0
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_4h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "post_6h": {
+       "mean_mgdl": null,
+       "n": 0,
+       "peak_mgdl": null,
+       "sd_mgdl": null,
+       "status": "insufficient",
+       "tir_pct": null
+      },
+      "quintile": 5,
+      "sequence_n": 0
+     }
+    ]
+   },
+   "pooled": {
+    "boundaries_g": [
+     30.949999999999996,
+     49.35,
+     67.75,
+     86.15
+    ],
+    "rows": [
+     {
+      "in_sequence": {
+       "mean_mgdl": 101.3,
+       "n": 8,
+       "peak_mgdl": 101.3,
+       "sd_mgdl": 0.0,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_4h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_6h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "quintile": 1,
+      "sequence_n": 8
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": 101.3,
+       "n": 8,
+       "peak_mgdl": 101.3,
+       "sd_mgdl": 0.0,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_4h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_6h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "quintile": 2,
+      "sequence_n": 8
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": 101.3,
+       "n": 8,
+       "peak_mgdl": 101.3,
+       "sd_mgdl": 0.0,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_4h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_6h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "quintile": 3,
+      "sequence_n": 8
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": 101.3,
+       "n": 8,
+       "peak_mgdl": 101.3,
+       "sd_mgdl": 0.0,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_4h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "post_6h": {
+       "mean_mgdl": 101.8,
+       "n": 8,
+       "peak_mgdl": 102.3,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 100.0
+      },
+      "quintile": 4,
+      "sequence_n": 8
+     },
+     {
+      "in_sequence": {
+       "mean_mgdl": 211.7,
+       "n": 8,
+       "peak_mgdl": 211.7,
+       "sd_mgdl": 0.0,
+       "status": "supported",
+       "tir_pct": 0.0
+      },
+      "post_4h": {
+       "mean_mgdl": 212.19999999999996,
+       "n": 8,
+       "peak_mgdl": 212.7,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 0.0
+      },
+      "post_6h": {
+       "mean_mgdl": 212.2,
+       "n": 8,
+       "peak_mgdl": 212.7,
+       "sd_mgdl": 0.408248290463863,
+       "status": "supported",
+       "tir_pct": 0.0
+      },
+      "quintile": 5,
+      "sequence_n": 8
+     }
+    ]
+   }
+  },
+  "status": "supported"
+ },
+ "repeat_eating_amplifier": {
+  "comparisons": [
+   {
+    "carb_quintile": 1,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 1,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 1,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 2,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 2,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 2,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 3,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 3,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 3,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 4,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 4,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 4,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 5,
+    "mean_difference_mgdl": null,
+    "period": "in_sequence",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 5,
+    "mean_difference_mgdl": null,
+    "period": "post_4h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   },
+   {
+    "carb_quintile": 5,
+    "mean_difference_mgdl": null,
+    "period": "post_6h",
+    "reference_band": "1",
+    "reference_n": 0,
+    "repeat_band": "3+",
+    "repeat_n": 0,
+    "sd_difference_mgdl": null,
+    "status": "insufficient",
+    "tir_difference_pct_points": null
+   }
+  ],
+  "exclusions": {
+   "carb_log_contamination": 0,
+   "cgm_coverage": 0,
+   "next_sequence_overlap": 0
+  },
+  "finding": null,
+  "matrix": [
+   {
+    "carb_quintile": 1,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "1"
+   },
+   {
+    "carb_quintile": 1,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "2"
+   },
+   {
+    "carb_quintile": 1,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "3+"
+   },
+   {
+    "carb_quintile": 2,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "1"
+   },
+   {
+    "carb_quintile": 2,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "2"
+   },
+   {
+    "carb_quintile": 2,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "3+"
+   },
+   {
+    "carb_quintile": 3,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "1"
+   },
+   {
+    "carb_quintile": 3,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "2"
+   },
+   {
+    "carb_quintile": 3,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "3+"
+   },
+   {
+    "carb_quintile": 4,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "1"
+   },
+   {
+    "carb_quintile": 4,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "2"
+   },
+   {
+    "carb_quintile": 4,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "3+"
+   },
+   {
+    "carb_quintile": 5,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "1"
+   },
+   {
+    "carb_quintile": 5,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "2"
+   },
+   {
+    "carb_quintile": 5,
+    "in_sequence": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_4h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "post_6h": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
+    "window_count_band": "3+"
+   }
+  ],
+  "status": "insufficient"
+ },
+ "schema": "eating-sequence-report-v1",
+ "window": {
+  "days": 30,
+  "end": "2040-01-21T06:00:00",
+  "start": "2039-12-22T06:00:00"
+ }
+}

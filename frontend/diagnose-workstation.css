@@ -1707,8 +1707,8 @@
    carries one, and its denominator, in words, on the last line.
 
    TERM 44 — no hairlines between queue rows in any state; spacing separates
-   (term 27 applied). A single gap sets the rhythm for the whole list, priced
-   and tail alike. */
+   (term 27 applied). One gap sets the list's rhythm; the demoted tail closes up
+   inside it to the beat one line of title earns (see the tail block below). */
 .dw .q { --q-gap: 10px; display: flex; flex-direction: column; gap: var(--q-gap); }
 /* TWO OPTICAL SPINES (term 22). Left: the title with its detail and reason lines
    flush beneath it. Right: the flavor tag in a FIXED column just inside the
@@ -1796,11 +1796,19 @@
 .dw .qrow .den.nums b { color: var(--mk-text); font-weight: 600; }
 
 /* #302 — the served order has three visual weights. The only additional ink is
-   the served tier word; its host does not classify or price the row. */
+   the served tier word; its host does not classify or price the row.
+
+   ONE IDIOM PER LEVEL. The rail's LIST speaks in quiet sentences — the seam
+   note, the Watching disclosure — and a CARD speaks in caps labels. This caption
+   was wearing the card idiom outside a card, so it read as the same kind of
+   object as the hero's own tier eyebrow and the two competed at equal weight.
+   The eyebrow keeps the caps rank because it labels a card; the caption takes
+   the list's rank instead, identical to the seam sentence it sits above. The
+   text is still the pinned map's, byte for byte — casing was only ever
+   presentation, and the map's own spelling is what now prints. */
 .dw .qtier {
-  margin: 12px 0 0; padding: 0 var(--ck-pad); color: var(--mk-muted);
-  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
-  text-transform: uppercase;
+  margin: 14px 0 0; padding: 0 var(--ck-pad); color: var(--mk-muted);
+  font-size: 11.5px; font-weight: 500; line-height: 1.5;
 }
 /* THE HERO IS THE SAME ROW, ONE LADDER STEP UP. It first shipped on `--ck-well`,
    which is the SUNKEN role — a card painted DARKER than the rail it sits on reads
@@ -1817,6 +1825,7 @@
    tag back in the queue's own column — which is what makes a bigger, brighter,
    roomier object still read as the same card family rather than a different one. */
 .dw .qrow.hero {
+  position: relative;
   margin: 2px 6px 10px; width: calc(100% - 12px);
   min-height: 92px; padding: 13px 6px 14px; row-gap: 6px;
   border: 0; border-radius: var(--ck-r); background: var(--mk-surface);
@@ -1857,15 +1866,44 @@
    so it takes body ink and body size where a compact row's takes secondary */
 .dw .qrow.hero .sum { font-size: var(--ck-emph); color: var(--mk-body); line-height: 1.5; }
 .dw .qrow.hero .den { color: var(--mk-body); }
-.dw .qrow.hero .go { align-self: center; font-size: 15px; }
+/* THE CHEVRON BELONGS TO THE WHOLE CARD, so it is centred on the whole card
+   rather than parked in the eyebrow row beside the flavor chip, where the two
+   read as one cluster and the card's target was ambiguous. It leaves the grid to
+   get there: the 12px chevron TRACK stays in the template either way, so the
+   flavor tag's right edge does not move and every row's tag keeps its one
+   constant x (term 36). Its own x is unchanged — `right` is the card's own
+   padding, which is where the track put it. */
+.dw .qrow.hero .go {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-size: 15px;
+}
 .dw .qrow.compact {
   grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) minmax(120px, .8fr) 12px;
 }
 .dw .qrow.compact .go { grid-column: 5; }
 .dw .qrow.compact :is(.sum, .den, .why) { grid-column: 2 / 4; }
+/* THE MINI IS A CHART WELL, not a panel fenced off behind a rule. ADR 255 seats
+   a chart one step BELOW the ground its surroundings sit on, and that step is
+   what tells the reader where the plot starts — so the hairline goes, for the
+   same reason term 44 keeps hairlines out from between the rows. The well also
+   gives the trace a ground of its own to be read against instead of floating in
+   the row's text field.
+
+   THE COHORT INKS ARE READ OFF THIS HOST. `eventComparisonChartOption` resolves
+   every cohort colour with `getComputedStyle(surface)`, and the workstation
+   hands it this element as that surface. The `--ec-*` tokens were scoped to
+   `.ec-surface` alone, so out here they resolved EMPTY and ECharts fell through
+   to its own default palette — a stock chart-library blue drawn into a clinical
+   rail, which is PRODUCT.md's anti-reference exactly. The mapping below is the
+   By-event canvas's own, unchanged, so a cohort is one colour whether the reader
+   is looking at the cell or at the stage it opens. */
 .dw .qrow .mini {
   grid-column: 4; grid-row: 1 / span 3; align-self: stretch; min-height: 52px;
-  overflow: hidden; border-left: 1px solid var(--ck-hair);
+  overflow: hidden;
+  margin-block: 1px 2px; border-radius: var(--wk-radius); background: var(--ck-well);
+  --ec-matched: var(--mk-primary);
+  --ec-nearly-matched: var(--mk-warn);
+  --ec-comparison: var(--mk-accent);
 }
 .dw .qrow .mini.tile-state {
   display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);
@@ -1887,9 +1925,18 @@
   margin: 14px 0 0; padding: 0 var(--ck-pad);
   font-size: 11.5px; color: var(--mk-muted); line-height: 1.5;
 }
-/* No padding override in the demoted tail (owner ruling, 2026-08-19) — every row
-   shares the identical fixed height and padding; the tail's own weight/size
-   step off `.lab` already reads as quieter without shrinking the box. */
+/* THE TAIL IS A LIST, and it is given the box one line of title earns. This
+   supersedes the 2026-08-19 ruling recorded here ("no padding override in the
+   demoted tail — every row shares the identical fixed height and padding"):
+   shown the built rail, the operator read two title-only rows adrift in a full
+   asserting row's box as leftovers rather than as a deliberately quiet group.
+   Consecutive tails close up to a 4px beat and the first one binds to the seam
+   sentence, so the sentence and the rows it describes read as one object. They
+   stay title-only; only the box moved, and the 760px block below restores a
+   44px touch target where a pointer is a finger. */
+.dw .qrow.tail { min-height: 30px; padding-block: 4px; }
+.dw .tailnote + .qrow.tail { margin-top: -4px; }
+.dw .qrow.tail + .qrow.tail { margin-top: calc(4px - var(--q-gap)); }
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
@@ -2013,6 +2060,10 @@
   .history-case :is(.verdict, .qual, .history-current, .history-notice,
     .history-pending, .history-stale), .dw .history-retirement { font-size: 14px; }
   .dw .qcollapse { min-height: 44px; }
+  /* a title-only row is still a target for a finger, so the tail's tightened
+     box returns to the touch floor here and its rows keep the list's own gap */
+  .dw .qrow.tail { min-height: 44px; padding-block: 8px; }
+  .dw :is(.tailnote + .qrow.tail, .qrow.tail + .qrow.tail) { margin-top: 0; }
   .dw .qrow.compact { grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) 12px; }
   .dw .qrow.compact .go { grid-column: 4; }
   .dw .qrow.compact .mini { display: none; }

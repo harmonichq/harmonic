@@ -247,6 +247,29 @@ class EmptyReportTest(unittest.TestCase):
 
 
 class EatingSequenceDetectorTest(unittest.TestCase):
+    def test_public_sequence_primitive_pins_window_merge_boundaries(self):
+        from ciq_autotune.analyzers.eating_sequences import build_sequences
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        exact = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=30), carbs=12.7),
+        ], config=EatingSequenceConfig())
+        split = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=31), carbs=12.7),
+        ], config=EatingSequenceConfig())
+        corrected = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=20), carbs=None),
+            BolusEvent(start + timedelta(minutes=40), carbs=12.7),
+        ], config=EatingSequenceConfig())
+
+        self.assertEqual((len(exact), exact[0].window_count), (1, 1))
+        self.assertEqual((len(split), split[0].window_count), (1, 2))
+        self.assertEqual((len(corrected), corrected[0].window_count), (1, 2))
+
     def _report(self, boluses, cgm=(), carb_log=(), *, config=None, hours=24):
         from ciq_autotune.analyzers.eating_sequences import build_report
 
@@ -331,6 +354,20 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         early = self._report([bolus], seven, [carb_entry(start + timedelta(hours=2))], config=config)
         self.assertEqual(early.high_carb_sequence.exclusions["carb_log_contamination"], 2)
 
+    def test_carb_log_horizon_is_half_open(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+        from tests.eating_sequence_streams import carb_entry
+
+        start = datetime(2040, 2, 3, 12)
+        bolus = BolusEvent(start, carbs=11.3)
+        config = EatingSequenceConfig(minimum_bucket_n=1)
+        cgm = [CgmReading(start + timedelta(minutes=minute), 111.3)
+               for minute in range(0, 365, 5)]
+        at_start = self._report([bolus], cgm, [carb_entry(start)], config=config)
+        at_end = self._report([bolus], cgm, [carb_entry(start + timedelta(hours=4))], config=config)
+        self.assertEqual(at_start.high_carb_sequence.exclusions["carb_log_contamination"], 3)
+        self.assertEqual(at_end.high_carb_sequence.exclusions["carb_log_contamination"], 1)
+
     def test_overlap_excludes_post_six_only_before_coverage(self):
         from ciq_autotune.events import BolusEvent, CgmReading
 
@@ -399,6 +436,32 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         finding = report_dict(report)["high_carb_sequence"]["finding"]
         self.assertIsNotNone(finding)
         self.assertIn("glucose spread", finding["summary"])
+
+    def test_tir_drop_outranks_a_larger_sd_only_comparison(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from ciq_autotune.events import BolusEvent, CgmReading
+
+        start = datetime(2040, 2, 3, 12)
+        boluses, cgm = [], []
+        for index in range(40):
+            meal = start + timedelta(hours=index * 8)
+            high = index >= 32
+            boluses.extend((BolusEvent(meal, carbs=11.3 + index * 2.7),
+                            BolusEvent(meal + timedelta(minutes=30), carbs=12.7)))
+            for minute in range(0, 391, 5):
+                value = 111.3
+                if high and minute < 35:
+                    value = 91.3 if minute % 10 else 171.3
+                elif high and minute < 55:
+                    value = 211.7
+                cgm.append(CgmReading(meal + timedelta(minutes=minute), value))
+        report = build_report(boluses, cgm, [], window_start=start,
+                              window_end=start + timedelta(hours=320),
+                              config=EatingSequenceConfig())
+
+        finding = report.high_carb_sequence.finding
+        self.assertIsNotNone(finding)
+        self.assertIn("in range against", finding.summary)
 
     def test_store_wrapper_uses_basal_as_a_bound_only_and_slices_events(self):
         from datetime import timedelta

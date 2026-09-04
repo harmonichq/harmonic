@@ -358,7 +358,8 @@ to_dict = report_dict
 
 
 @dataclass(frozen=True)
-class _Sequence:
+class EatingSequence:
+    """One chained eating-window sequence consumed by this report and #276."""
     start: datetime
     end: datetime
     carbs: float
@@ -379,8 +380,8 @@ def build_report(
     """Build the aggregate-only detector report from complete window-local streams."""
     window = SourceWindow(window_start.isoformat(), window_end.isoformat(),
                           (window_end - window_start).days)
-    sequences = _sequences(
-        [event for event in boluses if window_start <= event.t <= window_end], config)
+    sequences = build_sequences(
+        [event for event in boluses if window_start <= event.t <= window_end], config=config)
     if not sequences:
         return empty_report(window, config=config)
     assignment = assign_quintiles(
@@ -431,7 +432,10 @@ def _slice(events: Sequence, start: datetime, end: datetime) -> list:
     return [event for event in events if start <= event.t <= end]
 
 
-def _sequences(boluses: Sequence[BolusEvent], config: EatingSequenceConfig) -> list[_Sequence]:
+def build_sequences(
+    boluses: Sequence[BolusEvent], *, config: EatingSequenceConfig,
+) -> tuple[EatingSequence, ...]:
+    """Construct eating sequences for this report and the repeat-eating amplifier (#276)."""
     meals = sorted((event for event in boluses if event.carbs is not None and event.carbs > 0),
                    key=lambda event: event.t)
     windows = []
@@ -446,11 +450,11 @@ def _sequences(boluses: Sequence[BolusEvent], config: EatingSequenceConfig) -> l
             built.append([first, last, carbs, 1])
         else:
             built[-1][1], built[-1][2], built[-1][3] = last, built[-1][2] + carbs, built[-1][3] + 1
-    return [_Sequence(*item) for item in built]
+    return tuple(EatingSequence(*item) for item in built)
 
 
 def _metrics(
-    sequences: Sequence[_Sequence], cgm: Sequence[CgmReading],
+    sequences: Sequence[EatingSequence], cgm: Sequence[CgmReading],
     carb_log: Sequence[CarbEntry], config: EatingSequenceConfig,
 ) -> tuple[dict[tuple[datetime, str], MetricRow], dict[str, int]]:
     values = {}
@@ -487,7 +491,7 @@ def _metrics(
 
 
 def _intervals(
-    sequence: _Sequence, config: EatingSequenceConfig,
+    sequence: EatingSequence, config: EatingSequenceConfig,
 ) -> Iterable[tuple[str, datetime, datetime]]:
     yield "in_sequence", sequence.start, sequence.end + timedelta(minutes=config.in_sequence_tail_minutes)
     for hours in config.post_horizons_hours:
@@ -495,7 +499,7 @@ def _intervals(
 
 
 def _scope_report(
-    sequences: Sequence[_Sequence], boundaries: tuple[Optional[float], ...],
+    sequences: Sequence[EatingSequence], boundaries: tuple[Optional[float], ...],
     quintiles: Mapping[datetime, int], metrics: Mapping[tuple[datetime, str], MetricRow],
     config: EatingSequenceConfig,
 ) -> QuintileScope:
@@ -514,7 +518,7 @@ def _scope_report(
 
 
 def _comparison(
-    scope: str, period: str, sequences: Sequence[_Sequence],
+    scope: str, period: str, sequences: Sequence[EatingSequence],
     quintiles: Mapping[datetime, int], metrics: Mapping[tuple[datetime, str], MetricRow],
     config: EatingSequenceConfig,
 ) -> _ComparedCohorts:

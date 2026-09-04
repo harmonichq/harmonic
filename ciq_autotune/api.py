@@ -965,7 +965,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         """Aggregate-only high-carb sequence evidence for Diagnose."""
         if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
             raise HTTPException(status_code=400, detail=(
-                "eating sequences requires its fixed source window"))
+                "eating sequences requires its fixed "
+                f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day source window"))
         return fixed_response(fixed(
             ("eating-sequences", window), "eating-sequences-v1",
             lambda store: report_dict(build_eating_sequence_report(store, window_days=window)),

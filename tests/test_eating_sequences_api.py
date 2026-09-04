@@ -6,6 +6,7 @@ import unittest
 try:
     from fastapi.testclient import TestClient
     from ciq_autotune.api import create_app
+    from ciq_autotune import findings_projection as findings_projection_module
     HAS_API = True
 except ImportError:  # pragma: no cover
     HAS_API = False
@@ -41,7 +42,11 @@ class EatingSequencesApiTest(unittest.TestCase):
         malformed = self.client.get("/api/diagnose/eating-sequences", params={"window": "nope"})
 
         self.assertEqual(wrong.status_code, 400)
-        self.assertIn("fixed source window", wrong.json()["detail"])
+        self.assertIn("fixed", wrong.json()["detail"])
+        self.assertIn(
+            str(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS),
+            wrong.json()["detail"],
+        )
         self.assertEqual(malformed.status_code, 422)
 
     def test_configured_token_is_required(self):
@@ -59,4 +64,3 @@ class EatingSequencesApiTest(unittest.TestCase):
 
         self.assertEqual(refused.status_code, 401)
         self.assertEqual(accepted.status_code, 200, accepted.text)
-

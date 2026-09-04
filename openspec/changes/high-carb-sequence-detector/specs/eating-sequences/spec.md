@@ -6,8 +6,9 @@ The eating-sequences module SHALL expose
 `build_report(boluses, cgm, carb_log, *, window_start, window_end, config)` as a
 pure event-list entry returning `EatingSequenceReport`. It SHALL also expose
 `build_eating_sequence_report(store, *, window_days=30, now=None)`, which reads
-BolusEvent, CgmReading, and CarbEntry streams without writing and passes the
-result to `build_report`. Its `span_end` SHALL be the latest basal-or-CGM timestamp,
+BolusEvent, CgmReading, CarbEntry, and basal streams without writing and passes only
+the first three to `build_report`. It SHALL read basal solely to derive `span_end`,
+never as a modeling input. Its `span_end` SHALL be the latest basal-or-CGM timestamp,
 its `now` SHALL be supplied `now` or `span_end` or `datetime.now()`, and its start
 SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`.
 
@@ -17,6 +18,12 @@ SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`.
 - **WHEN** the store-facing report builder runs with the fixed Diagnose window
 - **THEN** the report window ends at the latest basal-or-CGM timestamp
 - **AND** its start is exactly thirty days earlier
+
+#### Scenario: A basal delivery later than the last CGM reading sets the window end
+
+- **GIVEN** a store whose latest basal delivery is later than its latest CGM reading
+- **WHEN** the store-facing report builder runs without an explicit `now`
+- **THEN** the report window ends at that basal delivery
 
 ### Requirement: High-carb findings are supported aggregate associations only
 

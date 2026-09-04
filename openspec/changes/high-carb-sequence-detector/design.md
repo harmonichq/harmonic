@@ -5,9 +5,10 @@
 - `build_report(boluses, cgm, carb_log, *, window_start, window_end, config)` is
   the analyzer's pure public entry. `build_eating_sequence_report(store, *,
   window_days=30, now=None)` is its thin read-only adapter: it reads the three
-  streams and derives `span_end`, `now`, and `start` exactly as `build_scenarios`
-  does. Event lists make construction and evidence testable without a store while
-  the shared window derivation keeps report bounds aligned with Diagnose.
+  modeling streams plus `store.basal_events()` solely to derive `span_end`, `now`,
+  and `start` exactly as `build_scenarios` does. Basal is never a modeling input.
+  Event lists make construction and evidence testable without a store while the
+  shared window derivation keeps report bounds aligned with Diagnose.
 - The detector assigns pooled quintiles before eligibility, then filters that single
   assignment and its boundaries for evening. It never re-ranks evening sequences.
   This preserves one user-relative population across both scopes.

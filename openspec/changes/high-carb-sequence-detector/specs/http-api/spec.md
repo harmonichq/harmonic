@@ -26,3 +26,33 @@ response."
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+## ADDED Requirements
+
+### Requirement: The eating-sequence report is a fixed-window cached Diagnose read
+
+`GET /api/diagnose/eating-sequences` SHALL be a bearer-token-gated data endpoint.
+Its `window` query parameter SHALL default to and accept only
+`findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other value SHALL return 400
+whose detail names that fixed window, matching basal-night evidence's refusal. It
+SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary with
+backend-owned `input_data_age` attached, from cache key `("eating-sequences", window)`
+with shape marker `"eating-sequences-v1"` and `serve_stale=False`. The fetch warm
+roster SHALL pre-warm this product.
+
+#### Scenario: A fixed-window request is served from the cache with input-data age
+
+- **GIVEN** a request for the fixed Diagnose source window
+- **WHEN** the endpoint answers the report
+- **THEN** it returns the cache-backed report with backend-owned `input_data_age`
+
+#### Scenario: A non-fixed window is refused
+
+- **WHEN** a request names a window other than the fixed Diagnose source window
+- **THEN** the endpoint returns 400 and its detail names the fixed window
+
+#### Scenario: A request without the configured token is refused
+
+- **GIVEN** the API has a bearer token configured
+- **WHEN** a request omits that token
+- **THEN** the endpoint refuses the request before serving report data

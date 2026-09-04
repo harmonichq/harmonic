@@ -91,6 +91,19 @@ the exploration ticket at admission.
   boundaries as midpoints between adjacent ordered values at each cut;
   coverage counts occupied five-minute slots over ceil(span/300 s). — inline
 
+### #274 lock review rounds
+
+- Round 1 (cold, Terra): 5 blockers, all `authoring` — anchors selected
+  detector requirements the lock forbade; nested report keys unnamed; a
+  test helper with no caller (charter deletion test); node fast gate missing
+  from Verification; ambiguous branch line. Fixed in 738b206.
+- Round 2 (same reviewer, deltas): 3 blockers — timestamp-rejection test vs
+  mandated window bounds (`injected` by round-1 fix 2); no Q5-vs-Q1–Q4
+  comparison rows (`authoring`); evening quintile assignment unspecified
+  (`authoring`; grounded in the exploration: pooled assignment, evening
+  filters). Fixed in 3378709.
+- Round 3 (same reviewer, deltas): 0 blockers. Countersigned.
+
 ## Open questions
 
 (none)

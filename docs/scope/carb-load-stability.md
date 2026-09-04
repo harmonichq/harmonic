@@ -150,6 +150,14 @@ the exploration ticket at admission.
   coordinator — the frozen fixture was pinned to `build_report` only, and
   now the parity test also runs the served store wrapper against it.
 
+### #276 lock review rounds
+
+- Pre-review: spec-delta headers written as `### Requirement N:` were not
+  parsed by openspec (`authoring`; coordinator renamed them, 772c396).
+- Panel 1 (cold, Terra): 1 blocker — facts.md transcripts spliced and one
+  line number stale (`authoring`; regenerated from scratch, 5830813).
+  Re-check: countersigned. Panel 2 fresh pass dispatched (Full depth).
+
 ## Open questions
 
 (none)

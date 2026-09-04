@@ -62,7 +62,7 @@
 
 ## 2. The tapered rail in the shipped app
 
-- [ ] In `frontend/diagnose-findings-queue.js`, `queueRows` stamps each row's
+- [x] In `frontend/diagnose-findings-queue.js`, `queueRows` stamps each row's
       `weight` — `hero` for the first shown priced ranked row, `compact` for
       every further shown priced ranked row, `tail` for a shown unpriced ranked
       row, unchanged `collapsed` for Watching — and `caption` (rule below, else `null`). The hero prints the row's served
@@ -90,7 +90,7 @@
       unchanged — its `queueMeta` string and its `queueRows` shown-row filter
       are not disturbed by the added `weight`/`caption` fields; the `morning`
       window's single priced row is a hero with no compact rows.
-- [ ] `renderFindingsQueue` paints the three weights: the hero as a
+- [x] `renderFindingsQueue` paints the three weights: the hero as a
       `button.qrow.hero` carrying kicker (flavor glyph+word, `TIER[row.tier]`),
       the served `title`, the detail line and the drill glyph — no headline,
       no chart; a compact row as today's `qrow`
@@ -101,7 +101,7 @@
       and the `whole_day` scope note keep their bytes and positions. The painter
       returns the rows and a list of `{ host, row }` mini slots for the
       workstation to mount.
-- [ ] In `frontend/diagnose-workstation.js`, the findings-level paint mounts
+- [x] In `frontend/diagnose-workstation.js`, the findings-level paint mounts
       each returned mini slot with the row's descriptor: resolve the descriptor
       by `chartId === row.id` (the same resolution the drawer's cells use),
       call the registry entry's `option(mode, { data: descriptor.data, range,
@@ -117,7 +117,7 @@
       observation, never on a hidden rail. Do not reuse `measureFieldNarrow`
       or its 280px, which measure the tile field for a full-width plot. No new
       fetch, no new endpoint, no series computed here.
-- [ ] `frontend/diagnose-workstation.css` carries the hero card, the compact
+- [x] `frontend/diagnose-workstation.css` carries the hero card, the compact
       row's mini column, the tail row, the tier caption and the ≤760px stack —
       layout and ink alike, on the existing `--mk-*` / `--primary` /
       `--ck-accent` tokens the file's `.qrow` rules already use — under the
@@ -129,7 +129,7 @@
       owns that file), and if it changes at all regenerate
       `mockups/diagnose-evidence-canvas.exploration/index.html` (its generator
       bakes `theme.css` in whole) so `generate.py --check` passes.
-- [ ] Regenerate `mockups/finding-evidence-routing.exploration/data.json`
+- [x] Regenerate `mockups/finding-evidence-routing.exploration/data.json`
       (`build.mjs` runs `queueRows`) and adjust `surface.js` only where the
       painter's return shape requires; `node
       mockups/finding-evidence-routing.exploration/build.mjs --check` passes.

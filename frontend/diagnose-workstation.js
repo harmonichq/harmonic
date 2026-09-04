@@ -823,8 +823,9 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   const canStage = cell.asserts;
   const capped = /capped/i.test(s.annotation || '');
   const thin = (supportFloor != null && e.n < supportFloor) || e.wide;
+  const span = `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`;
   renderParamLevel(host, {
-    head: `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
+    head: span,
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
@@ -890,7 +891,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
   }
   const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
-  renderSlotNightSelection(host, selected, `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
+  renderSlotNightSelection(host, selected, span,
     selected ? (evidence.nights || []).filter((night) => nightGroup(night) === nightGroup(selected)) : [],
     evidence.roster_glucose_mean,
     options.onClear || (() => {}), options.onDay || (() => {}));
@@ -3424,6 +3425,19 @@ function boot(root, data, callbacks, signal) {
       ?.focus({ preventScroll: true });
   }
 
+  /* Selecting a night, from a click or from an arrow step. The intent is
+     declared before the repaint so `paint`'s passive restore stands down, and
+     applied once after it — the slot level renders its roster synchronously
+     from the frame, so there is no loading paint to defer across the way the
+     factor roster has. */
+  function selectNight(frame, id) {
+    frame.selectedId = id;
+    occurrenceFocusId = id;
+    paint();
+    focusOccurrenceRow(id);
+    occurrenceFocusId = null;
+  }
+
   /** Exactly one level renders into #level; the previous one is discarded. */
   function paintLevel() {
     const host = el('level');
@@ -3515,7 +3529,7 @@ function boot(root, data, callbacks, signal) {
       }, {
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
-        onSelect: (id) => { f.selectedId = id; paint(); focusOccurrenceRow(id); },
+        onSelect: (id) => selectNight(f, id),
         onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         onClear: () => { f.selectedId = null; paint(); },
         onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
@@ -3938,14 +3952,22 @@ function boot(root, data, callbacks, signal) {
     reconcileTileDescriptors();
     paintFilter();
     paintCrumb();
-    /* A repaint the reader did not ask for — a settling tile, a background
-       findings refresh — must not cost them the roster row they are standing
-       on. `paintLevel` empties #level, so a focused occurrence row is captured
-       across it and put back. An explicit navigation request still outranks
-       this: `applyPendingFocus` runs after, and the factor roster's own
-       `occurrenceFocusId` restore runs inside `paintLevel`. */
-    const heldRow = document.activeElement?.closest?.('#level .case-occurrence')
-      ?.dataset.occurrenceId;
+    /* PRECEDENCE, enforced here rather than left to run order. An explicit focus
+       intent — `occurrenceFocusId`, set by navigation before it paints — wins
+       unconditionally: while one is pending, the passive restore below stands
+       down and captures nothing, so it can never move focus off the row
+       navigation just asked for. That is a standing rule, not a timing
+       accident. The two rosters apply their intent in different places and both
+       are protected by it: the factor roster's restore runs inside `paintLevel`
+       and may defer itself across a loading paint (ADR 101), and the night
+       roster's runs as `selectNight` returns.
+       The passive restore is only for a repaint nobody asked for — a settling
+       tile, a background findings refresh — where `paintLevel` emptying #level
+       would otherwise strand the reader on a row it just destroyed.
+       `applyPendingFocus` arbitrates none of this: it only ever focuses #level
+       itself or a `.qrow`, never a `.case-occurrence`. */
+    const heldRow = occurrenceFocusId ? null
+      : document.activeElement?.closest?.('#level .case-occurrence')?.dataset.occurrenceId;
     paintLevel();
     if (heldRow) focusOccurrenceRow(heldRow);
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
@@ -4020,13 +4042,11 @@ function boot(root, data, callbacks, signal) {
       const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
       if (at < 0 || next < 0 || next >= siblings.length) return;
       ev.preventDefault();
-      f.selectedId = siblings[next].date;
-      paint();
       /* The repaint destroys the row the key press was standing on, so the
          stepped row is focused explicitly — the same restoration the factor
          roster makes through `occurrenceFocusId` (ADR 101). Without it a screen
          reader lands on the document and Tab restarts at the top of the page. */
-      focusOccurrenceRow(f.selectedId);
+      selectNight(f, siblings[next].date);
       return;
     }
     const eventComparison = f.caseFile.projection.alignment === 'event';

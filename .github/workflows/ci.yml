@@ -72,6 +72,8 @@ jobs:
         run: uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
       - name: Check the generated missed-meal comparison fixture is current
         run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
+      - name: Check the generated eating-sequence report fixture is current
+        run: uv run python scripts/gen_eating_sequence_fixtures.py --check
 
   docs:
     name: ADR numbering guard

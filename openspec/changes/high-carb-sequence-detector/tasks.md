@@ -7,7 +7,7 @@
 
 ## 2. Serve and freeze the report
 
-- [ ] 5. Add `GET /api/diagnose/eating-sequences`: bearer-token-gated, fixed Diagnose-window-only, `fixed_response` delivery from `("eating-sequences", window)` / `"eating-sequences-v1"` with `serve_stale=False`, without a new invalidation path.
-- [ ] 6. Add API coverage for fresh cached report delivery (no `input_data_age` on fresh data, per the shared fixed-response semantics), 400 rejection of another integer window whose detail names the fixed window, framework query-validation refusal of a non-integer window, and missing-token refusal when a token is configured.
-- [ ] 7. Add the production-shaped fixture generator and parity/provenance test, then commit a synthetic populated report with a supported Q5 comparison and non-null finding.
-- [ ] 8. Add the generator `--check` to CI and update the AGENTS.md backend drift-check count and command list from twelve to thirteen. Inside a worker sandbox, run every `uv run python` above as `/Users/connor/Code/harmonichq/harmonic/.venv/bin/python`; uv cannot write its cache there, and the coordinator runs the gate verbatim outside the sandbox.
+- [x] 5. Add `GET /api/diagnose/eating-sequences`: bearer-token-gated, fixed Diagnose-window-only, `fixed_response` delivery from `("eating-sequences", window)` / `"eating-sequences-v1"` with `serve_stale=False`, without a new invalidation path.
+- [x] 6. Add API coverage for fresh cached report delivery (no `input_data_age` on fresh data, per the shared fixed-response semantics), 400 rejection of another integer window whose detail names the fixed window, framework query-validation refusal of a non-integer window, and missing-token refusal when a token is configured.
+- [x] 7. Add the production-shaped fixture generator and parity/provenance test, then commit a synthetic populated report with a supported Q5 comparison and non-null finding.
+- [x] 8. Add the generator `--check` to CI and update the AGENTS.md backend drift-check count and command list from twelve to thirteen. Inside a worker sandbox, run every `uv run python` above as `/Users/connor/Code/harmonichq/harmonic/.venv/bin/python`; uv cannot write its cache there, and the coordinator runs the gate verbatim outside the sandbox.

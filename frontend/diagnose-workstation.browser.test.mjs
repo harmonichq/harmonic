@@ -2014,6 +2014,66 @@ test('a lane slot renders a selected night trace over its envelope', async () =>
   } finally { /* browser stays open; closed once in after() */ }
 });
 
+test('an in-place basal lane swap clears the selected night trace and detail', async () => {
+  const browser = await runner.browser();
+  try {
+    const before = openerProblems().length;
+    const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+    await page.locator('#lane button').first().click();
+    await page.locator('#level .ev-row').first().click();
+    await page.locator('#level .occ-detail').waitFor();
+    const selectedTrace = await page.evaluate(() => {
+      const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+      return chart.getOption().series.find((series) => series.name === 'That day');
+    });
+    assert.ok(selectedTrace, 'precondition: the selected night paints its trace before the lane swap');
+    await page.locator('#lane button').nth(1).click();
+    await settle(page, 200);
+    assert.equal(await page.locator('#level .occ-detail, #level .clear-trace').count(), 0,
+      'the replacement slot clears the prior night detail and affordance');
+    const trace = await page.evaluate(() => {
+      const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+      return chart.getOption().series.find((series) => series.name === 'That day');
+    });
+    assert.equal(trace, undefined, 'the replacement slot clears the prior night trace');
+    await page.close();
+    assert.deepEqual(openerProblems().slice(before), [], 'the lane swap has no opener problems');
+  } finally { /* browser stays open; closed once in after() */ }
+});
+
+test('a lane slot without a published basal tile fetches and renders its own night roster', async () => {
+  const browser = await runner.browser();
+  try {
+    const before = openerProblems().length;
+    const basalRequests = [];
+    const page = await openApp(browser, {
+      state: 'typical', appSource: 'fixture',
+      evidenceScenario: async ({ path, url, body }) => {
+        if (path === '/api/diagnose/basal-night-evidence') {
+          basalRequests.push(new URL(String(url)).searchParams.get('slot'));
+        }
+        return { body };
+      },
+    });
+    await settle(page, 450);
+    const tileless = await page.evaluate((servedSlots) => {
+      const buttons = [...document.querySelectorAll('#lane button')];
+      const index = buttons.findIndex((_button, i) => !servedSlots.includes(String(i)));
+      return index < 0 ? null : { index, label: buttons[index].getAttribute('aria-label') };
+    }, basalRequests);
+    assert.ok(tileless, 'precondition: a lane slot has no published basal tile');
+    const requestsBefore = basalRequests.length;
+    await page.locator('#lane button').nth(tileless.index).click();
+    await page.locator('#level .ev-row').first().waitFor();
+    assert.ok(basalRequests.slice(requestsBefore).includes(String(tileless.index)),
+      `the tile-less ${tileless.label} slot requests its own evidence`);
+    assert.match(await page.locator('#level .slot-head .time').innerText(), new RegExp(tileless.label.slice(0, 5)),
+      'the rendered roster belongs to the selected tile-less slot');
+    await page.close();
+    assert.deepEqual(openerProblems().slice(before), [], 'the tile-less lane route has no opener problems');
+  } finally { /* browser stays open; closed once in after() */ }
+});
+
 test('a findings-row basal slot clears its selected night trace', async () => {
   const browser = await runner.browser();
   try {

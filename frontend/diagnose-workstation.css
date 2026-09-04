@@ -1802,16 +1802,62 @@
   font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
   text-transform: uppercase;
 }
+/* THE HERO IS THE SAME ROW, ONE LADDER STEP UP. It first shipped on `--ck-well`,
+   which is the SUNKEN role — a card painted DARKER than the rail it sits on reads
+   as a recess, and the operator's report was that they never saw it was there. It
+   now takes the SHEET role on the rail's FIELD ground: the one step ADR 255's
+   ladder holds for "card on pane", with the vessel edge and the single ambient
+   shadow. That is not a second elevation tier (the One-Shadow Rule) — the hero is
+   the only row that is a card at all, and a card is what `--shadow` is for.
+
+   BOTH OPTICAL SPINES ARE RESTORED (term 22 / term 36). The first card was inset a
+   full `--ck-pad` and then padded again, so its title started 10px right of every
+   other row's title and its flavor tag sat at its own x. Half the inset outside the
+   card and half inside puts the hero's title back on the queue's own spine and its
+   tag back in the queue's own column — which is what makes a bigger, brighter,
+   roomier object still read as the same card family rather than a different one. */
 .dw .qrow.hero {
-  margin: 4px var(--ck-pad) 4px; width: calc(100% - (var(--ck-pad) * 2));
-  min-height: 72px; padding: 10px; border: 1px solid var(--ck-hair);
-  border-radius: 6px; background: var(--ck-well);
+  margin: 2px 6px 10px; width: calc(100% - 12px);
+  min-height: 92px; padding: 13px 6px 14px; row-gap: 6px;
+  border: 0; border-radius: var(--ck-r); background: var(--mk-surface);
+  /* the edge is an inset ring rather than a border: term 44 forbids a horizontal
+     rule on a queue row, and a card's own edge should not have to argue with that
+     guard for the reader to see the card */
+  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--shadow);
 }
+/* the shared row hover darkens toward the sunken ground, which would sink the one
+   row that is meant to sit above it */
+.dw button.qrow.hero:hover { background: color-mix(in srgb, var(--ck-accent) 7%, var(--mk-surface)); }
+/* the rank numeral is furniture everywhere else and the card's ordinal here */
+.dw .qrow.hero .n {
+  grid-row: 1; align-self: center; color: var(--ck-accent);
+  font-size: var(--ck-data); font-weight: 700;
+}
+/* The served tier word is the card's EYEBROW, on the title's own spine beside that
+   ordinal. It previously hung in the 58px tag column under the flavor chip, where
+   it wrapped and collided with it. Only its position changed: the word is the
+   server's, no word joins it, and the card asserts its rank by weight instead. */
 .dw .qrow.hero .tier {
-  grid-column: 3; grid-row: 2; justify-self: end; color: var(--mk-muted);
-  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
-  text-transform: uppercase; white-space: nowrap;
+  grid-column: 2; grid-row: 1; justify-self: start; align-self: center;
+  color: var(--mk-text); font-size: var(--ck-micro); font-weight: 700;
+  letter-spacing: var(--ck-track); text-transform: uppercase; white-space: nowrap;
 }
+/* The title takes the step the No-Hero Rule leaves free — 15px is two steps over a
+   compact row and a long way under the 1.5rem cap, and it is the largest TEXT on
+   the rail without being display type. It is also the one title in the queue
+   allowed to wrap: the hero has the room, and a truncated decision reads worse
+   than a two-line one. */
+.dw .qrow.hero .lab {
+  grid-column: 2 / -1; grid-row: 2;
+  font-size: 15px; font-weight: 700; line-height: 1.3; white-space: normal;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  text-overflow: clip;
+}
+/* the annotation sentence is the hero's payload — it is the decision, in words —
+   so it takes body ink and body size where a compact row's takes secondary */
+.dw .qrow.hero .sum { font-size: var(--ck-emph); color: var(--mk-body); line-height: 1.5; }
+.dw .qrow.hero .den { color: var(--mk-body); }
+.dw .qrow.hero .go { align-self: center; font-size: 15px; }
 .dw .qrow.compact {
   grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) minmax(120px, .8fr) 12px;
 }

@@ -351,6 +351,10 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the numeral restates the position a screen reader already announces
     add(node, 'n', row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
+    // the hero's tier word is its EYEBROW, above the title rather than beside the
+    // flavor tag, so it is painted where it is read — before the title, not after
+    // the tag (the stylesheet places it; this is the announcement order)
+    if (row.weight === 'hero' && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     add(node, 'lab', row.title);
     if (row.weight === 'tail') {
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
@@ -365,7 +369,6 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the glyph is decoration on a word that already says it — never read aloud
     add(tag, 'gly', FLAVOR[row.flavor].glyph).setAttribute('aria-hidden', 'true');
     tag.append(FLAVOR[row.flavor].word);
-    if (row.weight === 'hero' && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
     // the evidence summary sits between the title and the denominator, clamped

@@ -104,6 +104,16 @@ the exploration ticket at admission.
   filters). Fixed in 3378709.
 - Round 3 (same reviewer, deltas): 0 blockers. Countersigned.
 
+### #274 code review rounds (Luna, Targeted, two axes)
+
+- Round 1: 2 findings — caller-owned `window`/`finding` dicts passed
+  arbitrary keys through (fixed by typed frozen rows); TIR bounds float vs
+  the spec's integer array (fixed; tasks.md amended under lock 2). One
+  evidence gap: no non-divisible-n quintile test (added, n=13).
+- Round 2: populated-finding serialisation test owed (added). The request
+  for runtime type/enum validation inside the rows was discarded as
+  assurance beyond the contract (charter: no guards for unreachable states).
+
 ## Open questions
 
 (none)

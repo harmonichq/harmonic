@@ -6,8 +6,7 @@ Every Finding case file's event projection SHALL align on its policy's
 per-family window, in minutes relative to the anchor: meals (−60, +300), lows
 (−60, +120), correction clusters (−120, +180), highs (−150, +300). The served
 `window_min` SHALL equal that window and every served cohort trace SHALL cover
-no minute outside it. The standalone Event comparison preparation's meal and
-low views SHALL read the same per-family window rather than restate it.
+no minute outside it. 
 
 #### Scenario: A low's comparison opens one hour before the nadir
 
@@ -20,10 +19,7 @@ low views SHALL read the same per-family window rather than restate it.
 - **WHEN** a case file is prepared for the correction-stacking Lever with event alignment
 - **THEN** its `window_min` is [-120, 180]
 
-#### Scenario: The standalone comparison views share the table
 
-- **WHEN** the Event comparison preparation serves its `lows` or `meals` view
-- **THEN** that view's window equals the policy table's window for that family
 
 #### Scenario: Meals and highs are unchanged
 

@@ -36,8 +36,8 @@ alignment window is already per exposure family; two families' lead-ins move.
   own; it reads served position and served tier.
 - Lows align at −60/+120 minutes and correction clusters at −120/+180; meals
   and highs are unchanged. Every committed encoding of those values moves with
-  the table, and the standalone Event comparison preparation reads the table
-  instead of restating it.
+  the table (the retired standalone comparison route's dead literals excepted,
+  as its design record explains).
 - Below a measured row width the compact row omits its mini and keeps its facts,
   so the rail holds on a tablet without a re-layout.
 - The revision is proven the revise way: the frozen behavior ledger and app-only

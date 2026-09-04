@@ -93,12 +93,17 @@ forbids, and the last would need a store the projection does not have.
 `CORRECTION_CLUSTERS: (-120, 180)`; `MEALS: (-60, 300)` and `HIGHS: (-150,
 300)` are unchanged, as are the two lever-specific policies (`MISSED_MEAL`,
 `MEAL_BOLUS_SHORT`) at (−60, 300). The served case-file `window_min` and every
-trace follow the table automatically. The standalone Event comparison
-preparation (`ciq_autotune/event_comparison.py`, `VIEW_CONFIG[...]["window"]`)
-follows the same fact: its `meals` and `lows` views read
-`list(_WINDOWS[Exposure.MEALS])` / `list(_WINDOWS[Exposure.LOWS])` instead of
-restating the tuples (no import cycle: that module already imports from
-`analyzers.scenario`), so one low opens at one lead-in on every surface. The
+trace follow the table automatically. `ciq_autotune/event_comparison.py` also carries `VIEW_CONFIG[...]["window"]`
+literals, but they are dead: the standalone `/api/diagnose/event-comparison`
+route is retired (`tests/test_findings_projection.py`
+`test_retired_behavioral_event_comparison_route_is_not_served` pins the 404),
+the only reader of that key is `_build_catalog_capture`, which nothing calls,
+and the live readers of `VIEW_CONFIG` (`EVENT_CHARTS`, `finding_case_file.
+_event_anchor`) read `factors`, `anchor_kind` and `anchor_label` only. So
+`_WINDOWS` is already the one live Python source of the alignment fact; the
+dead literals are left untouched rather than wired to a table nothing reads
+through them (a test of that wiring would compare a constant to its own
+definition — the silent-green shape the risk contract forbids). The
 committed encodings that restate the old values — three Python tests, the
 `#677` capture generator and its fixture-only projector `project.mjs`, the S13
 replay story, and three generated artifact sets — are enumerated in `tasks.md`

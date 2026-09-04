@@ -1567,9 +1567,7 @@ function boot(root, data, callbacks, signal) {
       const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
       if (!descriptor || tileRuntime.get(chartId)?.retained) {
         // the row is gone from the new generation: retain the named pin state
-        paintTiles();
-        paintChart();
-        paintBrace();
+        paint();
         return;
       }
       markTileStale(chartId, staleResult.message, { pending: true });

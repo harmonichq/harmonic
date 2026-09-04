@@ -4,7 +4,7 @@ WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE
 
 ## Status
 
-Attended exploration, not an implementation plan. Connor selected A on 2026-09-04; chart-browser behavior remains under discussion.
+Attended exploration, not an implementation plan. Connor selected A on 2026-09-04; chart-browser behavior was subsequently confirmed below.
 The runnable wireframe must be deleted before any implementation change lands.
 Screenshots and chosen decisions may survive. No production file is changed.
 
@@ -121,16 +121,32 @@ below the window controls, the findings queue remains right, and the glucose
 overview sits below the spotlight. Keep current scope visible near the presets.
 This settles page arrangement only, not an implementation lock.
 
-### Open chart-browser question
+## ADR 341 — All charts opens fullscreen without a docked strip
 
-Connor asked whether queue minis make the docked strip redundant and whether
-only the full-screen view should remain. This is a proposal, not a sanctioned
-retirement. Source inspection distinguishes the docked strip, the All charts
-explorer, and the single-chart fullscreen state. The explorer also provides
-access to Watching reads that are not all visible as ranked queue minis.
+2026-09-04: Connor confirmed "Exactly." to the preceding recommendation:
+"Charts opens the full-screen All charts browser directly. Choose a chart to
+return to A with that finding selected. Close or Escape returns without changing
+the selection or time window. The spotlight keeps Expand for viewing just its
+selected chart fullscreen."
 
-Recommendation for the next wireframe: a Charts button opens All charts
-directly; choosing one returns to A with that finding selected; dismissing
-without a choice preserves the previous selection and window. The selected
-spotlight keeps its own Expand control. Remove the docked strip only after
-Connor confirms this interaction and the affected behavior entries are amended.
+This sanctions retiring the docked chart strip. Its small previews duplicate
+those in the queue; the full-screen browser remains necessary for the full
+chart catalog, including Watching reads. The single-chart Expand view remains
+separate from All charts.
+
+The wireframe now demonstrates that flow. It has no docked view. Selecting a
+Watching chart opens its schematic evidence and reveals its Watching row;
+dismissing All charts changes neither the selection nor the current window.
+
+This is the operator ruling for the future production behavior-ledger amendment.
+The shipped frozen ledger remains unchanged while its app still has the dock;
+implementation must amend its affected stories and retain permanent retirement
+entries with this date, quote, and premise. No execution lock or production
+implementation is implied by this design approval.
+
+Wireframe verification after the ruling: Chromium confirmed All charts opens
+directly; Escape retains selected finding and scope; choosing another chart
+closes the browser and updates the spotlight; Close works; single-chart Expand
+still opens separately; a Watching selection opens its evidence, reveals its
+row, and retains the Overnight window. No dock element remains; no console
+errors. The All charts render was visually inspected.

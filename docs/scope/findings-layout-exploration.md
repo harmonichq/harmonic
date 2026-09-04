@@ -8,9 +8,11 @@
 
 - 2026-09-04: Connor selected A (Evidence first): "A looks good." Spotlight above glucose overview; queue remains right. → issue #341
 
+- 2026-09-04: Connor confirmed "Exactly." to removing the docked strip, opening All charts directly fullscreen, returning a picked chart to A, preserving selection/window on dismissal, and keeping the spotlight Expand control. → issue #341
+
 ## Open questions
 
-- Should the docked chart strip be retired, leaving direct access to the full-screen All charts browser? Connor raised this as a possibility; no retirement is sanctioned yet.
+- Implementation details remain for the built-app revision; no further arrangement or chart-browser question is open.
 - After composition is selected, settle exact queue density and drill behavior in the running app.
 
 ## Spawned tasks

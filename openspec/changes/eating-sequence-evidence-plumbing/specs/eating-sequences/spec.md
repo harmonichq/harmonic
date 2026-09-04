@@ -18,6 +18,7 @@ record-level values.
 
 ```json
 {"scope":"pooled","period":"in_sequence","reference_cohort":"Q1-Q4","high_cohort":"Q5","status":"insufficient","reference_n":0,"high_n":0,"reference":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"high":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"tir_difference_pct_points":null,"mean_difference_mgdl":null,"sd_difference_mgdl":null}
+{"carb_quintile":1,"period":"in_sequence","reference_band":"1","repeat_band":"3+","status":"insufficient","reference_n":0,"repeat_n":0,"reference":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"repeat":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"tir_difference_pct_points":null,"mean_difference_mgdl":null,"sd_difference_mgdl":null}
 ```
 
 #### Scenario: An empty source window remains a complete report
@@ -26,3 +27,9 @@ record-level values.
 - **WHEN** the report is serialised
 - **THEN** it carries every required comparison cohort aggregate as insufficient
 - **AND** it exposes no record-level value
+
+#### Scenario: Every supported difference agrees with served cohorts
+
+- **WHEN** a supported high-carb or repeat comparison is serialised
+- **THEN** both nested aggregate counts equal the row counts
+- **AND** each non-null TIR, mean, and SD difference equals its served cohort subtraction

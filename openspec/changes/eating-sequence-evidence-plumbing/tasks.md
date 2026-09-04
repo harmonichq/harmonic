@@ -10,8 +10,9 @@
   Requirements`: its normative JSON and comparison-row prose include both cohorts.
 - [ ] 3. Regenerate `frontend/__fixtures__/eating-sequence-report.json` through
   `scripts/gen_eating_sequence_fixtures.py`; retain parity and `--check`. Add
-  serialisation-key tests and a supported-row equality test that high TIR minus
-  reference TIR equals the served difference.
+  serialisation-key tests and equality tests for every supported high-carb and
+  repeat row: nested cohort `n` equals the row count and each non-null TIR, mean,
+  and SD difference equals the served subtraction, using `assertAlmostEqual`.
 
 ## 2. Fetch and adapt the report for the Diagnose evidence section
 
@@ -21,23 +22,15 @@
 - [ ] 5. Extend `frontend/diagnose-data-age.test.js`: pin that
   `recordDiagnoseAge(ages, shape, payload)` returns a payload with no
   `input_data_age` unchanged and deletes only `ages[shape]`; invent no age.
-- [ ] 6. Add `frontend/diagnose-eating-sequences.js`, Vue-free and DOM-free.
-  Field-for-field, with no arithmetic or reclassification, it provides:
-  - per-scope Q1–Q5 series over `in_sequence`, `post_4h`, and `post_6h`, with
-    median TIR default and served mean/SD alternatives; every point has `n`/status;
-  - paired Q5 and Q1–Q4 points per interval and pooled/evening scope from
-    `high_carb_sequence.comparisons` plus scope rows, with served `n`/status;
-  - a selected-period quintile matrix with `1`, `2`, and `3+` series, attaching
-    served comparison status/differences to `3+` cells; and
-  - detector `status`, `finding`, and `exclusions` passed through verbatim.
-  Insufficient cells remain `null` plus status, never omitted or zero-filled.
-- [ ] 7. Add `frontend/diagnose-eating-sequences.test.js` over the regenerated report:
-  assert row counts 5 / 5 / 6 / 15 / 15, insufficiency, and no invented number.
-  Construct an all-insufficient skeleton from fixture definitions and documented
-  shape in a test helper; add no ungenerated fixture.
-
-- [ ] 7. The adapter's high-carb candidate reads `reference` and `high` directly;
-  the repeat matrix reads `reference` and `repeat` directly. Its Node tests also
-  prove the fetch route name. Leave `CONTEXT.md` unchanged: its Explore entry
-  describes a retired mode and should not rename this independent section.
+- [ ] 6. Add `frontend/diagnose-eating-sequences.js` with exactly
+  `adaptEatingSequenceReport(report)`, `trajectorySeries(adapted, { scope, metric })`,
+  and `matrixSeries(adapted, { period, metric })`. The adapter preserves aggregates
+  untouched; trajectory returns the fixed periods, five quintile series and points
+  `{ period, value, n, status }`; matrix returns quintiles 1–5 and bands `1`,`2`,`3+`
+  with `{ quintile, value, n, status, comparison }`. Only `3+` has its matched served
+  comparison. Unknown scope, metric, or period throws. High-carb charts read
+  `adapted.highCarb.comparisons` directly.
+- [ ] 7. Add Node tests for the exact public shapes, all fixture values locatable in
+  the report, insufficient `{ value: null, status, n }`, the skeleton, and the
+  fetch helper's exact route name. Leave `CONTEXT.md` unchanged.
 - [ ] 8. Coordinator: run the full gate, including the fixture `--check`.

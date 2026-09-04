@@ -20,6 +20,13 @@ The projections are bounded to per-scope Q1–Q5 trajectories over three periods
 pooled/evening high-carb Q5 versus Q1–Q4 pairs; and a selected-period matched-carb
 repeat-eating matrix. Its `3+` cells retain served comparison status and differences.
 
+The adapter exports exactly `adaptEatingSequenceReport`, `trajectorySeries`, and
+`matrixSeries`. The first produces the named `highCarb` and `repeat` lookup shape
+without renaming aggregate fields. The second selects only a supplied aggregate
+metric into five three-period quintile series. The third selects a supplied period
+and metric into three bands, attaching a comparison only to `3+`. Unknown selector
+arguments throw. Evening-versus-pooled reads `highCarb.comparisons` directly.
+
 No browser route stub is added: `index.html` has no report consumer, so an answer
 would prove nothing. #278 adds route answers with the first consumer and story.
 

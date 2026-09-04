@@ -11,9 +11,10 @@ sed -n '326,368p' ciq_autotune/analyzers/eating_sequences.py
 sed -n '375,390p' ciq_autotune/analyzers/eating_sequences.py
 ```
 
-These definitions show that both comparison wrappers already retain the two
-aggregates, while the public rows serialise differences only; `empty_report` builds
-comparison rows from the insufficient aggregate.
+Output is the literal source text printed by the three commands above; it shows both
+comparison wrappers retain the two aggregates while public rows serialise only
+differences, and `empty_report` constructs comparison rows from the insufficient
+aggregate.
 
 ## Fixture generator and current first comparison
 
@@ -22,8 +23,9 @@ sed -n '20,36p' scripts/gen_eating_sequence_fixtures.py
 python3 -c 'import json; r=json.load(open("frontend/__fixtures__/eating-sequence-report.json")); print(r["high_carb_sequence"]["comparisons"][0])'
 ```
 
-The generator's `payload()` runs the report builder over manufactured streams, and
-the first frozen comparison currently has differences but no cohort aggregates.
+Output is the literal generator and JSON row printed by the commands above: the
+generator runs manufactured streams, and the frozen row currently has differences
+but no cohort aggregates.
 
 ## Frontend precedents
 

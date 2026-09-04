@@ -165,6 +165,27 @@ multiple deliverable artifacts. The repository's reviewer memory holds nearby
 anchors that agree with splitting a shipped Diagnose revision at the live run
 and with keeping analyzer-side semantics out of the surface chunk.
 
-### Review rounds
+### Review rounds (plan-review, 2026-09-03; Opus cold readers, read-only)
 
-(instrumented below as rounds run)
+- Round 1: BLOCKED, 7 blocking + 5 notes — all 7 `authoring` (a second live
+  encoding of the lows window; an unsatisfiable grep gate; `theme.css` unowned;
+  "served tier words" when the server stamps slugs; the caption rule firing on
+  the tail; `measureFieldNarrow` misnamed as a row floor; the ledger's retired
+  database). Same-reviewer re-check: 1 `injected` (wiring a dead route's
+  window key) + 4 notes.
+- Round 2 (fresh cold pass): BLOCKED, 4 blocking + 2 notes — 3 `injected`
+  (grep permitted-list wrong; `theme.css` baked into the evidence-canvas
+  exploration's generated `index.html` with no owner; `theme.css` is role-only)
+  and 1 `authoring` (the replay's row mix inherited from the wrong dataset;
+  both replay input sets dumped and pinned).
+- Round 3 (fresh cold pass, the cap): BLOCKED, 2 blocking + 4 notes — 1
+  `authoring` decision-class (hero headline vs #306's "only home" requirement;
+  ruled title-only, decision 2 above) and 1 `injected` (sub-order 2 told to
+  write a file it does not own). Same-reviewer re-checks: 1 `injected` stale
+  clause, then two mechanical word fixes; final verdict COUNTERSIGNED by the
+  round-3 reviewer on re-check.
+- Tally: 9 `authoring`, 6 `injected`. Injected blockers climbed 1 → 3 → 1
+  across fix rounds — the rewrite-clean signal fired at round 2 and the round-3
+  rewrite of the hero rule brought it back down. The cap was reached: the last
+  fresh cold pass did not return clean, and the final clean verdict is a
+  same-reviewer re-check, not a fresh pass. Disclosed in the posted order.

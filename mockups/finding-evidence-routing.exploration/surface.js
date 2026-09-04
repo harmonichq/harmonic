@@ -521,7 +521,7 @@ function paintQueue() {
      five rows drill nowhere, and `go` refuses an id it has no scene for rather
      than half-opening one. */
   const painted = renderFindingsQueue(level, data.queue.projection, (row) => go(row.id));
-  dressQueue(level, painted);
+  dressQueue(level, painted.rows);
 
   /* ROUND 2 ITEM 5 — the ruling's free-browse entry, below the projection's own
      rows and its priced/unpriced seam. These rows are NOT in the projection

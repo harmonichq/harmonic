@@ -19,9 +19,11 @@
   carry), otherwise requested once per slot frame through the same fetch the
   tile uses (`fetchDiagnoseBasalNightEvidence({ slot })`) and kept on the frame
   — one fetch function, no parallel client. While the payload is pending the
-  roster area prints the panel's existing loading state; when the request fails
-  it prints the panel's existing unavailable state; it never prints a roster it
-  did not receive. The panel
+  roster area prints one `.empty` line, "Loading nights…", and when the request
+  fails or the payload is stale, one `.empty` line, "Night evidence
+  unavailable." — the inspector's shipped empty-state element, the one the
+  Finding case file uses for "Opening case file…" and "Case file unavailable."
+  — and it never prints a roster it did not receive. The panel
   derives no direction, floor, threshold or verdict; the numbers-and-staging
   block above the roster is byte-identical to today's rendering. The roster and
   the detail block use the shipped design system only — `DESIGN.md` tokens, the
@@ -33,8 +35,9 @@
   breadcrumb nor the clock window; Up/Down step within the selected night's
   group and keep focus on the newly selected row; "Clear trace" releases the
   selection. Selection state lives on the slot frame the way `selectedId` lives
-  on the factor frame, and a lane click or a chart click that swaps the slot in
-  place clears it.
+  on the factor frame. Add the clearing: the in-place swap in `pickCell` today
+  overwrites only `cell` and `rowId`, so it must also clear the night selection,
+  its trace and its detail block, and so must popping the frame.
 - [ ] Paint the selected night's served `glucose_trace` over the pooled envelope
   on Glucose by time of day through the existing trace-over-envelope path
   (`envelope.labels` mapped by clock label), exactly as a selected Finding
@@ -50,7 +53,10 @@
 - [ ] Cover the new behaviour in Node through the public interface —
   `renderSlotLevel` in `frontend/diagnose-workstation.test.js` for the groups,
   counts, row text, excluded count line, pressed state and detail block, each
-  test failing first against pre-change behaviour — and in the route-stubbed
+  test failing first against pre-change behaviour, plus cases for the in-place
+  slot swap clearing the selection, trace and detail block, for the pending
+  payload printing "Loading nights…", and for a failed or stale payload printing
+  "Night evidence unavailable." with no roster — and in the route-stubbed
   browser suite `frontend/diagnose-workstation.browser.test.mjs` for one
   selection painting a trace series on the canvas and one clear removing it —
   one of the two entered from a lane cell click, the other from the findings
@@ -67,8 +73,11 @@
   that fails against the revision is a moved behaviour and blocks.
 - [ ] Amend `mockups/finding-evidence-routing.behavior.md` with one dated
   revision entry for #291: new executable stories, numbered from the next
-  unissued ID, for the roster's three groups and their served counts, the
-  excluded count line, night selection pressing one row without moving the
+  unissued ID, for the roster's four groups and their served counts (the stub
+  fixture holds no ran-below night and no night without a programmed rate, so
+  those two groups' stories supply their own body through the replay's
+  `evidenceScenario` hook, as S104 does), the no-programmed-rate night never
+  reading as ran-as-set, the excluded count line, night selection pressing one row without moving the
   breadcrumb or the clock window, the trace appearing on Glucose by time of day
   and clearing, the detail block's facts, Up/Down stepping within a group, and
   one story that runs the selection at the 1024×768 tablet viewport and asserts
@@ -87,7 +96,10 @@
   1280×800, 1024×768 (tablet, landscape) and 390×844, into `openspec/changes/basal-night-drill/evidence/`,
   alongside the base, fail-first and final replay outputs; and add the #291
   revision clause to the Finding → evidence routing row of `mockups/INDEX.md`.
-- [ ] Fast gate, every generator drift check, and the Diagnose browser gates
-  (`diagnose-workstation.browser.test.mjs`,
-  `diagnose-canvas-composition.browser.test.mjs`, `cockpit-shell.browser.test.mjs`)
-  green on the merged ticket branch.
+- [ ] Fast gate, every generator drift check, and every app-targeted browser
+  gate that loads the workstation module green on the merged ticket branch:
+  `diagnose-workstation.browser.test.mjs`,
+  `diagnose-canvas-composition.browser.test.mjs`, `cockpit-shell.browser.test.mjs`,
+  `diagnose-event-comparison-behavior.replay.mjs`,
+  `mockups/diagnose-event-comparison-support-audit.mjs` and
+  `verify-660-story-behavior.replay.mjs`, each run as `AGENTS.md` lists it.

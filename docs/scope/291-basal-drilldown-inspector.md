@@ -426,3 +426,31 @@ Verdict BLOCKED, 4 blocking + 3 notes. Reproduced against the checkout:
 - N7 accepted: the pytest skip count is being measured by the coordinator before
   posting; the Expectation quotes the measured figure.
 Injected blockers: 0.
+
+### Plan review — round 3 (cold Opus, read-only, 2026-09-03) — the cap
+
+Verdict BLOCKED, 3 blocking + 3 notes. Reproduced against the checkout:
+- O1 `authoring` confirmed: `pickCell`'s swap overwrites only `cell` and `rowId`;
+  the draft read as if it already cleared a selection. Task 2 now names the
+  clearing as added behaviour; task 5 pins it in Node.
+- O2 `authoring` confirmed: the settings panel has no loading or unavailable
+  state to reuse. Ruling (triage, delegated): borrow the inspector's shipped
+  `.empty` line — "Loading nights…" / "Night evidence unavailable." — the idiom
+  of "Opening case file…" / "Case file unavailable."; task 5 pins both states.
+- O3 `injected` (by the round-2 fourth-group fix) confirmed: the stub has one
+  programmed rate throughout, so the no-programmed-rate group had no story.
+  Task 7 issues it through `evidenceScenario`, as the ran-below group.
+- N4 half-refuted: #306 did change `scripts/public_scan_config.txt`
+  (`705a876`, 90 insertions); the warning that pins belong in the hand-ruled
+  section, never the generated block, is kept in sub-order 2's context.
+- N5 accepted: descriptor-shape citation is `:98`.
+- N6 accepted: the three other app-targeted browser legs join Verification and
+  task 10.
+Injected blockers: 1 (O3). Authoring: 2.
+
+**Cap ruling.** Three panels are the cap. The remaining objections were
+definitional, not decisions the operator would weigh, and the operator had
+delegated the remaining judgment to triage on 2026-09-03 ("make your best
+judgments … triage this to the point where it's ready … AFK"). The fixes above
+are applied, the change re-pinned, and the lock posted without a fourth panel.
+The executing session's Full-depth review is the next independent read.

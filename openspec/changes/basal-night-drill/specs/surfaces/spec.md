@@ -39,10 +39,11 @@ Correction factor and carb ratio panels SHALL be unchanged.
 - **THEN** the panel requests that slot's night evidence once through the
   tile's own fetch and renders the same roster the findings-row entry renders
 - **WHEN** the payload has not arrived
-- **THEN** the roster area prints the panel's existing loading state
+- **THEN** the roster area prints one line, "Loading nights…", in the
+  inspector's shipped empty-state element
 - **WHEN** the request fails or the payload is marked stale
-- **THEN** the roster area prints the panel's existing unavailable state and no
-  roster
+- **THEN** the roster area prints one line, "Night evidence unavailable.", in
+  that same element, and no roster
 
 ### Requirement: Selecting a night draws its trace and its facts
 
@@ -56,8 +57,9 @@ glucose mean against the roster's mean, entering to leaving glucose, its
 position within its group as `n of N`, a "Clear trace" control, and an
 "Open <date> in Day" control routing to that night's day. Up and Down SHALL step
 the selection within the night's group and keep focus on the newly selected
-row. "Clear trace", a lane click that swaps the slot, and leaving the slot frame
-SHALL release the selection and remove the trace.
+row. "Clear trace", a lane click or chart click that swaps the slot in place,
+and leaving the slot frame SHALL release the selection and remove the trace and
+the detail block.
 
 #### Scenario: A night click selects in place
 

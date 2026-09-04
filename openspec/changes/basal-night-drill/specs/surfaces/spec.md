@@ -80,7 +80,8 @@ replay with executable stories for every added behavior in the same change,
 SHALL record the base replay count, the fail-first replay result and the final
 replay count in that ledger entry, and SHALL store before/after renders of the
 basal drill at rest, with a night selected, and with its detail block, from the
-base and the revision served on the same synthetic database.
+base and the revision served on the same synthetic database, at desktop, tablet
+(1024×768) and phone widths, with no pane overflowing at any of them.
 
 #### Scenario: The amended replay proves the revision
 

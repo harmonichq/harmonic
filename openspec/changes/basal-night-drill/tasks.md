@@ -13,7 +13,11 @@
   request path; while that payload is absent or stale the roster prints the
   panel's existing loading or unavailable state and nothing else. The panel
   derives no direction, floor, threshold or verdict; the numbers-and-staging
-  block above the roster is byte-identical to today's rendering.
+  block above the roster is byte-identical to today's rendering. The roster and
+  the detail block use the shipped design system only — `DESIGN.md` tokens, the
+  Finding roster's row geometry and type hierarchy, no new colour, no new
+  component — and every row and control is a touch target the tablet width can
+  hit (the shipped `.ev-row` button is the sibling to match exactly).
 - [ ] Wire night selection as select-in-place on the standing slot frame: a
   row click presses that row alone, pushes no level and moves neither the
   breadcrumb nor the clock window; Up/Down step within the selected night's
@@ -52,8 +56,10 @@
   unissued ID, for the roster's three groups and their served counts, the
   excluded count line, night selection pressing one row without moving the
   breadcrumb or the clock window, the trace appearing on Glucose by time of day
-  and clearing, the detail block's facts, and Up/Down stepping within a group;
-  update the issued and active ID inventory lines so
+  and clearing, the detail block's facts, Up/Down stepping within a group, and
+  one story that runs the selection at the 1024×768 tablet viewport and asserts
+  the roster, the detail block and the canvas stay inside their panes without
+  horizontal overflow; update the issued and active ID inventory lines so
   `frontend/diagnose-behavior-ledger-parity.test.js` passes; retire nothing.
 - [ ] Add the same stories to `frontend/diagnose-workstation-behavior.replay.mjs`
   against the route stubs it already serves for `/api/diagnose/basal-night-evidence`;
@@ -64,7 +70,7 @@
 - [ ] Capture before/after renders of the basal drill — the roster at rest, one
   night selected with its trace, and the detail block — from the merge-base and
   the revision served on the same scratch copy of the QA showcase, at 1440×900,
-  1280×800 and 390×844, into `openspec/changes/basal-night-drill/evidence/`,
+  1280×800, 1024×768 (tablet, landscape) and 390×844, into `openspec/changes/basal-night-drill/evidence/`,
   alongside the base, fail-first and final replay outputs; and add the #291
   revision clause to the Finding → evidence routing row of `mockups/INDEX.md`.
 - [ ] Fast gate, every generator drift check, and the Diagnose browser gates

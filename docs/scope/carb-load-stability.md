@@ -114,6 +114,15 @@ the exploration ticket at admission.
   for runtime type/enum validation inside the rows was discarded as
   assurance beyond the contract (charter: no guards for unreachable states).
 
+### #275 lock review rounds
+
+- Round 1 (cold, Terra): 3 blockers, all `authoring` — span_end derived from
+  basal the wrapper was not told to read; the HTTP route absent from the
+  acceptance anchors; prose acceptance anchors. Fixed in 5ffa4c3.
+- Round 1 re-check: 1 `injected` blocker — the new route requirement demanded
+  `input_data_age` on a fresh fixed response. Mechanical wording fix in
+  3e1102c. Countersigned; fresh cold pass owed (sub-order 1 is Full).
+
 ## Open questions
 
 (none)

@@ -181,6 +181,17 @@ the exploration ticket at admission.
   rendered evidence comes from the frozen synthetic fixture unless #278 adds
   a QA coverage era. — inline
 
+### #277 lock review rounds
+
+- Panel 1 (cold, Terra): r1 3 blockers — facts appendix stale (`authoring`);
+  browser stubs with no consumer (`authoring`; deferred to #278); the paired
+  Q5-vs-rest chart needed reference medians the report served only as
+  differences (`authoring`; settled: comparison rows now carry both cohorts'
+  aggregates, making the ticket two serial chunks). r1b 5 blockers, all
+  `authoring` (facts outputs, repeat-row JSON, equality test scope, adapter
+  interface, task numbering). r1c 3 `injected` transcription defects, fixed
+  by the coordinator in place. r1d countersigned.
+
 ## Open questions
 
 (none)

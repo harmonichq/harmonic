@@ -2,13 +2,13 @@
 
 ## 1. Serve both cohorts on every comparison row
 
-- [ ] 1. Extend `HighCarbComparisonRow` with `reference` and `high`, and
+- [x] 1. Extend `HighCarbComparisonRow` with `reference` and `high`, and
   `RepeatComparisonRow` with `reference` and `repeat`: serialise each as the
   existing six-key interval aggregate. Populate them from `_ComparedCohorts` and
   `_ComparedRepeatCohorts`; make `empty_report` use the insufficient aggregate.
-- [ ] 2. Amend the complete eating-sequences requirement under `## MODIFIED
+- [x] 2. Amend the complete eating-sequences requirement under `## MODIFIED
   Requirements`: its normative JSON and comparison-row prose include both cohorts.
-- [ ] 3. Regenerate `frontend/__fixtures__/eating-sequence-report.json` through
+- [x] 3. Regenerate `frontend/__fixtures__/eating-sequence-report.json` through
   `scripts/gen_eating_sequence_fixtures.py`; retain parity and `--check`. Add
   serialisation-key tests and equality tests for every supported high-carb and
   repeat row: nested cohort `n` equals the row count and each non-null TIR, mean,

@@ -391,3 +391,11 @@ Verdict BLOCKED, 4 blocking + 1 note. Reproduced against the checkout:
 - N5 note accepted: chunk 1 context names the options-object extension of
   `renderSlotLevel` and `chartDescriptor(chartId)` as the lookup.
 Injected blockers: 0.
+- **Operator handed the remaining judgment to triage (2026-09-03):** "make it
+  pretty, premium, tell the story, help the user diagnose on first open, not
+  tiered, no lies, no over-editorializing, works on a tablet and a computer."
+  Translated into the pinned change: the roster and detail block use the shipped
+  design system only with the Finding roster's row as the exact sibling; one
+  replay story and the render matrix run at the 1024×768 tablet viewport with a
+  no-overflow assertion; the served facts print as served, null as `—`, and no
+  drill level repeats the headline. `→ ADR 291` (amended in place)

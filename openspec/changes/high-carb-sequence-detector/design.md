@@ -15,14 +15,21 @@
 - The detector assigns pooled quintiles before eligibility, then filters that single
   assignment and its boundaries for evening. It never re-ranks evening sequences.
   This preserves one user-relative population across both scopes.
-- A comparison is supported only when Q5 and Q1–Q4 are both supported for its scope
-  and period. It concludes only when Q5 median TIR is lower or Q5 median glucose SD
-  is higher. A fixed summary template uses only the served scope, period label,
-  medians, and cohort count and says association, never cause, carb advice, or a
-  setting change. The headline chooses the supported clinically legible contrast
-  with the largest absolute Q5 TIR drop; ties choose the shorter period, then pooled
-  before evening. An evening headline additionally requires its pooled counterpart
-  to clear the floor. Otherwise the detector is insufficient with `finding: null`.
+- **Settled SD-only comparison decision** [Scope ledger: detector finding condition].
+  A comparison is supported whenever Q5 and Q1–Q4 both clear the floor, and adverse
+  when Q5 median TIR is lower or Q5 median glucose SD is higher. Headline candidates
+  rank in two tiers: first adverse supported rows with a negative TIR difference,
+  ordered by largest absolute TIR drop; only when none exists, adverse supported rows
+  with a positive SD difference, ordered by largest SD rise. Both tiers break ties by
+  shorter period and then pooled before evening. An evening candidate additionally
+  requires its pooled counterpart to clear the floor. The fixed TIR template is
+  `In <scope> sequences, the highest-carb fifth spent <q5 TIR>% of the <period label>
+  in range against <reference TIR>% for the rest (n = <high_n> vs <reference_n>)`;
+  the SD template is `In <scope> sequences, the highest-carb fifth's <period label>
+  glucose spread was <q5 SD> mg/dL against <reference SD> mg/dL for the rest
+  (n = <high_n> vs <reference_n>)`. Both state association only, never cause, carb
+  advice, or a setting change. Otherwise the detector is insufficient with
+  `finding: null`.
 - `repeat_eating_amplifier` stays exactly `empty_report`'s all-insufficient complete
   skeleton. #276 owns its population and conclusion; serving a complete shape now
   avoids a second temporary schema.

@@ -37,16 +37,22 @@ as complete window content and SHALL construct no sequence from an event outside
 
 ### Requirement: High-carb findings are supported aggregate associations only
 
-For each scope and period, the detector SHALL compare Q5 with Q1–Q4. It SHALL
-surface a high-carb finding only when both cohorts are supported and Q5 has lower
-median TIR or higher median glucose SD. An evening candidate SHALL be headline
-eligible only when both that evening comparison and its pooled counterpart clear the
-floor. Among supported clinically legible candidates, it SHALL choose the largest
-absolute Q5 TIR drop in percentage points, breaking ties by shorter period and then
-pooled before evening. Without a supported candidate its status SHALL be
-`insufficient` and its finding null. The summary SHALL be a fixed template using only
-served scope, period label, the two median TIR values, and n; it SHALL state an
-association and SHALL NOT state cause, a carb limit, or a setting change.
+For each scope and period, the detector SHALL compare Q5 with Q1–Q4. A comparison
+row SHALL be `supported` whenever both cohorts clear the floor, and SHALL be adverse
+when Q5 has lower median TIR or higher median glucose SD. An evening candidate SHALL
+be headline eligible only when both that evening comparison and its pooled counterpart
+clear the floor. Headline candidates SHALL rank in two tiers: first every adverse
+supported comparison whose TIR difference is negative, ordered by largest absolute
+TIR drop; only if no such candidate exists, every adverse supported comparison whose
+SD difference is positive, ordered by largest SD rise. Both tiers SHALL break ties by
+shorter period and then pooled before evening. Without an adverse supported candidate
+its status SHALL be `insufficient` and its finding null. The summary SHALL use the
+fixed TIR variant `In <scope> sequences, the highest-carb fifth spent <q5 TIR>% of
+the <period label> in range against <reference TIR>% for the rest (n = <high_n> vs
+<reference_n>)` or the fixed SD variant `In <scope> sequences, the highest-carb
+fifth's <period label> glucose spread was <q5 SD> mg/dL against <reference SD> mg/dL
+for the rest (n = <high_n> vs <reference_n>)`, naming the served metric. It SHALL
+state an association and SHALL NOT state cause, a carb limit, or a setting change.
 
 #### Scenario: Higher-carb cohort with worse supported TIR receives the headline
 
@@ -60,6 +66,13 @@ association and SHALL NOT state cause, a carb limit, or a setting change.
 - **GIVEN** supported cohorts where Q5 has no lower median TIR and no higher median glucose SD
 - **WHEN** the detector builds the report
 - **THEN** the report has no finding
+
+#### Scenario: An SD-only adverse comparison headlines the SD association
+
+- **GIVEN** supported Q5 and Q1–Q4 cohorts with no negative TIR difference and a
+  positive Q5 SD difference
+- **WHEN** the detector builds the report
+- **THEN** the report finding is non-null and uses the fixed SD association template
 
 ### Requirement: Served eating-sequence evidence is generated and parity-checked
 

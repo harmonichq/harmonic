@@ -33,7 +33,7 @@ export class ApiTransportError extends Error {
  * @param {{ fetch?: Function }} [deps={}]
  * @returns {{ fetchCredentials, saveCredentials, fetchStatus, fetchNow,
  *             fetchPumpSettings, fetchBacktest, fetchAnalysis, fetchScenarios,
- *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, fetchAuditDismissals, dismissAuditItem, loadPlan, savePlanDraft,
+ *             fetchTimeline, fetchVerifyTrials, fetchExploreTimeOfDay, fetchEatingSequences, fetchAuditDismissals, dismissAuditItem, loadPlan, savePlanDraft,
  *             loadPlanHistory, applyPlan }}
  */
 export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
@@ -219,6 +219,8 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
 
   /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
   function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
+  /** GET /api/diagnose/eating-sequences — fixed Diagnose aggregate evidence. */
+  function fetchEatingSequences() { return api('/api/diagnose/eating-sequences'); }
   /** GET /api/explore/exposures — every exposure in the window with each
    *  classifier's verdict; the Diagnose inspector's own feed (#654). */
   function fetchExploreExposures() { return api('/api/explore/exposures'); }
@@ -464,6 +466,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchOutcomesTrend,
     fetchVerifyTrials,
     fetchExploreTimeOfDay,
+    fetchEatingSequences,
     fetchExploreExposures,
     fetchDiagnoseBasalNightEvidence,
     fetchDiagnoseIsfRestWindowEvidence,
@@ -512,6 +515,7 @@ export const fetchDayNavigator = _defaults.fetchDayNavigator;
 export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
+export const fetchEatingSequences = _defaults.fetchEatingSequences;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
 export const fetchDiagnoseBasalNightEvidence = _defaults.fetchDiagnoseBasalNightEvidence;
 export const fetchDiagnoseIsfRestWindowEvidence = _defaults.fetchDiagnoseIsfRestWindowEvidence;

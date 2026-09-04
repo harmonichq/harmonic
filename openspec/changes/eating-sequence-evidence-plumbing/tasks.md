@@ -16,13 +16,13 @@
 
 ## 2. Fetch and adapt the report for the Diagnose evidence section
 
-- [ ] 4. Add `fetchEatingSequences()` in `frontend/data.js`, beside
+- [x] 4. Add `fetchEatingSequences()` in `frontend/data.js`, beside
   `fetchExploreTimeOfDay` in `makeDeps`, its return namespace, and default exports.
   It calls `/api/diagnose/eating-sequences` with no query parameter.
-- [ ] 5. Extend `frontend/diagnose-data-age.test.js`: pin that
+- [x] 5. Extend `frontend/diagnose-data-age.test.js`: pin that
   `recordDiagnoseAge(ages, shape, payload)` returns a payload with no
   `input_data_age` unchanged and deletes only `ages[shape]`; invent no age.
-- [ ] 6. Add `frontend/diagnose-eating-sequences.js` exporting exactly three
+- [x] 6. Add `frontend/diagnose-eating-sequences.js` exporting exactly three
   functions, field selection and renaming only, never arithmetic:
   `adaptEatingSequenceReport(report)` returns
   `{ schema, window, definitions, highCarb: { status, finding, exclusions,
@@ -44,7 +44,7 @@
   cells and null elsewhere. Any other `scope`, `metric` or `period` throws. The
   evening-versus-pooled chart reads `adapted.highCarb.comparisons` directly; there
   is no third selector.
-- [ ] 7. Add Node tests for the exact public shapes, all fixture values locatable in
+- [x] 7. Add Node tests for the exact public shapes, all fixture values locatable in
   the report, insufficient `{ value: null, status, n }`, the skeleton, and the
   fetch helper's exact route name. Leave `CONTEXT.md` unchanged.
 - [ ] 8. Coordinator: run the full gate, including the fixture `--check`.

@@ -29,3 +29,10 @@ visual lock SHALL settle rendered name, placement, wording, and charts.
 - **WHEN** its data helper loads the report
 - **THEN** it requests `/api/diagnose/eating-sequences` without a window parameter
 - **AND** the server-owned fixed Diagnose source window determines the report
+
+#### Scenario: A fresh report response does not invent an input-data age
+
+- **GIVEN** a fresh eating-sequence report response without `input_data_age`
+- **WHEN** Diagnose records its response age
+- **THEN** the report passes through unchanged
+- **AND** only that report shape's recorded age is cleared

@@ -25,6 +25,14 @@ test('queryState reads Diagnose state from the canonical route query', () => {
   }
 });
 
+test('#302 · a settled tile refreshes the mounted findings-row mini', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  const fetchTile = source.match(/async function fetchTile\([\s\S]*?\n  \}/);
+  assert.ok(fetchTile, 'the workstation keeps one tile-fetch completion path');
+  assert.match(fetchTile[0], /descriptor\.state = descriptorHasData\(descriptor\) \? 'ok' : 'empty';[\s\S]*?refreshRowMinis\(\);/,
+    'a fetched compact-row descriptor replaces its pending mini through the mounted queue seam');
+});
+
 test('selected detail describes its glucose trace in product language', () => {
   const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
   assert.match(source, /The canvas shows the selected glucose trace and evidence markers\./);

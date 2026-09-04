@@ -1396,6 +1396,8 @@ function boot(root, data, callbacks, signal) {
         continue;
       }
       try {
+        host.classList.remove('tile-state');
+        host.textContent = '';
         const mounted = mountDescriptorChart(host, descriptor, true);
         rowMiniMounts.push(installTileMount(host, mounted));
         mounted.chart.setOption(mounted.option, true);
@@ -1404,6 +1406,17 @@ function boot(root, data, callbacks, signal) {
         host.textContent = 'Evidence unavailable';
       }
     }
+  }
+
+  function refreshRowMinis() {
+    if (top().k !== 'factors') return;
+    const host = el('level');
+    const rows = new Map((findings?.rows || []).map((row) => [row.id, row]));
+    const miniSlots = [...host.querySelectorAll('.qrow.compact .mini')]
+      .map((mini) => ({ host: mini, row: rows.get(mini.closest('.qrow').dataset.id) }))
+      .filter(({ row }) => row);
+    disposeRowMinis();
+    mountRowMinis(miniSlots);
   }
 
   function currentTileDescriptors() {
@@ -1528,6 +1541,7 @@ function boot(root, data, callbacks, signal) {
     const runtime = tileRuntime.get(chartId);
     runtime.message = message;
     runtime.pending = pending;
+    refreshRowMinis();
     paintTiles();
     return descriptor;
   }
@@ -1578,6 +1592,7 @@ function boot(root, data, callbacks, signal) {
       runtime.pending = false;
       descriptor.state = 'error';
       runtime.message = 'Evidence request is unavailable.';
+      refreshRowMinis();
       paintTiles();
       return;
     }
@@ -1599,6 +1614,7 @@ function boot(root, data, callbacks, signal) {
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
+      refreshRowMinis();
       paintTiles();
       paintChart();
       paintBrace();
@@ -1607,6 +1623,7 @@ function boot(root, data, callbacks, signal) {
       runtimeNow().pending = false;
       descriptor.state = 'error';
       runtimeNow().message = error?.message || 'Evidence request failed.';
+      refreshRowMinis();
       paintTiles();
     }
   }

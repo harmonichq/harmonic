@@ -143,8 +143,8 @@ class EvidencePopulationPolicy:
 
 
 _WINDOWS = {
-    Exposure.MEALS: (-60, 300), Exposure.LOWS: (-300, 120),
-    Exposure.CORRECTION_CLUSTERS: (-300, 180), Exposure.HIGHS: (-150, 300),
+    Exposure.MEALS: (-60, 300), Exposure.LOWS: (-60, 120),
+    Exposure.CORRECTION_CLUSTERS: (-120, 180), Exposure.HIGHS: (-150, 300),
 }
 
 

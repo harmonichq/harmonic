@@ -2,7 +2,7 @@
 
 ## 1. Retune the alignment windows across every encoding
 
-- [ ] In `ciq_autotune/analyzers/scenario/evidence_population.py` set
+- [x] In `ciq_autotune/analyzers/scenario/evidence_population.py` set
       `_WINDOWS[Exposure.LOWS] = (-60, 120)` and
       `_WINDOWS[Exposure.CORRECTION_CLUSTERS] = (-120, 180)`; leave `MEALS`,
       `HIGHS` and the two lever-specific policies untouched. Update the pinned
@@ -18,7 +18,7 @@
       literals alone: the standalone route is retired (404 pinned in
       `tests/test_findings_projection.py`) and nothing live reads that key
       (`design.md`, ADR 302 on the windows).
-- [ ] Move the hand-coded mirrors of the same values:
+- [x] Move the hand-coded mirrors of the same values:
       `mockups/diagnose-event-comparison.synthetic/generate.mjs` (the
       `[-300, 120]` view window and the `window: [-300, 120]` anchor literal
       become `[-60, 120]`) and its fixture-only projector
@@ -31,7 +31,7 @@
       `frontend/diagnose-event-comparison-behavior.replay.mjs` (its prose and
       the `state.window[0] === -300 && state.window[1] === 120` assertion) to
       `-60`/`120`.
-- [ ] Regenerate the generated consumers through their generators and run each
+- [x] Regenerate the generated consumers through their generators and run each
       `--check`: the seven files `.claude/qa/gen_synthetic_fixtures.py` writes
       into `mockups/diagnose-workstation.synthetic/` (`explore-day.capture.json`,
       `explore-exposures.capture.json`, `settings-audit.capture.json`,
@@ -57,7 +57,7 @@
       −300 minute walk in other spellings; they are historical drawings, not
       generated, and outside this gate.) Any other hit is an encoding this task
       missed: report it, do not edit outside the Expected diff.
-- [ ] Fast gate green (`uv run python -m pytest`, `node --test
+- [x] Fast gate green (`uv run python -m pytest`, `node --test
       'frontend/**/*.test.js'`, every `--check` in `AGENTS.md`); stage by path.
 
 ## 2. The tapered rail in the shipped app

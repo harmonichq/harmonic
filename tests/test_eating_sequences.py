@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from datetime import datetime, timedelta
 from dataclasses import FrozenInstanceError
 
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
@@ -26,6 +27,7 @@ from ciq_autotune.analyzers.eating_sequences import (
     empty_report,
     report_dict,
 )
+from tests.eating_sequence_streams import high_carb_stream
 
 
 class EatingSequenceConfigTest(unittest.TestCase):
@@ -242,3 +244,240 @@ class EmptyReportTest(unittest.TestCase):
                 self._assert_only_window_timestamps(child, path)
         elif isinstance(value, str):
             self.assertNotRegex(value, r"^\d{4}-\d\d-\d\d[ T]")
+
+
+class EatingSequenceDetectorTest(unittest.TestCase):
+    def test_public_sequence_primitive_pins_window_merge_boundaries(self):
+        from ciq_autotune.analyzers.eating_sequences import build_sequences
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        exact = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=30), carbs=12.7),
+        ], config=EatingSequenceConfig())
+        split = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=31), carbs=12.7),
+        ], config=EatingSequenceConfig())
+        corrected = build_sequences([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=20), carbs=None),
+            BolusEvent(start + timedelta(minutes=40), carbs=12.7),
+        ], config=EatingSequenceConfig())
+
+        self.assertEqual((len(exact), exact[0].window_count), (1, 1))
+        self.assertEqual((len(split), split[0].window_count), (1, 2))
+        self.assertEqual((len(corrected), corrected[0].window_count), (1, 2))
+
+    def _report(self, boluses, cgm=(), carb_log=(), *, config=None, hours=24):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        start = datetime(2040, 2, 3, 12)
+        return build_report(boluses, cgm, carb_log, window_start=start,
+                            window_end=start + timedelta(hours=hours),
+                            config=config or EatingSequenceConfig())
+
+    def test_build_report_chains_windows_and_ignores_corrections(self):
+        from datetime import datetime, timedelta
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        boluses = [
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=20), carbs=12.7),
+            BolusEvent(start + timedelta(minutes=50), carbs=None),
+            BolusEvent(start + timedelta(hours=3, minutes=20), carbs=23.9),
+            BolusEvent(start + timedelta(hours=6, minutes=21), carbs=31.1),
+        ]
+        report = build_report(
+            boluses, [], [], window_start=start,
+            window_end=start + timedelta(hours=8), config=EatingSequenceConfig(),
+        )
+
+        rows = report.high_carb_sequence.pooled.rows
+        self.assertEqual(sum(row.sequence_n for row in rows), 2)
+        self.assertEqual(report.high_carb_sequence.pooled.boundaries_g, (39.5, 39.5, 47.9, 47.9))
+
+    def test_construction_includes_exact_boundaries_and_evening_membership(self):
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        report = self._report([
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=30), carbs=12.7),
+            BolusEvent(start + timedelta(minutes=61), carbs=13.9),
+            BolusEvent(start + timedelta(hours=4, minutes=2), carbs=15.1),
+        ])
+        self.assertEqual(sum(row.sequence_n for row in report.high_carb_sequence.pooled.rows), 2)
+        evening = self._report([
+            BolusEvent(start.replace(hour=17, minute=59), carbs=11.3),
+            BolusEvent((start + timedelta(days=1)).replace(hour=18), carbs=12.7),
+            BolusEvent((start + timedelta(days=2)).replace(hour=23, minute=59), carbs=13.9),
+        ], hours=80)
+        self.assertEqual(sum(row.sequence_n for row in evening.high_carb_sequence.evening.rows), 2)
+
+    def test_assignment_precedes_eligibility_and_evening_reuses_boundaries(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+
+        start = datetime(2040, 2, 3, 18)
+        boluses = [BolusEvent(start + timedelta(hours=index * 8), carbs=11.3 + index * 2.7)
+                   for index in range(10)]
+        cgm = [CgmReading(bolus.t + timedelta(minutes=minute), 111.3)
+               for bolus in boluses[:8] for minute in range(0, 365, 5)]
+        report = self._report(boluses, cgm, hours=80)
+        q5 = report.high_carb_sequence.pooled.rows[4]
+        self.assertEqual(q5.sequence_n, 2)
+        self.assertEqual(q5.post_4h.n, 0)
+        self.assertEqual(report.high_carb_sequence.evening.boundaries_g,
+                         report.high_carb_sequence.pooled.boundaries_g)
+
+    def test_coverage_and_exclusion_counts_follow_pinned_order(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+        from tests.eating_sequence_streams import carb_entry
+
+        start = datetime(2040, 2, 3, 12)
+        config = EatingSequenceConfig(minimum_bucket_n=1, in_sequence_tail_minutes=50)
+        bolus = BolusEvent(start, carbs=11.3)
+        seven = [CgmReading(start + timedelta(minutes=index * 5), 111.3) for index in range(7)]
+        seven += [CgmReading(start + timedelta(minutes=index * 5), 111.3)
+                  for index in range(10, 73)]
+        report = self._report([bolus], seven, config=config)
+        self.assertEqual(report.high_carb_sequence.pooled.rows[0].in_sequence.n, 1)
+        six = self._report([bolus], [reading for reading in seven
+                                     if reading.t != start + timedelta(minutes=30)], config=config)
+        self.assertEqual(six.high_carb_sequence.exclusions["cgm_coverage"], 1)
+        contaminated = self._report([bolus], seven + [CgmReading(start + timedelta(hours=5), 111.3)],
+                                    [carb_entry(start + timedelta(hours=5))], config=config)
+        self.assertEqual(contaminated.high_carb_sequence.exclusions["carb_log_contamination"], 1)
+        early = self._report([bolus], seven, [carb_entry(start + timedelta(hours=2))], config=config)
+        self.assertEqual(early.high_carb_sequence.exclusions["carb_log_contamination"], 2)
+
+    def test_carb_log_horizon_is_half_open(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+        from tests.eating_sequence_streams import carb_entry
+
+        start = datetime(2040, 2, 3, 12)
+        bolus = BolusEvent(start, carbs=11.3)
+        config = EatingSequenceConfig(minimum_bucket_n=1)
+        cgm = [CgmReading(start + timedelta(minutes=minute), 111.3)
+               for minute in range(0, 365, 5)]
+        at_start = self._report([bolus], cgm, [carb_entry(start)], config=config)
+        at_end = self._report([bolus], cgm, [carb_entry(start + timedelta(hours=4))], config=config)
+        self.assertEqual(at_start.high_carb_sequence.exclusions["carb_log_contamination"], 3)
+        self.assertEqual(at_end.high_carb_sequence.exclusions["carb_log_contamination"], 1)
+
+    def test_overlap_excludes_post_six_only_before_coverage(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+
+        start = datetime(2040, 2, 3, 12)
+        config = EatingSequenceConfig(minimum_bucket_n=1)
+        first, next_ = BolusEvent(start, carbs=11.3), BolusEvent(start + timedelta(hours=5), carbs=17.3)
+        cgm = [CgmReading(start + timedelta(minutes=minute), 111.3) for minute in range(0, 665, 5)]
+        report = self._report([first, next_], cgm, config=config)
+        self.assertEqual(report.high_carb_sequence.exclusions["next_sequence_overlap"], 1)
+        self.assertEqual(report.high_carb_sequence.exclusions["cgm_coverage"], 0)
+
+    def test_non_adverse_and_empty_reports_do_not_conclude(self):
+        from ciq_autotune.events import BolusEvent, CgmReading
+
+        start = datetime(2040, 2, 3, 12)
+        start = start.replace(hour=18)
+        boluses = [BolusEvent(start + timedelta(hours=index * 8), carbs=11.3 + index * 2.7)
+                   for index in range(40)]
+        cgm = [CgmReading(bolus.t + timedelta(minutes=minute), 201.3 if index < 32 else 111.3)
+               for index, bolus in enumerate(boluses) for minute in range(0, 365, 5)]
+        report = self._report(boluses, cgm, hours=320)
+        self.assertEqual(report.high_carb_sequence.status, "insufficient")
+        self.assertIsNone(report.high_carb_sequence.finding)
+        empty = self._report([])
+        self.assertTrue(all(row.sequence_n == 0 for row in empty.high_carb_sequence.pooled.rows))
+        self.assertEqual(empty.high_carb_sequence.pooled.boundaries_g, (None, None, None, None))
+        self.assertEqual(empty.window.days, 1)
+
+    def test_pre_window_events_do_not_construct_a_sequence(self):
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        report = build_report([BolusEvent(start - timedelta(minutes=1), carbs=11.3)], [], [],
+                              window_start=start, window_end=start + timedelta(days=2),
+                              config=EatingSequenceConfig())
+        self.assertTrue(all(row.sequence_n == 0 for row in report.high_carb_sequence.pooled.rows))
+
+    def test_build_report_constructs_supported_high_carb_association(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        boluses, cgm, carb_log, _ = high_carb_stream()
+        report = build_report(
+            boluses, cgm, carb_log,
+            window_start=boluses[0].t,
+            window_end=cgm[-1].t,
+            config=EatingSequenceConfig(),
+        )
+
+        payload = report_dict(report)
+        self.assertEqual(payload["high_carb_sequence"]["status"], "supported")
+        self.assertIsNotNone(payload["high_carb_sequence"]["finding"])
+        self.assertIn("highest-carb fifth", payload["high_carb_sequence"]["finding"]["summary"])
+
+    def test_sd_only_adversity_uses_the_spread_summary(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        boluses, cgm, carb_log, _ = high_carb_stream(sd_only=True)
+        report = build_report(
+            boluses, cgm, carb_log,
+            window_start=boluses[0].t,
+            window_end=cgm[-1].t,
+            config=EatingSequenceConfig(),
+        )
+
+        finding = report_dict(report)["high_carb_sequence"]["finding"]
+        self.assertIsNotNone(finding)
+        self.assertIn("glucose spread", finding["summary"])
+
+    def test_tir_drop_outranks_a_larger_sd_only_comparison(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from ciq_autotune.events import BolusEvent, CgmReading
+
+        start = datetime(2040, 2, 3, 12)
+        boluses, cgm = [], []
+        for index in range(40):
+            meal = start + timedelta(hours=index * 8)
+            high = index >= 32
+            boluses.extend((BolusEvent(meal, carbs=11.3 + index * 2.7),
+                            BolusEvent(meal + timedelta(minutes=30), carbs=12.7)))
+            for minute in range(0, 391, 5):
+                value = 111.3
+                if high and minute < 35:
+                    value = 91.3 if minute % 10 else 171.3
+                elif high and minute < 55:
+                    value = 211.7
+                cgm.append(CgmReading(meal + timedelta(minutes=minute), value))
+        report = build_report(boluses, cgm, [], window_start=start,
+                              window_end=start + timedelta(hours=320),
+                              config=EatingSequenceConfig())
+
+        finding = report.high_carb_sequence.finding
+        self.assertIsNotNone(finding)
+        self.assertIn("in range against", finding.summary)
+
+    def test_store_wrapper_uses_basal_as_a_bound_only_and_slices_events(self):
+        from datetime import timedelta
+        from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report
+
+        boluses, cgm, carb_log, basal = high_carb_stream(count=1)
+        end = cgm[-1].t + timedelta(hours=2)
+        basal = [basal[0].__class__(end, "Profile")]
+
+        class Store:
+            def basal_events(self): return basal
+            def cgm_readings(self): return cgm
+            def bolus_events(self): return boluses
+            def carb_entries(self): return carb_log
+
+        report = build_eating_sequence_report(Store())
+        self.assertEqual(report.window.end, end.isoformat())
+        self.assertEqual(report.window.start, (end - timedelta(days=30)).isoformat())
+        self.assertEqual(report.high_carb_sequence.pooled.rows[0].sequence_n, 1)

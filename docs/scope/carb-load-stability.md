@@ -114,6 +114,42 @@ the exploration ticket at admission.
   for runtime type/enum validation inside the rows was discarded as
   assurance beyond the contract (charter: no guards for unreachable states).
 
+### #275 lock review rounds
+
+- Round 1 (cold, Terra): 3 blockers, all `authoring` — span_end derived from
+  basal the wrapper was not told to read; the HTTP route absent from the
+  acceptance anchors; prose acceptance anchors. Fixed in 5ffa4c3.
+- Round 1 re-check: 1 `injected` blocker — the new route requirement demanded
+  `input_data_age` on a fresh fixed response. Mechanical wording fix in
+  3e1102c. Countersigned; fresh cold pass owed (sub-order 1 is Full).
+- Fresh pass (panel 2, Terra): 3 blockers — warm roster contradicts the
+  scheduled-fetch contract (`authoring`; dropped, deferred to #277); stream
+  slicing to the window unspecified (`authoring`); 400 vs framework 422
+  (`authoring`). Re-check: 2 `injected` — half-open slice stated against an
+  inclusive `_slice`; stale warm sentence in the proposal. Mechanical fixes in
+  9e3499c. Countersigned; panel 3 fresh pass dispatched.
+- Panel 3 (fresh, Terra): 3 blockers — no generated-facts appendix
+  (`authoring`; facts.md added); gate not transcribed byte-exact
+  (`authoring`; lock rewritten); SD-only adverse comparison had no headline
+  rule (`authoring`; settled: TIR-drop tier first, SD-rise tier only when no
+  TIR drop, two fixed summary templates). Re-check: countersigned at the
+  panel cap. Lock 1 posted.
+
+### #275 code review rounds
+
+- Chunk 1 (Opus, Full, two axes + mutants): r1 — task 4 evidence largely
+  absent; cohort predicate duplicated in comparison and finding; r2 — 30-min
+  merge boundary unobservable (nothing read `window_count`), TIR-over-SD
+  precedence untested, Carb-log half-open bound untested; fixed by making
+  `build_sequences`/`EatingSequence` the public primitive and pinning all
+  three; r3 converged. Unconstructable by design: an evening headline
+  withheld while pooled is insufficient (evening ⊂ pooled).
+- Chunk 2 (Luna, Targeted, two axes): r1 — the 400 detail named no window;
+  fixed to derive the day count from the fixed-window constant; converged.
+- Whole diff (Opus, Full): converged; one latent gap closed by the
+  coordinator — the frozen fixture was pinned to `build_report` only, and
+  now the parity test also runs the served store wrapper against it.
+
 ## Open questions
 
 (none)

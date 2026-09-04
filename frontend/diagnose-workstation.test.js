@@ -245,7 +245,11 @@ test('basal slot evidence states distinguish loading and unavailable data', () =
   }
 });
 
-test('basal night evidence leaves the numbers and staging block byte-identical', () => {
+/* NOT a byte-identity check against origin/main — this renders the same head
+   twice in this tree, so an edit to the numbers or the staging markup moves both
+   sides together and it stays green. What it does prove is the roster's own
+   claim: adding nights beneath the block perturbs nothing inside it. */
+test('the night roster perturbs nothing in the numbers and staging block', () => {
   const originalDocument = globalThis.document;
   try {
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
@@ -256,10 +260,10 @@ test('basal night evidence leaves the numbers and staging block byte-identical',
     });
     renderSlotLevel(withRoster, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: nightPayload });
     assert.equal(withRoster.children[0].innerHTML, plain.children[0].innerHTML,
-      'the existing parameter numbers remain the untouched first panel');
+      'a served roster leaves the parameter numbers identical to a roster-free render');
     assert.equal(withRoster.children[0].children.find((child) => child.className === 'slot-foot').innerHTML,
       plain.children[0].children.find((child) => child.className === 'slot-foot').innerHTML,
-      'the existing staging block is byte-identical');
+      'a served roster leaves the staging block identical to a roster-free render');
   } finally {
     globalThis.document = originalDocument;
   }
@@ -345,11 +349,41 @@ test('basal night detail names the group the served night was sorted into', () =
       const head = host.children.find((child) => child.className === 'inner occ-detail');
       assert.match(head.innerHTML, new RegExp(`<span class="tag">${label}</span>`),
         `the ${label} night carries its group as the sibling detail tag`);
+      assert.match(head.innerHTML, /<span class="when">Jan \d+ · 00:00–00:30<\/span>/,
+        `the ${label} night's head carries the slot span beside the date`);
     }
   } finally { globalThis.document = originalDocument; }
 });
 
-test('basal night roster preserves null served mean and exit as em dashes', () => {
+/* Spec :28 — the row is date, delivered against programmed, in-slot mean. Entry
+   and exit belong to the selected night's detail block; a row carrying them
+   instead cannot be compared against its own programmed rate. */
+test('each basal night row prints the served date, both rates and the in-slot mean', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, shownCount: 5,
+    });
+    const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
+    const cells = (row) => [...row.innerHTML.matchAll(/<span class="(when|entry|arrow|worst|delta)">([^<]*)<\/span>/g)]
+      .map((match) => match[2].trim());
+
+    assert.deepEqual(cells(rows[0]), ['Jan 1', '0.80', '·', '0.60', '116'],
+      'the ran-above night compares its delivered rate against its programmed rate');
+    assert.deepEqual(cells(rows[1]), ['Jan 2', '0.40', '·', '0.60', '104'],
+      'the ran-below night prints the same four served facts');
+    assert.deepEqual(cells(rows[2]), ['Jan 3', '0.60', '·', '0.60', '—'],
+      'a null served in-slot mean prints as an em dash');
+    assert.deepEqual(cells(rows[3]), ['Jan 4', '0.60', '·', '—', '100'],
+      'a night with no served programmed rate prints an em dash in its place');
+    assert.doesNotMatch(rows[0].innerHTML, /111|121/,
+      'entering and leaving glucose stay in the detail block, off the row');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('basal night roster preserves a null served roster mean as an em dash', () => {
   const originalDocument = globalThis.document;
   try {
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
@@ -358,6 +392,5 @@ test('basal night roster preserves null served mean and exit as em dashes', () =
     const host = new RosterElement();
     renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
     assert.match(host.html.join('\n'), /— mg\/dL mean/);
-    assert.match(host.children.map((child) => child.innerHTML).join('\n'), /<span class="worst">—<\/span>/);
   } finally { globalThis.document = originalDocument; }
 });

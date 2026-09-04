@@ -11,8 +11,10 @@ nights, and selecting one draws that night on the glucose chart.
 
 **Decision (operator, 2026-09-03 triage round; Q2 = A, Q3 = A).**
 
-1. The roster groups nights under three headers — ran above, ran below, ran as
-   set — through the shared occurrence-roster mechanism's own groups, with the
+1. The roster groups nights under four headers — ran above, ran below, ran as
+   set, and, only when such nights exist, no programmed rate on file (the
+   amendment below settles that fourth one and why it cannot fold into ran as
+   set) — through the shared occurrence-roster mechanism's own groups, with the
    served counts in the headers. The tally that the 2026-09-01 session wanted to
    move off the chart into the panel becomes this: not a static count, but the
    entry to the nights themselves. Excluded nights are a count line only. They

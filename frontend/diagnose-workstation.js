@@ -634,6 +634,19 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   renderOccurrenceRoster(host, groups, { selectedId, shownCount, onSelect, onMore });
 }
 
+/* The two reader controls a selected occurrence owns, wherever it was selected:
+   release the trace, or hand the day off to Day. The Finding case file and the
+   basal night roster are both real callers, and the pair's wording is
+   user-visible copy that must not drift between them. */
+function renderOccurrenceFoot(host, date, onClearTrace, onOpenDay) {
+  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
+  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
+  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
+  day.textContent = `Open ${fmtDate(date)} in Day`; day.addEventListener('click', onOpenDay);
+  foot.append(clear, day); host.append(foot);
+}
+
 function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   const { selection } = caseFile;
   if (selection.state === 'unavailable') {
@@ -668,12 +681,7 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
     ${detail.source_corrections.map((dose) => `<div class="vd source-correction"><span class="pip" aria-hidden="true"></span>
       <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
   host.append(facts);
-  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
-  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
-  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
-  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
-  day.textContent = `Open ${fmtDate(detail.date)} in Day`; day.addEventListener('click', () => onDay(detail));
-  foot.append(clear, day); host.append(foot);
+  renderOccurrenceFoot(host, detail.date, onClearTrace, () => onDay(detail));
 }
 
 function renderBehavioralFullscreen(host, f) {
@@ -784,15 +792,18 @@ const NIGHT_GROUP_LABEL = {
    the em dashes on the lines below it. */
 const nightRate = (rate) => (rate == null ? '—' : u(rate));
 
-function renderSlotNightSelection(host, night, groupRows, rosterGlucoseMean, onClear, onDay) {
+function renderSlotNightSelection(host, night, span, groupRows, rosterGlucoseMean, onClear, onDay) {
   if (!night) return;
   const at = groupRows.findIndex((row) => row.date === night.date);
   const box = document.createElement('div'); box.className = 'inner occ-detail';
-  /* The tag is the Finding block's own: a selected row's detail sits under
+  /* The slot span joins the date inside `.when`, which is exactly how the
+     Finding block composes its own stamp — date · clock time. It needs no class
+     of its own, and it keeps the head to the sibling's three parts.
+     The tag is the Finding block's own too: a selected row's detail sits under
      whichever group the roster scrolled to, so the block states which group
      this night was served into rather than leaving the reader to find its
      header again. It restates the served grouping, never a second reading. */
-  box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)}</span>
+  box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)} · ${span}</span>
     <span class="tag">${NIGHT_GROUP_LABEL[nightGroup(night)]}</span>
     ${at >= 0 && groupRows.length > 1 ? `<span class="pos">${at + 1} of ${groupRows.length}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
     <div class="occ-nums">${nightRate(night.delivered_rate)} <span>U/h delivered</span> · ${nightRate(night.programmed_rate)} <span>U/h programmed</span></div>
@@ -803,12 +814,7 @@ function renderSlotNightSelection(host, night, groupRows, rosterGlucoseMean, onC
       <span>exit</span></div>
     <div class="statline">The canvas shows this night's glucose trace over the envelope.</div>`;
   host.append(box);
-  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
-  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
-  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClear);
-  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
-  day.textContent = `Open ${fmtDate(night.date)} in Day`; day.addEventListener('click', () => onDay(night));
-  foot.append(clear, day); host.append(foot);
+  renderOccurrenceFoot(host, night.date, onClear, () => onDay(night));
 }
 
 export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage, options = {}) {
@@ -858,12 +864,19 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     return {
       header: `<div class="ev-group"><b>${NIGHT_GROUP_LABEL[key]}</b><span class="n"> · ${rows.length} night${rows.length === 1 ? '' : 's'}</span></div>`,
       servedCount: rows.length,
+      /* The row is the comparison the roster exists for: what ran against what
+         was programmed, and where the night's glucose landed. Entering and
+         leaving glucose belong to the selected night's detail block, not to
+         every row — on the shared five-column spine they crowded out the
+         programmed rate and the mean, leaving a reader unable to compare any
+         night against its own setting without selecting nights one at a time.
+         The separator is the same `·` the detail block sets between the pair. */
       rows: rows.map((night) => ({
         id: night.date,
         html: `<span class="when">${fmtDate(night.date)}</span>
-          <span class="entry">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}</span>
-          <span class="arrow">→</span><span class="worst">${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}</span>
-          <span class="delta">${nightRate(night.delivered_rate)}</span>`,
+          <span class="entry">${nightRate(night.delivered_rate)}</span>
+          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}</span>
+          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}</span>`,
       })),
     };
   }).filter((group) => group.servedCount > 0);
@@ -877,7 +890,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
     host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
   }
   const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
-  renderSlotNightSelection(host, selected,
+  renderSlotNightSelection(host, selected, `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
     selected ? (evidence.nights || []).filter((night) => nightGroup(night) === nightGroup(selected)) : [],
     evidence.roster_glucose_mean,
     options.onClear || (() => {}), options.onDay || (() => {}));
@@ -3925,7 +3938,16 @@ function boot(root, data, callbacks, signal) {
     reconcileTileDescriptors();
     paintFilter();
     paintCrumb();
+    /* A repaint the reader did not ask for — a settling tile, a background
+       findings refresh — must not cost them the roster row they are standing
+       on. `paintLevel` empties #level, so a focused occurrence row is captured
+       across it and put back. An explicit navigation request still outranks
+       this: `applyPendingFocus` runs after, and the factor roster's own
+       `occurrenceFocusId` restore runs inside `paintLevel`. */
+    const heldRow = document.activeElement?.closest?.('#level .case-occurrence')
+      ?.dataset.occurrenceId;
     paintLevel();
+    if (heldRow) focusOccurrenceRow(heldRow);
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
@@ -4000,6 +4022,11 @@ function boot(root, data, callbacks, signal) {
       ev.preventDefault();
       f.selectedId = siblings[next].date;
       paint();
+      /* The repaint destroys the row the key press was standing on, so the
+         stepped row is focused explicitly — the same restoration the factor
+         roster makes through `occurrenceFocusId` (ADR 101). Without it a screen
+         reader lands on the document and Tab restarts at the top of the page. */
+      focusOccurrenceRow(f.selectedId);
       return;
     }
     const eventComparison = f.caseFile.projection.alignment === 'event';

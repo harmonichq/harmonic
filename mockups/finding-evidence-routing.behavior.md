@@ -3047,7 +3047,8 @@ S136 · Selecting one rendered night row stays in the standing slot frame and
        day, and Clear trace releases both the row and trace.
 S137 · The selected-night detail prints served rates and glucose facts,
        preserves null facts as dashes, offers the Day handoff, and Up/Down
-       steps only within the selected group's nights.
+       steps only within the selected group's nights, keeping focus on the
+       stepped row.
 S138 · At 1024×768, the roster, selected detail and canvas remain within their
        panes without horizontal overflow while the selected trace still paints.
 ```

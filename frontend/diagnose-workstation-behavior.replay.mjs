@@ -3809,6 +3809,11 @@ export const S137 = async (page) => {
     'S137 ArrowDown steps to the next night in the ran-above group');
   is((await page.locator('#level .occ-head .pos').innerText()).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
     'S137 the stepped detail names its position and arrow hint');
+  // The repaint destroys the row the key press stood on, so stepping must put
+  // focus on the newly selected row — otherwise a screen reader lands on the
+  // document and Tab restarts at the top of the page.
+  is(await page.evaluate(() => document.activeElement?.dataset?.occurrenceId ?? null), '2026-01-02',
+    'S137 the stepped row keeps focus, as the factor roster does');
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]').click();
   await settle(page, 200);
   const detail = (await page.locator('#level .occ-detail').innerText()).replace(/\s+/g, ' ').trim();

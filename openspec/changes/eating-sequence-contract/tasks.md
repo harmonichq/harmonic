@@ -3,8 +3,8 @@
 - [x] Add `ciq_autotune/analyzers/eating_sequence_config.py` with the frozen,
   code-owned `EatingSequenceConfig` interface: `window_merge_minutes=30.0`,
   `sequence_gap_hours=3.0`, `in_sequence_tail_minutes=5.0`,
-  `post_horizons_hours=(4, 6)`, `tir_low_mgdl=70.0`,
-  `tir_high_mgdl=180.0`, `cgm_coverage_floor=0.7`, `minimum_bucket_n=8`,
+  `post_horizons_hours=(4, 6)`, `tir_low_mgdl=70`,
+  `tir_high_mgdl=180`, `cgm_coverage_floor=0.7`, `minimum_bucket_n=8`,
   `quintile_count=5`, `evening_start_hour=18`, `evening_end_hour=24`, and
   `window_count_bands=("1", "2", "3+")`. Follow
   `scenario_config.py`'s docstring register: it belongs under `analyzers/`,

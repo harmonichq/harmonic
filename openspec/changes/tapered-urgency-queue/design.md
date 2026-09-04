@@ -190,11 +190,95 @@ replay.mjs` answers `/api/diagnose/findings` from the fixture-only mirror
 
 ## Live-round rulings
 
-Appended by the executing session, one dated entry per ruling on the hero's
-card treatment, type ranks and spacing, each within DESIGN.md's 1.5rem no-hero
-cap and the stage card's existing Label/Title/Body ranks.
+**2026-09-04 — hero card treatment.** Keep the hero as the rail's only raised
+card: `--mk-surface` on the field ground, one inset vessel edge and the system's
+single ambient shadow. The base's flat first row did not announce the change in
+urgency; making any compact or tail row a card would erase the distinction.
+
+**2026-09-04 — type ranks.** Keep the served tier as the hero's micro-caps
+eyebrow, its short title at 15px/700, and its annotation at the existing
+emphasis/body rank. Keep tier captions and the tail sentence at 11.5px/500.
+The hero remains well below DESIGN.md's 1.5rem no-hero cap and uses the stage
+card's existing Label/Title/Body ladder rather than inventing display type.
+
+**2026-09-04 — spacing.** Keep the hero's 6px outer inset, 13px/14px block
+padding and 10px release below; keep the 14px tier and tail pauses and the
+title-only tail's compact 30px desktop rhythm. At the mobile breakpoint tail
+rows return to 44px touch targets. The five-viewport matrix keeps the queue's
+title and flavor spines aligned while making each weight legible as one group.
+
+**2026-09-04 — row-mini floor.** Keep `MIN_ROW_MINI_WIDTH = 120`. The
+comparison traces remain legible at every matrix width where the two-column
+workstation stands, while the 760px narrow-inspector replay omits the mini and
+preserves the compact row. A smaller plot would spend ink without carrying a
+readable comparison; a larger floor would discard useful evidence at 768px.
+
+**2026-09-04 design round.** **The hero takes the sheet role, not the well
+role.** Ground moved from `--ck-well` (sunken) to `--mk-surface`, one step above
+the rail's field, with `--ck-tile-edge` and `--shadow`. The hero had been
+painted a full ladder step *darker* than the surface it sat on — a recess, not a
+card — which is why the operator did not see it.
+
+**2026-09-04 design round.** **The card edge is an inset ring, not a
+`border`.** `box-shadow: inset 0 0 0 1px` replaces `border`, because term 44
+forbids a horizontal rule on a queue row and the ledger counts
+`borderTopWidth` on every `.qrow`.
+
+**2026-09-04 design round.** **Both optical spines are restored.**
+`margin-inline: 6px` + `padding-inline: 6px` returns the hero's title and flavor
+tag to the queue's own 12px spine and one-constant-x column.
+
+**2026-09-04 design round.** **The served tier word becomes the card's
+eyebrow**, moved to row 1 beside the rank numeral at `--mk-text`. The word is
+pinned and cannot be changed, so placement and ink are the only levers.
+
+**2026-09-04 design round.** **The hero title takes 15px/700 and is the one
+title allowed to wrap**, far under DESIGN.md's 1.5rem No-Hero cap.
+
+**2026-09-04 design round.** **The rail defines the cohort inks it is read
+for**, on the By-event canvas's own mapping. `--ec-matched` /
+`--ec-nearly-matched` / `--ec-comparison` were defined only on `.ec-surface`,
+so in the rail they resolved to the empty string and ECharts silently
+substituted its own default palette — the mini was never drawing the app's
+cohort colours.
+
+**2026-09-04 design round.** **The mini is a chart well and the vertical rule
+does not earn its place**; ground half a step down (`color-mix` of `--ck-well`
+and `--ck-field` at 45%), because a full step made the cell out-contrast the
+hero and the eye landed on row 2.
+
+**2026-09-04 design round.** **The demoted tail takes the box one line of title
+earns**, superseding the 2026-08-19 identical-height ruling, which predates the
+tail being rendered beside a built hero card.
+
+**2026-09-04 design round.** **The chevron centres on the whole card, out of
+the grid**, keeping the 12px track so the one-constant-`tagX` assertion holds.
+
+**2026-09-04 design round.** **The eyebrow owns tier text; the caption drops to
+the list's rank** — one idiom per level, the caption unified with `TAIL_NOTE`'s
+voice. The caption still prints only the pinned map's text byte for byte.
+
+**2026-09-04 design round.** **The row mini's comparison ink is 85%**, a value
+step under the matched trace, because the two hues are too close to separate on
+their own.
+
+**2026-09-04 design-round hand-off — cohort ink separation.** Open finding:
+`--ec-matched` (`--mk-primary`, `#E07F3F`) and `--ec-comparison`
+(`--mk-accent`, `#D08150`) differ by roughly 16/1/15 in RGB — the same warm
+orange at two lightnesses. At the mini's size the pair carries essentially no
+hue separation and line type does the work. Widening that gap changes the
+By-event canvas too, so it belongs to that surface's owner, not to this ticket.
 
 ## Base story counts
 
-Recorded by the executing session against the base worktree before any product
-code changes.
+Fresh `origin/main` resolved the ticket branch's merge-base to
+`ee1d46f0a309b38625c2f4eee0956f8d480468c3`. From the detached base worktree,
+the full frozen replay ran through the declared no-fetch server on port 8873
+against its own scratch copy of the generated QA showcase and reported:
+
+```
+app: 151 of 151 stories passed
+```
+
+There were zero failures, zero opener problems and no skipped story. Complete
+stdout is committed as `evidence/replay.base.stdout.txt`.

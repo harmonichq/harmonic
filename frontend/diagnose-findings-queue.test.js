@@ -156,6 +156,34 @@ test('#302 · the painter returns compact-row mini slots without duplicating the
   }
 });
 
+test('#302 · the hero announces its served tier word before its title, and it alone carries one', () => {
+  class Node {
+    constructor() { this.children = []; this.dataset = {}; this.className = ''; }
+    append(...nodes) { this.children.push(...nodes); }
+    setAttribute() {}
+    addEventListener() {}
+  }
+  const previous = globalThis.document;
+  globalThis.document = { createElement: () => new Node() };
+  try {
+    const host = new Node();
+    renderFindingsQueue(host, W.global, () => {});
+    const painted = host.children.find((child) => child.className === 'q').children
+      .filter((child) => child.className.startsWith('qrow'));
+    const [hero] = painted;
+    assert.equal(hero.className, 'qrow hero');
+    // the eyebrow is READ where it is seen: numeral, tier word, then the title
+    assert.deepEqual(hero.children.map((child) => child.className),
+      ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums']);
+    assert.equal(hero.children[1].textContent, TIER.next_in_line);
+    // no other weight prints one — a compact row's tier is the caption above it
+    assert.ok(painted.slice(1).every((row) =>
+      !row.children.some((child) => child.className === 'tier')));
+  } finally {
+    globalThis.document = previous;
+  }
+});
+
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {
   for (const row of queueRows(W.afternoon)) {
     assert.equal(row.flavor, row.raw.kind === 'setting' ? 'setting' : 'habit');

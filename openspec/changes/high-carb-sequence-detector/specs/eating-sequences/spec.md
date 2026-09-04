@@ -11,10 +11,10 @@ the first three to `build_report`. It SHALL read basal solely to derive `span_en
 never as a modeling input. Its `span_end` SHALL be the latest basal-or-CGM timestamp,
 its `now` SHALL be supplied `now` or `span_end` or `datetime.now()`, and its start
 SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`. After that
-derivation it SHALL slice all three modeling streams to `[start, now)` exactly as
+derivation it SHALL slice all three modeling streams to `[start, now]` (both ends inclusive, the same predicate as Scenario's `_slice`) exactly as
 `build_scenarios` slices its streams. `build_report` SHALL treat the lists it receives
 as complete window content and SHALL construct no sequence from an event outside
-`[window_start, window_end)`.
+`[window_start, window_end]`.
 
 #### Scenario: Store wrapper reports the same fixed source bounds as Diagnose
 

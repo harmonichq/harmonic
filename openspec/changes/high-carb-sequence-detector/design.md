@@ -7,7 +7,7 @@
   window_days=30, now=None)` is its thin read-only adapter: it reads the three
   modeling streams plus `store.basal_events()` solely to derive `span_end`, `now`,
   and `start` exactly as `build_scenarios` does. Basal is never a modeling input.
-  It then slices all three modeling streams to `[start, now)` exactly as
+  It then slices all three modeling streams to `[start, now]` (both ends inclusive, as Scenario's `_slice` does) exactly as
   `build_scenarios` does; `build_report` treats its lists as complete window content
   and constructs no sequence outside its explicit bounds. Event lists make
   construction and evidence testable without a store while the shared window

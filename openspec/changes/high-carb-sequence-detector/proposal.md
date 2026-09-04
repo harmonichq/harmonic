@@ -16,7 +16,7 @@ detector useful without turning an association into insulin-setting advice.
   finding. Keep `repeat_eating_amplifier` as the complete insufficient skeleton for
   #276.
 - Serve the versioned report as a token-gated, fixed-window cached Diagnose product,
-  warm it after fetches, and freeze a populated synthetic report through the
+  and freeze a populated synthetic report through the
   production-shaped builder → `build_report` → generator path and drift gate.
 
 ## Risk contract

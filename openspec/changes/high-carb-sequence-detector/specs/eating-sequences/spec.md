@@ -10,7 +10,11 @@ BolusEvent, CgmReading, CarbEntry, and basal streams without writing and passes 
 the first three to `build_report`. It SHALL read basal solely to derive `span_end`,
 never as a modeling input. Its `span_end` SHALL be the latest basal-or-CGM timestamp,
 its `now` SHALL be supplied `now` or `span_end` or `datetime.now()`, and its start
-SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`.
+SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`. After that
+derivation it SHALL slice all three modeling streams to `[start, now)` exactly as
+`build_scenarios` slices its streams. `build_report` SHALL treat the lists it receives
+as complete window content and SHALL construct no sequence from an event outside
+`[window_start, window_end)`.
 
 #### Scenario: Store wrapper reports the same fixed source bounds as Diagnose
 
@@ -24,6 +28,12 @@ SHALL be `now - timedelta(days=window_days)`, matching `build_scenarios`.
 - **GIVEN** a store whose latest basal delivery is later than its latest CGM reading
 - **WHEN** the store-facing report builder runs without an explicit `now`
 - **THEN** the report window ends at that basal delivery
+
+#### Scenario: Events before the source window build no sequence
+
+- **GIVEN** otherwise qualifying bolus, CGM, and Carb-log events before the source window
+- **WHEN** the store-facing report builder prepares the report
+- **THEN** those events produce no eating sequence
 
 ### Requirement: High-carb findings are supported aggregate associations only
 

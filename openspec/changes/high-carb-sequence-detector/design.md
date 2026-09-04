@@ -7,8 +7,11 @@
   window_days=30, now=None)` is its thin read-only adapter: it reads the three
   modeling streams plus `store.basal_events()` solely to derive `span_end`, `now`,
   and `start` exactly as `build_scenarios` does. Basal is never a modeling input.
-  Event lists make construction and evidence testable without a store while the
-  shared window derivation keeps report bounds aligned with Diagnose.
+  It then slices all three modeling streams to `[start, now)` exactly as
+  `build_scenarios` does; `build_report` treats its lists as complete window content
+  and constructs no sequence outside its explicit bounds. Event lists make
+  construction and evidence testable without a store while the shared window
+  derivation keeps report bounds aligned with Diagnose.
 - The detector assigns pooled quintiles before eligibility, then filters that single
   assignment and its boundaries for evening. It never re-ranks evening sequences.
   This preserves one user-relative population across both scopes.
@@ -25,8 +28,9 @@
   avoids a second temporary schema.
 - The cached API uses key `("eating-sequences", window)` and marker
   `"eating-sequences-v1"`, accepts only Diagnose's fixed source window, requires the
-  bearer token, and is warmed after fetches. It is read-only, so it adds no cache
-  bump path.
+  bearer token, and is read-only, so it adds no cache bump path. The product joins
+  the warm roster when a Diagnose surface first requests it on initial load (#277),
+  because the roster's contract is the initial-load shape set.
 - `scripts/gen_eating_sequence_fixtures.py` consumes the shared synthetic stream
   builder and calls `build_report`, then writes the report fixture with provenance
   and byte-comparing `--check`. This production-shaped path prevents a hand-authored

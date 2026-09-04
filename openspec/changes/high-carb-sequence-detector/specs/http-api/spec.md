@@ -33,14 +33,14 @@ response."
 
 `GET /api/diagnose/eating-sequences` SHALL be a bearer-token-gated data endpoint.
 Its `window` query parameter SHALL default to and accept only
-`findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other value SHALL return 400
-whose detail names that fixed window, matching basal-night evidence's refusal. It
+`findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other integer value SHALL
+return 400 whose detail names that fixed window, matching basal-night evidence's
+refusal. Non-integer values SHALL be refused by the framework's query validation. It
 SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary under
 the shared fixed-response semantics — no age field on fresh data, backend-owned
 `input_data_age` only when a labelled stale predecessor is served, which
 `serve_stale=False` here never does — from cache key `("eating-sequences", window)`
-with shape marker `"eating-sequences-v1"` and `serve_stale=False`. The fetch warm
-roster SHALL pre-warm this product.
+with shape marker `"eating-sequences-v1"` and `serve_stale=False`.
 
 #### Scenario: A fixed-window request is served fresh from the cache
 
@@ -49,10 +49,11 @@ roster SHALL pre-warm this product.
 - **THEN** it returns the cache-backed `eating-sequence-report-v1` dictionary
 - **AND** the fresh response carries no `input_data_age` field
 
-#### Scenario: A non-fixed window is refused
+#### Scenario: A non-fixed integer window is refused
 
-- **WHEN** a request names a window other than the fixed Diagnose source window
+- **WHEN** a request names an integer window other than the fixed Diagnose source window
 - **THEN** the endpoint returns 400 and its detail names the fixed window
+- **AND** a non-integer window is refused by framework query validation
 
 #### Scenario: A request without the configured token is refused
 

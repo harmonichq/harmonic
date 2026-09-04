@@ -6,9 +6,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute,
+  DOCK_BOOT_WANT, DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute,
   chartFrameFindingIsLive, dismissRaisedDock,
-  dockView, isDrilledSpotlight, popInspector, seatableChartIds,
+  dockPickTransition, dockResizeTransition,
+  dockView, fallbackFocalId, isDrilledSpotlight, popInspector, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
 
@@ -269,4 +270,64 @@ test('the finding a chart frame names is not live once its row drops out, even i
 test('an absent findings payload names no live finding', () => {
   assert.equal(chartFrameFindingIsLive('finding:over_treated_low', null), false);
   assert.equal(chartFrameFindingIsLive('finding:over_treated_low', undefined), false);
+});
+
+/* THE STAGE HOLDS THE ACTIVE FINDING'S CHART, NEVER THE CHART JUST LEFT (ADR
+   306). `fallbackFocalId` is the one resolver the reconcile and `popTo` both
+   call — its own tail, `recommendedFocalId(...) || candidates[0] || pins[0]
+   || null`, never the "keep what was already focal" head that call sites
+   supply themselves. */
+test('the fallback focal id prefers the rank-1 event chart', () => {
+  const findings = { rows: [{ id: 'finding:missed_meal',
+    event_chart: { lever: 'missed_meal',
+      window: { scoped: false, start_min: null, end_min: null } } }] };
+  const descriptors = [
+    { chartId: 'finding:missed_meal', kind: 'event-comparison' },
+    { chartId: 'basal:0-30', kind: 'basal' },
+  ];
+  assert.equal(
+    fallbackFocalId(findings, descriptors, ['basal:0-30'], ['isf']),
+    'finding:missed_meal',
+  );
+});
+
+test('the fallback focal id falls to the first ranked candidate when nothing recommends', () => {
+  assert.equal(fallbackFocalId({ rows: [] }, [], ['basal:0-30', 'isf'], ['isf']), 'basal:0-30');
+});
+
+test('the fallback focal id falls to the first pin when there are no candidates either', () => {
+  assert.equal(fallbackFocalId({ rows: [] }, [], [], ['isf']), 'isf');
+});
+
+test('the fallback focal id resolves to none when the stage has nothing at all', () => {
+  assert.equal(fallbackFocalId({ rows: [] }, [], [], []), null);
+});
+
+/* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Boot never docks the
+   drawer on its own — that path is what the operator called "archived." */
+test('the dock boots hidden, never docked', () => {
+  assert.equal(DOCK_BOOT_WANT, 'hidden');
+  assert.equal(dockView(600).state, 'hidden', 'the default want with no field override is hidden');
+});
+
+/* A RESIZE CROSSING BELOW THE FLOOR HIDES THE DOCK; GROWING BACK NEVER
+   RE-DOCKS IT (ADR 306 retires ADR 215's grow-back half). */
+test('a resize crossing below the dock floor hides the dock, and growing back leaves the want alone', () => {
+  assert.equal(dockResizeTransition('docked', DOCK_FLOOR - 1), 'hidden');
+  assert.equal(dockResizeTransition('hidden', DOCK_FLOOR - 1), 'hidden');
+  assert.equal(dockResizeTransition('docked', DOCK_FLOOR), 'docked',
+    'growing back past the floor does not re-dock a docked want');
+  assert.equal(dockResizeTransition('hidden', DOCK_FLOOR), 'hidden',
+    'growing back past the floor does not revive a hidden want either');
+});
+
+/* PICKING A CHART FROM THE DRAWER PUTS IT AWAY (ADR 306): a cell click or
+   Enter, a Watching tail cell, or an explorer pick — every one of them a
+   `mini` or `grid` seat. */
+test('picking a mini or grid seat hides the dock; picking the spotlight does not', () => {
+  assert.equal(dockPickTransition('docked', 'mini'), 'hidden');
+  assert.equal(dockPickTransition('docked', 'grid'), 'hidden');
+  assert.equal(dockPickTransition('hidden', 'mini'), 'hidden');
+  assert.equal(dockPickTransition('docked', 'focal'), 'docked',
+    'the spotlight is already seated, not a pick from the drawer');
 });

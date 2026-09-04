@@ -110,7 +110,7 @@ test('the live descriptor list follows findings rows without a second chart list
     ['synthetic:cohort', { cohort_id: 'cohort-5' }],
   ]);
   assert.deepEqual(Object.keys(descriptorsFromFindings(findings, registry)[0]).sort(),
-    ['chartId', 'coordinates', 'data', 'kind', 'meta', 'mode', 'state', 'title']);
+    ['chartId', 'coordinates', 'data', 'headline', 'kind', 'meta', 'mode', 'state', 'title']);
   /* TWO BEHAVIOURAL ROWS, TWO DISTINCT TILES. One static registry name printed
      look-alike tiles the reader could not tell apart, so the name comes from the
      entry's own row hook and the two must not collide. */
@@ -128,6 +128,31 @@ test('the live descriptor list follows findings rows without a second chart list
 
   findings.rows = [{ id: 'isf', register: 'held', parameter: 'isf' }];
   assert.deepEqual(descriptorsFromFindings(findings, registry).map(({ chartId }) => chartId), ['isf']);
+});
+
+/* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306). The descriptor
+   carries the served headline BESIDE `title`, never in place of it: a mini or
+   grid seat keeps reading the short nameplate, and only the focal tile reads
+   the headline verbatim (frontend/diagnose-workstation.js decides which seat
+   gets which — this is the pure fact both rest on). */
+test('a descriptor carries the served headline beside its unchanged short title', () => {
+  const registry = [{ kind: 'basal', name: 'Basal · nights of steady data',
+    matches: (row) => row.parameter === 'basal_rate', coordinates: () => ({}) }];
+  const findings = { rows: [{ id: 'basal:0-30', register: 'assert', parameter: 'basal_rate',
+    headline: 'Pump ran above the programmed rate on 12 of 19 nights' }] };
+  const [descriptor] = descriptorsFromFindings(findings, registry);
+  assert.equal(descriptor.title, 'Basal · nights of steady data',
+    'the short nameplate is unchanged — a mini or grid seat still reads this');
+  assert.equal(descriptor.headline, 'Pump ran above the programmed rate on 12 of 19 nights');
+  assert.notEqual(descriptor.headline, descriptor.title);
+});
+
+test('a row with no served headline yet leaves the descriptor headline null, never undefined', () => {
+  const registry = [{ kind: 'isf', name: 'Correction factor · rest windows',
+    matches: (row) => row.parameter === 'isf', coordinates: () => ({}) }];
+  const findings = { rows: [{ id: 'isf', register: 'assert', parameter: 'isf' }] };
+  const [descriptor] = descriptorsFromFindings(findings, registry);
+  assert.equal(descriptor.headline, null);
 });
 
 test('every glucose chart in the field receives one shared range', () => {

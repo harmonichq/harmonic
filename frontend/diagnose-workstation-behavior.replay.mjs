@@ -2115,6 +2115,7 @@ export const S32 = async (page) => {
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
   await openWholeDay(page);
+  await raiseDock(page);
   const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().waitFor();
@@ -3147,6 +3148,7 @@ export const issue86DirectEntryRestoration = async (page) => {
     level.scrollTop = Math.min(24, Math.max(0, level.scrollHeight - level.clientHeight));
     return level.scrollTop;
   });
+  await raiseDock(page);
   const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
@@ -3222,6 +3224,7 @@ export const issue86MalformedRecovery = async (page) => {
     }
   };
   page.on('request', observeCaseRequest);
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
   await page.locator('#level [role="alert"]').waitFor();
   page.off('request', observeCaseRequest);
@@ -3528,6 +3531,172 @@ export const C55 = async (page) => {
 // STORY:finding-evidence-routing:D1
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
+
+/* ---- #306 · the left-column pattern (ADR 306) ---------------------------- */
+
+const SANCTION_DRAWER_GROW_BACK = 'sanction: Connor Griffin · 2026-09-02 · "It opens minimized. It never comes back up on its own. That path is archived. It\'s gone."';
+
+/* RETIRED BEHAVIOUR — the dock-floor rule's grow-back half. ADR 215's floor
+   rule hid the strip when the field shrank past DOCK_FLOOR and re-docked it
+   when the field grew back. ADR 306 keeps the first half and retires the
+   second. This function is never silent: it asserts the premise (shrinking
+   past the floor still hides), asserts the absence (growing back does not
+   re-dock), and prints the sanction on every run. */
+// STORY:finding-evidence-routing:S127
+export const S127 = async (page) => {
+  await openCanvas(page);
+  await raiseDock(page);
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'docked', 'S127 premise: the reader docked the strip');
+  await page.setViewportSize({ width: 1440, height: 480 });
+  await page.waitForFunction(() => document.querySelector('#tile-field')?.dataset.dock === 'hidden');
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+    'S127 premise: shrinking the field past the dock floor still hides the strip');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.waitForTimeout(700);
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+    'S127 RETIRED — growing back past the floor must not re-dock the strip');
+  console.log(`S127 RETIRED — ${SANCTION_DRAWER_GROW_BACK}`);
+};
+
+/* The served findings queue for the window the page is on, read through the
+   app's own stubbed route so the story compares against the projection the
+   rail and the stage both consumed. */
+const servedRows = (page, window) => page.evaluate(async (query) => {
+  const response = await fetch(`/api/diagnose/findings${query}`);
+  return (await response.json()).rows;
+}, window ? `?start_min=${window[0]}&end_min=${window[1]}` : '');
+
+const focalId = (page) => page.locator('#tile-focal .evidence-tile').first().getAttribute('data-chart-id');
+
+/* S128 · Leaving a drill returns the rank-1 chart to the stage. */
+// STORY:finding-evidence-routing:S128
+export const S128 = async (page) => {
+  await openWholeDay(page);
+  const rankOne = await focalId(page);
+  ok(rankOne, 'S128 the queue root seats a rank-1 chart');
+  await raiseDock(page);
+  const other = page.locator(`#tile-row .evidence-tile[data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
+  const otherId = await other.getAttribute('data-chart-id');
+  ok(otherId, 'S128 the strip publishes a lower-ranked chart to drill');
+  await other.locator('.tile-body').click();
+  await settle(page, 450);
+  is(await focalId(page), otherId, 'S128 drilling a lower-ranked chart seats it');
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await settle(page, 450);
+  is(await focalId(page), rankOne, 'S128 leaving the drill re-seats the rank-1 chart, never the chart just left');
+  await raiseDock(page);
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${otherId}"][data-selected]`).count(), 0,
+    'S128 the drilled chart\'s strip cell is no longer the current frame');
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${rankOne}"][data-selected]`).count(), 1,
+    'S128 the rank-1 cell is the current frame again');
+};
+
+/* S129 · An explorer pick drills the picked chart's finding and closes the explorer. */
+// STORY:finding-evidence-routing:S129
+export const S129 = async (page) => {
+  await openWholeDay(page);
+  const before = (await state(page)).crumb.length;
+  await page.locator('#dock-handle button[aria-label="Show every chart"]').click();
+  await page.locator('#tile-field[data-explorer]').waitFor();
+  const cell = page.locator('#tile-field[data-explorer] .evidence-tile[data-seat="grid"][data-chart-id^="finding:"]').first();
+  const id = await cell.getAttribute('data-chart-id');
+  ok(id, 'S129 the explorer lists a finding chart');
+  await cell.locator('.tile-body').click();
+  await settle(page, 450);
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the pick closes the explorer');
+  is(await focalId(page), id, 'S129 the picked chart holds the stage');
+  ok((await state(page)).crumb.length > before, 'S129 the picked chart\'s finding is drilled');
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S129 the drawer is away after the pick');
+};
+
+/* S130 · The drawer opens hidden and the stage holds the rank-1 chart. */
+// STORY:finding-evidence-routing:S130
+export const S130 = async (page) => {
+  await openWholeDay(page);
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S130 a fresh visit opens the drawer hidden');
+  const rows = await servedRows(page, null);
+  const first = rows.find((row) => row.event_chart || row.parameter);
+  ok(first, 'S130 the queue publishes a ranked row');
+  const focal = await focalId(page);
+  ok(focal, 'S130 the stage holds a chart while the queue shows');
+  is(await page.locator(`#level .qrow[data-id="${rows[0].id}"]`).count(), 1, 'S130 the rank-1 row is listed');
+  is(focal, rows[0].event_chart ? `finding:${rows[0].event_chart.lever}` : rows[0].id,
+    'S130 the stage holds the rank-1 finding\'s chart');
+};
+
+/* S131 · A pick from the drawer seats and drills that chart and puts the drawer away. */
+// STORY:finding-evidence-routing:S131
+export const S131 = async (page) => {
+  await openWholeDay(page);
+  await raiseDock(page);
+  const before = (await state(page)).crumb.length;
+  const mini = page.locator('#tile-row .evidence-tile[data-chart-id]').nth(1);
+  const id = await mini.getAttribute('data-chart-id');
+  ok(id, 'S131 the strip publishes a second chart');
+  await mini.locator('.tile-body').click();
+  await settle(page, 450);
+  is(await focalId(page), id, 'S131 the picked chart holds the stage');
+  ok((await state(page)).crumb.length > before, 'S131 the picked chart\'s finding is drilled');
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S131 the pick puts the drawer away');
+};
+
+/* S132 · The stage card's title is the served headline's only home: for every
+   family the stage title equals the row's served `headline`; the drawer cell
+   and the fullscreen header keep the short nameplate; no drill level repeats
+   the sentence. Morning is the one committed window that ranks a basal
+   assert, a carb-ratio assert and (under Watching) the correction-factor
+   read beside the event-comparison rows. */
+// STORY:finding-evidence-routing:S132
+export const S132 = async (page) => {
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 450);
+  const rows = await servedRows(page, [360, 720]);
+  const chartIdOf = (row) => (row.event_chart ? `finding:${row.event_chart.lever}` : row.id);
+  const picks = ['basal_rate', 'carb_ratio', 'isf'].map((parameter) =>
+    rows.find((row) => row.parameter === parameter && row.register !== 'history'))
+    .concat(rows.find((row) => row.register === 'finding'));
+  ok(picks.every(Boolean), 'S132 Morning ranks every chart family');
+  for (const row of picks) {
+    const id = chartIdOf(row);
+    ok(row.headline, `S132 ${id} carries a served headline`);
+    const queueRow = page.locator(`#level .qrow[data-id="${row.id}"]`);
+    if (!(await queueRow.count())) {
+      await page.getByRole('button', { name: /^Watching/ }).click();
+      await page.waitForTimeout(400);
+    }
+    await queueRow.click();
+    await settle(page, 450);
+    is(await focalId(page), id, `S132 drilling ${id} seats its chart`);
+    /* The stage card styles the served headline's first sentence as the title
+       and the rest as the subtitle (nameplate ruling, 2026-09-03); the two
+       together are the served string verbatim, and the slot nameplate is the
+       card's kicker. */
+    const stageText = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+      kicker: node.querySelector('.tile-kicker')?.textContent.trim() ?? null,
+      title: node.querySelector('h3')?.textContent.trim() ?? '',
+      sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+    }));
+    is([stageText.title, stageText.sub].filter(Boolean).join(' '), row.headline,
+      `S132 the stage title and subtitle together are ${id}'s served headline, verbatim`);
+    ok(stageText.kicker && stageText.kicker !== row.headline,
+      `S132 ${id}'s stage kicker is the short nameplate, not the headline`);
+    ok(!(await page.locator('#level').innerText()).includes(row.headline),
+      `S132 no drill level repeats ${id}'s headline`);
+    await raiseDock(page);
+    const cellTitle = (await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-head h3`).textContent()).trim();
+    ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s drawer cell keeps the short nameplate`);
+    is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s drawer cell carry the same short nameplate`);
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.waitForSelector('#tile-field[data-fullscreen-tile]');
+    is((await page.locator('#full-title').textContent()).trim(), cellTitle,
+      `S132 the fullscreen header keeps ${id}'s short nameplate`);
+    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+    await page.waitForTimeout(300);
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    await settle(page, 450);
+  }
+};
+
 // STORY:finding-evidence-routing:C41
 // STORY:finding-evidence-routing:C42
 // STORY:finding-evidence-routing:C43
@@ -3624,6 +3793,19 @@ const openCanvas = async (page) => {
   await page.waitForTimeout(700);
 };
 
+/* THE DRAWER OPENS MINIMIZED (ADR 306; operator, 2026-09-02: "It opens
+   minimized. It never comes back up on its own."). A story that reads the
+   strip brings it up through the reader's own control first, exactly as the
+   reader would; a pick from it puts it away again (S131), so a story that
+   reads the strip after a pick brings it up a second time. */
+const raiseDock = async (page) => {
+  if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
+    await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
+    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.waitForTimeout(300);
+  }
+};
+
 const pinNext = async (page) => {
   const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
   const next = page.locator('#tile-schematic .next:not([disabled])');
@@ -3636,6 +3818,7 @@ const pinNext = async (page) => {
 
 const reachPinCount = async (page, count) => {
   await openCanvas(page);
+  await raiseDock(page);
   for (let pins = 0; pins < count; pins += 1) {
     ok(await pinNext(page), `pin control reaches ${pins + 1} pins`);
   }
@@ -3705,6 +3888,7 @@ export const S102 = async (page) => {
 // STORY:finding-evidence-routing:S103
 export const S103 = async (page) => {
   await openCanvas(page);
+  await raiseDock(page);
   ok((await canvasSnapshot(page)).tiles.some((tile) => tile.state === 'ok'),
     'S103 a successful evidence request names the ok tile state');
 };
@@ -3712,6 +3896,7 @@ export const S103 = async (page) => {
 // STORY:finding-evidence-routing:S104
 export const S104 = async (page) => {
   await openCanvas(page);
+  await raiseDock(page);
   const empty = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'empty');
   ok(empty, 'S104 absent evidence names the empty tile state');
   ok(Boolean(empty.message), 'S104 the empty state explains the absence');
@@ -3735,6 +3920,7 @@ export const S105 = async (page) => {
 // STORY:finding-evidence-routing:S106
 export const S106 = async (page) => {
   await openCanvas(page);
+  await raiseDock(page);
   const carb = (await canvasSnapshot(page)).tiles.find((tile) => tile.id.startsWith('ic:'));
   ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
   const blockId = carb.id.slice('ic:'.length);
@@ -3876,11 +4062,14 @@ export const S107 = async (page) => {
 // STORY:finding-evidence-routing:S108
 export const S108 = async (page) => {
   await reachPinCount(page, 3);
-  const before = await canvasSnapshot(page);
   /* The stage is where a chart is expanded from — a cell's only verb is
      "become the spotlight" (ADR 215 amendment), so the strip carries the pin
-     and nothing else. */
+     and nothing else. Amended 2026-09-03 (ADR 306): the pick puts the drawer
+     away, so the state fullscreen leaves — and must restore — is snapshotted
+     after the pick, drawer hidden. */
   await page.locator('#tile-row .evidence-tile').first().click();
+  await page.waitForTimeout(300);
+  const before = await canvasSnapshot(page);
   await page.locator('#tile-focal .tile-fullscreen').click();
   is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
   await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
@@ -3982,6 +4171,11 @@ export const S114 = async (page) => {
   ok(Boolean(chartId), 'S114 the dock publishes a Watching tail chart');
   await tail.click();
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
+  /* Amended 2026-09-03 (ADR 306): the pick puts the drawer away. The strip
+     clauses below still hold once the reader brings it back up. */
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+    'S114 picking the Watching tail cell puts the drawer away');
+  await raiseDock(page);
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
     'S114 the promoted Watching chart keeps one strip cell');
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`)
@@ -3993,6 +4187,7 @@ export const S114 = async (page) => {
 // STORY:finding-evidence-routing:S115
 export const S115 = async (page) => {
   await openCanvas(page);
+  await raiseDock(page);
   const mini = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
   const chartId = await mini.getAttribute('data-chart-id');
   const option = await mini.locator('.tile-chart').evaluate((host) =>
@@ -4013,6 +4208,9 @@ export const S115 = async (page) => {
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
   is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
     'S115 Enter promotes the mini to the spotlight');
+  /* Amended 2026-09-03 (ADR 306): Enter is a pick, and a pick puts the drawer away. */
+  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
+    'S115 Enter on a mini puts the drawer away');
 };
 
 // STORY:finding-evidence-routing:S116
@@ -4071,6 +4269,7 @@ export const S118 = async (page) => {
 // STORY:finding-evidence-routing:S119
 export const S119 = async (page) => {
   await openCanvas(page);
+  await raiseDock(page);
   const basal = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
   ok(await basal.count(), 'S119 the generated canvas exposes one live basal chart');
   await basal.click();
@@ -4138,6 +4337,7 @@ export const S120 = async (page) => {
   const narrowEvidence = evidenceViewport.width < 760;
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await openCanvas(page);
+  await raiseDock(page);
 
   const opening = await starDockSnapshot(page);
   const victimId = 'basal:30-90';
@@ -4279,6 +4479,7 @@ const panelSnapshot = (page) => page.evaluate(() => ({
 export const S122 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S122-before-chart-click');
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4310,6 +4511,7 @@ export const S122 = async (page) => {
 export const S123 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S123-before-chart-click');
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4346,6 +4548,7 @@ export const S123 = async (page) => {
 export const S124 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S124-before-chart-click');
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4377,11 +4580,13 @@ export const S124 = async (page) => {
     of stacking a third under it. */
 export const S125 = async (page) => {
   await openWholeDay(page);
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const first = await state(page);
   is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
 
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const second = await state(page);
@@ -4390,6 +4595,7 @@ export const S125 = async (page) => {
   ok(/block$/.test(second.crumb[second.crumb.length - 1]),
     `S125 the carb-ratio chart is now standing (${second.crumb})`);
 
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const third = await state(page);
@@ -4413,6 +4619,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [300, 420], [0, 1440]);
   const drawn1 = await state(page);
   ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const basal = await state(page);
@@ -4423,6 +4630,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [700, 900], [0, 1440]);
   const drawn2 = await state(page);
   ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const carb = await state(page);
@@ -4435,6 +4643,7 @@ export const S126 = async (page) => {
   const drawn3 = await state(page);
   ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
   await captureEvidence(page, 'S126-before-isf-chart-click');
+  await raiseDock(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const isf = await state(page);
@@ -4628,6 +4837,9 @@ export const STORIES = [
   ['S126', S126, 'typical', {
     findingsInputs: () => FINDINGS_PROJECTION.direction_only_inputs,
   }],
+  ['S127', S127, 'typical'], ['S128', S128, 'typical'], ['S129', S129, 'typical'],
+  ['S130', S130, 'typical'], ['S131', S131, 'typical'],
+  ['S132', S132, 'typical'],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

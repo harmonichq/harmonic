@@ -1896,14 +1896,34 @@
    to its own default palette — a stock chart-library blue drawn into a clinical
    rail, which is PRODUCT.md's anti-reference exactly. The mapping below is the
    By-event canvas's own, unchanged, so a cohort is one colour whether the reader
-   is looking at the cell or at the stage it opens. */
+   is looking at the cell or at the stage it opens.
+
+   THE WELL IS HALF A STEP, NOT A FULL ONE. Seated on `--ck-well` outright, the
+   cell became the darkest patch and the hardest edge anywhere in the rail: a
+   sunken well on a flat row is a BIGGER visual event than a raised card when the
+   step is deep enough, so the eye landed on row 2 and the hero it sits under
+   stopped being the first thing read — the original complaint, re-created from
+   the other direction. The ground now sits between the two rungs it belongs
+   between, so its step down off the field matches the hero's step UP off the
+   same field in magnitude, and the hero keeps the ring and the shadow that the
+   compact rows have nothing to answer with. Its box is inset from the row's top
+   and bottom for the same reason: a plot seated in the row, never a slab
+   filling it. */
 .dw .qrow .mini {
-  grid-column: 4; grid-row: 1 / span 3; align-self: stretch; min-height: 52px;
+  grid-column: 4; grid-row: 1 / span 3; align-self: stretch; min-height: 44px;
   overflow: hidden;
-  margin-block: 1px 2px; border-radius: var(--wk-radius); background: var(--ck-well);
+  margin-block: 3px 4px; border-radius: var(--wk-radius);
+  background: color-mix(in srgb, var(--ck-well) 45%, var(--ck-field));
   --ec-matched: var(--mk-primary);
   --ec-nearly-matched: var(--mk-warn);
-  --ec-comparison: var(--mk-accent);
+  /* THE COMPARISON CARRIES LESS INK THAN THE EVIDENCE — the By-event canvas's own
+     concept (issue #677), applied at the rank where it decides legibility. This
+     is `--mk-accent` at a mini's ink weight, NOT a second colour for the cohort:
+     the hue is the one the stage draws, and only its ink steps down, so the
+     matched trace leads on value where the two hues are too close to lead on
+     their own. The remaining hue gap is a finding against the `--ec-*` mapping,
+     recorded for the canvas that owns it, not forked here. */
+  --ec-comparison: color-mix(in srgb, var(--mk-accent) 70%, transparent);
 }
 .dw .qrow .mini.tile-state {
   display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);

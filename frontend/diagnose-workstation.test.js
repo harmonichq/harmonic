@@ -51,9 +51,13 @@ test('#302 · the rail mini defines every cohort ink the shared chart reads off 
   const mini = css.match(/\.dw \.qrow \.mini \{[\s\S]*?\n\}/);
   assert.ok(mini, 'the rail still styles the row mini in one block');
   for (const token of tokens) {
-    assert.match(mini[0], new RegExp(`${token}:\\s*var\\(--`),
+    // an ink weight may wrap the token, but the hue is always the app's own
+    assert.match(mini[0], new RegExp(`${token}:[^;]*var\\(--`),
       `the rail mini defines ${token} on an app token, never on the chart library's default`);
   }
+  // declarations only — a comment is free to cite an issue number
+  assert.doesNotMatch(mini[0].replace(/\/\*[\s\S]*?\*\//g, ''), /#[0-9a-fA-F]{3,8}\b/,
+    'the cell carries no colour literal where the theme already names the value');
 });
 
 test('selected detail describes its glucose trace in product language', () => {

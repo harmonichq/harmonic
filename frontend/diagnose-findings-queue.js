@@ -37,6 +37,18 @@ export const FLAVOR = {
   watching: { word: 'Watching', glyph: '◌' },
 };
 
+/* The server owns the tier slug. This map only gives its two priced slugs their
+   settled reader-facing spelling; a new slug remains uncaptioned until the
+   server contract and design record name it. */
+export const TIER = {
+  next_in_line: 'Next in line',
+  worth_a_look: 'Worth a look',
+};
+
+/* The rail measures this host after it is painted. The workstation owns the
+   measurement and mounting lifecycle; this is the rail's legibility floor. */
+export const MIN_ROW_MINI_WIDTH = 120;
+
 /* Display units per parameter. Formatting, not policy: the projection publishes the
    numbers and the parameter id, and a unit is how a number is spelled. */
 const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
@@ -166,15 +178,26 @@ export function queueRows(projection, selected = null) {
   let pricedSeen = false;
   let seamOpened = false;
   let rankCounter = 0;
+  let previousPricedTier = null;
   return filtered.map(({ row, hidden, collapsed }) => {
     // The divider belongs to rows the reader can currently see, not to an
     // excluded row or to a read represented by the collapsed count.
     const shown = !hidden && !collapsed;
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
+    const pricedRanked = shown && ranked && !unpriced;
     const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
-    if (shown && ranked && !unpriced) pricedSeen = true;
+    const weight = collapsed ? 'collapsed'
+      : !shown ? null
+        : unpriced ? 'tail'
+          : pricedSeen ? 'compact' : 'hero';
+    const caption = pricedRanked && pricedSeen && row.tier !== previousPricedTier
+      ? TIER[row.tier] || null : null;
+    if (pricedRanked) {
+      pricedSeen = true;
+      previousPricedTier = row.tier;
+    }
     /* The rank NUMERAL prints the row's visible position among priced ranked
        rows — position was already the whole ranking statement (slice-2 ruling:
        no scores), the numeral just spells it. Nothing is re-ranked here: the
@@ -196,6 +219,8 @@ export function queueRows(projection, selected = null) {
       flavor: row.register === 'history' ? 'watching'
         : row.kind === 'setting' ? 'setting' : 'habit',
       tier: row.tier,
+      weight,
+      caption,
       seam,
       hidden,
       collapsed,
@@ -286,7 +311,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     line.className = 'quiet-line';
     line.textContent = EMPTY_LINE;
     host.append(line);
-    return rows;
+    return { rows, miniSlots: [] };
   }
   const shown = rows.filter((row) => !row.hidden && !row.collapsed);
   const collapsed = rows.filter((row) => row.collapsed);
@@ -295,13 +320,14 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     line.className = `quiet-line${filtering || collapsed.length ? ' sift-empty' : ''}`;
     line.textContent = filtering ? EMPTY_SIFT_LINE : EMPTY_LINE;
     host.append(line);
-    if (!collapsed.length) return rows;
+    if (!collapsed.length) return { rows, miniSlots: [] };
   }
   const list = document.createElement('div');
   list.className = 'q';
   list.setAttribute('role', 'list');
   host.append(list);
 
+  const miniSlots = [];
   const paintRow = (row) => {
     if (row.seam) {
       const note = document.createElement('p');
@@ -309,9 +335,15 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       note.textContent = TAIL_NOTE;
       list.append(note);
     }
+    if (row.caption) {
+      const caption = document.createElement('p');
+      caption.className = 'qtier';
+      caption.textContent = row.caption;
+      list.append(caption);
+    }
     const node = document.createElement('button');
     node.type = 'button';
-    node.className = 'qrow';
+    node.className = `qrow${row.weight ? ` ${row.weight}` : ''}`;
     node.setAttribute('role', 'listitem');
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
@@ -320,6 +352,12 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     add(node, 'n', row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
     add(node, 'lab', row.title);
+    if (row.weight === 'tail') {
+      add(node, 'go', '›').setAttribute('aria-hidden', 'true');
+      node.addEventListener('click', () => onDrill(row.raw));
+      list.append(node);
+      return;
+    }
     /* The tag is a SIBLING of the title, not a child of it: it owns the row's right
        spine, so it has to be a grid item of the row itself. Nested inside the title
        it trails the words and lands at a different x on every row (term 36). */
@@ -327,6 +365,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the glyph is decoration on a word that already says it — never read aloud
     add(tag, 'gly', FLAVOR[row.flavor].glyph).setAttribute('aria-hidden', 'true');
     tag.append(FLAVOR[row.flavor].word);
+    if (row.weight === 'hero' && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     // every row drills, held and blind included (terms 22 / 38)
     add(node, 'go', '›').setAttribute('aria-hidden', 'true');
     // the evidence summary sits between the title and the denominator, clamped
@@ -335,6 +374,12 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     const detail = paintDetail(node, row.detail);
     if (detail && row.raw.window_scope === 'whole_day') {
       add(detail, 'scope-note', ' · Whole day');
+    }
+    if (row.weight === 'compact') {
+      const mini = document.createElement('span');
+      mini.className = 'mini';
+      node.append(mini);
+      miniSlots.push({ host: mini, row: row.raw });
     }
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
@@ -355,5 +400,5 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       for (const row of collapsed) paintRow(row);
     }
   }
-  return rows;
+  return { rows, miniSlots };
 }

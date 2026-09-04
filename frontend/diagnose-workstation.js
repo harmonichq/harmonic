@@ -53,7 +53,7 @@ import {
 } from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
-  eventChartCoordinate, renderFindingsQueue, queueMeta,
+  eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
@@ -1192,6 +1192,7 @@ function boot(root, data, callbacks, signal) {
   let tileDescriptors = [];
   let tileRuntime = new Map();
   let tileMounts = [];
+  let rowMiniMounts = [];
   let tileAnalysisGeneration = findings?.analysis_generation || null;
   let seatingPolicyKey = null;
   let tileRequestGeneration = 0;
@@ -1357,6 +1358,52 @@ function boot(root, data, callbacks, signal) {
   function installTileMount(host, mount) {
     return { ...mount,
       observer: observeResize(mount.resizeHost || host, () => mount.chart) };
+  }
+
+  function disposeRowMinis() {
+    for (const mount of rowMiniMounts) {
+      mount.observer?.disconnect();
+      mount.chart?.dispose();
+    }
+    rowMiniMounts = [];
+  }
+
+  function mountDescriptorChart(host, descriptor, mini) {
+    const option = optionForDescriptor(
+      descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
+        mini, window: scopeWindow(), caseFile: tileCaseFile(descriptor), surface: host,
+      },
+    );
+    const chart = window.echarts.init(host, null, { renderer: 'canvas' });
+    return { chart, option };
+  }
+
+  function mountRowMinis(miniSlots) {
+    for (const { host, row } of miniSlots) {
+      const queueRow = host.closest('.qrow');
+      if (host.clientWidth < MIN_ROW_MINI_WIDTH) {
+        host.remove();
+        queueRow.dataset.mini = 'omitted';
+        continue;
+      }
+      const descriptor = chartDescriptor(row.id);
+      if (!descriptor) continue;
+      const runtime = tileRuntime.get(descriptor.chartId);
+      if (runtime?.pending || descriptor.state !== 'ok') {
+        const presentation = tileStatePresentation(descriptor);
+        host.classList.add('tile-state');
+        host.textContent = runtime?.pending ? 'Loading evidence…' : presentation.name;
+        continue;
+      }
+      try {
+        const mounted = mountDescriptorChart(host, descriptor, true);
+        rowMiniMounts.push(installTileMount(host, mounted));
+        mounted.chart.setOption(mounted.option, true);
+      } catch {
+        host.classList.add('tile-state');
+        host.textContent = 'Evidence unavailable';
+      }
+    }
   }
 
   function currentTileDescriptors() {
@@ -2934,22 +2981,13 @@ function boot(root, data, callbacks, signal) {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
               tileMounts.push(installTileMount(chartHost, mounted));
             } else {
-              const option = optionForDescriptor(
-                descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
-                mini: seat.seat === 'mini', window: scopeWindow(), caseFile,
-                /* Rebuild event ink on the live tile host after a theme refresh.
-                   The registry used to replace this with null, which made the
-                   chart fall back to ECharts' stale/default series ink. */
-                surface: chartHost,
-              },
-              );
+              const mounted = mountDescriptorChart(chartHost, descriptor, seat.seat === 'mini');
               /* RECORDED BEFORE IT IS DRAWN. `setOption` is the throwing call in
                  this block, and an instance created but not yet pushed is one
                  `disposeTiles` can never reach — the catch below re-renders the
                  tile over a live canvas that nothing owns. */
-              const evidenceChart = window.echarts.init(chartHost, null, { renderer: 'canvas' });
-              tileMounts.push(installTileMount(chartHost, { chart: evidenceChart }));
-              evidenceChart.setOption(option, true);
+              tileMounts.push(installTileMount(chartHost, mounted));
+              mounted.chart.setOption(mounted.option, true);
             }
           } catch (error) {
             descriptor.state = 'error';
@@ -3284,6 +3322,7 @@ function boot(root, data, callbacks, signal) {
   /** Exactly one level renders into #level; the previous one is discarded. */
   function paintLevel() {
     const host = el('level');
+    disposeRowMinis();
     host.innerHTML = '';
     delete host.dataset.historyId;
     delete host.dataset.analysisGeneration;
@@ -3347,11 +3386,12 @@ function boot(root, data, callbacks, signal) {
          declares whether it is waiting on the server, not only the queue. Same
          predicate — `settled()` is `pendingKey === null` — at a wider place, so
          the copy that used to sit here would now write it twice. */
-      renderFindingsQueue(host, findings, drillFinding, {
+      const queue = renderFindingsQueue(host, findings, drillFinding, {
         selected: selectedChips,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
+      mountRowMinis(queue.miniSlots);
       if (retirementNotice) {
         const notice = document.createElement('p');
         notice.className = 'history-retirement';
@@ -3918,6 +3958,7 @@ function boot(root, data, callbacks, signal) {
     }
     fieldNarrow = narrow;
     fieldHeight = height;
+    if (top().k === 'factors') paintLevel();
     paintTiles();
   });
   fieldWidthObserver.observe(el('tile-field'));

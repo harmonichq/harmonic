@@ -1795,6 +1795,40 @@
 .dw .qrow .den.nums { font-variant-numeric: tabular-nums; }
 .dw .qrow .den.nums b { color: var(--mk-text); font-weight: 600; }
 
+/* #302 — the served order has three visual weights. The only additional ink is
+   the served tier word; its host does not classify or price the row. */
+.dw .qtier {
+  margin: 12px 0 0; padding: 0 var(--ck-pad); color: var(--mk-muted);
+  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase;
+}
+.dw .qrow.hero {
+  margin: 4px var(--ck-pad) 4px; width: calc(100% - (var(--ck-pad) * 2));
+  min-height: 72px; padding: 10px; border: 1px solid var(--ck-hair);
+  border-radius: 6px; background: var(--ck-well);
+}
+.dw .qrow.hero .tier {
+  grid-column: 3; grid-row: 2; justify-self: end; color: var(--mk-muted);
+  font-size: var(--ck-micro); font-weight: 700; letter-spacing: var(--ck-track);
+  text-transform: uppercase; white-space: nowrap;
+}
+.dw .qrow.compact {
+  grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) minmax(120px, .8fr) 12px;
+}
+.dw .qrow.compact .go { grid-column: 5; }
+.dw .qrow.compact :is(.sum, .den, .why) { grid-column: 2 / 4; }
+.dw .qrow .mini {
+  grid-column: 4; grid-row: 1 / span 3; align-self: stretch; min-height: 52px;
+  overflow: hidden; border-left: 1px solid var(--ck-hair);
+}
+.dw .qrow .mini.tile-state {
+  display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);
+  font-size: var(--ck-micro); line-height: 1.25; text-align: center;
+}
+.dw .qrow.tail { grid-template-columns: 16px minmax(0, 1fr) 12px; }
+.dw .qrow.tail .go { grid-column: 3; }
+.dw .qrow.tail .lab { font-weight: 500; font-size: var(--ck-body); }
+
 /* ---- the unpriced tail (term 42) -------------------------------------
    The boundary is a PAUSE, not a bar — the row gap doubled, with one quiet
    sentence sitting inside it that SAYS what the tail is. The demotion steps the
@@ -1933,6 +1967,9 @@
   .history-case :is(.verdict, .qual, .history-current, .history-notice,
     .history-pending, .history-stale), .dw .history-retirement { font-size: 14px; }
   .dw .qcollapse { min-height: 44px; }
+  .dw .qrow.compact { grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) 12px; }
+  .dw .qrow.compact .go { grid-column: 4; }
+  .dw .qrow.compact .mini { display: none; }
   .history-run { font-size: 14px; }
   .history-run small, .history-canvas-notice { font-size: 14px; }
   .history-retry { min-height: 44px; }

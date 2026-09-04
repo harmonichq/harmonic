@@ -153,9 +153,8 @@
       2026-09-03; this amends a data declaration and retires no story.
 - [ ] Amend `mockups/finding-evidence-routing.behavior.md` and the replay in
       one revision entry with base SHA and data provenance: new stories with
-      replay functions for the hero (first priced row, served headline cut as
-      the stage cuts it, no chart element inside the hero, its chart on the
-      stage), a compact row's mini drawn from the same option the drawer cell
+      replay functions for the hero (first priced row, the served `title` as its title, the served headline absent from
+      `#level`, no chart element inside the hero, its chart on the stage), a compact row's mini drawn from the same option the drawer cell
       draws (compare the two `getOption()` series ids for one row), the tail's
       title-only rows drilling, tier captions printed once per priced-tier change, each caption's text
       a value of the rail's `TIER` map and no other tier word (and no

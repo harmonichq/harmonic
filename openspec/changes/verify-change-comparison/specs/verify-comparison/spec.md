@@ -162,3 +162,23 @@ selected detail and replace all subject-dependent content coherently.
 - **THEN** its low-event rate has a zero numerator and positive eligible-night denominator
 - **AND** those nights count toward evidence support
 - **AND** it is not mistaken for a period with no eligible observations
+
+### Requirement: The design investigation returns an evidence-grounded revision handoff
+
+The #340 investigation SHALL deliver the baseline behavior inventory, synthetic
+running-app evidence, proposed presentation contract and integrated build handoff
+specified by “ADR 340 — Design investigation delivery boundary”. It SHALL keep
+production source unchanged and distinguish observed baseline behavior from
+proposed behavior. Final revised-surface proof SHALL be an integrated-build gate.
+
+#### Scenario: The investigation completes
+
+- **WHEN** every existing Verify replay story passes and the baseline evidence and proposed contract are reviewed
+- **THEN** the findings link the committed parent-plan artifacts and explicitly identify the future revised-surface verification matrix
+- **AND** no production implementation, new build admission, or completed revised-surface visual proof is claimed
+
+#### Scenario: A proposed state is absent from baseline fixtures
+
+- **WHEN** the shipped synthetic fixtures cannot render a proposed state
+- **THEN** the investigation records the missing baseline evidence and a generator-owned build verification obligation
+- **AND** it does not substitute a fabricated render or report that state visually verified

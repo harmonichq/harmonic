@@ -6,7 +6,7 @@
 - [x] Ground existing Trial detection and evidence interfaces with focused baseline tests.
 - [x] Resolve the remaining feature-wide evidence-serving, assessment, and reuse questions in [#340 — Scope and lock the complete Verify redesign](https://github.com/harmonichq/harmonic/issues/340).
 - [x] Independently review the scoped design and its synthetic preflight evidence.
-- [ ] Lock the complete Verify behavior and presentation against the running app.
+- [ ] Complete #340: freeze the shipped Verify behavior against the synthetic running app, specify the proposed presentation and interaction contract, and return the integrated build handoff under ADR 340 — Design investigation delivery boundary.
 - [ ] Admit the integrated feature build through the normal ticket workflow.
 - [ ] Verify the complete feature after human-merged implementation.
 

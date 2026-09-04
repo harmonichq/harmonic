@@ -691,3 +691,71 @@ they do not verify an implementation of the proposed assessment.
 This is a reviewed scope checkpoint. Running-app presentation, interaction replay,
 and the complete visual/behavior lock remain pending; no implementation admission
 or completed visual validation is claimed.
+
+## ADR 340 — Design investigation delivery boundary
+
+On 2026-09-04 Connor directed completion of triage through a posted work order
+and delegated routine design decisions. This resolves the sequencing conflict
+between a design-only spike and the issue body's request for a fully revised
+running-app visual lock before production implementation is authorized.
+
+#340 completes a bounded investigation: run the existing synthetic app, freeze
+its current behavior, and produce the proposed presentation/interaction contract
+and integrated build handoff. The shipped-surface route remains `revise`. Actual
+revision, revised screenshots, and the final before/after behavior proof belong
+to execution of the integrated build. This explicitly amends the issue body's
+visual-lock timing, not its complete-feature delivery boundary. No production
+implementation is authorized by the investigation order. The investigation must
+not label a proposed contract as a visually verified revision.
+
+The investigator owns checklist task 7 and requirement 7 in this change. Tasks
+8–9 and product implementation requirements 1–6 are downstream ownership; read
+those requirements as design constraints, not permission to implement them.
+
+The investigation must:
+
+- Replay every existing Verify story in
+  `frontend/verify-660-story-behavior.replay.mjs` against the built app with
+  `mockups/verify-660-story.synthetic/payload.json`. Use the dependency paths
+  produced by `scripts/ensure_browser_gate_env.py`; its `PLAYWRIGHT_MODULE` and
+  `VENDOR_DIR` feed the existing replay command in AGENTS.md. Do not use `ONLY`.
+  Record the exact executed command, complete output, source revision and fixture
+  provenance under this change's `evidence/triage-340/` directory.
+- Use UI Craft behavior-sweep to inventory current source and live behavior,
+  including behavior absent from that eight-story replay. Record a frozen
+  baseline ledger in this change's `verify.behavior.md`, identifying existing
+  replay coverage and any uncovered stories individually. Do not claim that the
+  existing replay covers an invented new state. New regression automation for
+  uncovered stories is a named build obligation rather than spike implementation.
+- Inspect shipped charts and interactions for I:C, basal, ISF, profile and active
+  Focus using committed synthetic fixtures. Record available baseline screenshots
+  at 1440×900 and 390×844 in light and dark themes. Name any case absent from the
+  fixtures as unavailable baseline evidence, with an explicit generator-owned
+  build verification case; never manufacture screenshots of nonexistent behavior.
+- Append the proposed screen/state contract to design.md: subject/affected-window
+  context, Before/After labels and support, outcomes/concerns/uncertainty,
+  paired/overlay interaction, group-to-occurrence drilldown, loading, unavailable,
+  error/Retry, historical selection, Focus and Revert. Map every product
+  requirement 1–6 to its visible state, interaction and future replay obligation.
+  Record Keep as the authorized retirement. Preserve existing chart interactions
+  and identify the exact approved shared scale, zero marker and data-boundary
+  extension seams using current source citations.
+- Return a proposed single integrated feature build, with a closed file inventory,
+  dependency order, sizing traits, required generators/drift gates and browser
+  matrix. Do not create build tickets or admit implementation. Task 8 owns that
+  transition. Resolve routine presentation details using the delegated design
+  authority and the current design system; don't reopen settled scope.
+
+Use only the exact QA copy-then-serve declaration and synthetic source in this
+checkout's AGENTS.md for an API server. Existing browser replays can use their
+own declared synthetic static app runner. No live data or vendor fetch is allowed.
+Browser launch requires escalation on this host. If the baseline fails, record
+and reproduce the failure; do not fix production code inside this investigation
+or claim the baseline passed. A failure prevents the handoff being called ready.
+
+The only committed outputs are this parent change's documents and synthetic
+baseline evidence. The app source, replay scripts, fixtures, global design system
+and surface index remain inputs. Store proposed ledger amendments in the parent
+change; the integrated revision will apply them to canonical surface artifacts.
+The findings comment links the exact committed artifacts and reports the proposed
+contract and remaining implementation proof separately. No planning-only PR.

@@ -774,12 +774,15 @@ function nightGroup(night) {
   return 'set';
 }
 
-function renderSlotNightSelection(host, night, groupRows, onClear, onDay) {
+function renderSlotNightSelection(host, night, groupRows, rosterGlucoseMean, onClear, onDay) {
   if (!night) return;
   const at = groupRows.findIndex((row) => row.date === night.date);
   const box = document.createElement('div'); box.className = 'inner occ-detail';
   box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)}</span>
     ${at >= 0 && groupRows.length > 1 ? `<span class="pos">${at + 1} of ${groupRows.length}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
+    <div class="occ-nums">${u(night.delivered_rate)} <span>U/h delivered</span> · ${u(night.programmed_rate)} <span>U/h programmed</span></div>
+    <div class="occ-nums">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}
+      <span>mg/dL this night</span> · ${rosterGlucoseMean == null ? '—' : Math.round(rosterGlucoseMean)} <span>mg/dL roster mean</span></div>
     <div class="occ-nums">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}
       <span>entry</span> · ${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}
       <span>exit</span></div>
@@ -864,6 +867,7 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
   renderSlotNightSelection(host, selected,
     selected ? (evidence.nights || []).filter((night) => nightGroup(night) === nightGroup(selected)) : [],
+    evidence.roster_glucose_mean,
     options.onClear || (() => {}), options.onDay || (() => {}));
 }
 

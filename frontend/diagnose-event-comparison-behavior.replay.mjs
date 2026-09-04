@@ -658,7 +658,7 @@ export const S13 = async (open, browser) => use(open, browser,
     const state = await rendered(page);
     ok(JSON.stringify(state.axis) === JSON.stringify(state.window),
       `the canvas drew a window the case file did not publish: ${state.axis} vs ${state.window}`);
-    ok(state.window[0] === -300 && state.window[1] === 120,
+    ok(state.window[0] === -60 && state.window[1] === 120,
       `the low comparison lost its served window: ${state.window}`);
     const withheld = state.cohorts.filter((cohort) => cohort.support === 'withheld');
     ok(withheld.length > 0, 'the fixture holds no withheld population to check');

@@ -7,7 +7,7 @@
 
 const configs = {
   meals: { kind: 'meal', anchor: 'completed_carb_bolus', label: 'Completed carb bolus', window: [-60, 300] },
-  lows: { kind: 'low', anchor: 'excursion_nadir', label: 'Low excursion', window: [-300, 120] },
+  lows: { kind: 'low', anchor: 'excursion_nadir', label: 'Low excursion', window: [-60, 120] },
 };
 const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',

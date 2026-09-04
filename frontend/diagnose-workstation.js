@@ -2193,7 +2193,7 @@ function boot(root, data, callbacks, signal) {
     if (slotDescriptor(frame.cell) || frame.nightEvidence || frame.nightEvidencePending) return;
     const load = callbacks.loadBasalEvidence;
     if (!load) { frame.nightEvidenceFailed = true; return; }
-    const request = ++frame.nightEvidenceRequest;
+    const request = frame.nightEvidenceRequest;
     frame.nightEvidencePending = true;
     void load({ slot: frame.cell.i }).then((evidence) => {
       if (top() !== frame || frame.nightEvidenceRequest !== request) return;
@@ -2210,7 +2210,7 @@ function boot(root, data, callbacks, signal) {
   const prepareSlotFrame = (frame) => {
     Object.assign(frame, { selectedId: null, nightShownRows: EVIDENCE_CAP,
       nightEvidence: null, nightEvidencePending: false, nightEvidenceFailed: false,
-      nightEvidenceRequest: frame.nightEvidenceRequest || 0 });
+      nightEvidenceRequest: (frame.nightEvidenceRequest || 0) + 1 });
     requestSlotNightEvidence(frame);
     return frame;
   };

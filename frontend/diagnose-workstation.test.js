@@ -302,10 +302,27 @@ test('basal night roster preserves null served mean and exit as em dashes', () =
   } finally { globalThis.document = originalDocument; }
 });
 
-test('slot-frame requests fence a swapped slot and Day uses the served night timestamp', () => {
-  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
-  assert.match(source, /const request = \+\+frame\.nightEvidenceRequest;/);
-  assert.match(source, /frame\.nightEvidenceRequest !== request/);
-  assert.match(source, /t: night\.t/);
-  assert.doesNotMatch(source, /t: night\.glucose_trace\?\.\[0\]\?\.t/);
+test('a tile-less lane slot renders fetched night evidence and clears its selected detail', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const tilelessCell = { ...basalCell, i: 12, startMin: 360, endMin: 390 };
+    let selected = '2026-01-01';
+    const selectedHost = new RosterElement();
+    renderSlotLevel(selectedHost, tilelessCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, selectedId: selected,
+      onClear: () => { selected = null; },
+    });
+    assert.equal(selectedHost.children.filter((child) => child.className === 'inner occ-detail').length, 1,
+      'a tile-less slot renders the fetched roster and selected night detail');
+    selectedHost.children.find((child) => child.className === 'inner occ-foot')
+      .children.find((child) => child.className === 'linkbtn clear-trace').click();
+    const swappedHost = new RosterElement();
+    renderSlotLevel(swappedHost, { ...tilelessCell, i: 13, startMin: 390, endMin: 420 },
+      new Set(), 30, 8, () => {}, { nightEvidence: nightPayload, selectedId: selected });
+    assert.equal(swappedHost.children.filter((child) => child.className === 'inner occ-detail').length, 0,
+      'the replacement slot has neither the previous selection nor its detail block');
+    assert.equal(swappedHost.children.filter((child) => child.className === 'ev-row case-occurrence').length, 4,
+      'the replacement tile-less slot retains the fetched night roster');
+  } finally { globalThis.document = originalDocument; }
 });

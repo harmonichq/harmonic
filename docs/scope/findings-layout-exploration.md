@@ -6,9 +6,11 @@
 - Use three arrangements with identical queue information: evidence first, findings left, compact overview. Selected treatment is independent of ranked position. → issue #341
 - Use the committed synthetic findings projection as input. Diagrams are schematic, not replacement chart implementations. inline
 
+- 2026-09-04: Connor selected A (Evidence first): "A looks good." Spotlight above glucose overview; queue remains right. → issue #341
+
 ## Open questions
 
-- Which arrangement should proceed to an implementation brief?
+- Should the docked chart strip be retired, leaving direct access to the full-screen All charts browser? Connor raised this as a possibility; no retirement is sanctioned yet.
 - After composition is selected, settle exact queue density and drill behavior in the running app.
 
 ## Spawned tasks

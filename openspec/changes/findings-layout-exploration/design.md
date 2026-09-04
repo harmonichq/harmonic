@@ -4,7 +4,7 @@ WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE
 
 ## Status
 
-Attended exploration, not an implementation plan. No layout has been selected.
+Attended exploration, not an implementation plan. Connor selected A on 2026-09-04; chart-browser behavior remains under discussion.
 The runnable wireframe must be deleted before any implementation change lands.
 Screenshots and chosen decisions may survive. No production file is changed.
 
@@ -112,3 +112,25 @@ Local comparison URL: http://127.0.0.1:8766/openspec/changes/findings-layout-exp
 Server: Python static HTTP server serving this worktree, tool session 39473.
 The synthetic app server used for the baseline is stopped after verification.
 No PR, implementation order, freeze amendment, or layout approval is implied.
+
+
+## ADR 341 — Evidence first, findings on the right
+
+Connor selected option A on 2026-09-04: "A looks good." The spotlight begins
+below the window controls, the findings queue remains right, and the glucose
+overview sits below the spotlight. Keep current scope visible near the presets.
+This settles page arrangement only, not an implementation lock.
+
+### Open chart-browser question
+
+Connor asked whether queue minis make the docked strip redundant and whether
+only the full-screen view should remain. This is a proposal, not a sanctioned
+retirement. Source inspection distinguishes the docked strip, the All charts
+explorer, and the single-chart fullscreen state. The explorer also provides
+access to Watching reads that are not all visible as ranked queue minis.
+
+Recommendation for the next wireframe: a Charts button opens All charts
+directly; choosing one returns to A with that finding selected; dismissing
+without a choice preserves the previous selection and window. The selected
+spotlight keeps its own Expand control. Remove the docked strip only after
+Connor confirms this interaction and the affected behavior entries are amended.

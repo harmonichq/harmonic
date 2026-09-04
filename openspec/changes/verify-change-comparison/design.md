@@ -162,62 +162,14 @@ an intervention baseline, and an analyzer recommendation floor is not by itself 
 before/after outcome-confidence rule. An API shaped for a currently selected
 Diagnose window cannot silently move the tracked change's evidence boundary.
 
-## Open questions
+## Scope disposition
 
-### Q1 — What is the delivery boundary? Resolved
-
-The complete Verify feature is the delivery boundary, as recorded in the
-feature-wide delivery ADR below. The lunch example does not narrow the feature.
-
-### Q2 — What is a fair before/after comparison?
-
-For the lunch example, the fixed continuous previous-setting baseline capped at
-90 elapsed days, median with descriptive spread, and meal-bolus alignment from
--1 to +5 hours are settled by the ADRs above. Do not re-interview those choices.
-Resolve event eligibility (including overlapping eating), repeated events within
-a day, pointwise weighting, missing coverage, and changing starting conditions.
-Define the corresponding reference and alignment rules for the other change types;
-do not silently generalize lunch-specific policy to nights, corrections, or Focuses.
-Specify which observations appear early and whether the feature describes response
-or supports an interpretation of benefit. Unequal periods do not require equalized
-counts. No support floor or After cap has been agreed.
-
-### Q3 — How do the comparison periods fit the existing Trial lifecycle?
-
-The attended ADR 340 rulings below govern this question. Preserve detection,
-reverts and active-watch semantics. Ground the minimal change to the read-only
-Verify evidence periods and visibility needed for the accepted comparison duration;
-do not reopen the whole lifecycle. Maturity and an outcome assessment remain
-different facts. The existing serving path currently couples the periods to
-maturity, so the implementation boundary must name how those reads separate
-without altering the active watch.
-
-### Q4 — Which existing outcomes earn space for each change?
-
-The attended ADR 340 rulings below settle automatic selection, separate outcome
-assessments, concerns without causal attribution, and explicit uncertainty.
-Use the existing target metrics and evidence producers as the starting point.
-Resolve only gaps in their scope, denominator, unavailable states and assessment
-support. No goal-picker or new generic metric framework is requested.
-
-### Q5 — Which existing decisions and interactions should survive?
-
-ADR 24 (ic-trial-acceptance) proposed meal-based I:C readiness and a separate
-30-data-day foregrounding horizon. ADR 136 (verify-attribution-uncertainty)
-proposed per-block views and day-clustered uncertainty on the difference, including
-withholding bare differences when evidence is thin. Neither is implemented here.
-Issues #182 and #183 were closed NOT_PLANNED in the operator's backlog reset, with
-no closing implementation PR. Their closure did not mean the behavior shipped.
-
-The operator explicitly does not want those decisions revived by default. Reassess
-which parts still fit today's Diagnose and this request; record any sanctioned
-amendment in the repository's ADR home before implementation. In particular, the
-old withholding rule and the requested early group comparison and event drill-down need an explicit
-resolution. Do not treat this epic as silently amending either historical record.
-
-The visual work should revise the running shipped surface through ui-craft, with
-its existing behaviors inventoried and any sanctioned changes recorded. No fresh
-mockup may substitute for the current app.
+The delivery boundary remains the complete feature. The attended ADR 336 and
+ADR 340 rulings below are authoritative. The final ADR 340, “Resolve remaining
+scope under delegated design authority”, settles the evidence, assessment,
+historical-decision and composition choices previously listed as Q2–Q5.
+The safe running-app behavior and visual evidence are still required before
+implementation admission; no source-only design is called a visual lock.
 
 ## Evidence required before implementation admission
 
@@ -362,8 +314,7 @@ behavior by default rather than interviewing the operator to redesign it.
   Extending comparison evidence must not silently change these watch semantics.
 
 The source and existing tests ground these facts; no production code was changed.
-The next design work is a capability inventory of existing evidence and chart
-interfaces, with only the actual missing capabilities brought back for decision.
+The capability inventory below grounds the final delegated-design decisions.
 
 ### Frontend reuse inventory, #340 attended grounding
 
@@ -380,7 +331,7 @@ this triage setup, and source inspection is not a visual lock.
 | Supporting Trial outcomes | Selected Trial detail already serves target/guardrail evidence, rescue counts and day rows | Preserve units, meaning and denominator; raw rescue-log counts are not automatically lows per meal. |
 
 No new component, lifecycle change, or complete reuse proof is claimed by this
-inventory. The two identified response-chart extensions remain proposed.
+inventory. The following ADR records approval of the two response-chart extensions.
 
 ## ADR 340 — Extend the shared response chart for paired comparison
 
@@ -412,8 +363,7 @@ where applicable; no universal significance rule is inferred from these routines
 `createVerifyWorkstation` documents Keep as session-only acknowledgement with no
 persisted verdict. Revert forwards the selected detail's Plan route through
 `planRevertIntent`; the browser does not derive a replacement setting. Preserve
-that existing Revert boundary. Whether the session-only Keep action earns space
-in the revised surface is an attended presentation decision, still open.
+that existing Revert boundary. The later Keep-removal ADR governs the revised surface.
 
 ## ADR 340 — Remove session-only Keep and preserve Revert to Plan
 
@@ -474,9 +424,9 @@ that the existing Revert behavior is preserved.
 6. Use the decision area: omit Keep; retain the existing Revert-to-Plan route,
    availability and safeguards. No persistent keep record or direct pump action.
 
-These scenarios are partial admission criteria, not a claim that the feature is
-ready to implement. The exact supported-assessment policy, period reconciliation,
-and full rendered behavior coverage remain outstanding.
+The final delegated-design ADR supplies the assessment and period rules. These
+scenarios do not claim rendered fidelity; the full running-app behavior coverage
+and visual evidence remain outstanding.
 
 ### Verification completed during source grounding
 
@@ -502,63 +452,242 @@ buttons and must change with the approved Keep removal. No source inspection is
 claimed as a completed behavior sweep or a visual lock.
 
 
-## Remaining scope after existing-code grounding
+## ADR 340 — Resolve remaining scope under delegated design authority
 
-### Reuse choices that need no new product policy
+Connor delegated the remaining logical design choices on 2026-09-04: “I actually
+really trust you to get this right, so please just make the decisions you think
+are logical.” The decisions below are agent-selected under that delegation, not
+claims that Connor selected individual statistical constants or layouts.
 
-Start outcome selection from the existing automatic target mapping. Preserve the
-meaning of each producer's measure: TIR/TBR use observed glucose readings; peak
-and nadir have separate qualifying-meal counts; Focus behavior rates use their
-published eligible-opportunity counts. Rescue entries are observation context,
-not a proxy for low episodes. Do not add a lows-per-meal algorithm to literalize
-Connor's illustrative wording.
+### Evidence periods and lifecycle separation
 
-Use `project_cohort` for the descriptive response aggregation rather than writing
-another median/spread implementation. The serving path must form the correct
-period-owned occurrence traces first. Its existing point-support labels describe
-whether the curve can be displayed, not whether a change helped.
+Keep the existing Trial candidate derivation, identity, profile grouping, revert
+suppression and Focus precedence unchanged. Extend only the read-only Verify
+roster's historical reach; remove its elapsed-age exclusion and presentation cap,
+and render older entries in the existing change picker, giving its list a
+bounded scroll region for the longer history. Load only
+lightweight summaries for that picker; fetch and cache detail only for the
+selected subject, never eagerly for the entire roster. This is
+history derived from existing data, not a persisted Trial archive. A change the
+existing revert rules suppress remains suppressed.
 
-The existing complete response mount accepts a Finding case-file envelope and
-styles its named cohort roles. A Before/After rendering must adapt that existing
-input contract honestly; it must not invent a diagnosed Finding or change a
-population merely to satisfy a renderer. The final shared interface and evidence
-of preserved interactions remain part of UI Craft's reuse proof.
+For a setting Trial, derive Before from the immediately preceding continuous
+relevant setting period, capped at 90 elapsed days. Missing history shortens the
+baseline and is disclosed; never fill it from disconnected matching values.
+After ends at the next change to the same parameter in the affected clock span,
+or at the latest available data while that setting remains in force. For a
+whole-profile Trial the relevant state is the whole programmed profile. Different
+parameters or disjoint clock spans do not cut the period; name those overlapping
+changes as context. These bounds affect comparison serving only. Existing
+active-watch timing, Focus preemption and Revert availability remain unchanged.
 
-### Concrete serving work to bound
+Use half-open evidence periods consistently. Event ownership follows its anchor;
+clip its plotted and measured evidence to the owned period, leaving missing
+segments empty. A full -1-to-+5-hour axis does not imply complete observations.
+Every scalar and plotted outcome receives the same period bounds and uses the
+existing false-low preprocessing before grouping. Preserve captured I:C block
+provenance instead of reconstructing it from today's profile.
 
-- Select comparison bounds once for a detected Trial and feed them to all its
-  evidence reads. The current scalar summary and curve use different inclusivity
-  at the change instant. Resolve that serving inconsistency explicitly, with
-  exact-boundary synthetic tests, while preserving detection.
-- Expose extended comparison history separately from the existing active-watch
-  decision. A selected Trial that still expires from the roster after 28 days
-  cannot deliver the requested continuing comparison. Do not extend the active
-  Trial/Focus exclusion period as an accidental consequence.
-- Keep the response chart's full event window distinguishable from the scalar
-  peak/nadir's truncated window. The existing Trial scalar path passes all boluses
-  as truncation context, while the general trend passes meals. Do not silently
-  change or conflate either during the redesign; the desired scalar source must
-  be explicit in the final serving contract.
-- Obtain Focus Before/After data at its actual pin boundary using existing
-  behavior tally and outcome computations. Averaging existing tiled percentages
-  is not that comparison, and calling the trend's active-watch resolution inside
-  a read-only review endpoint can drop a Focus. Keep that write path out.
-- Use the existing rescue observation state and preprocessing deliberately.
-  The trend filters marked false lows and the current Trial evidence does not;
-  matching metric names alone cannot establish matching input semantics.
+For an active Focus, Before is the available 90 elapsed days before pinning and
+After begins at pinning and ends at the latest available data. Present only the
+existing active Focus; historical Focus archiving is outside this redesign.
+Read its stored identity and existing behavior tally without calling the
+side-effecting active-watch resolver from Verify. Existing pin/resolve/preempt
+behavior remains the authority over which Focus is active.
 
-### Assessment is the remaining substantive scope decision
+### One selected-detail interface
 
-The existing selected Trial response has no uncertainty-aware judgment that the
-change helped. `day_rate_clears` and `newcombe_diff_interval` already assess a
-specific binary day-rate comparison; they are not generic assessments of median
-meal response, repeated meal outcomes, or Focus opportunities. Reusing them for
-those different quantities would invent confidence rather than reuse behavior.
+Extend the existing `/api/verify/trials` read interface, rather than creating a
+parallel review service. A roster request returns lightweight `trials` summaries,
+`focuses` containing at most the existing eligible active Focus, and `selected:
+null`. Every summary carries server-owned `kind` (`trial` or `focus`), `id`, title,
+start and affected-window context. Existing Trial IDs stay unchanged; Focus IDs
+come from the stored Focus row. The client treats `(kind, id)` as opaque selection
+coordinates. Add an optional `kind` query argument defaulting to `trial`; pair it
+with the existing `selected` argument for a detail request.
 
-The smallest approach is to reuse existing supported assessment where its exact
-question and population fit, and show other outcomes as observed differences with
-an explicit “effect unclear” assessment. It would keep useful evidence visible
-but would not eventually produce a supported benefit verdict for every change
-type. Meeting that broader expectation requires a narrowly scoped new assessment
-calculation, beyond merely reshaping data for the frontend. This choice remains
-open; neither approach is admitted by this grounding note.
+A selected response uses one common envelope, preserving Trial identity/diff and
+`plan_route` when `kind` is `trial`, or Focus lever/pin metadata when it is `focus`:
+
+- `kind`, `id`, `title`, `started_at`, and affected-window context identify the subject.
+- `periods.before` and `periods.after` each carry start/end and boundary reasons.
+  They are the single source fed to all displayed values and chart producers.
+- `views` contains named shared-chart projections and their occurrence identities;
+  no view independently chooses its population in the browser.
+- `outcomes` contains keyed rows with label/unit, Before/After values, denominators,
+  observed difference, and `assessment` (state, interval when available, confidence,
+  method and human-readable reasons). States are `favorable`, `concerning`,
+  `unclear`, or `context`; observed direction is separate from assessment state.
+- `denominators` names eligible/readable counts, informative dates and coverage
+  shared by the selected comparison. Each outcome also names its own denominator;
+  shared counts never substitute for a different measure's population.
+- `availability` carries `state` (`available` or `unavailable`) and a reason;
+  no-data is an explicit successful unavailable result, not a request failure.
+
+Use the existing read-only Trial-active check when deciding whether an active
+Focus can be reviewed under the current precedence rule. Do not resolve/drop the
+stored Focus here. An existing but currently ineligible Focus returns unavailable
+with the precedence reason; an unknown subject returns the existing not-found
+HTTP behavior. Invalid kind follows ordinary API validation. Computation or
+transport failure remains an error, not an empty successful comparison.
+
+The browser fetches one selected detail at a time and discards responses whose
+request token or `(kind, id)` no longer matches the pending selection. Cache detail
+for the current roster refresh, with the server retaining its existing ResultCache
+invalidation behavior; include kind in the server cache key. A subject switch
+replaces the subject, plots and assessments atomically. While a replacement loads
+or fails, an already displayed subject may remain visible under its own label,
+with an explicit pending/failed-target message. Never label old evidence as the
+new subject. Initial failure shows an error and Retry. No new automatic retry or
+background recovery mechanism is required.
+
+### Response membership and outcome populations
+
+Meal response groups contain existing qualifying meal anchors in the captured
+changed block, with one supplied trace per anchor. Keep overlapping eating in
+this descriptive view; do not claim an isolated meal response. Reuse the shared
+cohort projector's one-sample-per-occurrence binning and support states, without
+adding a new chart floor or equalizing Before and After counts. Individual meals
+are drill-down, never the opening comparison when the group is too thin.
+
+Keep existing peak/nadir measurements as separately named supporting measures.
+Use the documented meal-context truncation of the existing outcome producer;
+pass qualifying meals, not correction-only boluses, as that context. Label its
+shorter observation window and separate peak/nadir counts. Do not present those
+measurements as summaries of the full untruncated response curve.
+
+For glycemic outcomes, reuse `compute_metrics` on the selected period and scope.
+For meal-window measures, combine the eligible windows as a union before reading
+CGM, so overlapping meals never double-count a reading. Retain both the number
+of contributing meals and the observed-reading denominator. Basal reads use
+existing detected Rest windows intersecting the affected hours. ISF keeps the
+existing fasting/rest evidence semantics; do not relabel it a per-correction
+response experiment. Whole-profile outcomes use whole-period readings and show
+constituent setting changes without attribution.
+
+Focus adherence remains the existing detector's behavior rate over its existing
+eligible opportunities. Recompute counts in each exact period, rather than
+averaging tiled percentages. Zero opportunities means unknown. Rescue context
+uses the existing observation-aware producer in both periods; unobserved silence
+is not zero rescues. Do not create a new lows-per-meal measure.
+
+### Curated outcomes
+
+| Change | Lead evidence and outcomes | Supporting/context reads |
+| --- | --- | --- |
+| Carb ratio | Meal response; time above range and time below range in the union of relevant meal windows | Existing peak/nadir and their separate support counts; starting glucose; observation-aware rescue context |
+| Basal | Existing relevant-night evidence; time below range in the affected rest hours | Time above/in range; delivered versus programmed basal where already supplied |
+| Correction factor | Existing rest-window evidence; time in range in those windows | Time below/above range, starting conditions, current evidence counts |
+| Whole profile | Whole-period clock response; time in range and time below range | Constituent changes; time above range; mean/CV as neutral care context |
+| Focus | Existing behavioral adherence and its existing mapped outcome, shown separately | Relevant low/high exposure and observation-aware rescue context |
+
+Keep general care context subordinate. Lower mean glucose, lower nadir and lower
+insulin delivery are not automatically favorable. Render their measured direction
+without assigning benefit. No overall numeric score or causal effect label.
+
+### Narrow outcome assessment
+
+Add one read-only comparison calculation behind selected Verify detail. It returns
+observed Before/After values, their difference, an uncertainty interval where
+estimable, named denominators and an assessment with reasons. Keep this logic
+beside existing evidence/uncertainty computation; no model registry, persistence,
+background job, new dependency or dosing-engine change is needed.
+
+Use the same statistic for the displayed difference and its interval. Resample
+whole contributing pump-local dates independently within each period; all
+observations from a date travel together. Preserve unequal period sizes and
+within-day counts. The response curve's middle-half spread remains descriptive.
+Use a deterministic 95% percentile interval, with 2,000 resamples, in the style
+of the existing stdlib uncertainty implementation. This is an observational
+uncertainty estimate, not an adjustment for confounding or proof of causation.
+Do not reuse `Estimate.wide` on a difference around zero.
+
+For a supported directional assessment require at least 14 informative dates in
+each period. For glucose rates, an informative date has at least the existing
+70% coverage threshold within that date's eligible clock/meal/rest duration;
+partial dates use their eligible duration, not 24 hours. For meal summaries, informative dates contain eligible meals with the
+required readable measurement; for Focus rates they contain eligible opportunities,
+whether or not the unwanted behavior occurred. Binary night/day rates count all
+eligible coverage-qualified nights/dates, including those with zero events. Events
+supply their numerator only. Thus zero events over a positive eligible denominator
+is an observed zero rate, while zero opportunities is unknown. These are comparison safeguards, independent of analyzer
+recommendation floors and active-watch maturity. Show values and progress before
+they are met, with the explicit unclear state. A fixed short Before may never
+clear this floor; the comparison stays useful but its conclusion remains unclear.
+
+Absent data, a denominator of zero, a non-estimable or degenerate interval, or an
+interval including zero yields an unclear assessment, never “no effect”. For
+binary nights-with-low comparisons, reuse the existing binary day-rate interval
+and clearance rule instead of a degenerate zero-event bootstrap. Mark intervals
+as approximate and per-outcome; there is no simultaneous or causal guarantee.
+
+Phrase supported directions as observed changes: less high exposure, more low
+exposure, or more time in range. When a favorable outcome and a concerning outcome
+coexist, show a mixed result. An observed worsening of a low-exposure guardrail is
+visible even when uncertain and prevents an unqualified favorable summary. Keep
+its uncertainty attached. Display sample counts and missing coverage beside the
+assessment; do not hide the Before/After values behind it.
+
+### Historical decisions
+
+For this redesign, the rulings above replace ADR 24's unimplemented proposal to
+borrow I:C analyzer support for Trial readiness and its proposed 30-data-day
+foreground horizon. The existing active-watch lifecycle stays in place.
+
+They retain ADR 136's non-causal reading and day-grouped uncertainty principle,
+but replace its complete withholding of an observed difference: show observed
+values and explicitly uncertain differences while withholding a supported
+benefit claim. Its ban on spread on individual period curves does not apply to
+the already-approved descriptive middle-half response spread. No implementation
+from the closed #182/#183 tickets is assumed to exist.
+
+### Frontend composition and existing interactions
+
+Keep the existing Verify shell, detected-change picker and What changed context.
+The selected subject and affected window remain visible above the evidence.
+Use the same shared response mount for Before/After groups, paired by default
+with a common scale; the overlay toggle changes presentation only. It preserves
+subject, populations and selected occurrence. Reuse the existing legend and
+pointer/keyboard readout. Adapt the mount's data boundary for this real second
+caller rather than manufacturing a diagnostic Finding or copying chart options.
+
+Keep the inspector for automatically chosen outcomes, coverage and concerns.
+Use one selected evidence view at a time for a combined change; reuse the shipped
+chart-selection interaction rather than laying out a chart dashboard. Narrow
+viewports stack the same content without losing period labels or actions.
+Retain Revert's current backend-controlled availability and Plan route; remove
+Keep as sanctioned above. Do not change Focus controls or the active-watch rule.
+
+The frozen predecessor behavior and running-app revision remain the visual
+contract. This document settles design direction, not rendered fidelity. No
+visual lock or completed UI revision is claimed until the safe synthetic app's
+behavior sweep and before/after evidence have been reviewed.
+
+### Statistical grounding and limits
+
+The percentile-interval mechanics follow the existing uncertainty module and the
+[NIST bootstrap description](https://www.itl.nist.gov/div898/handbook/eda/section3/bootplot.htm).
+The choice of daily resampling follows this repository's existing treatment of
+within-day dependence. The 14-date floor is a conservative product choice aligned
+with existing data-day expectations, not a clinically validated threshold.
+Synthetic preflight covers degenerate, thin, unchanged and clearly shifted cases;
+that checks behavior but is not a calibration study or a guarantee of coverage.
+
+### Scoped-design review evidence
+
+Independent review on 2026-09-04 countersigned this scoped design after three
+corrections: eligible zero-event dates remain in rate denominators, historical
+rosters load selected detail lazily, and Trial/Focus share an explicit selected
+response and failure contract. The reviewer rechecked those corrections and the
+new acceptance scenarios and reported no remaining blockers.
+
+Grounding verification passed 48 focused backend tests (watched change, Trial
+evidence, event comparison), six frontend Verify tests, and strict validation of
+this OpenSpec change. A manufactured assessment probe exercised empty support,
+one date with many events, unchanged distributions, unequal arm sizes, opposite
+observed directions, and degenerate distributions. These checks ground the scope;
+they do not verify an implementation of the proposed assessment.
+
+This is a reviewed scope checkpoint. Running-app presentation, interaction replay,
+and the complete visual/behavior lock remain pending; no implementation admission
+or completed visual validation is claimed.

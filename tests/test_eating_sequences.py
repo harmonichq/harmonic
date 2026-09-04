@@ -7,7 +7,18 @@ from dataclasses import FrozenInstanceError
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
 from ciq_autotune.analyzers.eating_sequences import (
     REPORT_SCHEMA,
+    EatingSequenceReport,
+    HighCarbComparisonRow,
+    HighCarbFinding,
+    HighCarbSequenceReport,
+    IntervalAggregate,
+    MatrixRow,
     MetricRow,
+    QuintileRow,
+    QuintileScope,
+    RepeatComparisonRow,
+    RepeatEatingAmplifierReport,
+    RepeatEatingFinding,
     SequenceItem,
     SourceWindow,
     aggregate_interval,
@@ -142,6 +153,68 @@ class EmptyReportTest(unittest.TestCase):
                     (None, None, None),
                 )
 
+        self._assert_only_window_timestamps(payload)
+
+    def test_populated_report_serializes_aggregate_findings_and_metrics(self):
+        aggregate = IntervalAggregate(
+            status="supported", n=8, tir_pct=63.125, mean_mgdl=147.875,
+            sd_mgdl=31.625, peak_mgdl=271.375,
+        )
+        scope = QuintileScope(
+            boundaries_g=(19.25, 37.75, 58.25, 83.75),
+            rows=(QuintileRow(5, 8, aggregate, aggregate, aggregate),),
+        )
+        high_carb = HighCarbSequenceReport(
+            status="supported",
+            finding=HighCarbFinding(
+                summary="Synthetic evening association.", scope="evening", period="post_4h",
+            ),
+            pooled=scope,
+            evening=scope,
+            comparisons=(HighCarbComparisonRow(
+                scope="evening", period="post_4h", status="supported", reference_n=8,
+                high_n=8, tir_difference_pct_points=13.875, mean_difference_mgdl=18.625,
+                sd_difference_mgdl=4.125,
+            ),),
+            exclusions={"cgm_coverage": 0, "carb_log_contamination": 0,
+                        "next_sequence_overlap": 0},
+        )
+        repeat = RepeatEatingAmplifierReport(
+            status="supported",
+            finding=RepeatEatingFinding(
+                summary="Synthetic repeat association.", carb_quintile=5, period="post_4h",
+            ),
+            matrix=(MatrixRow(5, "3+", aggregate, aggregate, aggregate),),
+            comparisons=(RepeatComparisonRow(
+                carb_quintile=5, period="post_4h", status="supported", reference_n=8,
+                repeat_n=8, tir_difference_pct_points=13.875, mean_difference_mgdl=18.625,
+                sd_difference_mgdl=4.125,
+            ),),
+            exclusions={"cgm_coverage": 0, "carb_log_contamination": 0,
+                        "next_sequence_overlap": 0},
+        )
+        payload = report_dict(EatingSequenceReport(
+            window=SourceWindow("2040-02-01T00:00:00", "2040-03-01T00:00:00", 29),
+            config=EatingSequenceConfig(), high_carb_sequence=high_carb,
+            repeat_eating_amplifier=repeat,
+        ))
+
+        self.assertEqual(payload["high_carb_sequence"]["finding"], {
+            "summary": "Synthetic evening association.", "scope": "evening", "period": "post_4h",
+        })
+        self.assertEqual(payload["repeat_eating_amplifier"]["finding"], {
+            "summary": "Synthetic repeat association.", "carb_quintile": 5, "period": "post_4h",
+        })
+        interval = payload["high_carb_sequence"]["scopes"]["evening"]["rows"][0]["post_4h"]
+        self.assertEqual(interval["status"], "supported")
+        self.assertTrue(all(interval[key] is not None for key in (
+            "tir_pct", "mean_mgdl", "sd_mgdl", "peak_mgdl",
+        )))
+        comparison = payload["high_carb_sequence"]["comparisons"][0]
+        self.assertEqual(comparison["status"], "supported")
+        self.assertTrue(all(comparison[key] is not None for key in (
+            "tir_difference_pct_points", "mean_difference_mgdl", "sd_difference_mgdl",
+        )))
         self._assert_only_window_timestamps(payload)
 
     def _assert_insufficient_intervals(self, row):

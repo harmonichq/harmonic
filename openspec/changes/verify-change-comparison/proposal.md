@@ -14,7 +14,7 @@ against the before-change experience with the same richness as Diagnose.
 
 - Keep the selected change, its start, and its affected part of the day visible.
   A lunch carb-ratio change follows the lunch block and its eating evidence.
-- Show recent relevant meals, nights, or other events beside a clearly identified
+- Lead with groups of relevant meals, nights, or other events beside a clearly identified
   before-change baseline. Separate what has happened so far from what the evidence
   can support concluding. Do not treat readiness as proof that a change worked.
 - Curate the primary comparison and supporting outcomes to the change. Keep a small
@@ -22,20 +22,32 @@ against the before-change experience with the same richness as Diagnose.
 - Reuse Diagnose's shipped chart components, event inspection, layout, and interaction
   language wherever the same behavior is required. Reuse backend evidence producers
   where their cohort and time boundaries fit; do not copy their implementation.
+  Component reuse is mandatory across this epic: change the supplied data and
+  exposed timeframe rather than rebuilding chart rendering or interactions.
+  A missing component or required extension needs a separate discussion with Connor.
 - Include behavioral Focuses as well as setting Trials. Behavior adherence and its
   associated outcomes must remain distinguishable.
 
 ## Planning boundary
 
-This is one planning epic, with no child issues filed at inception. The operator
-closed the previous Verify backlog after it became burdensome and drifted away
-from the evolving Diagnose surface. Historical decisions are inputs to reconsider,
-not automatically accepted requirements for this effort. Do not revive the old
-queue, turn every observation into a ticket, or pre-file an implementation sequence.
+The delivery target is the complete Verify feature described above, including
+setting Trials and behavioral Focuses. The lunch carb-ratio comparison is a
+worked example of the feature, not a separately shippable product increment.
+Do not turn the screen, each chart, and each data adapter into separate tickets.
 
-The epic remains useful if the operator chooses only a smaller next increment.
-There is no implementation lock, settled statistical policy, or approved visual
-revision yet. Select and scope one next slice when the operator wants to proceed.
+Connor authorized organized child tickets on 2026-09-04 and corrected the proposed
+single-lunch first release: “I'm trying to ship a feature, not one component of
+the feature.” Start with one feature-wide scoping/design spike. The intended
+follow-on is one integrated build through the normal ticket workflow. This is a
+planning target, not a claim that build admission or session sizing has passed.
+If grounding establishes a real dependency or independently shippable capability
+that requires a split, record the reason and settle it with Connor before filing.
+
+Keep one child in flight. File the build only after its blocking decisions and
+visual lock are settled. Keep additional concerns in the parent design instead
+of pre-filing a backlog. Historical tickets remain context, not commitments to
+revive. The planning branch carries the authority; child execution follows the
+normal ticket lifecycle and human PR merges.
 
 ## Out of scope for this planning session
 

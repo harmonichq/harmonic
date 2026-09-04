@@ -1,11 +1,12 @@
 # Planning sequence
 
-- [x] Inspect the shipped Diagnose and Verify surfaces with synthetic data.
-- [x] Record the desired comparison experience, reuse candidates, and open questions.
-- [ ] Choose one next slice with the operator when they want to continue.
-- [ ] Resolve only the questions that block that slice, including historical decisions.
-- [ ] Settle its behavior and visual contract in the running app.
-- [ ] File one bounded child and hand it to the normal ticket workflow.
+- [x] Inspect shipped Diagnose and Verify with synthetic data (historical grounding).
+- [x] Preserve the settled comparison decisions and feature-wide delivery boundary.
+- [ ] Resolve the feature-wide comparison, watch, outcome, and reuse questions in [#340 — Scope and lock the complete Verify redesign](https://github.com/harmonichq/harmonic/issues/340).
+- [ ] Lock the complete Verify behavior and presentation against the running app.
+- [ ] Admit the integrated feature build through the normal ticket workflow.
+- [ ] Verify the complete feature after human-merged implementation.
 
-No child issues have been filed. This list describes future decision points,
-not a committed backlog. Reassess the remainder after the first slice is used.
+The lunch comparison is a worked example, not a separate release. Implementation
+admission and session sizing remain pending the spike. No component backlog is
+admitted by this sequence.

@@ -2019,8 +2019,8 @@ test('a findings-row basal slot clears its selected night trace', async () => {
   try {
     const before = openerProblems().length;
     const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
-    await page.evaluate(() => [...document.querySelectorAll('#level .qrow')]
-      .find((row) => row.textContent.includes('Basal 05:30'))?.click());
+    await page.locator('#level .qcollapse').click();
+    await page.locator('#level .qrow').filter({ hasText: 'Basal 00:00 · leaning raise' }).first().click();
     await page.locator('#level .ev-row').first().click();
     await page.locator('#level .clear-trace').click();
     await settle(page, 200);

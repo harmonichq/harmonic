@@ -245,7 +245,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             # ISF evidence projection reads them, and /api/analyze strips them.
             # They persist in analyze-v1 and, via dump_findings wholesale under
             # _analysis, in every retained findings-history-v1 revision (about
-            # 150–200 KB per real 30-day revision); findings never reads the key.
+            # 150–200 KB per real 30-day revision); the findings projection's
+            # correction-factor headline (#306) reads no slot from this
+            # evidence — every slot is a row field — so it never reads the key.
             payload["_isf_rest_window_steps"] = [
                 {"insulin_acted": round(step.insulin_acted, 4),
                  "dbg": round(step.dbg, 2),

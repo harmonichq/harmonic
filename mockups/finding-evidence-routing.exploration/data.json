@@ -62,6 +62,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
      "id": "ic:720",
      "kind": "setting",
      "label": "Evening",
@@ -106,6 +107,7 @@
      "estimate": null,
      "event_chart": null,
      "evidence": null,
+     "headline": "A step up, limited to 20% above the set rate. Delivered above the programmed rate across 19 steady nights.",
      "id": "basal:30-90",
      "kind": "setting",
      "label": "00:30 to 01:30",
@@ -189,6 +191,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "A step up, limited to 20% above the set rate. Delivered 1.00 U/h across 22 steady nights against 0.80 programmed.",
      "id": "basal:330-360",
      "kind": "setting",
      "label": "05:30",
@@ -305,6 +308,7 @@
        "verdict": "outranked"
       }
      ],
+     "headline": "Ranks among this window's findings. Showed up in 1 of 5 lows in this window.",
      "id": "finding:over_treated_low",
      "kind": "habit",
      "label": null,
@@ -434,6 +438,7 @@
        "verdict": "clean"
       }
      ],
+     "headline": "Ranks among this window's findings. Showed up in 2 of 4 highs in this window.",
      "id": "finding:carb_undercount",
      "kind": "habit",
      "label": null,
@@ -547,6 +552,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
      "id": "finding:correction_on_iob",
      "kind": "habit",
      "label": null,
@@ -622,6 +628,7 @@
        "verdict": "fired"
       }
      ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
      "id": "finding:correction_stacking",
      "kind": "habit",
      "label": null,
@@ -679,6 +686,7 @@
      },
      "event_chart": null,
      "evidence": null,
+     "headline": "Past setting, no change suggested. Measured 6 g/U across 3 meal runs while 6 was programmed, until 2026-07-01. Programmed now: 5.",
      "id": "ich1_WzAsNzIwLCI2Il0",
      "kind": "setting",
      "label": "Morning",

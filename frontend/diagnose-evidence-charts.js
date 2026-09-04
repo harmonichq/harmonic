@@ -178,14 +178,19 @@ const basalFacts = (data) => {
    cells), but `fieldNarrow` shrinks the FOCAL seat too, and a rank chosen by
    name would pour the 950px deck into a 600px stage exactly as it poured into
    the explorer. The box is the fact; the seat is only an intention. */
+/* THE HEADLINE'S DECK IS GONE (ADR 306): the stage nameplate states the
+   finding now, so there is no headline text to reserve room for above the
+   plot. `figureTop` used to clear a two-line 21px headline stacked on
+   `deckTop`; with the headline gone the deck no longer owns a top offset of
+   its own, and the figure reclaims the room down to where the verdict rail's
+   own head block (16–58px) ends. */
 const EDITORIAL = Object.freeze({
-  margin: 28, deckTop: 16, figureTop: 80, footerBand: 80, rail: 206,
+  margin: 28, figureTop: 76, footerBand: 80, rail: 206,
 });
-/* At the middle rank the deck and the rail are gone: a 21px headline needs
-   620px to itself and the rail spends 206 of a 480px cell on type. What they
-   carried that the figure cannot — the verdict, the estimate and its range, the
-   three-way tally and the exclusions — is compressed into two lines above the
-   plot, so no fact leaves the tile with them. */
+/* At the middle rank the rail is gone too: it spends 206 of a 480px cell on
+   type. What it carried that the figure cannot — the verdict, the estimate
+   and its range, the three-way tally and the exclusions — is compressed into
+   two lines above the plot, so no fact leaves the tile with them. */
 const EDITORIAL_MIDDLE = Object.freeze({
   margin: 14, deckTop: 8, tallyTop: 24, figureTop: 46, footerBand: 54, rail: 0,
 });
@@ -455,24 +460,16 @@ function basalEditorialOption(data, mini, colors, surface) {
   const verdict = basalVerdict(data);
   const maxRate = total ? rates[total - 1] : null;
   /* ONE FACT, ONE HOME. The reader chose this slot, so nothing here re-sets the
-     scene: the headline states the finding and its support, the rail holds the
-     tally and the exclusions, the slug holds the estimate and its range, the
-     footer holds the window. Two things that were said twice are gone with the
-     saying — the standfirst repeated the rail's three counts, and the interval
-     caption repeated the slug's range and then its verdict word. What a mark
-     already shows is not captioned either: the cliff of nights sitting on the
-     rule was labelled "5 nights ran exactly as programmed" beside a rail row
-     reading "5 exactly as set", and that label was also the text the collision
-     audit caught running off the plot into the rail. */
-  /* The denominator is the drawn roster, and the direction is the served sign's
-     majority — the same counts the rail prints and the reading speaks. */
-  const headline = above > below
-    ? `Pump ran above the programmed rate on ${above} of ${total} nights`
-    : below > above
-      ? `Pump ran below the programmed rate on ${below} of ${total} nights`
-      : atRate
-        ? `Pump ran at the programmed rate on ${atRate} of ${total} nights`
-        : `${total} nights, counted by the rate the pump ran`;
+     scene: the stage nameplate states the finding — the served headline is its
+     only home (ADR 306) — the rail holds the tally and the exclusions, the
+     slug holds the estimate and its range, the footer holds the window. Two
+     things that were said twice are gone with the saying — the standfirst
+     repeated the rail's three counts, and the interval caption repeated the
+     slug's range and then its verdict word. What a mark already shows is not
+     captioned either: the cliff of nights sitting on the rule was labelled "5
+     nights ran exactly as programmed" beside a rail row reading "5 exactly as
+     set", and that label was also the text the collision audit caught running
+     off the plot into the rail. */
   const caps = `500 10px ${FONT}`;
   /* THE ROWS ARE PLACED IN PIXELS, not anchored to the rail's margin. A graphic
      element's box is its own text's box: anchor it by `right` and a short label
@@ -533,9 +530,6 @@ function basalEditorialOption(data, mini, colors, surface) {
       { type: 'text', left: L.margin, top: L.tallyTop, silent: true,
         style: { text: compactTally, fill: colors.muted, font: `500 10px ${FONT}` } },
     ] : [
-      { type: 'text', left: EDITORIAL.margin, top: EDITORIAL.deckTop, silent: true,
-        style: { text: editorialWrap(headline, 620, 21), fill: colors.text,
-          font: `600 21px ${FONT}`, lineHeight: 24 } },
       /* The verdict slug wears a warm-grey square, never rust: a hold is not an
          alarm, and the word beside it is the backend's own. */
       railHead({ text: `{sq|}{v|${verdict.toUpperCase()}}`,

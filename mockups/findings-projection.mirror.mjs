@@ -106,6 +106,7 @@ export function windowQuery(bounds) {
 function row(fields) {
   return {
     id: null, register: null, kind: null, title: null, priority: null, tier: null,
+    headline: null,
     parameter: null, label: null, span: null, direction: null,
     asserts_move: null,
     lean: null, current: null, recommended: null, estimate: null,
@@ -504,6 +505,177 @@ function historyRows(analysis, query) {
   return rows;
 }
 
+// --- headlines: one served sentence per row (#306 ADR "Every findings row
+// carries one served headline"), transcribed from
+// ciq_autotune/findings_projection.py's own headline templates — never
+// re-invented here. A slot names only a served row field — every family's,
+// correction factor included: the ISF rest-window evidence is never a
+// source.
+
+const BASAL_BLIND_HEADLINE = 'No steady nights delivered against the '
+  + 'programmed rate here, so nothing to say either way.';
+const HELD_AT_CURRENT_SUFFIX = '; held at current';
+const RANKING_TIERS = new Set(['next_in_line', 'worth_a_look']);
+
+/** Python's `f"{value:.{digits}f}"` and `Number.prototype.toFixed` both round
+    the EXACT stored IEEE754 double (V8's `toFixed` is spec-correct, not a
+    naive scaled multiply) — the two runtimes disagree only in HOW they break
+    a genuine tie: Python to even, `toFixed` away from zero. A "genuine tie"
+    is rare and exact (0.125 at 2 decimals, 0.25 at 1: both dyadic fractions
+    the double stores exactly); a decimal literal that merely LOOKS like a
+    tie (0.15, 8.35, 0.45 — none of them exactly representable in binary) is
+    already off-centre once stored, so both runtimes round it the same way
+    with nothing to break. Scaling by `10**digits` in floating point cannot
+    tell these apart: `0.15 * 10 === 1.5` exactly in JS despite the stored
+    double for 0.15 being ~0.1499999999999999944, so a scaled-multiply check
+    (this function's first, wrong version) flags a tie that was never there.
+    This instead decodes the double's mantissa/exponent (`DataView` + BigInt)
+    and tests, in exact arbitrary-precision arithmetic, whether
+    `value * 2 * 10**digits` is an odd integer — the precise definition of an
+    exact tie — with no floating-point step anywhere in the test or, on a
+    genuine tie, in choosing the even neighbour. */
+function formatHalfEven(value, digits) {
+  const buf = new ArrayBuffer(8);
+  const view = new DataView(buf);
+  view.setFloat64(0, value);
+  const hi = view.getUint32(0);
+  const lo = view.getUint32(4);
+  const negative = hi >>> 31 === 1;
+  const biasedExp = (hi >>> 20) & 0x7ff;
+  const mantissaHi = hi & 0xfffff;
+  let mantissa = (BigInt(mantissaHi) << 32n) | BigInt(lo);
+  let exp2;
+  if (biasedExp === 0) {
+    exp2 = -1022 - 52; // subnormal: no implicit leading 1 bit
+  } else {
+    mantissa |= (1n << 52n);
+    exp2 = (biasedExp - 1023) - 52;
+  }
+  // |value| = mantissa * 2^exp2, so |value| * 2 * 10^digits
+  //         = mantissa * 5^digits * 2^(exp2 + digits + 1)
+  const numerator = mantissa * (5n ** BigInt(digits));
+  const shift = exp2 + digits + 1;
+  let doubled;
+  if (shift >= 0) {
+    doubled = numerator << BigInt(shift);
+  } else {
+    const negShift = BigInt(-shift);
+    if ((numerator & ((1n << negShift) - 1n)) !== 0n) return value.toFixed(digits);
+    doubled = numerator >> negShift;
+  }
+  if ((doubled & 1n) === 0n) return value.toFixed(digits); // not an exact .5 tie
+
+  const lower = (doubled - 1n) / 2n; // |value| * 10^digits, floored — exact
+  const even = (lower % 2n === 0n) ? lower : lower + 1n;
+  const factor = 10n ** BigInt(digits);
+  const fracStr = (even % factor).toString().padStart(digits, '0');
+  return `${negative ? '-' : ''}${even / factor}.${fracStr}`;
+}
+const fmtUh = (value) => (value == null ? null : formatHalfEven(value, 2));
+const fmtPrecision = (value) => {
+  if (value == null) return null;
+  return Number.isInteger(value) ? String(value) : formatHalfEven(value, 1);
+};
+const belowAbove = (word) => (word == null ? null : (word === 'raise' ? 'above' : 'below'));
+const sentenceCase = (text) => (text ? text[0].toUpperCase() + text.slice(1) : text);
+
+function basalHeadline(r) {
+  if (r.register === 'blind') return BASAL_BLIND_HEADLINE;
+  const supportN = (r.support || {}).n;
+  const annotation = sentenceCase(r.annotation || '');
+  const current = r.current;
+  const estimateValue = (r.estimate || {}).value;
+  if (current != null && estimateValue != null) {
+    return `${annotation}. Delivered ${fmtUh(estimateValue)} U/h across `
+      + `${supportN} steady nights against ${fmtUh(current)} programmed.`;
+  }
+  // A merged run names no single programmed rate, and a slot with no
+  // delivered estimate (a harm-forced move on zero clean nights) has nothing
+  // to set against the programmed rate either — both read only the row's own
+  // served direction or lean and the steady-night count.
+  if (r.register === 'assert') {
+    const word = belowAbove(r.direction);
+    return `${annotation}. Delivered ${word} the programmed rate across `
+      + `${supportN} steady nights.`;
+  }
+  const lean = r.lean;
+  if (lean == null) {
+    return `${annotation}. ${supportN} steady nights delivered so far.`;
+  }
+  const word = belowAbove(lean);
+  return `${annotation}. Delivered ${word} the programmed rate across `
+    + `${supportN} steady nights.`;
+}
+
+function isfHeadline(r) {
+  // Every slot is a row field (`support.n`, `current`, `estimate.value`,
+  // `annotation`, `reason`) — the ISF rest-window evidence is never a
+  // source, so this reads only the row, like every other family.
+  const supportN = (r.support || {}).n;
+  const current = fmtPrecision(r.current);
+  if (r.register === 'assert') {
+    const estimateValue = fmtPrecision((r.estimate || {}).value);
+    const annotation = sentenceCase(r.annotation || '');
+    return `${annotation}. Measured 1 U : ${estimateValue} mg/dL across `
+      + `${supportN} fasting nights against 1 U : ${current} mg/dL programmed.`;
+  }
+  const reason = r.reason || '';
+  if (current === null) {
+    return `No direction is called: ${reason}. ${supportN} fasting nights measured.`;
+  }
+  return `No direction is called: ${reason}. ${supportN} fasting nights `
+    + `measured against 1 U : ${current} mg/dL programmed.`;
+}
+
+function icHeadline(r) {
+  const supportN = (r.support || {}).n;
+  const current = fmtPrecision(r.current);
+  const estimateValue = fmtPrecision((r.estimate || {}).value);
+  const againstCurrent = current !== null ? ` against ${current} programmed` : '';
+  if (r.register === 'assert') {
+    const annotation = sentenceCase(r.annotation || '');
+    return `${annotation}. Measured ${estimateValue} g/U across ${supportN} `
+      + `meal runs${againstCurrent}.`;
+  }
+  const rawReason = r.reason || '';
+  const reason = rawReason.endsWith(HELD_AT_CURRENT_SUFFIX)
+    ? rawReason.slice(0, -HELD_AT_CURRENT_SUFFIX.length) : rawReason;
+  return `Held at current: ${reason}. Measured ${estimateValue} g/U across `
+    + `${supportN} meal runs${againstCurrent}.`;
+}
+
+function findingHeadline(r) {
+  // findRows in this mirror never publishes a row without an appearance
+  // (transcribed from `_finding_rows`'s `by_lever` construction), so this
+  // is never null.
+  const appearance = r.appearances[0];
+  const verdict = RANKING_TIERS.has(r.tier)
+    ? "Ranks among this window's findings" : 'Not ranked in this window yet';
+  return `${verdict}. Showed up in ${appearance.n} of ${appearance.m} `
+    + `${appearance.noun} in this window.`;
+}
+
+function historyHeadline(r) {
+  const estimateValue = fmtPrecision((r.estimate || {}).value);
+  const support = r.support;
+  const pastSetting = fmtPrecision(r.past_setting);
+  const programmedNow = fmtPrecision(r.programmed_now);
+  const regimeEnd = r.regime_end;
+  const regimeEndDate = regimeEnd ? regimeEnd.split('T')[0] : regimeEnd;
+  return `Past setting, no change suggested. Measured ${estimateValue} g/U `
+    + `across ${support} meal runs while ${pastSetting} was programmed, `
+    + `until ${regimeEndDate}. Programmed now: ${programmedNow}.`;
+}
+
+function headlineFor(r) {
+  if (r.kind === 'habit') return findingHeadline(r);
+  if (r.register === 'history') return historyHeadline(r);
+  if (r.parameter === 'basal_rate') return basalHeadline(r);
+  if (r.parameter === 'isf') return isfHeadline(r);
+  if (r.parameter === 'carb_ratio') return icHeadline(r);
+  throw new Error(`no headline template for parameter ${r.parameter}`);
+}
+
 function selection(analysis, query, selectedId) {
   if (selectedId == null) return null;
   const history = (analysis.ic_history || []).find((row) => row.id === selectedId);
@@ -572,6 +744,9 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     if (row.priority == null) row.tier = 'noted';
     else if (row.register === 'assert') row.tier = 'next_in_line';
     else row.tier = 'worth_a_look';
+  }
+  for (const row of rows) {
+    row.headline = headlineFor(row);
   }
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };

@@ -152,6 +152,16 @@ export function popInspector(stack, index, descriptors) {
   return { stack: next, drilledChartId: drilledChartIdForFrame(next.at(-1), descriptors) };
 }
 
+/* THE STAGE HOLDS THE ACTIVE FINDING'S CHART, NEVER THE CHART JUST LEFT (ADR
+   306). A reconcile whose prior focal chart vanished, and a pop that lands
+   with no drill to re-seat, resolve to the same fallback: the rank-1 event
+   chart, else the first ranked candidate, else the first pin, else none. Both
+   callers share this one tail so the fallback can never diverge from what the
+   reconcile already used to fall back to. */
+export function fallbackFocalId(findings, descriptors, candidates, pins) {
+  return recommendedFocalId(findings, descriptors) || candidates[0] || pins[0] || null;
+}
+
 export function enterFullscreen(layout, chartId) {
   return {
     chartId,
@@ -201,10 +211,16 @@ export const DOCK_FLOOR = SPOTLIGHT_FLOOR + MINI_FLOOR + FIELD_GAP;
    control that exists and does nothing. The dock is a toggle at every height. */
 export const DOCK_WANTS = Object.freeze(['docked', 'hidden']);
 
+/* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Operator, 2026-09-02:
+   "It opens minimized. It never comes back up on its own. That path is
+   archived. It's gone." Boot and every reset that has no reader want of its
+   own resolve here, not to `'docked'`. */
+export const DOCK_BOOT_WANT = 'hidden';
+
 /* THE FIELD DECIDES ONE THING ONLY: whether a docked strip has the room to sit
    BELOW the spotlight or has to float over it. It never decides which state the
    reader is in. */
-export function dockView(fieldHeight, wanted = 'docked') {
+export function dockView(fieldHeight, wanted = DOCK_BOOT_WANT) {
   if (!DOCK_WANTS.includes(wanted)) {
     throw new RangeError(`unknown dock want ${wanted}`);
   }
@@ -234,4 +250,21 @@ export function dockView(fieldHeight, wanted = 'docked') {
     use this transition (ADR 215). */
 export function dismissRaisedDock(wanted, fieldHeight) {
   return dockView(fieldHeight, wanted).raised ? 'hidden' : wanted;
+}
+
+/** The spotlight puts itself away when it runs out of room, and never invites
+    itself back: growing back past the floor leaves the want exactly as the
+    reader last set it (ADR 306 retires ADR 215's grow-back half). Call this
+    only on the measured crossing, not on every resize tick, so it never
+    overrules a reader who brought the dock up by hand below the floor. */
+export function dockResizeTransition(wanted, fieldHeight) {
+  return fieldHeight < DOCK_FLOOR ? 'hidden' : wanted;
+}
+
+/** Picking a chart puts the drawer away — a cell click or Enter, a Watching
+    tail cell, or an explorer pick, on a `mini` or `grid` seat. The reader
+    asked to see one chart and got it; anything else about the dock's want is
+    left alone here (ADR 306). */
+export function dockPickTransition(wanted, seatKind) {
+  return seatKind === 'mini' || seatKind === 'grid' ? 'hidden' : wanted;
 }

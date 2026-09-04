@@ -128,6 +128,12 @@ the exploration ticket at admission.
   (`authoring`). Re-check: 2 `injected` — half-open slice stated against an
   inclusive `_slice`; stale warm sentence in the proposal. Mechanical fixes in
   9e3499c. Countersigned; panel 3 fresh pass dispatched.
+- Panel 3 (fresh, Terra): 3 blockers — no generated-facts appendix
+  (`authoring`; facts.md added); gate not transcribed byte-exact
+  (`authoring`; lock rewritten); SD-only adverse comparison had no headline
+  rule (`authoring`; settled: TIR-drop tier first, SD-rise tier only when no
+  TIR drop, two fixed summary templates). Re-check: countersigned at the
+  panel cap. Lock 1 posted.
 
 ## Open questions
 

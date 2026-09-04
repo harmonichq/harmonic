@@ -143,11 +143,43 @@ States: `queue-root`, `watching-expanded`, `drill-compact` (the compact row
 drilled, its chart on the stage), `drill-tail` (a tail row drilled). A sift
 cannot hide the showcase hero (the basal row carries no chips), so hero
 promotion under a sift is proven by the node test in `tasks.md` §2, not by a
-render. The replay's own row mix is the frozen fixture's, not the showcase's:
-`frontend/diagnose-workstation-behavior.replay.mjs` answers
-`/api/diagnose/findings` from the fixture-only mirror over `payload.json`
-(#735), whose `windows.global` yields one hero, four compact rows across two
-tiers, two tail rows and one collapsed read.
+render. The replay's own row mix is neither: `frontend/diagnose-workstation-behavior.
+replay.mjs` answers `/api/diagnose/findings` from the fixture-only mirror
+(#735) over one of two input sets, dumped at triage on 2026-09-03 with
+`node --input-type=module` calling `projectFindings(inputs, null, null)` from
+`mockups/findings-projection.mirror.mjs`, `id register tier priority chips`:
+
+- Default (a story opened without `history` or `findingsInputs`; inputs are
+  `payload.analyze`/`exposures`/`scenarios` plus the fixture's `event_charts`):
+  four unpriced finding rows and nothing else — no hero, no compact row, no
+  caption:
+
+  ```
+  finding:over_treated_low   finding noted null ["highs"]              (event chart)
+  finding:correction_on_iob  finding noted null ["lows","corrections"] (event chart)
+  finding:missed_meal        finding noted null ["highs"]              (event chart)
+  finding:late_bolus         finding noted null ["highs","meals"]      (event chart)
+  ```
+
+- Fixture inputs (a story opened with `history: true`, or passing
+  `frontend/__fixtures__/findings-projection.json`'s `inputs`): the frozen
+  `windows.global` rows:
+
+  ```
+  ic:720                     assert  next_in_line 66   ["highs"]
+  basal:30-90                assert  next_in_line 39   ["highs"]
+  basal:330-360              assert  next_in_line 39   ["highs"]
+  finding:over_treated_low   finding worth_a_look 28   ["highs"]         (event chart)
+  finding:carb_undercount    finding worth_a_look 21   ["highs","meals"] (event chart)
+  finding:correction_on_iob  finding noted        null ["lows"]          (event chart)
+  finding:correction_stacking finding noted       null ["lows","corrections"] (event chart)
+  ich1_WzAsNzIwLCI2Il0       history noted        null []
+  ```
+
+  So a story that needs the hero, a compact row, the one `Worth a look`
+  caption or the tail opens with the fixture inputs; a sift selecting only
+  `meals` hides every other priced row and promotes `finding:carb_undercount`
+  to hero, which is the hero-promotion story.
 
 ## Live-round rulings
 

@@ -395,6 +395,32 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         self.assertTrue(all(row.sequence_n == 0 for row in empty.high_carb_sequence.pooled.rows))
         self.assertEqual(empty.high_carb_sequence.pooled.boundaries_g, (None, None, None, None))
         self.assertEqual(empty.window.days, 1)
+        repeat = empty.repeat_eating_amplifier
+        self.assertEqual(repeat.status, "insufficient")
+        self.assertIsNone(repeat.finding)
+        self.assertEqual(
+            [(row.carb_quintile, row.window_count_band) for row in repeat.matrix],
+            [(quintile, band) for quintile in range(1, 6) for band in ("1", "2", "3+")],
+        )
+        self.assertTrue(all(
+            aggregate.n == 0 and aggregate.status == "insufficient"
+            for row in repeat.matrix
+            for aggregate in (row.in_sequence, row.post_4h, row.post_6h)
+        ))
+        self.assertEqual(
+            [(row.carb_quintile, row.period) for row in repeat.comparisons],
+            [(quintile, period) for quintile in range(1, 6)
+             for period in ("in_sequence", "post_4h", "post_6h")],
+        )
+        self.assertTrue(all(
+            row.status == "insufficient" and row.reference_n == row.repeat_n == 0
+            for row in repeat.comparisons
+        ))
+        self.assertEqual(repeat.exclusions, {
+            "cgm_coverage": 0,
+            "carb_log_contamination": 0,
+            "next_sequence_overlap": 0,
+        })
 
     def test_pre_window_events_do_not_construct_a_sequence(self):
         from ciq_autotune.events import BolusEvent
@@ -482,6 +508,22 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         q5_rows = [row for row in report.repeat_eating_amplifier.matrix if row.carb_quintile == 5]
         self.assertEqual([(row.window_count_band, row.post_4h.n) for row in q5_rows],
                          [("1", 8), ("2", 4), ("3+", 4)])
+
+    def test_repeat_bands_follow_the_detector_configuration(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        config = EatingSequenceConfig(window_count_bands=("single", "two", "repeated"))
+        boluses, cgm, carb_log, _ = repeat_eating_stream()
+        report = build_report(boluses, cgm, carb_log, window_start=boluses[0].t,
+                              window_end=cgm[-1].t, config=config)
+
+        q5_rows = [row for row in report.repeat_eating_amplifier.matrix if row.carb_quintile == 5]
+        self.assertEqual([(row.window_count_band, row.post_4h.n) for row in q5_rows],
+                         [("single", 8), ("two", 0), ("repeated", 8)])
+        comparison = next(row for row in report.repeat_eating_amplifier.comparisons
+                          if row.carb_quintile == 5 and row.period == "post_4h")
+        self.assertEqual((comparison.reference_band, comparison.repeat_band),
+                         ("single", "repeated"))
 
     def test_repeat_eating_sd_only_adversity_uses_spread_template(self):
         from ciq_autotune.analyzers.eating_sequences import build_report

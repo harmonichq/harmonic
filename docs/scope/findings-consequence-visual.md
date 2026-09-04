@@ -101,12 +101,16 @@ agent's judgment recorded under that delegation; the composition decisions in
    "start here"; the tier word says what the engine actually claims. `inline`
    Corrects the issue body's premise that four tiers are served.
 
-2. **Hero = headline + facts, no chart.** Fixed by #305 Q7 and the 2026-09-01
-   comment. The hero card renders the served `headline` cut at its first
-   sentence end (title) with the remainder as subtitle — the same cut the stage
-   card makes, composing nothing — plus the row's existing single detail line
-   (counts or numbers) and its flavor tag. Its chart is the promoted stage
-   chart at left. `inline`
+2. **Hero = title + facts, no headline, no chart.** #305 Q7 and the
+   2026-09-01 comment said "headline + stats"; #306 then shipped the
+   requirement that the stage card is the served headline's only home (its
+   scenario asserts the headline appears nowhere else on the surface), and the
+   operator's "no dupes" rule points the same way. Ruled at triage 2026-09-03
+   (plan-review round 3) under the delegation: the hero renders the row's
+   served title at Title rank, its kicker (flavor and tier words) and its
+   existing single detail line; the sentence and the chart live on the stage
+   card beside it. The rail is the index, the stage tells the story. `inline`
+   The operator can reverse this by ruling the headline may appear twice.
 
 3. **Compact rows draw the drawer's own mini.** Every remaining priced row
    (rank 2 onward, in served order) is a compact row: rank numeral, title, one

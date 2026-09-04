@@ -23,10 +23,11 @@ alignment window is already per exposure family; two families' lead-ins move.
 ## What changes
 
 - The rail becomes a tapered queue read entirely off the served order and
-  tiers. The first priced ranked row is the hero: a card leading with its served
-  headline (first sentence as title, the rest as subtitle), its facts line and
-  its flavor and tier words — no chart of its own, because the stage at left
-  already holds that finding's chart (ADR 306). Every further priced row is a
+  tiers. The first priced ranked row is the hero: a card leading with its title, its
+  facts line and its flavor and tier words — no headline and no chart of its
+  own, because the stage at left already holds that finding's chart and is the
+  served headline's only home (ADR 306); the rail is the index, the stage tells
+  the story. Every further priced row is a
   compact row: numeral, title, one facts line, and the same small chart the
   drawer's cell draws for it, from data the page already fetched. Unpriced
   `noted` rows are title-only lines under the existing seam sentence. Watching

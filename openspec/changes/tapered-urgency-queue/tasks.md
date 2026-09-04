@@ -43,9 +43,13 @@
       `node mockups/finding-evidence-routing.exploration/build.mjs` (then
       `--check`); `mockups/diagnose-evidence-canvas.exploration/index.html` via
       `uv run python mockups/diagnose-evidence-canvas.exploration/generate.py`
-      (then `--check`). Grep the whole tree (no extension filter, `.git`
-      excluded) for `-300, 120`, `-300, 180`, `[-300, 120]` and `[-300, 180]`
-      afterwards; the only permitted hits are `ciq_autotune/event_comparison.py`
+      (then `--check`). Sweep for every spelling the old values take afterwards, `.git` excluded:
+      `grep -rn -e '-300, 120' -e '-300, 180' .` (source and prose);
+      `grep -rn -A1 '"window_min": \[$' mockups frontend/__fixtures__ | grep -E -- '-\s*-300,'`
+      (the indented JSON the generators write);
+      `grep -n -E '^\s*-300,$|"minute": -300' mockups/finding-evidence-routing.exploration/data.json`;
+      `grep -n -- '=== -300' frontend/diagnose-event-comparison-behavior.replay.mjs`.
+      Every sweep must come back empty except that the first's only permitted hits are `ciq_autotune/event_comparison.py`
       (the dead `VIEW_CONFIG` window, sanctioned in `design.md`) and this
       change's own `tasks.md`, which quotes the old values as instructions.
       (The hand-drawn wireframes under
@@ -61,16 +65,15 @@
 - [ ] In `frontend/diagnose-findings-queue.js`, `queueRows` stamps each row's
       `weight` — `hero` for the first shown priced ranked row, `compact` for
       every further shown priced ranked row, `tail` for a shown unpriced ranked
-      row, unchanged `collapsed` for Watching — and `caption`, the served tier
-      word (`Next in line` / `Worth a look` / `noted`) on the first shown
-      ranked row whose `tier` differs from the previous shown ranked row's, else
-      `null`. The hero's `headlineLead`/`headlineRest` are the served
-      `headline` cut at its first `. ` exactly as `diagnose-workstation.js`
-      cuts it for the stage card; a missing headline yields the title alone.
+      row, unchanged `collapsed` for Watching — and `caption` (rule below, else `null`). The hero prints the row's served
+      `title`, never its `headline` — the stage card is the headline's only
+      home (ADR 306; the shipped requirement's scenario asserts the headline
+      text appears nowhere else on the surface).
       Add a `TIER` map beside `FLAVOR` whose keys are exactly
-      `next_in_line`, `worth_a_look`, `noted` and whose values are DESIGN.md
-      rule 4's words `Next in line`, `Worth a look`, `noted`; a slug outside the
-      map yields no caption and no kicker word. `caption` is set only on a
+      `next_in_line` and `worth_a_look` and whose values are DESIGN.md rule 4's
+      words `Next in line` and `Worth a look` (`noted` is stamped only on
+      unpriced rows, which never reach a caption or the kicker); a slug outside
+      the map yields no caption and no kicker word. `caption` is set only on a
       shown **priced** ranked row whose `tier` differs from the previous shown
       priced ranked row's; tail rows never carry one. Nothing here reads
       `priority` as a number, orders by it, or consults `asserts_move`; the one
@@ -89,7 +92,8 @@
       window's single priced row is a hero with no compact rows.
 - [ ] `renderFindingsQueue` paints the three weights: the hero as a
       `button.qrow.hero` carrying kicker (flavor glyph+word, `TIER[row.tier]`),
-      title, subtitle, detail line and drill glyph; a compact row as today's `qrow`
+      the served `title`, the detail line and the drill glyph — no headline,
+      no chart; a compact row as today's `qrow`
       plus an empty `.mini` host at the row's end; a tail row as a `qrow.tail`
       with numeral slot, title and drill glyph only; a caption as `p.qtier`
       before its row. The seam `tailnote`, the Watching `qcollapse`, every
@@ -120,9 +124,9 @@
       1.5rem no-hero cap and the existing Label/Title/Body ranks; every existing
       `.qrow` selector the replay reads still matches its element.
       `frontend/theme.css` is themed by ROLE (its header names five roles and
-      forbids a theme rule wearing a surface's selector): touch it only for a
-      genuine role-level override, record any such gap in `design.md`, and if
-      it changes at all regenerate
+      forbids a theme rule wearing a surface's selector): touch it only for a genuine role-level override, report any such gap in
+      the handback for the coordinator to record in `design.md` (sub-order 3
+      owns that file), and if it changes at all regenerate
       `mockups/diagnose-evidence-canvas.exploration/index.html` (its generator
       bakes `theme.css` in whole) so `generate.py --check` passes.
 - [ ] Regenerate `mockups/finding-evidence-routing.exploration/data.json`

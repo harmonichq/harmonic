@@ -24,13 +24,18 @@ should work on a tablet and on a computer"), recorded in
 the server's order at three weights, chosen by served facts alone:
 
 - **Hero** — the first shown priced ranked row (`register` `assert` or
-  `finding` with a non-null `priority`, after any sift): a card whose title is
-  the served `headline` cut at its first sentence end and whose subtitle is the
-  remainder (the same cut the stage card makes; one-sentence headlines have no
-  subtitle), followed by the row's existing single detail line (the number pair
-  or the support/appearance counts) and a kicker carrying the flavor word and
-  the row's served tier word. It draws no chart: under ADR 306 the stage already
-  holds this row's chart, and nothing renders twice.
+  `finding` with a non-null `priority`, after any sift): a card carrying a
+  kicker (the flavor word and the row's tier word through `TIER`), the row's
+  served `title` at Title rank, and the row's existing single detail line (the
+  number pair or the support/appearance counts). It prints no headline and
+  draws no chart: under ADR 306 the stage card beside it is the served
+  headline's only home (`openspec/specs/surfaces/spec.md`, "The stage card's
+  title is the headline's only home": the headline text appears nowhere else
+  on the surface) and already holds this row's chart, so the rail is the
+  index and the stage tells the story — nothing renders twice, and DESIGN.md's
+  No-Hero Rule keeps its one sentence-length title. Ruled at triage on
+  2026-09-03 under the operator's delegation; it supersedes the #305 ledger's
+  "headline + stats" phrasing for the hero, which predates #306's requirement.
 - **Compact** — every further priced ranked row: rank numeral, title, flavor
   tag, one detail line, and a mini chart at the row's end (ADR below).
 - **Tail** — every unpriced ranked row (`tier` `noted`): title-only line under
@@ -41,11 +46,13 @@ the server's order at three weights, chosen by served facts alone:
 A tier caption prints once where the served `tier` of consecutive shown
 **priced** rows changes; the hero's kicker carries its own tier. The tail
 prints no caption — the seam sentence already labels it. The server stamps
-slugs (`next_in_line`, `worth_a_look`, `noted`), not display words, so the rail
-carries one pinned map `TIER` beside its existing `FLAVOR` map whose domain is
-exactly those three slugs and whose range is DESIGN.md rule 4's words —
-`Next in line`, `Worth a look`, `noted` — and nothing else; an unknown slug
-renders no caption and no kicker word rather than a guess. The frontend
+slugs (`next_in_line`, `worth_a_look`, `noted`), not display words, so the rail carries one pinned map `TIER` beside its existing `FLAVOR` map
+whose domain is exactly the two priced slugs — `next_in_line`,
+`worth_a_look` — and whose range is DESIGN.md rule 4's words for them, `Next
+in line` and `Worth a look`. `noted` needs no entry: `_assign_tiers` stamps it
+only on unpriced rows, and only priced rows reach a caption or the kicker.
+A slug outside the map renders no caption and no kicker word rather than a
+guess (`tier` crosses the server boundary, so that guard is earned). The frontend
 derives no rank, tier, floor, direction or threshold: `queueRows` keeps walking
 the server's order and the new weight is a function of `priority == null`,
 position among shown priced rows, and the served `tier` slug.

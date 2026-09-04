@@ -130,6 +130,7 @@ test('basal detail states the served support floor', () => {
   const element = () => ({
     className: '', innerHTML: '', children: [], dataset: {},
     append(...children) { this.children.push(...children); },
+    insertAdjacentHTML() {},
     addEventListener() {},
   });
   try {
@@ -142,11 +143,161 @@ test('basal detail states the served support floor', () => {
         annotation: 'not enough nights of steady data yet to point one way',
         estimate: { value: 0.8, lo: 0.7, hi: 0.9, n: 3, wide: false },
       },
-    }, new Set(), 30, 11, () => assert.fail('thin detail cannot stage'));
+    }, new Set(), 30, 11, () => assert.fail('thin detail cannot stage'), {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
 
     const footer = host.children[0].children.find((child) => child.className === 'slot-foot');
     assert.match(footer.innerHTML, /below the 11-night support floor/);
   } finally {
     globalThis.document = originalDocument;
   }
+});
+
+class RosterElement {
+  constructor(tagName = 'div') {
+    this.tagName = tagName.toUpperCase();
+    this.className = '';
+    this.innerHTML = '';
+    this.textContent = '';
+    this.children = [];
+    this.dataset = {};
+    this.attributes = new Map();
+    this.listeners = new Map();
+    this.html = [];
+  }
+
+  insertAdjacentHTML(_position, html) { this.html.push(html); }
+  append(...children) { this.children.push(...children); }
+  setAttribute(name, value) { this.attributes.set(name, value); }
+  getAttribute(name) { return this.attributes.get(name); }
+  addEventListener(name, listener) { this.listeners.set(name, listener); }
+  click() { this.listeners.get('click')?.(); }
+}
+
+const basalCell = {
+  i: 0, startMin: 0, endMin: 30, asserts: false, verdict: 'insufficient',
+  slot: {
+    current: 0.6, recommended: null, safety_status: 'insufficient evidence',
+    annotation: 'not enough nights of steady data yet to point one way',
+    estimate: { value: 0.8, lo: 0.7, hi: 0.9, n: 3, wide: false },
+  },
+};
+
+const nightPayload = {
+  roster_glucose_mean: 119.5,
+  excluded_night_count: 2,
+  nights: [
+    { date: '2026-01-01', sign: 1, delivered_rate: 0.8, programmed_rate: 0.6,
+      glucose_entry: 111, glucose_exit: 121, glucose_mean: 116,
+      t: '2026-01-01T00:00:00', glucose_trace: [{ t: '2026-01-01 00:00:00', bg: 111 }] },
+    { date: '2026-01-02', sign: -1, delivered_rate: 0.4, programmed_rate: 0.6,
+      t: '2026-01-02T00:00:00', glucose_entry: 109, glucose_exit: 99, glucose_mean: 104,
+      glucose_trace: [{ t: '2026-01-02 00:00:00', bg: 109 }] },
+    { date: '2026-01-03', sign: null, delivered_rate: 0.6, programmed_rate: 0.6,
+      t: '2026-01-03T00:00:00', glucose_entry: null, glucose_exit: null, glucose_mean: null, glucose_trace: [] },
+    { date: '2026-01-04', sign: null, delivered_rate: 0.6, programmed_rate: null,
+      t: '2026-01-04T00:00:00', glucose_entry: 100, glucose_exit: null, glucose_mean: 100, glucose_trace: [] },
+  ],
+};
+
+test('basal slot detail groups served nights, selects one, and preserves roster mechanics', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const host = new RosterElement();
+    const selected = [];
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: nightPayload, selectedId: '2026-01-01', shownCount: 5,
+      onSelect: (id) => selected.push(id), onMore() {}, onClear() {}, onDay() {},
+    });
+
+    assert.match(host.html.join('\n'), /Nights of steady data/);
+    assert.match(host.html.join('\n'), /Ran above.*1 night/);
+    assert.match(host.html.join('\n'), /Ran below.*1 night/);
+    assert.match(host.html.join('\n'), /Ran as set.*1 night/);
+    assert.match(host.html.join('\n'), /No programmed rate.*1 night/);
+    assert.match(host.html.join('\n'), /2 excluded nights/);
+    const rows = host.children.filter((child) => child.className === 'ev-row case-occurrence');
+    assert.equal(rows.length, 4);
+    assert.equal(rows[0].getAttribute('aria-pressed'), 'true');
+    rows[1].click();
+    assert.deepEqual(selected, ['2026-01-02']);
+    assert.match(host.children.map((child) => child.innerHTML).join('\n'), /Jan 1/);
+    assert.match(host.children.map((child) => child.innerHTML).join('\n'), /111/);
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('basal slot evidence states distinguish loading and unavailable data', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    for (const [nightEvidence, message] of [[{ pending: true }, 'Loading nights…'], [{ stale: true }, 'Night evidence unavailable.']]) {
+      const host = new RosterElement();
+      renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence });
+      assert.match(host.html.join('\n'), new RegExp(message));
+      assert.equal(host.children.filter((child) => child.className === 'ev-row case-occurrence').length, 0);
+    }
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('basal night evidence leaves the numbers and staging block byte-identical', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const plain = new RosterElement();
+    const withRoster = new RosterElement();
+    renderSlotLevel(plain, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
+    renderSlotLevel(withRoster, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: nightPayload });
+    assert.equal(withRoster.children[0].innerHTML, plain.children[0].innerHTML,
+      'the existing parameter numbers remain the untouched first panel');
+    assert.equal(withRoster.children[0].children.find((child) => child.className === 'slot-foot').innerHTML,
+      plain.children[0].children.find((child) => child.className === 'slot-foot').innerHTML,
+      'the existing staging block is byte-identical');
+  } finally {
+    globalThis.document = originalDocument;
+  }
+});
+
+test('basal night roster caps and expands its served rows', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const payload = structuredClone(nightPayload);
+    payload.nights = Array.from({ length: 7 }, (_, index) => ({ ...payload.nights[0], date: `2026-02-0${index + 1}` }));
+    const collapsed = new RosterElement();
+    const more = [];
+    renderSlotLevel(collapsed, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: payload, shownCount: 5, onMore: () => more.push('expand'),
+    });
+    assert.equal(collapsed.children.filter((child) => child.className === 'ev-row case-occurrence').length, 5);
+    const toggle = collapsed.children.find((child) => child.className === 'more');
+    assert.equal(toggle.textContent, '2 more');
+    toggle.click();
+    assert.deepEqual(more, ['expand']);
+    const expanded = new RosterElement();
+    renderSlotLevel(expanded, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: payload, shownCount: Infinity,
+    });
+    assert.equal(expanded.children.filter((child) => child.className === 'ev-row case-occurrence').length, 7);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('basal night roster preserves null served mean and exit as em dashes', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const payload = structuredClone(nightPayload);
+    payload.roster_glucose_mean = null;
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
+    assert.match(host.html.join('\n'), /— mg\/dL mean/);
+    assert.match(host.children.map((child) => child.innerHTML).join('\n'), /<span class="worst">—<\/span>/);
+  } finally { globalThis.document = originalDocument; }
 });

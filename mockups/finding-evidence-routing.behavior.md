@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**152 issued executable IDs:** S01–S132, C41–C57, and D1–D3
-**Active executable IDs:** S01–S116, S118–S132, C41–C57, and D1–D3
+**158 issued executable IDs:** S01–S138, C41–C57, and D1–D3
+**Active executable IDs:** S01–S116, S118–S138, C41–C57, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3011,3 +3011,50 @@ S21's lane-click exclusivity sentence is corrected to describe which drills
 actually release. Recorded in
 `openspec/changes/one-settings-drill-down/design.md`, ADR 294 ("The
 clock-window rule stays per-parameter, and the chart gesture adopts it").
+
+## Revision — 2026-09-04, base `ee1d46f0a309b38625c2f4eee0956f8d480468c3` (issue #291: basal nights in the drill rail)
+
+Before product code changes, `app: 151 of 151 stories passed` against exact
+base `ee1d46f0a309b38625c2f4eee0956f8d480468c3` (the ticket branch's
+merge-base with `origin/main`) through the declared no-fetch server, served at
+port 8876 from a dedicated worktree and its own scratch copy of
+`mockups/qa-e2e.synthetic/harmonic.sqlite`. Every retired sanction printed.
+The raw output is
+`openspec/changes/basal-night-drill/evidence/replay.base.stdout.txt`.
+
+**Fail-first.** The six new stories ran through the amended replay driver
+against that base frontend and each failed waiting for the absent rendered
+night-roster group (`#level .ev-group`): S133–S138 therefore report `app: 0
+of 6 new stories passed`, rather than accepting an internal-state stand-in.
+The complete failure evidence is
+`openspec/changes/basal-night-drill/evidence/replay.fail-first.stdout.txt`.
+
+**Behavior added.**
+
+```
+S133 · The served basal-night roster keeps ran-above and ran-as-set groups
+       distinct, shows their served counts, honours the five-row cap, and
+       prints the separate excluded-night tally.
+S134 · A night whose served sign is negative appears under Ran below.
+S135 · A night without a programmed rate appears under No programmed rate,
+       never Ran as set even though its served sign is null.
+S136 · Selecting one rendered night row stays in the standing slot frame and
+       clock window, presses that row, paints its trace on Glucose by time of
+       day, and Clear trace releases both the row and trace.
+S137 · The selected-night detail prints served rates and glucose facts,
+       preserves null facts as dashes, offers the Day handoff, and Up/Down
+       steps only within the selected group's nights.
+S138 · At 1024×768, the roster, selected detail and canvas remain within their
+       panes without horizontal overflow while the selected trace still paints.
+```
+
+No frozen story is amended or retired, so no retirement sanction is owed.
+The final amended replay output is
+`openspec/changes/basal-night-drill/evidence/replay.final.stdout.txt`.
+Before/after renders at 1440×900, 1280×800, 1024×768 and 390×844 cover the
+resting roster, selected trace and detail state under
+`openspec/changes/basal-night-drill/evidence/renders/`.
+
+Data provenance: the replays and renders use the committed synthetic Diagnose
+payload and the scratch copy of the generated QA showcase only; no real patient
+data, credentials or live fetches are involved.

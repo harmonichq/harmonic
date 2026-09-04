@@ -3697,6 +3697,131 @@ export const S132 = async (page) => {
   }
 };
 
+/* ---- #291 · basal nights in the drill rail (ADR 291) ------------------- */
+
+const openBasalNightRoster = async (page) => {
+  await page.locator('#lane button').first().click();
+  await page.locator('#level .ev-group').first().waitFor();
+  await settle(page, 200);
+};
+
+const rosterGroups = (page) => page.evaluate(() => [...document.querySelectorAll('#level .ev-group')]
+  .map((header) => ({
+    label: header.textContent.replace(/\s+/g, ' ').trim(),
+    rows: (() => {
+      const rows = [];
+      for (let node = header.nextElementSibling; node && !node.matches('.ev-group'); node = node.nextElementSibling) {
+        if (node.matches('.ev-row')) rows.push(node.dataset.occurrenceId);
+      }
+      return rows;
+    })(),
+  })));
+
+const nightTrace = (page) => page.evaluate(() => {
+  const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+  return chart.getOption().series.find((series) => series.name === 'That day')?.data
+    .filter((value) => value !== '-' && value != null) || [];
+});
+
+// STORY:finding-evidence-routing:S133
+/** S133 · The served normal body keeps ran-above and ran-as-set distinct, with
+    their supplied counts and the one excluded-nights tally beneath the roster. */
+export const S133 = async (page) => {
+  await openBasalNightRoster(page);
+  is(await rosterGroups(page), [
+    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+  ], 'S133 the served group headers, five-row cap and rows stand in the drill rail');
+  is((await page.locator('#level .empty').allTextContents()).map((text) => text.trim()), ['1 excluded night'],
+    'S133 the served excluded-night count is a separate tally');
+};
+
+// STORY:finding-evidence-routing:S134
+/** S134 · A served negative sign is a ran-below night, never folded into ran-as-set. */
+export const S134 = async (page) => {
+  await openBasalNightRoster(page);
+  is(await rosterGroups(page), [
+    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+    { label: 'Ran below · 1 night', rows: ['2026-01-08'] },
+    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+  ], 'S134 the served negative-sign night owns its ran-below group');
+};
+
+// STORY:finding-evidence-routing:S135
+/** S135 · A missing programmed rate has its own group even though its sign is null. */
+export const S135 = async (page) => {
+  await openBasalNightRoster(page);
+  const groups = await rosterGroups(page);
+  ok(groups.some((group) => group.label === 'No programmed rate · 1 night' && group.rows[0] === '2026-01-09'),
+    'S135 the no-programmed-rate night has its own header and row');
+  ok(!groups.find((group) => group.label.startsWith('Ran as set'))?.rows.includes('2026-01-09'),
+    'S135 the no-programmed-rate night never reads as ran-as-set');
+};
+
+// STORY:finding-evidence-routing:S136
+/** S136 · Selecting a night is in place: one row presses, the clock and trail stay,
+    the trace appears on Glucose by time of day, and Clear trace releases it. */
+export const S136 = async (page) => {
+  await openBasalNightRoster(page);
+  const before = await state(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
+  await settle(page, 200);
+  const selected = await state(page);
+  is(selected.crumb, before.crumb, 'S136 selecting a night leaves the breadcrumb in place');
+  is(selected.chip, before.chip, 'S136 selecting a night leaves the clock window in place');
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-01',
+    'S136 exactly the selected night row presses');
+  ok((await nightTrace(page)).length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
+  await page.locator('#level .clear-trace').click();
+  await settle(page, 200);
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').count(), 0, 'S136 Clear trace releases the row');
+  is(await nightTrace(page), [], 'S136 Clear trace removes the canvas trace');
+};
+
+// STORY:finding-evidence-routing:S137
+/** S137 · The ran-as-set night's null facts print as dashes; arrows step only
+    within a selected group and the detail provides its reader controls. */
+export const S137 = async (page) => {
+  await openBasalNightRoster(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 200);
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-02',
+    'S137 ArrowDown steps to the next night in the ran-above group');
+  is((await page.locator('#level .occ-head .pos').innerText()).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
+    'S137 the stepped detail names its position and arrow hint');
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]').click();
+  const detail = (await page.locator('#level .occ-detail').innerText()).replace(/\s+/g, ' ').trim();
+  ok(detail.includes('0.60 U/h delivered · 0.60 U/h programmed'), `S137 detail prints served delivered and programmed rates (${detail})`);
+  ok(detail.includes('— mg/dL this night · 114 mg/dL roster mean'), 'S137 null served mean prints as a dash beside roster mean');
+  ok(detail.includes('117 entry · — exit'), 'S137 null served exit prints as a dash');
+  is(await page.locator('#level .occ-head .pos').count(), 0, 'S137 a singleton group has no misleading arrow position');
+  is(await page.getByRole('button', { name: 'Open Jan 7 in Day', exact: true }).count(), 1,
+    'S137 the selected night offers the Day handoff');
+};
+
+// STORY:finding-evidence-routing:S138
+/** S138 · At the #ALIGN tablet width, the roster, selected detail and canvas stay
+    inside their panes with no horizontal overflow. */
+export const S138 = async (page) => {
+  await openBasalNightRoster(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-02"]').click();
+  await settle(page, 200);
+  const boxes = await page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    return ['.inspector', '#level', '#chart', '#level .occ-detail'].map((selector) => {
+      const node = document.querySelector(selector);
+      const box = node?.getBoundingClientRect();
+      return { selector, left: Math.round(box?.left ?? -1), right: Math.round(box?.right ?? -1), scroll: node?.scrollWidth ?? -1, client: node?.clientWidth ?? -1, viewport };
+    });
+  });
+  for (const box of boxes) {
+    ok(box.left >= 0 && box.right <= box.viewport, `S138 ${box.selector} remains inside the tablet viewport`);
+    ok(box.scroll <= box.client, `S138 ${box.selector} has no horizontal overflow`);
+  }
+  ok((await nightTrace(page)).length > 0, 'S138 the selected tablet night still paints on the canvas');
+};
+
 // STORY:finding-evidence-routing:C41
 // STORY:finding-evidence-routing:C42
 // STORY:finding-evidence-routing:C43
@@ -4840,6 +4965,19 @@ export const STORIES = [
   ['S127', S127, 'typical'], ['S128', S128, 'typical'], ['S129', S129, 'typical'],
   ['S130', S130, 'typical'], ['S131', S131, 'typical'],
   ['S132', S132, 'typical'],
+  ['S133', S133, 'typical'],
+  ['S134', S134, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence'
+      ? { ...body, nights: [...body.nights, { ...body.nights[0], date: '2026-01-08', t: '2026-01-08T00:00:00', sign: -1 }] }
+      : body,
+  }) }],
+  ['S135', S135, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence'
+      ? { ...body, nights: [...body.nights, { ...body.nights[0], date: '2026-01-09', t: '2026-01-09T00:00:00', programmed_rate: null, sign: null }] }
+      : body,
+  }) }],
+  ['S136', S136, 'typical'], ['S137', S137, 'typical'],
+  ['S138', S138, 'typical', { viewport: { width: 1024, height: 768 } }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

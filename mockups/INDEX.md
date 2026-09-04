@@ -121,6 +121,13 @@ moved-token list and colour pairs the design record names, plus before/after
 renders and the ribbon renders through the committed Trial opener — is stored
 under `openspec/changes/graphite-palette/evidence/`.
 
+Issue [#291](https://github.com/harmonichq/harmonic/issues/291) revises the
+shipped Finding → evidence routing surface so basal slot drills show their
+served-sign night roster, select a trace in place, keep nights without a
+programmed rate distinct, and expose selected-night facts plus the Day handoff.
+The replay and before/after synthetic evidence are under
+`openspec/changes/basal-night-drill/evidence/`.
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

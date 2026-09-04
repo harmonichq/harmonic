@@ -1,0 +1,26 @@
+FAIL S133 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+FAIL S134 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+FAIL S135 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+FAIL S136 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+FAIL S137 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+FAIL S138 — locator.waitFor: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#level .ev-group').first() to be visible[22m
+
+
+app: 0 of 6 new stories passed

@@ -192,6 +192,15 @@ the exploration ticket at admission.
   interface, task numbering). r1c 3 `injected` transcription defects, fixed
   by the coordinator in place. r1d countersigned.
 
+### #277 code review rounds (Luna, Targeted)
+
+- Chunk 1: clean (13/13, 10/10). Chunk 2: clean (12/12, 11/11).
+- Whole diff: 1 finding — the frozen fixture differs between supported
+  interpreters (Python 3.12's compensated float `sum()` vs 3.9 in the
+  per-sequence mean). Fixed by a follow-up chunk: `fmean` plus fixed served
+  precision at the analyzer, fixture regenerated, `--check` proven on both
+  interpreters.
+
 ## Open questions
 
 (none)

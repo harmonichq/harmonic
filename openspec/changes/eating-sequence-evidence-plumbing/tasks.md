@@ -1,19 +1,27 @@
 # Tasks — eating-sequence evidence plumbing
 
-## 1. Data contract
+## 1. Serve both cohorts on every comparison row
 
-- [ ] 1. Add `fetchEatingSequences()` in `frontend/data.js`, beside
+- [ ] 1. Extend `HighCarbComparisonRow` with `reference` and `high`, and
+  `RepeatComparisonRow` with `reference` and `repeat`: serialise each as the
+  existing six-key interval aggregate. Populate them from `_ComparedCohorts` and
+  `_ComparedRepeatCohorts`; make `empty_report` use the insufficient aggregate.
+- [ ] 2. Amend the complete eating-sequences requirement under `## MODIFIED
+  Requirements`: its normative JSON and comparison-row prose include both cohorts.
+- [ ] 3. Regenerate `frontend/__fixtures__/eating-sequence-report.json` through
+  `scripts/gen_eating_sequence_fixtures.py`; retain parity and `--check`. Add
+  serialisation-key tests and a supported-row equality test that high TIR minus
+  reference TIR equals the served difference.
+
+## 2. Fetch and adapt the report for the Diagnose evidence section
+
+- [ ] 4. Add `fetchEatingSequences()` in `frontend/data.js`, beside
   `fetchExploreTimeOfDay` in `makeDeps`, its return namespace, and default exports.
   It calls `/api/diagnose/eating-sequences` with no query parameter.
-- [ ] 2. Extend `frontend/diagnose-data-age.test.js`: pin that
+- [ ] 5. Extend `frontend/diagnose-data-age.test.js`: pin that
   `recordDiagnoseAge(ages, shape, payload)` returns a payload with no
   `input_data_age` unchanged and deletes only `ages[shape]`; invent no age.
-- [ ] 3. Add an injected-fetch Node test that proves the helper requests exactly
-  `/api/diagnose/eating-sequences`.
-
-## 2. Vue-free adapter
-
-- [ ] 4. Add `frontend/diagnose-eating-sequences.js`, Vue-free and DOM-free.
+- [ ] 6. Add `frontend/diagnose-eating-sequences.js`, Vue-free and DOM-free.
   Field-for-field, with no arithmetic or reclassification, it provides:
   - per-scope Q1–Q5 series over `in_sequence`, `post_4h`, and `post_6h`, with
     median TIR default and served mean/SD alternatives; every point has `n`/status;
@@ -23,25 +31,13 @@
     served comparison status/differences to `3+` cells; and
   - detector `status`, `finding`, and `exclusions` passed through verbatim.
   Insufficient cells remain `null` plus status, never omitted or zero-filled.
-- [ ] 5. Add `frontend/diagnose-eating-sequences.test.js` over the frozen report:
+- [ ] 7. Add `frontend/diagnose-eating-sequences.test.js` over the regenerated report:
   assert row counts 5 / 5 / 6 / 15 / 15, insufficiency, and no invented number.
   Construct an all-insufficient skeleton from fixture definitions and documented
   shape in a test helper; add no ungenerated fixture.
 
-## 3. Browser and harness boundaries
-
-- [ ] 6. Answer `/api/diagnose/eating-sequences` with the frozen fixture in
-  cockpit shell `routeApp` and the workstation app-load stub table, the only suites
-  here that load Diagnose inputs. Do not alter canvas composition: it injects data
-  through `openApp` and does not load shell inputs.
-- [ ] 7. Declare no new harness path or story; no story requests this report.
-  Keep `frontend/harness-api-paths.test.js` green. #278 adds both with rendering.
-- [ ] 8. Do not hand-edit the generated workstation payload. #278 extends
-  `.claude/qa/gen_synthetic_fixtures.py` and regenerates it if its story needs this
-  response.
-
-## 4. Specification and verification
-
-- [ ] 9. Add the surfaces delta. Leave `CONTEXT.md` unchanged: its Explore entry
+- [ ] 7. The adapter's high-carb candidate reads `reference` and `high` directly;
+  the repeat matrix reads `reference` and `repeat` directly. Its Node tests also
+  prove the fetch route name. Leave `CONTEXT.md` unchanged: its Explore entry
   describes a retired mode and should not rename this independent section.
-- [ ] 10. Run the six-line fast gate exactly from `AGENTS.md`. CI runs browser legs.
+- [ ] 8. Coordinator: run the full gate, including the fixture `--check`.

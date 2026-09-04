@@ -6,7 +6,11 @@ from pathlib import Path
 import unittest
 
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-from ciq_autotune.analyzers.eating_sequences import build_report, report_dict
+from ciq_autotune.analyzers.eating_sequences import (
+    build_eating_sequence_report,
+    build_report,
+    report_dict,
+)
 from tests.eating_sequence_streams import high_carb_stream
 
 
@@ -39,3 +43,21 @@ class EatingSequenceFixtureTest(unittest.TestCase):
             comparison["status"] == "supported"
             for comparison in fixture["high_carb_sequence"]["comparisons"]
         ))
+
+    def test_served_wrapper_reproduces_the_frozen_fixture(self):
+        """The route builds through the store wrapper; the fixture must pin that path too."""
+        root = Path(__file__).resolve().parents[1]
+        fixture = json.loads((
+            root / "frontend/__fixtures__/eating-sequence-report.json"
+        ).read_text())
+        boluses, cgm, carb_log, basal = high_carb_stream()
+
+        class Store:
+            def basal_events(self): return basal
+            def cgm_readings(self): return cgm
+            def bolus_events(self): return boluses
+            def carb_entries(self): return carb_log
+
+        served = report_dict(build_eating_sequence_report(Store()))
+        frozen = {key: value for key, value in fixture.items() if not key.startswith("_")}
+        self.assertEqual(served, frozen)

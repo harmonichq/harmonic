@@ -18,10 +18,10 @@ detector, API producer, projection, or chart.
   `eating-sequence-report-v1` contract module with immutable report rows,
   deterministic quintile assignment, median aggregation, complete
   serialisation, and an all-insufficient empty report.
-- Add a deterministic synthetic event-stream test helper plus public-interface
-  tests for the contract. The helper manufactures bolus, CGM, and Carb log
-  streams; it is not a committed event fixture or a substitute for #275's
-  generator-owned JSON capture.
+- Add public-interface tests for the contract using deterministic caller-owned
+  sequence items and metric rows. #275 introduces the synthetic event-stream
+  builder with its first store-event consumer, rather than adding a shared seam
+  before it has a caller.
 
 ## Boundaries
 

@@ -34,13 +34,20 @@ one implementable contract rather than reopening them.
   use `findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`, not a detector-local
   range, so every aggregate denominator has the same named source window as
   Diagnose. [Scope ledger: build-phase decisions.]
-- **#275 owns the committed JSON fixture and generator.** #274 adds only a
-  synthetic event-stream builder for tests. Before #275 builds store-event
-  primitives and a report producer there is no production-shaped artifact to
-  generate; committing JSON now would violate the repository rule that every
-  committed fixture ships with its producer and `--check` gate. #275 therefore
-  adds `scripts/gen_eating_sequence_fixtures.py`, its generated fixture, and
-  drift check together. [Scope ledger: risk contract; AGENTS.md fixture rule.]
+- **Pooled and evening scopes share one nested shape.** The spec comment's
+  separate top-level `quintiles` object collapses into
+  `high_carb_sequence.scopes.pooled`; `pooled` and `evening` therefore carry
+  identical boundaries-and-five-rows shapes. That removes two encodings of the
+  same report fact while preserving every aggregate. [Scope ledger:
+  eating-sequence contract pin.]
+- **#275 owns the first event-stream consumer, JSON fixture, and generator.**
+  #274 has no event-stream consumer: its public functions accept caller-owned
+  sequence items and metric rows, so a shared stream helper would be a seam
+  without a caller. #275 adds the synthetic event-stream builder when it builds
+  store-event primitives, alongside `scripts/gen_eating_sequence_fixtures.py`,
+  its generated fixture, and drift check. Committing JSON now would violate the
+  repository rule that every committed fixture ships with its producer and
+  `--check` gate. [Scope ledger: risk contract; AGENTS.md fixture rule.]
 
 The future detector modules own construction, eligibility, and conclusions but
 must consume this contract: windows chain carb-bearing boluses within 30
@@ -49,3 +56,7 @@ post-4-hour, and post-6-hour only; scopes are pooled and evening; and the
 two-window band remains descriptive. The report contract records their
 eventual input and output shape without bringing their implementation into this
 change.
+
+The parent issue's spec comment records the two detector finding conditions and
+headline preferences. They land with #275 and #276, the detector tickets, not
+with this contract-only change.

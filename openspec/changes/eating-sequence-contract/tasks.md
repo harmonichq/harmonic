@@ -32,32 +32,27 @@
   medians of the per-sequence `tir_pct`, `mean_mgdl`, `sd_mgdl`, and
   `peak_mgdl` values. It must never produce a pooled reading-level metric.
 - [ ] Serialize the complete `eating-sequence-report-v1` dictionary in
-  `ciq_autotune/analyzers/eating_sequences.py`: `schema`, `window`,
-  `definitions`, `high_carb_sequence`, `repeat_eating_amplifier`, their
-  fixed-key quintile/scopes/matrix/comparisons/exclusions subshapes, and all
-  three interval keys. Public output contains only aggregate counts, aggregate
-  metrics, user-relative boundaries, and optional finding summaries; it must
-  contain no timestamp, event id, event row, Day link, raw EGV, or
-  per-occurrence data. `empty_report(window)` must preserve every key with
-  all interval aggregates insufficient at `n=0`.
-- [ ] Add the shared deterministic test builder at
-  `tests/eating_sequence_streams.py`. Manufacture `BolusEvent`, `CgmReading`,
-  and `CarbEntry` streams from specified eating windows, sequences, carb totals,
-  and coverage without real-shaped values; choose synthetic constants that are
-  not rounded real readings. The helper gives #275 and #276 analyzer-output
-  inputs rather than hand-set detector flags. Do not commit a JSON event
-  fixture; #275 owns `scripts/gen_eating_sequence_fixtures.py`, its generated
-  fixture, and its `--check` gate.
+  `ciq_autotune/analyzers/eating_sequences.py` exactly as the capability's
+  **separately versioned report is aggregate-only and complete** requirement
+  specifies: five ordered Q1–Q5 quintile rows in each scope, all fifteen
+  `(quintile, band)` matrix rows, all fifteen `(quintile, period)` comparison
+  rows, every aggregate and exclusion key, and only the two source-window
+  bounds as time values. Public output contains no event id, event row, Day
+  link, raw EGV, or per-occurrence data. `empty_report(window)` must preserve
+  that complete shape with all rows present and all interval aggregates
+  insufficient at `n=0`.
 - [ ] Add `tests/test_eating_sequences.py` through the public contract
   interface. Cover configuration immutability; deterministic balanced quintiles
   for `n=5k`, non-divisible `n`, ties, and `n<5`; all four boundary values;
   insufficiency at `n=7` and support at `n=8`; median aggregation; complete
   serialisation by walking the dictionary for every required key and rejecting
   timestamp- or event-id-like keys; and the complete `n=0` empty-report
-  skeleton. Use the synthetic stream helper where event-shaped inputs are
-  needed; do not hand-set outcome flags.
+  skeleton, including five rows per scope and fifteen matrix and comparison
+  rows. Build deterministic caller-owned item and metric-row literals in the
+  test; their values must not round from a real reading.
 - [ ] Run the focused contract tests and the required static gates: the locked
-  pytest interpreter, `npx --yes @fission-ai/openspec@1 validate --all --strict`,
+  pytest interpreter, `node --test 'frontend/**/*.test.js'`,
+  `npx --yes @fission-ai/openspec@1 validate --all --strict`,
   `python3 scripts/check_adr_numbers.py`,
   `python3 scripts/check_owned_identifiers.py`, and
   `python3 scripts/check_public_allowlist.py`. Leave API/cache integration,

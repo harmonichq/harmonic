@@ -30,6 +30,10 @@ mirror: all localhost API requests continue to the served showcase.
   amendments.
 - `replay.stdout.txt` — amended revision replay:
   `app: 157 of 157 stories passed`.
+  That capture is this revision round against its own base. After merging
+  `origin/main`, which issued its own S133-S138 for the basal night drill,
+  this change's six stories were renumbered S139-S144 and the merged
+  registry replays `app: 163 of 163 stories passed`.
 
 All three are complete stdout captures. The final run has zero failures, zero
 opener problems and no skipped story. The deliberate-red first execution of

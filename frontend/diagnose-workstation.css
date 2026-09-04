@@ -1631,9 +1631,14 @@
   color: var(--mk-muted); white-space: nowrap;
   padding-right: 8px; border-right: 1px solid color-mix(in srgb, var(--ck-hair) 70%, transparent);
 }
-.ev-row .entry { color: var(--mk-secondary); text-align: right; }
+/* The measured number carries the ink and the reference number gives way to it.
+   These four cells are the basal night roster's alone — the Finding and
+   comparison rosters span this range with `.only` — and the row now reads
+   delivered · programmed, where programmed repeats down the whole group. Ink on
+   the constant would pull the eye to the one column that never varies. */
+.ev-row .entry { color: var(--mk-text); text-align: right; }
 .ev-row .arrow { color: color-mix(in srgb, var(--mk-muted) 70%, transparent); text-align: center; }
-.ev-row .worst { color: var(--mk-text); text-align: right; }
+.ev-row .worst { color: var(--mk-secondary); text-align: right; }
 .ev-row .delta { color: var(--mk-muted); text-align: right; }
 /* one reading only: the numeric columns give way to a single stated cell */
 .ev-row .only { grid-column: 2 / 6; color: var(--mk-text); white-space: nowrap; }

@@ -3698,34 +3698,186 @@ export const S132 = async (page) => {
   }
 };
 
+/* ---- #291 · basal nights in the drill rail (ADR 291) ------------------- */
+
+const openBasalNightRoster = async (page) => {
+  await page.locator('#lane button').first().click();
+  await page.locator('#level .ev-group').first().waitFor();
+  await settle(page, 200);
+};
+
+const rosterGroups = (page) => page.evaluate(() => [...document.querySelectorAll('#level .ev-group')]
+  .map((header) => ({
+    label: header.textContent.replace(/\s+/g, ' ').trim(),
+    rows: (() => {
+      const rows = [];
+      for (let node = header.nextElementSibling; node && !node.matches('.ev-group'); node = node.nextElementSibling) {
+        if (node.matches('.ev-row')) rows.push(node.dataset.occurrenceId);
+      }
+      return rows;
+    })(),
+  })));
+
+const syntheticNight = (night, date, values) => ({
+  ...night, ...values, date, t: `${date}T00:00:00`,
+  glucose_trace: night.glucose_trace.map((point) => {
+    const at = new Date(`${date}T00:00:00Z`);
+    at.setUTCMinutes(at.getUTCMinutes() + point.minute);
+    const stamp = [at.getUTCFullYear(), String(at.getUTCMonth() + 1).padStart(2, '0'), String(at.getUTCDate()).padStart(2, '0')].join('-');
+    return { ...point, t: `${stamp} ${String(at.getUTCHours()).padStart(2, '0')}:${String(at.getUTCMinutes()).padStart(2, '0')}:00` };
+  }),
+});
+
+const nightTrace = (page) => page.evaluate(() => {
+  const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+  const series = chart.getOption().series;
+  return {
+    trace: series.find((item) => item.name === 'That day')?.data
+      .filter((value) => value !== '-' && value != null) || [],
+    envelope: series.find((item) => item.name === 'Median')?.data
+      .filter((value) => value !== '-' && value != null) || [],
+  };
+});
+
+// STORY:finding-evidence-routing:S133
+/** S133 · The served normal body keeps ran-above and ran-as-set distinct, with
+    their supplied counts and the one excluded-nights tally beneath the roster. */
+export const S133 = async (page) => {
+  await openBasalNightRoster(page);
+  is(await rosterGroups(page), [
+    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+  ], 'S133 the served group headers, five-row cap and rows stand in the drill rail');
+  is((await page.locator('#level .empty').allTextContents()).map((text) => text.trim()), ['1 excluded night'],
+    'S133 the served excluded-night count is a separate tally');
+};
+
+// STORY:finding-evidence-routing:S134
+/** S134 · The frontend reads the served sign as-is and derives no direction of
+    its own: a coherent served negative-sign night is never folded into ran-as-set. */
+export const S134 = async (page) => {
+  await openBasalNightRoster(page);
+  is(await rosterGroups(page), [
+    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+    { label: 'Ran below · 1 night', rows: ['2026-01-08'] },
+    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+  ], 'S134 the served negative-sign night owns its ran-below group');
+};
+
+// STORY:finding-evidence-routing:S135
+/** S135 · The frontend reads the served missing programmed rate as-is and derives
+    no direction of its own: it has its own group even when the sign is null. */
+export const S135 = async (page) => {
+  await openBasalNightRoster(page);
+  const groups = await rosterGroups(page);
+  ok(groups.some((group) => group.label === 'No programmed rate · 1 night' && group.rows[0] === '2026-01-09'),
+    'S135 the no-programmed-rate night has its own header and row');
+  ok(!groups.find((group) => group.label.startsWith('Ran as set'))?.rows.includes('2026-01-09'),
+    'S135 the no-programmed-rate night never reads as ran-as-set');
+};
+
+// STORY:finding-evidence-routing:S136
+/** S136 · Selecting a night is in place: one row presses, the clock and trail stay,
+    the trace appears on Glucose by time of day, and Clear trace releases it. */
+export const S136 = async (page) => {
+  await openBasalNightRoster(page);
+  const before = await state(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
+  await settle(page, 200);
+  const selected = await state(page);
+  is(selected.crumb, before.crumb, 'S136 selecting a night leaves the breadcrumb in place');
+  is(selected.chip, before.chip, 'S136 selecting a night leaves the clock window in place');
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-01',
+    'S136 exactly the selected night row presses');
+  const painted = await nightTrace(page);
+  ok(painted.trace.length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
+  ok(painted.envelope.length > 0, 'S136 the selected trace paints over the standing pooled envelope');
+  await page.locator('#level .clear-trace').click();
+  await settle(page, 200);
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').count(), 0, 'S136 Clear trace releases the row');
+  is((await nightTrace(page)).trace, [], 'S136 Clear trace removes the canvas trace');
+};
+
+// STORY:finding-evidence-routing:S137
+/** S137 · The ran-as-set night's null facts print as dashes; arrows step only
+    within a selected group and the detail provides its reader controls. */
+export const S137 = async (page) => {
+  await openBasalNightRoster(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
+  await page.keyboard.press('ArrowDown');
+  await settle(page, 200);
+  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-02',
+    'S137 ArrowDown steps to the next night in the ran-above group');
+  is((await page.locator('#level .occ-head .pos').innerText()).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
+    'S137 the stepped detail names its position and arrow hint');
+  // The repaint destroys the row the key press stood on, so stepping must put
+  // focus on the newly selected row — otherwise a screen reader lands on the
+  // document and Tab restarts at the top of the page.
+  is(await page.evaluate(() => document.activeElement?.dataset?.occurrenceId ?? null), '2026-01-02',
+    'S137 the stepped row keeps focus, as the factor roster does');
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]').click();
+  await settle(page, 200);
+  const detail = (await page.locator('#level .occ-detail').innerText()).replace(/\s+/g, ' ').trim();
+  ok(detail.includes('0.60 U/h delivered · 0.60 U/h programmed'), `S137 detail prints served delivered and programmed rates (${detail})`);
+  ok(detail.includes('— mg/dL this night · 114 mg/dL roster mean'), 'S137 null served mean prints as a dash beside roster mean');
+  ok(detail.includes('117 entry · — exit'), 'S137 null served exit prints as a dash');
+  is(await page.locator('#level .occ-head .pos').count(), 0, 'S137 a singleton group has no misleading arrow position');
+  is(await page.getByRole('button', { name: 'Open Jan 7 in Day', exact: true }).count(), 1,
+    'S137 the selected night offers the Day handoff');
+};
+
+// STORY:finding-evidence-routing:S138
+/** S138 · At the #ALIGN tablet width, the roster, selected detail and canvas stay
+    inside their panes with no horizontal overflow. */
+export const S138 = async (page) => {
+  await openBasalNightRoster(page);
+  await page.locator('#level .ev-row[data-occurrence-id="2026-01-02"]').click();
+  await settle(page, 200);
+  const boxes = await page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    return ['.inspector', '#level', '#chart', '#level .occ-detail'].map((selector) => {
+      const node = document.querySelector(selector);
+      const box = node?.getBoundingClientRect();
+      return { selector, left: Math.round(box?.left ?? -1), right: Math.round(box?.right ?? -1), scroll: node?.scrollWidth ?? -1, client: node?.clientWidth ?? -1, viewport };
+    });
+  });
+  for (const box of boxes) {
+    ok(box.left >= 0 && box.right <= box.viewport, `S138 ${box.selector} remains inside the tablet viewport`);
+    ok(box.scroll <= box.client, `S138 ${box.selector} has no horizontal overflow`);
+  }
+  const painted = await nightTrace(page);
+  ok(painted.trace.length > 0, 'S138 the selected tablet night still paints on the canvas');
+  ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
+};
+
 /* ---- #302 · the tapered urgency queue ------------------------------------ */
 
-/** S133 · The first priced row is the hero. Its row title remains the served
+/** S139 · The first priced row is the hero. Its row title remains the served
     short title while the served headline stays out of the rail, and its chart
     occupies the stage rather than nesting inside the hero. */
-// STORY:finding-evidence-routing:S133
-export const S133 = async (page) => {
+// STORY:finding-evidence-routing:S139
+export const S139 = async (page) => {
   await openWholeDay(page);
   const rows = await servedRows(page, null);
   const first = rows.find((row) => row.priority != null);
-  ok(first, 'S133 the served queue publishes a priced row');
+  ok(first, 'S139 the served queue publishes a priced row');
   const hero = page.locator('#level .qrow.hero');
-  is(await hero.count(), 1, 'S133 the rail paints one hero');
-  is(await hero.getAttribute('data-id'), first.id, 'S133 the first priced row is the hero');
+  is(await hero.count(), 1, 'S139 the rail paints one hero');
+  is(await hero.getAttribute('data-id'), first.id, 'S139 the first priced row is the hero');
   is((await hero.locator('.lab').innerText()).trim(), first.title,
-    'S133 the hero title is the served short title');
+    'S139 the hero title is the served short title');
   ok(!(await page.locator('#level').innerText()).includes(first.headline),
-    'S133 the served headline stays out of the rail');
+    'S139 the served headline stays out of the rail');
   is(await hero.locator('canvas, svg, .mini').count(), 0,
-    'S133 no chart is nested inside the hero');
+    'S139 no chart is nested inside the hero');
   const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
-  is(await focalId(page), chartId, 'S133 the hero chart occupies the stage');
+  is(await focalId(page), chartId, 'S139 the hero chart occupies the stage');
 };
 
-/** S134 · A compact row and its drawer cell draw the same mini option: the
+/** S140 · A compact row and its drawer cell draw the same mini option: the
     series identities come from the one shared chart builder. */
-// STORY:finding-evidence-routing:S134
-export const S134 = async (page) => {
+// STORY:finding-evidence-routing:S140
+export const S140 = async (page) => {
   await openWholeDay(page);
   const id = 'finding:over_treated_low';
   const rowMini = page.locator(`#level .qrow.compact[data-id="${id}"] .mini`);
@@ -3737,67 +3889,67 @@ export const S134 = async (page) => {
     window.echarts.getInstanceByDom(host).getOption().series.map((series) => series.id));
   const rowIds = await seriesIds(rowMini);
   const drawerIds = await seriesIds(drawerMini);
-  ok(rowIds.length > 0, 'S134 the compact row mini draws at least one series');
-  is(rowIds, drawerIds, 'S134 row and drawer minis draw identical series ids');
+  ok(rowIds.length > 0, 'S140 the compact row mini draws at least one series');
+  is(rowIds, drawerIds, 'S140 row and drawer minis draw identical series ids');
 };
 
-/** S135 · Every unpriced tail row is title-only and still drills through the
+/** S141 · Every unpriced tail row is title-only and still drills through the
     same queue-row route, seating its own chart on the stage. */
-// STORY:finding-evidence-routing:S135
-export const S135 = async (page) => {
+// STORY:finding-evidence-routing:S141
+export const S141 = async (page) => {
   await openWholeDay(page);
   const ids = ['finding:correction_on_iob', 'finding:correction_stacking'];
   let drilled = 0;
   for (const id of ids) {
     const row = page.locator(`#level .qrow.tail[data-id="${id}"]`);
-    is(await row.count(), 1, `S135 ${id} is a tail row`);
+    is(await row.count(), 1, `S141 ${id} is a tail row`);
     is(await row.locator('.sum, .den, .tag, .mini, .why').count(), 0,
-      `S135 ${id} is title-only`);
+      `S141 ${id} is title-only`);
     await row.click();
     await settle(page, 450);
-    is(await focalId(page), id, `S135 drilling ${id} seats its chart`);
+    is(await focalId(page), id, `S141 drilling ${id} seats its chart`);
     drilled += 1;
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
     await settle(page, 450);
   }
-  is(drilled, ids.length, 'S135 every title-only tail row drills');
+  is(drilled, ids.length, 'S141 every title-only tail row drills');
 };
 
-/** S136 · Tier language appears only at priced-tier changes: the hero eyebrow
+/** S142 · Tier language appears only at priced-tier changes: the hero eyebrow
     and the single compact-tier caption are values of the rail's TIER map, and
     the retired Decide now wording never returns. */
-// STORY:finding-evidence-routing:S136
-export const S136 = async (page) => {
+// STORY:finding-evidence-routing:S142
+export const S142 = async (page) => {
   await openWholeDay(page);
   const tierWords = await page.locator('#level .tier, #level .qtier').allTextContents();
   is(tierWords, [TIER.next_in_line, TIER.worth_a_look],
-    'S136 tier words print once at each priced-tier change');
+    'S142 tier words print once at each priced-tier change');
   ok(tierWords.every((word) => Object.values(TIER).includes(word)),
-    'S136 every printed tier word comes from the TIER map');
+    'S142 every printed tier word comes from the TIER map');
   ok(!(await page.locator('#level').innerText()).includes('Decide now'),
-    'S136 no retired Decide now tier appears anywhere in the rail');
+    'S142 no retired Decide now tier appears anywhere in the rail');
 };
 
-/** S137 · Below the rail mini's measured width floor, the compact row remains
+/** S143 · Below the rail mini's measured width floor, the compact row remains
     and the mini is omitted rather than mounting an unreadable chart. */
-// STORY:finding-evidence-routing:S137
-export const S137 = async (page) => {
+// STORY:finding-evidence-routing:S143
+export const S143 = async (page) => {
   await openWholeDay(page);
   const row = page.locator('#level .qrow.compact[data-id="finding:over_treated_low"]');
-  is(await row.count(), 1, 'S137 the compact row survives the narrow inspector');
-  ok(MIN_ROW_MINI_WIDTH > 0, 'S137 the rail publishes a positive mini width floor');
-  is(await row.locator('.mini').count(), 0, 'S137 no sub-floor mini remains mounted');
+  is(await row.count(), 1, 'S143 the compact row survives the narrow inspector');
+  ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
+  is(await row.locator('.mini').count(), 0, 'S143 no sub-floor mini remains mounted');
   is(await row.getAttribute('data-mini'), 'omitted',
-    'S137 the compact row records the sub-floor omission');
+    'S143 the compact row records the sub-floor omission');
 };
 
-/** S138 · Sifting to Meals promotes Carb undercount from compact to hero and
+/** S144 · Sifting to Meals promotes Carb undercount from compact to hero and
     moves its chart onto the stage without changing the server's row identity. */
-// STORY:finding-evidence-routing:S138
-export const S138 = async (page) => {
+// STORY:finding-evidence-routing:S144
+export const S144 = async (page) => {
   await openWholeDay(page);
   is(await page.locator('#level .qrow.hero').getAttribute('data-id'), 'ic:720',
-    'S138 the unsifted fixture begins with the served I:C hero');
+    'S144 the unsifted fixture begins with the served I:C hero');
   await page.getByRole('button', { name: /Filter/ }).click();
   for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
     await page.getByRole('menuitemcheckbox', { name }).click();
@@ -3805,11 +3957,11 @@ export const S138 = async (page) => {
   await page.keyboard.press('Escape');
   await settle(page, 450);
   const hero = page.locator('#level .qrow.hero');
-  is(await hero.count(), 1, 'S138 the meals-only sift paints one hero');
+  is(await hero.count(), 1, 'S144 the meals-only sift paints one hero');
   is((await hero.locator('.lab').innerText()).trim(), 'Carb undercount',
-    'S138 the promoted hero keeps the served title');
+    'S144 the promoted hero keeps the served title');
   is(await focalId(page), 'finding:carb_undercount',
-    'S138 the promoted hero chart moves onto the stage');
+    'S144 the promoted hero chart moves onto the stage');
 };
 
 // STORY:finding-evidence-routing:C41
@@ -4955,12 +5107,25 @@ export const STORIES = [
   ['S127', S127, 'typical'], ['S128', S128, 'typical'], ['S129', S129, 'typical'],
   ['S130', S130, 'typical'], ['S131', S131, 'typical'],
   ['S132', S132, 'typical'],
-  ['S133', S133, 'typical', { history: true }],
-  ['S134', S134, 'typical', { history: true }],
-  ['S135', S135, 'typical', { history: true }],
-  ['S136', S136, 'typical', { history: true }],
-  ['S137', S137, 'typical', { history: true, viewport: { width: 760, height: 900 } }],
-  ['S138', S138, 'typical', { history: true }],
+  ['S133', S133, 'typical'],
+  ['S134', S134, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence'
+      ? { ...body, nights: [...body.nights, syntheticNight(body.nights[0], '2026-01-08', { delivered_rate: 0.4, sign: -1 })] }
+      : body,
+  }) }],
+  ['S135', S135, 'typical', { evidenceScenario: async ({ path, body }) => ({
+    body: path === '/api/diagnose/basal-night-evidence'
+      ? { ...body, nights: [...body.nights, syntheticNight(body.nights[0], '2026-01-09', { programmed_rate: null, sign: null })] }
+      : body,
+  }) }],
+  ['S136', S136, 'typical'], ['S137', S137, 'typical'],
+  ['S138', S138, 'typical', { viewport: { width: 1024, height: 768 } }],
+  ['S139', S139, 'typical', { history: true }],
+  ['S140', S140, 'typical', { history: true }],
+  ['S141', S141, 'typical', { history: true }],
+  ['S142', S142, 'typical', { history: true }],
+  ['S143', S143, 'typical', { history: true, viewport: { width: 760, height: 900 } }],
+  ['S144', S144, 'typical', { history: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

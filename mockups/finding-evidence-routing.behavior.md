@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**158 issued executable IDs:** S01–S138, C41–C57, and D1–D3
-**Active executable IDs:** S01–S116, S118–S138, C41–C57, and D1–D3
+**164 issued executable IDs:** S01–S144, C41–C57, and D1–D3
+**Active executable IDs:** S01–S116, S118–S144, C41–C57, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3025,6 +3025,58 @@ actually release. Recorded in
 `openspec/changes/one-settings-drill-down/design.md`, ADR 294 ("The
 clock-window rule stays per-parameter, and the chart gesture adopts it").
 
+## Revision — 2026-09-04, base `ee1d46f0a309b38625c2f4eee0956f8d480468c3` (issue #291: basal nights in the drill rail)
+
+Before product code changes, `app: 151 of 151 stories passed` against exact
+base `ee1d46f0a309b38625c2f4eee0956f8d480468c3` (the ticket branch's
+merge-base with `origin/main`) through the declared no-fetch server, served at
+port 8876 from a dedicated worktree and its own scratch copy of
+`mockups/qa-e2e.synthetic/harmonic.sqlite`. Every retired sanction printed.
+The raw output is
+`openspec/changes/basal-night-drill/evidence/replay.base.stdout.txt`.
+
+**Fail-first.** The real replay driver ran against the base frontend through:
+
+```sh
+PLAYWRIGHT_MODULE="$PLAYWRIGHT_MODULE" VENDOR_DIR="$VENDOR_DIR" BASE_URL=http://127.0.0.1:8876 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+```
+
+It reports `app: 151 of 157 stories passed`: exactly S133–S138 fail waiting for the absent rendered
+night-roster group (`#level .ev-group`), while the frozen contract keeps
+passing. The complete failure evidence is
+`openspec/changes/basal-night-drill/evidence/replay.fail-first.stdout.txt`.
+
+**Behavior added.**
+
+```
+S133 · The served basal-night roster keeps ran-above and ran-as-set groups
+       distinct, shows their served counts, honours the five-row cap, and
+       prints the separate excluded-night tally.
+S134 · A night whose served sign is negative appears under Ran below.
+S135 · A night without a programmed rate appears under No programmed rate,
+       never Ran as set even though its served sign is null.
+S136 · Selecting one rendered night row stays in the standing slot frame and
+       clock window, presses that row, paints its trace on Glucose by time of
+       day, and Clear trace releases both the row and trace.
+S137 · The selected-night detail prints served rates and glucose facts,
+       preserves null facts as dashes, offers the Day handoff, and Up/Down
+       steps only within the selected group's nights, keeping focus on the
+       stepped row.
+S138 · At 1024×768, the roster, selected detail and canvas remain within their
+       panes without horizontal overflow while the selected trace still paints.
+```
+
+No frozen story is amended or retired, so no retirement sanction is owed.
+The final amended replay output is
+`openspec/changes/basal-night-drill/evidence/replay.final.stdout.txt`.
+Before/after renders at 1440×900, 1280×800, 1024×768 and 390×844 cover the
+resting roster, selected trace and detail state under
+`openspec/changes/basal-night-drill/evidence/renders/`.
+
+Data provenance: the replays and renders use the committed synthetic Diagnose
+payload and the scratch copy of the generated QA showcase only; no real patient
+data, credentials or live fetches are involved.
+
 ## Revision — 2026-09-04, base `ee1d46f0a309b38625c2f4eee0956f8d480468c3` (issue #302: tapered urgency queue)
 
 Before the ledger or replay changed, `app: 151 of 151 stories passed` against
@@ -3041,7 +3093,7 @@ the served showcase's unbounded 24-hour queue from
 `scripts/gen_qa_e2e_db.py`. Replay stories answer
 `/api/diagnose/findings` through ADR 735's fixture-only mirror over either the
 payload-derived default or `frontend/__fixtures__/findings-projection.json`'s
-pinned inputs. Stories S118 and S133–S138 open with the latter because their
+pinned inputs. Stories S118 and S139–S144 open with the latter because their
 subject is a priced row; S121 keeps its direction-only fixture.
 
 **Fail-first.** The unamended replay against the revised rail reported
@@ -3050,8 +3102,8 @@ in the payload-derived queue, which has no priced rows, and S121 still looked
 for the analyzer explanation inside an unpriced row that is now deliberately
 title-only. Their complete failures are recorded in
 `openspec/changes/tapered-urgency-queue/evidence/replay.pre.stdout.txt`.
-Each of S133–S138 was also run deliberately red after reaching its real browser
-state; all six failed its sentinel, and S138 additionally exposed the stage
+Each of S139–S144 was also run deliberately red after reaching its real browser
+state; all six failed its sentinel, and S144 additionally exposed the stage
 remaining on `ic:720` after the Meals-only sift promoted Carb undercount.
 
 **Behavior changed — S118 and S121.** S118 now opens the pinned priced input
@@ -3068,23 +3120,23 @@ ratify, with no sanction quoted.
 **Behavior added.** The new executable stories are:
 
 ```
-S133 · The first priced row is the sole hero. Its title is the served short
+S139 · The first priced row is the sole hero. Its title is the served short
        title, the served headline is absent from the rail, no chart nests
        inside the hero, and that row's chart occupies the stage.
-S134 · A compact row's mini and the matching drawer cell draw identical
+S140 · A compact row's mini and the matching drawer cell draw identical
        ECharts series ids through the shared option builder.
-S135 · Both unpriced tail rows are title-only and still drill, seating their
+S141 · Both unpriced tail rows are title-only and still drill, seating their
        own chart on the stage.
-S136 · The hero eyebrow and compact-tier caption print each priced-tier change
+S142 · The hero eyebrow and compact-tier caption print each priced-tier change
        once, every tier word comes from `TIER`, and `Decide now` stays absent.
-S137 · At a 760px viewport the inspector is below the row-mini layout floor:
+S143 · At a 760px viewport the inspector is below the row-mini layout floor:
        the compact row remains, records `data-mini="omitted"`, and mounts no
        unreadable chart.
-S138 · A Meals-only sift promotes `finding:carb_undercount` to the sole hero
+S144 · A Meals-only sift promotes `finding:carb_undercount` to the sole hero
        and moves that same chart onto the stage.
 ```
 
-S138's fail-first run found that Sift changed the rail weight while the canvas
+S144's fail-first run found that Sift changed the rail weight while the canvas
 correctly preserved a still-live old focal id. The correction reuses
 `queueRows` as the sole weight authority inside the existing Sift toggle and
 focuses its visible hero; it introduces no second ranking rule. S29, S42, S74

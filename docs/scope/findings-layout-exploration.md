@@ -33,3 +33,12 @@ Remaining dispositions: none. No execution lock exists.
 
 Why: this is a reversible layout and navigation-mode revision around unchanged advisory judgments.
 Disposition: → implementation brief for #341.
+
+## Implementation-brief review
+
+2026-09-04, ordinary targeted plan review, one independent Terra panel.
+One authoring blocker: the draft envelope used ordinal task ranges where the
+source checklist used phase-qualified labels. Mechanically corrected the two
+references to 1.1–1.5 and 2.1–2.5; no scope changed. Same-reviewer recheck
+countersigned all five axes. No injected blockers. The reviewed source is
+be8b09bc7de258ae4a8c8afdac7551e6ea8bb127. Execution lock awaits operator approval.

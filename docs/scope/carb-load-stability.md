@@ -166,6 +166,21 @@ the exploration ticket at admission.
   of the band strings noted, and the finding sentence's "three or more" is
   fixed by the spec while the band boundary stays 3).
 
+- Diagnose home for the eating-sequence report (coordinator decision,
+  2026-09-04, grounded in the record): "Explore mode" was retired as a mode
+  toggle (ADR 215, sanction 2026-08-26) and the named "better version" is the
+  dock for ranked findings' evidence, which this non-finding aggregate does
+  not fit; the drawer/stage field builds descriptors from findings rows only
+  (ADR 306). The report therefore gets a distinct, explicitly non-advisory
+  aggregate-evidence section on the Diagnose surface, outside Audit and
+  outside Watching (whose definition is tuning reads only). #277 delivers
+  the data plumbing (fetch, Vue-free adapter, age handling, browser-gate
+  route answers, harness path) with no rendered surface; #278's ui-craft
+  lock settles the section's name, placement and charts. The QA showcase
+  yields an all-insufficient report (32 carb boluses ~24 h apart), so
+  rendered evidence comes from the frozen synthetic fixture unless #278 adds
+  a QA coverage era. — inline
+
 ## Open questions
 
 (none)

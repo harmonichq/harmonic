@@ -156,7 +156,7 @@ test('#341 · every priced row, including rank one, receives the common mini mou
   }
 });
 
-test('#302 · the hero announces its served tier word before its title, and it alone carries one', () => {
+test('#341 · rank one keeps its served tier word within the common priced-row structure', () => {
   class Node {
     constructor() { this.children = []; this.dataset = {}; this.className = ''; }
     append(...nodes) { this.children.push(...nodes); }
@@ -171,7 +171,7 @@ test('#302 · the hero announces its served tier word before its title, and it a
     const painted = host.children.find((child) => child.className === 'q').children
       .filter((child) => child.className.startsWith('qrow'));
     const [hero] = painted;
-    assert.equal(hero.className, 'qrow hero');
+    assert.equal(hero.className, 'qrow priced');
     // the eyebrow is READ where it is seen: numeral, tier word, then the title
     assert.deepEqual(hero.children.map((child) => child.className),
       ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums', 'mini']);

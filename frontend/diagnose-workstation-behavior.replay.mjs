@@ -3546,16 +3546,8 @@ const SANCTION_DRAWER_GROW_BACK = 'sanction: Connor Griffin · 2026-09-02 · "It
 // STORY:finding-evidence-routing:S127
 export const S127 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'docked', 'S127 premise: the reader docked the strip');
-  await page.setViewportSize({ width: 1440, height: 480 });
-  await page.waitForFunction(() => document.querySelector('#tile-field')?.dataset.dock === 'hidden');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S127 premise: shrinking the field past the dock floor still hides the strip');
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.waitForTimeout(700);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S127 RETIRED — growing back past the floor must not re-dock the strip');
+  is(await page.locator('#dock-handle, [data-dock]').count(), 0,
+    'S127 RETIRED — no dock control or dock state remains');
   console.log(`S127 RETIRED — ${SANCTION_DRAWER_GROW_BACK}`);
 };
 
@@ -3575,8 +3567,8 @@ export const S128 = async (page) => {
   await openWholeDay(page);
   const rankOne = await focalId(page);
   ok(rankOne, 'S128 the queue root seats a rank-1 chart');
-  await raiseDock(page);
-  const other = page.locator(`#tile-row .evidence-tile[data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
+  await page.getByRole('button', { name: 'All charts' }).click();
+  const other = page.locator(`#tile-row .evidence-tile[data-seat="grid"][data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
   const otherId = await other.getAttribute('data-chart-id');
   ok(otherId, 'S128 the strip publishes a lower-ranked chart to drill');
   await other.locator('.tile-body').click();
@@ -3585,11 +3577,9 @@ export const S128 = async (page) => {
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   is(await focalId(page), rankOne, 'S128 leaving the drill re-seats the rank-1 chart, never the chart just left');
-  await raiseDock(page);
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${otherId}"][data-selected]`).count(), 0,
-    'S128 the drilled chart\'s strip cell is no longer the current frame');
+  await page.getByRole('button', { name: 'All charts' }).click();
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${rankOne}"][data-selected]`).count(), 1,
-    'S128 the rank-1 cell is the current frame again');
+    'S128 the catalog marks the rank-1 chart current again');
 };
 
 /* S129 · An explorer pick drills the picked chart's finding and closes the explorer. */
@@ -3597,7 +3587,7 @@ export const S128 = async (page) => {
 export const S129 = async (page) => {
   await openWholeDay(page);
   const before = (await state(page)).crumb.length;
-  await page.locator('#dock-handle button[aria-label="Show every chart"]').click();
+  await page.getByRole('button', { name: 'All charts' }).click();
   await page.locator('#tile-field[data-explorer]').waitFor();
   const cell = page.locator('#tile-field[data-explorer] .evidence-tile[data-seat="grid"][data-chart-id^="finding:"]').first();
   const id = await cell.getAttribute('data-chart-id');
@@ -3607,14 +3597,14 @@ export const S129 = async (page) => {
   is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the pick closes the explorer');
   is(await focalId(page), id, 'S129 the picked chart holds the stage');
   ok((await state(page)).crumb.length > before, 'S129 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S129 the drawer is away after the pick');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the catalog is away after the pick');
 };
 
 /* S130 · The drawer opens hidden and the stage holds the rank-1 chart. */
 // STORY:finding-evidence-routing:S130
 export const S130 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S130 a fresh visit opens the drawer hidden');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S130 a fresh visit opens the catalog closed');
   const rows = await servedRows(page, null);
   const first = rows.find((row) => row.event_chart || row.parameter);
   ok(first, 'S130 the queue publishes a ranked row');
@@ -3629,16 +3619,16 @@ export const S130 = async (page) => {
 // STORY:finding-evidence-routing:S131
 export const S131 = async (page) => {
   await openWholeDay(page);
-  await raiseDock(page);
+  await page.getByRole('button', { name: 'All charts' }).click();
   const before = (await state(page)).crumb.length;
-  const mini = page.locator('#tile-row .evidence-tile[data-chart-id]').nth(1);
+  const mini = page.locator('#tile-row .evidence-tile[data-seat="grid"][data-chart-id]').nth(1);
   const id = await mini.getAttribute('data-chart-id');
   ok(id, 'S131 the strip publishes a second chart');
   await mini.locator('.tile-body').click();
   await settle(page, 450);
   is(await focalId(page), id, 'S131 the picked chart holds the stage');
   ok((await state(page)).crumb.length > before, 'S131 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S131 the pick puts the drawer away');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S131 the pick closes All charts');
 };
 
 /* S132 · The stage card's title is the served headline's only home: for every
@@ -3861,26 +3851,24 @@ export const S139 = async (page) => {
   const rows = await servedRows(page, null);
   const first = rows.find((row) => row.priority != null);
   ok(first, 'S139 the served queue publishes a priced row');
-  const hero = page.locator('#level .qrow.hero');
-  is(await hero.count(), 1, 'S139 the rail paints one hero');
-  is(await hero.getAttribute('data-id'), first.id, 'S139 the first priced row is the hero');
+  const hero = page.locator(`#level .qrow.priced[data-id="${first.id}"]`);
+  is(await hero.count(), 1, 'S139 the first row uses the common priced geometry');
   is((await hero.locator('.lab').innerText()).trim(), first.title,
-    'S139 the hero title is the served short title');
+    'S139 the priced row title is the served short title');
   ok(!(await page.locator('#level').innerText()).includes(first.headline),
     'S139 the served headline stays out of the rail');
-  is(await hero.locator('canvas, svg, .mini').count(), 0,
-    'S139 no chart is nested inside the hero');
+  is(await hero.locator('.mini').count(), 1, 'S139 rank one receives the common mini host');
   const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
   is(await focalId(page), chartId, 'S139 the hero chart occupies the stage');
 };
 
-/** S140 · A compact row and its drawer cell draw the same mini option: the
+/** S140 · A priced row and its shared chart builder draw the same mini option:
     series identities come from the one shared chart builder. */
 // STORY:finding-evidence-routing:S140
 export const S140 = async (page) => {
   await openWholeDay(page);
   const id = 'finding:over_treated_low';
-  const rowMini = page.locator(`#level .qrow.compact[data-id="${id}"] .mini`);
+  const rowMini = page.locator(`#level .qrow.priced[data-id="${id}"] .mini`);
   await rowMini.locator('canvas').waitFor();
   await raiseDock(page);
   const drawerMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);

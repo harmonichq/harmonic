@@ -342,6 +342,9 @@
   background-color: var(--ck-field);
   box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .35);
 }
+.adjust-window { margin-left: 8px; }
+.dw[data-dock-full] > .panes { grid-template-columns: minmax(0, 1fr); }
+.dw[data-dock-full] > .panes > .inspector { display: none; }
 /* ONE GEOMETRY (ADR 215): the focal chart takes the field, and the mini row is
    a fixed 145px band under it. Nothing derives a grid from a pin count. */
 .tile-field { grid-template-rows: minmax(0, 1fr) 145px; }
@@ -1889,6 +1892,11 @@
 }
 .dw .qrow.compact .go { grid-column: 5; }
 .dw .qrow.compact :is(.sum, .den, .why) { grid-column: 2 / 4; }
+.dw .qrow.priced {
+  grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) minmax(120px, .8fr) 12px;
+}
+.dw .qrow.priced .go { grid-column: 5; }
+.dw .qrow.priced :is(.sum, .den, .why) { grid-column: 2 / 4; }
 /* THE MINI IS A CHART WELL, not a panel fenced off behind a rule. ADR 255 seats
    a chart one step BELOW the ground its surroundings sit on, and that step is
    what tells the reader where the plot starts — so the hairline goes, for the

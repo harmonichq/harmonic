@@ -343,7 +343,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     }
     const node = document.createElement('button');
     node.type = 'button';
-    node.className = `qrow${row.weight ? ` ${row.weight}` : ''}`;
+    node.className = `qrow${row.rank !== null ? ' priced' : row.weight ? ` ${row.weight}` : ''}`;
     node.setAttribute('role', 'listitem');
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
@@ -354,7 +354,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the hero's tier word is its EYEBROW, above the title rather than beside the
     // flavor tag, so it is painted where it is read — before the title, not after
     // the tag (the stylesheet places it; this is the announcement order)
-    if (row.weight === 'hero' && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
+    if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     add(node, 'lab', row.title);
     if (row.weight === 'tail') {
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');

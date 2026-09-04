@@ -63,7 +63,7 @@ Issue [#306](https://github.com/harmonichq/harmonic/issues/306) revises the
 shipped Diagnose left column to the composition #305 settled. The stage always
 holds the active finding's chart: the rank-1 chart while the findings queue
 shows, the drilled finding's chart while drilled, and the rank-1 chart again
-the moment the reader leaves the drill (S128); an explorer pick opens that
+the moment the reader leaves the drill (S128); an All charts pick opens that
 chart's finding through the one chart-click route (S129). The charts drawer is
 a picker: it opens minimized (S130), a pick from it seats and drills that chart
 and puts it away (S131; S114 and S115 amended), and the dock-floor rule's

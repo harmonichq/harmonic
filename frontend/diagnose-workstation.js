@@ -84,6 +84,7 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
+      <button class="adjust-window" id="adjust-window" type="button">Adjust window</button>
     </div>
     <!-- ADR 215 — the mode control and the pin-cap schematic are BOTH gone from
          this row. The mode had one other position and that position is retired;
@@ -2742,7 +2743,8 @@ function boot(root, data, callbacks, signal) {
       tile.dataset.chartId = descriptor.chartId;
       /* Only a dock CELL can be the current frame; the spotlight is the stage
          itself and marking it would say the stage is one of its own frames. */
-      tile.toggleAttribute('data-selected', Boolean(seat.selected) && seat.seat === 'mini');
+      tile.toggleAttribute('data-selected', descriptor.chartId === canvasLayout.focalId
+        && (seat.seat === 'mini' || seat.seat === 'grid'));
       tile.dataset.seat = seat.seat;
       tile.dataset.state = descriptor.state;
       tile.toggleAttribute('data-pinned', seat.pinned);
@@ -3956,6 +3958,11 @@ function boot(root, data, callbacks, signal) {
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
+  el('adjust-window')?.addEventListener('click', () => {
+    const overview = el('chart')?.parentElement;
+    overview?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el('chart')?.focus?.({ preventScroll: true });
+  }, { signal });
   installDrag();
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && fullscreen) {

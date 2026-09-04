@@ -130,6 +130,7 @@ test('basal detail states the served support floor', () => {
   const element = () => ({
     className: '', innerHTML: '', children: [], dataset: {},
     append(...children) { this.children.push(...children); },
+    insertAdjacentHTML() {},
     addEventListener() {},
   });
   try {
@@ -142,7 +143,9 @@ test('basal detail states the served support floor', () => {
         annotation: 'not enough nights of steady data yet to point one way',
         estimate: { value: 0.8, lo: 0.7, hi: 0.9, n: 3, wide: false },
       },
-    }, new Set(), 30, 11, () => assert.fail('thin detail cannot stage'));
+    }, new Set(), 30, 11, () => assert.fail('thin detail cannot stage'), {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
 
     const footer = host.children[0].children.find((child) => child.className === 'slot-foot');
     assert.match(footer.innerHTML, /below the 11-night support floor/);
@@ -187,14 +190,14 @@ const nightPayload = {
   nights: [
     { date: '2026-01-01', sign: 1, delivered_rate: 0.8, programmed_rate: 0.6,
       glucose_entry: 111, glucose_exit: 121, glucose_mean: 116,
-      glucose_trace: [{ t: '2026-01-01 00:00:00', bg: 111 }] },
+      t: '2026-01-01T00:00:00', glucose_trace: [{ t: '2026-01-01 00:00:00', bg: 111 }] },
     { date: '2026-01-02', sign: -1, delivered_rate: 0.4, programmed_rate: 0.6,
-      glucose_entry: 109, glucose_exit: 99, glucose_mean: 104,
+      t: '2026-01-02T00:00:00', glucose_entry: 109, glucose_exit: 99, glucose_mean: 104,
       glucose_trace: [{ t: '2026-01-02 00:00:00', bg: 109 }] },
     { date: '2026-01-03', sign: null, delivered_rate: 0.6, programmed_rate: 0.6,
-      glucose_entry: null, glucose_exit: null, glucose_mean: null, glucose_trace: [] },
+      t: '2026-01-03T00:00:00', glucose_entry: null, glucose_exit: null, glucose_mean: null, glucose_trace: [] },
     { date: '2026-01-04', sign: null, delivered_rate: 0.6, programmed_rate: null,
-      glucose_entry: 100, glucose_exit: null, glucose_mean: 100, glucose_trace: [] },
+      t: '2026-01-04T00:00:00', glucose_entry: 100, glucose_exit: null, glucose_mean: 100, glucose_trace: [] },
   ],
 };
 
@@ -248,7 +251,9 @@ test('basal night evidence leaves the numbers and staging block byte-identical',
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
     const plain = new RosterElement();
     const withRoster = new RosterElement();
-    renderSlotLevel(plain, basalCell, new Set(), 30, 8, () => {});
+    renderSlotLevel(plain, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: { nights: [], roster_glucose_mean: null, excluded_night_count: 0 },
+    });
     renderSlotLevel(withRoster, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: nightPayload });
     assert.equal(withRoster.children[0].innerHTML, plain.children[0].innerHTML,
       'the existing parameter numbers remain the untouched first panel');
@@ -258,4 +263,49 @@ test('basal night evidence leaves the numbers and staging block byte-identical',
   } finally {
     globalThis.document = originalDocument;
   }
+});
+
+test('basal night roster caps and expands its served rows', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const payload = structuredClone(nightPayload);
+    payload.nights = Array.from({ length: 7 }, (_, index) => ({ ...payload.nights[0], date: `2026-02-0${index + 1}` }));
+    const collapsed = new RosterElement();
+    const more = [];
+    renderSlotLevel(collapsed, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: payload, shownCount: 5, onMore: () => more.push('expand'),
+    });
+    assert.equal(collapsed.children.filter((child) => child.className === 'ev-row case-occurrence').length, 5);
+    const toggle = collapsed.children.find((child) => child.className === 'more');
+    assert.equal(toggle.textContent, '2 more');
+    toggle.click();
+    assert.deepEqual(more, ['expand']);
+    const expanded = new RosterElement();
+    renderSlotLevel(expanded, basalCell, new Set(), 30, 8, () => {}, {
+      nightEvidence: payload, shownCount: Infinity,
+    });
+    assert.equal(expanded.children.filter((child) => child.className === 'ev-row case-occurrence').length, 7);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('basal night roster preserves null served mean and exit as em dashes', () => {
+  const originalDocument = globalThis.document;
+  try {
+    globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
+    const payload = structuredClone(nightPayload);
+    payload.roster_glucose_mean = null;
+    const host = new RosterElement();
+    renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
+    assert.match(host.html.join('\n'), /— mg\/dL mean/);
+    assert.match(host.children.map((child) => child.innerHTML).join('\n'), /<span class="worst">—<\/span>/);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('slot-frame requests fence a swapped slot and Day uses the served night timestamp', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  assert.match(source, /const request = \+\+frame\.nightEvidenceRequest;/);
+  assert.match(source, /frame\.nightEvidenceRequest !== request/);
+  assert.match(source, /t: night\.t/);
+  assert.doesNotMatch(source, /t: night\.glucose_trace\?\.\[0\]\?\.t/);
 });

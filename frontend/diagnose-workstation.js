@@ -826,7 +826,6 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
         + 'are shown as measured.',
     onStage: () => onStage(cell),
   });
-  if (!Object.hasOwn(options, 'nightEvidence')) return;
   const evidence = options.nightEvidence;
   if (evidence?.pending) {
     host.insertAdjacentHTML('beforeend', '<div class="empty">Loading nights…</div>');
@@ -851,8 +850,6 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
           <span class="arrow">→</span><span class="worst">${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}</span>
           <span class="delta">${night.delivered_rate == null ? '—' : u(night.delivered_rate)}</span>`,
       })),
-      empty: '<div class="empty">No nights in this group.</div>',
-      emptyBeforeHeader: true,
     };
   }).filter((group) => group.servedCount > 0);
   host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Nights of steady data
@@ -1549,7 +1546,7 @@ function boot(root, data, callbacks, signal) {
     const runtime = tileRuntime.get(chartId);
     runtime.message = message;
     runtime.pending = pending;
-    paintTiles();
+    paint();
     return descriptor;
   }
 
@@ -1574,9 +1571,7 @@ function boot(root, data, callbacks, signal) {
       const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
       if (!descriptor || tileRuntime.get(chartId)?.retained) {
         // the row is gone from the new generation: retain the named pin state
-        paintTiles();
-        paintChart();
-        paintBrace();
+        paint();
         return;
       }
       markTileStale(chartId, staleResult.message, { pending: true });
@@ -1599,13 +1594,13 @@ function boot(root, data, callbacks, signal) {
       runtime.pending = false;
       descriptor.state = 'error';
       runtime.message = 'Evidence request is unavailable.';
-      paintTiles();
+      paint();
       return;
     }
     const request = ++tileRequestGeneration;
     runtimeNow().request = request;
     runtimeNow().pending = true;
-    paintTiles();
+    paint();
     const superseded = () => runtimeNow()?.request !== request
       || !tileDescriptors.includes(descriptor);
     try {
@@ -1620,15 +1615,13 @@ function boot(root, data, callbacks, signal) {
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
-      paintTiles();
-      paintChart();
-      paintBrace();
+      paint();
     } catch (error) {
       if (superseded()) return;
       runtimeNow().pending = false;
       descriptor.state = 'error';
       runtimeNow().message = error?.message || 'Evidence request failed.';
-      paintTiles();
+      paint();
     }
   }
 
@@ -2155,9 +2148,6 @@ function boot(root, data, callbacks, signal) {
     ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
-    for (const frame of stack.slice(i + 1)) {
-      if (frame.k === 'slot') frame.selectedId = null;
-    }
     pendingFocus = pendingRowFocus(stack[1]);
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
@@ -2203,14 +2193,15 @@ function boot(root, data, callbacks, signal) {
     if (slotDescriptor(frame.cell) || frame.nightEvidence || frame.nightEvidencePending) return;
     const load = callbacks.loadBasalEvidence;
     if (!load) { frame.nightEvidenceFailed = true; return; }
+    const request = ++frame.nightEvidenceRequest;
     frame.nightEvidencePending = true;
     void load({ slot: frame.cell.i }).then((evidence) => {
-      if (top() !== frame) return;
+      if (top() !== frame || frame.nightEvidenceRequest !== request) return;
       frame.nightEvidencePending = false;
       frame.nightEvidence = evidence;
-      paint(); paintChart(); paintBrace();
+      paint();
     }).catch(() => {
-      if (top() !== frame) return;
+      if (top() !== frame || frame.nightEvidenceRequest !== request) return;
       frame.nightEvidencePending = false;
       frame.nightEvidenceFailed = true;
       paint();
@@ -2218,7 +2209,8 @@ function boot(root, data, callbacks, signal) {
   };
   const prepareSlotFrame = (frame) => {
     Object.assign(frame, { selectedId: null, nightShownRows: EVIDENCE_CAP,
-      nightEvidence: null, nightEvidencePending: false, nightEvidenceFailed: false });
+      nightEvidence: null, nightEvidencePending: false, nightEvidenceFailed: false,
+      nightEvidenceRequest: frame.nightEvidenceRequest || 0 });
     requestSlotNightEvidence(frame);
     return frame;
   };
@@ -3486,7 +3478,7 @@ function boot(root, data, callbacks, signal) {
         onSelect: (id) => { f.selectedId = id; paint(); },
         onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
         onClear: () => { f.selectedId = null; paint(); },
-        onDay: (night) => callbacks.day?.({ t: night.glucose_trace?.[0]?.t, text: `Basal · ${f.cell.label}` }),
+        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
       });
       return;
     }

@@ -135,6 +135,21 @@ the exploration ticket at admission.
   TIR drop, two fixed summary templates). Re-check: countersigned at the
   panel cap. Lock 1 posted.
 
+### #275 code review rounds
+
+- Chunk 1 (Opus, Full, two axes + mutants): r1 — task 4 evidence largely
+  absent; cohort predicate duplicated in comparison and finding; r2 — 30-min
+  merge boundary unobservable (nothing read `window_count`), TIR-over-SD
+  precedence untested, Carb-log half-open bound untested; fixed by making
+  `build_sequences`/`EatingSequence` the public primitive and pinning all
+  three; r3 converged. Unconstructable by design: an evening headline
+  withheld while pooled is insufficient (evening ⊂ pooled).
+- Chunk 2 (Luna, Targeted, two axes): r1 — the 400 detail named no window;
+  fixed to derive the day count from the fixed-window constant; converged.
+- Whole diff (Opus, Full): converged; one latent gap closed by the
+  coordinator — the frozen fixture was pinned to `build_report` only, and
+  now the parity test also runs the served store wrapper against it.
+
 ## Open questions
 
 (none)

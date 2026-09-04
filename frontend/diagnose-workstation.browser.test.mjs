@@ -1993,6 +1993,49 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /Diagnose needs an API token/);
 });
 
+test('a lane slot renders a selected night trace over its envelope', async () => {
+  const browser = await runner.browser();
+  try {
+    const before = openerProblems().length;
+    const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+    await page.locator('#lane button').first().click();
+    await page.locator('#level .ev-row').first().click();
+    await settle(page, 250);
+    const trace = await page.evaluate(() => {
+      const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+      return chart.getOption().series.find((series) => series.name === 'That day')?.data
+        .filter((value) => value !== '-' && value != null) || [];
+    });
+    assert.ok(trace.length > 0, 'the selected ran-above night supplies a canvas trace');
+    assert.equal(await page.locator('#level .occ-detail').count(), 1,
+      'the selected night exposes its sibling detail block');
+    await page.close();
+    assert.deepEqual(openerProblems().slice(before), [], 'the lane night selection has no opener problems');
+  } finally { /* browser stays open; closed once in after() */ }
+});
+
+test('a findings-row basal slot clears its selected night trace', async () => {
+  const browser = await runner.browser();
+  try {
+    const before = openerProblems().length;
+    const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+    await page.evaluate(() => [...document.querySelectorAll('#level .qrow')]
+      .find((row) => row.textContent.includes('Basal 05:30'))?.click());
+    await page.locator('#level .ev-row').first().click();
+    await page.locator('#level .clear-trace').click();
+    await settle(page, 200);
+    assert.equal(await page.locator('#level .occ-detail, #level .clear-trace').count(), 0,
+      'clearing removes both the night detail and selected trace affordance');
+    const trace = await page.evaluate(() => {
+      const chart = window.echarts.getInstanceByDom(document.getElementById('chart'));
+      return chart.getOption().series.find((series) => series.name === 'That day');
+    });
+    assert.equal(trace, undefined, 'clearing removes the selected night canvas trace');
+    await page.close();
+    assert.deepEqual(openerProblems().slice(before), [], 'the findings-row night clearing has no opener problems');
+  } finally { /* browser stays open; closed once in after() */ }
+});
+
 test('#63 · the unexplained-highs sentence is retired from the findings queue', async () => {
     const browser = await runner.browser();
     try {

@@ -767,7 +767,33 @@ function renderParamLevel(host, spec) {
 }
 
 /** The slot branch: one pushed level, same back gesture as everything else. */
-export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage) {
+function nightGroup(night) {
+  if (night.programmed_rate == null) return 'unprogrammed';
+  if (night.sign === 1) return 'above';
+  if (night.sign === -1) return 'below';
+  return 'set';
+}
+
+function renderSlotNightSelection(host, night, groupRows, onClear, onDay) {
+  if (!night) return;
+  const at = groupRows.findIndex((row) => row.date === night.date);
+  const box = document.createElement('div'); box.className = 'inner occ-detail';
+  box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)}</span>
+    ${at >= 0 && groupRows.length > 1 ? `<span class="pos">${at + 1} of ${groupRows.length}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
+    <div class="occ-nums">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}
+      <span>entry</span> · ${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}
+      <span>exit</span></div>
+    <div class="statline">The canvas shows this night's glucose trace over the envelope.</div>`;
+  host.append(box);
+  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
+  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClear);
+  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
+  day.textContent = `Open ${fmtDate(night.date)} in Day`; day.addEventListener('click', () => onDay(night));
+  foot.append(clear, day); host.append(foot);
+}
+
+export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage, options = {}) {
   const s = cell.slot;
   const e = s.estimate;
   const canStage = cell.asserts;
@@ -800,6 +826,48 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
         + 'are shown as measured.',
     onStage: () => onStage(cell),
   });
+  if (!Object.hasOwn(options, 'nightEvidence')) return;
+  const evidence = options.nightEvidence;
+  if (evidence?.pending) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty">Loading nights…</div>');
+    return;
+  }
+  if (!evidence || evidence.stale || evidence.failed) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty">Night evidence unavailable.</div>');
+    return;
+  }
+  const labels = {
+    above: 'Ran above', below: 'Ran below', set: 'Ran as set', unprogrammed: 'No programmed rate',
+  };
+  const groups = ['above', 'below', 'set', 'unprogrammed'].map((key) => {
+    const rows = (evidence.nights || []).filter((night) => nightGroup(night) === key);
+    return {
+      header: `<div class="ev-group"><b>${labels[key]}</b><span class="n"> · ${rows.length} night${rows.length === 1 ? '' : 's'}</span></div>`,
+      servedCount: rows.length,
+      rows: rows.map((night) => ({
+        id: night.date,
+        html: `<span class="when">${fmtDate(night.date)}</span>
+          <span class="entry">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}</span>
+          <span class="arrow">→</span><span class="worst">${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}</span>
+          <span class="delta">${night.delivered_rate == null ? '—' : u(night.delivered_rate)}</span>`,
+      })),
+      empty: '<div class="empty">No nights in this group.</div>',
+      emptyBeforeHeader: true,
+    };
+  }).filter((group) => group.servedCount > 0);
+  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Nights of steady data
+    <span class="meta">${evidence.roster_glucose_mean == null ? '—' : Math.round(evidence.roster_glucose_mean)} mg/dL mean</span></div>`);
+  renderOccurrenceRoster(host, groups, {
+    selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
+    onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),
+  });
+  if (evidence.excluded_night_count) {
+    host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
+  }
+  const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
+  renderSlotNightSelection(host, selected,
+    selected ? (evidence.nights || []).filter((night) => nightGroup(night) === nightGroup(selected)) : [],
+    options.onClear || (() => {}), options.onDay || (() => {}));
 }
 
 /**
@@ -2087,6 +2155,9 @@ function boot(root, data, callbacks, signal) {
     ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
+    for (const frame of stack.slice(i + 1)) {
+      if (frame.k === 'slot') frame.selectedId = null;
+    }
     pendingFocus = pendingRowFocus(stack[1]);
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
@@ -2116,6 +2187,41 @@ function boot(root, data, callbacks, signal) {
   }
 
   const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
+  const slotDescriptor = (cell) => tileDescriptors.find((descriptor) => descriptor.kind === 'basal'
+    && descriptor.coordinates.slot === cell.i);
+  const slotNightEvidence = (frame) => {
+    const descriptor = slotDescriptor(frame.cell);
+    if (descriptor?.data) return descriptor.data;
+    if (frame.nightEvidence) return frame.nightEvidence;
+    if (frame.nightEvidencePending || tileRuntime.get(descriptor?.chartId)?.pending) return { pending: true };
+    if (frame.nightEvidenceFailed || descriptor?.state === 'error' || descriptor?.state === 'stale-generation') {
+      return { failed: true };
+    }
+    return null;
+  };
+  const requestSlotNightEvidence = (frame) => {
+    if (slotDescriptor(frame.cell) || frame.nightEvidence || frame.nightEvidencePending) return;
+    const load = callbacks.loadBasalEvidence;
+    if (!load) { frame.nightEvidenceFailed = true; return; }
+    frame.nightEvidencePending = true;
+    void load({ slot: frame.cell.i }).then((evidence) => {
+      if (top() !== frame) return;
+      frame.nightEvidencePending = false;
+      frame.nightEvidence = evidence;
+      paint(); paintChart(); paintBrace();
+    }).catch(() => {
+      if (top() !== frame) return;
+      frame.nightEvidencePending = false;
+      frame.nightEvidenceFailed = true;
+      paint();
+    });
+  };
+  const prepareSlotFrame = (frame) => {
+    Object.assign(frame, { selectedId: null, nightShownRows: EVIDENCE_CAP,
+      nightEvidence: null, nightEvidencePending: false, nightEvidenceFailed: false });
+    requestSlotNightEvidence(frame);
+    return frame;
+  };
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
   /* Selection belongs to the standing case file, while descriptor data belongs
@@ -2170,8 +2276,10 @@ function boot(root, data, callbacks, signal) {
        the 90-min floor a DRAWN window must respect — a slot boundary is data,
        not a drawn sample, and only the frame path renders it unsnapped. */
     releaseWindow();
-    if (top().k === 'slot') { Object.assign(top(), { cell, rowId }); paint(); return; }
-    push({ k: 'slot', cell, rowId });
+    if (top().k === 'slot') {
+      prepareSlotFrame(Object.assign(top(), { cell, rowId })); paint(); return;
+    }
+    push(prepareSlotFrame({ k: 'slot', cell, rowId }));
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
@@ -2206,7 +2314,7 @@ function boot(root, data, callbacks, signal) {
     // the Undo affordance are all visible at rest
     const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
     if (cell.asserts) staged.add(cell.i);
-    stack.push({ k: 'slot', cell });
+    stack.push(prepareSlotFrame({ k: 'slot', cell }));
   }
   /* If the asserting capture is missing, this state opens at LEVEL 1 instead of
      on a block — that is where the missing-capture line prints, and a state
@@ -2280,8 +2388,11 @@ function boot(root, data, callbacks, signal) {
        on top of whatever window the factor frame resolved above. */
     const detail = f.k === 'factor' && f.caseFile?.selection?.state === 'selected'
       ? f.caseFile.selection.detail : null;
-    const trace = detail ? envelope.labels.map((label) => {
-      const point = detail.glucose.find((row) => row.t.slice(11, 16) === label);
+    const selectedNight = f.k === 'slot' && f.selectedId
+      ? slotNightEvidence(f)?.nights?.find((night) => night.date === f.selectedId) : null;
+    const tracePoints = detail?.glucose || selectedNight?.glucose_trace || null;
+    const trace = tracePoints ? envelope.labels.map((label) => {
+      const point = tracePoints.find((row) => row.t.slice(11, 16) === label);
       return point?.bg ?? null;
     }) : null;
     /* Whatever window the canvas landed on — preset, drawn, or frame-derived —
@@ -3369,6 +3480,13 @@ function boot(root, data, callbacks, signal) {
         // PORT: reach the app's Plan draft as well as the local tally
         callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey }, staged.has(cell.i));
         paint();
+      }, {
+        nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
+        shownCount: f.nightShownRows,
+        onSelect: (id) => { f.selectedId = id; paint(); },
+        onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
+        onClear: () => { f.selectedId = null; paint(); },
+        onDay: (night) => callbacks.day?.({ t: night.glucose_trace?.[0]?.t, text: `Basal · ${f.cell.label}` }),
       });
       return;
     }
@@ -3851,9 +3969,22 @@ function boot(root, data, callbacks, signal) {
       popTo(stack.length - 2);
       return;
     }
-    if (f.k !== 'factor' || !f.selectedId
+    if (!['factor', 'slot'].includes(f.k) || !f.selectedId
       || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
     if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
+    if (f.k === 'slot') {
+      const evidence = slotNightEvidence(f);
+      const selected = evidence?.nights?.find((night) => night.date === f.selectedId);
+      const siblings = selected
+        ? evidence.nights.filter((night) => nightGroup(night) === nightGroup(selected)) : [];
+      const at = siblings.findIndex((night) => night.date === f.selectedId);
+      const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
+      if (at < 0 || next < 0 || next >= siblings.length) return;
+      ev.preventDefault();
+      f.selectedId = siblings[next].date;
+      paint();
+      return;
+    }
     const eventComparison = f.caseFile.projection.alignment === 'event';
     const siblings = eventComparison
       ? (f.caseFile.projection.cohorts.find((cohort) => cohort.key

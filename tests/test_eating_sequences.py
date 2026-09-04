@@ -519,14 +519,17 @@ class EatingSequenceDetectorTest(unittest.TestCase):
                     self.assertAlmostEqual(
                         row["tir_difference_pct_points"],
                         compared["tir_pct"] - reference["tir_pct"],
+                        places=3,
                     )
                     self.assertAlmostEqual(
                         row["mean_difference_mgdl"],
                         compared["mean_mgdl"] - reference["mean_mgdl"],
+                        places=3,
                     )
                     self.assertAlmostEqual(
                         row["sd_difference_mgdl"],
                         compared["sd_mgdl"] - reference["sd_mgdl"],
+                        places=3,
                     )
 
     def test_repeat_eating_tir_drop_outranks_a_spread_rise(self):

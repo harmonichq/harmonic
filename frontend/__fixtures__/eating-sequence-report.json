@@ -52,7 +52,7 @@
    },
    {
     "high": {
-     "mean_mgdl": 161.49999999999997,
+     "mean_mgdl": 161.5,
      "n": 16,
      "peak_mgdl": 161.5,
      "sd_mgdl": 0.0,
@@ -61,7 +61,7 @@
     },
     "high_cohort": "Q5",
     "high_n": 16,
-    "mean_difference_mgdl": 50.199999999999974,
+    "mean_difference_mgdl": 50.2,
     "period": "post_4h",
     "reference": {
      "mean_mgdl": 111.3,
@@ -482,7 +482,7 @@
        "tir_pct": 50.0
       },
       "post_4h": {
-       "mean_mgdl": 161.49999999999997,
+       "mean_mgdl": 161.5,
        "n": 16,
        "peak_mgdl": 161.5,
        "sd_mgdl": 0.0,
@@ -845,7 +845,7 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999999,
+    "mean_difference_mgdl": 100.4,
     "period": "in_sequence",
     "reference": {
      "mean_mgdl": 111.3,
@@ -873,7 +873,7 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999996,
+    "mean_difference_mgdl": 100.4,
     "period": "post_4h",
     "reference": {
      "mean_mgdl": 111.3,
@@ -886,7 +886,7 @@
     "reference_band": "1",
     "reference_n": 8,
     "repeat": {
-     "mean_mgdl": 211.69999999999996,
+     "mean_mgdl": 211.7,
      "n": 8,
      "peak_mgdl": 211.7,
      "sd_mgdl": 0.0,
@@ -901,7 +901,7 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999999,
+    "mean_difference_mgdl": 100.4,
     "period": "post_6h",
     "reference": {
      "mean_mgdl": 111.3,
@@ -1342,7 +1342,7 @@
      "tir_pct": 0.0
     },
     "post_4h": {
-     "mean_mgdl": 211.69999999999996,
+     "mean_mgdl": 211.7,
      "n": 8,
      "peak_mgdl": 211.7,
      "sd_mgdl": 0.0,

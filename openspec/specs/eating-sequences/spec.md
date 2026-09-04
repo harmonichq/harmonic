@@ -144,138 +144,39 @@ keys or reporting empty success.
 
 ### Requirement: The separately versioned report is aggregate-only and complete
 
-The report module SHALL expose `REPORT_SCHEMA = "eating-sequence-report-v1"`
-and frozen report rows for interval aggregates, quintiles, matrix rows, and
-comparisons. Its public serialisation SHALL use the following complete shape.
-`window.start` and `window.end` are ISO date-time strings for the source-window
-bounds, and are the only time values the report may carry; they are not event
-times. `days` and every exclusion count are integers. An interval aggregate's
-`n` is an integer >= 0; each metric is a number or null, all null when status is
-`insufficient` and all non-null when status is `supported`. `boundaries_g` has
-exactly four number-or-null entries. Each scope always has five Q1–Q5 rows in
-ascending order. `high_carb_sequence.comparisons` always has all six rows in
-`(scope, period)` order; `matrix` always has all fifteen rows in
-`(carb_quintile, window_count_band)` order; and
-`repeat_eating_amplifier.comparisons` always has all fifteen rows in
-`(carb_quintile, period)` order. Optional `finding` is either null or exactly
-the shown object. Every `definitions` duration, range, and coverage field is a
-number except its closed integer arrays (`post_horizons_hours`,
-`tir_range_mgdl`, and `evening_hours`); both detector statuses are exactly
-`supported` or `insufficient`; all listed enumerations are closed.
+The report module SHALL expose `REPORT_SCHEMA = "eating-sequence-report-v1"` and
+frozen report rows for interval aggregates, quintiles, matrix rows, and comparisons.
+Its public serialisation SHALL retain the complete existing report shape, including
+the fixed source-window bounds, ordered five-row scopes, six high-carb comparisons,
+fifteen matrix rows, fifteen repeat-eating comparisons, closed status enumerations,
+and aggregate-only data boundary. Each high-carb comparison row SHALL additionally
+carry `reference` and `high`, and each repeat-eating comparison row SHALL additionally
+carry `reference` and `repeat`. Each is an interval aggregate with exactly
+`status`, `n`, `tir_pct`, `mean_mgdl`, `sd_mgdl`, and `peak_mgdl`; it is insufficient
+at `n: 0` with null metrics when the comparison is insufficient. The existing
+difference fields remain and SHALL equal high minus reference, or repeat minus
+reference, for their corresponding served aggregates. The report SHALL contain no
+record-level values.
 
 ```json
-{
-  "schema": "eating-sequence-report-v1",
-  "window": {"start": "2040-01-01T00:00:00", "end": "2040-01-31T00:00:00", "days": 30},
-  "definitions": {"window_merge_minutes": 30, "sequence_gap_hours": 3, "in_sequence_tail_minutes": 5, "post_horizons_hours": [4, 6], "tir_range_mgdl": [70, 180], "cgm_coverage_floor": 0.7, "minimum_bucket_n": 8, "evening_hours": [18, 24]},
-  "high_carb_sequence": {
-    "status": "insufficient",
-    "finding": null,
-    "scopes": {
-      "pooled": {"boundaries_g": [null, null, null, null], "rows": [
-        {"quintile": 1, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 2, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 3, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 4, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 5, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}}
-      ]},
-      "evening": {"boundaries_g": [null, null, null, null], "rows": [
-        {"quintile": 1, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 2, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 3, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 4, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-        {"quintile": 5, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}}
-      ]}
-    },
-    "comparisons": [
-      {"scope": "pooled", "period": "in_sequence", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"scope": "pooled", "period": "post_4h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"scope": "pooled", "period": "post_6h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"scope": "evening", "period": "in_sequence", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"scope": "evening", "period": "post_4h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"scope": "evening", "period": "post_6h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null}
-    ],
-    "exclusions": {"cgm_coverage": 0, "carb_log_contamination": 0, "next_sequence_overlap": 0}
-  },
-  "repeat_eating_amplifier": {
-    "status": "insufficient",
-    "finding": null,
-    "matrix": [
-      {"carb_quintile": 1, "window_count_band": "1", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 1, "window_count_band": "2", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 1, "window_count_band": "3+", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 2, "window_count_band": "1", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 2, "window_count_band": "2", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 2, "window_count_band": "3+", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 3, "window_count_band": "1", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 3, "window_count_band": "2", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 3, "window_count_band": "3+", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 4, "window_count_band": "1", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 4, "window_count_band": "2", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 4, "window_count_band": "3+", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 5, "window_count_band": "1", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 5, "window_count_band": "2", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}},
-      {"carb_quintile": 5, "window_count_band": "3+", "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}}
-    ],
-    "comparisons": [
-      {"carb_quintile": 1, "period": "in_sequence", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 1, "period": "post_4h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 1, "period": "post_6h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 2, "period": "in_sequence", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 2, "period": "post_4h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 2, "period": "post_6h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 3, "period": "in_sequence", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 3, "period": "post_4h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 3, "period": "post_6h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 4, "period": "in_sequence", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 4, "period": "post_4h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 4, "period": "post_6h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 5, "period": "in_sequence", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 5, "period": "post_4h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
-      {"carb_quintile": 5, "period": "post_6h", "reference_band": "1", "repeat_band": "3+", "status": "insufficient", "reference_n": 0, "repeat_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null}
-    ],
-    "exclusions": {"cgm_coverage": 0, "carb_log_contamination": 0, "next_sequence_overlap": 0}
-  }
-}
+[
+{"scope":"pooled","period":"in_sequence","reference_cohort":"Q1-Q4","high_cohort":"Q5","status":"insufficient","reference_n":0,"high_n":0,"reference":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"high":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"tir_difference_pct_points":null,"mean_difference_mgdl":null,"sd_difference_mgdl":null},
+{"carb_quintile":1,"period":"in_sequence","reference_band":"1","repeat_band":"3+","status":"insufficient","reference_n":0,"repeat_n":0,"reference":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"repeat":{"status":"insufficient","n":0,"tir_pct":null,"mean_mgdl":null,"sd_mgdl":null,"peak_mgdl":null},"tir_difference_pct_points":null,"mean_difference_mgdl":null,"sd_difference_mgdl":null}
+]
 ```
-
-The JSON block's repeating rows use the following exact row definitions:
-`quintile` is an integer 1..5 and `sequence_n` an integer >= 0; each of
-`in_sequence`, `post_4h`, and `post_6h` is the interval aggregate above.
-Each matrix row has integer `carb_quintile` 1..5, `window_count_band` exactly
-`"1"`, `"2"`, or `"3+"`, and those three interval aggregates. Each comparison
-row in `high_carb_sequence.comparisons` has `scope` exactly `"pooled"` or
-`"evening"`, `period` exactly `"in_sequence"`, `"post_4h"`, or `"post_6h"`,
-`reference_cohort` exactly `"Q1-Q4"`, `high_cohort` exactly `"Q5"`, `status`
-exactly `"supported"` or `"insufficient"`, integer `reference_n` and `high_n`,
-and number-or-null `tir_difference_pct_points`, `mean_difference_mgdl`, and
-`sd_difference_mgdl`. Its reference aggregate SHALL be the median across the
-union of qualifying Q1–Q4 sequences for its scope and period, never a median
-of the four quintile medians; each difference SHALL be high minus reference;
-and its status SHALL be supported only when both cohorts have `n >=
-minimum_bucket_n`. Each comparison row in
-`repeat_eating_amplifier.comparisons` has integer `carb_quintile` 1..5,
-`period` exactly `"in_sequence"`, `"post_4h"`, or `"post_6h"`,
-`reference_band` exactly `"1"`, `repeat_band` exactly `"3+"`, `status` exactly
-`"supported"` or `"insufficient"`, integer `reference_n` and `repeat_n`, and
-number-or-null
-`tir_difference_pct_points`, `mean_difference_mgdl`, and
-`sd_difference_mgdl`. `high_carb_sequence.finding`, when non-null, has string
-`summary`, `scope` exactly `"pooled"` or `"evening"`, and `period` from the
-three interval names. `repeat_eating_amplifier.finding`, when non-null, has
-string `summary`, integer `carb_quintile` 1..5, and the same `period`
-enumeration. It SHALL contain aggregate counts, aggregate metrics, and optional
-aggregate finding summaries only; it SHALL NOT return timestamps other than the
-two window bounds, event IDs or rows, Day links, raw EGVs, or per-occurrence
-data.
 
 #### Scenario: An empty source window remains a complete report
 
 - **GIVEN** no qualifying eating sequences in the fixed Diagnose source window
 - **WHEN** the report is serialised
-- **THEN** it carries `eating-sequence-report-v1`, every required key, and
-  all-insufficient interval aggregates at `n` 0
+- **THEN** it carries every required comparison cohort aggregate as insufficient
 - **AND** it exposes no record-level value
+
+#### Scenario: Every supported difference agrees with served cohorts
+
+- **WHEN** a supported high-carb or repeat comparison is serialised
+- **THEN** both nested aggregate counts equal the row counts
+- **AND** each non-null TIR, mean, and SD difference equals its served cohort subtraction
 
 ### Requirement: Eating-sequence reporting is outside the tuning and safety paths
 

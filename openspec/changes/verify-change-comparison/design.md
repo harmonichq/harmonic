@@ -182,22 +182,23 @@ Specify which observations appear early and whether the feature describes respon
 or supports an interpretation of benefit. Unequal periods do not require equalized
 counts. No support floor or After cap has been agreed.
 
-### Q3 — How long does a change stay visible, and when is it ready?
+### Q3 — How do the comparison periods fit the existing Trial lifecycle?
 
-Separate observation progress, confidence in the outcome, and the period a change
-occupies the active watch. The user wants weeks to a month or longer when needed.
-Reconsider the old fixed expiration and single-active-change constraints together;
-an indefinitely maturing change must not silently lock the workflow. Decide what
-happens on a further setting change, revert, feed gap, or return to an old setting.
-Do not inherit counts from recommendation support without checking the question.
+The attended ADR 340 rulings below govern this question. Preserve detection,
+reverts and active-watch semantics. Ground the minimal change to the read-only
+Verify evidence periods and visibility needed for the accepted comparison duration;
+do not reopen the whole lifecycle. Maturity and an outcome assessment remain
+different facts. The existing serving path currently couples the periods to
+maturity, so the implementation boundary must name how those reads separate
+without altering the active watch.
 
-### Q4 — Which outcomes earn space for each change?
+### Q4 — Which existing outcomes earn space for each change?
 
-Choose the intended outcome, guardrails, relevant supporting measures, and whole-day
-care context. Define units, direction, scope, denominator, and unavailable states.
-Decide whether users choose an objective or a default is inferred. Specify Focus
-adherence and outcome independently. Decide whether compact trends add meaning
-beyond a well-labelled pair of values and a supported difference.
+The attended ADR 340 rulings below settle automatic selection, separate outcome
+assessments, concerns without causal attribution, and explicit uncertainty.
+Use the existing target metrics and evidence producers as the starting point.
+Resolve only gaps in their scope, denominator, unavailable states and assessment
+support. No goal-picker or new generic metric framework is requested.
 
 ### Q5 — Which existing decisions and interactions should survive?
 
@@ -267,3 +268,297 @@ capabilities require the separately requested discussion with Connor; routine
 composition and data scoping are not reasons to file a new component ticket.
 Return the decisions, risk contract, visual lock, acceptance scenarios, and a
 justified integrated implementation shape. Do not claim this map is build-ready.
+
+## ADR 340 — Judge the outcome and keep the comparison visible
+
+Connor settled the first attended question on 2026-09-04: Verify should judge
+whether a change helped while also presenting the before/after evidence. When
+the result is not clear, that uncertainty must be explicit.
+
+The feature therefore owes an outcome assessment alongside the underlying
+comparison. A descriptive-only comparison does not fulfill the request. An
+unclear result must remain visibly unclear rather than imply benefit or no effect.
+The previously settled median and middle-half spread remain descriptive evidence;
+this ruling does not make that spread confidence in the effect of a change.
+
+The assessment method, evidence requirements, outcome priorities, and exact
+wording remain open for the attended spike. This ruling chooses the product's
+responsibility; it does not authorize a clinical threshold or a causal claim,
+and does not by itself revive the unimplemented policies in ADR 24 or ADR 136.
+
+## ADR 340 — Assess relevant outcomes separately without causal attribution
+
+Connor clarified that Verify should rate the outcomes relevant to the selected
+change and also surface concerning differences that might be associated with it.
+A favorable result on one outcome must not conceal a concerning result on another.
+The presentation must not claim that the changed setting caused an observed low
+or other outcome.
+
+Show the observed Before and After values with their units and denominators,
+then describe whether the observed measure is higher or lower. Connor's example
+was the average number of lows per meal in each set, rather than saying that a
+carb-ratio change caused lows. This is a presentation and interpretation ruling,
+not yet a definition of a low event, its meal association window, eligibility,
+or a statistical threshold. Those definitions remain to be grounded and settled.
+
+Keep uncertainty explicit for each assessment. A numerical difference alone does
+not settle whether the change helped. The relevant outcome set, concerning-outcome
+rules, and any combined summary remain open; no single overall score is adopted.
+
+## ADR 340 — Select relevant outcomes automatically
+
+Connor confirmed that Verify should automatically choose the outcomes relevant
+to each change, without requiring the user to select a goal. This applies across
+the feature's setting Trials and behavioral Focuses. The specific outcome sets
+and their denominators remain to be grounded and settled in this spike.
+
+## ADR 340 — Accumulate After without a fixed expiry
+
+Connor confirmed that After keeps accumulating for as long as the relevant
+setting or behavior stays unchanged, with no fixed expiry. Elapsed duration alone
+does not end the After evidence period.
+
+This is the desired comparison duration, subject to the frontend-first scope
+boundary below. The current implementation caps evidence at 14 days and roster
+visibility at 28 days. Ground a minimal serving change before admitting extended
+comparison periods; this preference does not authorize replacement of Trial
+detection, reversion handling, or the active-watch lifecycle. The previously
+settled Before baseline is unchanged.
+
+
+## ADR 340 — Anchor the frontend redesign in existing Trial logic
+
+Connor clarified the scope on 2026-09-04: this is primarily a frontend redesign.
+Reuse the existing automatically detected Trials and current lifecycle logic.
+Backend changes may serve the frontend's concrete evidence and presentation needs;
+a broad refactor or reinvention of Trial detection and lifecycle is not admitted.
+Ground each required addition against existing behavior before proposing it.
+
+The earlier discussion of successive setting periods is not authorization to
+replace current change/revert rules or create a persistent Trial archive. Desired
+comparison periods must be reconciled with the existing serving path, with any
+necessary logic change made explicit and kept narrowly scoped. Preserve existing
+behavior by default rather than interviewing the operator to redesign it.
+
+### Grounded existing behavior
+
+- `detect_trial` derives the active Trial from dose/basal value histories and
+  settings-snapshot profile switches. It already distinguishes a third value
+  from an in-window return to baseline and coalesces related parameter changes.
+- `review_trials` independently serves the read-only Verify roster and selected
+  evidence. Its candidate builder reuses regime and switch detection, suppresses
+  closed revert loops, and admits block-scoped carb-ratio changes through captured
+  Plan provenance. It returns at most three recent Trials within 28 days.
+- Target outcomes are already inferred: basal uses TBR; correction factor and
+  glucose target use TIR; carb ratio uses the meal response; whole-profile changes
+  use TIR and meal response. Start with those existing choices when selecting
+  the redesigned surface's outcomes.
+- Selected detail currently sets Before to the previous 14 days and After to at
+  most 14 days. `trial_breakdown` accepts those period bounds and serves settings
+  differences, glucose envelopes, meal responses where applicable, rescue counts,
+  and per-day data. This is the existing path to extend for concrete display needs.
+- The separate active-watch path gives a Trial precedence over a Focus and can
+  persistently drop the Focus. Reading the Verify Trial roster does not do that.
+  Extending comparison evidence must not silently change these watch semantics.
+
+The source and existing tests ground these facts; no production code was changed.
+The next design work is a capability inventory of existing evidence and chart
+interfaces, with only the actual missing capabilities brought back for decision.
+
+### Frontend reuse inventory, #340 attended grounding
+
+UI Craft setup routes this shipped surface to `revise` with the checkout's
+complete synthetic QA copy-then-serve declaration. No app was started during
+this triage setup, and source inspection is not a visual lock.
+
+| Requested read | Existing implementation | Concrete remaining gap |
+| --- | --- | --- |
+| Before/After meal groups with spread and inspection | `renderEventSurface` in `frontend/diagnose-event-comparison.js` renders served cohorts, descriptive spread, selected traces, legend, keyboard and pointer readouts; its projection supplies elapsed-time bounds | The full mount computes its own glucose range and exposes no common-range argument; the chart has no dedicated zero line. Discuss these extensions before adopting them. |
+| Trial meal evidence | `trial_breakdown` already scopes meals to the captured block and supplied periods | Its envelope currently serves median/count bins through +4 hours, not the requested +5-hour cohort/spread and occurrence payload. Reuse existing evidence producers where semantics match; do not change detection to fill this payload. |
+| Basal and correction-factor evidence | The shipped evidence registry has basal night and correction-factor rest-window charts | Registry option builders alone are not complete component reuse. Confirm the existing mount and interaction ownership before choosing their Verify composition. |
+| Focus adherence and outcome | `FocusView` supplies lever identity and target metric; existing `BehaviorTrend` carries the lever's series | Verify's current Trial adapter has no Focus detail. Compose the existing Focus/trend data without replacing Focus pinning or preemption. |
+| Supporting Trial outcomes | Selected Trial detail already serves target/guardrail evidence, rescue counts and day rows | Preserve units, meaning and denominator; raw rescue-log counts are not automatically lows per meal. |
+
+No new component, lifecycle change, or complete reuse proof is claimed by this
+inventory. The two identified response-chart extensions remain proposed.
+
+## ADR 340 — Extend the shared response chart for paired comparison
+
+Connor approved two extensions to the existing shared response-chart component:
+an injected common glucose scale for paired Before/After plots, and a dedicated
+meal-zero marker. Preserve the component's existing legend, pointer and keyboard
+inspection, selected-trace behavior, and cleanup. The marker and scale are display
+capabilities, not changes to Trial detection or evidence eligibility.
+
+This is specific approval for these two extensions. It does not authorize a
+replacement wrapper or additional chart capabilities not yet discussed.
+
+### Additional reuse and behavior grounding
+
+The basal, correction-factor and carb-ratio chart descriptors are already mounted
+by Diagnose's `mountDescriptorChart`, with resize and disposal owned by the
+workstation. These chart mounts are currently internal to the workstation;
+sharing their existing mounting behavior is a frontend reuse task, not a reason
+to copy options or invent alternate chart interactions. Fullscreen behavioral
+response comparison already calls the public `renderEventSurface` mount.
+
+The current Verify selected detail supplies evidence and maturity, but no
+uncertainty-aware per-outcome assessment. Its frontend colors raw differences
+as favorable or unfavorable. Existing outcome-trend day-rate comparison routines
+answer a particular day-count question, not every Trial outcome. The requested
+assessment needs an explicitly scoped serving design using existing computation
+where applicable; no universal significance rule is inferred from these routines.
+
+`createVerifyWorkstation` documents Keep as session-only acknowledgement with no
+persisted verdict. Revert forwards the selected detail's Plan route through
+`planRevertIntent`; the browser does not derive a replacement setting. Preserve
+that existing Revert boundary. Whether the session-only Keep action earns space
+in the revised surface is an attended presentation decision, still open.
+
+## ADR 340 — Remove session-only Keep and preserve Revert to Plan
+
+Connor approved removing the current “Keep change” button on 2026-09-04. The
+proposal stated that it saves nothing and recommended retaining “Revert → Plan”;
+Connor answered “Sure.” Remove the session-only acknowledgement action from the
+revised Verify surface. Do not add a persisted keep decision or change the Trial
+lifecycle in its place.
+
+Retain Revert's existing backend-supplied route into Plan, including its current
+prior-setting availability and manual-review behavior. No direct pump action or
+new frontend setting derivation is introduced. The implementation must amend the
+Verify behavior contract and replay to record this sanctioned removal and verify
+that the existing Revert behavior is preserved.
+
+
+## Admission contract for the narrowed feature
+
+### Risk contract
+
+- **Must prevent:** exposure of credentials or personal data; irreversible loss
+  of authoritative data; silent incorrect success; evidence assigned to the wrong
+  change, period or affected window; causal claims or favorable certainty that the
+  supplied evidence cannot support; an outcome comparison changing dosing advice
+  or the active-watch lifecycle.
+- **Must recover:** no new automatic recovery machinery is required.
+- **Accepted failure:** missing or insufficient evidence remains explicitly
+  unavailable or uncertain. A failed evidence request shows failure rather than
+  a successful empty comparison. Existing request recovery behavior is retained.
+- **Unsupported:** causal attribution to a particular setting, new dosing
+  recommendations, and a replacement Trial or Focus lifecycle.
+- **Evidence owed:** public-interface tests of period and change identity,
+  evidence membership and denominators, missing-data states, assessment wording,
+  preservation of detection/Focus behavior, and browser evidence for reused chart
+  interactions and the sanctioned Keep removal.
+- Why: the redesigned display interprets advisory health data; a misleading
+  assessment is consequential even when it writes no setting.
+- Disposition: this parent design is the downstream authority. The contract is
+  bounded by the frontend-first scope ruling; it creates no new reliability tier.
+
+### Acceptance scenarios already determined by attended decisions
+
+1. Open a detected Trial: show its existing identity, actual start, setting diff
+   and affected window alongside the comparison. Selecting another Trial swaps
+   all evidence to that Trial; no mixed details or retained previous assessment.
+2. Read a supported comparison: show Before and After values with their units,
+   periods and denominators, the relevant outcome assessments, and any concerns.
+   Describe observed differences without claiming the setting caused them.
+3. Read an unclear comparison: preserve the available evidence and explicitly
+   identify uncertainty. Descriptive middle-half spread is never presented as
+   confidence in the effect; maturity alone never implies benefit.
+4. Inspect a meal comparison: retain the group-first opening, the settled
+   -1-to-+5-hour alignment, paired comparison with an overlay toggle, and the
+   approved shared glucose scale and zero marker. Preserve the reused component's
+   pointer and keyboard readouts, legend, selected trace and cleanup.
+5. Open a Focus: show the existing lever's adherence separately from its outcome.
+   Do not treat an unavailable adherence denominator as successful adherence.
+6. Use the decision area: omit Keep; retain the existing Revert-to-Plan route,
+   availability and safeguards. No persistent keep record or direct pump action.
+
+These scenarios are partial admission criteria, not a claim that the feature is
+ready to implement. The exact supported-assessment policy, period reconciliation,
+and full rendered behavior coverage remain outstanding.
+
+### Verification completed during source grounding
+
+`python3 -m unittest tests.test_watched_change tests.test_trial_evidence` passed.
+`node --test frontend/verify-trial.test.js frontend/verify-workstation-data.test.js`
+passed. These verify the current baseline, not the proposed redesign.
+
+A manufactured `project_cohort` probe exercised empty, single-occurrence,
+limited-support and supported populations over the requested elapsed-time bounds.
+It also confirmed that multiple readings from one occurrence contribute only one
+sample to a five-minute bin. The existing projector supplies median, middle-half
+spread, per-point support and occurrence identity. Reuse its display-support
+contract; it is not an outcome-effect confidence calculation.
+
+### Document and behavior update ownership
+
+The build must reconcile the current outcomes and surfaces specifications,
+`CONTEXT.md`, Verify's public API documentation/comments, and the shipped Verify
+component and replay contract where the admitted behavior changes them. Historical
+ADRs and archived design evidence remain history; amendments belong here rather
+than rewriting earlier records. The old complete-state replay expects two action
+buttons and must change with the approved Keep removal. No source inspection is
+claimed as a completed behavior sweep or a visual lock.
+
+
+## Remaining scope after existing-code grounding
+
+### Reuse choices that need no new product policy
+
+Start outcome selection from the existing automatic target mapping. Preserve the
+meaning of each producer's measure: TIR/TBR use observed glucose readings; peak
+and nadir have separate qualifying-meal counts; Focus behavior rates use their
+published eligible-opportunity counts. Rescue entries are observation context,
+not a proxy for low episodes. Do not add a lows-per-meal algorithm to literalize
+Connor's illustrative wording.
+
+Use `project_cohort` for the descriptive response aggregation rather than writing
+another median/spread implementation. The serving path must form the correct
+period-owned occurrence traces first. Its existing point-support labels describe
+whether the curve can be displayed, not whether a change helped.
+
+The existing complete response mount accepts a Finding case-file envelope and
+styles its named cohort roles. A Before/After rendering must adapt that existing
+input contract honestly; it must not invent a diagnosed Finding or change a
+population merely to satisfy a renderer. The final shared interface and evidence
+of preserved interactions remain part of UI Craft's reuse proof.
+
+### Concrete serving work to bound
+
+- Select comparison bounds once for a detected Trial and feed them to all its
+  evidence reads. The current scalar summary and curve use different inclusivity
+  at the change instant. Resolve that serving inconsistency explicitly, with
+  exact-boundary synthetic tests, while preserving detection.
+- Expose extended comparison history separately from the existing active-watch
+  decision. A selected Trial that still expires from the roster after 28 days
+  cannot deliver the requested continuing comparison. Do not extend the active
+  Trial/Focus exclusion period as an accidental consequence.
+- Keep the response chart's full event window distinguishable from the scalar
+  peak/nadir's truncated window. The existing Trial scalar path passes all boluses
+  as truncation context, while the general trend passes meals. Do not silently
+  change or conflate either during the redesign; the desired scalar source must
+  be explicit in the final serving contract.
+- Obtain Focus Before/After data at its actual pin boundary using existing
+  behavior tally and outcome computations. Averaging existing tiled percentages
+  is not that comparison, and calling the trend's active-watch resolution inside
+  a read-only review endpoint can drop a Focus. Keep that write path out.
+- Use the existing rescue observation state and preprocessing deliberately.
+  The trend filters marked false lows and the current Trial evidence does not;
+  matching metric names alone cannot establish matching input semantics.
+
+### Assessment is the remaining substantive scope decision
+
+The existing selected Trial response has no uncertainty-aware judgment that the
+change helped. `day_rate_clears` and `newcombe_diff_interval` already assess a
+specific binary day-rate comparison; they are not generic assessments of median
+meal response, repeated meal outcomes, or Focus opportunities. Reusing them for
+those different quantities would invent confidence rather than reuse behavior.
+
+The smallest approach is to reuse existing supported assessment where its exact
+question and population fit, and show other outcomes as observed differences with
+an explicit “effect unclear” assessment. It would keep useful evidence visible
+but would not eventually produce a supported benefit verdict for every change
+type. Meeting that broader expectation requires a narrowly scoped new assessment
+calculation, beyond merely reshaping data for the frontend. This choice remains
+open; neither approach is admitted by this grounding note.

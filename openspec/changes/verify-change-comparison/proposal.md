@@ -7,8 +7,9 @@ Epic: https://github.com/harmonichq/harmonic/issues/336
 Diagnose now gives the user a useful way to identify a setting or behavior to change.
 Verify should let them return during the following weeks and understand how that
 specific change is going. The shipped screen mostly compares aggregate glucose
-curves and counts fourteen days; it cannot yet show the latest few relevant events
-against the before-change experience with the same richness as Diagnose.
+curves and counts fourteen days. The redesign should make its existing detected
+changes understandable through group comparisons, supporting outcomes, and the
+same evidence inspection available in Diagnose.
 
 ## Destination
 
@@ -48,6 +49,19 @@ visual lock are settled. Keep additional concerns in the parent design instead
 of pre-filing a backlog. Historical tickets remain context, not commitments to
 revive. The planning branch carries the authority; child execution follows the
 normal ticket lifecycle and human PR merges.
+
+## Frontend-first implementation boundary
+
+Use the scope ruling in `design.md`, “ADR 340 — Anchor the frontend redesign in
+existing Trial logic”. Trial detection, revert handling, profile grouping and
+Focus lifecycle are existing behavior to preserve. Required backend work serves
+specific evidence, period and assessment needs identified by the surface; this
+is not permission for a replacement lifecycle or a general statistics engine.
+
+The attended rulings in `design.md` also govern automatic outcome selection,
+explicit uncertainty, non-causal comparisons, the approved shared-chart extensions,
+and removal of session-only Keep. Implementation admission still requires the
+remaining evidence questions and the running-surface contract to be resolved.
 
 ## Out of scope for this planning session
 

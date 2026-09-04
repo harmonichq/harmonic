@@ -6,7 +6,8 @@
   `sign` — ran above (`1`), ran below (`-1`), ran as set (`null`) — each header
   carrying that group's served count, one button row per steady night printing
   the night's date, delivered against programmed rate in U/h, and its in-slot
-  glucose mean, and one count line for `excluded_night_count` beneath the groups.
+  glucose mean (a null served value prints as `—`, the Finding block's
+  convention), and one count line for `excluded_night_count` beneath the groups.
   The roster reads the same served night-evidence payload the basal tile holds
   for that slot (`descriptor.data` for the slot's `basal` tile), never a second
   request path; while that payload is absent or stale the roster prints the
@@ -30,7 +31,8 @@
   programmed rate, that night's in-slot mean against the roster mean
   (`roster_glucose_mean`), entering to leaving glucose, `n of N` within its
   group with the Up/Down hint, "Clear trace", and "Open <date> in Day" routing
-  through the existing Day callback with the night's `t`.
+  through the existing Day callback with the night's `t`. A null served mean,
+  entry or exit prints as `—`, never as a number or an empty slot.
 - [ ] Cover the new behaviour in Node through the public interface —
   `renderSlotLevel` in `frontend/diagnose-workstation.test.js` for the groups,
   counts, row text, excluded count line, pressed state and detail block, each

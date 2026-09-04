@@ -22,7 +22,7 @@ Correction factor and carb ratio panels SHALL be unchanged.
 - **THEN** the panel renders three group headers whose counts equal the served
   number of nights of each sign
 - **AND** each night row prints the served date, delivered and programmed rate,
-  and in-slot glucose mean
+  and in-slot glucose mean, with a null served value printed as `—`
 - **AND** one line prints the served excluded-night count and no excluded night
   renders as a row
 - **AND** the Current / Estimate / Recommended block, its hedges, the support

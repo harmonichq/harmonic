@@ -373,3 +373,21 @@ vocabulary the basal night rows want, and it is precedent rather than new design
 - **The active change is `openspec/changes/basal-night-drill/`** (proposal,
   tasks, design with ADR 291 and the safe-start declaration, surfaces delta),
   validated strictly. `inline`
+
+### Plan review — round 1 (cold Opus, read-only, 2026-09-03)
+
+Verdict BLOCKED, 4 blocking + 1 note. Reproduced against the checkout:
+- O1 `authoring` confirmed: the lock's drift-check list omitted
+  `gen_qa_e2e_db.py --check` (AGENTS.md lists eleven). Mechanical fix.
+- O2 refuted: the workstation browser suite opens through the replay module's
+  `openApp`, whose route handler serves `/api/diagnose/basal-night-evidence`
+  from the generated fixture in fixture mode and accepts an `evidenceScenario`
+  override. Not forwarded; the draft now names that mechanism explicitly.
+- O3 `authoring` confirmed: the stub fixture has no `sign: -1` night (6 above,
+  1 as-set). Draft corrected; ran-below stories go through `evidenceScenario`.
+- O4 `authoring` confirmed: night 2026-01-07 has a 12-point trace and null mean
+  and exit. Pinned tasks 1 and 4 and scenario 1 amended: null prints as `—`
+  (the Finding block's convention). Re-pinned.
+- N5 note accepted: chunk 1 context names the options-object extension of
+  `renderSlotLevel` and `chartDescriptor(chartId)` as the lookup.
+Injected blockers: 0.

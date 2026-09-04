@@ -16,6 +16,7 @@ Each behavioral classifier (late bolus, missed meal, carb undercount, etc.) is a
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: A pattern asserts only when enough evidence backs it.
 
 The system SHALL satisfy the following:
@@ -26,6 +27,7 @@ Before a detector can assert a behavioral lever in an episode, three gates must 
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Behavioral and settings levers rank on a single 0–100 Priority axis.
 
 The system SHALL satisfy the following:
@@ -36,6 +38,7 @@ Both flavors compose Priority identically as `100 · √(impact · recurrence)`,
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Exposure and Cause are different lists; the layer names both.
 
 The system SHALL satisfy the following:
@@ -46,6 +49,7 @@ Exposure is the outcome family an episode lands in — "all meals," "all lows," 
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: One policy owns each lever's complete evidence populations.
 
 The system SHALL satisfy the following:
@@ -81,6 +85,7 @@ cross-population flag, so no consumer infers either from a lever's name.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: One canonical opportunity population owns every Finding case file.
 
 The system SHALL satisfy the following:
@@ -126,6 +131,7 @@ independently evidenced correction levers.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The layer refuses to assert on insufficient evidence and surfaces why.
 
 The system SHALL satisfy the following:
@@ -136,3 +142,27 @@ No judgment fires without a verdict grounded in data — either observed (a hard
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+### Requirement: Event alignment windows are per exposure family
+
+Every Finding case file's event projection SHALL align on its policy's
+per-family window, in minutes relative to the anchor: meals (−60, +300), lows
+(−60, +120), correction clusters (−120, +180), highs (−150, +300). The served
+`window_min` SHALL equal that window and every served cohort trace SHALL cover
+no minute outside it. 
+
+#### Scenario: A low's comparison opens one hour before the nadir
+
+- **WHEN** a case file is prepared for a lows-family Lever with event alignment
+- **THEN** its `window_min` is [-60, 120]
+- **AND** no cohort trace carries a minute outside that window
+
+#### Scenario: A correction cluster's comparison opens two hours before the pair
+
+- **WHEN** a case file is prepared for the correction-stacking Lever with event alignment
+- **THEN** its `window_min` is [-120, 180]
+
+#### Scenario: Meals and highs are unchanged
+
+- **WHEN** a case file is prepared for a meals-family or highs-family Lever
+- **THEN** its `window_min` is [-60, 300] or [-150, 300] respectively

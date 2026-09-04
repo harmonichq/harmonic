@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
 from ciq_autotune.analyzers.eating_sequences import build_report, report_dict
-from tests.eating_sequence_streams import high_carb_stream
+from tests.eating_sequence_streams import repeat_eating_stream
 
 
 OUT = ROOT / "frontend/__fixtures__/eating-sequence-report.json"
@@ -19,7 +19,7 @@ OUT = ROOT / "frontend/__fixtures__/eating-sequence-report.json"
 
 def payload() -> dict:
     """Build a populated report from the shared manufactured stream."""
-    boluses, cgm, carb_log, _ = high_carb_stream()
+    boluses, cgm, carb_log, _ = repeat_eating_stream()
     end = cgm[-1].t
     report = build_report(
         boluses, cgm, carb_log,

@@ -27,6 +27,7 @@ escape its directory.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Data endpoints are gated by one optional static bearer token; the app shell is not
 
 There is no login screen and no session. The app shell and its assets load
@@ -41,17 +42,19 @@ single shared secret for a single user; there are no accounts, roles, or scopes.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: The heavy read endpoints answer from one per-process result cache
 
 Recomputing the analysis from the store costs tens of seconds, so the expensive
 reads — the analysis result, scenarios, backtest, outcomes, the outcomes trend, the
 per-day model view, the day navigator, the pattern sweep, the time-of-day evidence
-feed, and the lever catalog — answer through a cache keyed by endpoint name plus
-the parameters that change the answer. Finding case-file preparation is cached once
-per data version and projects each request's coordinates from that prepared source.
-Caching is opt-in per endpoint: the cheap store reads (status, timeline, pump
-settings, carb entries, prompts, the Plan draft and its history, Focus, dismissals)
-read the store directly on every request and are never cached.
+feed, the lever catalog, and the eating-sequence report — answer through a cache
+keyed by endpoint name plus the parameters that change the answer. Finding case-file
+preparation is cached once per data version and projects each request's coordinates
+from that prepared source. Caching is opt-in per endpoint: the cheap store reads
+(status, timeline, pump settings, carb entries, prompts, the Plan draft and its
+history, Focus, dismissals) read the store directly on every request and are never
+cached.
 
 The cache instance belongs to the app, not to the module, so two apps built in one
 process (as tests do) never share state. It is bounded by a least-recently-used cap
@@ -66,6 +69,7 @@ response."
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Historical findings and event evidence share one restart-safe generation
 
 The system SHALL satisfy the following:
@@ -98,6 +102,7 @@ changes only the echoed selection; it does not filter `run_ids` or `series`.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Finding case files are bound to one snapshot preparation.
 
 The system SHALL satisfy the following:
@@ -131,6 +136,7 @@ replace the High roster or attribution account.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Every write path MUST invalidate the cache
 
 The system SHALL satisfy the following:
@@ -261,6 +267,7 @@ the API rather than a second process.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
 ### Requirement: Configuration resolves in the app factory, so every entry path gets the same defaults
 
 The database path, the bearer token, the path to the credential-encryption key, and
@@ -292,3 +299,35 @@ arguments.
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+### Requirement: The eating-sequence report is a fixed-window cached Diagnose read
+
+`GET /api/diagnose/eating-sequences` SHALL be a bearer-token-gated data endpoint.
+Its `window` query parameter SHALL default to and accept only
+`findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS`; any other integer value SHALL
+return 400 whose detail names that fixed window, matching basal-night evidence's
+refusal. Non-integer values SHALL be refused by the framework's query validation. It
+SHALL return `fixed_response(...)` of the `eating-sequence-report-v1` dictionary under
+the shared fixed-response semantics — no age field on fresh data, backend-owned
+`input_data_age` only when a labelled stale predecessor is served, which
+`serve_stale=False` here never does — from cache key `("eating-sequences", window)`
+with shape marker `"eating-sequences-v1"` and `serve_stale=False`.
+
+#### Scenario: A fixed-window request is served fresh from the cache
+
+- **GIVEN** a request for the fixed Diagnose source window
+- **WHEN** the endpoint answers the report
+- **THEN** it returns the cache-backed `eating-sequence-report-v1` dictionary
+- **AND** the fresh response carries no `input_data_age` field
+
+#### Scenario: A non-fixed integer window is refused
+
+- **WHEN** a request names an integer window other than the fixed Diagnose source window
+- **THEN** the endpoint returns 400 and its detail names the fixed window
+- **AND** a non-integer window is refused by framework query validation
+
+#### Scenario: A request without the configured token is refused
+
+- **GIVEN** the API has a bearer token configured
+- **WHEN** a request omits that token
+- **THEN** the endpoint refuses the request before serving report data

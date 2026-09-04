@@ -399,3 +399,30 @@ Injected blockers: 0.
   replay story and the render matrix run at the 1024×768 tablet viewport with a
   no-overflow assertion; the served facts print as served, null as `—`, and no
   drill level repeats the headline. `→ ADR 291` (amended in place)
+
+### Plan review — round 2 (cold Opus, read-only, 2026-09-03)
+
+Verdict BLOCKED, 4 blocking + 3 notes. Reproduced against the checkout:
+- O1 `authoring` confirmed: a lane click calls `pickCell(cell)` with no row id, so
+  `chartDescriptor(chartId)` had no producer. Fix: look the basal tile up by
+  `kind` and `coordinates.slot === cell.i` (spiked in Node against the
+  descriptor shape `frontend/diagnose-canvas-state.test.js:97`).
+- O2 `authoring` confirmed: the roster cap needs `shownCount`/`onMore`; added to
+  the options object with slot-frame expand state, plus a Node case.
+- O3 `authoring` confirmed: a basal tile exists only for a slot with a findings
+  row, while the analysis publishes all 48 slots. Ruling (triage, under the
+  operator's delegated judgment): tile copy when present, otherwise one request
+  through the tile's own fetch, kept on the slot frame; "no second way" becomes
+  "one fetch function". Task 1, scenario 2 and ADR 291 amended.
+- O4 `authoring` confirmed: sub-order 2 may now touch
+  `frontend/diagnose-workstation.test.js` for assertions its own corrections
+  invalidate.
+- N5 accepted: nights with a null served programmed rate get their own header,
+  never ran-as-set (analyzer skips them, `basal.py:358`). Task 1 and
+  requirement 1 amended.
+- N6 declined: the drafting-conventions line is the lock template's literal, read
+  by the ticket skill from its own install; a machine path never enters a
+  tracker comment.
+- N7 accepted: the pytest skip count is being measured by the coordinator before
+  posting; the Expectation quotes the measured figure.
+Injected blockers: 0.

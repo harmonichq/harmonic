@@ -4,13 +4,17 @@
 
 The Diagnose basal slot panel SHALL render, beneath its numbers-and-staging
 block, a roster of the slot's steady nights through the shared occurrence-roster
-mechanism: three groups keyed on the served per-night sign — ran above the
-programmed rate, ran below it, ran as set — each header carrying its served
-count, one button row per night printing that night's date, delivered against
+mechanism: groups keyed on the served per-night facts — ran above the
+programmed rate, ran below it, ran as set, and, only when such nights exist, no
+programmed rate on file — each header carrying its served count, the
+mechanism's row cap and show-more control honoured, one button row per night printing that night's date, delivered against
 programmed rate, and in-slot glucose mean, and one count line for the served
-excluded-night count. Excluded nights SHALL NOT render as rows. The roster SHALL
-read the same served night-evidence payload the basal evidence tile holds for
-that slot and SHALL request it no second way. The panel SHALL derive no
+excluded-night count. Excluded nights SHALL NOT render as rows, and a night
+with no served programmed rate SHALL NOT read as ran-as-set. The roster SHALL
+read the served night-evidence payload for that slot — the basal evidence
+tile's own copy when the findings publish a tile for the slot, otherwise one
+request through the same fetch the tile uses — so a slot opened from the lane
+and a slot opened from its findings row render the same roster. The panel SHALL derive no
 direction, floor, threshold or safety verdict, and the numbers-and-staging block
 SHALL render exactly as shipped. The panel SHALL NOT repeat the served headline.
 Correction factor and carb ratio panels SHALL be unchanged.
@@ -28,12 +32,17 @@ Correction factor and carb ratio panels SHALL be unchanged.
 - **AND** the Current / Estimate / Recommended block, its hedges, the support
   count and the staging control render exactly as before the roster existed
 
-#### Scenario: The roster waits for the tile's payload
+#### Scenario: The roster waits for its payload and renders from either entry
 
-- **WHEN** the slot's night-evidence payload has not arrived or is marked stale
-- **THEN** the roster area prints the panel's existing loading or unavailable
-  state
-- **AND** the panel issues no request of its own for that payload
+- **WHEN** the reader opens a basal slot from a lane cell that publishes no
+  findings tile
+- **THEN** the panel requests that slot's night evidence once through the
+  tile's own fetch and renders the same roster the findings-row entry renders
+- **WHEN** the payload has not arrived
+- **THEN** the roster area prints the panel's existing loading state
+- **WHEN** the request fails or the payload is marked stale
+- **THEN** the roster area prints the panel's existing unavailable state and no
+  roster
 
 ### Requirement: Selecting a night draws its trace and its facts
 

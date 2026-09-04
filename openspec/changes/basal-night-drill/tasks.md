@@ -2,16 +2,26 @@
 
 - [ ] Render a night roster on the basal slot panel, beneath its existing
   numbers-and-staging block, through the shared occurrence-roster mechanism
-  (`frontend/occurrence-roster.js`): three groups keyed on the served per-night
-  `sign` — ran above (`1`), ran below (`-1`), ran as set (`null`) — each header
-  carrying that group's served count, one button row per steady night printing
-  the night's date, delivered against programmed rate in U/h, and its in-slot
-  glucose mean (a null served value prints as `—`, the Finding block's
-  convention), and one count line for `excluded_night_count` beneath the groups.
-  The roster reads the same served night-evidence payload the basal tile holds
-  for that slot (`descriptor.data` for the slot's `basal` tile), never a second
-  request path; while that payload is absent or stale the roster prints the
-  panel's existing loading or unavailable state and nothing else. The panel
+  (`frontend/occurrence-roster.js`): groups keyed on the served per-night facts —
+  ran above (`sign` 1), ran below (`sign` -1), ran as set (`sign` null with a
+  served `programmed_rate`), and, only when such nights exist, no programmed
+  rate on file (`programmed_rate` null, whatever its `sign`), the same
+  distinction the basal tile's verdict rail draws — each header carrying that
+  group's served count, one button row per steady night printing the night's
+  date, delivered against programmed rate in U/h, and its in-slot glucose mean
+  (a null served value prints as `—`, the Finding block's convention), and one
+  count line for `excluded_night_count` beneath the groups. The mechanism's
+  five-row cap is honoured: the panel passes `shownCount` and `onMore` with an
+  expand state kept on the slot frame, exactly as the Finding rosters do. The
+  payload is the served night-evidence body for that slot: the slot's `basal`
+  tile descriptor's `data` when the findings publish such a tile (looked up by
+  kind and `coordinates.slot`, never by a chart id the lane click does not
+  carry), otherwise requested once per slot frame through the same fetch the
+  tile uses (`fetchDiagnoseBasalNightEvidence({ slot })`) and kept on the frame
+  — one fetch function, no parallel client. While the payload is pending the
+  roster area prints the panel's existing loading state; when the request fails
+  it prints the panel's existing unavailable state; it never prints a roster it
+  did not receive. The panel
   derives no direction, floor, threshold or verdict; the numbers-and-staging
   block above the roster is byte-identical to today's rendering. The roster and
   the detail block use the shipped design system only — `DESIGN.md` tokens, the
@@ -42,7 +52,11 @@
   counts, row text, excluded count line, pressed state and detail block, each
   test failing first against pre-change behaviour — and in the route-stubbed
   browser suite `frontend/diagnose-workstation.browser.test.mjs` for one
-  selection painting a trace series on the canvas and one clear removing it,
+  selection painting a trace series on the canvas and one clear removing it —
+  one of the two entered from a lane cell click, the other from the findings
+  row, so both entries prove the roster renders — plus Node cases for the
+  capped roster and its expansion, and for a lane slot with no published tile
+  rendering the roster from the fetched payload,
   against the generated stub `frontend/__fixtures__/basal-night-evidence.json`.
 - [ ] Replay the frozen finding-evidence-routing ledger, unchanged, against the
   exact merge-base with `origin/main` and again against the revision, each

@@ -25,6 +25,16 @@ nights, and selecting one draws that night on the glucose chart.
    in the block: divergence from the slot's norm must be readable against that
    norm, or a big-meal night reads as a basal problem.
 
+**Two amendments from the cold plan review (2026-09-03).** A lane click opens
+any of the 48 slots and carries no chart id, while a basal tile exists only for
+a slot with a published findings row; the analysis payload publishes every
+slot, so the panel takes the tile's copy when there is one and otherwise makes
+the tile's own request once per slot frame — one fetch function, two entries,
+one roster. And the analyzer skips a sample with no programmed rate, so such a
+night's sign is null exactly like a ran-as-set night's; the roster keeps them
+apart under their own header, as the tile's verdict rail already does, because
+"unmeasurable" must never read as "measured and equal" on this surface.
+
 **Why the rail and not the chart.** The chart is the evidence; the stage card's
 title is the headline's only home (#306); the tile's verdict rail keeps the
 direction counts. The rail is the one place a per-night drill can live without

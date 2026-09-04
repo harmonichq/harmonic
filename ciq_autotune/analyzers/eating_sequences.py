@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from math import ceil
-from statistics import median, pstdev
+from statistics import fmean, median, pstdev
 from typing import Iterable, Mapping, Optional, Sequence
 
 from ..events import BolusEvent, CarbEntry, CgmReading
@@ -142,6 +142,8 @@ class HighCarbComparisonRow:
     tir_difference_pct_points: Optional[float]
     mean_difference_mgdl: Optional[float]
     sd_difference_mgdl: Optional[float]
+    reference: IntervalAggregate
+    high: IntervalAggregate
     reference_cohort: str = "Q1-Q4"
     high_cohort: str = "Q5"
 
@@ -167,6 +169,8 @@ class RepeatComparisonRow:
     tir_difference_pct_points: Optional[float]
     mean_difference_mgdl: Optional[float]
     sd_difference_mgdl: Optional[float]
+    reference: IntervalAggregate
+    repeat: IntervalAggregate
     reference_band: str = "1"
     repeat_band: str = "3+"
 
@@ -179,6 +183,8 @@ class RepeatComparisonRow:
             "status": self.status,
             "reference_n": self.reference_n,
             "repeat_n": self.repeat_n,
+            "reference": self.reference.to_dict(),
+            "repeat": self.repeat.to_dict(),
             "tir_difference_pct_points": self.tir_difference_pct_points,
             "mean_difference_mgdl": self.mean_difference_mgdl,
             "sd_difference_mgdl": self.sd_difference_mgdl,
@@ -310,16 +316,20 @@ def assign_quintiles(items: Sequence[SequenceItem], *, config: EatingSequenceCon
 
 
 def aggregate_interval(metric_rows: Sequence[MetricRow], *, config: EatingSequenceConfig) -> IntervalAggregate:
-    """Aggregate qualifying sequences by metric median, never pooled readings."""
+    """Aggregate qualifying sequences by metric median, never pooled readings.
+
+    Served metrics are rounded to three decimals so the frozen fixture is identical
+    on every supported interpreter.
+    """
     n = len(metric_rows)
     if n < config.minimum_bucket_n:
         return IntervalAggregate("insufficient", n, None, None, None, None)
     return IntervalAggregate(
         "supported", n,
-        median(row.tir_pct for row in metric_rows),
-        median(row.mean_mgdl for row in metric_rows),
-        median(row.sd_mgdl for row in metric_rows),
-        median(row.peak_mgdl for row in metric_rows),
+        round(median(row.tir_pct for row in metric_rows), 3),
+        round(median(row.mean_mgdl for row in metric_rows), 3),
+        round(median(row.sd_mgdl for row in metric_rows), 3),
+        round(median(row.peak_mgdl for row in metric_rows), 3),
     )
 
 
@@ -334,7 +344,8 @@ def empty_report(window: SourceWindow, *, config: EatingSequenceConfig | None = 
     scope = QuintileScope((None, None, None, None), quintile_rows)
     exclusions = {"cgm_coverage": 0, "carb_log_contamination": 0, "next_sequence_overlap": 0}
     high_comparisons = tuple(
-        HighCarbComparisonRow(scope_name, period, "insufficient", 0, 0, None, None, None)
+        HighCarbComparisonRow(scope_name, period, "insufficient", 0, 0, None, None, None,
+                              aggregate, aggregate)
         for scope_name in _SCOPES for period in _PERIODS
     )
     matrix = tuple(
@@ -344,6 +355,7 @@ def empty_report(window: SourceWindow, *, config: EatingSequenceConfig | None = 
     )
     repeat_comparisons = tuple(
         RepeatComparisonRow(quintile, period, "insufficient", 0, 0, None, None, None,
+                            aggregate, aggregate,
                             config.window_count_bands[0], config.window_count_bands[-1])
         for quintile in range(1, config.quintile_count + 1)
         for period in _PERIODS
@@ -506,9 +518,10 @@ def _metrics(
                 continue
             if readings:
                 values[(sequence.start, period)] = MetricRow(
-                    100 * sum(config.tir_low_mgdl <= value <= config.tir_high_mgdl
-                              for value in readings) / len(readings),
-                    sum(readings) / len(readings), pstdev(readings), max(readings))
+                    round(100 * sum(config.tir_low_mgdl <= value <= config.tir_high_mgdl
+                                    for value in readings) / len(readings), 4),
+                    round(fmean(readings), 4), round(pstdev(readings), 4),
+                    round(max(readings), 4))
     return values, exclusions
 
 
@@ -552,13 +565,14 @@ def _comparison(
     high_aggregate = aggregate_interval(high, config=config)
     if reference_aggregate.status != "supported" or high_aggregate.status != "supported":
         row = HighCarbComparisonRow(scope, period, "insufficient", len(reference), len(high),
-                                    None, None, None)
+                                    None, None, None, reference_aggregate, high_aggregate)
     else:
         row = HighCarbComparisonRow(
         scope, period, "supported", len(reference), len(high),
-        high_aggregate.tir_pct - reference_aggregate.tir_pct,
-        high_aggregate.mean_mgdl - reference_aggregate.mean_mgdl,
-        high_aggregate.sd_mgdl - reference_aggregate.sd_mgdl,
+        round(high_aggregate.tir_pct - reference_aggregate.tir_pct, 3),
+        round(high_aggregate.mean_mgdl - reference_aggregate.mean_mgdl, 3),
+        round(high_aggregate.sd_mgdl - reference_aggregate.sd_mgdl, 3),
+        reference_aggregate, high_aggregate,
         )
     return _ComparedCohorts(row, reference_aggregate, high_aggregate)
 
@@ -604,14 +618,16 @@ def _repeat_comparison(
     repeat_aggregate = aggregate_interval(repeat, config=config)
     if reference_aggregate.status != "supported" or repeat_aggregate.status != "supported":
         row = RepeatComparisonRow(quintile, period, "insufficient", len(reference), len(repeat),
-                                  None, None, None, config.window_count_bands[0],
+                                  None, None, None, reference_aggregate, repeat_aggregate,
+                                  config.window_count_bands[0],
                                   config.window_count_bands[-1])
     else:
         row = RepeatComparisonRow(
             quintile, period, "supported", len(reference), len(repeat),
-            repeat_aggregate.tir_pct - reference_aggregate.tir_pct,
-            repeat_aggregate.mean_mgdl - reference_aggregate.mean_mgdl,
-            repeat_aggregate.sd_mgdl - reference_aggregate.sd_mgdl,
+            round(repeat_aggregate.tir_pct - reference_aggregate.tir_pct, 3),
+            round(repeat_aggregate.mean_mgdl - reference_aggregate.mean_mgdl, 3),
+            round(repeat_aggregate.sd_mgdl - reference_aggregate.sd_mgdl, 3),
+            reference_aggregate, repeat_aggregate,
             config.window_count_bands[0], config.window_count_bands[-1],
         )
     return _ComparedRepeatCohorts(row, reference_aggregate, repeat_aggregate)
@@ -692,6 +708,8 @@ def _comparison_dict(row: HighCarbComparisonRow) -> dict:
         "status": row.status,
         "reference_n": row.reference_n,
         "high_n": row.high_n,
+        "reference": row.reference.to_dict(),
+        "high": row.high.to_dict(),
         "tir_difference_pct_points": row.tir_difference_pct_points,
         "mean_difference_mgdl": row.mean_difference_mgdl,
         "sd_difference_mgdl": row.sd_difference_mgdl,

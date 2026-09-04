@@ -148,7 +148,26 @@ class EmptyReportTest(unittest.TestCase):
         for group in (payload["high_carb_sequence"]["comparisons"],
                       payload["repeat_eating_amplifier"]["comparisons"]):
             for row in group:
+                self.assertEqual(
+                    list(row),
+                    ([
+                        "scope", "period", "reference_cohort", "high_cohort", "status",
+                        "reference_n", "high_n", "reference", "high",
+                        "tir_difference_pct_points", "mean_difference_mgdl",
+                        "sd_difference_mgdl",
+                    ] if "scope" in row else [
+                        "carb_quintile", "period", "reference_band", "repeat_band", "status",
+                        "reference_n", "repeat_n", "reference", "repeat",
+                        "tir_difference_pct_points", "mean_difference_mgdl",
+                        "sd_difference_mgdl",
+                    ]),
+                )
                 self.assertEqual(row["status"], "insufficient")
+                for cohort in ("reference", "high" if "scope" in row else "repeat"):
+                    self.assertEqual(row[cohort], {
+                        "status": "insufficient", "n": 0, "tir_pct": None,
+                        "mean_mgdl": None, "sd_mgdl": None, "peak_mgdl": None,
+                    })
                 self.assertEqual(
                     (row["tir_difference_pct_points"], row["mean_difference_mgdl"],
                      row["sd_difference_mgdl"]),
@@ -176,7 +195,7 @@ class EmptyReportTest(unittest.TestCase):
             comparisons=(HighCarbComparisonRow(
                 scope="evening", period="post_4h", status="supported", reference_n=8,
                 high_n=8, tir_difference_pct_points=13.875, mean_difference_mgdl=18.625,
-                sd_difference_mgdl=4.125,
+                sd_difference_mgdl=4.125, reference=aggregate, high=aggregate,
             ),),
             exclusions={"cgm_coverage": 0, "carb_log_contamination": 0,
                         "next_sequence_overlap": 0},
@@ -190,7 +209,7 @@ class EmptyReportTest(unittest.TestCase):
             comparisons=(RepeatComparisonRow(
                 carb_quintile=5, period="post_4h", status="supported", reference_n=8,
                 repeat_n=8, tir_difference_pct_points=13.875, mean_difference_mgdl=18.625,
-                sd_difference_mgdl=4.125,
+                sd_difference_mgdl=4.125, reference=aggregate, repeat=aggregate,
             ),),
             exclusions={"cgm_coverage": 0, "carb_log_contamination": 0,
                         "next_sequence_overlap": 0},
@@ -478,6 +497,40 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         self.assertIsNotNone(repeat.finding)
         self.assertIn("spent", repeat.finding.summary)
         self.assertEqual(repeat.finding.period, "post_4h")
+
+    def test_comparisons_serve_cohorts_that_match_supported_differences(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        boluses, cgm, carb_log, _ = repeat_eating_stream()
+        payload = report_dict(build_report(
+            boluses, cgm, carb_log, window_start=boluses[0].t,
+            window_end=cgm[-1].t, config=EatingSequenceConfig(),
+        ))
+
+        for rows, high_key in (
+            (payload["high_carb_sequence"]["comparisons"], "high"),
+            (payload["repeat_eating_amplifier"]["comparisons"], "repeat"),
+        ):
+            for row in rows:
+                reference, compared = row["reference"], row[high_key]
+                self.assertEqual(reference["n"], row["reference_n"])
+                self.assertEqual(compared["n"], row[f"{high_key}_n"])
+                if row["status"] == "supported":
+                    self.assertAlmostEqual(
+                        row["tir_difference_pct_points"],
+                        compared["tir_pct"] - reference["tir_pct"],
+                        places=3,
+                    )
+                    self.assertAlmostEqual(
+                        row["mean_difference_mgdl"],
+                        compared["mean_mgdl"] - reference["mean_mgdl"],
+                        places=3,
+                    )
+                    self.assertAlmostEqual(
+                        row["sd_difference_mgdl"],
+                        compared["sd_mgdl"] - reference["sd_mgdl"],
+                        places=3,
+                    )
 
     def test_repeat_eating_tir_drop_outranks_a_spread_rise(self):
         from ciq_autotune.analyzers.eating_sequences import build_report

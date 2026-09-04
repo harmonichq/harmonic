@@ -166,6 +166,41 @@ the exploration ticket at admission.
   of the band strings noted, and the finding sentence's "three or more" is
   fixed by the spec while the band boundary stays 3).
 
+- Diagnose home for the eating-sequence report (coordinator decision,
+  2026-09-04, grounded in the record): "Explore mode" was retired as a mode
+  toggle (ADR 215, sanction 2026-08-26) and the named "better version" is the
+  dock for ranked findings' evidence, which this non-finding aggregate does
+  not fit; the drawer/stage field builds descriptors from findings rows only
+  (ADR 306). The report therefore gets a distinct, explicitly non-advisory
+  aggregate-evidence section on the Diagnose surface, outside Audit and
+  outside Watching (whose definition is tuning reads only). #277 delivers
+  the data plumbing (fetch, Vue-free adapter, age handling, browser-gate
+  route answers, harness path) with no rendered surface; #278's ui-craft
+  lock settles the section's name, placement and charts. The QA showcase
+  yields an all-insufficient report (32 carb boluses ~24 h apart), so
+  rendered evidence comes from the frozen synthetic fixture unless #278 adds
+  a QA coverage era. — inline
+
+### #277 lock review rounds
+
+- Panel 1 (cold, Terra): r1 3 blockers — facts appendix stale (`authoring`);
+  browser stubs with no consumer (`authoring`; deferred to #278); the paired
+  Q5-vs-rest chart needed reference medians the report served only as
+  differences (`authoring`; settled: comparison rows now carry both cohorts'
+  aggregates, making the ticket two serial chunks). r1b 5 blockers, all
+  `authoring` (facts outputs, repeat-row JSON, equality test scope, adapter
+  interface, task numbering). r1c 3 `injected` transcription defects, fixed
+  by the coordinator in place. r1d countersigned.
+
+### #277 code review rounds (Luna, Targeted)
+
+- Chunk 1: clean (13/13, 10/10). Chunk 2: clean (12/12, 11/11).
+- Whole diff: 1 finding — the frozen fixture differs between supported
+  interpreters (Python 3.12's compensated float `sum()` vs 3.9 in the
+  per-sequence mean). Fixed by a follow-up chunk: `fmean` plus fixed served
+  precision at the analyzer, fixture regenerated, `--check` proven on both
+  interpreters.
+
 ## Open questions
 
 (none)

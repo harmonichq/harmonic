@@ -23,10 +23,26 @@
  "high_carb_sequence": {
   "comparisons": [
    {
+    "high": {
+     "mean_mgdl": 161.5,
+     "n": 16,
+     "peak_mgdl": 161.5,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 50.0
+    },
     "high_cohort": "Q5",
     "high_n": 16,
     "mean_difference_mgdl": 50.2,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 64,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 64,
     "scope": "pooled",
@@ -35,10 +51,26 @@
     "tir_difference_pct_points": -50.0
    },
    {
+    "high": {
+     "mean_mgdl": 161.5,
+     "n": 16,
+     "peak_mgdl": 161.5,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 50.0
+    },
     "high_cohort": "Q5",
     "high_n": 16,
-    "mean_difference_mgdl": 50.199999999999974,
+    "mean_difference_mgdl": 50.2,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 64,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 64,
     "scope": "pooled",
@@ -47,10 +79,26 @@
     "tir_difference_pct_points": -50.0
    },
    {
+    "high": {
+     "mean_mgdl": 161.5,
+     "n": 16,
+     "peak_mgdl": 161.5,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 50.0
+    },
     "high_cohort": "Q5",
     "high_n": 16,
     "mean_difference_mgdl": 50.2,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 64,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 64,
     "scope": "pooled",
@@ -59,10 +107,26 @@
     "tir_difference_pct_points": -50.0
    },
    {
+    "high": {
+     "mean_mgdl": null,
+     "n": 6,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "high_cohort": "Q5",
     "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 21,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 21,
     "scope": "evening",
@@ -71,10 +135,26 @@
     "tir_difference_pct_points": null
    },
    {
+    "high": {
+     "mean_mgdl": null,
+     "n": 6,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "high_cohort": "Q5",
     "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 21,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 21,
     "scope": "evening",
@@ -83,10 +163,26 @@
     "tir_difference_pct_points": null
    },
    {
+    "high": {
+     "mean_mgdl": null,
+     "n": 6,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "high_cohort": "Q5",
     "high_n": 6,
     "mean_difference_mgdl": null,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 21,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_cohort": "Q1-Q4",
     "reference_n": 21,
     "scope": "evening",
@@ -386,7 +482,7 @@
        "tir_pct": 50.0
       },
       "post_4h": {
-       "mean_mgdl": 161.49999999999997,
+       "mean_mgdl": 161.5,
        "n": 16,
        "peak_mgdl": 161.5,
        "sd_mgdl": 0.0,
@@ -415,8 +511,24 @@
     "carb_quintile": 1,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -427,8 +539,24 @@
     "carb_quintile": 1,
     "mean_difference_mgdl": null,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -439,8 +567,24 @@
     "carb_quintile": 1,
     "mean_difference_mgdl": null,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -451,8 +595,24 @@
     "carb_quintile": 2,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -463,8 +623,24 @@
     "carb_quintile": 2,
     "mean_difference_mgdl": null,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -475,8 +651,24 @@
     "carb_quintile": 2,
     "mean_difference_mgdl": null,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -487,8 +679,24 @@
     "carb_quintile": 3,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -499,8 +707,24 @@
     "carb_quintile": 3,
     "mean_difference_mgdl": null,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -511,8 +735,24 @@
     "carb_quintile": 3,
     "mean_difference_mgdl": null,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -523,8 +763,24 @@
     "carb_quintile": 4,
     "mean_difference_mgdl": null,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -535,8 +791,24 @@
     "carb_quintile": 4,
     "mean_difference_mgdl": null,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -547,8 +819,24 @@
     "carb_quintile": 4,
     "mean_difference_mgdl": null,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 16,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 16,
+    "repeat": {
+     "mean_mgdl": null,
+     "n": 0,
+     "peak_mgdl": null,
+     "sd_mgdl": null,
+     "status": "insufficient",
+     "tir_pct": null
+    },
     "repeat_band": "3+",
     "repeat_n": 0,
     "sd_difference_mgdl": null,
@@ -557,10 +845,26 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999999,
+    "mean_difference_mgdl": 100.4,
     "period": "in_sequence",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 8,
+    "repeat": {
+     "mean_mgdl": 211.7,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
+    },
     "repeat_band": "3+",
     "repeat_n": 8,
     "sd_difference_mgdl": 0.0,
@@ -569,10 +873,26 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999996,
+    "mean_difference_mgdl": 100.4,
     "period": "post_4h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 8,
+    "repeat": {
+     "mean_mgdl": 211.7,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
+    },
     "repeat_band": "3+",
     "repeat_n": 8,
     "sd_difference_mgdl": 0.0,
@@ -581,10 +901,26 @@
    },
    {
     "carb_quintile": 5,
-    "mean_difference_mgdl": 100.39999999999999,
+    "mean_difference_mgdl": 100.4,
     "period": "post_6h",
+    "reference": {
+     "mean_mgdl": 111.3,
+     "n": 8,
+     "peak_mgdl": 111.3,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 100.0
+    },
     "reference_band": "1",
     "reference_n": 8,
+    "repeat": {
+     "mean_mgdl": 211.7,
+     "n": 8,
+     "peak_mgdl": 211.7,
+     "sd_mgdl": 0.0,
+     "status": "supported",
+     "tir_pct": 0.0
+    },
     "repeat_band": "3+",
     "repeat_n": 8,
     "sd_difference_mgdl": 0.0,
@@ -1006,7 +1342,7 @@
      "tir_pct": 0.0
     },
     "post_4h": {
-     "mean_mgdl": 211.69999999999996,
+     "mean_mgdl": 211.7,
      "n": 8,
      "peak_mgdl": 211.7,
      "sd_mgdl": 0.0,

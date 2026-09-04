@@ -22,7 +22,7 @@ insufficient None 15 15
 Command:
 
 ```sh
-sed -n '110,180p;228,241p' ciq_autotune/analyzers/eating_sequences.py
+sed -n '110,125p' ciq_autotune/analyzers/eating_sequences.py
 ```
 
 Output:
@@ -44,8 +44,17 @@ class MatrixRow:
             "window_count_band": self.window_count_band,
             **_period_dict(self),
         }
+```
 
+Command:
 
+```sh
+sed -n '153,180p' ciq_autotune/analyzers/eating_sequences.py
+```
+
+Output:
+
+```text
 @dataclass(frozen=True)
 class RepeatComparisonRow:
     """A 3+-minus-1 window-count comparison for one quintile and interval."""
@@ -74,8 +83,17 @@ class RepeatComparisonRow:
             "mean_difference_mgdl": self.mean_difference_mgdl,
             "sd_difference_mgdl": self.sd_difference_mgdl,
         }
+```
 
+Command:
 
+```sh
+sed -n '228,241p' ciq_autotune/analyzers/eating_sequences.py
+```
+
+Output:
+
+```text
 @dataclass(frozen=True)
 class RepeatEatingFinding:
     """The optional aggregate-only summary for repeated eating evidence."""
@@ -144,12 +162,16 @@ def _finding(compared: Sequence[_ComparedCohorts]) -> Optional[HighCarbFinding]:
 Command:
 
 ```sh
-sed -n '439,465p' ciq_autotune/analyzers/eating_sequences.py
+sed -n '435,453p' ciq_autotune/analyzers/eating_sequences.py
 ```
 
 Output:
 
 ```text
+def build_sequences(
+    boluses: Sequence[BolusEvent], *, config: EatingSequenceConfig,
+) -> tuple[EatingSequence, ...]:
+    """Construct eating sequences for this report and the repeat-eating amplifier (#276)."""
     meals = sorted((event for event in boluses if event.carbs is not None and event.carbs > 0),
                    key=lambda event: event.t)
     windows = []
@@ -165,18 +187,6 @@ Output:
         else:
             built[-1][1], built[-1][2], built[-1][3] = last, built[-1][2] + carbs, built[-1][3] + 1
     return tuple(EatingSequence(*item) for item in built)
-
-
-def _metrics(
-    sequences: Sequence[EatingSequence], cgm: Sequence[CgmReading],
-    carb_log: Sequence[CarbEntry], config: EatingSequenceConfig,
-) -> tuple[dict[tuple[datetime, str], MetricRow], dict[str, int]]:
-    values = {}
-    exclusions = {
-        "cgm_coverage": 0,
-        "carb_log_contamination": 0,
-        "next_sequence_overlap": 0,
-    }
 ```
 
 ## Synthetic builder and fixture generator
@@ -184,7 +194,7 @@ def _metrics(
 Command:
 
 ```sh
-sed -n '7p' tests/eating_sequence_streams.py
+sed -n '8p' tests/eating_sequence_streams.py
 ```
 
 Output:
@@ -196,7 +206,7 @@ def high_carb_stream(*, start=datetime(2040, 1, 1, 12), count=40, sd_only=False)
 Command:
 
 ```sh
-sed -n '19,34p' scripts/gen_eating_sequence_fixtures.py
+sed -n '20,33p' scripts/gen_eating_sequence_fixtures.py
 ```
 
 Output:
@@ -229,7 +239,7 @@ grep -n 'gen_eating_sequence_fixtures.py' AGENTS.md
 Output:
 
 ```text
-71:uv run python scripts/gen_eating_sequence_fixtures.py --check
+73:uv run python scripts/gen_eating_sequence_fixtures.py --check
 ```
 
 ## Expected-diff paths
@@ -237,17 +247,17 @@ Output:
 Command:
 
 ```sh
-ls -ld openspec/changes/high-carb-sequence-detector ciq_autotune/analyzers/eating_sequences.py tests/eating_sequence_streams.py tests/test_eating_sequences.py tests/test_eating_sequence_fixture.py scripts/gen_eating_sequence_fixtures.py frontend/__fixtures__/eating-sequence-report.json
+for p in openspec/changes/repeat-eating-amplifier ciq_autotune/analyzers/eating_sequences.py tests/eating_sequence_streams.py tests/test_eating_sequences.py tests/test_eating_sequence_fixture.py scripts/gen_eating_sequence_fixtures.py frontend/__fixtures__/eating-sequence-report.json; do test -e "$p" && echo "present $p" || echo "absent $p"; done
 ```
 
 Output:
 
 ```text
--rw-r--r--@ 1 connor  staff  22863 Sep  4 11:42 ciq_autotune/analyzers/eating_sequences.py
--rw-r--r--@ 1 connor  staff  21774 Sep  4 11:42 frontend/__fixtures__/eating-sequence-report.json
-drwxr-xr-x@ 7 connor  staff    224 Sep  4 11:42 openspec/changes/high-carb-sequence-detector
--rw-r--r--@ 1 connor  staff   1691 Sep  4 11:42 scripts/gen_eating_sequence_fixtures.py
--rw-r--r--@ 1 connor  staff   1006 Sep  4 11:42 tests/eating_sequence_streams.py
--rw-r--r--@ 1 connor  staff   2495 Sep  4 11:42 tests/test_eating_sequence_fixture.py
--rw-r--r--@ 1 connor  staff  23187 Sep  4 11:42 tests/test_eating_sequences.py
+present openspec/changes/repeat-eating-amplifier
+present ciq_autotune/analyzers/eating_sequences.py
+present tests/eating_sequence_streams.py
+present tests/test_eating_sequences.py
+present tests/test_eating_sequence_fixture.py
+present scripts/gen_eating_sequence_fixtures.py
+present frontend/__fixtures__/eating-sequence-report.json
 ```

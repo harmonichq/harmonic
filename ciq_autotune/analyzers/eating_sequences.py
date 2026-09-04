@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from math import ceil
 from statistics import median, pstdev
-from typing import Mapping, Optional, Sequence
+from typing import Iterable, Mapping, Optional, Sequence
 
 from ..events import BolusEvent, CarbEntry, CgmReading
 from .eating_sequence_config import EatingSequenceConfig
@@ -365,6 +365,13 @@ class _Sequence:
     window_count: int
 
 
+@dataclass(frozen=True)
+class _ComparedCohorts:
+    row: HighCarbComparisonRow
+    reference: IntervalAggregate
+    high: IntervalAggregate
+
+
 def build_report(
     boluses: Sequence[BolusEvent], cgm: Sequence[CgmReading], carb_log: Sequence[CarbEntry], *,
     window_start: datetime, window_end: datetime, config: EatingSequenceConfig,
@@ -391,11 +398,12 @@ def build_report(
         scope: _scope_report(items, assignment.boundaries_g, quintiles, metrics, config)
         for scope, items in scopes.items()
     }
-    comparisons = tuple(
+    compared = tuple(
         _comparison(scope, period, scopes[scope], quintiles, metrics, config)
         for scope in _SCOPES for period in _PERIODS
     )
-    finding = _finding(comparisons, scopes, quintiles, metrics, config)
+    comparisons = tuple(item.row for item in compared)
+    finding = _finding(compared)
     status = "supported" if finding is not None else "insufficient"
     high = HighCarbSequenceReport(status, finding, scope_reports["pooled"],
                                   scope_reports["evening"], comparisons, exclusions)
@@ -413,9 +421,14 @@ def build_eating_sequence_report(store, *, window_days: int = 30,
     times = [event.t for event in basal] + [event.t for event in cgm]
     end = now or (max(times) if times else None) or datetime.now()
     start = end - timedelta(days=window_days)
-    within = lambda events: [event for event in events if start <= event.t <= end]
-    return build_report(within(boluses), within(cgm), within(carb_log),
+    return build_report(_slice(boluses, start, end), _slice(cgm, start, end),
+                        _slice(carb_log, start, end),
                         window_start=start, window_end=end, config=EatingSequenceConfig())
+
+
+def _slice(events: Sequence, start: datetime, end: datetime) -> list:
+    """Return the inclusive source-window slice shared with Scenario semantics."""
+    return [event for event in events if start <= event.t <= end]
 
 
 def _sequences(boluses: Sequence[BolusEvent], config: EatingSequenceConfig) -> list[_Sequence]:
@@ -436,7 +449,10 @@ def _sequences(boluses: Sequence[BolusEvent], config: EatingSequenceConfig) -> l
     return [_Sequence(*item) for item in built]
 
 
-def _metrics(sequences, cgm, carb_log, config):
+def _metrics(
+    sequences: Sequence[_Sequence], cgm: Sequence[CgmReading],
+    carb_log: Sequence[CarbEntry], config: EatingSequenceConfig,
+) -> tuple[dict[tuple[datetime, str], MetricRow], dict[str, int]]:
     values = {}
     exclusions = {
         "cgm_coverage": 0,
@@ -470,13 +486,19 @@ def _metrics(sequences, cgm, carb_log, config):
     return values, exclusions
 
 
-def _intervals(sequence, config):
+def _intervals(
+    sequence: _Sequence, config: EatingSequenceConfig,
+) -> Iterable[tuple[str, datetime, datetime]]:
     yield "in_sequence", sequence.start, sequence.end + timedelta(minutes=config.in_sequence_tail_minutes)
     for hours in config.post_horizons_hours:
         yield f"post_{hours}h", sequence.end, sequence.end + timedelta(hours=hours)
 
 
-def _scope_report(sequences, boundaries, quintiles, metrics, config):
+def _scope_report(
+    sequences: Sequence[_Sequence], boundaries: tuple[Optional[float], ...],
+    quintiles: Mapping[datetime, int], metrics: Mapping[tuple[datetime, str], MetricRow],
+    config: EatingSequenceConfig,
+) -> QuintileScope:
     rows = []
     for quintile in range(1, config.quintile_count + 1):
         members = [s for s in sequences if quintiles[s.start] == quintile]
@@ -491,7 +513,11 @@ def _scope_report(sequences, boundaries, quintiles, metrics, config):
     return QuintileScope(boundaries, tuple(rows))
 
 
-def _comparison(scope, period, sequences, quintiles, metrics, config):
+def _comparison(
+    scope: str, period: str, sequences: Sequence[_Sequence],
+    quintiles: Mapping[datetime, int], metrics: Mapping[tuple[datetime, str], MetricRow],
+    config: EatingSequenceConfig,
+) -> _ComparedCohorts:
     reference = [metrics[(s.start, period)] for s in sequences
                  if quintiles[s.start] < config.quintile_count and (s.start, period) in metrics]
     high = [metrics[(s.start, period)] for s in sequences
@@ -499,57 +525,52 @@ def _comparison(scope, period, sequences, quintiles, metrics, config):
     reference_aggregate = aggregate_interval(reference, config=config)
     high_aggregate = aggregate_interval(high, config=config)
     if reference_aggregate.status != "supported" or high_aggregate.status != "supported":
-        return HighCarbComparisonRow(scope, period, "insufficient", len(reference), len(high),
-                                     None, None, None)
-    return HighCarbComparisonRow(
+        row = HighCarbComparisonRow(scope, period, "insufficient", len(reference), len(high),
+                                    None, None, None)
+    else:
+        row = HighCarbComparisonRow(
         scope, period, "supported", len(reference), len(high),
         high_aggregate.tir_pct - reference_aggregate.tir_pct,
         high_aggregate.mean_mgdl - reference_aggregate.mean_mgdl,
         high_aggregate.sd_mgdl - reference_aggregate.sd_mgdl,
-    )
+        )
+    return _ComparedCohorts(row, reference_aggregate, high_aggregate)
 
 
-def _finding(comparisons, scopes, quintiles, metrics, config):
-    pooled = {(row.period): row for row in comparisons if row.scope == "pooled"}
-    candidates = [row for row in comparisons if row.status == "supported" and (
-        row.scope == "pooled" or pooled[row.period].status == "supported")]
-    tir = [row for row in candidates if row.tir_difference_pct_points < 0]
-    sd = [row for row in candidates if row.sd_difference_mgdl > 0]
+def _finding(compared: Sequence[_ComparedCohorts]) -> Optional[HighCarbFinding]:
+    """Select the adverse cohort sentence from the authoritative comparison aggregates."""
+    pooled = {item.row.period: item.row for item in compared if item.row.scope == "pooled"}
+    candidates = [item for item in compared if item.row.status == "supported" and (
+        item.row.scope == "pooled" or pooled[item.row.period].status == "supported")]
+    tir = [item for item in candidates if item.row.tir_difference_pct_points < 0]
+    sd = [item for item in candidates if item.row.sd_difference_mgdl > 0]
     if tir:
-        chosen = min(tir, key=lambda row: (row.tir_difference_pct_points,
-                                           _PERIODS.index(row.period), row.scope != "pooled"))
+        chosen = min(tir, key=lambda item: (item.row.tir_difference_pct_points,
+                                            _PERIODS.index(item.row.period),
+                                            item.row.scope != "pooled"))
         metric = "tir"
     elif sd:
-        chosen = max(sd, key=lambda row: (row.sd_difference_mgdl,
-                                          -_PERIODS.index(row.period), row.scope == "pooled"))
+        chosen = max(sd, key=lambda item: (item.row.sd_difference_mgdl,
+                                           -_PERIODS.index(item.row.period),
+                                           item.row.scope == "pooled"))
         metric = "sd"
     else:
         return None
-    scope_sequences = scopes[chosen.scope]
-    ref_metrics = [
-        metrics[(s.start, chosen.period)] for s in scope_sequences
-        if quintiles[s.start] < config.quintile_count and (s.start, chosen.period) in metrics
-    ]
-    high_metrics = [
-        metrics[(s.start, chosen.period)] for s in scope_sequences
-        if quintiles[s.start] == config.quintile_count and (s.start, chosen.period) in metrics
-    ]
-    reference = aggregate_interval(ref_metrics, config=config)
-    high = aggregate_interval(high_metrics, config=config)
+    row, reference, high = chosen.row, chosen.reference, chosen.high
     period_label = {
         "in_sequence": "in-sequence interval",
         "post_4h": "four-hour post-sequence interval",
         "post_6h": "six-hour post-sequence interval",
-    }[chosen.period]
+    }[row.period]
     if metric == "tir":
-        summary = (f"In {chosen.scope} sequences, the highest-carb fifth spent {high.tir_pct}% of the "
+        summary = (f"In {row.scope} sequences, the highest-carb fifth spent {high.tir_pct}% of the "
                    f"{period_label} in range against {reference.tir_pct}% for the rest "
-                   f"(n = {chosen.high_n} vs {chosen.reference_n})")
+                   f"(n = {row.high_n} vs {row.reference_n})")
     else:
-        summary = (f"In {chosen.scope} sequences, the highest-carb fifth's {period_label} glucose spread "
+        summary = (f"In {row.scope} sequences, the highest-carb fifth's {period_label} glucose spread "
                    f"was {high.sd_mgdl} mg/dL against {reference.sd_mgdl} mg/dL for the rest "
-                   f"(n = {chosen.high_n} vs {chosen.reference_n})")
-    return HighCarbFinding(summary, chosen.scope, chosen.period)
+                   f"(n = {row.high_n} vs {row.reference_n})")
+    return HighCarbFinding(summary, row.scope, row.period)
 
 
 def _period_dict(row: object) -> dict:

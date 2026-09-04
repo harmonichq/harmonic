@@ -634,6 +634,19 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   renderOccurrenceRoster(host, groups, { selectedId, shownCount, onSelect, onMore });
 }
 
+/* The two reader controls a selected occurrence owns, wherever it was selected:
+   release the trace, or hand the day off to Day. The Finding case file and the
+   basal night roster are both real callers, and the pair's wording is
+   user-visible copy that must not drift between them. */
+function renderOccurrenceFoot(host, date, onClearTrace, onOpenDay) {
+  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
+  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
+  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
+  day.textContent = `Open ${fmtDate(date)} in Day`; day.addEventListener('click', onOpenDay);
+  foot.append(clear, day); host.append(foot);
+}
+
 function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   const { selection } = caseFile;
   if (selection.state === 'unavailable') {
@@ -668,12 +681,7 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
     ${detail.source_corrections.map((dose) => `<div class="vd source-correction"><span class="pip" aria-hidden="true"></span>
       <div>${dose.t.slice(11, 16)} · ${dose.insulin} U correction</div></div>`).join('')}`;
   host.append(facts);
-  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
-  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
-  clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
-  const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
-  day.textContent = `Open ${fmtDate(detail.date)} in Day`; day.addEventListener('click', () => onDay(detail));
-  foot.append(clear, day); host.append(foot);
+  renderOccurrenceFoot(host, detail.date, onClearTrace, () => onDay(detail));
 }
 
 function renderBehavioralFullscreen(host, f) {
@@ -767,14 +775,57 @@ function renderParamLevel(host, spec) {
 }
 
 /** The slot branch: one pushed level, same back gesture as everything else. */
-export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage) {
+function nightGroup(night) {
+  if (night.programmed_rate == null) return 'unprogrammed';
+  if (night.sign === 1) return 'above';
+  if (night.sign === -1) return 'below';
+  return 'set';
+}
+
+const NIGHT_GROUP_LABEL = {
+  above: 'Ran above', below: 'Ran below', set: 'Ran as set', unprogrammed: 'No programmed rate',
+};
+
+/* Every null in this block is one em dash, the Finding block's own null and the
+   roster row's own null. `u()` renders a missing rate as `--`, which is the
+   parameter panel's convention two blocks up and reads as a second mark beside
+   the em dashes on the lines below it. */
+const nightRate = (rate) => (rate == null ? '—' : u(rate));
+
+function renderSlotNightSelection(host, night, span, groupRows, rosterGlucoseMean, onClear, onDay) {
+  if (!night) return;
+  const at = groupRows.findIndex((row) => row.date === night.date);
+  const box = document.createElement('div'); box.className = 'inner occ-detail';
+  /* The slot span joins the date inside `.when`, which is exactly how the
+     Finding block composes its own stamp — date · clock time. It needs no class
+     of its own, and it keeps the head to the sibling's three parts.
+     The tag is the Finding block's own too: a selected row's detail sits under
+     whichever group the roster scrolled to, so the block states which group
+     this night was served into rather than leaving the reader to find its
+     header again. It restates the served grouping, never a second reading. */
+  box.innerHTML = `<div class="occ-head"><span class="when">${fmtDate(night.date)} · ${span}</span>
+    <span class="tag">${NIGHT_GROUP_LABEL[nightGroup(night)]}</span>
+    ${at >= 0 && groupRows.length > 1 ? `<span class="pos">${at + 1} of ${groupRows.length}<i class="keyhint">↑ ↓</i></span>` : ''}</div>
+    <div class="occ-nums">${nightRate(night.delivered_rate)} <span>U/h delivered</span> · ${nightRate(night.programmed_rate)} <span>U/h programmed</span></div>
+    <div class="occ-nums">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}
+      <span>mg/dL this night</span> · ${rosterGlucoseMean == null ? '—' : Math.round(rosterGlucoseMean)} <span>mg/dL roster mean</span></div>
+    <div class="occ-nums">${night.glucose_entry == null ? '—' : Math.round(night.glucose_entry)}
+      <span>entry</span> · ${night.glucose_exit == null ? '—' : Math.round(night.glucose_exit)}
+      <span>exit</span></div>
+    <div class="statline">The canvas shows this night's glucose trace over the envelope.</div>`;
+  host.append(box);
+  renderOccurrenceFoot(host, night.date, onClear, () => onDay(night));
+}
+
+export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, onStage, options = {}) {
   const s = cell.slot;
   const e = s.estimate;
   const canStage = cell.asserts;
   const capped = /capped/i.test(s.annotation || '');
   const thin = (supportFloor != null && e.n < supportFloor) || e.wide;
+  const span = `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`;
   renderParamLevel(host, {
-    head: `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`,
+    head: span,
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
@@ -800,6 +851,50 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
         + 'are shown as measured.',
     onStage: () => onStage(cell),
   });
+  const evidence = options.nightEvidence;
+  if (evidence?.pending) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty">Loading nights…</div>');
+    return;
+  }
+  if (!evidence || evidence.stale || evidence.failed) {
+    host.insertAdjacentHTML('beforeend', '<div class="empty">Night evidence unavailable.</div>');
+    return;
+  }
+  const groups = ['above', 'below', 'set', 'unprogrammed'].map((key) => {
+    const rows = (evidence.nights || []).filter((night) => nightGroup(night) === key);
+    return {
+      header: `<div class="ev-group"><b>${NIGHT_GROUP_LABEL[key]}</b><span class="n"> · ${rows.length} night${rows.length === 1 ? '' : 's'}</span></div>`,
+      servedCount: rows.length,
+      /* The row is the comparison the roster exists for: what ran against what
+         was programmed, and where the night's glucose landed. Entering and
+         leaving glucose belong to the selected night's detail block, not to
+         every row — on the shared five-column spine they crowded out the
+         programmed rate and the mean, leaving a reader unable to compare any
+         night against its own setting without selecting nights one at a time.
+         The separator is the same `·` the detail block sets between the pair. */
+      rows: rows.map((night) => ({
+        id: night.date,
+        html: `<span class="when">${fmtDate(night.date)}</span>
+          <span class="entry">${nightRate(night.delivered_rate)}</span>
+          <span class="arrow">·</span><span class="worst">${nightRate(night.programmed_rate)}</span>
+          <span class="delta">${night.glucose_mean == null ? '—' : Math.round(night.glucose_mean)}</span>`,
+      })),
+    };
+  }).filter((group) => group.servedCount > 0);
+  host.insertAdjacentHTML('beforeend', `<div class="lvl-cap">Nights of steady data
+    <span class="meta">${evidence.roster_glucose_mean == null ? '—' : Math.round(evidence.roster_glucose_mean)} mg/dL mean</span></div>`);
+  renderOccurrenceRoster(host, groups, {
+    selectedId: options.selectedId, shownCount: options.shownCount ?? EVIDENCE_CAP,
+    onSelect: options.onSelect || (() => {}), onMore: options.onMore || (() => {}),
+  });
+  if (evidence.excluded_night_count) {
+    host.insertAdjacentHTML('beforeend', `<div class="empty">${evidence.excluded_night_count} excluded night${evidence.excluded_night_count === 1 ? '' : 's'}</div>`);
+  }
+  const selected = (evidence.nights || []).find((night) => night.date === options.selectedId);
+  renderSlotNightSelection(host, selected, span,
+    selected ? (evidence.nights || []).filter((night) => nightGroup(night) === nightGroup(selected)) : [],
+    evidence.roster_glucose_mean,
+    options.onClear || (() => {}), options.onDay || (() => {}));
 }
 
 /**
@@ -1481,7 +1576,7 @@ function boot(root, data, callbacks, signal) {
     const runtime = tileRuntime.get(chartId);
     runtime.message = message;
     runtime.pending = pending;
-    paintTiles();
+    paint();
     return descriptor;
   }
 
@@ -1506,9 +1601,7 @@ function boot(root, data, callbacks, signal) {
       const descriptor = tileDescriptors.find((item) => item.chartId === chartId);
       if (!descriptor || tileRuntime.get(chartId)?.retained) {
         // the row is gone from the new generation: retain the named pin state
-        paintTiles();
-        paintChart();
-        paintBrace();
+        paint();
         return;
       }
       markTileStale(chartId, staleResult.message, { pending: true });
@@ -1531,13 +1624,13 @@ function boot(root, data, callbacks, signal) {
       runtime.pending = false;
       descriptor.state = 'error';
       runtime.message = 'Evidence request is unavailable.';
-      paintTiles();
+      paint();
       return;
     }
     const request = ++tileRequestGeneration;
     runtimeNow().request = request;
     runtimeNow().pending = true;
-    paintTiles();
+    paint();
     const superseded = () => runtimeNow()?.request !== request
       || !tileDescriptors.includes(descriptor);
     try {
@@ -1552,15 +1645,13 @@ function boot(root, data, callbacks, signal) {
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
-      paintTiles();
-      paintChart();
-      paintBrace();
+      paint();
     } catch (error) {
       if (superseded()) return;
       runtimeNow().pending = false;
       descriptor.state = 'error';
       runtimeNow().message = error?.message || 'Evidence request failed.';
-      paintTiles();
+      paint();
     }
   }
 
@@ -2116,6 +2207,43 @@ function boot(root, data, callbacks, signal) {
   }
 
   const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
+  const slotDescriptor = (cell) => tileDescriptors.find((descriptor) => descriptor.kind === 'basal'
+    && descriptor.coordinates.slot === cell.i);
+  const slotNightEvidence = (frame) => {
+    const descriptor = slotDescriptor(frame.cell);
+    if (descriptor?.data) return descriptor.data;
+    if (frame.nightEvidence) return frame.nightEvidence;
+    if (frame.nightEvidencePending || tileRuntime.get(descriptor?.chartId)?.pending) return { pending: true };
+    if (frame.nightEvidenceFailed || descriptor?.state === 'error' || descriptor?.state === 'stale-generation') {
+      return { failed: true };
+    }
+    return null;
+  };
+  const requestSlotNightEvidence = (frame) => {
+    if (slotDescriptor(frame.cell) || frame.nightEvidence || frame.nightEvidencePending) return;
+    const load = callbacks.loadBasalEvidence;
+    if (!load) { frame.nightEvidenceFailed = true; return; }
+    const request = frame.nightEvidenceRequest;
+    frame.nightEvidencePending = true;
+    void load({ slot: frame.cell.i }).then((evidence) => {
+      if (top() !== frame || frame.nightEvidenceRequest !== request) return;
+      frame.nightEvidencePending = false;
+      frame.nightEvidence = evidence;
+      paint();
+    }).catch(() => {
+      if (top() !== frame || frame.nightEvidenceRequest !== request) return;
+      frame.nightEvidencePending = false;
+      frame.nightEvidenceFailed = true;
+      paint();
+    });
+  };
+  const prepareSlotFrame = (frame) => {
+    Object.assign(frame, { selectedId: null, nightShownRows: EVIDENCE_CAP,
+      nightEvidence: null, nightEvidencePending: false, nightEvidenceFailed: false,
+      nightEvidenceRequest: (frame.nightEvidenceRequest || 0) + 1 });
+    requestSlotNightEvidence(frame);
+    return frame;
+  };
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
   /* Selection belongs to the standing case file, while descriptor data belongs
@@ -2170,8 +2298,10 @@ function boot(root, data, callbacks, signal) {
        the 90-min floor a DRAWN window must respect — a slot boundary is data,
        not a drawn sample, and only the frame path renders it unsnapped. */
     releaseWindow();
-    if (top().k === 'slot') { Object.assign(top(), { cell, rowId }); paint(); return; }
-    push({ k: 'slot', cell, rowId });
+    if (top().k === 'slot') {
+      prepareSlotFrame(Object.assign(top(), { cell, rowId })); paint(); return;
+    }
+    push(prepareSlotFrame({ k: 'slot', cell, rowId }));
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
@@ -2206,7 +2336,7 @@ function boot(root, data, callbacks, signal) {
     // the Undo affordance are all visible at rest
     const cell = lane.cells.find((c) => c.verdict === 'up') || lane.cells[0];
     if (cell.asserts) staged.add(cell.i);
-    stack.push({ k: 'slot', cell });
+    stack.push(prepareSlotFrame({ k: 'slot', cell }));
   }
   /* If the asserting capture is missing, this state opens at LEVEL 1 instead of
      on a block — that is where the missing-capture line prints, and a state
@@ -2280,8 +2410,11 @@ function boot(root, data, callbacks, signal) {
        on top of whatever window the factor frame resolved above. */
     const detail = f.k === 'factor' && f.caseFile?.selection?.state === 'selected'
       ? f.caseFile.selection.detail : null;
-    const trace = detail ? envelope.labels.map((label) => {
-      const point = detail.glucose.find((row) => row.t.slice(11, 16) === label);
+    const selectedNight = f.k === 'slot' && f.selectedId
+      ? slotNightEvidence(f)?.nights?.find((night) => night.date === f.selectedId) : null;
+    const tracePoints = detail?.glucose || selectedNight?.glucose_trace || null;
+    const trace = tracePoints ? envelope.labels.map((label) => {
+      const point = tracePoints.find((row) => row.t.slice(11, 16) === label);
       return point?.bg ?? null;
     }) : null;
     /* Whatever window the canvas landed on — preset, drawn, or frame-derived —
@@ -3281,6 +3414,30 @@ function boot(root, data, callbacks, signal) {
               : '';
   }
 
+  /* Selecting a roster row rebuilds the level, so the row the reader pressed is
+     a new element and focus would otherwise land on the document. The case file
+     has always put it back; the basal nights are the second roster to need it.
+     `preventScroll` is the point of the gesture: selection is evidence, not
+     navigation, so it never moves the reader's viewport. */
+  function focusOccurrenceRow(id) {
+    [...el('level').querySelectorAll('.case-occurrence')]
+      .find((button) => button.dataset.occurrenceId === id)
+      ?.focus({ preventScroll: true });
+  }
+
+  /* Selecting a night, from a click or from an arrow step. The intent is
+     declared before the repaint so `paint`'s passive restore stands down, and
+     applied once after it — the slot level renders its roster synchronously
+     from the frame, so there is no loading paint to defer across the way the
+     factor roster has. */
+  function selectNight(frame, id) {
+    frame.selectedId = id;
+    occurrenceFocusId = id;
+    paint();
+    focusOccurrenceRow(id);
+    occurrenceFocusId = null;
+  }
+
   /** Exactly one level renders into #level; the previous one is discarded. */
   function paintLevel() {
     const host = el('level');
@@ -3369,6 +3526,13 @@ function boot(root, data, callbacks, signal) {
         // PORT: reach the app's Plan draft as well as the local tally
         callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey }, staged.has(cell.i));
         paint();
+      }, {
+        nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
+        shownCount: f.nightShownRows,
+        onSelect: (id) => selectNight(f, id),
+        onMore: () => { f.nightShownRows = f.nightShownRows > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; paint(); },
+        onClear: () => { f.selectedId = null; paint(); },
+        onDay: (night) => callbacks.day?.({ t: night.t, text: `Basal · ${f.cell.label}` }),
       });
       return;
     }
@@ -3433,9 +3597,7 @@ function boot(root, data, callbacks, signal) {
     });
     appendCaseError(host);
     if (occurrenceFocusId && !f.loading && f.selectedId === occurrenceFocusId) {
-      const row = [...host.querySelectorAll('.case-occurrence')]
-        .find((button) => button.dataset.occurrenceId === occurrenceFocusId);
-      row?.focus({ preventScroll: true });
+      focusOccurrenceRow(occurrenceFocusId);
       occurrenceFocusId = null;
     }
   }
@@ -3790,7 +3952,24 @@ function boot(root, data, callbacks, signal) {
     reconcileTileDescriptors();
     paintFilter();
     paintCrumb();
+    /* PRECEDENCE, enforced here rather than left to run order. An explicit focus
+       intent — `occurrenceFocusId`, set by navigation before it paints — wins
+       unconditionally: while one is pending, the passive restore below stands
+       down and captures nothing, so it can never move focus off the row
+       navigation just asked for. That is a standing rule, not a timing
+       accident. The two rosters apply their intent in different places and both
+       are protected by it: the factor roster's restore runs inside `paintLevel`
+       and may defer itself across a loading paint (ADR 101), and the night
+       roster's runs as `selectNight` returns.
+       The passive restore is only for a repaint nobody asked for — a settling
+       tile, a background findings refresh — where `paintLevel` emptying #level
+       would otherwise strand the reader on a row it just destroyed.
+       `applyPendingFocus` arbitrates none of this: it only ever focuses #level
+       itself or a `.qrow`, never a `.case-occurrence`. */
+    const heldRow = occurrenceFocusId ? null
+      : document.activeElement?.closest?.('#level .case-occurrence')?.dataset.occurrenceId;
     paintLevel();
+    if (heldRow) focusOccurrenceRow(heldRow);
     renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
@@ -3851,9 +4030,25 @@ function boot(root, data, callbacks, signal) {
       popTo(stack.length - 2);
       return;
     }
-    if (f.k !== 'factor' || !f.selectedId
+    if (!['factor', 'slot'].includes(f.k) || !f.selectedId
       || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
     if (ev.target instanceof Element && ev.target.closest('#ec-chart')) return;
+    if (f.k === 'slot') {
+      const evidence = slotNightEvidence(f);
+      const selected = evidence?.nights?.find((night) => night.date === f.selectedId);
+      const siblings = selected
+        ? evidence.nights.filter((night) => nightGroup(night) === nightGroup(selected)) : [];
+      const at = siblings.findIndex((night) => night.date === f.selectedId);
+      const next = at + (ev.key === 'ArrowDown' ? 1 : -1);
+      if (at < 0 || next < 0 || next >= siblings.length) return;
+      ev.preventDefault();
+      /* The repaint destroys the row the key press was standing on, so the
+         stepped row is focused explicitly — the same restoration the factor
+         roster makes through `occurrenceFocusId` (ADR 101). Without it a screen
+         reader lands on the document and Tab restarts at the top of the page. */
+      selectNight(f, siblings[next].date);
+      return;
+    }
     const eventComparison = f.caseFile.projection.alignment === 'event';
     const siblings = eventComparison
       ? (f.caseFile.projection.cohorts.find((cohort) => cohort.key

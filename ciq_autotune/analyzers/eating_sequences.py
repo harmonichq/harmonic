@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from math import ceil
-from statistics import median, pstdev
+from statistics import fmean, median, pstdev
 from typing import Iterable, Mapping, Optional, Sequence
 
 from ..events import BolusEvent, CarbEntry, CgmReading
@@ -316,16 +316,20 @@ def assign_quintiles(items: Sequence[SequenceItem], *, config: EatingSequenceCon
 
 
 def aggregate_interval(metric_rows: Sequence[MetricRow], *, config: EatingSequenceConfig) -> IntervalAggregate:
-    """Aggregate qualifying sequences by metric median, never pooled readings."""
+    """Aggregate qualifying sequences by metric median, never pooled readings.
+
+    Served metrics are rounded to three decimals so the frozen fixture is identical
+    on every supported interpreter.
+    """
     n = len(metric_rows)
     if n < config.minimum_bucket_n:
         return IntervalAggregate("insufficient", n, None, None, None, None)
     return IntervalAggregate(
         "supported", n,
-        median(row.tir_pct for row in metric_rows),
-        median(row.mean_mgdl for row in metric_rows),
-        median(row.sd_mgdl for row in metric_rows),
-        median(row.peak_mgdl for row in metric_rows),
+        round(median(row.tir_pct for row in metric_rows), 3),
+        round(median(row.mean_mgdl for row in metric_rows), 3),
+        round(median(row.sd_mgdl for row in metric_rows), 3),
+        round(median(row.peak_mgdl for row in metric_rows), 3),
     )
 
 
@@ -514,9 +518,10 @@ def _metrics(
                 continue
             if readings:
                 values[(sequence.start, period)] = MetricRow(
-                    100 * sum(config.tir_low_mgdl <= value <= config.tir_high_mgdl
-                              for value in readings) / len(readings),
-                    sum(readings) / len(readings), pstdev(readings), max(readings))
+                    round(100 * sum(config.tir_low_mgdl <= value <= config.tir_high_mgdl
+                                    for value in readings) / len(readings), 4),
+                    round(fmean(readings), 4), round(pstdev(readings), 4),
+                    round(max(readings), 4))
     return values, exclusions
 
 
@@ -564,9 +569,9 @@ def _comparison(
     else:
         row = HighCarbComparisonRow(
         scope, period, "supported", len(reference), len(high),
-        high_aggregate.tir_pct - reference_aggregate.tir_pct,
-        high_aggregate.mean_mgdl - reference_aggregate.mean_mgdl,
-        high_aggregate.sd_mgdl - reference_aggregate.sd_mgdl,
+        round(high_aggregate.tir_pct - reference_aggregate.tir_pct, 3),
+        round(high_aggregate.mean_mgdl - reference_aggregate.mean_mgdl, 3),
+        round(high_aggregate.sd_mgdl - reference_aggregate.sd_mgdl, 3),
         reference_aggregate, high_aggregate,
         )
     return _ComparedCohorts(row, reference_aggregate, high_aggregate)
@@ -619,9 +624,9 @@ def _repeat_comparison(
     else:
         row = RepeatComparisonRow(
             quintile, period, "supported", len(reference), len(repeat),
-            repeat_aggregate.tir_pct - reference_aggregate.tir_pct,
-            repeat_aggregate.mean_mgdl - reference_aggregate.mean_mgdl,
-            repeat_aggregate.sd_mgdl - reference_aggregate.sd_mgdl,
+            round(repeat_aggregate.tir_pct - reference_aggregate.tir_pct, 3),
+            round(repeat_aggregate.mean_mgdl - reference_aggregate.mean_mgdl, 3),
+            round(repeat_aggregate.sd_mgdl - reference_aggregate.sd_mgdl, 3),
             reference_aggregate, repeat_aggregate,
             config.window_count_bands[0], config.window_count_bands[-1],
         )

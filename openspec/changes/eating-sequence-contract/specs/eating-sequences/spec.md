@@ -79,14 +79,19 @@ reading-level statistic. Its metric keys SHALL be `tir_pct`, `mean_mgdl`,
 
 ### Requirement: Carb quintiles are deterministic and user-relative
 
-The contract SHALL assign balanced empirical quintiles over sequences ordered
+The contract SHALL assign balanced empirical quintiles once over every
+constructed sequence in the source window, before interval eligibility, ordered
 by `(carb total ascending, sequence start ascending)`. For 0-based rank `i` of
 `n`, the internal quintile index SHALL be `min(4, i * 5 // n)`; served quintile
 labels SHALL be 1-based Q1 through Q5. The four boundaries SHALL be midpoints
 between adjacent ordered carb totals at each cut: for 0-based cut `q`, left
 index `((q + 1) * n + 4) // 5 - 1` and right index `min(left + 1, n - 1)`.
-These boundaries SHALL be user-relative interpretation data, not clinical or
-reusable carb thresholds.
+The evening scope SHALL filter that pooled assignment and repeat its boundaries
+verbatim; it SHALL never re-rank evening sequences. A quintile row's
+`sequence_n` SHALL count every sequence assigned to that quintile within the
+scope, whether or not any of its intervals qualify, while each interval
+aggregate's `n` SHALL count qualifying sequences only. These boundaries SHALL
+be user-relative interpretation data, not clinical or reusable carb thresholds.
 
 #### Scenario: Equal carb totals remain deterministic
 
@@ -94,6 +99,16 @@ reusable carb thresholds.
 - **WHEN** quintiles and boundaries are assigned
 - **THEN** sequence start breaks the tie deterministically
 - **AND** every sequence receives exactly one balanced empirical quintile
+
+#### Scenario: Evening rows reuse the pooled quintile assignment
+
+- **GIVEN** constructed source-window sequences whose evening subset has a
+  different carb distribution from the pooled set
+- **WHEN** quintile rows are prepared for pooled and evening scopes
+- **THEN** evening filters the quintiles and boundaries assigned to the pooled
+  source-window population without re-ranking
+- **AND** each `sequence_n` includes assigned sequences even when all of their
+  measured intervals are excluded
 
 ### Requirement: Insufficient evidence remains visible and non-concluding
 
@@ -124,8 +139,10 @@ times. `days` and every exclusion count are integers. An interval aggregate's
 `n` is an integer >= 0; each metric is a number or null, all null when status is
 `insufficient` and all non-null when status is `supported`. `boundaries_g` has
 exactly four number-or-null entries. Each scope always has five Q1–Q5 rows in
-ascending order. `matrix` always has all fifteen rows in `(carb_quintile,
-window_count_band)` order, and `comparisons` always has all fifteen rows in
+ascending order. `high_carb_sequence.comparisons` always has all six rows in
+`(scope, period)` order; `matrix` always has all fifteen rows in
+`(carb_quintile, window_count_band)` order; and
+`repeat_eating_amplifier.comparisons` always has all fifteen rows in
 `(carb_quintile, period)` order. Optional `finding` is either null or exactly
 the shown object. Every `definitions` duration, range, and coverage field is a
 number except its closed integer arrays (`post_horizons_hours`,
@@ -156,6 +173,14 @@ number except its closed integer arrays (`post_horizons_hours`,
         {"quintile": 5, "sequence_n": 0, "in_sequence": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_4h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}, "post_6h": {"status": "insufficient", "n": 0, "tir_pct": null, "mean_mgdl": null, "sd_mgdl": null, "peak_mgdl": null}}
       ]}
     },
+    "comparisons": [
+      {"scope": "pooled", "period": "in_sequence", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
+      {"scope": "pooled", "period": "post_4h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
+      {"scope": "pooled", "period": "post_6h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
+      {"scope": "evening", "period": "in_sequence", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
+      {"scope": "evening", "period": "post_4h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null},
+      {"scope": "evening", "period": "post_6h", "reference_cohort": "Q1-Q4", "high_cohort": "Q5", "status": "insufficient", "reference_n": 0, "high_n": 0, "tir_difference_pct_points": null, "mean_difference_mgdl": null, "sd_difference_mgdl": null}
+    ],
     "exclusions": {"cgm_coverage": 0, "carb_log_contamination": 0, "next_sequence_overlap": 0}
   },
   "repeat_eating_amplifier": {
@@ -205,10 +230,21 @@ The JSON block's repeating rows use the following exact row definitions:
 `in_sequence`, `post_4h`, and `post_6h` is the interval aggregate above.
 Each matrix row has integer `carb_quintile` 1..5, `window_count_band` exactly
 `"1"`, `"2"`, or `"3+"`, and those three interval aggregates. Each comparison
-row has integer `carb_quintile` 1..5, `period` exactly `"in_sequence"`,
-`"post_4h"`, or `"post_6h"`, `reference_band` exactly `"1"`, `repeat_band`
-exactly `"3+"`, `status` exactly `"supported"` or `"insufficient"`, integer
-`reference_n` and `repeat_n`, and number-or-null
+row in `high_carb_sequence.comparisons` has `scope` exactly `"pooled"` or
+`"evening"`, `period` exactly `"in_sequence"`, `"post_4h"`, or `"post_6h"`,
+`reference_cohort` exactly `"Q1-Q4"`, `high_cohort` exactly `"Q5"`, `status`
+exactly `"supported"` or `"insufficient"`, integer `reference_n` and `high_n`,
+and number-or-null `tir_difference_pct_points`, `mean_difference_mgdl`, and
+`sd_difference_mgdl`. Its reference aggregate SHALL be the median across the
+union of qualifying Q1–Q4 sequences for its scope and period, never a median
+of the four quintile medians; each difference SHALL be high minus reference;
+and its status SHALL be supported only when both cohorts have `n >=
+minimum_bucket_n`. Each comparison row in
+`repeat_eating_amplifier.comparisons` has integer `carb_quintile` 1..5,
+`period` exactly `"in_sequence"`, `"post_4h"`, or `"post_6h"`,
+`reference_band` exactly `"1"`, `repeat_band` exactly `"3+"`, `status` exactly
+`"supported"` or `"insufficient"`, integer `reference_n` and `repeat_n`, and
+number-or-null
 `tir_difference_pct_points`, `mean_difference_mgdl`, and
 `sd_difference_mgdl`. `high_carb_sequence.finding`, when non-null, has string
 `summary`, `scope` exactly `"pooled"` or `"evening"`, and `period` from the

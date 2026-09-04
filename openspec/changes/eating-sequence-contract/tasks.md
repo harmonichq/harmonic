@@ -13,7 +13,8 @@
 - [ ] Add `ciq_autotune/analyzers/eating_sequences.py` as a pure, separately
   versioned report contract. Export `REPORT_SCHEMA =
   "eating-sequence-report-v1"`, frozen row types for interval aggregates,
-  quintiles, matrix rows, and comparisons, plus `assign_quintiles`,
+  quintiles, matrix rows, high-carb comparison rows, repeat comparison rows,
+  plus `assign_quintiles`,
   `aggregate_interval`, `report_dict`/`to_dict`, and `empty_report` (or an
   equivalent public interface). Do not import `safety.py`, change
   `AnalysisResult`, or add a `TuningLever`.
@@ -24,7 +25,10 @@
   `(carb_total ascending, sequence_start ascending)`; assign rank `i` of `n`
   to `min(4, i * 5 // n)`; and calculate each boundary as the midpoint of the
   adjacent values at left index `((q + 1) * n + 4) // 5 - 1` and right index
-  `min(left + 1, n - 1)`. Preserve duplicate carb totals through the start-key
+  `min(left + 1, n - 1)`. Assign once across every constructed sequence in the
+  source window before interval eligibility, then filter that same assignment
+  into the evening scope; evening repeats the pooled boundaries verbatim and
+  never re-ranks. Preserve duplicate carb totals through the start-key
   tiebreaker rather than collapsing sequences.
 - [ ] Make `aggregate_interval(metric_rows, *, config)` return the true
   qualifying `n`; return `status="insufficient"` with all four metric values
@@ -35,21 +39,24 @@
   `ciq_autotune/analyzers/eating_sequences.py` exactly as the capability's
   **separately versioned report is aggregate-only and complete** requirement
   specifies: five ordered Q1–Q5 quintile rows in each scope, all fifteen
-  `(quintile, band)` matrix rows, all fifteen `(quintile, period)` comparison
-  rows, every aggregate and exclusion key, and only the two source-window
-  bounds as time values. Public output contains no event id, event row, Day
-  link, raw EGV, or per-occurrence data. `empty_report(window)` must preserve
-  that complete shape with all rows present and all interval aggregates
-  insufficient at `n=0`.
+  `(quintile, band)` matrix rows, all six `(scope, period)` high-carb
+  comparison rows, all fifteen `(quintile, period)` repeat comparison rows,
+  every aggregate and exclusion key, and only `window.start` and `window.end`
+  as source-window-bound time values. Public output contains no event id,
+  event row, Day link, raw EGV, or per-occurrence data. `empty_report(window)`
+  must preserve that complete shape with all rows present and all interval
+  aggregates insufficient at `n=0`.
 - [ ] Add `tests/test_eating_sequences.py` through the public contract
   interface. Cover configuration immutability; deterministic balanced quintiles
   for `n=5k`, non-divisible `n`, ties, and `n<5`; all four boundary values;
   insufficiency at `n=7` and support at `n=8`; median aggregation; complete
-  serialisation by walking the dictionary for every required key and rejecting
-  timestamp- or event-id-like keys; and the complete `n=0` empty-report
-  skeleton, including five rows per scope and fifteen matrix and comparison
-  rows. Build deterministic caller-owned item and metric-row literals in the
-  test; their values must not round from a real reading.
+  serialisation by walking the dictionary for every required key, exempting
+  exactly `window.start` and `window.end` as source-window bounds and rejecting
+  every other timestamp-like or event-id-like key or value; and the complete
+  `n=0` empty-report skeleton, including five rows per scope, six high-carb
+  comparisons, fifteen matrix rows, and fifteen repeat comparisons. Build
+  deterministic caller-owned item and metric-row literals in the test; their
+  values must not round from a real reading.
 - [ ] Run the focused contract tests and the required static gates: the locked
   pytest interpreter, `node --test 'frontend/**/*.test.js'`,
   `npx --yes @fission-ai/openspec@1 validate --all --strict`,

@@ -12,18 +12,23 @@ one implementable contract rather than reopening them.
   eating-sequence report describes aggregate associations in pump-recorded carb
   and CGM history, so it receives its own immutable,
   `eating-sequence-report-v1` contract under `analyzers/`. It neither imports
-  nor couples to `safety.py`, and its public shape excludes timestamps, event
-  rows, Day links, raw EGVs, and per-occurrence data. This keeps an aggregate
-  observation from becoming a setting recommendation. [Scope ledger:
+  nor couples to `safety.py`, and its public shape excludes event timestamps,
+  event rows, Day links, raw EGVs, and per-occurrence data; its only permitted
+  time values are `window.start` and `window.end`, the source-window bounds.
+  This keeps an aggregate observation from becoming a setting recommendation.
+  [Scope ledger:
   advisory-only risk boundary and build-phase decisions.]
 - **Carb grouping is empirical and user-relative.** The config holds only
   code-owned definitions and data-quality gates. It has no fixed carb cutoff:
-  all sequences sort by `(carb total, sequence start)` and receive balanced
-  empirical Q1–Q5 ranks; boundaries are adjacent-value midpoints. The served
-  rows use 1-based quintile labels, while the implementation may use the pinned
-  0-based calculation internally. Boundaries interpret this user's cohorts and
-  are never reusable clinical thresholds. [Scope ledger: eating-sequence
-  contract pin.]
+  all constructed sequences in the source window sort by `(carb total,
+  sequence start)` and receive balanced empirical Q1–Q5 ranks before interval
+  eligibility; evening then filters that pooled assignment, repeats the pooled
+  boundaries verbatim, and never re-ranks. The served rows use 1-based quintile
+  labels, while the implementation may use the pinned 0-based calculation
+  internally. Boundaries interpret this user's cohorts and are never reusable
+  clinical thresholds. `sequence_n` counts all sequences assigned to that
+  quintile within the scope, while interval `n` counts qualifying sequences
+  only. [Scope ledger: eating-sequence contract pin.]
 - **Insufficiency is a present, non-concluding result.** Each interval carries
   `status` and its true qualifying `n`. Below eight, all metrics are null and
   the row cannot support a comparison or headline. The zero-sequence report is

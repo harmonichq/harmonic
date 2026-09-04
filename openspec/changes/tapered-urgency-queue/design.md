@@ -38,12 +38,17 @@ the server's order at three weights, chosen by served facts alone:
   on click as every row does. Held, blind and history reads stay collapsed
   behind `Watching · N reads` exactly as shipped.
 
-A tier caption prints the served tier word verbatim — `Next in line`,
-`Worth a look`, `noted` — once, where the tier of consecutive shown rows
-changes; the hero's kicker carries its own. The frontend derives no rank, tier,
-floor, direction or threshold: `queueRows` keeps walking the server's order and
-the new weight is a function of `priority == null`, position among shown priced
-rows, and the served `tier` string.
+A tier caption prints once where the served `tier` of consecutive shown
+**priced** rows changes; the hero's kicker carries its own tier. The tail
+prints no caption — the seam sentence already labels it. The server stamps
+slugs (`next_in_line`, `worth_a_look`, `noted`), not display words, so the rail
+carries one pinned map `TIER` beside its existing `FLAVOR` map whose domain is
+exactly those three slugs and whose range is DESIGN.md rule 4's words —
+`Next in line`, `Worth a look`, `noted` — and nothing else; an unknown slug
+renders no caption and no kicker word rather than a guess. The frontend
+derives no rank, tier, floor, direction or threshold: `queueRows` keeps walking
+the server's order and the new weight is a function of `priority == null`,
+position among shown priced rows, and the served `tier` slug.
 
 **Why.** The projection stamps three tiers and refuses a fourth on purpose
 (`_assign_tiers`, #41: "the server has no cross-parameter headline, so selecting
@@ -66,7 +71,13 @@ whether the drawer is up or hidden, so no request is added and no series is
 added to the projection (ADR 306: the Finding case file is not a projection
 source). A descriptor whose runtime is pending or stale shows the drawer's own
 pending or stale mark in the mini slot, never an empty box. The mini is
-furniture: below a measured row width it is omitted and the row's facts stay.
+furniture: when its own host element measures narrower than the named constant
+`MIN_ROW_MINI_WIDTH` (provisional 120px in sub-order 2, ruled at the running
+app in sub-order 3 and recorded under `## Live-round rulings`), the row omits
+the chart, marks `data-mini="omitted"`, and keeps its facts. The host is
+measured, not the row and not the field: `measureFieldNarrow`'s 280px is the
+floor for a plot that fills the tile field and says nothing about a row-end
+mini, and a row is only ever measured while the rail is painted and visible.
 Row minis are mounted after the row is in the DOM (ADR 215 amendment) and
 disposed when the queue repaints, the same discipline the drawer cells follow.
 
@@ -82,8 +93,17 @@ forbids, and the last would need a store the projection does not have.
 `CORRECTION_CLUSTERS: (-120, 180)`; `MEALS: (-60, 300)` and `HIGHS: (-150,
 300)` are unchanged, as are the two lever-specific policies (`MISSED_MEAL`,
 `MEAL_BOLUS_SHORT`) at (−60, 300). The served case-file `window_min` and every
-trace follow the table automatically; the committed encodings that restate the
-old values are enumerated in `tasks.md` §1 and move in the same chunk.
+trace follow the table automatically. The standalone Event comparison
+preparation (`ciq_autotune/event_comparison.py`, `VIEW_CONFIG[...]["window"]`)
+follows the same fact: its `meals` and `lows` views read
+`list(_WINDOWS[Exposure.MEALS])` / `list(_WINDOWS[Exposure.LOWS])` instead of
+restating the tuples (no import cycle: that module already imports from
+`analyzers.scenario`), so one low opens at one lead-in on every surface. The
+committed encodings that restate the old values — three Python tests, the
+`#677` capture generator and its fixture-only projector `project.mjs`, the S13
+replay story, and three generated artifact sets — are enumerated in `tasks.md`
+§1 and move in the same chunk. `tasks.md` itself quotes the old values in prose
+and is a sanctioned residue.
 
 **Why.** The story of an over-treated low is the drop into it and the divergent
 recovery; five hours of lead-in flattens both (operator, 2026-08-31). Two hours
@@ -94,11 +114,35 @@ verified at triage); this is a values change, not new machinery.
 ## Render matrix
 
 Before/after renders from the base and the revision served on the same showcase
-copy, at 1440×900, 1280×800, 1024×768, 768×1024 and 390×844: the queue root in
-a window that ranks every weight (hero, at least one compact row, at least one
-`noted` row, Watching collapsed), the Watching expansion, a sift that empties
-the hero, and a compact row's drill. Dark only (#304). Stored under
-`openspec/changes/tapered-urgency-queue/evidence/renders/`.
+copy, at 1440×900, 1280×800, 1024×768, 768×1024 and 390×844, dark only (#304),
+stored under `openspec/changes/tapered-urgency-queue/evidence/renders/`. The
+window is the showcase's **24 h** queue (no `start_min`/`end_min`), the one
+served window that ranks every weight. Dumped at triage on 2026-09-03 from the
+declared no-fetch serve of `mockups/qa-e2e.synthetic/harmonic.sqlite`
+(`GET /api/diagnose/findings`), `id register tier priority`:
+
+```
+basal:180-240              assert   next_in_line  55
+finding:over_treated_low   finding  worth_a_look  22   (event chart)
+finding:correction_on_iob  finding  noted         null (event chart)
+finding:meal_bolus_short   finding  noted         null
+ich1_WzAsMTQ0MCwiMTIiXQ    history  noted         null
+```
+
+So the 24 h root renders one hero (basal, its chart on the stage), one compact
+row with a mini, one `Worth a look` caption, two title-only tail rows and a
+collapsed Watching of one read. The four presets rank at most one priced row
+(Overnight: the basal hero alone; Afternoon: `over_treated_low` as hero;
+Morning and Evening: no priced row, no hero), so they are not matrix states.
+States: `queue-root`, `watching-expanded`, `drill-compact` (the compact row
+drilled, its chart on the stage), `drill-tail` (a tail row drilled). A sift
+cannot hide the showcase hero (the basal row carries no chips), so hero
+promotion under a sift is proven by the node test in `tasks.md` §2, not by a
+render. The replay's own row mix is the frozen fixture's, not the showcase's:
+`frontend/diagnose-workstation-behavior.replay.mjs` answers
+`/api/diagnose/findings` from the fixture-only mirror over `payload.json`
+(#735), whose `windows.global` yields one hero, four compact rows across two
+tiers, two tail rows and one collapsed read.
 
 ## Live-round rulings
 

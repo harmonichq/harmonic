@@ -26,6 +26,7 @@ from ciq_autotune.analyzers.eating_sequences import (
     empty_report,
     report_dict,
 )
+from tests.eating_sequence_streams import high_carb_stream
 
 
 class EatingSequenceConfigTest(unittest.TestCase):
@@ -242,3 +243,77 @@ class EmptyReportTest(unittest.TestCase):
                 self._assert_only_window_timestamps(child, path)
         elif isinstance(value, str):
             self.assertNotRegex(value, r"^\d{4}-\d\d-\d\d[ T]")
+
+
+class EatingSequenceDetectorTest(unittest.TestCase):
+    def test_build_report_chains_windows_and_ignores_corrections(self):
+        from datetime import datetime, timedelta
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from ciq_autotune.events import BolusEvent
+
+        start = datetime(2040, 2, 3, 12)
+        boluses = [
+            BolusEvent(start, carbs=11.3),
+            BolusEvent(start + timedelta(minutes=20), carbs=12.7),
+            BolusEvent(start + timedelta(minutes=50), carbs=None),
+            BolusEvent(start + timedelta(hours=3, minutes=20), carbs=23.9),
+            BolusEvent(start + timedelta(hours=6, minutes=21), carbs=31.1),
+        ]
+        report = build_report(
+            boluses, [], [], window_start=start,
+            window_end=start + timedelta(hours=8), config=EatingSequenceConfig(),
+        )
+
+        rows = report.high_carb_sequence.pooled.rows
+        self.assertEqual(sum(row.sequence_n for row in rows), 2)
+        self.assertEqual(report.high_carb_sequence.pooled.boundaries_g, (39.5, 39.5, 47.9, 47.9))
+
+    def test_build_report_constructs_supported_high_carb_association(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        boluses, cgm, carb_log, _ = high_carb_stream()
+        report = build_report(
+            boluses, cgm, carb_log,
+            window_start=boluses[0].t,
+            window_end=cgm[-1].t,
+            config=EatingSequenceConfig(),
+        )
+
+        payload = report_dict(report)
+        self.assertEqual(payload["high_carb_sequence"]["status"], "supported")
+        self.assertIsNotNone(payload["high_carb_sequence"]["finding"])
+        self.assertIn("highest-carb fifth", payload["high_carb_sequence"]["finding"]["summary"])
+
+    def test_sd_only_adversity_uses_the_spread_summary(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+
+        boluses, cgm, carb_log, _ = high_carb_stream(sd_only=True)
+        report = build_report(
+            boluses, cgm, carb_log,
+            window_start=boluses[0].t,
+            window_end=cgm[-1].t,
+            config=EatingSequenceConfig(),
+        )
+
+        finding = report_dict(report)["high_carb_sequence"]["finding"]
+        self.assertIsNotNone(finding)
+        self.assertIn("glucose spread", finding["summary"])
+
+    def test_store_wrapper_uses_basal_as_a_bound_only_and_slices_events(self):
+        from datetime import timedelta
+        from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report
+
+        boluses, cgm, carb_log, basal = high_carb_stream(count=1)
+        end = cgm[-1].t + timedelta(hours=2)
+        basal = [basal[0].__class__(end, "Profile")]
+
+        class Store:
+            def basal_events(self): return basal
+            def cgm_readings(self): return cgm
+            def bolus_events(self): return boluses
+            def carb_entries(self): return carb_log
+
+        report = build_eating_sequence_report(Store())
+        self.assertEqual(report.window.end, end.isoformat())
+        self.assertEqual(report.window.start, (end - timedelta(days=30)).isoformat())
+        self.assertEqual(report.high_carb_sequence.pooled.rows[0].sequence_n, 1)

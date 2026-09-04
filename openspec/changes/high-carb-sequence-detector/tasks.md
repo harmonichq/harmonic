@@ -1,9 +1,9 @@
 ## 1. Eating-sequence primitives and the high-carb detector
 
-- [ ] 1. Add `build_report` and the read-only `build_eating_sequence_report` wrapper in the eating-sequences module. The wrapper derives the window from basal-or-CGM exactly as Scenario does, then slices bolus, CGM, and Carb-log streams to `[start, now]` (both ends inclusive, as Scenario's `_slice` does); basal is solely a span-end anchor, never a modeling input. `build_report` treats received lists as complete window content and constructs no sequence outside its explicit bounds.
-- [ ] 2. Populate high-carb Q5-versus-Q1–Q4 comparison rows, supported and adverse verdicts, the two fixed aggregate-only TIR/SD summary variants, and the settled two-tier headline selection; retain the repeat-eating skeleton for #276.
-- [ ] 3. Add the deterministic synthetic event-stream builder used by both detector tests and the later fixture generator.
-- [ ] 4. Add public-interface tests through `build_report` covering every construction, eligibility, scope, support, comparison, headline, and empty-report evidence anchor in the proposal, plus a basal delivery later than the last CGM reading setting the wrapper window end, otherwise-qualifying builder-stream events before the source window producing no sequence, an SD-only adverse finding, and tier precedence where a TIR-drop candidate outranks a larger SD-only rise.
+- [x] 1. Add `build_report` and the read-only `build_eating_sequence_report` wrapper in the eating-sequences module. The wrapper derives the window from basal-or-CGM exactly as Scenario does, then slices bolus, CGM, and Carb-log streams to `[start, now]` (both ends inclusive, as Scenario's `_slice` does); basal is solely a span-end anchor, never a modeling input. `build_report` treats received lists as complete window content and constructs no sequence outside its explicit bounds.
+- [x] 2. Populate high-carb Q5-versus-Q1–Q4 comparison rows, supported and adverse verdicts, the two fixed aggregate-only TIR/SD summary variants, and the settled two-tier headline selection; retain the repeat-eating skeleton for #276.
+- [x] 3. Add the deterministic synthetic event-stream builder used by both detector tests and the later fixture generator.
+- [x] 4. Add public-interface tests through `build_report` covering every construction, eligibility, scope, support, comparison, headline, and empty-report evidence anchor in the proposal, plus a basal delivery later than the last CGM reading setting the wrapper window end, otherwise-qualifying builder-stream events before the source window producing no sequence, an SD-only adverse finding, and tier precedence where a TIR-drop candidate outranks a larger SD-only rise.
 
 ## 2. Serve and freeze the report
 

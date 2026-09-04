@@ -1922,8 +1922,18 @@
      the hue is the one the stage draws, and only its ink steps down, so the
      matched trace leads on value where the two hues are too close to lead on
      their own. The remaining hue gap is a finding against the `--ec-*` mapping,
-     recorded for the canvas that owns it, not forked here. */
-  --ec-comparison: color-mix(in srgb, var(--mk-accent) 70%, transparent);
+     recorded for the canvas that owns it, not forked here.
+
+     THE WEIGHT IS SET AGAINST THIS GROUND, and 70% was set against the deeper
+     one this cell used to sit on. Carried onto the half-step ground it now has,
+     that much transparency stopped the cell arguing at all — it read as a smudge
+     rather than as two cohorts, which costs the rail the one place its case is
+     made from data. 85% keeps a real value step under the matched trace while
+     both traces hold the lighter ground. The step cannot come off the matched
+     trace instead: that one is already the token at full strength, and the only
+     way to give it more presence would be to tint it, which is a different
+     colour for the cohort and the one thing this cell must never do. */
+  --ec-comparison: color-mix(in srgb, var(--mk-accent) 85%, transparent);
 }
 .dw .qrow .mini.tile-state {
   display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);

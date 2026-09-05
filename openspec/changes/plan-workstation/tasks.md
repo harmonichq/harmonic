@@ -53,13 +53,14 @@ surface-ledger row, the wireframe renders and the base evidence set.
       267 and 284 (pane header rail — `header h2`, `header .meta`); 275 and 291
       (the host-level `--ck-*` overrides); 348 (the reduced-motion `.panes`
       rule). Add `.pw .plan-strip` beside `.vw .verify-strip` in the three
-      instrument-rail rules at lines 203, 227 and 286. Leave every other
+      instrument-rail rules at lines 203, 227 and 286, and `.pw .plan-strip
+      .strip-note` beside `.vw .verify-strip .strip-note` at line 220. Leave every other
       `:is(.dw, .vw)` line as it is — the `.canvas-pane`, dock-floor
       (`.inspector > .watch`, `.watch .go`), `.seg`, caption and number
       selectors, `[data-safety]` / `[data-verdict]`, `.factor`, `.qrow` and
       `.lane-key` rules are Diagnose and Verify furniture Plan does not render
       (`grep -c ':is(\.dw, \.vw)' frontend/theme.css` → `61` is the whole set;
-      fifteen edits is the Plan subset). Update the file's role comment (lines
+      sixteen edits is the Plan subset). Update the file's role comment (lines
       22–28) and `DESIGN.md`'s role note (lines 116–119) to name the third
       host. Nothing else in `theme.css` moves.
 - [ ] Update the two drivers that pinned the old chrome:

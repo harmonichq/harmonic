@@ -725,12 +725,15 @@
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
 }
 .tile-field[data-explorer] > .tile-row > .evidence-tile[data-selected] {
-  box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+  box-shadow: inset 0 0 0 2px var(--ck-focus-mark), var(--ck-cell-shadow);
 }
-.tile-field[data-explorer] > .tile-row > .evidence-tile[data-tail-head],
-.tile-field[data-explorer] > .tile-row > .evidence-tile[data-tail-head][data-selected] {
+.tile-field[data-explorer] > .tile-row > .evidence-tile[data-tail-head] {
   box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
     inset 0 0 0 1px var(--ck-tile-edge), var(--ck-cell-shadow);
+}
+.tile-field[data-explorer] > .tile-row > .evidence-tile[data-tail-head][data-selected] {
+  box-shadow: -5px 0 0 -4px var(--ck-tile-edge),
+    inset 0 0 0 2px var(--ck-focus-mark), var(--ck-cell-shadow);
 }
 /* A PIN IS NO LONGER A RING (#215). The tile-wide accent ring said "you pinned
    this" in the same pigment the drilled tile needs for "the inspector is

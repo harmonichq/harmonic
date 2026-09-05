@@ -138,7 +138,7 @@ const MARKUP = `
       <div class="tile-field" id="tile-field" aria-label="Evidence charts">
         <div class="tile-focal" id="tile-focal"></div>
         <div class="tile-row" id="tile-row" role="group"
-          aria-label="Evidence charts — scrolls horizontally"></div>
+          aria-label="Evidence charts — scrolls vertically"></div>
       </div>
     </section>
 

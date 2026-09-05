@@ -1188,26 +1188,30 @@ test('every vessel state retains the Dark retheme edge', async () => {
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
     await page.locator('#tile-field[data-explorer]').waitFor();
     const styles = await page.evaluate(() => {
-      const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
       const style = (node) => {
         const computed = getComputedStyle(node);
         return { radius: computed.borderRadius, shadow: computed.boxShadow };
       };
-      const catalog = style(document.querySelector(selector));
-      const selectedNode = document.querySelector(selector);
-      selectedNode.setAttribute('data-selected', '');
-      const selected = style(selectedNode);
-      selectedNode.removeAttribute('data-selected');
-      selectedNode.setAttribute('data-tail-head', '');
-      const tail = style(selectedNode);
-      selectedNode.removeAttribute('data-tail-head');
-      return { catalog, selected, tail };
+      return {
+        catalog: style(document.querySelector('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])')),
+        selected: style(document.querySelector('#tile-row .evidence-tile[data-selected]')),
+        tail: style(document.querySelector('#tile-row .evidence-tile[data-tail-head]:not([data-selected])')),
+        label: document.querySelector('#tile-row').getAttribute('aria-label'),
+      };
     });
-    for (const state of ['catalog', 'selected', 'tail']) {
+    for (const state of ['catalog', 'tail']) {
       assert.equal(styles[state].radius, '4px');
       assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
         `Dark ${state} cells retain the #453d35 vessel edge`);
     }
+    assert.equal(styles.selected.radius, '4px',
+      'the current mark does not change catalog geometry');
+    assert.notEqual(styles.selected.shadow, styles.catalog.shadow,
+      'the actual current chart has a visible computed-style difference from ordinary cells');
+    assert.match(styles.selected.shadow, /rgb\(242, 237, 226\) 0px 0px 0px 2px inset/,
+      'the current chart uses the existing focus-mark token as a non-geometric inset mark');
+    assert.equal(styles.label, 'Evidence charts — scrolls vertically',
+      'the catalog names the direction it actually scrolls');
 
     const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
     await hoverTile.hover();

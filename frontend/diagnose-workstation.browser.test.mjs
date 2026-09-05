@@ -1129,6 +1129,7 @@ test('#100 · the Findings crumb restores focus to the drilled finding row', asy
       'the finding row intended for crumb restoration is present in the queue');
     await findingRow.focus();
     await page.keyboard.press('Enter');
+    await page.locator('#level .inner .who').waitFor();
     await page.getByLabel(/Findings›Carb undercount/).getByRole('button', { name: 'Findings', exact: true }).focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,

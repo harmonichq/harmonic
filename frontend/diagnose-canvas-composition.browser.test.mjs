@@ -12,7 +12,7 @@
  * missed:
  *   · starring a ranked chart reordered the dock even though retention and
  *     focus are separate verbs;
- *   · selecting a filmstrip cell moved that chart left-most instead of leaving
+ *   · selecting an All charts cell moved that chart left-most instead of leaving
  *     the dock in its published findings order;
  *   · a stale-generation recovery restored a layout captured before the refresh,
  *     so a pin whose row the new generation dropped was seated with no
@@ -104,10 +104,9 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
      chart list — enough charts to fill the cap. */
   await page.getByRole('button', { name: '24 h' }).click();
   await page.waitForTimeout(1200);
-  /* THE DRAWER OPENS MINIMIZED (ADR 306). Every composition story below reads
-     the strip, so the opener brings it up through the reader's own control. */
-  await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-  await page.locator('#tile-field[data-dock="docked"]').waitFor();
+  /* Composition stories compare the complete catalog, so they enter All charts. */
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await page.locator('#tile-field[data-explorer]').waitFor();
   await page.waitForTimeout(300);
   return { page, errors };
 }
@@ -121,7 +120,7 @@ const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · 
    drill or hover, and the mark it used to add is carried by elevation. */
 const RETIRED_RAIL_WELL_SANCTION = 'sanction: ADR 215 amendment · 2026-08-27 · "The hover well plate over a tile\'s plot is retired."';
 const RETIRED_MEAL_MARKERS_SANCTION = 'ConnorGriffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."';
-const SPOTLIGHT_OCCURRENCE_SELECTION_SANCTION = 'sanction: live-judging ruling · 2026-08-28 · "A picked occurrence belongs to the spotlight; the dock mini stays static."';
+const SPOTLIGHT_OCCURRENCE_SELECTION_SANCTION = 'sanction: live-judging ruling · 2026-08-28 · "A picked occurrence belongs to the spotlight; the catalog chart stays static."';
 
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
@@ -134,7 +133,7 @@ const readField = (page) => page.evaluate(() => ({
     mark: tile.querySelector('.tile-drilled-mark')?.textContent || null,
     body: tile.querySelector('.tile-state span')?.textContent || null,
   })),
-  drawer: [...document.querySelectorAll('.explorer-thumbnail .thumbnail-name')]
+  catalog: [...document.querySelectorAll('.explorer-thumbnail .thumbnail-name')]
     .map((name) => name.textContent),
   cells: [...document.querySelectorAll('.tile-schematic > *')].map((cell) => cell.className),
   pinCount: document.querySelector('#pin-count')?.textContent || null,
@@ -147,7 +146,7 @@ const readField = (page) => page.evaluate(() => ({
   })),
 }));
 
-test('five stars remain available without reordering the dock or moving the spotlight', async () => {
+test('five stars remain available without reordering All charts or moving the spotlight', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
@@ -155,7 +154,7 @@ test('five stars remain available without reordering the dock or moving the spot
     assert.ok(opening.focal, 'the fixed canvas opens with a spotlight');
     const order = opening.row.map(({ chartId }) => chartId);
     const targets = opening.row.filter(({ pinned }) => !pinned).slice(0, 5).reverse();
-    assert.equal(targets.length, 5, 'the filmstrip exposes at least five charts to keep');
+    assert.equal(targets.length, 5, 'All charts exposes at least five charts to keep');
 
     for (const { chartId } of targets) {
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-pin`).click();
@@ -163,7 +162,7 @@ test('five stars remain available without reordering the dock or moving the spot
       const field = await readField(page);
       assert.equal(field.focal, opening.focal, `starring ${chartId} leaves the spotlight alone`);
       assert.deepEqual(field.row.map(({ chartId: id }) => id), order,
-        'stars never change the server-published dock order');
+        'stars never change the server-published catalog order');
     }
     assert.equal((await readField(page)).row.filter(({ pinned }) => pinned).length, 5,
       'the fifth star is accepted without evicting any earlier star');
@@ -182,16 +181,16 @@ test('a ranked chart star uses keep copy and changes no position or spotlight', 
     assert.ok(focal, 'the canvas opens with a focal chart');
     const order = opening.row.map(({ chartId }) => chartId);
     const mini = opening.row.find(({ chartId }) => chartId !== focal);
-    assert.ok(mini, 'the opening filmstrip exposes a chart beside the spotlight');
+    assert.ok(mini, 'All charts exposes a chart beside the spotlight');
     const star = page.locator(`#tile-row .evidence-tile[data-chart-id="${mini.chartId}"] .tile-pin`);
     const title = mini.title;
     assert.equal(await star.getAttribute('aria-label'), `Keep ${title}`);
-    assert.equal(await star.getAttribute('title'), 'Keep this chart in the dock');
+    assert.equal(await star.getAttribute('title'), 'Keep this chart available');
     await star.focus();
     await page.keyboard.press('Space');
     await page.waitForTimeout(350);
     let field = await readField(page);
-    assert.equal(field.focal, focal, 'starring a filmstrip chart does not move focus to it');
+    assert.equal(field.focal, focal, 'starring a catalog chart does not move focus to it');
     assert.deepEqual(field.row.map(({ chartId }) => chartId), order,
       'starring a ranked chart leaves the published order unchanged');
     assert.equal(field.row.find(({ chartId }) => chartId === mini.chartId)?.pinned, true,
@@ -213,7 +212,7 @@ test('a ranked chart star uses keep copy and changes no position or spotlight', 
   }
 });
 
-test('selecting any visible filmstrip cell changes only the spotlight mark', async () => {
+test('selecting any visible All charts cell changes only the spotlight mark', async () => {
   const browser = await runner.browser();
   for (const sourceIndex of [1, 2, 3]) {
     const { page, errors } = await openCanvas(browser);
@@ -221,21 +220,19 @@ test('selecting any visible filmstrip cell changes only the spotlight mark', asy
       const opening = await readField(page);
       const order = opening.row.map(({ chartId }) => chartId);
       const source = opening.row[sourceIndex];
-      assert.ok(opening.focal && source, `the filmstrip exposes cell ${sourceIndex + 1}`);
+      assert.ok(opening.focal && source, `All charts exposes cell ${sourceIndex + 1}`);
 
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
       await page.waitForTimeout(350);
-      /* The pick puts the drawer away (ADR 306); the strip clauses below read
-         it after the reader brings it back up. */
-      assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-        `cell ${sourceIndex + 1}'s pick puts the drawer away`);
-      await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-      await page.locator('#tile-field[data-dock="docked"]').waitFor();
+      assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+        `cell ${sourceIndex + 1}'s pick closes All charts`);
+      await page.getByRole('button', { name: 'All charts', exact: true }).click();
+      await page.locator('#tile-field[data-explorer]').waitFor();
       await page.waitForTimeout(350);
       const focused = await readField(page);
       assert.equal(focused.focal, source.chartId, `cell ${sourceIndex + 1} becomes the spotlight`);
       assert.deepEqual(focused.row.map(({ chartId }) => chartId), order,
-        'selecting a current frame never reorders the filmstrip');
+        'selecting a current frame never reorders All charts');
       assert.deepEqual(focused.row.filter(({ selected }) => selected).map(({ chartId }) => chartId),
         [source.chartId], 'the selected cell alone marks the current frame');
       assert.deepEqual(errors, [], `cell ${sourceIndex + 1} focus throws no page error`);
@@ -256,7 +253,7 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
        and the drilled one takes the focal seat wearing a visible mark. */
     const opening = await readField(page);
     assert.ok(opening.row.length >= 5,
-      `the 24 h filmstrip publishes behavioural charts beside the parameter ones (${JSON.stringify(opening.row)})`);
+      `the 24 h catalog publishes behavioural charts beside the parameter ones (${JSON.stringify(opening.row)})`);
     assert.equal(new Set(opening.row.map(({ title }) => title)).size, opening.row.length,
       `no two live charts share a name (${JSON.stringify(opening.row)})`);
 
@@ -295,17 +292,17 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
     assert.equal(drilled.tiles.filter((tile) => tile.drilled && tile.chartId !== target).length, 0,
       'no chart besides the current frame claims the drill');
     assert.equal(new Set(drilled.row.map(({ title }) => title)).size, drilled.row.length,
-      `no two filmstrip cells are identically named (${JSON.stringify(drilled.row)})`);
+      `no two catalog cells are identically named (${JSON.stringify(drilled.row)})`);
     assert.deepEqual(errors, [], 'the drill throws no page error');
   } finally {
     await page.close();
   }
 });
 
-/* AMENDED — live-judging ruling · 2026-08-28. A dock mini is the front door
+/* AMENDED — live-judging ruling · 2026-08-28. A catalog chart is the front door
    to its spotlight, not a second live chart. The picked Occurrence therefore
-   belongs to the spotlight, while the dock mini keeps its cohort-only view. */
-test('an occurrence selection stays in the spotlight while the dock mini stays static', async () => {
+   belongs to the spotlight, while the catalog chart keeps its cohort-only view. */
+test('an occurrence selection stays in the spotlight while the catalog chart stays static', async () => {
   const browser = await runner.browser();
   const findingId = 'finding:missed_meal';
   const { page, errors } = await openCanvas(browser, {
@@ -329,10 +326,10 @@ test('an occurrence selection stays in the spotlight while the dock mini stays s
     const matchedLegendSelected = await page.locator(
       '.ec-key-item[data-cohort="matched"]',
     ).getAttribute('data-selected-cohort');
-    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
-    /* The cell pick put the drawer away (ADR 306); Back lands on that state. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.locator('#chart-headacts button[aria-label="Close"]').click();
+    /* The cell pick closes All charts; Close returns to that same context. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
     await page.waitForFunction((id) => {
       const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-chart`);
@@ -348,7 +345,7 @@ test('an occurrence selection stays in the spotlight while the dock mini stays s
         opacity: series.lineStyle?.opacity ?? 1,
       }));
     }, findingId);
-    const dockMini = await page.evaluate((id) => {
+    const catalogChart = await page.evaluate((id) => {
       const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       const option = window.echarts.getInstanceByDom(host).getOption();
       return option.series.filter((series) => series.id).map((series) => ({
@@ -365,8 +362,8 @@ test('an occurrence selection stays in the spotlight while the dock mini stays s
     assert.ok(nonSelectedCohortLines.length > 0
       && nonSelectedCohortLines.every((series) => series.opacity < selected.opacity),
     'the spotlight dims non-selected cohort lines beneath the selected trace');
-    assert.equal(dockMini.some((series) => series.id === 'selected:trace'), false,
-      'the dock mini stays static and draws no selected Occurrence trace');
+    assert.equal(catalogChart.some((series) => series.id === 'selected:trace'), false,
+      'the catalog chart stays static and draws no selected Occurrence trace');
     assert.equal(matchedLegendSelected, 'true',
       'the fullscreen legend marks the selected Matched cohort');
     assert.deepEqual(errors, [], 'selection redraw produces no page error');
@@ -383,7 +380,7 @@ test('the fixed field exposes no retired arrangement or pin-cap schematic', asyn
     assert.equal(field.arrangement, null, 'the fixed field publishes no derived arrangement');
     assert.equal(field.pinCount, null, 'the uncapped pin model publishes no cap counter');
     assert.deepEqual(field.cells, [], 'the retired arrangement schematic stays absent');
-    assert.ok(field.row.length >= 5, 'the replacement is the full ordered filmstrip');
+    assert.ok(field.row.length >= 5, 'the replacement is the full ordered catalog');
     assert.deepEqual(errors, []);
   } finally {
     await page.close();
@@ -731,7 +728,7 @@ test('glucose-strip meal markers stay retired — RETIRED', async () => {
   }
 });
 
-test('Dark canvas gives the shared hero/basal body one vessel edge and role-owned dock chrome', async () => {
+test('Dark canvas gives the shared hero/basal body one vessel edge and role-owned chart actions', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
@@ -741,7 +738,7 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
       const focal = style('#tile-focal .evidence-tile');
       const chart = style('#chart');
       const lane = style('#lane');
-      const handle = style('#dock-handle');
+      const close = style('#chart-headacts button[aria-label="Close"]');
       const slot = style('#tile-focal .tile-head');
       return {
         focalEdge: focal.boxShadow, focalRadius: focal.borderTopLeftRadius,
@@ -754,8 +751,8 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
           separated.className = 'body';
           return !sharesBody(document.querySelector('#chart'), separated);
         })(),
-        handleGround: handle.backgroundColor, slotGround: slot.backgroundColor,
-        handleRule: handle.borderTopColor,
+        closeGround: close.backgroundColor, slotGround: slot.backgroundColor,
+        retiredDockCount: document.querySelectorAll('#dock-handle, [data-dock], [data-raised]').length,
       };
     });
     assert.match(surface.focalEdge, /0px 0px 0px 1px inset/, 'focal chart has one inset vessel edge');
@@ -764,8 +761,8 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
     assert.equal(surface.laneBorder, '0px', 'basal lane adds no second top seam');
     assert.equal(surface.sharedHeroBasalBody, true, 'hero chart and basal lane share one canvas body');
     assert.equal(surface.separatedBodyFails, true, 'a separated basal body fails the shared-vessel identity check');
-    assert.equal(surface.handleGround, surface.slotGround, 'dock handle shares the swappable-slot rail');
-    assert.notEqual(surface.handleRule, 'rgba(0, 0, 0, 0)', 'dock handle exposes its own tray boundary');
+    assert.notEqual(surface.closeGround, '', 'the visible Close action owns chart chrome');
+    assert.equal(surface.retiredDockCount, 0, 'the retired chart dock has no rendered control or state');
     assert.deepEqual(errors, []);
   } finally { await page.close(); }
 });
@@ -784,10 +781,9 @@ test('Backspace return restores provenance to the chart owning the finding frame
     assert.equal(await page.locator('#drill-provenance').count(), 0,
       'RETIRED — the provenance readout must not return');
 
-    /* The finding click put the drawer away (ADR 306); the basal cell is
-       read after bringing the strip back up. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    /* The finding click closes All charts; reopen the catalog for the basal cell. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const basalId = await page.locator('.evidence-tile[data-chart-id^="basal:"]').first()
       .getAttribute('data-chart-id');
     const basalSlot = Number(basalId.split(':')[1].split('-')[0]) / 30;

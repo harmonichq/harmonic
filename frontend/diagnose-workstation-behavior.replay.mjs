@@ -2116,7 +2116,7 @@ export const S32 = async (page) => {
 // STORY:finding-evidence-routing:S40
 export const S40 = async (page) => {
   await openWholeDay(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().waitFor();
@@ -3149,7 +3149,7 @@ export const issue86DirectEntryRestoration = async (page) => {
     level.scrollTop = Math.min(24, Math.max(0, level.scrollHeight - level.clientHeight));
     return level.scrollTop;
   });
-  await raiseDock(page);
+  await openAllCharts(page);
   const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
@@ -3225,7 +3225,7 @@ export const issue86MalformedRecovery = async (page) => {
     }
   };
   page.on('request', observeCaseRequest);
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
   await page.locator('#level [role="alert"]').waitFor();
   page.off('request', observeCaseRequest);
@@ -3533,30 +3533,20 @@ export const C55 = async (page) => {
 // STORY:finding-evidence-routing:D2
 // STORY:finding-evidence-routing:D3
 
-/* ---- #306 · the left-column pattern (ADR 306) ---------------------------- */
+/* ---- #341 · direct All charts access (ADR 341) --------------------------- */
 
-const SANCTION_DRAWER_GROW_BACK = 'sanction: Connor Griffin · 2026-09-02 · "It opens minimized. It never comes back up on its own. That path is archived. It\'s gone."';
+const SANCTION_RETIRED_CHART_DOCK = 'sanction: Connor Griffin · 2026-09-04 · "Exactly," confirming "Charts opens the full-screen All charts browser directly. Choose a chart to return to A with that finding selected. Close or Escape returns without changing the selection or time window. The spotlight keeps Expand for viewing just its selected chart fullscreen." Premise: queue minis supply quick previews while All charts retains the broader catalog, including Watching reads.';
 
-/* RETIRED BEHAVIOUR — the dock-floor rule's grow-back half. ADR 215's floor
-   rule hid the strip when the field shrank past DOCK_FLOOR and re-docked it
-   when the field grew back. ADR 306 keeps the first half and retires the
-   second. This function is never silent: it asserts the premise (shrinking
-   past the floor still hides), asserts the absence (growing back does not
-   re-dock), and prints the sanction on every run. */
+/* RETIRED BEHAVIOUR — the complete chart dock. ADR 341 removes the handle,
+   dock state and resize transitions in favor of direct All charts access.
+   This permanent witness attempts to locate every forbidden host/state and
+   prints the operator, date, quotation and replacement premise on every run. */
 // STORY:finding-evidence-routing:S127
 export const S127 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'docked', 'S127 premise: the reader docked the strip');
-  await page.setViewportSize({ width: 1440, height: 480 });
-  await page.waitForFunction(() => document.querySelector('#tile-field')?.dataset.dock === 'hidden');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S127 premise: shrinking the field past the dock floor still hides the strip');
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.waitForTimeout(700);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S127 RETIRED — growing back past the floor must not re-dock the strip');
-  console.log(`S127 RETIRED — ${SANCTION_DRAWER_GROW_BACK}`);
+  is(await page.locator('#dock-handle, [data-dock]').count(), 0,
+    'S127 RETIRED — no dock control or dock state remains');
+  console.log(`S127 RETIRED — ${SANCTION_RETIRED_CHART_DOCK}`);
 };
 
 /* The served findings queue for the window the page is on, read through the
@@ -3575,8 +3565,8 @@ export const S128 = async (page) => {
   await openWholeDay(page);
   const rankOne = await focalId(page);
   ok(rankOne, 'S128 the queue root seats a rank-1 chart');
-  await raiseDock(page);
-  const other = page.locator(`#tile-row .evidence-tile[data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
+  await page.getByRole('button', { name: 'All charts' }).click();
+  const other = page.locator(`#tile-row .evidence-tile[data-seat="grid"][data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
   const otherId = await other.getAttribute('data-chart-id');
   ok(otherId, 'S128 the strip publishes a lower-ranked chart to drill');
   await other.locator('.tile-body').click();
@@ -3585,11 +3575,9 @@ export const S128 = async (page) => {
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   is(await focalId(page), rankOne, 'S128 leaving the drill re-seats the rank-1 chart, never the chart just left');
-  await raiseDock(page);
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${otherId}"][data-selected]`).count(), 0,
-    'S128 the drilled chart\'s strip cell is no longer the current frame');
+  await page.getByRole('button', { name: 'All charts' }).click();
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${rankOne}"][data-selected]`).count(), 1,
-    'S128 the rank-1 cell is the current frame again');
+    'S128 the catalog marks the rank-1 chart current again');
 };
 
 /* S129 · An explorer pick drills the picked chart's finding and closes the explorer. */
@@ -3597,7 +3585,7 @@ export const S128 = async (page) => {
 export const S129 = async (page) => {
   await openWholeDay(page);
   const before = (await state(page)).crumb.length;
-  await page.locator('#dock-handle button[aria-label="Show every chart"]').click();
+  await page.getByRole('button', { name: 'All charts' }).click();
   await page.locator('#tile-field[data-explorer]').waitFor();
   const cell = page.locator('#tile-field[data-explorer] .evidence-tile[data-seat="grid"][data-chart-id^="finding:"]').first();
   const id = await cell.getAttribute('data-chart-id');
@@ -3607,14 +3595,14 @@ export const S129 = async (page) => {
   is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the pick closes the explorer');
   is(await focalId(page), id, 'S129 the picked chart holds the stage');
   ok((await state(page)).crumb.length > before, 'S129 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S129 the drawer is away after the pick');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the catalog is away after the pick');
 };
 
-/* S130 · The drawer opens hidden and the stage holds the rank-1 chart. */
+/* S130 · All charts opens closed and the stage holds the rank-1 chart. */
 // STORY:finding-evidence-routing:S130
 export const S130 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S130 a fresh visit opens the drawer hidden');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S130 a fresh visit opens the catalog closed');
   const rows = await servedRows(page, null);
   const first = rows.find((row) => row.event_chart || row.parameter);
   ok(first, 'S130 the queue publishes a ranked row');
@@ -3625,24 +3613,24 @@ export const S130 = async (page) => {
     'S130 the stage holds the rank-1 finding\'s chart');
 };
 
-/* S131 · A pick from the drawer seats and drills that chart and puts the drawer away. */
+/* S131 · An All charts pick seats and drills that chart, then closes the catalog. */
 // STORY:finding-evidence-routing:S131
 export const S131 = async (page) => {
   await openWholeDay(page);
-  await raiseDock(page);
+  await page.getByRole('button', { name: 'All charts' }).click();
   const before = (await state(page)).crumb.length;
-  const mini = page.locator('#tile-row .evidence-tile[data-chart-id]').nth(1);
+  const mini = page.locator('#tile-row .evidence-tile[data-seat="grid"][data-chart-id]').nth(1);
   const id = await mini.getAttribute('data-chart-id');
-  ok(id, 'S131 the strip publishes a second chart');
+  ok(id, 'S131 the catalog publishes a second chart');
   await mini.locator('.tile-body').click();
   await settle(page, 450);
   is(await focalId(page), id, 'S131 the picked chart holds the stage');
   ok((await state(page)).crumb.length > before, 'S131 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden', 'S131 the pick puts the drawer away');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S131 the pick closes All charts');
 };
 
 /* S132 · The stage card's title is the served headline's only home: for every
-   family the stage title equals the row's served `headline`; the drawer cell
+   family the stage title equals the row's served `headline`; the catalog cell
    and the fullscreen header keep the short nameplate; no drill level repeats
    the sentence. Morning is the one committed window that ranks a basal
    assert, a carb-ratio assert and (under Watching) the correction-factor
@@ -3683,15 +3671,16 @@ export const S132 = async (page) => {
       `S132 ${id}'s stage kicker is the short nameplate, not the headline`);
     ok(!(await page.locator('#level').innerText()).includes(row.headline),
       `S132 no drill level repeats ${id}'s headline`);
-    await raiseDock(page);
+    await openAllCharts(page);
     const cellTitle = (await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-head h3`).textContent()).trim();
-    ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s drawer cell keeps the short nameplate`);
-    is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s drawer cell carry the same short nameplate`);
+    ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s All charts cell keeps the short nameplate`);
+    is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s catalog cell carry the same short nameplate`);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.locator('#tile-focal .tile-fullscreen').click();
     await page.waitForSelector('#tile-field[data-fullscreen-tile]');
     is((await page.locator('#full-title').textContent()).trim(), cellTitle,
       `S132 the fullscreen header keeps ${id}'s short nameplate`);
-    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+    await page.locator('#chart-headacts button[aria-label="Close"]').click();
     await page.waitForTimeout(300);
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
     await settle(page, 450);
@@ -3850,47 +3839,43 @@ export const S138 = async (page) => {
   ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
 };
 
-/* ---- #302 · the tapered urgency queue ------------------------------------ */
+/* ---- #341 · the consistent priced queue --------------------------------- */
 
-/** S139 · The first priced row is the hero. Its row title remains the served
-    short title while the served headline stays out of the rail, and its chart
-    occupies the stage rather than nesting inside the hero. */
+/** S139 · The first priced row uses the same geometry and mini policy as every
+    other priced row. Its chart remains the root spotlight. */
 // STORY:finding-evidence-routing:S139
 export const S139 = async (page) => {
   await openWholeDay(page);
   const rows = await servedRows(page, null);
   const first = rows.find((row) => row.priority != null);
   ok(first, 'S139 the served queue publishes a priced row');
-  const hero = page.locator('#level .qrow.hero');
-  is(await hero.count(), 1, 'S139 the rail paints one hero');
-  is(await hero.getAttribute('data-id'), first.id, 'S139 the first priced row is the hero');
-  is((await hero.locator('.lab').innerText()).trim(), first.title,
-    'S139 the hero title is the served short title');
+  const pricedRow = page.locator(`#level .qrow.priced[data-id="${first.id}"]`);
+  is(await pricedRow.count(), 1, 'S139 the first row uses the common priced geometry');
+  is((await pricedRow.locator('.lab').innerText()).trim(), first.title,
+    'S139 the priced row title is the served short title');
   ok(!(await page.locator('#level').innerText()).includes(first.headline),
     'S139 the served headline stays out of the rail');
-  is(await hero.locator('canvas, svg, .mini').count(), 0,
-    'S139 no chart is nested inside the hero');
+  is(await pricedRow.locator('.mini').count(), 1, 'S139 rank one receives the common mini host');
   const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
-  is(await focalId(page), chartId, 'S139 the hero chart occupies the stage');
+  is(await focalId(page), chartId, 'S139 the rank-one chart occupies the stage');
 };
 
-/** S140 · A compact row and its drawer cell draw the same mini option: the
-    series identities come from the one shared chart builder. */
+/** S140 · A priced row and All charts use the same shared chart builder. */
 // STORY:finding-evidence-routing:S140
 export const S140 = async (page) => {
   await openWholeDay(page);
   const id = 'finding:over_treated_low';
-  const rowMini = page.locator(`#level .qrow.compact[data-id="${id}"] .mini`);
+  const rowMini = page.locator(`#level .qrow.priced[data-id="${id}"] .mini`);
   await rowMini.locator('canvas').waitFor();
-  await raiseDock(page);
-  const drawerMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
-  await drawerMini.locator('canvas').waitFor();
+  await openAllCharts(page);
+  const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+  await catalogChart.locator('canvas').waitFor();
   const seriesIds = async (locator) => locator.evaluate((host) =>
     window.echarts.getInstanceByDom(host).getOption().series.map((series) => series.id));
   const rowIds = await seriesIds(rowMini);
-  const drawerIds = await seriesIds(drawerMini);
-  ok(rowIds.length > 0, 'S140 the compact row mini draws at least one series');
-  is(rowIds, drawerIds, 'S140 row and drawer minis draw identical series ids');
+  const catalogIds = await seriesIds(catalogChart);
+  ok(rowIds.length > 0, 'S140 the priced row mini draws at least one series');
+  is(rowIds, catalogIds, 'S140 the row mini and catalog chart draw identical series ids');
 };
 
 /** S141 · Every unpriced tail row is title-only and still drills through the
@@ -3915,8 +3900,8 @@ export const S141 = async (page) => {
   is(drilled, ids.length, 'S141 every title-only tail row drills');
 };
 
-/** S142 · Tier language appears only at priced-tier changes: the hero eyebrow
-    and the single compact-tier caption are values of the rail's TIER map, and
+/** S142 · Tier language appears only at priced-tier changes. Each tier caption
+    is a value of the rail's TIER map, and
     the retired Decide now wording never returns. */
 // STORY:finding-evidence-routing:S142
 export const S142 = async (page) => {
@@ -3930,38 +3915,38 @@ export const S142 = async (page) => {
     'S142 no retired Decide now tier appears anywhere in the rail');
 };
 
-/** S143 · Below the rail mini's measured width floor, the compact row remains
+/** S143 · Below the rail mini's measured width floor, the priced row remains
     and the mini is omitted rather than mounting an unreadable chart. */
 // STORY:finding-evidence-routing:S143
 export const S143 = async (page) => {
   await openWholeDay(page);
-  const row = page.locator('#level .qrow.compact[data-id="finding:over_treated_low"]');
-  is(await row.count(), 1, 'S143 the compact row survives the narrow inspector');
+  const row = page.locator('#level .qrow.priced[data-id="finding:over_treated_low"]');
+  is(await row.count(), 1, 'S143 the priced row survives the narrow inspector');
   ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
   is(await row.locator('.mini').count(), 0, 'S143 no sub-floor mini remains mounted');
   is(await row.getAttribute('data-mini'), 'omitted',
-    'S143 the compact row records the sub-floor omission');
+    'S143 the priced row records the sub-floor omission');
 };
 
-/** S144 · Sifting to Meals promotes Carb undercount from compact to hero and
-    moves its chart onto the stage without changing the server's row identity. */
+/** S144 · Sifting to Meals makes Carb undercount first without changing its
+    priced-row geometry or server identity. */
 // STORY:finding-evidence-routing:S144
 export const S144 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#level .qrow.hero').getAttribute('data-id'), 'ic:720',
-    'S144 the unsifted fixture begins with the served I:C hero');
+  is(await page.locator('#level .qrow.priced').getAttribute('data-id'), 'ic:720',
+    'S144 the unsifted fixture begins with the served I:C row');
   await page.getByRole('button', { name: /Filter/ }).click();
   for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
     await page.getByRole('menuitemcheckbox', { name }).click();
   }
   await page.keyboard.press('Escape');
   await settle(page, 450);
-  const hero = page.locator('#level .qrow.hero');
-  is(await hero.count(), 1, 'S144 the meals-only sift paints one hero');
-  is((await hero.locator('.lab').innerText()).trim(), 'Carb undercount',
-    'S144 the promoted hero keeps the served title');
+  const first = page.locator('#level .qrow.priced');
+  is(await first.count(), 1, 'S144 the meals-only sift paints one priced row');
+  is((await first.locator('.lab').innerText()).trim(), 'Carb undercount',
+    'S144 the promoted row keeps the served title');
   is(await focalId(page), 'finding:carb_undercount',
-    'S144 the promoted hero chart moves onto the stage');
+    'S144 the promoted row chart moves onto the stage');
 };
 
 // STORY:finding-evidence-routing:C41
@@ -4060,15 +4045,10 @@ const openCanvas = async (page) => {
   await page.waitForTimeout(700);
 };
 
-/* THE DRAWER OPENS MINIMIZED (ADR 306; operator, 2026-09-02: "It opens
-   minimized. It never comes back up on its own."). A story that reads the
-   strip brings it up through the reader's own control first, exactly as the
-   reader would; a pick from it puts it away again (S131), so a story that
-   reads the strip after a pick brings it up a second time. */
-const raiseDock = async (page) => {
-  if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
-    await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+const openAllCharts = async (page) => {
+  if (await page.locator('#tile-field').getAttribute('data-explorer') === null) {
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     await page.waitForTimeout(300);
   }
 };
@@ -4085,7 +4065,7 @@ const pinNext = async (page) => {
 
 const reachPinCount = async (page, count) => {
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   for (let pins = 0; pins < count; pins += 1) {
     ok(await pinNext(page), `pin control reaches ${pins + 1} pins`);
   }
@@ -4155,7 +4135,7 @@ export const S102 = async (page) => {
 // STORY:finding-evidence-routing:S103
 export const S103 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   ok((await canvasSnapshot(page)).tiles.some((tile) => tile.state === 'ok'),
     'S103 a successful evidence request names the ok tile state');
 };
@@ -4163,7 +4143,7 @@ export const S103 = async (page) => {
 // STORY:finding-evidence-routing:S104
 export const S104 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   const empty = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'empty');
   ok(empty, 'S104 absent evidence names the empty tile state');
   ok(Boolean(empty.message), 'S104 the empty state explains the absence');
@@ -4176,7 +4156,7 @@ export const S104 = async (page) => {
    chart the strip is not currently showing. */
 export const S105 = async (page) => {
   await openCanvas(page);
-  await page.locator('#dock-handle button[aria-label="Show every chart"]').click();
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
   await page.locator('#tile-row .evidence-tile[data-chart-id^="ic:"]').first().click();
   await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
     .some((tile) => tile.dataset.state === 'error'));
@@ -4187,7 +4167,7 @@ export const S105 = async (page) => {
 // STORY:finding-evidence-routing:S106
 export const S106 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   const carb = (await canvasSnapshot(page)).tiles.find((tile) => tile.id.startsWith('ic:'));
   ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
   const blockId = carb.id.slice('ic:'.length);
@@ -4330,16 +4310,15 @@ export const S107 = async (page) => {
 export const S108 = async (page) => {
   await reachPinCount(page, 3);
   /* The stage is where a chart is expanded from — a cell's only verb is
-     "become the spotlight" (ADR 215 amendment), so the strip carries the pin
-     and nothing else. Amended 2026-09-03 (ADR 306): the pick puts the drawer
-     away, so the state fullscreen leaves — and must restore — is snapshotted
-     after the pick, drawer hidden. */
+     "become the spotlight" (ADR 215 amendment), so the catalog carries the pin
+     and nothing else. The pick closes All charts, so fullscreen must restore
+     the selected spotlight context. */
   await page.locator('#tile-row .evidence-tile').first().click();
   await page.waitForTimeout(300);
   const before = await canvasSnapshot(page);
   await page.locator('#tile-focal .tile-fullscreen').click();
   is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
-  await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
+  await page.locator('#chart-headacts button[aria-label="Close"]').click();
   const after = await canvasSnapshot(page);
   is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
   is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
@@ -4385,8 +4364,8 @@ export const S111 = async (page) => {
   await page.locator('#level .clear-trace').click();
   await page.waitForFunction(() => !document.querySelector('#level .clear-trace'));
   is((await state(page)).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
-  /* THE STAGE IS WHERE THE DRILL IS MARKED. A chart keeps its strip cell while
-     it stands on the stage (ADR 215's filmstrip rule), so an unscoped count of
+  /* THE STAGE IS WHERE THE DRILL IS MARKED. A chart keeps its catalog cell while
+     it stands on the stage, so an unscoped count of
      drilled tiles now answers "how many seats does one chart have", not "is the
      owning chart still drilled". */
   is(await page.locator('#tile-focal .evidence-tile[data-drilled]').count(), 1,
@@ -4422,62 +4401,51 @@ export const S113 = retiredStory('S113');
 
 /* An explicit focus outranks rank-only seating. A Watching chart is not ranked,
    but selecting its tail cell promotes it to the spotlight without removing the
-   cell the filmstrip uses to keep the current frame in view. */
+   cell All charts uses to mark the current frame. */
 // STORY:finding-evidence-routing:S114
 export const S114 = async (page) => {
   await openCanvas(page);
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await page.waitForTimeout(700);
-  if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-  }
-  await page.locator('#tile-field[data-dock="docked"]').waitFor();
+  await openAllCharts(page);
   const tail = page.locator('#tile-row .evidence-tile[data-tail-head]').first();
   const chartId = await tail.getAttribute('data-chart-id');
-  ok(Boolean(chartId), 'S114 the dock publishes a Watching tail chart');
+  ok(Boolean(chartId), 'S114 All charts publishes a Watching chart');
   await tail.click();
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
-  /* Amended 2026-09-03 (ADR 306): the pick puts the drawer away. The strip
-     clauses below still hold once the reader brings it back up. */
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S114 picking the Watching tail cell puts the drawer away');
-  await raiseDock(page);
+  is(await page.locator('#tile-field[data-explorer]').count(), 0,
+    'S114 picking the Watching chart closes All charts');
+  await openAllCharts(page);
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
-    'S114 the promoted Watching chart keeps one strip cell');
+    'S114 the promoted Watching chart keeps one catalog cell');
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`)
-    .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is selected');
+    .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is current');
   is(await page.locator('#tile-row .evidence-tile[data-selected]').count(), 1,
-    'S114 the strip has one selected current frame');
+    'S114 All charts has one selected current chart');
 };
 
 // STORY:finding-evidence-routing:S115
 export const S115 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
-  const mini = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
-  const chartId = await mini.getAttribute('data-chart-id');
-  const option = await mini.locator('.tile-chart').evaluate((host) =>
+  await openAllCharts(page);
+  const cell = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
+  const chartId = await cell.getAttribute('data-chart-id');
+  const option = await cell.locator('.tile-chart').evaluate((host) =>
     window.echarts.getInstanceByDom(host)?.getOption());
-  ok(option, 'S115 an event-comparison mini mounts its chart');
+  ok(option, 'S115 an event-comparison catalog cell mounts its chart');
   const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
-  ok(axes.every((axis) => axis.axisLabel?.show === false),
-    'S115 the event-comparison mini carries no axis furniture');
-  const tooltips = option.tooltip == null ? []
-    : Array.isArray(option.tooltip) ? option.tooltip : [option.tooltip];
-  ok(tooltips.every((tooltip) => tooltip.show === false),
-    'S115 the mini tooltip is inert');
-  const series = Array.isArray(option.series) ? option.series : [];
-  ok(series.every((item) => !/(episode|selected)/i.test(item.name || '')),
-    'S115 the mini carries neither episode nor selected trace');
-  await mini.focus();
+  ok(axes.some((axis) => axis.axisLabel?.show !== false),
+    'S115 the full-size catalog chart retains readable axis furniture');
+  is(await cell.getAttribute('tabindex'), '0',
+    'S115 the catalog cell is reachable in keyboard order');
+  await cell.focus();
   await page.keyboard.press('Enter');
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
   is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
-    'S115 Enter promotes the mini to the spotlight');
-  /* Amended 2026-09-03 (ADR 306): Enter is a pick, and a pick puts the drawer away. */
-  is(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-    'S115 Enter on a mini puts the drawer away');
+    'S115 Enter promotes the catalog chart to the spotlight');
+  is(await page.locator('#tile-field[data-explorer]').count(), 0,
+    'S115 Enter on a chart closes All charts');
 };
 
 // STORY:finding-evidence-routing:S116
@@ -4536,7 +4504,7 @@ export const S118 = async (page) => {
 // STORY:finding-evidence-routing:S119
 export const S119 = async (page) => {
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   const basal = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
   ok(await basal.count(), 'S119 the generated canvas exposes one live basal chart');
   await basal.click();
@@ -4566,12 +4534,12 @@ export const S119 = async (page) => {
     `S119 fullscreen introduces no page scroll: ${JSON.stringify(measured.pageScroll)}`);
   await page.setViewportSize({ width: 2084, height: 742 });
   await settle(page, 500);
-  await page.getByRole('button', { name: 'Back to the dock' }).click();
+  await page.getByRole('button', { name: 'Close' }).click();
   is(await canvasSnapshot(page), before,
-    'S119 resize and Back restore the exact prior Spotlight and dock state');
+    'S119 resize and Close restore the exact prior Spotlight context');
 };
 
-const starDockSnapshot = (page) => page.evaluate(() => ({
+const starCatalogSnapshot = (page) => page.evaluate(() => ({
   focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
   row: [...document.querySelectorAll('#tile-row .evidence-tile')].map((tile) => ({
     id: tile.dataset.chartId,
@@ -4582,12 +4550,8 @@ const starDockSnapshot = (page) => page.evaluate(() => ({
   })),
 }));
 
-const revealNarrowDockForEvidence = async (page, chartId) => {
-  const bringUp = page.locator('#dock-handle button[aria-label="Bring the charts up"]');
-  if (await bringUp.count()) {
-    await bringUp.click();
-    await settle(page, 350);
-  }
+const revealNarrowCatalogForEvidence = async (page, chartId) => {
+  await openAllCharts(page);
   await page.locator('#tile-row').evaluate((row, targetId) => {
     const target = row.querySelector(`[data-chart-id="${CSS.escape(targetId)}"]`);
     if (target) {
@@ -4604,12 +4568,12 @@ export const S120 = async (page) => {
   const narrowEvidence = evidenceViewport.width < 760;
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await openCanvas(page);
-  await raiseDock(page);
+  await openAllCharts(page);
 
-  const opening = await starDockSnapshot(page);
+  const opening = await starCatalogSnapshot(page);
   const victimId = 'basal:30-90';
   const victim = opening.row.find(({ id }) => id === victimId);
-  ok(victim, 'S120 the whole-day dock publishes the ranked chart that will become Watching');
+  ok(victim, 'S120 All charts publishes the ranked chart that will become Watching');
   const openingTail = opening.row.findIndex(({ tailHead }) => tailHead);
   const openingRankEnd = openingTail < 0 ? opening.row.length : openingTail;
   ok(openingRankEnd > opening.row.findIndex(({ id }) => id === victimId),
@@ -4621,12 +4585,12 @@ export const S120 = async (page) => {
   await star.focus();
   await page.keyboard.press('Space');
   await settle(page, 350);
-  const starred = await starDockSnapshot(page);
+  const starred = await starCatalogSnapshot(page);
   const stopName = await star.getAttribute('aria-label');
   const stopTitle = await star.getAttribute('title');
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
-  if (narrowEvidence) await revealNarrowDockForEvidence(page, victimId);
+  if (narrowEvidence) await revealNarrowCatalogForEvidence(page, victimId);
   await captureEvidence(page, 'ranked-star');
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);
@@ -4634,16 +4598,16 @@ export const S120 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await settle(page, 700);
-  const retained = await starDockSnapshot(page);
+  const retained = await starCatalogSnapshot(page);
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
-  if (narrowEvidence) await revealNarrowDockForEvidence(page, victimId);
+  if (narrowEvidence) await revealNarrowCatalogForEvidence(page, victimId);
   await captureEvidence(page, 'unranked-retained-star');
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);
 
   is(keepName, `Keep ${victim.title}`, 'S120 the star names the Keep action');
-  is(keepTitle, 'Keep this chart in the dock', 'S120 the star title names retention');
+  is(keepTitle, 'Keep this chart available', 'S120 the star title names retention');
   is(stopName, `Stop keeping ${victim.title}`, 'S120 the held star names Stop keeping');
   is(stopTitle, 'Stop keeping this chart', 'S120 the held star title names retention');
   is(starred.focal, opening.focal, 'S120 starring leaves the Spotlight unchanged');
@@ -4660,7 +4624,7 @@ export const S120 = async (page) => {
   await stop.focus();
   await page.keyboard.press('Space');
   await settle(page, 350);
-  const released = await starDockSnapshot(page);
+  const released = await starCatalogSnapshot(page);
   const releasedIndex = released.row.findIndex(({ id }) => id === victimId);
   const releasedTail = released.row.findIndex(({ tailHead }) => tailHead);
   is(released.focal, retainedFocal, 'S120 stopping retention leaves the Spotlight unchanged');
@@ -4719,7 +4683,7 @@ export const S121 = async (page) => {
    window, ISF does not — the ADR 294 clock-window ruling).
 
    EVERY CHART CLICK BELOW IS SCOPED TO `#tile-row`. `paintTiles` marks the
-   current Spotlight rather than removing it from the filmstrip (ADR 215:
+   current Spotlight rather than removing it from All charts (ADR 215:
    "the spotlighted one is marked rather than removed"), so a chart that is
    also the current focal seat renders TWICE — once in `#tile-focal`, once in
    `#tile-row` as the selected mini — while a bare `.evidence-tile[data-
@@ -4746,7 +4710,7 @@ const panelSnapshot = (page) => page.evaluate(() => ({
 export const S122 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S122-before-chart-click');
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4778,7 +4742,7 @@ export const S122 = async (page) => {
 export const S123 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S123-before-chart-click');
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4815,7 +4779,7 @@ export const S123 = async (page) => {
 export const S124 = async (page) => {
   await openWholeDay(page);
   await captureEvidence(page, 'S124-before-chart-click');
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const viaChart = await state(page);
@@ -4847,13 +4811,13 @@ export const S124 = async (page) => {
     of stacking a third under it. */
 export const S125 = async (page) => {
   await openWholeDay(page);
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const first = await state(page);
   is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
 
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const second = await state(page);
@@ -4862,7 +4826,7 @@ export const S125 = async (page) => {
   ok(/block$/.test(second.crumb[second.crumb.length - 1]),
     `S125 the carb-ratio chart is now standing (${second.crumb})`);
 
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const third = await state(page);
@@ -4886,7 +4850,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [300, 420], [0, 1440]);
   const drawn1 = await state(page);
   ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
   const basal = await state(page);
@@ -4897,7 +4861,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [700, 900], [0, 1440]);
   const drawn2 = await state(page);
   ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
   const carb = await state(page);
@@ -4910,7 +4874,7 @@ export const S126 = async (page) => {
   const drawn3 = await state(page);
   ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
   await captureEvidence(page, 'S126-before-isf-chart-click');
-  await raiseDock(page);
+  await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
   const isf = await state(page);

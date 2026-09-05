@@ -141,8 +141,8 @@ export function drilledChartIdForFrame(frame, descriptors) {
   return null;
 }
 
-/* The dock repeats the spotlight's chart as a navigable echo. A drill marks
-   the stage, not that echo, so there is one drilled tile per current frame. */
+/* All charts repeats the spotlight's chart as a navigable cell. A drill marks
+   the stage, not that cell, so there is one drilled tile per current frame. */
 export function isDrilledSpotlight(seat, chartId, drilledChartId) {
   return seat?.seat === 'focal' && chartId === drilledChartId;
 }
@@ -179,92 +179,4 @@ export function dismissFullscreen(fullscreen) {
 
 export function untraceDrill(drill) {
   return drill ? { ...drill, selectedId: null } : drill;
-}
-
-/* ---- the dock's two states (ADR 215 amendment) -----------------------
-   HIDDEN · BOTTOM-DOCKED. The same tiles, rails and pins in both; only the
-   geometry differs. Everything below is pure arithmetic over one measured
-   number — the canvas field's inner height — so the resolution is node-testable
-   and the painter holds no rules of its own.
-
-   MOUNTED IS GONE, and with it the third verb the handle could never carry.
-   Mounted hid the spotlight and spent the whole field on a grid of minis: the
-   pre-spotlight canvas, kept alive only because the handle had grown a control
-   for it. Operator, judging the built dock: "mounted dies." One chart at full
-   size over a strip of the rest is what this surface is now, and the reader
-   reaches every other chart through the strip or through fullscreen — so a
-   state that deleted the spotlight to show the strip larger was answering a
-   question the spotlight had already answered.
-
-   What is left is one object in two places, which is why there is one act in
-   every state and no vocabulary to learn. */
-export const SPOTLIGHT_FLOOR = 220;
-export const MINI_FLOOR = 148;
-const FIELD_GAP = 8;
-export const DOCK_FLOOR = SPOTLIGHT_FLOOR + MINI_FLOOR + FIELD_GAP;
-
-/* WHAT THE READER ASKED FOR IS WHAT THEY GET. `wanted` used to be a request the
-   measured field could overrule — a short viewport turned a docked want into a
-   mounted one, and a tall viewport refused to hide the minis at all. Neither
-   override survives mounted: there is nothing to divert a short field to, and
-   the tall-field refusal left the handle with no act to offer, which is a
-   control that exists and does nothing. The dock is a toggle at every height. */
-export const DOCK_WANTS = Object.freeze(['docked', 'hidden']);
-
-/* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Operator, 2026-09-02:
-   "It opens minimized. It never comes back up on its own. That path is
-   archived. It's gone." Boot and every reset that has no reader want of its
-   own resolve here, not to `'docked'`. */
-export const DOCK_BOOT_WANT = 'hidden';
-
-/* THE FIELD DECIDES ONE THING ONLY: whether a docked strip has the room to sit
-   BELOW the spotlight or has to float over it. It never decides which state the
-   reader is in. */
-export function dockView(fieldHeight, wanted = DOCK_BOOT_WANT) {
-  if (!DOCK_WANTS.includes(wanted)) {
-    throw new RangeError(`unknown dock want ${wanted}`);
-  }
-  const short = fieldHeight < DOCK_FLOOR;
-  /* A RAISED DOCK FLOATS OVER THE SPOTLIGHT; IT NEVER SQUEEZES IT. Splitting
-     the field below the dock floor gave the spotlight 0px at a 150px viewport,
-     destroying the one required way out by leaving nothing to click. Floating
-     holds at any height, which is what lets the raise floor go with mounted:
-     there is no height at which bottom-docking has to divert somewhere else. */
-  const raised = wanted === 'docked' && short;
-  /* TWO ACTS, AND THEY ARE DIFFERENT KINDS OF THING. The first is the toggle
-     between the dock's two resting states, and it is always the state the
-     reader is not in. `explore` is not a resting state at all — it opens the
-     explorer, every chart at full size over the canvas — so it is offered
-     alongside the toggle rather than instead of it, and it is the same act at
-     every height because the explorer takes the pane rather than the field. */
-  return {
-    state: wanted,
-    raised,
-    short,
-    acts: [wanted === 'hidden' ? 'up' : 'hide', 'explore'],
-  };
-}
-
-/** Attention leaving a raised dock puts it away; a seated or hidden dock stays
-    in the state the reader chose. Both a spotlight click and a finding drill
-    use this transition (ADR 215). */
-export function dismissRaisedDock(wanted, fieldHeight) {
-  return dockView(fieldHeight, wanted).raised ? 'hidden' : wanted;
-}
-
-/** The spotlight puts itself away when it runs out of room, and never invites
-    itself back: growing back past the floor leaves the want exactly as the
-    reader last set it (ADR 306 retires ADR 215's grow-back half). Call this
-    only on the measured crossing, not on every resize tick, so it never
-    overrules a reader who brought the dock up by hand below the floor. */
-export function dockResizeTransition(wanted, fieldHeight) {
-  return fieldHeight < DOCK_FLOOR ? 'hidden' : wanted;
-}
-
-/** Picking a chart puts the drawer away — a cell click or Enter, a Watching
-    tail cell, or an explorer pick, on a `mini` or `grid` seat. The reader
-    asked to see one chart and got it; anything else about the dock's want is
-    left alone here (ADR 306). */
-export function dockPickTransition(wanted, seatKind) {
-  return seatKind === 'mini' || seatKind === 'grid' ? 'hidden' : wanted;
 }

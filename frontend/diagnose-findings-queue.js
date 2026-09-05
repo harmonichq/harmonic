@@ -190,8 +190,7 @@ export function queueRows(projection, selected = null) {
     if (seam) seamOpened = true;
     const weight = collapsed ? 'collapsed'
       : !shown ? null
-        : unpriced ? 'tail'
-          : pricedSeen ? 'compact' : 'hero';
+        : unpriced ? 'tail' : 'priced';
     const caption = pricedRanked && pricedSeen && row.tier !== previousPricedTier
       ? TIER[row.tier] || null : null;
     if (pricedRanked) {
@@ -343,7 +342,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     }
     const node = document.createElement('button');
     node.type = 'button';
-    node.className = `qrow${row.weight ? ` ${row.weight}` : ''}`;
+    node.className = `qrow${row.rank !== null ? ' priced' : row.weight ? ` ${row.weight}` : ''}`;
     node.setAttribute('role', 'listitem');
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
@@ -351,10 +350,9 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // the numeral restates the position a screen reader already announces
     add(node, 'n', row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
-    // the hero's tier word is its EYEBROW, above the title rather than beside the
-    // flavor tag, so it is painted where it is read — before the title, not after
-    // the tag (the stylesheet places it; this is the announcement order)
-    if (row.weight === 'hero' && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
+    // The first served tier word is read before the first row's title; later tier
+    // changes use the caption inserted immediately before their first row.
+    if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     add(node, 'lab', row.title);
     if (row.weight === 'tail') {
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
@@ -378,7 +376,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     if (detail && row.raw.window_scope === 'whole_day') {
       add(detail, 'scope-note', ' · Whole day');
     }
-    if (row.weight === 'compact') {
+    if (row.rank !== null) {
       const mini = document.createElement('span');
       mini.className = 'mini';
       node.append(mini);

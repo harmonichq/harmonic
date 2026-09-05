@@ -1,0 +1,18 @@
+  ok S1
+  ok S2
+  ok S3
+  ok S4
+  ok S5
+  ok S6
+  ok S7
+  ok S8
+  ok S9
+  ok S10
+  ok S11
+  ok S12
+  ok S13
+  ok S14
+  ok S15
+  ok S16
+
+app: 16 of 16 stories passed

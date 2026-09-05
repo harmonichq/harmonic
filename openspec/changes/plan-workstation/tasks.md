@@ -57,8 +57,12 @@ surface-ledger row, the wireframe renders and the base evidence set.
       keeps `.active-profile-ref` as Plan's readiness selector unchanged.
 - [ ] Register the replay: add a `Plan behaviour ledger` leg to the
       browser-gates matrix in `.github/workflows/ci.yml` (`vendor: true`,
-      `TARGET=app node frontend/plan-behavior.replay.mjs`) and list the leg in
-      `CLAUDE.md`'s browser-gate command block.
+      `TARGET=app node frontend/plan-behavior.replay.mjs`), making eleven legs
+      where there are ten today (`grep -c '^          - gate:'
+      .github/workflows/ci.yml` → `10`). In `AGENTS.md` (the file `CLAUDE.md`
+      links to) change both cardinality sentences — "The ten gate legs, as CI
+      runs them." (line 135) and "All ten **fail closed**" (line 149) — to
+      eleven, and add the leg's exact command to the block between them.
 - [ ] Verification for this task, all green locally before handing back:
       `node --test 'frontend/**/*.test.js'`; `uv run python -m pytest`;
       `npx --yes @fission-ai/openspec@1 validate --all --strict`; the three
@@ -68,28 +72,36 @@ surface-ledger row, the wireframe renders and the base evidence set.
       `node --test frontend/cockpit-shell.browser.test.mjs`. Browser legs run
       with escalated permissions (`AGENTS.md`, sandbox rule).
 
-## 2. Live run, evidence and polish
+## 2. Live run, audit and polish, then the evidence record
 
 - [ ] Serve the ticket worktree through the declared QA copy-then-serve
-      command and a second worktree at base `aeb37c6a` on a distinct port
-      from its own scratch copy of the same showcase. Capture Plan's
-      nothing-staged state on both at 1440×900, 1024×768 and 390×844 into
-      `evidence/revision/live/` and `evidence/base/live/`.
-- [ ] Capture the stubbed-state renders on the revision:
-      `PLAN_EVIDENCE_DIR=openspec/changes/plan-workstation/evidence/revision`
-      at the same three viewports (S3, S4, S10, S11 narrow; the full set at
-      1440×900).
-- [ ] Run `/ui-craft audit` and `/ui-craft polish` against the revision in the
-      running app: console clean, no unstubbed requests, keyboard path through
-      the chips, inputs and reconcile buttons, contrast on every ink/ground
-      pair the sheet introduces, no horizontal page overflow at 390px. Fix
-      what the run exposes in the same task; re-run task 1's verification
-      after every fix.
-- [ ] Write `evidence/README.md` naming every capture pair (base ↔ revision),
-      the story each evidences, the viewport, and the replay's raw output on
-      the revision (`16 of 16`). Stamp every ledger story `replayed-pass on
-      revision` in `mockups/plan.behavior.md`.
+      command and a second worktree at base `aeb37c6a` (spin it with
+      `spin-worktree`) on a distinct port from its own scratch copy of the same
+      showcase. Run `/ui-craft audit` and `/ui-craft polish` against the
+      revision in the running app: console clean, no unstubbed requests,
+      keyboard focus reaches every chip control, input and reconcile button in
+      order, every ink/ground pair the sheet introduces clears the theme's
+      contrast bar, and the page does not scroll horizontally at 390px (the
+      schedule table scrolls inside its scrollport instead). Fix what the run
+      exposes in `frontend/plan-workstation.css` and the Plan markup in
+      `frontend/index.html` only; after every fix re-run task 1's verification
+      list in full. Commit the last fix before any capture below.
+- [ ] After the last fix, capture the whole revision matrix from that commit:
+      Plan's nothing-staged state on both servers at 1440×900, 1024×768 and
+      390×844 into `evidence/revision/live/` and `evidence/base/live/`; the
+      stubbed states through
+      `PLAN_EVIDENCE_DIR=openspec/changes/plan-workstation/evidence/revision
+      TARGET=app node frontend/plan-behavior.replay.mjs` (full set at
+      1440×900; `ONLY=S3,S4,S10,S11` at the two narrow viewports), each run's
+      complete output saved beside its renders as `replay-<viewport>.txt`,
+      matching the base set already under `evidence/base/`. A capture taken
+      before the last fix is stale and is regenerated, never kept.
+- [ ] Write `evidence/README.md` naming the revision commit the captures came
+      from, every base ↔ revision pair by story and viewport, and the three
+      raw replay summary lines. Stamp every ledger story's `status:` line
+      `replayed-pass on revision · <date>` in `mockups/plan.behavior.md`.
 - [ ] Delete `wireframes/plan-arrangements.html`; keep `wireframes/shots/`.
       Update the Plan row in `mockups/INDEX.md` to name the evidence path.
-- [ ] Verification for this task: everything in task 1's list, plus the
-      evidence README present and every ledger story stamped.
+- [ ] Verification for this task: everything in task 1's list at the final
+      commit, plus the evidence README present, every ledger story stamped, and
+      no capture older than the commit the README names.

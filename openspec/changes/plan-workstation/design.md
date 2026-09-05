@@ -63,6 +63,40 @@ renders only Plan's nothing-staged state; the replay's inline synthetic
 fixtures supply every other state. The UI Craft router returned `revise` on
 (`shipped`, `runnable`, `complete`, `synthetic`).
 
+## Generated facts (2026-09-05, worktree commit after 51eff3b)
+
+Every figure the order cites, regenerated from the checked-out tree.
+
+```
+$ grep -c '^          - gate:' .github/workflows/ci.yml
+10
+$ grep -n "ten gate legs\|All ten" AGENTS.md
+135:# The ten gate legs, as CI runs them.
+149:All ten **fail closed**: a missing driver, vendored asset or fixture exits
+$ sed -n 71p frontend/index.test.js
+  const verify = page.match(/<div v-show="tab === 'verify'">[\s\S]*?<\/div>\n\n    <!-- ============================ PLAN/)[0];
+$ grep -n "==== PLAN ====" frontend/index.html
+1649:    <!-- ============================ PLAN ============================ -->
+$ grep -c ':is(\.dw, \.vw)' frontend/theme.css
+13
+$ sqlite3 mockups/qa-e2e.synthetic/harmonic.sqlite "select count(*) from profile_settings; select count(*) from plan_draft; select count(*) from plan_history"
+3
+0
+0
+$ TARGET=app node frontend/plan-behavior.replay.mjs | tail -1        # full output: evidence/base/replay-1440x900.txt
+app: 16 of 16 stories passed
+$ VIEWPORT=1024x768 TARGET=app ONLY=S3,S4,S10,S11 node frontend/plan-behavior.replay.mjs | tail -1   # evidence/base/replay-1024x768.txt
+app: 4 of 4 stories passed
+$ VIEWPORT=390x844 TARGET=app ONLY=S3,S4,S10,S11 node frontend/plan-behavior.replay.mjs | tail -1    # evidence/base/replay-390x844.txt
+app: 4 of 4 stories passed
+$ node --test 'frontend/**/*.test.js' 2>&1 | grep -E "^ℹ (tests|pass|fail)"
+ℹ tests 595
+ℹ pass 595
+ℹ fail 0
+$ npx --yes @fission-ai/openspec@1 validate --all --strict | tail -1
+Totals: 73 passed, 0 failed (73 items)
+```
+
 ## Base story counts
 
 Plan ledger on base `aeb37c6a`: 16 of 16 at 1440×900; S3, S4, S10, S11 also

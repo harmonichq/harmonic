@@ -47,11 +47,21 @@ surface-ledger row, the wireframe renders and the base evidence set.
       The three no-profile states (error, loading, not configured) render in
       the left pane body. Every handler, computed and copy string is the
       shipped one; no new frontend gate, threshold or direction is derived.
-- [ ] Extend `frontend/theme.css`'s role selectors from `:is(.dw, .vw)` to
-      `:is(.dw, .vw, .pw)` for pane body, pane header rail and the instrument
-      rail (adding `.pw .plan-strip` beside `.vw .verify-strip`), and update
-      the file's role comment and `DESIGN.md`'s role note (lines 116–119) to
-      name the third host. Nothing else in `theme.css` moves.
+- [ ] Extend `frontend/theme.css`'s role selectors to `:is(.dw, .vw, .pw)` on
+      exactly these twelve lines (numbers at commit c1025a1): 138, 144, 150,
+      155, 172 and 177 (pane body — `.panes`, `.pane`, the pane divider); 243,
+      267 and 284 (pane header rail — `header h2`, `header .meta`); 275 and 291
+      (the host-level `--ck-*` overrides); 348 (the reduced-motion `.panes`
+      rule). Add `.pw .plan-strip` beside `.vw .verify-strip` in the three
+      instrument-rail rules at lines 203, 227 and 286. Leave every other
+      `:is(.dw, .vw)` line as it is — the `.canvas-pane`, dock-floor
+      (`.inspector > .watch`, `.watch .go`), `.seg`, caption and number
+      selectors, `[data-safety]` / `[data-verdict]`, `.factor`, `.qrow` and
+      `.lane-key` rules are Diagnose and Verify furniture Plan does not render
+      (`grep -c ':is(\.dw, \.vw)' frontend/theme.css` → `61` is the whole set;
+      fifteen edits is the Plan subset). Update the file's role comment (lines
+      22–28) and `DESIGN.md`'s role note (lines 116–119) to name the third
+      host. Nothing else in `theme.css` moves.
 - [ ] Update the two drivers that pinned the old chrome:
       `frontend/plan-first-match.browser.mjs` locates the deliverable by its
       heading ("Deliverable — pump-ready") inside the `.pw` surface instead of

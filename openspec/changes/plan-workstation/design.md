@@ -63,7 +63,7 @@ renders only Plan's nothing-staged state; the replay's inline synthetic
 fixtures supply every other state. The UI Craft router returned `revise` on
 (`shipped`, `runnable`, `complete`, `synthetic`).
 
-## Generated facts (2026-09-05, worktree commit after 51eff3b)
+## Generated facts (2026-09-05, regenerated at the commit that carries this appendix)
 
 Every figure the order cites, regenerated from the checked-out tree.
 
@@ -78,7 +78,7 @@ $ sed -n 71p frontend/index.test.js
 $ grep -n "==== PLAN ====" frontend/index.html
 1649:    <!-- ============================ PLAN ============================ -->
 $ grep -c ':is(\.dw, \.vw)' frontend/theme.css
-13
+61
 $ sqlite3 mockups/qa-e2e.synthetic/harmonic.sqlite "select count(*) from profile_settings; select count(*) from plan_draft; select count(*) from plan_history"
 3
 0

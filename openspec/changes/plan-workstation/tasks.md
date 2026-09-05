@@ -22,9 +22,11 @@ surface-ledger row, the wireframe renders and the base evidence set.
       stack (schedule first) and the schedule table sits in an
       `overflow-x: auto` scrollport. Link the sheet in `frontend/index.html`
       after `verify-workstation.css` and before `theme.css`.
-- [ ] Rewrite the Plan tab markup in `frontend/index.html` (keep the
-      `<!-- ==== PLAN ==== -->` banner comment that `frontend/index.test.js`
-      slices on) as `<div class="pw plan-surface">`: the strip (Profile cap,
+- [ ] Rewrite the Plan tab markup in `frontend/index.html` (keep the banner
+      comment `<!-- ============================ PLAN ============================ -->`
+      exactly as it is at line 1649, directly after the Verify block, because
+      `frontend/index.test.js:71` uses it as the terminator of its Verify-fragment
+      slice) as `<div class="pw plan-surface">`: the strip (Profile cap,
       the profile name or `IDP n`, `DIA {h}h · max bolus {U}U · carb entry
       on|off`, the other-profiles `.pill.warn`, and a `.strip-note` reading the
       reconcile summary — pending, on-pump as-of, or mismatch count); the left

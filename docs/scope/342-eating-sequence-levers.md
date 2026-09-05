@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Comparable pricing (operator, 2026-09-05): price both new findings on the existing shared Priority axis. Do not assign blanket queue precedence to existing meal advice. Grounded formula: `priority_score(impact, recurrence)` uses `round(100 * sqrt(impact * recurrence))`; behavioral inputs are normalized hypo-weighted outcome severity and Wilson lower-bound recurrence. Sequence occurrence identity and eligible recurrence population must be specified before pricing is admitted. Disposition: inline.
+
 - Chart workspace (operator, 2026-09-05): build and mock the chart family using the frontend chart design harness (`harness/`). The operator permits real or synthetic data; triage selects manufactured synthetic fixtures under the automated UI revision rules. Exercise the real chart modules through the harness, then verify their integration in the shipped Diagnose tile. Disposition: inline.
 
 - Classification: code. Add High-carb sequence and Repeat eating as behavioral levers, their Patterns in the existing server-ranked Diagnose queue, and a fifth chart kind in the shipped tile. Source: issue #342 read 2026-09-05. Disposition: inline.
@@ -23,7 +25,7 @@ Why: behavioral advice must preserve the report's evidence floors and the existi
 
 ## Open questions
 
-- When a sequence also supports an existing meal finding (carb undercount or late bolus), which advice owns that episode? Proposed conservative default: preserve the existing attribution, allowing the new sequence levers only when no existing lever wins. This may withhold a sequence finding despite a supported aggregate association.
+- Pricing is required and queue order uses the shared Priority. The current engine attributes each episode before computing Pattern Priority. Clarify whether the operator intends price to choose the single episode owner as well, which would change earliest-actionable-driver attribution and require a defined pre-attribution pricing population. The earlier blanket existing-advice-first proposal is withdrawn.
 - After attribution is settled, ground the sequence-to-episode membership and recurrence population, then specify the coherent analyzer/projection/chart ownership and verification. These are dependent work, not settled contracts.
 - No execution lock has been drafted, reviewed or posted. No issue status has changed.
 

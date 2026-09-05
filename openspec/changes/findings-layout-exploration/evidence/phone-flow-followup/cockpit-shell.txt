@@ -1,0 +1,4 @@
+✔ the retired occurrence route has no production source (4.12725ms)
+✔ the page never scrolls, the panes do, and the advisory stays whole on every tab (1294.898167ms)
+✔ top bar and footer expose the locked destination inventory and neutral profile facts (735.399708ms)
+✔ a bare or hash arrival is promoted to a maturing Trial, and a named page is not (2547.817167ms)

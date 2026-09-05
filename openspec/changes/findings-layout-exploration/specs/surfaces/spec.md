@@ -84,9 +84,7 @@ At desktop widths, Diagnose SHALL place the spotlight at the top of the left
 pane below the clock-window controls, the glucose-by-time-of-day overview and
 its basal verdict lane beneath the spotlight, and the findings/details
 inspector on the right. The active clock range SHALL remain visible beside the
-window controls. An Adjust window shortcut SHALL bring the overview's existing
-selection surface into view and make it keyboard reachable without changing the
-window. The overview SHALL retain its existing plotting, readout, drag, resize,
+window controls. The overview SHALL retain its existing plotting, readout, drag, resize,
 slide, preset, touch and basal-lane behaviors. The right pane's persistent
 watched-change floor SHALL remain available in both queue and detail states.
 
@@ -96,18 +94,12 @@ watched-change floor SHALL remain available in both queue and detail states.
 - **THEN** the spotlight precedes the glucose overview and the active range remains visible above both panes
 - **AND** the queue and spotlight describe the same served window
 
-#### Scenario: Adjust a custom window in its new location
-
-- **GIVEN** the reader has drilled a finding or scrolled the evidence pane
-- **WHEN** they use Adjust window and then the existing chart selection gesture
-- **THEN** the overview becomes reachable, the gesture still uses its plotted clock coordinates, and the normal window/reconciliation behavior runs
-- **AND** merely using the shortcut changes neither the current window nor the finding
-
 #### Scenario: A narrow or short viewport retains the controls
 
 - **WHEN** the viewport cannot fit the desktop columns or the usual spotlight height
-- **THEN** the layout adapts without document-level horizontal overflow or inaccessible controls
-- **AND** the overview, finding details, watched-change state and fullscreen exit remain reachable by keyboard and touch
+- **THEN** phone widths present Spotlight, the overview, complete Findings rows and Watching in one shell-owned vertical reading flow without document-level horizontal overflow
+- **AND** the overview's time selection, finding details, watched-change state and fullscreen exit remain reachable by keyboard and touch
+- **AND** All charts and single-chart fullscreen remain temporary viewport-owned states whose dismissal preserves the prior reading position
 
 ### Requirement: Ranked findings share one aligned row structure
 

@@ -69,7 +69,8 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  derivedPumpSettings, openApp, openerProblems, panThenAim, state, withIsfVerdict,
+  derivedPumpSettings, openApp, openerProblems, panThenAim, state, touchDrag, touchScroll,
+  withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
   densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
@@ -136,6 +137,13 @@ after(() => runner.close());
 // diagnose-workstation-behavior.replay.mjs's own `settle` is not exported —
 // this is the same wait, kept local rather than widening that file's surface.
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
+
+async function touchTap(page, locator) {
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
+  assert.ok(box, 'touch target is rendered');
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+}
 
 async function shot(page, family, state_, viewport) {
   if (!SHOTS) return;
@@ -305,11 +313,8 @@ test('#341 · All charts confines interaction and dismissal preserves the window
     })), { instruments: false, inspector: false, focus: 'explorer-trigger' },
     'dismissal restores underlying interaction and focus to All charts');
 
-    await page.getByRole('button', { name: 'Adjust window', exact: true }).click();
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'chart',
-      'Adjust window makes the real overview keyboard-reachable');
-    assert.equal(await page.locator('#seg-window button[aria-pressed="true"]').innerText(), pressedBefore,
-      'Adjust window does not mutate the selected time window');
+    assert.equal(await page.getByRole('button', { name: 'Adjust window', exact: true }).count(), 0,
+      'the invented Adjust window shortcut is absent');
   } finally {
     await page.close();
   }
@@ -332,7 +337,8 @@ test('#341 · the overview keeps its full name at the split tablet width', async
 
 test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable', async () => {
   const browser = await runner.browser();
-  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 },
+    { width: 360, height: 800 }]) {
     const page = await openApp(browser, {
       state: 'typical', viewport, history: true, appSource: 'fixture',
     });
@@ -351,6 +357,18 @@ test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain 
         && tierGeometry.tier.bottom <= tierGeometry.label.top + 1,
       `${viewport.width}px gives the tier its own line before the finding title`);
 
+      const rootControls = await page.locator('#tile-focal .evidence-tile').evaluate((tile) => {
+        const host = tile.getBoundingClientRect();
+        return [...tile.querySelectorAll('.tile-rail button, .tile-fullscreen')].map((button) => {
+          const box = button.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width, height: box.height,
+            hostLeft: host.left, hostRight: host.right, name: button.getAttribute('aria-label') };
+        });
+      });
+      assert.ok(rootControls.every(({ left, right, hostLeft, hostRight }) =>
+        left >= hostLeft - 1 && right <= hostRight + 1),
+      `${viewport.width}px Spotlight chart controls stay inside their tile: ${JSON.stringify(rootControls)}`);
+
       await page.getByRole('button', { name: 'All charts', exact: true }).click();
       const catalog = await page.locator('#tile-row').evaluate((row) => ({
         client: row.clientWidth,
@@ -365,12 +383,18 @@ test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain 
       `${viewport.width}px catalog cards stay inside their one-column viewport`);
 
       const narrowControls = await page.locator('#tile-row .tile-rail button, #chart-headacts button')
-        .evaluateAll((buttons) => buttons.map((button) => {
+        .evaluateAll((buttons, viewportWidth) => buttons.map((button) => {
           const box = button.getBoundingClientRect();
-          return { width: box.width, height: box.height, name: button.getAttribute('aria-label') };
-        }));
+          const tile = button.closest('.evidence-tile')?.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width, height: box.height,
+            tileLeft: tile?.left ?? 0, tileRight: tile?.right ?? viewportWidth,
+            name: button.getAttribute('aria-label') };
+        }), viewport.width);
       assert.ok(narrowControls.every(({ width, height }) => width >= 44 && height >= 44),
         `${viewport.width}px chart controls keep 44px hit areas: ${JSON.stringify(narrowControls)}`);
+      assert.ok(narrowControls.every(({ left, right, tileLeft, tileRight }) =>
+        left >= tileLeft - 1 && right <= tileRight + 1),
+      `${viewport.width}px catalog controls stay inside their tile or header: ${JSON.stringify(narrowControls)}`);
 
       await page.getByRole('button', { name: 'Close', exact: true }).click();
       await page.locator('#tile-focal .tile-fullscreen').click();
@@ -381,6 +405,170 @@ test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain 
     } finally {
       await page.close();
     }
+  }
+});
+
+test('#341 · phone Diagnose is one complete vertical reading flow', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 800 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, hasTouch: true, isMobile: true,
+      appSource: 'fixture', findingsInputs: twoFamilyInputs,
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.waitForFunction(() => document.querySelectorAll(
+        '#level .mini[data-preview-kind] canvas',
+      ).length === 5);
+      const flow = await page.evaluate(() => {
+        const main = document.querySelector('.cockpit-stage > .main-content');
+        const box = (selector) => {
+          const node = document.querySelector(selector);
+          const rect = node.getBoundingClientRect();
+          return { top: rect.top + main.scrollTop, bottom: rect.bottom + main.scrollTop,
+            height: rect.height };
+        };
+        const overflow = (selector) => {
+          const node = document.querySelector(selector);
+          return node.scrollHeight - node.clientHeight;
+        };
+        return {
+          mainOverflow: main.scrollHeight - main.clientHeight,
+          nestedOverflow: {
+            canvas: overflow('.canvas-pane'),
+            inspectorBody: overflow('.inspector > .body'),
+            level: overflow('#level'),
+          },
+          spotlight: box('#tile-field'),
+          overview: box('.canvas-pane > .body'),
+          queue: box('.inspector > .body'),
+          watching: box('#watch-dock'),
+          documentOverflowX: document.documentElement.scrollWidth
+            - document.documentElement.clientWidth,
+          windowRail: {
+            label: box('.instruments .instrument > .cap'),
+            labels: [...document.querySelectorAll('#seg-window button')].map((button) => {
+              const range = document.createRange();
+              range.selectNodeContents(button);
+              const rect = range.getBoundingClientRect();
+              return { left: rect.left, right: rect.right };
+            }),
+          },
+        };
+      });
+      assert.ok(flow.mainOverflow > viewport.height,
+        `${viewport.width}px gives the shell one substantial reading scroll: ${JSON.stringify(flow)}`);
+      assert.deepEqual(flow.nestedOverflow, { canvas: 0, inspectorBody: 0, level: 0 },
+        `${viewport.width}px removes competing nested phone scrollports`);
+      assert.ok(flow.spotlight.height >= 350 && flow.overview.height >= 200
+        && flow.spotlight.bottom <= flow.overview.top + 1
+        && flow.overview.bottom <= flow.queue.top + 1
+        && flow.queue.bottom <= flow.watching.top + 1,
+      `${viewport.width}px orders complete Spotlight, overview, Findings, then Watching: ${JSON.stringify(flow)}`);
+      assert.ok(flow.documentOverflowX <= 0,
+        `${viewport.width}px phone reading flow has no document horizontal overflow`);
+      assert.ok(flow.windowRail.label.top >= 0
+        && flow.windowRail.labels.every(({ left, right }, index, labels) =>
+          left >= 0 && right <= viewport.width
+          && (index === 0 || left - labels[index - 1].right >= 3)),
+      `${viewport.width}px window label and preset words remain distinct and contained: ${JSON.stringify(flow.windowRail)}`);
+
+      const readingStops = [page.locator('#tile-field'), page.locator('.canvas-pane > .body'),
+        page.locator('#level .qrow.priced').first(), page.locator('#level .qrow.priced').last(),
+        page.locator('#watch-dock')];
+      for (const stop of readingStops) {
+        const visible = await stop.evaluate((node) => {
+          node.scrollIntoView({ block: 'start' });
+          const main = document.querySelector('.cockpit-stage > .main-content');
+          const rect = node.getBoundingClientRect();
+          const viewportRect = main.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom,
+            viewportTop: viewportRect.top, viewportBottom: viewportRect.bottom,
+            canvasScroll: document.querySelector('.canvas-pane').scrollTop,
+            levelScroll: document.querySelector('#level').scrollTop };
+        });
+        assert.ok(visible.top >= visible.viewportTop - 1
+          && visible.bottom <= visible.viewportBottom + 1
+          && visible.canvasScroll === 0 && visible.levelScroll === 0,
+        `${viewport.width}px can read each section whole through the shell scroll: ${JSON.stringify(visible)}`);
+      }
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('#341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    hasTouch: true, isMobile: true, appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await touchTap(page, page.getByRole('button', { name: '24 h', exact: true }));
+    await page.waitForFunction(() => document.querySelectorAll(
+      '#level .mini[data-preview-kind] canvas',
+    ).length === 5);
+
+    await touchScroll(page, { x: 180, y: 700 });
+    await page.locator('#chart').scrollIntoViewIfNeeded();
+    const chart = await page.locator('#chart').boundingBox();
+    assert.ok(chart && chart.width > 260 && chart.height >= 150,
+      `the overview is a usable touch surface: ${JSON.stringify(chart)}`);
+    await touchDrag(page,
+      { x: chart.x + chart.width * .28, y: chart.y + chart.height * .45 },
+      { x: chart.x + chart.width * .72, y: chart.y + chart.height * .45 },
+      { steps: 8 });
+    await settle(page);
+    const drawnWindow = (await page.locator('#seg-window [data-follow]').innerText())
+      .replace('×', '').trim();
+    assert.match(drawnWindow, /^Window \d\d:\d\d–\d\d:\d\d$/,
+      'the touch drag commits the shown time range');
+
+    await touchTap(page, page.getByRole('button', { name: 'All charts', exact: true }));
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    await touchTap(page, page.getByRole('button', { name: 'Close', exact: true }));
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'touch dismisses All charts');
+    assert.equal((await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim(),
+      drawnWindow, 'All charts dismissal preserves the drawn window');
+
+    const rows = page.locator('#level .qrow.priced');
+    assert.ok(await rows.count() > 1, 'the touch path has a lower-ranked finding');
+    await touchTap(page, rows.nth(1));
+    await page.waitForFunction(() => document.querySelector('#crumb-trail button')?.textContent
+      .includes('Findings'));
+    assert.ok((await page.locator('#crumb-trail').innerText()).includes('Findings'),
+      'touch opens the lower-ranked finding immediately');
+    await settle(page);
+    await touchTap(page, page.locator('#crumb-trail button', { hasText: 'Findings' }));
+    const first = page.locator('#level .qrow.priced').first();
+    assert.ok(await first.evaluate((row) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const title = row.querySelector('.lab').getBoundingClientRect();
+      return title.top >= viewport.top && title.bottom <= viewport.bottom;
+    }), 'touch return puts rank one back in view');
+
+    const watching = page.locator('#watch-dock');
+    for (let step = 0; step < 12 && !await watching.evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const box = node.getBoundingClientRect();
+      return box.top >= viewport.top && box.bottom <= viewport.bottom;
+    }); step += 1) {
+      await touchScroll(page, { x: 180, y: 700 });
+    }
+    const reached = await watching.evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const box = node.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, viewportTop: viewport.top,
+        viewportBottom: viewport.bottom,
+        mainScroll: document.querySelector('.cockpit-stage > .main-content').scrollTop };
+    });
+    assert.ok(reached.mainScroll > 0 && reached.top >= reached.viewportTop - 1
+      && reached.bottom <= reached.viewportBottom + 1,
+    `touch scrolling reaches complete Watching content: ${JSON.stringify(reached)}`);
+  } finally {
+    await page.close();
   }
 });
 
@@ -420,12 +608,12 @@ test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async (
     `the window rail and complete Spotlight title remain visible at rest: ${JSON.stringify(visibleContext)}`);
     await shot(page, 'long-title-spotlight',
       process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', { width: 390, height: 844 });
-    const pane = page.locator('.canvas-pane');
-    await pane.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    await page.locator('#canvas-head').evaluate((node) => node.scrollIntoView({ block: 'start' }));
     assert.ok(await page.locator('#canvas-head').evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
       const box = node.getBoundingClientRect();
-      return box.bottom > 0 && box.top < window.innerHeight;
-    }), 'the overview remains reachable through the existing canvas-pane scroll');
+      return box.top >= viewport.top && box.bottom <= viewport.bottom;
+    }), 'the overview remains reachable through the phone reading scroll');
   } finally {
     await page.close();
   }
@@ -481,7 +669,7 @@ test('#341 · useful queue previews remain present and legible at narrow width',
     const minis = page.locator('#level .mini[data-preview-kind]');
     for (let index = 0; index < await minis.count(); index += 1) {
       const bounds = await minis.nth(index).evaluate((host) => {
-        const scroller = host.closest('#level');
+        const scroller = document.querySelector('.cockpit-stage > .main-content');
         const before = host.getBoundingClientRect();
         scroller.scrollTop += before.top - scroller.getBoundingClientRect().top - 4;
         const box = host.getBoundingClientRect();
@@ -527,7 +715,7 @@ test('#341 · expanding Watching renders its available ISF preview', async () =>
   }
 });
 
-test('#341 · All charts dismissal preserves a genuinely scrolled inspector', async () => {
+test('#341 · All charts dismissal preserves a genuinely scrolled phone reading position', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, {
     state: 'typical', viewport: { width: 390, height: 844 }, history: true,
@@ -535,38 +723,49 @@ test('#341 · All charts dismissal preserves a genuinely scrolled inspector', as
   });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    const level = page.locator('#level');
     await page.waitForFunction(() => {
       const node = document.querySelector('#level');
       return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
         && !node.textContent.includes('Loading evidence')
-        && node.scrollHeight > node.clientHeight;
+        && document.querySelector('.cockpit-stage > .main-content').scrollHeight
+          > document.querySelector('.cockpit-stage > .main-content').clientHeight;
     });
     await page.waitForTimeout(150);
-    await level.evaluate((node) => { node.scrollTop = Math.min(96, node.scrollHeight - node.clientHeight); });
+    const opener = page.getByRole('button', { name: 'All charts', exact: true });
+    await opener.focus({ preventScroll: true });
+    await page.locator('#level .qrow.priced').nth(2).evaluate((node) =>
+      node.scrollIntoView({ block: 'start' }));
     const before = await page.evaluate(() => ({
-      scroll: document.querySelector('#level').scrollTop,
+      scroll: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+      scrollHeight: document.querySelector('.cockpit-stage > .main-content').scrollHeight,
+      rows: document.querySelectorAll('#level .qrow').length,
+      minis: document.querySelectorAll('#level .mini canvas').length,
+      queueHeight: document.querySelector('#level').getBoundingClientRect().height,
       window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
       finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
     }));
     assert.ok(before.scroll > 0, `the witness begins with real inspector overflow (${before.scroll})`);
 
-    const opener = page.getByRole('button', { name: 'All charts', exact: true });
-    await opener.click();
+    await page.keyboard.press('Enter');
     const catalog = page.locator('#tile-field[data-explorer] > #tile-row');
     await catalog.evaluate((node) => { node.scrollTop = node.scrollHeight; });
     assert.ok(await catalog.evaluate((node) => node.scrollTop > 0),
       'the witness scrolls overflowing All charts content');
     await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page, 500);
 
     const after = await page.evaluate(() => ({
-      scroll: document.querySelector('#level').scrollTop,
+      scroll: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+      scrollHeight: document.querySelector('.cockpit-stage > .main-content').scrollHeight,
+      rows: document.querySelectorAll('#level .qrow').length,
+      minis: document.querySelectorAll('#level .mini canvas').length,
+      queueHeight: document.querySelector('#level').getBoundingClientRect().height,
       window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
       finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
       focus: document.activeElement?.textContent?.trim(),
     }));
-    assert.deepEqual({ scroll: after.scroll, window: after.window, finding: after.finding }, before,
-      'catalog dismissal restores the exact inspector scroll, window, and finding');
+    assert.deepEqual({ ...after, focus: undefined }, { ...before, focus: undefined },
+      'catalog dismissal restores the exact reading scroll, window, and finding');
     assert.equal(after.focus, 'All charts', 'catalog dismissal restores focus to its opener');
   } finally {
     await page.close();
@@ -617,15 +816,16 @@ test('#341 · a narrow lower-rank drill returns with rank one readable', async (
 
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
     const returned = await page.locator('#level .qrow.priced').first().evaluate((row) => {
-      const level = row.closest('#level').getBoundingClientRect();
+      const level = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
       const title = row.querySelector('.lab').getBoundingClientRect();
       const tier = row.querySelector('.tier')?.getBoundingClientRect();
       return { levelTop: level.top, titleTop: title.top, tierTop: tier?.top ?? null,
-        scrollTop: row.closest('#level').scrollTop };
+        scrollTop: document.querySelector('.cockpit-stage > .main-content').scrollTop };
     });
     assert.ok(returned.titleTop >= returned.levelTop && returned.tierTop >= returned.levelTop,
       `return makes rank one readable instead of stranding it above the pane: ${JSON.stringify(returned)}`);
-    assert.equal(returned.scrollTop, 0, 'the queue-origin return restores the root anchor');
+    assert.equal(await page.locator('#level').evaluate((node) => node.scrollTop), 0,
+      'the queue-origin return uses the shell reading flow, not a nested queue scroll');
   } finally {
     await page.close();
   }
@@ -1818,6 +2018,15 @@ test('#83 · Filter and every menu item stay reachable at 390×844', async () =>
       const trigger = page.getByRole('button', { name: /Filter/ });
       await trigger.waitFor();
       await trigger.click();
+      const placement = await page.evaluate(() => {
+        const trigger = document.querySelector('#filter-trigger').getBoundingClientRect();
+        const menu = document.querySelector('#filter-menu').getBoundingClientRect();
+        return { trigger: { top: trigger.top, bottom: trigger.bottom },
+          menu: { top: menu.top, bottom: menu.bottom },
+          gap: Math.min(Math.abs(menu.top - trigger.bottom), Math.abs(trigger.top - menu.bottom)) };
+      });
+      assert.ok(placement.gap <= 8,
+        `Filter menu stays attached to its trigger: ${JSON.stringify(placement)}`);
       const boxes = await page.locator('#filter-trigger, #filter-menu [role^="menuitem"]').evaluateAll(
         (nodes) => nodes.map((node) => {
           const rect = node.getBoundingClientRect();
@@ -1829,6 +2038,26 @@ test('#83 · Filter and every menu item stay reachable at 390×844', async () =>
         assert.ok(box.left >= 0 && box.right <= 390, `${box.label} stays inside the viewport horizontally`);
         assert.ok(box.top >= 0 && box.bottom <= 844, `${box.label} stays inside the viewport vertically`);
       }
+      assert.ok(boxes.slice(1).every((box) => box.bottom - box.top >= 44),
+        `every phone Filter item keeps a visible 44px target: ${JSON.stringify(boxes)}`);
+
+      await page.keyboard.press('Escape');
+      await trigger.focus({ preventScroll: true });
+      await trigger.evaluate((node) => {
+        const main = document.querySelector('.cockpit-stage > .main-content');
+        main.scrollTop += node.getBoundingClientRect().top - 150;
+      });
+      await page.keyboard.press('Enter');
+      const scrolledPlacement = await page.evaluate(() => {
+        const trigger = document.querySelector('#filter-trigger').getBoundingClientRect();
+        const menu = document.querySelector('#filter-menu').getBoundingClientRect();
+        return { trigger: { top: trigger.top, bottom: trigger.bottom },
+          menu: { top: menu.top, bottom: menu.bottom },
+          gap: Math.min(Math.abs(menu.top - trigger.bottom), Math.abs(trigger.top - menu.bottom)) };
+      });
+      assert.ok(scrolledPlacement.gap <= 8 && scrolledPlacement.menu.top >= 0
+        && scrolledPlacement.menu.bottom <= 844,
+      `Filter remains attached and bounded after page scroll: ${JSON.stringify(scrolledPlacement)}`);
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems at the narrow Filter viewport');

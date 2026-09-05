@@ -84,10 +84,10 @@ opener, and the replay's complete output are stored under
 Issue [#341](https://github.com/harmonichq/harmonic/issues/341) revises the
 shipped Diagnose composition to put the spotlight before the real glucose
 overview and basal lane. Every priced finding uses one row geometry and the
-same readable-width mini policy. **Adjust window** returns keyboard focus to
-the overview without changing the current window. **All charts** opens the
+same readable-width mini policy. At phone widths, Spotlight, the overview,
+Findings, and Watching share one vertical reading flow. **All charts** opens the
 complete ranked-and-Watching catalog directly; its Close control and Escape
-restore the current selection, window and inspector context, while a chart pick
+restore the current selection, window and reading context, while a chart pick
 keeps the existing immediate chart-to-finding route. The retired chart dock,
 handle and dock modes remain covered by S127's permanent attributed absence
 witness (ADR 341 in `openspec/changes/findings-layout-exploration/design.md`).

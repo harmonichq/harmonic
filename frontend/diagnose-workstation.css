@@ -329,20 +329,6 @@
   background-color: var(--ck-field);
   box-shadow: inset 0 6px 10px -8px rgba(0, 0, 0, .35);
 }
-.adjust-window {
-  margin-left: 8px;
-  min-height: 28px;
-  border: 1px solid var(--ck-hair);
-  border-radius: 5px;
-  background: var(--ck-inset);
-  color: var(--mk-secondary);
-  padding: 4px 9px;
-  font-size: 11.5px;
-  font-weight: 550;
-  cursor: pointer;
-}
-.adjust-window:hover { color: var(--mk-text); border-color: var(--ck-tile-edge); }
-.adjust-window:focus-visible { outline: 2px solid var(--ck-focus-mark); outline-offset: 2px; }
 .dw[data-canvas-full] > .panes { grid-template-columns: minmax(0, 1fr); }
 .dw[data-canvas-full] > .panes > .inspector { display: none; }
 .tile-field { grid-template-rows: minmax(0, 1fr); }
@@ -720,7 +706,8 @@
    takes its 24px off the chart's width so nothing is ever drawn on top of
    evidence. */
 .evidence-tile {
-  display: grid; grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) 24px;
+  display: grid;
+  grid-template: 28px minmax(0, 1fr) / minmax(0, 1fr) var(--ck-rail-col);
   min-width: 0; min-height: 0;
   margin: 0; overflow: hidden; background: var(--ck-rail); border-radius: 4px;
   box-shadow: inset 0 0 0 1px var(--ck-tile-edge), var(--ck-tile-shadow);
@@ -1869,6 +1856,109 @@
 .dw[data-canvas-mode="explore"] .filter-wrap,
 .dw[data-canvas-mode="explore"] .vband,
 .dw[data-canvas-mode="explore"] .vband-foot { display: none; }
+
+/* A phone is one reading surface, owned by the shell scroller: Spotlight,
+   overview, Findings, then Watching. The tablet split above deliberately keeps
+   its compact two-pane workspace; only true phone widths retire the competing
+   canvas, queue, and inspector scrollports. Temporary full-canvas states keep
+   their own viewport-sized geometry. */
+@media (max-width: 480px) {
+  .main-content > div:has(.dw:not([data-canvas-full])),
+  .main-content > div:has(.dw:not([data-canvas-full])) > div {
+    height: auto;
+    min-height: 100%;
+  }
+  .main-content .dw:not([data-canvas-full]) {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+    grid-template-rows: auto auto;
+  }
+  .main-content .dw:not([data-canvas-full]) .panes {
+    grid-template-rows: auto auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .main-content .dw:not([data-canvas-full]) .canvas-pane {
+    grid-template-rows: 350px auto 210px;
+    min-height: 0;
+    overflow: visible;
+  }
+  .main-content .dw:not([data-canvas-full]) .canvas-pane > .body {
+    height: 210px;
+    min-height: 210px;
+    overflow: hidden;
+  }
+  .main-content .dw:not([data-canvas-full]) .tile-field {
+    height: 350px;
+    min-height: 350px;
+  }
+  .main-content .dw:not([data-canvas-full]) .inspector {
+    grid-template-rows: auto auto auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .main-content .dw:not([data-canvas-full]) .inspector > .body {
+    display: block;
+    min-height: 0;
+    overflow: visible;
+  }
+  .main-content .dw:not([data-canvas-full]) #level {
+    min-height: 0;
+    overflow: visible;
+  }
+  .main-content .dw .instruments {
+    overflow-x: hidden;
+  }
+  .main-content .dw .instruments > .instrument:first-child {
+    flex: 1 1 auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3px;
+    padding-block: 4px;
+  }
+  .main-content .dw .instruments > .instrument:first-child .seg {
+    flex: 1 1 auto;
+  }
+  .main-content .dw .instruments > .instrument:first-child .seg button {
+    flex: 1 1 0;
+    padding-inline: 3px;
+  }
+  .main-content .dw .instruments > .instrument:first-child .seg:has(button[data-follow]) {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .main-content .dw .instruments > .instrument:first-child .seg button[data-follow] {
+    grid-column: 1 / -1;
+    width: auto;
+  }
+  .main-content .dw:not([data-canvas-full]) .filter-menu {
+    max-height: var(--filter-menu-max-height, none);
+    overflow-y: auto;
+  }
+  .main-content .dw:not([data-canvas-full]) .filter-menu[data-side="above"] {
+    inset-block-start: auto;
+    inset-block-end: calc(100% + 6px);
+  }
+  .main-content .dw:not([data-canvas-full]) .filter-menu[data-side="below"] {
+    inset-block-start: calc(100% + 6px);
+    inset-block-end: auto;
+  }
+  .main-content .dw:not([data-canvas-full]) .filter-menu button {
+    min-height: 44px;
+  }
+  .main-content .dw[data-canvas-full] {
+    height: 100%;
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .main-content .dw[data-canvas-full] .panes,
+  .main-content .dw[data-canvas-full] .canvas-pane {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
 
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`

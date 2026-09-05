@@ -949,7 +949,7 @@ export const S02 = async (page) => {
     `S02 inspector re-scoped to the drawn window (${after.crumbMeta})`);
 };
 
-const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
+export const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
   const session = await page.context().newCDPSession(page);
   const point = (x, y) => ({ x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
   const inspectEnd = end === 'cancel' || end === 'lost-capture';
@@ -991,7 +991,7 @@ const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
   return beforeEnd;
 };
 
-const touchScroll = async (page, at) => {
+export const touchScroll = async (page, at) => {
   const session = await page.context().newCDPSession(page);
   const point = (y) => ({ x: at.x, y, id: 1, radiusX: 1, radiusY: 1, force: 1 });
   await session.send('Input.dispatchTouchEvent', {

@@ -1,0 +1,87 @@
+✔ seven generated history reads remain ordered, reachable, laid out, and non-stageable (2279.278375ms)
+✔ an explicit fixture opener ignores a hostile ambient app-source override (1642.572209ms)
+✔ #135 · Escape dismisses fullscreen and restores the exact canvas arrangement (2165.989625ms)
+✔ #341 · All charts confines interaction and dismissal preserves the window context (1878.37575ms)
+✔ #341 · the overview keeps its full name at the split tablet width (1617.247791ms)
+✔ #341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable (3593.155458ms)
+✔ #341 · phone Diagnose is one complete vertical reading flow (3741.932083ms)
+✔ #341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable (5668.522083ms)
+✔ #341 · a long narrow Spotlight title leaves a readable I:C plot (1852.990375ms)
+✔ #341 · a rendered queue preview meets the existing width floor (1626.539833ms)
+✔ #341 · useful queue previews remain present and legible at narrow width (1853.884209ms)
+✔ #341 · expanding Watching renders its available ISF preview (1746.156041ms)
+✔ #341 · All charts dismissal preserves a genuinely scrolled phone reading position (2616.402958ms)
+✔ #341 · narrow Spotlight content clears the overview header content (3533.844166ms)
+✔ #341 · a narrow lower-rank drill returns with rank one readable (1800.1295ms)
+✔ #341 · a chart picked from All charts can expand independently (2059.491042ms)
+✔ #232 · every registered chart family stays inside one fullscreen frame (24016.3555ms)
+✔ #96 · global Align is permanently absent and alignment belongs to each tile — RETIRED — Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops" (2187.466166ms)
+✔ #100 · Enter on a finding row focuses the opened detail container (1687.447958ms)
+✔ #100 · the Findings crumb restores focus to the drilled finding row (1731.569458ms)
+✔ #100 · Backspace restores focus to the drilled history row (1791.5855ms)
+✔ #100 · an asynchronous repaint does not move focus without navigation (3962.857791ms)
+✔ #81 · pending and superseded projections replace the whole inspector (10190.99825ms)
+✔ #81 · a failed replacement projection stays failed until the window changes (3790.460625ms)
+✔ #81 · a settled slice renders only its server-published findings (2941.0945ms)
+✔ #86 issue-scoped probe · header and Filter ownership (1696.902583ms)
+✔ #86 issue-scoped probe · Sift intersection (2286.420708ms)
+✔ #86 issue-scoped probe · direct event-chart seating and root restoration (2869.670666ms)
+✔ #86 issue-scoped probe · malformed event evidence recovery (2601.263583ms)
+✔ #86 issue-scoped probe · pending root projection (1785.758083ms)
+✔ Diagnose scopes the readable user-claim palette (1647.252ms)
+✔ populated Diagnose renders readable ink and chart marks (1642.218ms)
+✔ the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible (1858.994667ms)
+✔ All charts and its Close control clear the text contrast floor (1878.332ms)
+✔ Diagnose keeps the Dark material roles ordered and target bounds as rails (1772.543458ms)
+✔ All charts catalog vessels retain the Dark retheme edge (2018.46625ms)
+✔ locked panel geometry holds at both required viewports (3237.36725ms)
+✔ #130 · a wrapped draw leaves two endpoint edges without adding basal selection paint (3699.213ms)
+✔ the Filter menu renders each server-published Sift count (2113.60275ms)
+✔ #83 · Filter is a roving ARIA menu and Escape wins over the drawn window (1984.271875ms)
+✔ #83 · the retired Event charts root filter and global canvas stay absent (2141.798875ms)
+✖ #83 · Filter and every menu item stay reachable at 390×844 (1672.637375ms)
+✔ deselecting a Sift item leaves only rows matching the remaining choices (2550.6655ms)
+✔ the Watching group collapses during a sift and expands again (2985.200125ms)
+✔ an all-hidden sift names the empty result while retaining the held group (2519.630958ms)
+✔ the ISF row visibly declares its whole-day scope (1721.564125ms)
+✔ a held I:C finding enters through the findings queue with no stage button (2327.962708ms)
+✔ an insufficient basal slot case file names nights of steady data (2184.794125ms)
+✔ ISF is not stageable without an exact true backend verdict (2222.554083ms)
+✔ a rounded false ISF verdict keeps evidence and empty Recommended geometry at every review render (4252.374084ms)
+✔ a recommendation-bearing legacy ISF row with a missing verdict fails closed without losing its direction (2165.762584ms)
+✔ an exact true capped ISF verdict stages one unchanged value per generated pump segment (2324.16075ms)
+✔ setError tears down a live render and replaces the mount with a plain failure message (581.343417ms)
+✔ a rejected first-load fetch shows the failure message, not an uncaught error (527.198834ms)
+✔ frontend contains no client-side verdict threshold or direction comparison (12.383459ms)
+✔ a lane slot renders a selected night trace over its envelope (2078.060791ms)
+✔ an in-place basal lane swap clears the selected night trace and detail (2125.976458ms)
+✔ a lane slot without a published basal tile fetches and renders its own night roster (2173.043958ms)
+✔ a findings-row basal slot clears its selected night trace (2490.138125ms)
+RETIRED — sanction: ConnorGriffin · 2026-08-23 · "Retired and incomplete evidence stops competing with the findings you can act on."
+✔ #63 · the unexplained-highs sentence is retired from the findings queue (1633.868625ms)
+ℹ tests 60
+ℹ suites 0
+ℹ pass 59
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 165993.101708
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:1978:1
+✖ #83 · Filter and every menu item stay reachable at 390×844 (1672.637375ms)
+  AssertionError [ERR_ASSERTION]: Corrections 0 stays inside the viewport vertically
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/341-c2/frontend/diagnose-workstation.browser.test.mjs:1997:16)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processImmediate (node:internal/timers:541:9)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

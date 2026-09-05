@@ -1,0 +1,93 @@
+<!doctype html>
+<!-- WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE
+     Ticket #344, Q1: which pane arrangement does Plan take inside the
+     workstation composition. Three concepts, switchable. Synthetic data only
+     (the first-plan-reconcile fixture: four segments, noon I:C 5.4 → 5.7).
+     Deleted when the change lands; only screenshots and the ruling survive. -->
+<html lang="en"><head><meta charset="utf-8"><title>#344 wireframe — Plan arrangements</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{color-scheme:dark;
+ --wk-canvas:#0f0d0b;--wk-field:#1e1a17;--wk-surface:#221e1b;--wk-surface-rail:#2b2622;--wk-surface-sunken:#14120f;
+ --wk-ink:#f2ede2;--wk-ink-body:#cfc8bd;--wk-ink-meta:#a49c90;--wk-rule:#3f3833;--wk-rule-strong:#453d35;
+ --wk-signal:#d2743e;--primary:#e07f3f;--secondary:#a89a85;--warn:#c98a4e;--warn-bg:#3a2b1b;--ok:#9aada1;--ok-bg:#2b332d;--danger:#ec6f55;
+ --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;--micro:10px;--track:.08em;--data:12px;--body:12.5px;--pad:12px;}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--wk-canvas);color:var(--wk-ink-body);font:400 var(--body)/1.45 Inter,system-ui,sans-serif;display:grid;grid-template-rows:auto 44px 42px minmax(0,1fr) 28px}
+.mockbar{background:#111;color:#bbb;font:12px var(--mono);padding:6px 12px;display:flex;gap:14px;align-items:center;border-bottom:1px dashed #555}
+.mockbar b{color:#f5c}.mockbar button{font:inherit;background:#222;color:#ddd;border:1px solid #555;padding:3px 9px;cursor:pointer}.mockbar button[aria-pressed=true]{background:#444;color:#fff}
+.topbar{display:flex;align-items:center;gap:22px;padding:0 14px;background:var(--wk-surface-sunken);border-bottom:1px solid var(--wk-rule-strong);color:var(--wk-ink-meta);font-size:12px}
+.topbar .wm{font-weight:800;color:var(--wk-ink);letter-spacing:.04em}.topbar .step{display:inline-flex;gap:6px;align-items:center}.topbar .step i{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--wk-rule-strong);font-style:normal;font-size:10px}
+.topbar .step.cur{color:var(--wk-ink)}.topbar .step.cur i{background:var(--wk-signal);color:#1b1109;border-color:var(--wk-signal)}
+.strip{display:flex;align-items:center;gap:7px;padding:0 14px;background:var(--wk-canvas);border-bottom:1px solid var(--wk-rule-strong);min-width:0}
+.cap{font-size:var(--micro);text-transform:uppercase;letter-spacing:var(--track);color:var(--wk-ink-meta);font-weight:650;white-space:nowrap}
+.strip .id{font:600 var(--data) var(--mono);color:var(--wk-ink);margin-left:6px}.strip .meta{font:500 var(--micro) var(--mono);color:var(--wk-ink-meta);letter-spacing:0}
+.strip .note{margin-left:auto;font:500 var(--micro) var(--mono);color:var(--wk-ink-meta)}.strip .pill{font-size:var(--micro);padding:1px 7px;border-radius:4px;background:var(--warn-bg);color:var(--warn);font-weight:700}
+.panes{display:grid;min-height:0;background:var(--wk-field);grid-template-columns:minmax(0,1fr) 430px}
+.panes.single{grid-template-columns:minmax(0,1fr)}
+.pane{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0;min-width:0;background:var(--wk-field)}
+.pane+.pane{border-left:1px solid var(--wk-rule-strong)}
+.pane>header{display:flex;align-items:center;gap:12px;min-height:30px;padding:4px var(--pad);background:var(--wk-surface-rail);border-bottom:1px solid var(--wk-rule)}
+.pane>header h2{margin:0;font-size:var(--micro);font-weight:700;letter-spacing:var(--track);text-transform:uppercase;color:var(--secondary)}
+.pane>header .meta{margin-left:auto;font:500 var(--micro) var(--mono);color:var(--wk-ink-meta);font-variant-numeric:tabular-nums}
+.body{min-height:0;overflow:auto;padding:var(--pad)}
+.blk{padding:10px 0;border-bottom:1px solid var(--wk-rule)}.blk:last-child{border-bottom:0}.blk>.cap{display:block;margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font:var(--data) var(--mono);font-variant-numeric:tabular-nums}
+th{font:650 var(--micro) Inter,system-ui,sans-serif;text-transform:uppercase;letter-spacing:var(--track);color:var(--wk-ink-meta);text-align:right;padding:6px 8px;border-bottom:1px solid var(--wk-rule)}
+th:first-child,td:first-child{text-align:left}td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--wk-rule)}
+td.cell{white-space:nowrap}td .cur{color:var(--wk-ink-meta)}td .cur::after{content:" →";}
+td input{width:64px;background:var(--wk-surface-sunken);border:1px solid var(--wk-rule);color:var(--wk-ink);font:inherit;text-align:right;padding:3px 6px;border-radius:3px}
+td.acc{background:color-mix(in srgb,var(--ok) 10%,transparent)}td.edit{background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.row{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--wk-rule);border-radius:4px;margin:4px 0;background:var(--wk-surface)}
+.row.sel{border-color:var(--wk-signal);background:var(--wk-surface-rail)}
+.row .t{font-weight:700;color:var(--primary);font-size:var(--micro);text-transform:uppercase;letter-spacing:var(--track)}
+.row .d{font:600 var(--data) var(--mono);color:var(--wk-ink)}.row .d small{font-weight:500;color:var(--wk-ink-meta)}.row .x,.row .j{color:var(--wk-ink-meta);font-size:12px;cursor:pointer}
+.verdict{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:4px;border:1px solid var(--wk-rule);font-size:var(--data)}
+.verdict.pend{color:var(--wk-ink-body)}.verdict.ok{border-color:var(--ok);color:var(--ok)}.verdict.mis{border-color:var(--warn);color:var(--warn);flex-direction:column;align-items:stretch}
+.acts{display:flex;gap:8px;margin-top:8px}.btn{font:600 12px Inter,system-ui,sans-serif;padding:5px 10px;border-radius:4px;border:1px solid var(--wk-rule-strong);background:var(--wk-surface-rail);color:var(--wk-ink);cursor:pointer}.btn.pri{background:var(--wk-signal);border-color:var(--wk-signal);color:#1b1109}
+details summary{cursor:pointer;color:var(--wk-ink-meta);font-size:var(--micro);text-transform:uppercase;letter-spacing:var(--track);font-weight:650}
+.muted{color:var(--wk-ink-meta)}.empty{color:var(--wk-ink-meta);font-style:italic;padding:8px 0}
+.foot{display:flex;align-items:center;padding:0 14px;background:var(--wk-surface-sunken);border-top:1px solid var(--wk-rule-strong);color:var(--wk-ink-meta);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.guide{font:500 var(--micro) var(--mono);color:var(--warn);padding:6px 0 0}
+@media (max-width:760px){.panes{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}.pane+.pane{border-left:0;border-top:1px solid var(--wk-rule-strong)}.strip .note{display:none}}
+</style></head><body>
+<div class="mockbar"><b>WIREFRAME — NO FIDELITY CLAIM — NOT LOCKABLE</b> #344 Q1
+ <span>concept</span><button data-v="A" aria-pressed="true">A schedule | case file</button><button data-v="B">B changes | schedule</button><button data-v="C">C one dock</button>
+ <span style="margin-left:14px">state</span><button data-s="pending" aria-pressed="true">pending</button><button data-s="mismatch">mismatch</button><button data-s="onpump">on pump</button></div>
+<div class="topbar"><span class="wm">HARMONIC</span><span class="step"><i>1</i>Diagnose</span><span class="step cur"><i>2</i>Plan</span><span class="step"><i>3</i>Verify</span><span style="margin-left:auto">Day</span></div>
+<div class="strip"><span class="cap">Profile</span><span class="id">P005</span><span class="meta">DIA 5h · max bolus 10U · carb entry on</span><span class="pill">1 other profile not analyzed</span><span class="note" id="note">pending · key these into the pump; rechecks on the next fetch</span></div>
+<div class="panes" id="panes"></div>
+<div class="foot">Advisory · never writes to the pump</div>
+<script>
+const seg=[['00:00',.6,50,10,110],['06:00',.75,45,8,110],['12:00',.7,50,5.4,110],['22:00',.6,55,10,110]];
+const chip={t:'I:C',time:'12:00',from:5.4,to:5.7};
+let v='A',s='pending';
+const cell=(r,i)=>{const p=i===3&&r[0]==='12:00';return `<td class="cell${p?' acc':''}">${p?`<span class="cur">${r[3]}</span> <input value="${chip.to}">`:`<input value="${r[i+1]}">`}</td>`};
+const table=()=>`<table><thead><tr><th>Start</th><th>Basal U/h</th><th>ISF mg/dL/U</th><th>I:C g/U</th><th>Target mg/dL</th></tr></thead><tbody>${seg.map(r=>`<tr><td>${r[0]}</td>${[0,1,2,3].map(i=>cell(r,i)).join('')}</tr>`).join('')}</tbody></table>`;
+const chips=(sel)=>`<div class="row${sel?' sel':''}"><span class="t">${chip.t}</span><span class="d">${chip.time} <small>${chip.from} →</small> ${chip.to}</span><span class="j" title="Back to Diagnose evidence">↩</span><span class="x">✕</span></div>`;
+const reconcile=()=>s==='pending'?`<div class="verdict pend">Pending — program these into your pump. After the next fetch this reconciles automatically.</div>`
+ :s==='onpump'?`<div class="verdict ok">✓ On pump as of 2026-07-20 08:00 — the pump matches your plan.<span style="margin-left:auto" class="btn pri">Confirm &amp; re-baseline →</span></div>`
+ :`<div class="verdict mis"><div>⚠ The pump doesn't match your plan. Check these values — likely a keying error.</div><table><thead><tr><th>Start</th><th>Parameter</th><th>Planned</th><th>On pump</th></tr></thead><tbody><tr><td>12:00</td><td>I:C</td><td>5.7</td><td style="color:var(--danger);font-weight:700">5.1</td></tr></tbody></table><div class="acts"><span class="btn">Re-key &amp; recheck</span><span class="btn pri">Accept pump values</span></div></div>`;
+const history=()=>`<details><summary>Apply history · 2</summary><table><thead><tr><th>Applied</th><th style="text-align:left">Items</th></tr></thead><tbody><tr><td>2026-07-06 09:12</td><td style="text-align:left">Basal 03:00 0.70 → 0.65</td></tr><tr><td>2026-06-14 18:40</td><td style="text-align:left">I:C 18:00 8 → 7.5</td></tr></tbody></table></details>`;
+const profile=()=>`<details><summary>What the pump holds now</summary><table><thead><tr><th>Start</th><th>Basal</th><th>ISF</th><th>I:C</th><th>Target</th></tr></thead><tbody>${seg.map(r=>`<tr>${r.map((c,i)=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`;
+const guide=`<div class="guide">↳ from Verify: reverting the 07-06 basal change — the prior setting is staged below</div>`;
+const V={
+A:()=>`<section class="pane"><header><h2>Schedule to key in</h2><span class="meta">4 segments of 16 · 1 change</span></header><div class="body">${table()}</div></section>
+<section class="pane"><header><h2>Case file</h2><span class="meta">draft saved 08:01</span></header><div class="body">
+<div class="blk"><span class="cap">Accepted changes · 1</span>${chips(false)}</div>
+<div class="blk"><span class="cap">Reconcile</span>${reconcile()}</div>
+<div class="blk">${profile()}</div><div class="blk">${history()}</div></div></section>`,
+B:()=>`<section class="pane"><header><h2>Accepted changes</h2><span class="meta">1 of 1 family · I:C</span></header><div class="body">${chips(true)}<div class="empty">Stage more from the Diagnose queue.</div>
+<div class="blk">${profile()}</div><div class="blk">${history()}</div></div></section>
+<section class="pane"><header><h2>Schedule to key in</h2><span class="meta">4 segments of 16</span></header><div class="body">${table()}<div class="blk" style="margin-top:10px"><span class="cap">Reconcile</span>${reconcile()}</div></div></section>`,
+C:()=>`<section class="pane"><header><h2>Plan</h2><span class="meta">4 segments of 16 · 1 change · draft saved 08:01</span></header><div class="body">
+<div class="blk"><span class="cap">Accepted changes · 1</span>${chips(false)}</div>
+<div class="blk"><span class="cap">Schedule to key in</span>${table()}</div>
+<div class="blk"><span class="cap">Reconcile</span>${reconcile()}</div>
+<div class="blk">${profile()}</div><div class="blk">${history()}</div></div></section>`};
+function render(){const p=document.getElementById('panes');p.className='panes'+(v==='C'?' single':'');p.innerHTML=V[v]();
+ document.getElementById('note').textContent=s==='pending'?'pending · key these into the pump; rechecks on the next fetch':s==='onpump'?'✓ on pump as of 2026-07-20 08:00':'⚠ pump differs from plan · 1 cell';
+ document.querySelectorAll('[data-v]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));document.querySelectorAll('[data-s]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===s));}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{v=b.dataset.v;render()});document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{s=b.dataset.s;render()});
+const q=new URLSearchParams(location.search);if(q.get('v'))v=q.get('v');if(q.get('s'))s=q.get('s');render();
+</script></body></html>

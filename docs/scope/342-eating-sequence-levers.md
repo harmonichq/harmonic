@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Operator direction (2026-09-05): competing findings should be outranked by impact, using comparable pricing. Ground the choice in existing code and, where needed, the operator's real events; do not ask the operator to invent a precedence list. Research may prototype forecasting/model comparisons before the execution lock. Disposition: inline.
+
 - Comparable pricing (operator, 2026-09-05): price both new findings on the existing shared Priority axis. Do not assign blanket queue precedence to existing meal advice. Grounded formula: `priority_score(impact, recurrence)` uses `round(100 * sqrt(impact * recurrence))`; behavioral inputs are normalized hypo-weighted outcome severity and Wilson lower-bound recurrence. Sequence occurrence identity and eligible recurrence population must be specified before pricing is admitted. Disposition: inline.
 
 - Chart workspace (operator, 2026-09-05): build and mock the chart family using the frontend chart design harness (`harness/`). The operator permits real or synthetic data; triage selects manufactured synthetic fixtures under the automated UI revision rules. Exercise the real chart modules through the harness, then verify their integration in the shipped Diagnose tile. Disposition: inline.
@@ -25,7 +27,7 @@ Why: behavioral advice must preserve the report's evidence floors and the existi
 
 ## Open questions
 
-- Pricing is required and queue order uses the shared Priority. The current engine attributes each episode before computing Pattern Priority. Clarify whether the operator intends price to choose the single episode owner as well, which would change earliest-actionable-driver attribution and require a defined pre-attribution pricing population. The earlier blanket existing-advice-first proposal is withdrawn.
+- Resolve comparable impact empirically. The operator has directed impact-based outranking; the question is the supported measurement, not a preference poll. Current `attribute()` chooses the earliest driver, `model_view._anchor_state()` marks other matched anchors outranked, and `findings_projection._occurrence_verdict()` retains row-relative matches as fired even when another lever owns the episode. Preserve those evidence distinctions when specifying any change. The earlier blanket existing-advice-first proposal is withdrawn.
 - After attribution is settled, ground the sequence-to-episode membership and recurrence population, then specify the coherent analyzer/projection/chart ownership and verification. These are dependent work, not settled contracts.
 - No execution lock has been drafted, reviewed or posted. No issue status has changed.
 
@@ -44,3 +46,13 @@ Why: behavioral advice must preserve the report's evidence floors and the existi
 - `ciq_autotune/findings_projection.py`: reads served episode attribution and Pattern Priority; window membership is consequence-anchored.
 - `frontend/diagnose-eating-sequences.js`: merged served-value adapter.
 - `openspec/specs/eating-sequences/spec.md` and `openspec/specs/surfaces/spec.md`: existing prohibitions and aggregate-section placement that #342 explicitly supersedes.
+
+## Impact research preparation
+
+- Read-only snapshot transfer was rejected by automatic approval review before execution. Exact full-payload transfer approval is pending; no snapshot was taken.
+- Inventory all classifier matches before attribution, and map them to eating sequences using the existing sequence construction. Summarize overlap and eligible counts without exporting event-level records.
+- Reuse the shared hypo-weighted outcome severity as the comparison target. Giving each competing explanation the entire same episode severity cannot distinguish their contributions; do not call that an estimated incremental benefit.
+- Compare simple matched-cohort estimates for high-carb and repeat eating against existing meal explanations, adjusting for the other behavior, time of day, baseline state and available treatment context where support permits. Preserve current coverage, overlap and carb-log exclusions and the eight-per-cohort floor.
+- Evaluate predictive candidates on later held-out time blocks, with training-only cohort boundaries and separated overlapping outcome horizons. Compare against the existing outcome baseline, inspect support and winner stability, and report absence of a reliable distinction explicitly. Observational prediction does not establish the effect of changing a behavior.
+- Keep exploratory scripts and event-level outputs in session scratch. Publish only aggregate findings and the eventual decision; build final chart evidence through the frontend harness using independently generated synthetic fixtures.
+- Findings determine whether an implementation lock is supportable or whether further investigation is required. No forecasting model, ranking amendment or new precedence rule has been implemented or admitted.

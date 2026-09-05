@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Chart workspace (operator, 2026-09-05): build and mock the chart family using the frontend chart design harness (`harness/`). The operator permits real or synthetic data; triage selects manufactured synthetic fixtures under the automated UI revision rules. Exercise the real chart modules through the harness, then verify their integration in the shipped Diagnose tile. Disposition: inline.
+
 - Classification: code. Add High-carb sequence and Repeat eating as behavioral levers, their Patterns in the existing server-ranked Diagnose queue, and a fifth chart kind in the shipped tile. Source: issue #342 read 2026-09-05. Disposition: inline.
 - Reuse the merged eating-window/sequence construction, pooled empirical quintiles, cohort eligibility, eight-qualifying-sequences-per-cohort floor, headline selection, fixed source window, report endpoint and frontend adapter. Disposition: inline.
 - One lever per episode remains required. Repeat eating wins a tie with High-carb sequence. Precedence against existing levers remains open. Disposition: inline.

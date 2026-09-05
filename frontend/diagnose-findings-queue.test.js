@@ -117,11 +117,11 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   assert.equal(MIN_ROW_MINI_WIDTH, 120);
   assert.deepEqual(rows.filter((row) => !row.hidden && !row.collapsed)
     .map(({ id, weight, caption }) => ({ id, weight, caption })), [
-    { id: 'ic:720', weight: 'hero', caption: null },
-    { id: 'basal:30-90', weight: 'compact', caption: null },
-    { id: 'basal:330-360', weight: 'compact', caption: null },
-    { id: 'finding:over_treated_low', weight: 'compact', caption: 'Worth a look' },
-    { id: 'finding:carb_undercount', weight: 'compact', caption: null },
+      { id: 'ic:720', weight: 'priced', caption: null },
+      { id: 'basal:30-90', weight: 'priced', caption: null },
+      { id: 'basal:330-360', weight: 'priced', caption: null },
+      { id: 'finding:over_treated_low', weight: 'priced', caption: 'Worth a look' },
+      { id: 'finding:carb_undercount', weight: 'priced', caption: null },
     { id: 'finding:correction_on_iob', weight: 'tail', caption: null },
     { id: 'finding:correction_stacking', weight: 'tail', caption: null },
   ]);
@@ -129,10 +129,10 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
-    { id: 'finding:carb_undercount', weight: 'hero', caption: null },
+    { id: 'finding:carb_undercount', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
-  assert.deepEqual(morning.map((row) => row.weight), ['hero']);
+  assert.deepEqual(morning.map((row) => row.weight), ['priced']);
 });
 
 test('#341 · every priced row, including rank one, receives the common mini mount slot', () => {

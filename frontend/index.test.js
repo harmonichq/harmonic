@@ -29,8 +29,10 @@ test('the vessel cascade composes one Dark 1px/4px grammar (#255)', () => {
     'the vessel edge resolves through the strong edge role');
   assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
     'the spotlight adds only elevation beyond the shared vessel edge');
-  assert.match(workstation, /\.tile-field\[data-dock="docked"\][\s\S]*?\.tile-field\[data-raised\][\s\S]*?\.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
-    'docked, raised, and Explorer cells keep the shared vessel edge and radius');
+  assert.match(workstation, /\.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'All charts cells keep the shared vessel edge and radius');
+  assert.doesNotMatch(workstation, /data-dock|data-raised|dock-handle/,
+    'the retired strip has no dormant selector that can resurrect it');
   assert.match(workstation, /\.tile-field:is\(\[data-fullscreen-tile\], \[data-explorer\]\) \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
     'fullscreen cells keep the shared vessel edge and radius');
 });

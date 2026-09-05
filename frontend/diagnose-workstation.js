@@ -19,8 +19,8 @@
  *   - `CFG` is indexed per mount rather than once at module load, so a state
  *     change can re-derive it without a page reload.
  *
- * Issue #135 deliberately revises the canvas composition below: the clock
- * canvas is now a strip above a registry-backed evidence tile field.
+ * Issue #341 revises the canvas composition below: the evidence spotlight
+ * leads, followed by the real clock overview and basal lane.
  */
 import {
   buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
@@ -77,8 +77,7 @@ export function queryState(fallback, param = 'mode') {
   return new URLSearchParams(window.location.search).get(param) || fallback;
 }
 
-/* The shipped pane shell, revised by #135 to hold a condensed clock strip and
-   the evidence tile field. The app shell still owns the topbar and status. */
+/* The shipped pane shell. The app shell still owns the topbar and status. */
 const MARKUP = `
   <div class="instruments">
     <div class="instrument">
@@ -118,12 +117,10 @@ const MARKUP = `
           </div>
         </div>
         <span class="meta persist" id="canvas-pool">—</span>
-        <!-- Fullscreen's way back rides the same row, on the right, in the
-             handle's own cells — see the handle's note above. -->
-        <div class="dock-headacts" id="dock-headacts" hidden></div>
+        <div class="chart-headacts" id="chart-headacts" hidden></div>
       </header>
       <div class="body">
-        <div id="chart"></div>
+        <div id="chart" tabindex="-1"></div>
         <div class="brace" id="brace" hidden>
           <div class="edge" id="brace-a"></div>
           <div class="edge" id="brace-b"></div>
@@ -136,18 +133,12 @@ const MARKUP = `
           <div class="lane-key" id="lane-key"></div>
         </div>
       </div>
-      <!-- THE SPOTLIGHT AND THE DOCK (ADR 215 amendment). One focal chart —
-           the spotlight — over a dock of every ranked finding's chart. The dock
-           has two states and the same tiles, rails and pins in both; the handle
-           on its top edge is the one control that toggles between them, and in
-           the hidden state that top edge is the canvas floor. -->
+      <!-- The spotlight is the resting evidence surface. All charts temporarily
+           reuses the row host as its full catalog; no intermediate strip exists. -->
       <div class="tile-field" id="tile-field" aria-label="Evidence charts">
         <div class="tile-focal" id="tile-focal"></div>
         <div class="tile-row" id="tile-row" role="group"
           aria-label="Evidence charts — scrolls horizontally"></div>
-        <!-- WORDS LEFT, CONTROLS RIGHT — the same order the fullscreen header
-             uses, which is what makes the handle that header shrunk to what a
-             19px edge can afford rather than a second piece of furniture. -->
       </div>
     </section>
 
@@ -179,10 +170,6 @@ const MARKUP = `
            never level-1 content, never scrolled away, and never conditional on the
            queue's length or scope. -->
       <div class="watch" id="watch-dock"></div>
-      <!-- RETIRED — the chart roster. The dock is the better version of
-           it: every chart, browsable at full canvas, with the same tiles, rails
-           and pins. Shipping both put two routes to one thing on screen at once,
-           under the same name and with two different counts. See the ADR. -->
     </section>
   </main>
 `;
@@ -1177,10 +1164,8 @@ function boot(root, data, callbacks, signal) {
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
   let fullscreen = null;
-  /* THE EXPLORER — every chart at readable size, over the canvas (ADR 215
-     amendment). Not a dock want: like chart fullscreen it is a temporary state
-     the reader opens, picks from and leaves, so it lives beside `fullscreen`
-     rather than inside `dockView`, whose two states are where the strip RESTS. */
+  /* All charts is a temporary full-canvas catalog, independent of the selected
+     chart's own fullscreen state. */
   let explorerOpen = false;
   let drilledChartId = null;
   let filterOpen = false;
@@ -2471,10 +2456,10 @@ function boot(root, data, callbacks, signal) {
       delete chartNode.dataset.selectedRunId;
     }
     /* THE READING COUNT IS GONE (#135 fix round, operator ruling). "window 216
-       of 864 readings" priced the strip in a unit no decision on this surface is
+       of 864 readings" priced the overview in a unit no decision on this surface is
        made in, at data weight, right beside the title — and the pooled-days
-       chip below already says how much history the strip drew from. The one
-       thing the strip header still has to say is when the drilled finding has
+       chip below already says how much history the overview drew from. The one
+       thing the overview header still has to say is when the drilled finding has
        no population in the window (ADR 62 part 9), so that stays. */
     el('canvas-scope').textContent =
       f.k === 'factor' && settled() && !f.caseFile
@@ -2496,8 +2481,7 @@ function boot(root, data, callbacks, signal) {
       + '<path d="M2.6 10H6v3.4"/><path d="M13.4 10H10v3.4"/>',
     /* A STAR, NOT A PUSHPIN (ADR 215 amendment). A pushpin says "fix this in
        place", which is not what the control does — it says "keep this one to
-       hand", and on a strip that runs to nine charts on a real history and
-       grows with it, that is a favourite. Operator, on the pushpin: "the pin
+       hand" in the complete catalog. Operator, on the pushpin: "the pin
        function is very... confusing to a user at this point."
 
        Drawn on the same 16 box and the same centre as the other faces: five
@@ -2553,62 +2537,37 @@ function boot(root, data, callbacks, signal) {
     return button;
   }
 
-  /* THE DOCK'S GLYPHS ARE THE TILE RAIL'S OWN. `dismiss` already means exactly
-     shrink on this very surface — the evidence-tile rail draws it today — so
-     shrink IS that mark, referenced from RAIL_FACES rather than redrawn, and a
-     second vocabulary is declined rather than invented. Bring-up and put-away
-     extend the same corner language to the vertical acts: the same four corner
-     brackets, opened downward to bring the dock up and upward to put it away.
-
-     They are stroke-only, like every other mark in that rail, so they take the
-     rail's own face convention and no fill class exists here.
-
-     `mount` went with the state (ADR 215 amendment). It borrowed `RAIL_FACES.full`,
-     which is fullscreen's own mark — two doors wearing one glyph, opening onto
-     the two different "big" states this surface had. Fullscreen keeps the mark. */
-  const DOCK_FACES = {
-    /* THE DOCK'S TOGGLE IS A CHEVRON, NOT A BRACKET (ADR 215 amendment). It was
-       drawn in the same four-corner language as `full` and `dismiss`, so
-       "put the strip away" and "show every chart" differed only in which way the
-       brackets opened — two marks a hand apart that read as one control drawn
-       twice. Brackets are the SIZE family: they say a thing is about to fill or
-       leave the pane. The dock does neither; it slides down and back up, and a
-       chevron is what says that and shares nothing with the other two. */
-    up: '<path d="M3.6 9.6 8 5.2l4.4 4.4"/>',
-    hide: '<path d="M3.6 6.4 8 10.8l4.4-4.4"/>',
-    shrink: RAIL_FACES.dismiss,
-    explore: RAIL_FACES.full,
+  const CHART_ACTION_FACES = {
+    close: RAIL_FACES.dismiss,
+    browse: RAIL_FACES.full,
   };
-  /* `up` and `hide` are the dock's whole vocabulary, and they are one toggle:
-     whichever state the reader is in, the handle offers the other one. `shrink`
-     is not a dock act at all — it is fullscreen's way back, drawn in the header
-     fullscreen borrows. */
-  const DOCK_ACTS = {
-    shrink: { label: 'Back to Diagnose' },
-    explore: { label: 'All charts' },
+  const CHART_ACTIONS = {
+    close: { label: 'Close' },
+    browse: { label: 'All charts' },
   };
 
-  function dockFace(name) {
+  function chartActionFace(name) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 16 16');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('class', 'face-off');
-    svg.innerHTML = DOCK_FACES[name];
+    svg.innerHTML = CHART_ACTION_FACES[name];
     return svg;
   }
 
-  function dockButton(act) {
+  function chartActionButton(act) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.act = act;
-    if (act === 'explore') button.id = 'explorer-trigger';
-    button.title = DOCK_ACTS[act].label;
-    button.setAttribute('aria-label', DOCK_ACTS[act].label);
-    button.append(dockFace(act));
+    if (act === 'browse') button.id = 'explorer-trigger';
+    button.title = CHART_ACTIONS[act].label;
+    button.setAttribute('aria-label', CHART_ACTIONS[act].label);
+    button.append(chartActionFace(act));
+    const label = document.createElement('span');
+    label.textContent = CHART_ACTIONS[act].label;
+    button.append(label);
     button.onclick = (ev) => {
       ev.stopPropagation();
-      /* SHRINK IS THE WAY OUT OF WHICHEVER BIG STATE IS OPEN, and it backs out
-         through the door it came in — the dock is left as it was. */
       if (fullscreen) {
         dismissChartFullscreen();
         return;
@@ -2618,7 +2577,7 @@ function boot(root, data, callbacks, signal) {
         paint();
         return;
       }
-      if (act === 'explore') {
+      if (act === 'browse') {
         explorerOpen = true;
         paint();
         return;
@@ -2628,31 +2587,15 @@ function boot(root, data, callbacks, signal) {
     return button;
   }
 
-  /* THE LIP IS THE CONTROL (ADR 215 amendment). The handle was a 148px tab
-     centred over the strip: a fifth floating object on a surface that already
-     had too many, shaped like a browser tab rather than like something you take
-     hold of, and centred on a canvas where every other thing is left-aligned.
-     Operator, on the built tab: "the control for it [looks like shit] ... I
-     don't know how to get a control that lets the user summon the dock from
-     hidden, full screen it from docked, etc. without sacrificing something."
-
-     Nothing has to be sacrificed once there are two states. The strip's own top
-     lip IS the control: it runs the full width, it is knurled at the left where
-     a grip belongs, and pressing it toggles. It is not furniture ABOUT the dock
-     parked near it — it is the dock's own edge, so it moves because the dock
-     moved, and in the hidden state that edge is the canvas floor.
-
-     ONE ELEMENT, ONE TARGET, ONE LABEL. The tab was a container of buttons, so
-     the word was inert and only two 44px cells were pressable. The lip is a
-     single button the width of the pane; the knurl and the word are its face,
-     and the glyph at the far end says which way it will go. */
+  /* The header owns one visible action for the current state: All charts at
+     rest, and Close while the catalog or one-chart fullscreen is open. */
   function paintChartActions(view) {
-    const headActs = el('dock-headacts');
+    const headActs = el('chart-headacts');
     if (!headActs) return;
     const preserveExplorerFocus = document.activeElement?.id === 'explorer-trigger';
     headActs.innerHTML = '';
     headActs.hidden = false;
-    for (const act of view.acts) headActs.append(dockButton(act));
+    for (const act of view.acts) headActs.append(chartActionButton(act));
     if (preserveExplorerFocus) el('explorer-trigger')?.focus();
   }
 
@@ -2672,7 +2615,7 @@ function boot(root, data, callbacks, signal) {
       /* AN EXPLICIT FOCUS OUTRANKS RANK-ONLY SEATING. The candidates are the
          ranked charts, so a Watching-tail chart the reader clicked could never
          reach the stage: focusChart set the layout and placeSeats dropped it.
-         The focused id joins the candidate pool for seating; the strip's own
+         The focused id joins the candidate pool for seating; the catalog's
          order still comes from rank alone. */
       : placeSeats([...new Set([...currentTileCandidates(),
         ...(canvasLayout.focalId ? [canvasLayout.focalId] : [])])], canvasLayout))
@@ -2685,25 +2628,23 @@ function boot(root, data, callbacks, signal) {
         .filter((chartId) => byId.has(chartId))
         .map((chartId) => ({ chartId, seat: 'grid', pinned: canvasLayout.pins.includes(chartId) }))
       : placed.filter(({ seat }) => seat === 'focal');
-    /* THE RANGE SPANS THE WHOLE ROW, not the part of it currently scrolled into
-       view: a range that changed as the row scrolled would redraw the focal
-       chart's axis under a gesture that was only ever about the row. */
+    /* Every chart shares a range derived from the complete candidate set, not
+       from whichever catalog cells are currently visible. */
     sharedGlucoseRange = fieldRange(placed.map(({ chartId }) => ({
       ...byId.get(chartId), data: tileCaseFile(byId.get(chartId)),
     })), DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
     host.toggleAttribute('data-fullscreen-tile', Boolean(fullscreen));
-    /* FULLSCREEN IS NOT A THIRD DOCK STATE. It is one temporary chart over
-       whichever hidden or docked door opened it, so retaining a dock attribute
-       here only makes unrelated dock furniture paint on that chart. */
     host.toggleAttribute('data-explorer', explorer);
-    /* FULLSCREEN TAKES THE GLUCOSE STRIP'S ROW TOO, and names the chart it is
+    /* FULLSCREEN TAKES THE GLUCOSE OVERVIEW'S ROW TOO, and names the chart it is
        showing there rather than growing a parallel header beside the one the
        reader already learned. This composition was mounted's; mounted is gone
        and fullscreen is now its only occupant, so the row carries a chart name
        and never a standing title. */
     const big = Boolean(fullscreen) || explorer;
     el('canvas-head').toggleAttribute('data-full', big);
-    root.toggleAttribute('data-dock-full', big);
+    root.toggleAttribute('data-canvas-full', big);
+    root.querySelector(':scope > .instruments')?.toggleAttribute('inert', big);
+    root.querySelector(':scope > .panes > .inspector')?.toggleAttribute('inert', big);
     /* AND IT IS CLEARED WHEN IT IS NOT SHOWN. The row is hidden at rest, but a
        stale name left in it is what the next fullscreen paints over for a frame
        — and what a reader of the DOM sees claimed about a pane showing nothing
@@ -2717,10 +2658,10 @@ function boot(root, data, callbacks, signal) {
        numeral among glyphs is a button until proven otherwise. The number it
        carried is also derivable by the only means that matters here — the
        charts are on screen and scrollable — so nothing is lost but the
-       misread. `liveCount` goes with it; `paintDock` no longer takes one. */
-    /* FULLSCREEN STATES ITS OWN VIEW rather than borrowing a dock want. It is
-       not a dock state, and the only act it has is the way back. */
-    paintChartActions(big ? { acts: ['shrink'] } : { acts: ['explore'] });
+       misread. `liveCount` goes with it. */
+    /* The big views state their own Close action; the resting view exposes the
+       direct catalog entry. */
+    paintChartActions(big ? { acts: ['close'] } : { acts: ['browse'] });
     focalHost.innerHTML = '';
     rowHost.innerHTML = '';
     if (!seats.length) {
@@ -2739,9 +2680,9 @@ function boot(root, data, callbacks, signal) {
       /* A mini is an evidence article, not a button: it contains its own pin
          control. The article gets the keyboard path for its existing promotion
          action without creating nested interactive controls. */
-      tile.tabIndex = seat.seat === 'mini' ? 0 : -1;
+      tile.tabIndex = seat.seat === 'mini' || seat.seat === 'grid' ? 0 : -1;
       tile.dataset.chartId = descriptor.chartId;
-      /* Only a dock CELL can be the current frame; the spotlight is the stage
+      /* Only an All charts cell can be the current frame; the spotlight is the stage
          itself and marking it would say the stage is one of its own frames. */
       tile.toggleAttribute('data-selected', descriptor.chartId === canvasLayout.focalId
         && (seat.seat === 'mini' || seat.seat === 'grid'));
@@ -2773,7 +2714,7 @@ function boot(root, data, callbacks, signal) {
       id.className = 'tile-id';
       const title = document.createElement('h3');
       /* THE STAGE CARD'S TITLE IS THE HEADLINE'S ONLY HOME (ADR 306). Every
-         other seat — the strip's minis, the explorer's grid, fullscreen's own
+         other seat — queue minis, the catalog grid, fullscreen's own
          header below — keeps `descriptor.title`, `nameFor`'s short name; only
          the focal seat renders the served headline verbatim. */
       const editorial = seat.seat === 'focal' && Boolean(descriptor.headline);
@@ -2817,15 +2758,15 @@ function boot(root, data, callbacks, signal) {
       head.append(id);
       tile.append(head);
 
-      /* A CELL CARRIES ONLY THE STRIP'S OWN VERB (ADR 215 amendment). Four
+      /* A CELL CARRIES ONLY THE CATALOG'S OWN VERB (ADR 215 amendment). Four
          marks were drawn in every cell's margin, and three of them — fullscreen
          and the two alignments — are "read this properly" verbs, which is what
          the stage is for: you promote the cell and act there. On a 148px cell
          those three were a quarter of its height spent on controls, repeated
          across the row, and the plot paid for all of it. Operator, on the built
-         strip: "the filmstrip still looks like shit."
+         catalog: "the filmstrip still looks like shit."
 
-         The star stays, because it is the one verb that is about the STRIP
+         The star stays, because it is the one verb that is about the CATALOG
          rather than about reading a chart — it says "keep this chart available"
          and there is nowhere else for it to mean that. Nothing is hidden to
          achieve this: a mini simply has one control, which is the rule the rail
@@ -2866,7 +2807,7 @@ function boot(root, data, callbacks, signal) {
       }
 
       /* A STAR RETAINS THE CHART (ADR 226), so it means one thing on every tile:
-         keep this chart in the dock if findings rank stops carrying it. There
+         keep this chart available if findings rank stops carrying it. There
          is no cap, so there is no refusal or disabled state. */
       const pin = railButton({
         className: 'tile-pin',
@@ -2875,7 +2816,7 @@ function boot(root, data, callbacks, signal) {
         held: seat.pinned,
       });
       pin.title = seat.pinned ? 'Stop keeping this chart'
-        : 'Keep this chart in the dock';
+        : 'Keep this chart available';
       pin.setAttribute('aria-label', seat.pinned
         ? `Stop keeping ${descriptor.title}` : `Keep ${descriptor.title}`);
       pin.onclick = (event) => {
@@ -2921,7 +2862,7 @@ function boot(root, data, callbacks, signal) {
          pop-up looking ugliness to it." A chart that is the pane has no margin
          of its own to keep controls in; the pane's header is where its controls
          belong, which is the same rule that moved its name there. */
-      if (fullscreen) el('dock-headacts').prepend(rail);
+      if (fullscreen) el('chart-headacts').prepend(rail);
       else tile.append(rail);
 
       const body = document.createElement('div');
@@ -2940,15 +2881,15 @@ function boot(root, data, callbacks, signal) {
       } else {
         const chartHost = document.createElement('div');
         /* Comparison charts resolve their cohort palette from the module's scoped
-           aliases. Every tile rank — mini, focal, explorer, fullscreen — shares
+           aliases. Every tile rank — mini, focal, catalog, fullscreen — shares
            this host, so the aliases re-resolve from the live theme on repaint. */
         chartHost.className = 'tile-chart ec-surface';
         body.append(chartHost);
-        /* MOUNTED AFTER THE TILE IS IN THE DOM (ADR 215 amendment). `echarts.init`
+        /* MOUNTED AFTER THE TILE IS IN THE DOM. `echarts.init`
            reads the host's box, and the host was still detached here — every
            chart on this surface was created at 0 x 0 and only ever rescued by
-           the resize observer firing once the tile landed. In the docked strip
-           that rescue always came; in the explorer's grid it did not, and three
+           the resize observer firing once the tile landed. In the catalog grid
+           that rescue did not always come, and three
            charts came up as empty frames with nameplates. Deferring the mount to
            after the append makes the first measurement the real one, and leaves
            the observer doing what it is for — later resizes. */
@@ -2997,14 +2938,9 @@ function boot(root, data, callbacks, signal) {
            `showChartInspector` already seats and drills the picked chart, so
            there is no second focus call to make here.
 
-           THE DRAWER IS A PICKER (ADR 306): "Picking a chart from the drawer
-           — a cell click or Enter, a Watching tail cell, or an explorer pick
-           — seats and drills that chart and puts the drawer away." Operator,
-           2026-09-02, on the click that does it: "it goes away." Clicking the
-           spotlight is not a pick from the drawer — it is already seated —
-           so `dockPickTransition` leaves it alone; only a raised dock is put
-           away there, because attention leaving a floating dock is ADR 215's
-           separate rule. */
+           ALL CHARTS IS A PICKER: a cell click, Enter, Watching tail cell, or
+           catalog pick seats and drills that chart, then closes the catalog.
+           Clicking the spotlight is not a catalog pick — it is already seated. */
         if (explorer) explorerOpen = false;
         showChartInspector(descriptor);
         paintTiles();
@@ -3023,10 +2959,10 @@ function boot(root, data, callbacks, signal) {
          needing a second container, a second painter or a heading.
 
          IT IS A MARK, NOT AN ELEMENT. Drawn as its own `<span>` it was a child
-         of the row, and the row sizes every child it flows to one mini's width:
-         a 1px hairline was handed a full 404px column and the strip grew a
+         of the row, and the grid sizes every child it flows to one cell's width:
+         a 1px hairline was handed a full column and the catalog grew a
          blank cell between the ranked charts and the Watching reads. Operator,
-         on the built strip: an empty frame with no name and no plot. The mark
+         on the built surface: an empty frame with no name and no plot. The mark
          now rides the tile it introduces, in the gutter that was already
          there. */
       tile.toggleAttribute('data-tail-head', Boolean(seat.tail)

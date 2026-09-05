@@ -233,16 +233,15 @@ test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangem
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     for (let count = 0; count < 3; count += 1) {
       const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
       const next = page.locator('#tile-schematic .next:not([disabled])');
       if (await tile.count()) await tile.first().click();
       else await next.first().click();
     }
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     const read = () => page.evaluate(() => ({
       arrangement: document.querySelector('#tile-field').dataset.arrangement,
       tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
@@ -265,26 +264,55 @@ test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangem
   }
 });
 
-test('#215 · fullscreen from the docked strip takes the header and draws the chart', async () => {
+test('#341 · All charts confines interaction and dismissal preserves the window context', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const pressedBefore = await page.locator('#seg-window button[aria-pressed="true"]').innerText();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    assert.deepEqual(await page.evaluate(() => ({
+      instruments: document.querySelector('.dw > .instruments')?.inert,
+      inspector: document.querySelector('.dw > .panes > .inspector')?.inert,
+    })), { instruments: true, inspector: true },
+    'the full catalog makes the underlying Diagnose controls non-interactive');
+
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'Escape closes All charts');
+    assert.equal(await page.locator('#seg-window button[aria-pressed="true"]').innerText(), pressedBefore,
+      'catalog dismissal preserves the selected time window');
+    assert.deepEqual(await page.evaluate(() => ({
+      instruments: document.querySelector('.dw > .instruments')?.inert,
+      inspector: document.querySelector('.dw > .panes > .inspector')?.inert,
+      focus: document.activeElement?.id,
+    })), { instruments: false, inspector: false, focus: 'explorer-trigger' },
+    'dismissal restores underlying interaction and focus to All charts');
+
+    await page.getByRole('button', { name: 'Adjust window', exact: true }).click();
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'chart',
+      'Adjust window makes the real overview keyboard-reachable');
+    assert.equal(await page.locator('#seg-window button[aria-pressed="true"]').innerText(), pressedBefore,
+      'Adjust window does not mutate the selected time window');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · a chart picked from All charts can expand independently', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): the strip is brought up through
-       the reader's own control before a cell is read from it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const tile = page.locator('.tile-row .evidence-tile:has(.tile-chart canvas)').first();
     const chartId = await tile.getAttribute('data-chart-id');
     const chartTitle = (await tile.locator('h3').textContent()).trim();
-    const dockedTitle = await page.locator('#full-title').textContent();
+    const restingTitle = await page.locator('#full-title').textContent();
 
-    /* A CELL'S ONLY VERB IS "BECOME THE SPOTLIGHT" (ADR 215 amendment), so
-       fullscreen is reached by promoting the cell and expanding from the stage.
-       The strip carries the pin and nothing else. */
-    assert.equal(await tile.locator('.tile-fullscreen').count(), 0,
-      'a cell offers no fullscreen of its own');
-    await tile.click();
+    await tile.locator('.tile-body').click();
     await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
     await page.locator('#tile-focal .tile-fullscreen').click();
     const fullscreen = page.locator(`.evidence-tile[data-chart-id="${chartId}"]`);
@@ -298,8 +326,8 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
       };
     });
 
-    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), null,
-      'fullscreen does not impersonate a dock state');
+    assert.equal(await page.locator('#dock-handle, [data-dock]').count(), 0,
+      'fullscreen cannot resurrect the retired strip');
     assert.equal(await page.locator('#tile-field').getAttribute('data-fullscreen-tile'), '',
       'the field names the temporary one-chart geometry directly');
     assert.equal(await page.locator('#canvas-head').getAttribute('data-full'), '',
@@ -308,11 +336,11 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
       'the shared header names the fullscreen chart');
     /* FULLSCREEN KEEPS THE CHART'S RAIL beside its way back. The tile has no
        margin of its own to hold controls, so the pin moves into the shared
-       header with Back to the dock; the retired mounted-only hide cell does
+       header with Close; the retired dock controls do
        not return. */
-    assert.deepEqual(await page.locator('#dock-headacts button')
+    assert.deepEqual(await page.locator('#chart-headacts button')
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
-    [`Keep ${chartTitle}`, 'Back to the dock'],
+    [`Keep ${chartTitle}`, 'Close'],
     'fullscreen moves the chart rail and its one way back into the shared header');
     assert.equal(await fullscreen.locator('.tile-fullscreen').count(), 0,
       'fullscreen shrink has one home, in the shared header');
@@ -322,14 +350,12 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
     assert.ok(measured.width > measured.tileWidth * .8,
       `the fullscreen plot takes its tile (${measured.width} of ${measured.tileWidth}px)`);
 
-    await page.getByRole('button', { name: 'Back to the dock' }).click();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     assert.equal(await page.locator('.dw').getAttribute('data-fullscreen'), null,
       'shrink returns through the door it came in');
-    /* The cell pick put the drawer away (ADR 306), so the state fullscreen
-       left — and lands back on — is hidden. */
-    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-      'and lands back on the dock state it left');
-    assert.equal(await page.locator('#full-title').textContent(), dockedTitle,
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'closing the expanded chart returns to Diagnose, not All charts');
+    assert.equal(await page.locator('#full-title').textContent(), restingTitle,
       'the borrowed header carries no standing title of its own');
   } finally {
     await page.close();
@@ -467,7 +493,7 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
         await shot(page, `fullscreen-${family.kind}`,
           process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', viewport);
 
-        await page.getByRole('button', { name: 'Back to the dock' }).click();
+        await page.getByRole('button', { name: 'Close', exact: true }).click();
         await settle(page);
         const after = await page.evaluate(() => ({
           focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
@@ -509,30 +535,27 @@ test(`#96 · global Align is permanently absent and alignment belongs to each ti
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     assert.equal(await page.locator('#seg-align, #align-canvas').count(), 0,
       'the retired global Align host cannot return');
-    assert.equal(await page.locator('#tile-row .tile-modes').count(), 0,
-      'a strip cell keeps only its pin, never a reading control');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     /* Basal's mode toggle retired with #205 (one treatment, no clock/event
        switch), so the per-tile-alignment proof promotes a chart that still
        owns modes. */
     /* Basal's clock/event toggle retired with #205, so the tile-owned-controls
        half of this proof promotes the ISF chart, which still owns modes and
-       docks in the Afternoon window. */
+       appears in the Afternoon window. */
     await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-    if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
-      await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-      await page.locator('#tile-field[data-dock="docked"]').waitFor();
-    }
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const eligible = page.locator('#tile-row .evidence-tile[data-chart-id="isf"]').first();
     await eligible.waitFor({ state: 'visible' });
     assert.equal(await eligible.count(), 1,
-      'the strip publishes an ISF chart whose alignment controls can move to the spotlight');
-    await eligible.click();
+      'All charts publishes an ISF chart with its alignment controls');
+    assert.ok(await eligible.locator('.tile-modes').count() > 0,
+      'the full catalog chart exposes its own alignment control');
+    await eligible.locator('.tile-body').click();
     assert.ok(await page.locator('#tile-focal .tile-modes').count() > 0,
       'the promoted event chart owns its alignment control at the spotlight');
   } finally {
@@ -1079,47 +1102,41 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
   } finally { await page.close(); }
 });
 
-/* The dock is now the canvas filmstrip, and the Charts lip is its control —
-   neither inherits the retired explorer drawer's trench. Both carry compact
-   text, so measure their rendered chrome rather than a token probe that could
-   remain green after either surface moves. */
-test('the chart dock and its lip clear the text contrast floor', async () => {
+test('All charts and its Close control clear the text contrast floor', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     await page.locator('#tile-row .evidence-tile').first().waitFor({ state: 'visible' });
     const colors = await page.locator('#tile-field').evaluate((field) => {
       const color = (node) => {
-        if (!node) throw new Error('the chart dock is missing a text role to measure');
+        if (!node) throw new Error('All charts is missing a text role to measure');
         return getComputedStyle(node).color;
       };
       const ground = (node) => {
-        if (!node) throw new Error('the chart dock is missing chrome to measure');
+        if (!node) throw new Error('All charts is missing chrome to measure');
         return getComputedStyle(node).backgroundColor;
       };
       const cell = field.querySelector('#tile-row .evidence-tile');
-      const lip = field.querySelector('#dock-handle');
+      const action = document.querySelector('#chart-headacts button[aria-label="Close"]');
+      const actionGround = document.querySelector('#canvas-head');
       return {
         cell: ground(cell),
         name: color(cell?.querySelector('.tile-head h3')),
         meta: color(cell?.querySelector('.tile-meta')),
-        lip: ground(lip),
-        label: color(lip?.querySelector('.dock-word')),
-        act: color(lip?.querySelector('button')),
+        actionGround: ground(actionGround),
+        action: color(action),
       };
     });
     for (const [role, foreground, background] of [
       ['name', colors.name, colors.cell], ['meta', colors.meta, colors.cell],
-      ['lip label', colors.label, colors.lip], ['lip act', colors.act, colors.lip],
+      ['Close', colors.action, colors.actionGround],
     ]) {
       const ratio = contrastRatio(foreground, background);
       assert.ok(ratio >= 4.5,
-        `chart dock ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
+        `All charts ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
     }
   } finally {
     await page.close();
@@ -1168,23 +1185,15 @@ test('every vessel state retains the Dark retheme edge', async () => {
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const styles = await page.evaluate(() => {
-      const field = document.querySelector('#tile-field');
       const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
       const style = (node) => {
         const computed = getComputedStyle(node);
         return { radius: computed.borderRadius, shadow: computed.boxShadow };
       };
-      field.removeAttribute('data-dock');
-      field.removeAttribute('data-raised');
-      field.removeAttribute('data-explorer');
-      const general = style(document.querySelector(selector));
-      field.setAttribute('data-dock', 'docked');
-      const docked = style(document.querySelector(selector));
+      const catalog = style(document.querySelector(selector));
       const selectedNode = document.querySelector(selector);
       selectedNode.setAttribute('data-selected', '');
       const selected = style(selectedNode);
@@ -1192,27 +1201,21 @@ test('every vessel state retains the Dark retheme edge', async () => {
       selectedNode.setAttribute('data-tail-head', '');
       const tail = style(selectedNode);
       selectedNode.removeAttribute('data-tail-head');
-      field.setAttribute('data-raised', '');
-      const raised = style(document.querySelector(selector));
-      field.removeAttribute('data-raised');
-      field.setAttribute('data-explorer', '');
-      const explorer = style(document.querySelector(selector));
-      return { general, docked, selected, tail, raised, explorer };
+      return { catalog, selected, tail };
     });
-    for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
+    for (const state of ['catalog', 'selected', 'tail']) {
       assert.equal(styles[state].radius, '4px');
       assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
         `Dark ${state} cells retain the #453d35 vessel edge`);
     }
 
-    await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
     const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
     await hoverTile.hover();
     const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
     assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
       'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
 
-    await page.locator('#tile-row .evidence-tile').first().click();
+    await page.locator('#tile-row .evidence-tile').first().locator('.tile-body').click();
     await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
     const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
       const style = getComputedStyle(node);

@@ -141,8 +141,8 @@ export function drilledChartIdForFrame(frame, descriptors) {
   return null;
 }
 
-/* The dock repeats the spotlight's chart as a navigable echo. A drill marks
-   the stage, not that echo, so there is one drilled tile per current frame. */
+/* All charts repeats the spotlight's chart as a navigable cell. A drill marks
+   the stage, not that cell, so there is one drilled tile per current frame. */
 export function isDrilledSpotlight(seat, chartId, drilledChartId) {
   return seat?.seat === 'focal' && chartId === drilledChartId;
 }

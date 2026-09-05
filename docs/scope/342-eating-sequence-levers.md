@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Real-data investigation completed (2026-09-05): candidate overlap is substantial, but the tested held-out regressions and more closely matched cohorts do not establish a reliable intervention-impact winner. Retain observed-burden pricing as the grounded proposal; do not ship these exploratory regressions as a causal chooser. Details and limitations: `docs/scope/342-impact-research.md`. This is a research conclusion, not admission of an attribution design. Disposition: inline.
+
 - Operator direction (2026-09-05): competing findings should be outranked by impact, using comparable pricing. Ground the choice in existing code and, where needed, the operator's real events; do not ask the operator to invent a precedence list. Research may prototype forecasting/model comparisons before the execution lock. Disposition: inline.
 
 - Comparable pricing (operator, 2026-09-05): price both new findings on the existing shared Priority axis. Do not assign blanket queue precedence to existing meal advice. Grounded formula: `priority_score(impact, recurrence)` uses `round(100 * sqrt(impact * recurrence))`; behavioral inputs are normalized hypo-weighted outcome severity and Wilson lower-bound recurrence. Sequence occurrence identity and eligible recurrence population must be specified before pricing is admitted. Disposition: inline.
@@ -49,7 +51,7 @@ Why: behavioral advice must preserve the report's evidence floors and the existi
 
 ## Impact research preparation
 
-- Read-only snapshot transfer was rejected by automatic approval review before execution. Exact full-payload transfer approval is pending; no snapshot was taken.
+- Initial snapshot transfer was rejected before execution. The operator then explicitly approved the full source/destination transfer on 2026-09-05. The WAL-safe snapshot was taken, read only, and the remote temporary copy immediately removed. Research findings: `docs/scope/342-impact-research.md`. Local snapshot and private row dataset were deleted after the study; the remote temporary copy had already been deleted.
 - Inventory all classifier matches before attribution, and map them to eating sequences using the existing sequence construction. Summarize overlap and eligible counts without exporting event-level records.
 - Reuse the shared hypo-weighted outcome severity as the comparison target. Giving each competing explanation the entire same episode severity cannot distinguish their contributions; do not call that an estimated incremental benefit.
 - Compare simple matched-cohort estimates for high-carb and repeat eating against existing meal explanations, adjusting for the other behavior, time of day, baseline state and available treatment context where support permits. Preserve current coverage, overlap and carb-log exclusions and the eight-per-cohort floor.

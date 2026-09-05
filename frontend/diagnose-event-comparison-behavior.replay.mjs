@@ -206,34 +206,32 @@ export async function openApp(browser, options = {}) {
     fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
   }
   page.__catalogChartComparison = await catalogChartRendered(page, findingId);
+  /* The standalone support audit is a consumer of this opener and retains its
+     historical property name. Feed it the same successor catalog snapshot;
+     this is an adapter alias, not a resurrected dock surface. */
+  page.__dockMiniComparison = page.__catalogChartComparison;
   /* Promote the cell, then expand from the stage — a cell's only verb is
      "become the spotlight" (ADR 215 amendment). */
   await catalogChart.click();
   await page.waitForSelector('#tile-field:not([data-explorer])', { timeout: 15000 });
+  if (options.selectCohort) {
+    /* Selection belongs to the visible case roster. Fullscreen deliberately
+       hides the inspector, so make the reader's selection before expanding
+       the already-promoted Spotlight. */
+    await page.locator(`#level [data-comparison-cohort="${options.selectCohort}"]:visible`).first().click();
+    await page.waitForSelector('#level .case-facts', { timeout: 15000 });
+    await settle(page, 500);
+    page.__selectedComparison = servedByFinding.get(findingId);
+  }
   await page.locator('#tile-focal .tile-fullscreen').click();
   await page.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
-    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
-    await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
-    await page.waitForSelector('#level .case-facts', { timeout: 15000 });
-    await settle(page, 500);
-    page.__selectedComparison = servedByFinding.get(findingId);
     page.__spotlightComparison = await spotlightRendered(page, findingId);
     await page.locator('#chart-headacts button[aria-label="Close"]').click();
-    /* Close restores the selected spotlight; reopen All charts to read the
-       catalog chart's intentionally static cohort view. */
-    if (!(await catalogChart.isVisible())) {
-      await page.getByRole('button', { name: 'All charts', exact: true }).click();
-      await page.waitForSelector('#tile-field[data-explorer]', { timeout: 15000 });
-    }
-    await catalogChart.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForFunction((id) => {
-      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
-      return Boolean(host && window.echarts.getInstanceByDom(host));
-    }, findingId, { timeout: 15000 });
-    await settle(page, 700);
-    page.__catalogChartComparison = await catalogChartRendered(page, findingId);
+    /* Close restores the selected Spotlight. The catalog snapshot was taken
+       before selection and is intentionally static, so reopening All charts
+       here would only hide the live drilled provenance this story also reads. */
   }
   return page;
 }

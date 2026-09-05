@@ -28,7 +28,7 @@ import {
   BIN_MINUTES,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
-  validateHistoryEvents,
+  validateHistoryEvents, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
@@ -1431,10 +1431,10 @@ function boot(root, data, callbacks, signal) {
     rowMiniMounts = [];
   }
 
-  function mountDescriptorChart(host, descriptor, mini) {
+  function mountDescriptorChart(host, descriptor, mini, { catalog = false } = {}) {
     const option = optionForDescriptor(
       descriptor, DIAGNOSE_EVIDENCE_CHARTS, sharedGlucoseRange, {
-        mini, window: scopeWindow(), caseFile: tileCaseFile(descriptor), surface: host,
+        mini, window: scopeWindow(), caseFile: catalog ? descriptor.data : tileCaseFile(descriptor), surface: host,
       },
     );
     const chart = window.echarts.init(host, null, { renderer: 'canvas' });
@@ -1450,7 +1450,14 @@ function boot(root, data, callbacks, signal) {
         continue;
       }
       const descriptor = chartDescriptor(row.id);
-      if (!descriptor) continue;
+      if (!descriptor) {
+        /* Some ranked history rows have no chart contract. Do not leave an
+           empty chart well that implies missing evidence; every queue chart
+           that does have a descriptor remains mounted. */
+        host.remove();
+        queueRow.dataset.mini = 'unavailable';
+        continue;
+      }
       const runtime = tileRuntime.get(descriptor.chartId);
       if (runtime?.pending || descriptor.state !== 'ok') {
         const presentation = tileStatePresentation(descriptor);
@@ -1461,7 +1468,21 @@ function boot(root, data, callbacks, signal) {
       try {
         host.classList.remove('tile-state');
         host.textContent = '';
-        const mounted = mountDescriptorChart(host, descriptor, true);
+        const styles = getComputedStyle(host);
+        const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+        const option = queuePreviewOption(descriptor, sharedGlucoseRange, {
+          text: token('--mk-text', '#f2ede2'), muted: token('--mk-muted', '#a49c90'),
+          line: token('--wk-rule', '#3f3833'), signal: token('--in-range', '#86ad78'),
+          high: token('--high', '#e2be4c'), basal: token('--basal', '#a89a85'),
+          excluded: token('--notindata', '#8d8579'),
+          cohorts: {
+            matched: token('--ec-matched', '#86ad78'),
+            nearly_matched: token('--ec-nearly-matched', '#e2be4c'),
+            comparison: token('--ec-comparison', '#d08150'),
+          },
+        });
+        const mounted = { chart: window.echarts.init(host, null, { renderer: 'canvas' }), option };
+        host.dataset.previewKind = descriptor.kind;
         rowMiniMounts.push(installTileMount(host, mounted));
         mounted.chart.setOption(mounted.option, true);
       } catch {
@@ -2119,14 +2140,14 @@ function boot(root, data, callbacks, signal) {
   /** A queue row's drill target — keyed on the projection's own row id, never
       guessed from a title. A row whose parameter this payload cannot show keeps its
       chevron and simply does not move (the app always carries all three). */
-  function drillFinding(row) {
+  function drillFinding(row, { queueOrigin = false } = {}) {
     if (row.register === 'history') {
       retirementNotice = null;
       push({
         k: 'history', id: row.id, row, generation: findings.analysis_generation,
         align: 'clock', events: null, selectedRunId: null,
         canvasScope: historyCanvasScope(),
-        pending: false, stale: false, notice: null,
+        pending: false, stale: false, notice: null, queueOrigin,
       });
       return;
     }
@@ -2135,20 +2156,20 @@ function boot(root, data, callbacks, signal) {
       const frame = { k: 'factor', rowId: row.id, title: row.title,
         caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
         bandVerdict: null, loading: false,
-        eventDiscovery: entryAlignment === 'event' };
+        eventDiscovery: entryAlignment === 'event', queueOrigin };
       push(frame);
       requestCase(frame, entryAlignment);
       return;
     }
-    if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id }); return; }
+    if (row.parameter === 'isf') { push({ k: 'isf', rowId: row.id, queueOrigin }); return; }
     if (row.parameter === 'carb_ratio') {
       const cell = icBlocks.find((c) => `ic:${c.id}` === row.id);
-      if (cell) pickBlock(cell, row.id);
+      if (cell) pickBlock(cell, row.id, { queueOrigin });
       return;
     }
     if (row.parameter === 'basal_rate') {
       const cell = lane.cells.find((c) => c.startMin === row.span?.start_min);
-      if (cell) pickCell(cell, row.id);
+      if (cell) pickCell(cell, row.id, { queueOrigin });
     }
   }
 
@@ -2182,7 +2203,14 @@ function boot(root, data, callbacks, signal) {
     ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
+    const resetQueueRoot = i === 0 && stack.slice(1).some((frame) => frame.queueOrigin);
     pendingFocus = pendingRowFocus(stack[1]);
+    /* A queue-row drill changes the shared stage to that row's evidence. On
+       return the stage deliberately re-seats rank one, so restore the queue's
+       matching root anchor as well. Keep focus on the originating row without
+       scrolling it back over rank one; direct All charts entry is not tagged
+       queueOrigin and retains its saved queue position. */
+    if (resetQueueRoot) queueScrollTop = 0;
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
     seatDrill(popped.drilledChartId);
@@ -2292,7 +2320,7 @@ function boot(root, data, callbacks, signal) {
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
-  function pickCell(cell, rowId = null) {
+  function pickCell(cell, rowId = null, { queueOrigin = false } = {}) {
     /* Selecting a slot is a NAVIGATION that carries its own window, so it
        releases whatever explicit choice was standing and lets the slot frame
        supply the window. Minting a `drawn` window here was wrong twice over: it
@@ -2305,14 +2333,14 @@ function boot(root, data, callbacks, signal) {
     if (top().k === 'slot') {
       prepareSlotFrame(Object.assign(top(), { cell, rowId })); paint(); return;
     }
-    push(prepareSlotFrame({ k: 'slot', cell, rowId }));
+    push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin }));
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
-  function pickBlock(cell, rowId = null) {
+  function pickBlock(cell, rowId = null, { queueOrigin = false } = {}) {
     releaseWindow();
     if (top().k === 'block') { Object.assign(top(), { cell, rowId }); paint(); return; }
-    push({ k: 'block', cell, rowId });
+    push({ k: 'block', cell, rowId, queueOrigin });
   }
 
   /* SELECT-IN-PLACE (P35 retired, ADR 31 part 5). An evidence-row click used to
@@ -2575,9 +2603,14 @@ function boot(root, data, callbacks, signal) {
       if (explorerOpen) {
         explorerOpen = false;
         paint();
+        el('explorer-trigger')?.focus();
         return;
       }
       if (act === 'browse') {
+        /* The catalog is a temporary layer over Diagnose. Preserve the real
+           inspector position before its repaint so Close and Escape restore
+           the exact queue reading context, even when it is well below zero. */
+        queueScrollTop = el('level')?.scrollTop || 0;
         explorerOpen = true;
         paint();
         return;
@@ -2623,10 +2656,17 @@ function boot(root, data, callbacks, signal) {
     /* CHART FULLSCREEN OUTRANKS THE EXPLORER: it is opened FROM it, and two big
        states cannot both hold the pane. */
     const explorer = explorerOpen && !fullscreen;
+    const currentDescriptors = currentTileDescriptors();
+    const rankedChartIds = new Set(seatableChartIds(findings, currentDescriptors));
     const seats = explorer
-      ? rosterChartIds(findings, currentTileDescriptors())
+      ? rosterChartIds(findings, currentDescriptors, canvasLayout.pins)
         .filter((chartId) => byId.has(chartId))
-        .map((chartId) => ({ chartId, seat: 'grid', pinned: canvasLayout.pins.includes(chartId) }))
+        .map((chartId) => ({
+          chartId,
+          seat: 'grid',
+          pinned: canvasLayout.pins.includes(chartId),
+          tail: !rankedChartIds.has(chartId) && !canvasLayout.pins.includes(chartId),
+        }))
       : placed.filter(({ seat }) => seat === 'focal');
     /* Every chart shares a range derived from the complete candidate set, not
        from whichever catalog cells are currently visible. */
@@ -2905,7 +2945,9 @@ function boot(root, data, callbacks, signal) {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
               tileMounts.push(installTileMount(chartHost, mounted));
             } else {
-              const mounted = mountDescriptorChart(chartHost, descriptor, seat.seat === 'mini');
+              const mounted = mountDescriptorChart(chartHost, descriptor, seat.seat === 'mini', {
+                catalog: seat.seat === 'grid',
+              });
               /* RECORDED BEFORE IT IS DRAWN. `setOption` is the throwing call in
                  this block, and an instance created but not yet pushed is one
                  `disposeTiles` can never reach — the catch below re-renders the
@@ -3035,15 +3077,15 @@ function boot(root, data, callbacks, signal) {
     if (next.has(key)) next.delete(key); else next.add(key);
     selectedChips = next.size === CHIP_LABELS.length ? null : next;
     collapsedFindingsExpanded = false;
-    /* THE HERO AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes which of the
-       server-ordered rows is first without changing the descriptor set, so the
-       ordinary canvas reconcile quite correctly preserves the still-live old
-       focal id. Ask the rail's one weight authority which visible row became
-       hero and seat that same id; do not re-rank the projection here. */
-    const hero = queueRows(findings, selectedChips)
-      .find((row) => row.weight === 'hero' && !row.hidden && !row.collapsed);
-    if (hero && currentTileDescriptors().some(({ chartId }) => chartId === hero.id)) {
-      focusChart(hero.id);
+    /* THE FIRST PRICED ROW AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes
+       which of the server-ordered rows is first without changing the descriptor
+       set, so the ordinary canvas reconcile quite correctly preserves the
+       still-live old focal id. Ask the rail's one weight authority which visible
+       row became first and seat that same id; do not re-rank the projection here. */
+    const firstPriced = queueRows(findings, selectedChips)
+      .find((row) => row.weight === 'priced' && !row.hidden && !row.collapsed);
+    if (firstPriced && currentTileDescriptors().some(({ chartId }) => chartId === firstPriced.id)) {
+      focusChart(firstPriced.id);
     }
   }
 
@@ -3334,7 +3376,8 @@ function boot(root, data, callbacks, signal) {
          declares whether it is waiting on the server, not only the queue. Same
          predicate — `settled()` is `pendingKey === null` — at a wider place, so
          the copy that used to sit here would now write it twice. */
-      const queue = renderFindingsQueue(host, findings, drillFinding, {
+      const queue = renderFindingsQueue(host, findings,
+        (row) => drillFinding(row, { queueOrigin: true }), {
         selected: selectedChips,
         collapsedExpanded: collapsedFindingsExpanded,
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },

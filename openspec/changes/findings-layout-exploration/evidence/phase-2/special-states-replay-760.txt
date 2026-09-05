@@ -1,0 +1,15 @@
+  ok S39
+  ok S104
+  ok S105
+  ok S106
+  ok S114
+  ok S120
+  ok S121
+  ok S128
+  ok S132
+  ok S138
+  ok S141
+  ok S143
+  ok S144
+
+app: 13 of 13 stories passed

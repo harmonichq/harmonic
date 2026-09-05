@@ -2857,6 +2857,7 @@ export const S39 = async (page) => {
     'S39 the pane names what is loading and its window');
   is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
   ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  await captureEvidence(page, 'S39-pending-window');
   await settle(page, 1400);
   const after = await state(page);
   is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
@@ -3860,7 +3861,8 @@ export const S139 = async (page) => {
   is(await focalId(page), chartId, 'S139 the rank-one chart occupies the stage');
 };
 
-/** S140 · A priced row and All charts use the same shared chart builder. */
+/** S140 · A priced row mini and its All charts cell preserve the same served
+    cohort medians while using furniture appropriate to their two sizes. */
 // STORY:finding-evidence-routing:S140
 export const S140 = async (page) => {
   await openWholeDay(page);
@@ -3870,12 +3872,23 @@ export const S140 = async (page) => {
   await openAllCharts(page);
   const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
   await catalogChart.locator('canvas').waitFor();
-  const seriesIds = async (locator) => locator.evaluate((host) =>
-    window.echarts.getInstanceByDom(host).getOption().series.map((series) => series.id));
-  const rowIds = await seriesIds(rowMini);
-  const catalogIds = await seriesIds(catalogChart);
-  ok(rowIds.length > 0, 'S140 the priced row mini draws at least one series');
-  is(rowIds, catalogIds, 'S140 the row mini and catalog chart draw identical series ids');
+  const series = async (locator) => locator.evaluate((host) =>
+    window.echarts.getInstanceByDom(host).getOption().series
+      .map(({ id, data }) => ({ id, data })));
+  const rowSeries = await series(rowMini);
+  const catalogSeries = await series(catalogChart);
+  for (const cohort of ['matched', 'comparison']) {
+    const points = (rows, accepts) => rows.filter(({ id }) => accepts(id || ''))
+      .flatMap(({ data }) => data || [])
+      .filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]))
+      .sort((left, right) => left[0] - right[0]);
+    const miniPoints = points(rowSeries, (id) => id === `queue:event:${cohort}:median`);
+    const fullPoints = points(catalogSeries, (id) => id.startsWith(`${cohort}:line:`));
+    ok(miniPoints.length > 0 && fullPoints.length > 0,
+      `S140 ${cohort} is drawn in both the mini and full chart`);
+    is(miniPoints, fullPoints,
+      `S140 ${cohort} keeps the same served median points across mini and full furniture`);
+  }
 };
 
 /** S141 · Every unpriced tail row is title-only and still drills through the
@@ -3915,17 +3928,24 @@ export const S142 = async (page) => {
     'S142 no retired Decide now tier appears anywhere in the rail');
 };
 
-/** S143 · Below the rail mini's measured width floor, the priced row remains
-    and the mini is omitted rather than mounting an unreadable chart. */
+/** S143 · At the tablet split, the chart reflows onto its own row above the
+    measured width floor; the general sub-floor omission guard remains true. */
 // STORY:finding-evidence-routing:S143
 export const S143 = async (page) => {
   await openWholeDay(page);
   const row = page.locator('#level .qrow.priced[data-id="finding:over_treated_low"]');
   is(await row.count(), 1, 'S143 the priced row survives the narrow inspector');
   ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
-  is(await row.locator('.mini').count(), 0, 'S143 no sub-floor mini remains mounted');
-  is(await row.getAttribute('data-mini'), 'omitted',
-    'S143 the priced row records the sub-floor omission');
+  const mini = row.locator('.mini[data-preview-kind]');
+  await mini.locator('canvas').waitFor();
+  const width = await mini.evaluate((host) => host.getBoundingClientRect().width);
+  ok(width >= MIN_ROW_MINI_WIDTH,
+    `S143 the reflowed mini clears its ${MIN_ROW_MINI_WIDTH}px floor (${width}px)`);
+  is(await row.getAttribute('data-mini'), null,
+    'S143 the reflowed priced row does not record an omission');
+  const subFloor = await page.locator('#level .mini[data-preview-kind]').evaluateAll(
+    (hosts, floor) => hosts.filter((host) => host.clientWidth < floor).length, MIN_ROW_MINI_WIDTH);
+  is(subFloor, 0, 'S143 no sub-floor mini remains mounted');
 };
 
 /** S144 · Sifting to Meals makes Carb undercount first without changing its
@@ -3933,7 +3953,7 @@ export const S143 = async (page) => {
 // STORY:finding-evidence-routing:S144
 export const S144 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#level .qrow.priced').getAttribute('data-id'), 'ic:720',
+  is(await page.locator('#level .qrow.priced').first().getAttribute('data-id'), 'ic:720',
     'S144 the unsifted fixture begins with the served I:C row');
   await page.getByRole('button', { name: /Filter/ }).click();
   for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
@@ -4162,6 +4182,7 @@ export const S105 = async (page) => {
     .some((tile) => tile.dataset.state === 'error'));
   const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');
   ok(failed?.message, 'S105 a failed evidence request names and explains the error state');
+  await captureEvidence(page, 'S105-failed-chart');
 };
 
 // STORY:finding-evidence-routing:S106
@@ -4172,6 +4193,7 @@ export const S106 = async (page) => {
   ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
   const blockId = carb.id.slice('ic:'.length);
   await page.locator(`.evidence-tile[data-chart-id="${carb.id}"] .tile-pin`).click();
+  await page.locator(`.evidence-tile[data-chart-id="${carb.id}"] .tile-body`).click();
   const pattern = '**/api/diagnose/carb-ratio-block-evidence*';
   let staleSent = false;
   const staleRoute = async (route) => {
@@ -4207,6 +4229,10 @@ export const S106 = async (page) => {
       `S106 stale ${carb.id} did not issue a findings-generation recovery request`,
     )),
   ]);
+  /* The retired strip no longer leaves every retained chart on screen at rest.
+     All charts is the direct successor surface for inspecting a non-focal kept
+     chart while its recovery request is held. */
+  await openAllCharts(page);
   try {
     await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
       .some((tile) => tile.dataset.state === 'stale-generation'), null, { timeout: 5000 });
@@ -4221,6 +4247,9 @@ export const S106 = async (page) => {
     'S106 the typed 409 issues one findings-generation recovery request');
   is(stale?.message, 'Evidence changed. Refresh findings.',
     'S106 the 409 renders the named stale-generation state');
+  await page.locator('.evidence-tile[data-state="stale-generation"]').evaluate((tile) =>
+    tile.scrollIntoView({ block: 'center' }));
+  await captureEvidence(page, 'S106-stale-chart');
   await page.unroute(pattern, staleRoute);
   releaseRecovery();
   await page.unroute(findingsPattern, delayRecovery);
@@ -4423,6 +4452,9 @@ export const S114 = async (page) => {
     .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is current');
   is(await page.locator('#tile-row .evidence-tile[data-selected]').count(), 1,
     'S114 All charts has one selected current chart');
+  await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).evaluate((tile) =>
+    tile.scrollIntoView({ block: 'center' }));
+  await captureEvidence(page, 'S114-selected-watching-chart');
 };
 
 // STORY:finding-evidence-routing:S115
@@ -4595,9 +4627,11 @@ export const S120 = async (page) => {
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);
 
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await settle(page, 700);
+  await openAllCharts(page);
   const retained = await starCatalogSnapshot(page);
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
@@ -4615,8 +4649,8 @@ export const S120 = async (page) => {
     'S120 starring leaves the server-published ranked order unchanged');
   const retainedIndex = retained.row.findIndex(({ id }) => id === victimId);
   const retainedTail = retained.row.findIndex(({ tailHead }) => tailHead);
-  is(retainedIndex, retainedTail - 1,
-    'S120 an unranked retained star sits immediately before Watching');
+  is(retainedIndex, retainedTail >= 0 ? retainedTail - 1 : retained.row.length - 1,
+    'S120 an unranked retained star follows ranked entries and precedes Watching when present');
   ok(retained.row[retainedIndex].kept, 'S120 the retained chart keeps its star');
 
   const retainedFocal = retained.focal;
@@ -5044,7 +5078,7 @@ export const STORIES = [
   ['S110', S110, 'typical'], ['S111', S111, 'typical'],
   ['S112', S112, 'typical', { viewport: { width: 390, height: 844 } }],
   ['S113', S113, 'typical'],
-  ['S114', S114, 'typical'],
+  ['S114', S114, 'typical', { findingsProjectionInputs: withStarBecomingWatching }],
   ['S115', S115, 'typical'], ['S116', S116, 'typical'],
   ['S118', S118, 'typical', { history: true }],
   ['S119', S119, 'typical', { viewport: { width: 2084, height: 742 } }],

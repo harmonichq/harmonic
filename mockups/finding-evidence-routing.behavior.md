@@ -43,6 +43,10 @@ selected chart fullscreen." The catalog covers the complete
 ranked and Watching population, marks the current stage chart, closes with its
 visible control or Escape without changing window or inspector context, and a
 chart pick still drills immediately through the existing chart-to-finding route.
+Returning from a queue-row drill re-seats rank one and re-anchors the queue so
+that row's tier and title are readable, while restoring focus to the originating
+row without scrolling it over rank one. Closing All charts is not a queue return:
+it preserves the inspector's prior scroll and focus unchanged.
 
 The sanctioned premise is that queue minis now supply quick previews while All
 charts retains the broader catalog, including Watching reads. S127 permanently
@@ -2659,6 +2663,8 @@ entry erases or weakens the other.
   sanction: Connor Griffin · 2026-08-25 · “Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control.”
 - **RETIRED event-comparison replay S8 · final gate reconciliation.** The arrow-key cursor belonged to the retired global comparison canvas. The successor comparison lives in its row-derived tile, whose fullscreen compatibility renderer is not a visible or focusable reader surface; served support disclosure remains covered by S7 and the support audit.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
+- **AMENDED event-comparison replay S8 · issue 135 live judging.** The dated retirement above remains the record of the global comparison canvas. On 2026-08-28 the keyboard cursor was restored on the visible, focusable comparison chart in the Spotlight, where Arrow keys expose the served cohort readout and update the chart's accessible name. `diagnose-event-comparison-behavior.replay.mjs` S8 is the living witness and still proves every comparison canvas is nested inside an evidence tile; the global comparison canvas remains permanently absent.
+  sanction: live-judging ruling · 2026-08-28 · “The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence.”
 - **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 - **RETIRED S92 · ADR 215 amendment.** Focus no longer swaps charts through fixed seats; promoting a chart leaves the dock's ordered set sorted.
@@ -2835,7 +2841,9 @@ two-viewport matrix. Synthetic before/after renders are stored under
 filmstrip order and current Spotlight unchanged. If that still-live chart later
 becomes a Watching read, its star keeps it immediately after the ranked charts
 and before the Watching divider. Stopping retention leaves the Spotlight alone
-and returns the chart to its automatic position after the divider. The star's
+and returns the chart to its automatic position after the divider. The divider
+is carried by the first automatic Watching chart, so it is present whenever
+that group is nonempty and absent rather than stranded when no such chart exists. The star's
 keyboard path and accessible copy say **Keep** and **Stop keeping**, never Pin,
 Unpin, or left-most. Evidence: replay S120.
 
@@ -3170,3 +3178,16 @@ Evidence: the complete amended replay output is
 line records the applicable count. The paired matrix under `evidence/renders/`
 contains `before-` and `after-` files for all four named states at all five
 viewports. No story is retired by this revision.
+
+## Amendment — 2026-09-04, useful queue previews (issue #341)
+
+Connor's later ruling keeps charts in the queue and requires useful miniatures
+rather than full charts squeezed into a small box. This amends S140 and S143
+without retiring either obligation. S140 now proves that the purpose-built mini
+and the matching full All charts cell preserve the same served median points
+for each behavioral cohort; their series identifiers and furniture deliberately
+differ. S143 keeps the positive measured-width floor and the rule that no
+sub-floor chart may remain mounted, while recognizing that the uniform row
+reflow gives the tablet preview its own above-floor line instead of omitting it.
+Backend evidence, ranking, eligibility, full-size chart options and immediate
+detail navigation are unchanged.

@@ -1,0 +1,12 @@
+✔ first exact match renders "Confirm & re-baseline" and confirming persists the effective plan (#462) (722.608375ms)
+✔ a divergent first plan stays pending with no mis-key table (#462) (717.454625ms)
+✔ a first plan with nothing staged says there is nothing to program (#393) (675.025083ms)
+✔ editing a first-plan cell then reverting it leaves nothing staged and cannot confirm (#462) (630.337916ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2747.319959

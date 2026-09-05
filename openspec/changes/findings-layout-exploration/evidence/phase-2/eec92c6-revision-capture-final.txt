@@ -1,0 +1,10 @@
+{"label":"eec92c6-final","source":"projection","size":"1440x900","metrics":{"viewport":[1440,900],"documentOverflowX":0,"overviewTop":664,"spotlightBottom":626,"overviewHeaderTop":634}}
+{"label":"eec92c6-final","source":"projection","size":"2084x742","metrics":{"viewport":[2084,742],"documentOverflowX":0,"overviewTop":508,"spotlightBottom":470,"overviewHeaderTop":478}}
+{"label":"eec92c6-final","source":"projection","size":"1024x768","metrics":{"viewport":[1024,768],"documentOverflowX":0,"overviewTop":534,"spotlightBottom":496,"overviewHeaderTop":504}}
+{"label":"eec92c6-final","source":"projection","size":"760x900","metrics":{"viewport":[760,900],"documentOverflowX":0,"overviewTop":475,"spotlightBottom":447,"overviewHeaderTop":445}}
+{"label":"eec92c6-final","source":"projection","size":"390x844","metrics":{"viewport":[390,844],"documentOverflowX":0,"overviewTop":475,"spotlightBottom":447,"overviewHeaderTop":445}}
+{"label":"eec92c6-final","source":"qa-showcase","size":"1440x900","metrics":{"viewport":[1440,900],"documentOverflowX":0,"overviewTop":664,"spotlightBottom":626,"overviewHeaderTop":634}}
+{"label":"eec92c6-final","source":"qa-showcase","size":"2084x742","metrics":{"viewport":[2084,742],"documentOverflowX":0,"overviewTop":508,"spotlightBottom":470,"overviewHeaderTop":478}}
+{"label":"eec92c6-final","source":"qa-showcase","size":"1024x768","metrics":{"viewport":[1024,768],"documentOverflowX":0,"overviewTop":534,"spotlightBottom":496,"overviewHeaderTop":504}}
+{"label":"eec92c6-final","source":"qa-showcase","size":"760x900","metrics":{"viewport":[760,900],"documentOverflowX":0,"overviewTop":475,"spotlightBottom":447,"overviewHeaderTop":445}}
+{"label":"eec92c6-final","source":"qa-showcase","size":"390x844","metrics":{"viewport":[390,844],"documentOverflowX":0,"overviewTop":475,"spotlightBottom":447,"overviewHeaderTop":445}}

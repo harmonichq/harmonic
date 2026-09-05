@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   chartClickRoute, chartFrameFindingIsLive, fallbackFocalId, isDrilledSpotlight,
-  popInspector, seatableChartIds,
+  popInspector, rosterChartIds, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
 
@@ -39,6 +39,9 @@ test('ranked Findings self-seat in server order while Watching charts require a 
   assert.deepEqual(seatableChartIds(findings, descriptors, ['ic:720']), [
     'finding:carb_undercount', 'isf', 'ic:720',
   ], 'an explicit live Watching pin follows every ranked Finding without reordering them');
+  assert.deepEqual(rosterChartIds(findings, descriptors, ['ic:720']), [
+    'finding:carb_undercount', 'isf', 'ic:720', 'basal:0-30',
+  ], 'All charts puts retained reads after rank and before automatic Watching reads');
 });
 
 

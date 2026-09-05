@@ -1,0 +1,1 @@
+owned capture server pid=27871 port=49255 scratch=/private/tmp/harmonic-341-eec92c6-capture.U3R7F3/harmonic.sqlite

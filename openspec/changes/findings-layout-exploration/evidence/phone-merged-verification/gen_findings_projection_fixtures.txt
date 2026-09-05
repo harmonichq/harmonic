@@ -1,0 +1,1 @@
+findings-projection fixtures current (/private/tmp/harmonic-wireframes/harmonic/341/frontend/__fixtures__/findings-projection.json)

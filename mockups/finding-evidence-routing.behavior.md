@@ -33,9 +33,12 @@ synthetic provenance and contain no real patient data.
 
 ## Amendment — 2026-09-04, issue #341
 
-ADR 341 moves the existing glucose overview and basal lane below the spotlight,
-adds the Adjust window shortcut, and replaces the chart dock with direct **All
-charts** access. Sanction: Connor Griffin · 2026-09-04 · "Exactly," confirming
+ADR 341 moved the existing glucose overview and basal lane below the spotlight,
+introduced the **Adjust window** shortcut, and replaced the chart dock with
+direct **All charts** access. The shortcut portion of this amendment is
+historical and superseded by the later phone-correction amendment below, where
+it was removed under Connor's "fix it" ruling. Sanction: Connor Griffin ·
+2026-09-04 · "Exactly," confirming
 "Charts opens the full-screen All charts browser directly. Choose a chart to
 return to A with that finding selected. Close or Escape returns without changing
 the selection or time window. The spotlight keeps Expand for viewing just its

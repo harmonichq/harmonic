@@ -83,7 +83,6 @@ const MARKUP = `
     <div class="instrument">
       <span class="cap">Window</span>
       <div class="seg" id="seg-window" role="group" aria-label="Clock window"></div>
-      <button class="adjust-window" id="adjust-window" type="button">Adjust window</button>
     </div>
     <!-- ADR 215 — the mode control and the pin-cap schematic are BOTH gone from
          this row. The mode had one other position and that position is retired;
@@ -1174,6 +1173,31 @@ function boot(root, data, callbacks, signal) {
   let collapsedFindingsExpanded = false;
   const watched = data.watched;
 
+  const phoneReadingScroller = () => window.matchMedia('(max-width: 480px)').matches
+    ? root.closest('.main-content') : null;
+  const queueScrollOwner = () => phoneReadingScroller() || el('level');
+  const rememberQueuePosition = () => {
+    queueScrollTop = queueScrollOwner()?.scrollTop || 0;
+  };
+  const restorePhoneQueuePosition = ({ first = false } = {}) => {
+    const scroller = phoneReadingScroller();
+    if (!scroller) return;
+    const restore = () => {
+      if (first) {
+        el('level')?.querySelector('.qrow.priced, .qrow')?.scrollIntoView({ block: 'start' });
+      } else {
+        scroller.scrollTop = queueScrollTop;
+      }
+    };
+    /* Queue minis acquire their final chart boxes on the frame after the DOM
+       repaint. Restore once immediately and once after that sizing frame so a
+       deep reading position is not clamped to the shorter interim document. */
+    requestAnimationFrame(() => {
+      restore();
+      requestAnimationFrame(restore);
+    });
+  };
+
   /* ---- mock 1982-2011 — VERBATIM ---- */
   /* A capture can declare itself SYNTHETIC. No window of this operator's real
      history produces an I:C block that asserts a move, so the asserting path can
@@ -1437,6 +1461,14 @@ function boot(root, data, callbacks, signal) {
         mini, window: scopeWindow(), caseFile: catalog ? descriptor.data : tileCaseFile(descriptor), surface: host,
       },
     );
+    if (!mini && host.clientWidth <= 480) {
+      const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
+      for (const axis of axes) {
+        if (!axis?.name) continue;
+        axis.nameLocation = 'end';
+        axis.nameTextStyle = { ...axis.nameTextStyle, align: 'right' };
+      }
+    }
     const chart = window.echarts.init(host, null, { renderer: 'canvas' });
     return { chart, option };
   }
@@ -2180,7 +2212,7 @@ function boot(root, data, callbacks, signal) {
   let occurrenceFocusId = null;
   const top = () => stack[stack.length - 1];
   const push = (frame) => {
-    if (top().k === 'factors') queueScrollTop = el('level').scrollTop;
+    if (top().k === 'factors') rememberQueuePosition();
     filterOpen = false;
     pendingFocus = 'level';
     dir = 'push'; stack.push(frame);
@@ -2225,6 +2257,7 @@ function boot(root, data, callbacks, signal) {
         currentTileCandidates(), canvasLayout.pins));
     }
     dir = 'pop'; paint();
+    if (i === 0) restorePhoneQueuePosition({ first: resetQueueRoot });
   };
 
   function findingRowFor(frame) {
@@ -2317,6 +2350,7 @@ function boot(root, data, callbacks, signal) {
     canvasLayout = dismissFullscreen(fullscreen);
     fullscreen = null;
     paint();
+    if (!explorerOpen) restorePhoneQueuePosition();
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
      slot frame it swaps in place, so clicking cells never deepens the stack. */
@@ -2603,14 +2637,15 @@ function boot(root, data, callbacks, signal) {
       if (explorerOpen) {
         explorerOpen = false;
         paint();
-        el('explorer-trigger')?.focus();
+        el('explorer-trigger')?.focus({ preventScroll: true });
+        restorePhoneQueuePosition();
         return;
       }
       if (act === 'browse') {
         /* The catalog is a temporary layer over Diagnose. Preserve the real
-           inspector position before its repaint so Close and Escape restore
-           the exact queue reading context, even when it is well below zero. */
-        queueScrollTop = el('level')?.scrollTop || 0;
+           reading position before its repaint so Close and Escape restore the
+           exact context, even when it is well below the opening viewport. */
+        rememberQueuePosition();
         explorerOpen = true;
         paint();
         return;
@@ -2629,7 +2664,7 @@ function boot(root, data, callbacks, signal) {
     headActs.innerHTML = '';
     headActs.hidden = false;
     for (const act of view.acts) headActs.append(chartActionButton(act));
-    if (preserveExplorerFocus) el('explorer-trigger')?.focus();
+    if (preserveExplorerFocus) el('explorer-trigger')?.focus({ preventScroll: true });
   }
 
   function paintTiles() {
@@ -2682,9 +2717,7 @@ function boot(root, data, callbacks, signal) {
        and never a standing title. */
     const big = Boolean(fullscreen) || explorer;
     el('canvas-head').toggleAttribute('data-full', big);
-    root.toggleAttribute('data-canvas-full', big);
-    root.querySelector(':scope > .instruments')?.toggleAttribute('inert', big);
-    root.querySelector(':scope > .panes > .inspector')?.toggleAttribute('inert', big);
+    applyCanvasFullState(big);
     /* AND IT IS CLEARED WHEN IT IS NOT SHOWN. The row is hidden at rest, but a
        stale name left in it is what the next fullscreen paints over for a frame
        — and what a reader of the DOM sees claimed about a pane showing nothing
@@ -2827,6 +2860,7 @@ function boot(root, data, callbacks, signal) {
         full.setAttribute('aria-label', `Show ${descriptor.title} fullscreen`);
         full.onclick = (event) => {
           event.stopPropagation();
+          if (!explorerOpen) rememberQueuePosition();
           fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
           showChartInspector(descriptor);
           paint();
@@ -3014,6 +3048,12 @@ function boot(root, data, callbacks, signal) {
     for (const mount of mounts) mount();
   }
 
+  function applyCanvasFullState(big) {
+    root.toggleAttribute('data-canvas-full', big);
+    root.querySelector(':scope > .instruments')?.toggleAttribute('inert', big);
+    root.querySelector(':scope > .panes > .inspector')?.toggleAttribute('inert', big);
+  }
+
   function paintCanvasChrome() {
     root.toggleAttribute('data-fullscreen', Boolean(fullscreen));
   }
@@ -3097,6 +3137,21 @@ function boot(root, data, callbacks, signal) {
 
   /** Root-only ARIA menu. Sift composes browser-owned selection over fields the
       findings projection already published; it requests no new population. */
+  function placeFilterMenu(trigger, menu) {
+    delete menu.dataset.side;
+    menu.style.removeProperty('--filter-menu-max-height');
+    if (!window.matchMedia('(max-width: 480px)').matches || menu.hidden) return;
+    const margin = 12;
+    const gap = 6;
+    const triggerBox = trigger.getBoundingClientRect();
+    const menuHeight = menu.getBoundingClientRect().height;
+    const above = Math.max(0, triggerBox.top - margin - gap);
+    const below = Math.max(0, window.innerHeight - margin - triggerBox.bottom - gap);
+    const side = below >= menuHeight || below >= above ? 'below' : 'above';
+    menu.dataset.side = side;
+    menu.style.setProperty('--filter-menu-max-height', `${Math.max(44, side === 'below' ? below : above)}px`);
+  }
+
   function paintFilter() {
     const wrap = el('filter-wrap');
     const trigger = el('filter-trigger');
@@ -3173,6 +3228,7 @@ function boot(root, data, callbacks, signal) {
     })));
     filterFocus = Math.max(0, Math.min(filterFocus, items.length - 1));
     items.forEach((item, index) => item.tabIndex = index === filterFocus ? 0 : -1);
+    placeFilterMenu(trigger, menu);
     menu.onkeydown = (ev) => {
       if (ev.key === 'Tab') {
         setTimeout(() => closeFilter(), 0);
@@ -3391,7 +3447,8 @@ function boot(root, data, callbacks, signal) {
         host.prepend(notice);
       }
       appendCaseError(host);
-      host.scrollTop = queueScrollTop;
+      if (phoneReadingScroller()) host.scrollTop = 0;
+      else host.scrollTop = queueScrollTop;
       return;
     }
     if (f.k === 'slot') {
@@ -3821,6 +3878,10 @@ function boot(root, data, callbacks, signal) {
   }
 
   function paint() {
+    /* The queue measures mini hosts while it paints. Clear a dismissed
+       full-canvas state before that measurement or its inert/hidden inspector
+       has zero width and every useful preview is removed for the return. */
+    applyCanvasFullState(Boolean(fullscreen) || (explorerOpen && !fullscreen));
     paintCanvasChrome();
     ensurePreparation();
     reconcileTileDescriptors();
@@ -3937,11 +3998,6 @@ function boot(root, data, callbacks, signal) {
   }, { signal });   // PORT: abortable
 
   observeResize(el('chart'), () => chart);
-  el('adjust-window')?.addEventListener('click', () => {
-    const overview = el('chart')?.parentElement;
-    overview?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    el('chart')?.focus?.({ preventScroll: true });
-  }, { signal });
   installDrag();
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && fullscreen) {
@@ -3955,7 +4011,8 @@ function boot(root, data, callbacks, signal) {
       ev.stopImmediatePropagation();
       explorerOpen = false;
       paint();
-      el('explorer-trigger')?.focus();
+      el('explorer-trigger')?.focus({ preventScroll: true });
+      restorePhoneQueuePosition();
       return;
     }
   }, { capture: true, signal });

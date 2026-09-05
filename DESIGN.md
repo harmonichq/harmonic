@@ -121,9 +121,10 @@ components:
 ## 1. Overview
 
 Diagnose puts the selected evidence chart ahead of the glucose overview. The
-overview remains the real clock control surface below it; **Adjust window**
-returns focus to that surface without changing the current window. **All charts**
-opens the full catalog directly, rather than a docked chart strip.
+overview remains the real clock control surface below it. **All charts** opens
+the full catalog directly, rather than a docked chart strip. At phone widths,
+Spotlight, the overview, Findings and Watching form one vertical reading flow;
+temporary chart catalog and fullscreen states still own the viewport.
 
 **Creative North Star: "The Diagnostic Instrument"**
 

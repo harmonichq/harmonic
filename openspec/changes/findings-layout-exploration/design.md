@@ -132,6 +132,25 @@ and staging. This ruling supersedes the earlier requirement for identical
 mini/catalog rendering and the narrow-layout omission of queue previews. Their
 replay replacements retain evidence-identity and readability obligations.
 
+## ADR 341 — Phone Diagnose is one reading flow
+
+The initially delivered phone composition retained the desktop pane height
+budgets and introduced an **Adjust window** button that only scrolled and
+focused the overview. After inspecting that running surface Connor ruled the
+shortcut out — “that's a new behavior that was not a part of the app, why was
+that added?” followed by “fix it” — while explicitly preserving queue charts.
+The button and its behavior are removed rather than renamed or replaced.
+
+At phone widths the shell's existing main-content scroller owns the root
+reading position. Spotlight, the overview and its adjacent furniture, complete
+Findings rows with useful previews, and Watching appear in that order without
+nested canvas, inspector, or queue scrollports. All charts and single-chart
+fullscreen remain temporary viewport-owned states. Their dismissal restores
+the pre-overlay shell position; returning from a lower-ranked finding instead
+places the first ranked finding in view. Tablet and desktop arrangements are
+unchanged, as are all served evidence, ranking, window, chart, and backend
+judgments.
+
 Implementation and verification evidence is indexed in
 [evidence/phase-2/MANIFEST.md](evidence/phase-2/MANIFEST.md). Coordinator
 integration checks are recorded in [evidence/merged-verification](evidence/merged-verification).

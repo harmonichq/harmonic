@@ -3191,3 +3191,25 @@ sub-floor chart may remain mounted, while recognizing that the uniform row
 reflow gives the tablet preview its own above-floor line instead of omitting it.
 Backend evidence, ranking, eligibility, full-size chart options and immediate
 detail navigation are unchanged.
+
+## Amendment — 2026-09-04, phone reading flow and shortcut removal (issue #341)
+
+The earlier issue #341 amendment recorded a branch-added **Adjust window**
+shortcut. It never adjusted the window; it scrolled to and focused the existing
+overview. After seeing the running phone surface Connor ruled: “that's a new
+behavior that was not a part of the app, why was that added?” and then “fix
+it”. That branch-invented behavior is removed in full, not renamed or replaced.
+This does not remove a behavior from the pre-ticket surface.
+
+At phone widths the root Diagnose state now has one reading position owned by
+the shell's existing main-content scroller. Spotlight, the overview, complete
+queue rows (including their useful previews), and Watching follow vertically;
+the canvas pane, inspector body, and `#level` no longer compete as nested
+scrollports. All charts and one-chart fullscreen remain viewport-owned temporary
+states. Close and Escape restore the exact prior shell reading position,
+window, selected finding, and opener focus. Returning from a lower-ranked drill
+retains the established root-return meaning by bringing rank one into view;
+because rank one follows Spotlight and the overview in the same document, that
+anchor is intentionally nonzero. Desktop/tablet pane behavior, queue evidence,
+full-size chart options, clock gestures, ranking, and backend judgments do not
+change.

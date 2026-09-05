@@ -1,0 +1,16 @@
+✔ #341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable (5482.667208ms)
+✔ #341 · phone Diagnose is one complete vertical reading flow (3680.815709ms)
+✔ #341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable (5689.842042ms)
+✔ #341 · a long narrow Spotlight title leaves a readable I:C plot (1874.9545ms)
+✔ #341 · useful queue previews remain present and legible at narrow width (1843.074208ms)
+✔ #341 · All charts dismissal preserves a genuinely scrolled phone reading position (2586.882459ms)
+✔ #341 · a narrow lower-rank drill returns with rank one readable (1766.233375ms)
+✔ #83 · Filter and every menu item stay reachable at 390×844 (1679.341458ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 24781.7325

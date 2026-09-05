@@ -1,8 +1,8 @@
 # Behaviour ledger — Plan
 
-**☐ FREEZE PENDING — operator approval stamps the ★ FROZEN line below.**
+**★ FROZEN 2026-09-05 · Connor Griffin ("yes and yes", 2026-09-05) · operator-approved shipped-surface behavior contract.**
 
-★ FROZEN <date on approval> · base `aeb37c6a` (origin/main, 2026-09-05) ·
+★ FROZEN 2026-09-05 · base `aeb37c6a` (origin/main, 2026-09-05) ·
 generator n/a · window n/a · fixtures inline in the replay (synthetic, the
 first-plan-reconcile profile and the noon carb-ratio pick) · predecessor none —
 first sweep of a shipped surface · retired 0

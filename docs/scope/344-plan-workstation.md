@@ -72,6 +72,18 @@ Connor's read that Plan "is its own thing, kinda ugly" next to Diagnose.
   pending, on-pump, mismatch and history; the live showcase proves the composition
   and the nothing-staged state. No shipped behavior is retired. `inline`
 
+- 2026-09-05 · Q7 = A (Connor: "yes and yes"): the Plan behavior ledger is frozen as
+  swept, sixteen stories, no retirements. `inline`
+- 2026-09-05 · Q8 = A: the countersigned order is posted as lock 1. `inline`
+- Plan review: one Terra panel, BLOCKED 4+1 on the cold pass, countersigned after
+  four same-reviewer re-checks; authoring blockers 5, injected 3 (all closed in
+  the same panel). Round ledger in session scratch. `inline`
+
+### Risk contract
+
+Copied verbatim into `openspec/changes/plan-workstation/design.md` ("Risk
+contract") and cited by the posted order; the design record is the authority.
+
 ## Open questions
 
 (none; frontier empty 2026-09-05)

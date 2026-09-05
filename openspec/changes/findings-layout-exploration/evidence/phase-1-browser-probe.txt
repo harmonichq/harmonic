@@ -1,0 +1,41 @@
+✔ #341 · All charts confines interaction and dismissal preserves the window context (2535.801666ms)
+✖ #341 · a chart picked from All charts can expand independently (2038.331583ms)
+✖ every vessel state retains the Dark retheme edge (1863.405459ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6659.599833
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:303:1
+✖ #341 · a chart picked from All charts can expand independently (2038.331583ms)
+  AssertionError [ERR_ASSERTION]: the borrowed header carries no standing title of its own
+  
+  '' !== 'All charts'
+  
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/341-c1/frontend/diagnose-workstation.browser.test.mjs:358:12)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:969:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'All charts',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at frontend/diagnose-workstation.browser.test.mjs:1183:1
+✖ every vessel state retains the Dark retheme edge (1863.405459ms)
+  page.evaluate: TypeError: Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.
+      at style (eval at evaluate (:303:30), <anonymous>:3:26)
+      at eval (eval at evaluate (:303:30), <anonymous>:9:15)
+      at UtilityScript.evaluate (<anonymous>:305:16)
+      at UtilityScript.<anonymous> (<anonymous>:1:44)
+      at TestContext.<anonymous> (/Users/connor/worktrees/harmonic/341-c1/frontend/diagnose-workstation.browser.test.mjs:1190:31) {
+    log: []
+  }

@@ -3869,13 +3869,13 @@ export const S140 = async (page) => {
   const id = 'finding:over_treated_low';
   const rowMini = page.locator(`#level .qrow.priced[data-id="${id}"] .mini`);
   await rowMini.locator('canvas').waitFor();
-  await openAllCharts(page);
-  const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
-  await catalogChart.locator('canvas').waitFor();
   const series = async (locator) => locator.evaluate((host) =>
     window.echarts.getInstanceByDom(host).getOption().series
       .map(({ id, data }) => ({ id, data })));
   const rowSeries = await series(rowMini);
+  await openAllCharts(page);
+  const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+  await catalogChart.locator('canvas').waitFor();
   const catalogSeries = await series(catalogChart);
   for (const cohort of ['matched', 'comparison']) {
     const points = (rows, accepts) => rows.filter(({ id }) => accepts(id || ''))

@@ -12,7 +12,7 @@ made upstream must be inventoried before changing the live app.
 | Window controls, overview, spotlight and inspector | `frontend/diagnose-workstation.js`: `createDiagnoseWorkstation`, `MARKUP`, `paintTiles` | Rearrange existing hosts; no duplicate route or app |
 | Clock coordinates and resize | `frontend/diagnose-workstation-chart.js`: existing canvas helpers | Preserve caller contract; change only geometry coupling exposed by the host move |
 | Queue structure | `frontend/diagnose-findings-queue.js`: `queueRows`, `renderFindingsQueue` | One priced-row layout; use served fields and current filters |
-| Queue previews | workstation `mountRowMinis` / `mountDescriptorChart`; `MIN_ROW_MINI_WIDTH` | Include top rank; retain common option builder, descriptor lifetime and readable-width policy |
+| Queue previews | workstation `mountRowMinis` / `queuePreviewOption`; `MIN_ROW_MINI_WIDTH` | Include top rank; retain descriptor evidence/lifetime and readable-width policy in the full-width preview well |
 | Dock/explorer state | `frontend/diagnose-canvas-state.js`; workstation `dockButton`, `paintDock`, `paintTiles` | Delete retired dock-only behavior; keep explorer and single-chart ownership in the existing module |
 | Chart-to-finding route | `chartClickRoute`, workstation `drillFinding`, `push`, `popTo` | Preserve immediate drill, identity, one inspector level, parameter-specific scope and focus return |
 | Theme and chrome roles | `frontend/diagnose-workstation.css`, `frontend/theme.css`, scoped shell rules | Reuse shipped material; no token palette or theme change |
@@ -45,10 +45,10 @@ permission to ignore other matches found by the complete scan.
 - S122–S126: preserve settings chart/queue parity and per-parameter clock-window
   release. Moving the overview changes no advisory judgment.
 - S139–S144: amend tapered geometry, first-row no-mini, tier placement and drawer
-  comparison assumptions. Compare each row mini against the existing registry
-  mini option over the same descriptor data; the All charts full-size plot is
-  not a pixel-equivalent mini oracle. Retain unpriced drill, width omission and
-  Sift-to-root-stage witnesses.
+  comparison assumptions. Compare the actual served evidence represented by each
+  purpose-built row mini and its matching All charts plot; identical rendering
+  is not required. Retain unpriced drill, the measured-width fallback and
+  Sift-to-root-stage witnesses, and prove narrow previews remain reachable.
 - C41–C57 and D1–D3: preserve case-file/evidence behavior in the full replay;
   avoid selectors whose presence formerly depended on the dock being mounted.
 

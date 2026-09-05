@@ -36,6 +36,7 @@ The fast, drift and public-tree commands were:
 ```sh
 uv run python -m pytest
 node --test 'frontend/**/*.test.js'
+node --test scripts/screenshots.local.test.mjs
 npx --yes @fission-ai/openspec@1 validate --all --strict
 python3 scripts/check_adr_numbers.py
 python3 scripts/check_owned_identifiers.py

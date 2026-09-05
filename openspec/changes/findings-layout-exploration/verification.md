@@ -106,7 +106,10 @@ widths relevant to the interaction, additionally exercise:
 Measure preview-host widths against the existing floor, type/preview column
 alignment, visible plot bounds and document overflow. Inspect the screenshots;
 file existence and green logic tests are not visual evidence. Keep the existing
-chart options, theme tokens and clinical text. No diagram placeholder or wireframe
+full-size
+chart options, theme tokens and clinical text; queue previews follow Connor’s
+subsequent useful-preview ruling recorded in design.md. No diagram
+placeholder or wireframe
 styling becomes production chart code.
 
 Store synthetic renders and logs under this change's evidence directory, with a

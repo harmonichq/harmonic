@@ -70,7 +70,7 @@ also represented.
 - The final 390×844 `drill-return` render visibly starts at the rank-one tier
   and title. `all-charts-dismissed` carries the same corrected root state while
   preserving the catalog dismissal contract.
-- The live narrow queue witness scrolls all five supported preview families
+- The live narrow queue witness scrolls all five chart-backed previews
   fully inside the queue viewport above the watched-change dock; each remains
   mounted and clears the existing width floor.
 
@@ -105,7 +105,10 @@ honestly (14 runnable cases passed). The initial 159/163 historical replay, the
 `eec92c6` 161/163 replay that exposed superseded S140/S143 assertions, the
 initial detached-canvas workstation retry, the fail-first long-title witness,
 and sandbox/cache or wrapper failures remain diagnostic evidence. The `final`
-logs named above are authoritative. All ten browser legs were run against the
-completed surface on the owned no-fetch server recorded in
+logs named above are authoritative. The server-dependent aggregate used the owned no-fetch server recorded in
 `eec92c6-browser-owned-server-final-metadata.txt`; the render matrix used the
 separate owned server recorded in `eec92c6-capture-owned-server-metadata.txt`.
+The coordinator reran the composition and shell suites on final commit
+`2505e17` after the late responsive correction: `coordinator-2505e17-composition.txt`
+and `coordinator-2505e17-shell.txt` record 14 passes each, with the same two
+pre-existing shell skips. `coordinator-2505e17-node.txt` records 589 passes.

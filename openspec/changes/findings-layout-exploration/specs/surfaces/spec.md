@@ -112,8 +112,9 @@ watched-change floor SHALL remain available in both queue and detail states.
 ### Requirement: Ranked findings share one aligned row structure
 
 Every shown priced ranked row SHALL use the same rank, short title, served
-annotation where already applicable, support/action detail, type label, mini
-preview and drill-affordance columns. The first row SHALL use that same
+annotation where already applicable, support/action detail, type label and
+drill-affordance columns, with a matching full-width mini preview below the text.
+The first row SHALL use that same
 structure without a hero card, unique shadow, enlarged title, or special height.
 Wrapped content MAY increase row height when needed; rank alone SHALL NOT.
 The root stage's current row SHALL have a restrained non-geometric selected
@@ -121,14 +122,17 @@ state, separately recognizable from its rank number. The queue SHALL retain
 server order and existing filtering semantics and SHALL derive no clinical
 rank, tier, eligibility or verdict. Tier captions SHALL appear at the beginning
 of each contiguous served priced-tier group using the existing tier-word map.
-Unpriced rows SHALL retain their title-only seam and Watching reads SHALL retain
-their disclosure and drill paths.
+Unpriced tail rows SHALL retain their title-only seam. Watching reads SHALL
+retain their disclosure and drill paths, with available chart previews when expanded.
 
-A mini SHALL use the existing registry's mini option and the descriptor's already
-fetched data. Preview rendering SHALL cause no additional analysis request or
-new chart implementation. All priced rows, including the first, SHALL follow the
-existing minimum readable mini-width policy: below that floor omit minis
-consistently while retaining text and drill affordances. Pending, empty, failed
+A mini SHALL use the descriptor's already fetched evidence in a purpose-built
+queue preview. It SHALL preserve served observations, support and gaps without
+inventing values. Preview rendering SHALL cause no additional analysis request
+and SHALL leave full-size chart options unchanged. All priced rows, including
+the first, SHALL reflow their preview below readable text at narrow widths.
+The existing minimum readable mini-width policy remains the fallback if a host
+cannot meet that floor; text and drill affordances SHALL remain available.
+Pending, empty, failed
 or stale evidence SHALL use the existing state presentation, never fabricated
 curves or fabricated counts.
 
@@ -136,7 +140,7 @@ curves or fabricated counts.
 
 - **GIVEN** synthetic ranked settings and habit findings with mixed-length titles
 - **WHEN** the queue is rendered at a width that admits minis
-- **THEN** rank, type, preview and drill columns share their alignment positions across every priced row
+- **THEN** rank, type and drill columns align across every priced row, with equally sized full-width preview wells below the text
 - **AND** the top row has the same structure and a mini governed by the same rules
 
 #### Scenario: Filtering changes order visibility, not geometry
@@ -147,8 +151,9 @@ curves or fabricated counts.
 
 #### Scenario: Minis remain honest at narrow widths and during failures
 
-- **WHEN** mini hosts are below the existing readable-width floor or their existing descriptor is not ready
-- **THEN** the width policy omits unreadable minis, or the normal evidence-state presentation is shown, respectively
+- **WHEN** the queue is rendered at phone or tablet width
+- **THEN** available previews reflow to retain readable chart wells and can scroll fully into view
+- **AND** a host below the existing readable-width floor is omitted, while an unready descriptor uses the normal evidence-state presentation
 - **AND** every affected row still opens its existing finding details
 
 ### Requirement: All charts opens fullscreen without an intermediate dock

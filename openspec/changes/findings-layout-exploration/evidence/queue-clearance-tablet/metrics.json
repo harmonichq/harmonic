@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ic:720",
+    "kind": "carb-ratio",
+    "chart": {
+      "top": 582.546875,
+      "bottom": 674.546875,
+      "width": 710,
+      "height": 92
+    },
+    "viewport": {
+      "top": 578.96875,
+      "bottom": 778
+    }
+  },
+  {
+    "id": "basal:30-90",
+    "kind": "basal",
+    "chart": {
+      "top": 582.609375,
+      "bottom": 674.609375,
+      "width": 710,
+      "height": 92
+    },
+    "viewport": {
+      "top": 578.96875,
+      "bottom": 778
+    }
+  },
+  {
+    "id": "basal:330-360",
+    "kind": "basal",
+    "chart": {
+      "top": 582.671875,
+      "bottom": 674.671875,
+      "width": 710,
+      "height": 92
+    },
+    "viewport": {
+      "top": 578.96875,
+      "bottom": 778
+    }
+  },
+  {
+    "id": "finding:over_treated_low",
+    "kind": "event-comparison",
+    "chart": {
+      "top": 583.3125,
+      "bottom": 675.3125,
+      "width": 710,
+      "height": 92
+    },
+    "viewport": {
+      "top": 578.96875,
+      "bottom": 778
+    }
+  },
+  {
+    "id": "finding:carb_undercount",
+    "kind": "event-comparison",
+    "chart": {
+      "top": 582.703125,
+      "bottom": 674.703125,
+      "width": 710,
+      "height": 92
+    },
+    "viewport": {
+      "top": 578.96875,
+      "bottom": 778
+    }
+  }
+]

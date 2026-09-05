@@ -3,14 +3,17 @@
 ## Status and authority
 
 Connor selected arrangement A and direct full-screen All charts, and retained
-immediate row-to-detail navigation. This is the implementation brief for #341;
-no execution lock has been posted and no production file has changed.
+immediate row-to-detail navigation. This brief was executed under the posted
+#341 lock and Connor’s subsequent
+placement and useful-preview rulings. Both implementation phases are integrated
+on the ticket branch; the active change remains available for human PR review.
 
 The surfaces delta is the sole normative product contract. `tasks.md` assigns
 execution; `behavior-map.md` identifies current owners and contract consumers;
 `verification.md` assigns checks and rendered evidence. `facts.md` records the
-actual grounding commands and outputs. `wireframes.html` is a disposable
-conversation aid, explicitly not lockable and not a fidelity oracle.
+actual grounding commands and outputs. The retained wireframe screenshots are
+decision context, not a fidelity oracle.
+The disposable `wireframes.html` has been removed.
 
 ## ADR 341 — Evidence first, findings on the right
 
@@ -110,3 +113,25 @@ uses shipped tokens and chart readability floors, verified in the live pass.
 
 Why: this is a reversible layout and navigation-mode revision around unchanged advisory judgments.
 Disposition: copied into this authoritative implementation brief; scope retains the session record.
+
+## ADR 341 — Useful evidence previews stay in the queue
+
+During live judging Connor explicitly retained the queue charts: “Charts stay in
+the queue... They just shoundn't be unuseful garbarge”, then confirmed the
+purpose-built preview direction. Each chart-backed row keeps readable finding
+text and supplied evidence counts above a dedicated full-width preview. All
+ranked rows use the same geometry. Available Watching charts retain previews
+when expanded.
+
+The compact chart keeps the evidence appropriate to its family: departures
+from programmed basal, correction steps, meal traces, or cohort response and
+spread. Served gaps remain gaps and sparse observations remain visible. The
+preview changes presentation only; selecting the row still opens the detailed
+finding and full-size chart, and the backend still owns support, rank, direction
+and staging. This ruling supersedes the earlier requirement for identical
+mini/catalog rendering and the narrow-layout omission of queue previews. Their
+replay replacements retain evidence-identity and readability obligations.
+
+Implementation and verification evidence is indexed in
+[evidence/phase-2/MANIFEST.md](evidence/phase-2/MANIFEST.md). Coordinator
+integration checks are recorded in [evidence/merged-verification](evidence/merged-verification).

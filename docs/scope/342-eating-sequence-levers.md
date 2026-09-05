@@ -2,6 +2,8 @@
 
 ## Decisions
 
+- Operator approval (2026-09-05): “ok go for it” accepts observed-burden impact pricing, impact-based outranking with retained evidence, and recurrence-based Priority. Continue triage without another precedence interview. The concrete source/ownership proposal is in `openspec/changes/eating-sequence-findings/design.md`; it still requires mandatory review and baseline UI admission. Disposition: → ADR (recorded as ADR 342 in that change).
+
 - Real-data investigation completed (2026-09-05): candidate overlap is substantial, but the tested held-out regressions and more closely matched cohorts do not establish a reliable intervention-impact winner. Retain observed-burden pricing as the grounded proposal; do not ship these exploratory regressions as a causal chooser. Details and limitations: `docs/scope/342-impact-research.md`. This is a research conclusion, not admission of an attribution design. Disposition: inline.
 
 - Operator direction (2026-09-05): competing findings should be outranked by impact, using comparable pricing. Ground the choice in existing code and, where needed, the operator's real events; do not ask the operator to invent a precedence list. Research may prototype forecasting/model comparisons before the execution lock. Disposition: inline.
@@ -12,9 +14,9 @@
 
 - Classification: code. Add High-carb sequence and Repeat eating as behavioral levers, their Patterns in the existing server-ranked Diagnose queue, and a fifth chart kind in the shipped tile. Source: issue #342 read 2026-09-05. Disposition: inline.
 - Reuse the merged eating-window/sequence construction, pooled empirical quintiles, cohort eligibility, eight-qualifying-sequences-per-cohort floor, headline selection, fixed source window, report endpoint and frontend adapter. Disposition: inline.
-- One lever per episode remains required. Repeat eating wins a tie with High-carb sequence. Precedence against existing levers remains open. Disposition: inline.
+- One lever per episode remains required. Repeat eating wins a tie with High-carb sequence. Larger observed candidate impact now decides competition with existing levers; no blanket old-advice precedence. Disposition: inline.
 - No new section, evidence band, rail entry, drawer behavior, stage layout, glucose strip or dock behavior. Supersede the separate aggregate-section requirement and finding/lever/Priority prohibitions while preserving all tuning and safety exclusions. Disposition: inline.
-- UI Craft setup/router returned `revise` for a shipped, runnable surface with a complete synthetic safe-start declaration. Execution must freeze/replay existing Diagnose behavior and carry design-record updates and synthetic before/after evidence. Triage has not launched the app. Disposition: inline.
+- UI Craft setup/router returned `revise` for a shipped, runnable surface with a complete synthetic safe-start declaration. Execution must freeze/replay existing Diagnose behavior and carry design-record updates and synthetic before/after evidence. Triage subsequently ran the documented synthetic safe-start and preserved the existing contract; evidence is in the active change. Disposition: inline.
 - Scope route: interview. Grounding found that the report serves supported aggregate associations, whereas existing attribution walks episode anchors and picks the earliest actionable driver. At a meal, carb undercount precedes late bolus. The new levers need an explicit collision rule before drafting their integration. Disposition: inline.
 
 ### Risk contract

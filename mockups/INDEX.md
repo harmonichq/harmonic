@@ -124,3 +124,6 @@ under `openspec/changes/graphite-palette/evidence/`.
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.
+
+Issue #342 chart baseline: `openspec/changes/eating-sequence-findings/evidence/`;
+contract remains `finding-evidence-routing.behavior.md` and its app-only replay.

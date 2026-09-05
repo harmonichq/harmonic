@@ -3149,3 +3149,20 @@ Evidence: the complete amended replay output is
 line records the applicable count. The paired matrix under `evidence/renders/`
 contains `before-` and `after-` files for all four named states at all five
 viewports. No story is retired by this revision.
+
+
+## Baseline re-freeze — issue #342
+
+★ FROZEN 2026-09-05 · base a1bba577ff2970e9f9ae2e5c4c53fea6bb34bc4f · generator same base
+· fixtures mockups/diagnose-workstation.synthetic/payload.json: 1509b275e9b3
+· predecessor same shipped app · retirements unchanged
+
+The operator approved preserving the shipped chart interactions while adding the
+eating-sequence chart through the frontend harness. The affected source/style
+inventory and app replay found no new base story or missing inherited story.
+All existing sanctions remain unchanged; #342 authorizes no retirement.
+Evidence and exact transported synthetic input locator:
+`openspec/changes/eating-sequence-findings/evidence/baseline.md`.
+The unchanged app-only replay passed all active stories; complete output is retained
+there. New sequence stories will be added during the revision, never substituted
+for an inherited story.

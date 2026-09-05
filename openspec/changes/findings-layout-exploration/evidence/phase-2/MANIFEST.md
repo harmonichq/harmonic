@@ -40,10 +40,18 @@ also represented.
 ## Measurements and targeted states
 
 - Every revision matrix measurement reported zero document-level horizontal
-  overflow. At rest the Spotlight bottom precedes the overview header, and the
-  overview header precedes its chart at all five sizes.
+  overflow. At rest the overview header precedes its chart at all five sizes.
+  At 760 and 390 px the Spotlight field and overview header boxes share 2 px of
+  border geometry; the live boundary witness proves the Spotlight tile and its
+  body both clear the overview header's content rather than overlapping it.
 - The live browser witness measures every rendered desktop queue preview at or
   above the existing 120 px host-width floor.
+- `preview-followup/` contains the focused useful-mini revision at desktop,
+  short, tablet and narrow sizes. Mixed-projection captures show I:C, basal and
+  behavioral rows; the default projection's expanded Watching state supplies
+  ISF. Dedicated chart-scroll captures show the chart where the short inspector
+  viewport cannot contain a complete row at once. `capture.txt` records uniform
+  92 px preview heights, widths from 340–710 px, and zero horizontal overflow.
 - The live narrow witness measures chart controls at a minimum 44×44 px hit
   area while retaining the existing 13 px marks.
 - `special-states/` contains the current pending, failed, stale, empty,
@@ -55,6 +63,12 @@ also represented.
   preserving the catalog dismissal contract.
 
 ## Gate evidence
+
+The table below preserves the completed `b32a0ea` phase-2 sweep as historical
+evidence; it is not relabeled as covering the later useful-mini follow-up. That
+bounded follow-up ran 124/124 affected pure frontend and ledger tests plus 4/4
+affected browser contracts. Per operator direction, the full 163-story replay
+and long gate sweep remain for after coordinator inspection of these previews.
 
 | Gate | Result | Log |
 |---|---|---|

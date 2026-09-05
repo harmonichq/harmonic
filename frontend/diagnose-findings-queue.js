@@ -376,12 +376,13 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     if (detail && row.raw.window_scope === 'whole_day') {
       add(detail, 'scope-note', ' · Whole day');
     }
-    if (row.rank !== null) {
-      const mini = document.createElement('span');
-      mini.className = 'mini';
-      node.append(mini);
-      miniSlots.push({ host: mini, row: row.raw });
-    }
+    /* Chart-backed Watching rows use the same evidence preview as ranked rows
+       when the reader expands them. The workstation registry decides whether
+       a descriptor actually exists; rows without one lose the empty host. */
+    const mini = document.createElement('span');
+    mini.className = 'mini';
+    node.append(mini);
+    miniSlots.push({ host: mini, row: row.raw });
     node.addEventListener('click', () => onDrill(row.raw));
     list.append(node);
   };

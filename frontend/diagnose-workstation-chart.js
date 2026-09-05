@@ -70,6 +70,209 @@ export const hhmm = (mins) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 };
 
+/* Queue previews are evidence summaries, not scaled-down copies of the full
+   charts. Each family keeps only the marks that answer its first question:
+   departures from the programmed basal rate, dose against glucose response,
+   meal traces around their shared start, or cohort response around an event.
+   Every mark below is a served point or a reference rule; no fit, smoothing or
+   replacement value is derived here. */
+const previewBase = (description) => ({
+  animation: false,
+  backgroundColor: 'transparent',
+  aria: { enabled: true, decal: { show: false }, description },
+  tooltip: { show: false },
+  grid: { left: 8, right: 8, top: 20, bottom: 10, containLabel: false },
+});
+const previewAxis = (type, extra = {}) => ({
+  type, show: false, axisLine: { show: false }, axisTick: { show: false },
+  axisLabel: { show: false }, splitLine: { show: false }, ...extra,
+});
+const previewText = (text, left, color, extra = {}) => ({
+  type: 'text', left, top: 5, silent: true,
+  style: { text, fill: color, font: '600 9px Inter, system-ui, sans-serif', ...extra },
+});
+const previewRange = (range, values) => {
+  if (Array.isArray(range) && range.length === 2 && range.every(Number.isFinite)
+      && range[0] < range[1]) return range;
+  const finite = values.filter(Number.isFinite);
+  if (!finite.length) return [0, 1];
+  const lo = Math.min(...finite); const hi = Math.max(...finite);
+  return lo === hi ? [lo - 1, hi + 1] : [lo, hi];
+};
+const previewBands = (points) => {
+  const bands = [];
+  let band = [];
+  for (const point of points) {
+    if (point.support !== 'withheld'
+        && [point.minute, point.p25, point.p75].every(Number.isFinite)) {
+      band.push(point);
+    } else if (band.length) {
+      bands.push(band);
+      band = [];
+    }
+  }
+  if (band.length) bands.push(band);
+  return bands;
+};
+
+export function queuePreviewOption(descriptor, range, colors) {
+  const data = descriptor?.data || {};
+  const ink = colors || {};
+  const text = ink.text || '#f2ede2';
+  const muted = ink.muted || '#a49c90';
+  const line = ink.line || '#3f3833';
+  const signal = ink.signal || '#86ad78';
+  const high = ink.high || '#e2be4c';
+  const basal = ink.basal || '#a89a85';
+  const excluded = ink.excluded || '#8d8579';
+
+  if (descriptor.kind === 'basal') {
+    const nights = (data.nights || []).filter((night) =>
+      Number.isFinite(night.delivered_rate) && Number.isFinite(night.programmed_rate));
+    const delta = (night) => night.delivered_rate - night.programmed_rate;
+    const extent = Math.max(.05, ...nights.map((night) => Math.abs(delta(night))));
+    return {
+      ...previewBase(`${nights.length} served nights shown as departures from each night's programmed basal rate.`),
+      grid: { left: 8, right: 8, top: 22, bottom: 8 },
+      xAxis: previewAxis('value', { min: -extent, max: extent }),
+      yAxis: previewAxis('value', { min: 0, max: Math.max(1, nights.length), inverse: true }),
+      graphic: [previewText('LESS', 8, muted), previewText('PROGRAMMED', 'center', text,
+        { align: 'center' }), previewText('MORE', 'right', high, { align: 'right' })],
+      series: [
+        { id: 'queue:basal:departures', type: 'custom', animation: false,
+          data: nights.map((night, index) => [delta(night), index + .5]),
+          renderItem: (params, api) => {
+            const night = nights[params.dataIndex];
+            const zero = api.coord([0, api.value(1)]); const end = api.coord([api.value(0), api.value(1)]);
+            const height = Math.max(2, Math.min(5, params.coordSys.height / Math.max(nights.length, 1) - 1));
+            const served = night.sign === 1 ? high : night.sign === -1 ? basal : text;
+            return { type: 'rect', shape: { x: Math.min(zero[0], end[0]), y: zero[1] - height / 2,
+              width: Math.max(2, Math.abs(end[0] - zero[0])), height },
+            style: { fill: served, opacity: night.sign == null ? .72 : .88 } };
+          } },
+        { id: 'queue:basal:programmed', type: 'custom', animation: false, silent: true,
+          data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect',
+            shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+              width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .72 } }) },
+      ],
+    };
+  }
+
+  if (descriptor.kind === 'isf') {
+    const steps = (data.steps || []).filter((step) =>
+      Number.isFinite(step.insulin_acted) && Number.isFinite(step.dbg));
+    const xs = previewRange(null, steps.map((step) => step.insulin_acted));
+    const ys = previewRange(null, [...steps.map((step) => step.dbg), 0]);
+    return {
+      ...previewBase(`${steps.length} served correction steps plotted as insulin acted against glucose change.`),
+      xAxis: previewAxis('value', { min: Math.min(0, xs[0]), max: xs[1] }),
+      yAxis: previewAxis('value', { min: ys[0], max: ys[1] }),
+      graphic: [previewText('GLUCOSE CHANGE', 8, muted), previewText('DOSE ACTED →', 'right', text,
+        { align: 'right' })],
+      series: [
+        { id: 'queue:isf:steps', type: 'scatter', symbol: 'circle', symbolSize: 5,
+          data: steps.map((step) => [step.insulin_acted, step.dbg]),
+          itemStyle: { color: signal, opacity: .68 }, emphasis: { disabled: true } },
+        { id: 'queue:isf:zero', type: 'custom', animation: false, silent: true, data: [[0, 0]],
+          renderItem: (params, api) => ({ type: 'rect', shape: {
+            x: params.coordSys.x, y: api.coord([0, 0])[1] - .5,
+            width: params.coordSys.width, height: 1 }, style: { fill: line, opacity: .9 } }) },
+      ],
+    };
+  }
+
+  if (descriptor.kind === 'carb-ratio') {
+    const runs = new Map((data.runs || []).map((run) => [run.run_id, run]));
+    const traces = (data.series || []).map((series) => ({ ...series,
+      points: series.points || [] }));
+    const x = previewRange(null, traces.flatMap((trace) => trace.points
+      .map((point) => point.minute)));
+    const y = previewRange(range, traces.flatMap((trace) => trace.points
+      .map((point) => point.bg)));
+    return {
+      ...previewBase(`${traces.length} served meal traces shown around the first meal.`),
+      xAxis: previewAxis('value', { min: x[0], max: x[1] }),
+      yAxis: previewAxis('value', { min: y[0], max: y[1] }),
+      graphic: [previewText('MEAL · RESPONSE', 'center', text, { align: 'center' })],
+      series: [
+        { id: 'queue:ic:target', type: 'line', data: [], silent: true,
+          markArea: { silent: true, itemStyle: { color: signal, opacity: .055 },
+            data: [[{ yAxis: 70 }, { yAxis: 180 }]] } },
+        ...traces.map((trace) => {
+          const supported = Boolean(runs.get(trace.run_id)?.in_pool);
+          return { id: `queue:ic:run:${trace.run_id}`, type: 'line', symbol: 'circle',
+            symbolSize: 3.5, showSymbol: true, connectNulls: false, animation: false,
+            data: trace.points.map((point) => [
+              Number.isFinite(point.minute) ? point.minute : null,
+              Number.isFinite(point.minute) && Number.isFinite(point.bg) ? point.bg : null,
+            ]),
+            lineStyle: { color: supported ? signal : excluded, width: supported ? 1.6 : 1,
+              opacity: supported ? .64 : .34, type: supported ? 'solid' : 'dashed' },
+            itemStyle: { color: supported ? signal : excluded,
+              opacity: supported ? .8 : .5 } };
+        }),
+        { id: 'queue:ic:meal-anchor', type: 'custom', animation: false, silent: true,
+          data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
+            x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+            width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .65 } }) },
+      ],
+    };
+  }
+
+  const projection = data.projection || {};
+  const cohorts = (projection.cohorts || []).map((cohort) => ({ ...cohort,
+    points: cohort.points || [] }))
+    .filter((cohort) => cohort.points.some((point) => point.support !== 'withheld'
+      && Number.isFinite(point.minute) && Number.isFinite(point.median)));
+  const y = previewRange(range, cohorts.flatMap((cohort) =>
+    cohort.points.filter((point) => point.support !== 'withheld')
+      .flatMap((point) => [point.p25, point.median, point.p75])));
+  const styles = ['solid', 'dashed', 'dotted'];
+  const series = [];
+  cohorts.forEach((cohort, index) => {
+    const color = ink.cohorts?.[cohort.key] || [signal, high, excluded][index % 3];
+    previewBands(cohort.points).forEach((band, bandIndex) => {
+      const quantiles = band.map((point) => [point.minute, point.p25, point.p75]);
+      series.push({ id: `queue:event:${cohort.key}:band:${bandIndex}`, type: 'custom',
+        animation: false, silent: true, data: [[bandIndex]], quantiles,
+        renderItem: (_params, api) => {
+          const upper = quantiles.map(([minute, , p75]) => api.coord([minute, p75]));
+          const lower = quantiles.toReversed()
+            .map(([minute, p25]) => api.coord([minute, p25]));
+          if (quantiles.length === 1) {
+            return { type: 'line', shape: { x1: upper[0][0], y1: upper[0][1],
+              x2: lower[0][0], y2: lower[0][1] },
+            style: { stroke: color, lineWidth: 3, opacity: .22 } };
+          }
+          return { type: 'polygon', shape: { points: [...upper, ...lower] },
+            style: { fill: color, opacity: .16 } };
+        } });
+    });
+    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line', symbol: 'circle',
+      symbolSize: index === 0 ? 4 : 3.5, showSymbol: true,
+      connectNulls: false, data: cohort.points.map((point) => [
+        Number.isFinite(point.minute) ? point.minute : null,
+        point.support !== 'withheld' && Number.isFinite(point.minute)
+          && Number.isFinite(point.median) ? point.median : null,
+      ]),
+      lineStyle: { color, width: index === 0 ? 2.4 : 1.8, opacity: index === 0 ? .92 : .78,
+        type: styles[index % styles.length] },
+      itemStyle: { color, opacity: index === 0 ? .95 : .82 } });
+  });
+  return {
+    ...previewBase(`${cohorts.length} served response cohorts compared around the event.`),
+    xAxis: previewAxis('value', { min: projection.window_min?.[0] ?? -60,
+      max: projection.window_min?.[1] ?? 180 }),
+    yAxis: previewAxis('value', { min: y[0], max: y[1] }),
+    graphic: [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
+    series: [...series,
+      { id: 'queue:event:event-anchor', type: 'custom', animation: false, silent: true,
+        data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
+          x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+          width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } }) }],
+  };
+}
+
 /**
  * Name a committed circular window, start to end. A window that ENDS on the day
  * boundary names that instant 24:00, matching the preset grammar

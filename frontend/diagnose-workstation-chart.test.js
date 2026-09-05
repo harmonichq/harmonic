@@ -5,7 +5,7 @@ import {
   BIN_MINUTES, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
   commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText, GRID,
-  stripGlucoseRange,
+  stripGlucoseRange, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,108 @@ import { fileURLToPath } from 'node:url';
 const historyCapture = JSON.parse(readFileSync(fileURLToPath(new URL(
   '../mockups/diagnose-workstation.synthetic/ic-history-events.capture.json', import.meta.url,
 )), 'utf8'));
+const fixture = (path) => JSON.parse(readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8'));
+const previewColors = {
+  text: '#f2ede2', muted: '#a49c90', line: '#3f3833', signal: '#86ad78',
+  high: '#e2be4c', basal: '#a89a85', excluded: '#8d8579',
+  cohorts: { matched: '#86ad78', nearly_matched: '#e2be4c', comparison: '#d08150' },
+};
+
+test('#341 · queue previews carry a purpose-built grammar for every evidence family', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const options = {
+    basal: queuePreviewOption({ kind: 'basal', data: basal }, null, previewColors),
+    isf: queuePreviewOption({ kind: 'isf', data: isf }, null, previewColors),
+    ic: queuePreviewOption({ kind: 'carb-ratio', data: ic }, [60, 240], previewColors),
+    event: queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors),
+  };
+
+  assert.equal(options.basal.series.find(({ id }) => id === 'queue:basal:departures').data.length,
+    basal.nights.length, 'basal draws every served night around its programmed rate');
+  assert.equal(options.isf.series.find(({ id }) => id === 'queue:isf:steps').data.length,
+    isf.steps.length, 'correction factor draws every served dose/response step');
+  assert.equal(options.ic.series.filter(({ id }) => id?.startsWith('queue:ic:run:')).length,
+    ic.series.length, 'I:C preserves every served meal trace');
+  assert.deepEqual(options.ic.series.find(({ id }) => id === `queue:ic:run:${ic.series[0].run_id}`).data,
+    ic.series[0].points.map(({ minute, bg }) => [minute, bg]),
+    'I:C does not smooth or manufacture points');
+  const supported = event.projection.cohorts.filter((cohort) =>
+    cohort.points.some((point) => point.support !== 'withheld' && Number.isFinite(point.median)));
+  assert.equal(options.event.series.filter(({ id }) => id?.endsWith(':median')).length,
+    supported.length, 'behavioral previews draw each cohort with served aggregate support');
+  assert.ok(options.basal.series.some(({ id }) => id === 'queue:basal:programmed'));
+  assert.ok(options.isf.series.some(({ id }) => id === 'queue:isf:zero'));
+  assert.ok(options.ic.series.some(({ id }) => id === 'queue:ic:meal-anchor'));
+  assert.ok(options.event.series.some(({ id }) => id === 'queue:event:event-anchor'));
+  for (const option of Object.values(options)) {
+    assert.equal(option.xAxis.show, false);
+    assert.equal(option.yAxis.show, false);
+    assert.equal(option.tooltip.show, false);
+  }
+});
+
+test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
+  const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
+    runs: [{ run_id: 'meal', in_pool: true }],
+    series: [{ run_id: 'meal', points: [
+      { minute: -5, bg: 110 }, { minute: 0, bg: null }, { minute: 5, bg: 130 },
+    ] }],
+  } }, [60, 240], previewColors);
+  const meal = ic.series.find(({ id }) => id === 'queue:ic:run:meal');
+  assert.deepEqual(meal.data, [[-5, 110], [0, null], [5, 130]]);
+  assert.equal(meal.connectNulls, false);
+  assert.notEqual(meal.symbol, 'none', 'isolated served meal points remain visible');
+  assert.equal(meal.itemStyle.color, previewColors.signal,
+    'meal symbols use the same evidence ink as their trace');
+
+  const event = queuePreviewOption({ kind: 'event-comparison', data: { projection: {
+    window_min: [-10, 20], cohorts: [{ key: 'matched', name: 'Matched', points: [
+      { minute: -10, median: 100, p25: 90, p75: 110, support: 'supported' },
+      { minute: -5, median: 105, p25: 95, p75: 115, support: 'supported' },
+      { minute: 0, median: null, p25: null, p75: null, support: 'withheld' },
+      { minute: 5, median: 120, p25: 108, p75: 132, support: 'limited' },
+      { minute: 10, median: 125, p25: 112, p75: 138, support: 'limited' },
+    ] }],
+  } } }, [60, 240], previewColors);
+  const median = event.series.find(({ id }) => id === 'queue:event:matched:median');
+  assert.deepEqual(median.data, [
+    [-10, 100], [-5, 105], [0, null], [5, 120], [10, 125],
+  ]);
+  assert.equal(median.connectNulls, false);
+  assert.notEqual(median.symbol, 'none', 'isolated served cohort points remain visible');
+  assert.equal(median.itemStyle.color, previewColors.cohorts.matched,
+    'cohort symbols use the same evidence ink as their trace');
+  assert.deepEqual(event.series.filter(({ id }) => id?.startsWith('queue:event:matched:band:'))
+    .map(({ quantiles }) => quantiles), [[[-10, 90, 110], [-5, 95, 115]],
+      [[5, 108, 132], [10, 112, 138]]], 'withheld evidence splits the quantile bands');
+});
+
+test('#341 · behavioral preview bands plot served p25/p75 coordinates directly', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors);
+  const band = option.series.find(({ id, quantiles }) => id?.includes(':comparison:band:')
+    && quantiles?.some(([, p25, p75]) => p75 > p25));
+  assert.ok(band, 'the served comparison cohort publishes a nonzero spread');
+  const rendered = band.renderItem({ coordSys: { x: 0, y: 0, width: 300, height: 90 } }, {
+    coord: ([minute, value]) => [minute, value],
+  });
+  const expected = band.quantiles.length === 1
+    ? [[band.quantiles[0][0], band.quantiles[0][2]], [band.quantiles[0][0], band.quantiles[0][1]]]
+    : [
+      ...band.quantiles.map(([minute, , p75]) => [minute, p75]),
+      ...band.quantiles.toReversed().map(([minute, p25]) => [minute, p25]),
+    ];
+  const points = rendered.type === 'polygon'
+    ? rendered.shape.points
+    : [[rendered.shape.x1, rendered.shape.y1], [rendered.shape.x2, rendered.shape.y2]];
+  assert.deepEqual(points, expected, 'the rendered spread uses the served quantiles, not a stack delta');
+});
 
 test('buildSlotLane reads the backend verdict fields', () => {
   const lane = buildSlotLane([

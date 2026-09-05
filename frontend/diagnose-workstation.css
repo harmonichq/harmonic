@@ -1496,11 +1496,14 @@
   margin: 14px 0 0; padding: 0 var(--ck-pad); color: var(--mk-muted);
   font-size: 11.5px; font-weight: 500; line-height: 1.5;
 }
-.dw .qrow.priced {
-  grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) minmax(120px, .8fr) 12px;
+.dw .qrow:has(> .mini) {
+  grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) 12px;
 }
-.dw .qrow.priced .go { grid-column: 5; }
-.dw .qrow.priced :is(.sum, .den, .why) { grid-column: 2 / 4; }
+.dw .qrow:has(> .mini) .go { grid-column: 4; }
+.dw .qrow:has(> .mini) :is(.lab, .sum, .den) {
+  overflow: visible; text-overflow: clip; white-space: normal;
+}
+.dw .qrow:has(> .mini) .sum { display: block; }
 /* THE MINI IS A CHART WELL, not a panel fenced off behind a rule. ADR 255 seats
    a chart one step BELOW the ground its surroundings sit on, and that step is
    what tells the reader where the plot starts — so the hairline goes, for the
@@ -1529,9 +1532,10 @@
    and bottom for the same reason: a plot seated in the row, never a slab
    filling it. */
 .dw .qrow .mini {
-  grid-column: 4; grid-row: 1 / span 3; align-self: stretch; min-height: 44px;
+  display: block; grid-column: 2 / -1; grid-row: auto; align-self: stretch;
+  min-height: 92px; height: 92px;
   overflow: hidden;
-  margin-block: 3px 4px; border-radius: var(--wk-radius);
+  margin-block: 7px 4px; border-radius: var(--wk-radius);
   background: color-mix(in srgb, var(--ck-well) 45%, var(--ck-field));
   --ec-matched: var(--mk-primary);
   --ec-nearly-matched: var(--mk-warn);
@@ -1554,7 +1558,6 @@
      colour for the cohort and the one thing this cell must never do. */
   --ec-comparison: color-mix(in srgb, var(--mk-accent) 85%, transparent);
 }
-.dw .qrow:has(> .tier) .mini { grid-row: 1 / span 4; }
 .dw .qrow .mini.tile-state {
   display: grid; place-items: center; padding-inline: 5px; color: var(--mk-muted);
   font-size: var(--ck-micro); line-height: 1.25; text-align: center;
@@ -1720,9 +1723,9 @@
      box returns to the touch floor here and its rows keep the list's own gap */
   .dw .qrow.tail { min-height: 44px; padding-block: 8px; }
   .dw :is(.tailnote + .qrow.tail, .qrow.tail + .qrow.tail) { margin-top: 0; }
-  .dw .qrow.priced { grid-template-columns: 16px minmax(0, 1fr) var(--tag-col) 12px; }
-  .dw .qrow.priced .go { grid-column: 4; }
-  .dw .qrow.priced .mini { display: none; }
+  .dw .qrow:has(> .mini) .mini {
+    min-height: 92px; height: 92px;
+  }
   .history-run { font-size: 14px; }
   .history-run small, .history-canvas-notice { font-size: 14px; }
   .history-retry { min-height: 44px; }

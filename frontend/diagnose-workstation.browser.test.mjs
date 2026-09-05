@@ -399,6 +399,144 @@ test('#341 · a rendered queue preview meets the existing width floor', async ()
   }
 });
 
+test('#341 · useful queue previews remain present and legible at narrow width', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('#level .qrow.priced .mini canvas').length > 1);
+    const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
+      hosts.map((host) => {
+        const option = window.echarts.getInstanceByDom(host)?.getOption();
+        const box = host.getBoundingClientRect();
+        return { kind: host.dataset.previewKind, width: box.width, height: box.height,
+          series: (option?.series || []).map(({ id, data }) => ({ id, points: data?.length ?? 0 })) };
+      }));
+    assert.ok(previews.length > 1, 'the narrow ranked queue retains its charts');
+    assert.ok(previews.every(({ width, height }) => width >= 240 && height >= 76),
+      `narrow previews get a readable row of their own: ${JSON.stringify(previews)}`);
+    assert.ok(previews.every(({ kind, series }) => kind && series.some(({ points }) => points > 0)),
+      `each preview exposes a family grammar backed by served points: ${JSON.stringify(previews)}`);
+    const clipped = await page.locator('#level .qrow:has(> .mini) .lab, '
+      + '#level .qrow:has(> .mini) .sum, #level .qrow:has(> .mini) .den')
+      .evaluateAll((nodes) => nodes.filter((node) => node.scrollWidth > node.clientWidth + 1
+        || node.scrollHeight > node.clientHeight + 1).map((node) => node.textContent.trim()));
+    assert.deepEqual(clipped, [],
+      `chart rows preserve their supplied titles, annotations, and denominators: ${JSON.stringify(clipped)}`);
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · expanding Watching renders its available ISF preview', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture',
+  });
+  try {
+    const watching = page.locator('#level .qcollapse');
+    assert.equal(await watching.getAttribute('aria-expanded'), 'false');
+    await watching.click();
+    const preview = page.locator('#level .qrow[data-id="isf"] .mini[data-preview-kind="isf"]');
+    await preview.locator('canvas').waitFor();
+    const evidence = await preview.evaluate((host) => {
+      const option = window.echarts.getInstanceByDom(host)?.getOption();
+      const box = host.getBoundingClientRect();
+      return { width: box.width, height: box.height,
+        steps: option?.series?.find(({ id }) => id === 'queue:isf:steps')?.data?.length || 0 };
+    });
+    assert.ok(evidence.width >= 240 && evidence.height >= 76 && evidence.steps > 0,
+      `the expanded Watching row exposes served ISF steps: ${JSON.stringify(evidence)}`);
+    const clipped = await page.locator('#level .qrow[data-id="isf"] .lab, '
+      + '#level .qrow[data-id="isf"] .sum, #level .qrow[data-id="isf"] .den')
+      .evaluateAll((nodes) => nodes.filter((node) => node.scrollWidth > node.clientWidth + 1
+        || node.scrollHeight > node.clientHeight + 1).map((node) => node.textContent.trim()));
+    assert.deepEqual(clipped, [], 'the expanded ISF row preserves all supplied text');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · All charts dismissal preserves a genuinely scrolled inspector', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const level = page.locator('#level');
+    await page.waitForFunction(() => {
+      const node = document.querySelector('#level');
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+        && !node.textContent.includes('Loading evidence')
+        && node.scrollHeight > node.clientHeight;
+    });
+    await page.waitForTimeout(150);
+    await level.evaluate((node) => { node.scrollTop = Math.min(96, node.scrollHeight - node.clientHeight); });
+    const before = await page.evaluate(() => ({
+      scroll: document.querySelector('#level').scrollTop,
+      window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
+      finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
+    }));
+    assert.ok(before.scroll > 0, `the witness begins with real inspector overflow (${before.scroll})`);
+
+    const opener = page.getByRole('button', { name: 'All charts', exact: true });
+    await opener.click();
+    const catalog = page.locator('#tile-field[data-explorer] > #tile-row');
+    await catalog.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    assert.ok(await catalog.evaluate((node) => node.scrollTop > 0),
+      'the witness scrolls overflowing All charts content');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+
+    const after = await page.evaluate(() => ({
+      scroll: document.querySelector('#level').scrollTop,
+      window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
+      finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
+      focus: document.activeElement?.textContent?.trim(),
+    }));
+    assert.deepEqual({ scroll: after.scroll, window: after.window, finding: after.finding }, before,
+      'catalog dismissal restores the exact inspector scroll, window, and finding');
+    assert.equal(after.focus, 'All charts', 'catalog dismissal restores focus to its opener');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · narrow Spotlight content clears the overview header content', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, appSource: 'fixture', findingsInputs: twoFamilyInputs,
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#tile-focal .evidence-tile').first().waitFor({ timeout: 5000 });
+      const boundary = await page.evaluate(() => {
+        const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+        const field = rect('#tile-field');
+        const tile = rect('#tile-focal .evidence-tile');
+        const content = rect('#tile-focal .tile-body');
+        const head = rect('#canvas-head');
+        const headContent = rect('#canvas-head .head-rest');
+        return { fieldBottom: field.bottom, tileBottom: tile.bottom, contentBottom: content.bottom,
+          headTop: head.top, headContentTop: headContent.top };
+      });
+      assert.ok(boundary.contentBottom <= boundary.headContentTop
+        && boundary.tileBottom <= boundary.headContentTop,
+      `${viewport.width}px keeps Spotlight content clear of overview content: ${JSON.stringify(boundary)}`);
+      assert.ok(boundary.fieldBottom - boundary.headTop <= 2.1,
+        `${viewport.width}px overlap is confined to the shared border geometry: ${JSON.stringify(boundary)}`);
+    } finally {
+      await page.close();
+    }
+  }
+});
+
 test('#341 · a narrow lower-rank drill returns with rank one readable', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, {

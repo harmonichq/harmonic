@@ -28,7 +28,7 @@ import {
   BIN_MINUTES,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
-  validateHistoryEvents,
+  validateHistoryEvents, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
@@ -1450,7 +1450,14 @@ function boot(root, data, callbacks, signal) {
         continue;
       }
       const descriptor = chartDescriptor(row.id);
-      if (!descriptor) continue;
+      if (!descriptor) {
+        /* Some ranked history rows have no chart contract. Do not leave an
+           empty chart well that implies missing evidence; every queue chart
+           that does have a descriptor remains mounted. */
+        host.remove();
+        queueRow.dataset.mini = 'unavailable';
+        continue;
+      }
       const runtime = tileRuntime.get(descriptor.chartId);
       if (runtime?.pending || descriptor.state !== 'ok') {
         const presentation = tileStatePresentation(descriptor);
@@ -1461,7 +1468,21 @@ function boot(root, data, callbacks, signal) {
       try {
         host.classList.remove('tile-state');
         host.textContent = '';
-        const mounted = mountDescriptorChart(host, descriptor, true);
+        const styles = getComputedStyle(host);
+        const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+        const option = queuePreviewOption(descriptor, sharedGlucoseRange, {
+          text: token('--mk-text', '#f2ede2'), muted: token('--mk-muted', '#a49c90'),
+          line: token('--wk-rule', '#3f3833'), signal: token('--in-range', '#86ad78'),
+          high: token('--high', '#e2be4c'), basal: token('--basal', '#a89a85'),
+          excluded: token('--notindata', '#8d8579'),
+          cohorts: {
+            matched: token('--ec-matched', '#86ad78'),
+            nearly_matched: token('--ec-nearly-matched', '#e2be4c'),
+            comparison: token('--ec-comparison', '#d08150'),
+          },
+        });
+        const mounted = { chart: window.echarts.init(host, null, { renderer: 'canvas' }), option };
+        host.dataset.previewKind = descriptor.kind;
         rowMiniMounts.push(installTileMount(host, mounted));
         mounted.chart.setOption(mounted.option, true);
       } catch {
@@ -2582,9 +2603,14 @@ function boot(root, data, callbacks, signal) {
       if (explorerOpen) {
         explorerOpen = false;
         paint();
+        el('explorer-trigger')?.focus();
         return;
       }
       if (act === 'browse') {
+        /* The catalog is a temporary layer over Diagnose. Preserve the real
+           inspector position before its repaint so Close and Escape restore
+           the exact queue reading context, even when it is well below zero. */
+        queueScrollTop = el('level')?.scrollTop || 0;
         explorerOpen = true;
         paint();
         return;
@@ -3051,15 +3077,15 @@ function boot(root, data, callbacks, signal) {
     if (next.has(key)) next.delete(key); else next.add(key);
     selectedChips = next.size === CHIP_LABELS.length ? null : next;
     collapsedFindingsExpanded = false;
-    /* THE HERO AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes which of the
-       server-ordered rows is first without changing the descriptor set, so the
-       ordinary canvas reconcile quite correctly preserves the still-live old
-       focal id. Ask the rail's one weight authority which visible row became
-       hero and seat that same id; do not re-rank the projection here. */
-    const hero = queueRows(findings, selectedChips)
+    /* THE FIRST PRICED ROW AND THE STAGE ARE ONE ACTIVE FINDING. Sift changes
+       which of the server-ordered rows is first without changing the descriptor
+       set, so the ordinary canvas reconcile quite correctly preserves the
+       still-live old focal id. Ask the rail's one weight authority which visible
+       row became first and seat that same id; do not re-rank the projection here. */
+    const firstPriced = queueRows(findings, selectedChips)
       .find((row) => row.weight === 'priced' && !row.hidden && !row.collapsed);
-    if (hero && currentTileDescriptors().some(({ chartId }) => chartId === hero.id)) {
-      focusChart(hero.id);
+    if (firstPriced && currentTileDescriptors().some(({ chartId }) => chartId === firstPriced.id)) {
+      focusChart(firstPriced.id);
     }
   }
 

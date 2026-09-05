@@ -3861,7 +3861,8 @@ export const S139 = async (page) => {
   is(await focalId(page), chartId, 'S139 the rank-one chart occupies the stage');
 };
 
-/** S140 · A priced row and All charts use the same shared chart builder. */
+/** S140 · A priced row mini and its All charts cell preserve the same served
+    cohort medians while using furniture appropriate to their two sizes. */
 // STORY:finding-evidence-routing:S140
 export const S140 = async (page) => {
   await openWholeDay(page);
@@ -3871,12 +3872,23 @@ export const S140 = async (page) => {
   await openAllCharts(page);
   const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
   await catalogChart.locator('canvas').waitFor();
-  const seriesIds = async (locator) => locator.evaluate((host) =>
-    window.echarts.getInstanceByDom(host).getOption().series.map((series) => series.id));
-  const rowIds = await seriesIds(rowMini);
-  const catalogIds = await seriesIds(catalogChart);
-  ok(rowIds.length > 0, 'S140 the priced row mini draws at least one series');
-  is(rowIds, catalogIds, 'S140 the row mini and catalog chart draw identical series ids');
+  const series = async (locator) => locator.evaluate((host) =>
+    window.echarts.getInstanceByDom(host).getOption().series
+      .map(({ id, data }) => ({ id, data })));
+  const rowSeries = await series(rowMini);
+  const catalogSeries = await series(catalogChart);
+  for (const cohort of ['matched', 'comparison']) {
+    const points = (rows, accepts) => rows.filter(({ id }) => accepts(id || ''))
+      .flatMap(({ data }) => data || [])
+      .filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]))
+      .sort((left, right) => left[0] - right[0]);
+    const miniPoints = points(rowSeries, (id) => id === `queue:event:${cohort}:median`);
+    const fullPoints = points(catalogSeries, (id) => id.startsWith(`${cohort}:line:`));
+    ok(miniPoints.length > 0 && fullPoints.length > 0,
+      `S140 ${cohort} is drawn in both the mini and full chart`);
+    is(miniPoints, fullPoints,
+      `S140 ${cohort} keeps the same served median points across mini and full furniture`);
+  }
 };
 
 /** S141 · Every unpriced tail row is title-only and still drills through the
@@ -3916,17 +3928,24 @@ export const S142 = async (page) => {
     'S142 no retired Decide now tier appears anywhere in the rail');
 };
 
-/** S143 · Below the rail mini's measured width floor, the priced row remains
-    and the mini is omitted rather than mounting an unreadable chart. */
+/** S143 · At the tablet split, the chart reflows onto its own row above the
+    measured width floor; the general sub-floor omission guard remains true. */
 // STORY:finding-evidence-routing:S143
 export const S143 = async (page) => {
   await openWholeDay(page);
   const row = page.locator('#level .qrow.priced[data-id="finding:over_treated_low"]');
   is(await row.count(), 1, 'S143 the priced row survives the narrow inspector');
   ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
-  is(await row.locator('.mini').count(), 0, 'S143 no sub-floor mini remains mounted');
-  is(await row.getAttribute('data-mini'), 'omitted',
-    'S143 the priced row records the sub-floor omission');
+  const mini = row.locator('.mini[data-preview-kind]');
+  await mini.locator('canvas').waitFor();
+  const width = await mini.evaluate((host) => host.getBoundingClientRect().width);
+  ok(width >= MIN_ROW_MINI_WIDTH,
+    `S143 the reflowed mini clears its ${MIN_ROW_MINI_WIDTH}px floor (${width}px)`);
+  is(await row.getAttribute('data-mini'), null,
+    'S143 the reflowed priced row does not record an omission');
+  const subFloor = await page.locator('#level .mini[data-preview-kind]').evaluateAll(
+    (hosts, floor) => hosts.filter((host) => host.clientWidth < floor).length, MIN_ROW_MINI_WIDTH);
+  is(subFloor, 0, 'S143 no sub-floor mini remains mounted');
 };
 
 /** S144 · Sifting to Meals makes Carb undercount first without changing its

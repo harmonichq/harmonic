@@ -1731,13 +1731,16 @@
   .history-retry { min-height: 44px; }
   .history-canvas-notice { inset-inline: 12px; }
   .canvas-pane {
-    grid-template-rows: minmax(220px, 1fr) auto 160px;
-    overflow: hidden;
+    /* A wrapped clinical headline must not spend the plot's remaining height.
+       The pane keeps its established internal scroll, so the overview remains
+       reachable below a Spotlight whose chart now has a real reading floor. */
+    grid-template-rows: minmax(350px, 1fr) auto 160px;
+    overflow-x: hidden; overflow-y: auto;
   }
   .canvas-pane > .body { height: 160px; min-height: 160px; }
   .tile-field {
     display: grid; grid-template-rows: minmax(0, 1fr);
-    overflow: hidden; min-height: 0;
+    overflow: hidden; min-height: 350px;
   }
   .tile-field > .tile-focal,
   .tile-field > .tile-focal > .evidence-tile,

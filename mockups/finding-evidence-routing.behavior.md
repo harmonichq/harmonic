@@ -3178,3 +3178,16 @@ Evidence: the complete amended replay output is
 line records the applicable count. The paired matrix under `evidence/renders/`
 contains `before-` and `after-` files for all four named states at all five
 viewports. No story is retired by this revision.
+
+## Amendment — 2026-09-04, useful queue previews (issue #341)
+
+Connor's later ruling keeps charts in the queue and requires useful miniatures
+rather than full charts squeezed into a small box. This amends S140 and S143
+without retiring either obligation. S140 now proves that the purpose-built mini
+and the matching full All charts cell preserve the same served median points
+for each behavioral cohort; their series identifiers and furniture deliberately
+differ. S143 keeps the positive measured-width floor and the rule that no
+sub-floor chart may remain mounted, while recognizing that the uniform row
+reflow gives the tablet preview its own above-floor line instead of omitting it.
+Backend evidence, ranking, eligibility, full-size chart options and immediate
+detail navigation are unchanged.

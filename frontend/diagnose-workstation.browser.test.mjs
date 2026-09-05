@@ -384,6 +384,53 @@ test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain 
   }
 });
 
+test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === 'ic:720'
+      && document.querySelector('#tile-focal .tile-head h3')?.textContent.includes('Post-meal corrections'));
+    const geometry = await page.locator('#tile-focal .tile-chart').evaluate((host) => {
+      const chart = window.echarts.getInstanceByDom(host);
+      const grid = chart.getModel().getComponent('grid').coordinateSystem.getRect();
+      const ticks = chart.getModel().getComponent('yAxis').axis.scale.getTicks()
+        .map(({ value }) => chart.convertToPixel({ yAxisIndex: 0 }, value))
+        .filter(Number.isFinite).sort((left, right) => left - right);
+      return { hostHeight: host.getBoundingClientRect().height, plotHeight: grid.height,
+        canvasScrollTop: document.querySelector('.canvas-pane').scrollTop,
+        minimumTickGap: Math.min(...ticks.slice(1).map((value, index) => value - ticks[index])) };
+    });
+    assert.ok(geometry.hostHeight >= 170 && geometry.plotHeight >= 90
+      && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
+    `the long-title I:C plot keeps readable height and separated y ticks: ${JSON.stringify(geometry)}`);
+    const visibleContext = await page.evaluate(() => {
+      const rect = (selector) => {
+        const box = document.querySelector(selector).getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom };
+      };
+      return { windowRail: rect('#seg-window'), title: rect('#tile-focal .tile-head'),
+        pageScroll: window.scrollY, viewportHeight: window.innerHeight };
+    });
+    assert.ok(visibleContext.pageScroll === 0 && visibleContext.windowRail.top >= 0
+      && visibleContext.title.top >= 0 && visibleContext.title.bottom <= visibleContext.viewportHeight,
+    `the window rail and complete Spotlight title remain visible at rest: ${JSON.stringify(visibleContext)}`);
+    await shot(page, 'long-title-spotlight',
+      process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', { width: 390, height: 844 });
+    const pane = page.locator('.canvas-pane');
+    await pane.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    assert.ok(await page.locator('#canvas-head').evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      return box.bottom > 0 && box.top < window.innerHeight;
+    }), 'the overview remains reachable through the existing canvas-pane scroll');
+  } finally {
+    await page.close();
+  }
+});
+
 test('#341 · a rendered queue preview meets the existing width floor', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', history: true, appSource: 'fixture' });
@@ -407,7 +454,12 @@ test('#341 · useful queue previews remain present and legible at narrow width',
   });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    await page.waitForFunction(() => document.querySelectorAll('#level .qrow.priced .mini canvas').length > 1);
+    await page.waitForFunction(() => {
+      const level = document.querySelector('#level');
+      return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+        && !level.textContent.includes('Loading evidence');
+    });
     const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
       hosts.map((host) => {
         const option = window.echarts.getInstanceByDom(host)?.getOption();
@@ -426,6 +478,20 @@ test('#341 · useful queue previews remain present and legible at narrow width',
         || node.scrollHeight > node.clientHeight + 1).map((node) => node.textContent.trim()));
     assert.deepEqual(clipped, [],
       `chart rows preserve their supplied titles, annotations, and denominators: ${JSON.stringify(clipped)}`);
+    const minis = page.locator('#level .mini[data-preview-kind]');
+    for (let index = 0; index < await minis.count(); index += 1) {
+      const bounds = await minis.nth(index).evaluate((host) => {
+        const scroller = host.closest('#level');
+        const before = host.getBoundingClientRect();
+        scroller.scrollTop += before.top - scroller.getBoundingClientRect().top - 4;
+        const box = host.getBoundingClientRect();
+        const visible = scroller.getBoundingClientRect();
+        return { kind: host.dataset.previewKind, top: box.top, bottom: box.bottom,
+          visibleTop: visible.top, visibleBottom: visible.bottom };
+      });
+      assert.ok(bounds.top >= bounds.visibleTop - 1 && bounds.bottom <= bounds.visibleBottom + 1,
+        `narrow preview ${index + 1} (${bounds.kind}) scrolls fully above the dock: ${JSON.stringify(bounds)}`);
+    }
   } finally {
     await page.close();
   }

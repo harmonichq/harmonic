@@ -270,6 +270,21 @@ test('#341 · All charts confines interaction and dismissal preserves the window
   try {
     await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
     const pressedBefore = await page.locator('#seg-window button[aria-pressed="true"]').innerText();
+    const restingGeometry = await page.evaluate(() => {
+      const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+      return {
+        instruments: box('.dw > .instruments'),
+        spotlight: box('#tile-field'),
+        overviewHead: box('#canvas-head'),
+        overview: box('.canvas-pane > .body'),
+      };
+    });
+    assert.ok(restingGeometry.instruments.bottom <= restingGeometry.spotlight.top + 1,
+      'the global window selector remains above the Spotlight');
+    assert.ok(restingGeometry.spotlight.bottom <= restingGeometry.overviewHead.top + 1,
+      'the Spotlight precedes the overview-specific header and readout');
+    assert.ok(restingGeometry.overviewHead.bottom <= restingGeometry.overview.top + 1,
+      'the overview-specific header and readout stay grouped with the overview and basal lane');
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
     await page.locator('#tile-field[data-explorer]').waitFor();
     assert.deepEqual(await page.evaluate(() => ({
@@ -300,6 +315,118 @@ test('#341 · All charts confines interaction and dismissal preserves the window
   }
 });
 
+test('#341 · the overview keeps its full name at the split tablet width', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 1024, height: 768 }, appSource: 'fixture',
+  });
+  try {
+    const title = page.locator('#canvas-head .head-rest h2');
+    assert.equal((await title.innerText()).trim(), 'GLUCOSE BY TIME OF DAY');
+    assert.equal(await title.evaluate((node) => node.scrollWidth <= node.clientWidth), true,
+      'the overview name is not reduced to an ellipsis beside empty scope furniture');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, appSource: 'fixture',
+    });
+    try {
+      const spotlight = await page.locator('#tile-focal .tile-chart canvas').first()
+        .evaluate((canvas) => canvas.getBoundingClientRect());
+      assert.ok(spotlight.height >= 120,
+        `${viewport.width}px keeps a readable selected evidence plot (${spotlight.height}px)`);
+
+      const tierGeometry = await page.locator('#level .qrow.priced').first().evaluate((row) => {
+        const tier = row.querySelector('.tier')?.getBoundingClientRect();
+        const label = row.querySelector('.lab')?.getBoundingClientRect();
+        return { tier, label };
+      });
+      assert.ok(tierGeometry.tier && tierGeometry.label
+        && tierGeometry.tier.bottom <= tierGeometry.label.top + 1,
+      `${viewport.width}px gives the tier its own line before the finding title`);
+
+      await page.getByRole('button', { name: 'All charts', exact: true }).click();
+      const catalog = await page.locator('#tile-row').evaluate((row) => ({
+        client: row.clientWidth,
+        tiles: [...row.querySelectorAll('.evidence-tile')].map((tile) => {
+          const box = tile.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width };
+        }),
+      }));
+      assert.ok(catalog.tiles.length > 1, `${viewport.width}px catalog publishes multiple charts`);
+      assert.ok(catalog.tiles.every((tile) => tile.left >= 0
+        && tile.right <= viewport.width + 1 && tile.width <= catalog.client + 1),
+      `${viewport.width}px catalog cards stay inside their one-column viewport`);
+
+      const narrowControls = await page.locator('#tile-row .tile-rail button, #chart-headacts button')
+        .evaluateAll((buttons) => buttons.map((button) => {
+          const box = button.getBoundingClientRect();
+          return { width: box.width, height: box.height, name: button.getAttribute('aria-label') };
+        }));
+      assert.ok(narrowControls.every(({ width, height }) => width >= 44 && height >= 44),
+        `${viewport.width}px chart controls keep 44px hit areas: ${JSON.stringify(narrowControls)}`);
+
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      await page.locator('#tile-focal .tile-fullscreen').click();
+      const fullscreen = await page.locator('#tile-field[data-fullscreen-tile] .tile-chart canvas').first()
+        .evaluate((canvas) => canvas.getBoundingClientRect());
+      assert.ok(fullscreen.height >= 240 && fullscreen.width <= viewport.width + 1,
+        `${viewport.width}px fullscreen exposes a usable chart (${fullscreen.width}x${fullscreen.height})`);
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('#341 · a rendered queue preview meets the existing width floor', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', history: true, appSource: 'fixture' });
+  try {
+    await page.locator('#level .qrow.priced .mini').first().waitFor();
+    const widths = await page.locator('#level .qrow.priced .mini').evaluateAll((minis) =>
+      minis.map((mini) => mini.getBoundingClientRect().width));
+    assert.ok(widths.length > 0, 'the desktop queue renders quick previews');
+    assert.ok(widths.every((width) => width >= 120),
+      `every rendered preview meets the documented 120px floor: ${widths.join(', ')}`);
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · a narrow lower-rank drill returns with rank one readable', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true, appSource: 'fixture',
+  });
+  try {
+    const rows = page.locator('#level .qrow.priced');
+    assert.ok(await rows.count() > 1, 'the narrow queue publishes a lower-ranked drill target');
+    await rows.nth(1).click();
+    assert.ok((await page.locator('#crumb-trail').innerText()).includes('Findings'),
+      'the user action opens the lower-ranked detail');
+
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    const returned = await page.locator('#level .qrow.priced').first().evaluate((row) => {
+      const level = row.closest('#level').getBoundingClientRect();
+      const title = row.querySelector('.lab').getBoundingClientRect();
+      const tier = row.querySelector('.tier')?.getBoundingClientRect();
+      return { levelTop: level.top, titleTop: title.top, tierTop: tier?.top ?? null,
+        scrollTop: row.closest('#level').scrollTop };
+    });
+    assert.ok(returned.titleTop >= returned.levelTop && returned.tierTop >= returned.levelTop,
+      `return makes rank one readable instead of stranding it above the pane: ${JSON.stringify(returned)}`);
+    assert.equal(returned.scrollTop, 0, 'the queue-origin return restores the root anchor');
+  } finally {
+    await page.close();
+  }
+});
+
 test('#341 · a chart picked from All charts can expand independently', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
@@ -310,7 +437,6 @@ test('#341 · a chart picked from All charts can expand independently', async ()
     const tile = page.locator('.tile-row .evidence-tile:has(.tile-chart canvas)').first();
     const chartId = await tile.getAttribute('data-chart-id');
     const chartTitle = (await tile.locator('h3').textContent()).trim();
-    const restingTitle = await page.locator('#full-title').textContent();
 
     await tile.locator('.tile-body').click();
     await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
@@ -355,7 +481,7 @@ test('#341 · a chart picked from All charts can expand independently', async ()
       'shrink returns through the door it came in');
     assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
       'closing the expanded chart returns to Diagnose, not All charts');
-    assert.equal(await page.locator('#full-title').textContent(), restingTitle,
+    assert.equal((await page.locator('#full-title').textContent()).trim(), '',
       'the borrowed header carries no standing title of its own');
   } finally {
     await page.close();
@@ -1180,7 +1306,7 @@ test('Diagnose keeps the Dark material roles ordered and target bounds as rails'
   } finally { await page.close(); }
 });
 
-test('every vessel state retains the Dark retheme edge', async () => {
+test('All charts catalog vessels retain the Dark retheme edge', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
@@ -1195,11 +1321,10 @@ test('every vessel state retains the Dark retheme edge', async () => {
       return {
         catalog: style(document.querySelector('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])')),
         selected: style(document.querySelector('#tile-row .evidence-tile[data-selected]')),
-        tail: style(document.querySelector('#tile-row .evidence-tile[data-tail-head]:not([data-selected])')),
         label: document.querySelector('#tile-row').getAttribute('aria-label'),
       };
     });
-    for (const state of ['catalog', 'tail']) {
+    for (const state of ['catalog']) {
       assert.equal(styles[state].radius, '4px');
       assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
         `Dark ${state} cells retain the #453d35 vessel edge`);

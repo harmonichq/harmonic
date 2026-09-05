@@ -10,10 +10,10 @@
  *
  * Three regressions this file exists to hold, each of which a green fast gate
  * missed:
- *   · starring a ranked chart reordered the dock even though retention and
+ *   · keeping a ranked chart reordered the catalog even though retention and
  *     focus are separate verbs;
  *   · selecting an All charts cell moved that chart left-most instead of leaving
- *     the dock in its published findings order;
+ *     All charts in its published findings order;
  *   · a stale-generation recovery restored a layout captured before the refresh,
  *     so a pin whose row the new generation dropped was seated with no
  *     descriptor and the repaint threw.
@@ -111,6 +111,11 @@ async function openCanvas(browser, { routes = null, ...options } = {}) {
   return { page, errors };
 }
 
+async function closeAllCharts(page) {
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.locator('#tile-field[data-explorer]').waitFor({ state: 'detached' });
+}
+
 const SANCTION_DRILL_WORD = 'sanction: live-judging ruling · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."';
 const RETIRED_EXPLORE_MODE_SANCTION = 'sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we\'re building a better version of it right now."';
 /* The drilled tile was marked twice — a ring, and a rail that materialized a
@@ -125,7 +130,9 @@ const SPOTLIGHT_OCCURRENCE_SELECTION_SANCTION = 'sanction: live-judging ruling �
 const readField = (page) => page.evaluate(() => ({
   arrangement: document.querySelector('.tile-field')?.dataset.arrangement || null,
   tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
-    chartId: tile.dataset.chartId, seat: tile.dataset.seat, state: tile.dataset.state,
+    chartId: tile.dataset.chartId,
+    seat: tile.closest('#tile-focal') ? 'focal' : tile.dataset.seat,
+    state: tile.dataset.state,
     pinned: tile.hasAttribute('data-pinned'),
     drilled: tile.hasAttribute('data-drilled'),
     title: tile.querySelector('.tile-head h3')?.textContent || null,
@@ -137,7 +144,7 @@ const readField = (page) => page.evaluate(() => ({
     .map((name) => name.textContent),
   cells: [...document.querySelectorAll('.tile-schematic > *')].map((cell) => cell.className),
   pinCount: document.querySelector('#pin-count')?.textContent || null,
-  focal: document.querySelector('.evidence-tile[data-seat="focal"]')?.dataset.chartId || null,
+  focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
   row: [...document.querySelectorAll('#tile-row .evidence-tile')].map((tile) => ({
     chartId: tile.dataset.chartId,
     pinned: tile.hasAttribute('data-pinned'),
@@ -146,12 +153,13 @@ const readField = (page) => page.evaluate(() => ({
   })),
 }));
 
-test('five stars remain available without reordering All charts or moving the spotlight', async () => {
+test('five stars remain available without reordering the direct All charts catalog', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
-    assert.ok(opening.focal, 'the fixed canvas opens with a spotlight');
+    assert.equal(opening.focal, null,
+      'the direct All charts browser leaves no duplicate spotlight tile behind it');
     const order = opening.row.map(({ chartId }) => chartId);
     const targets = opening.row.filter(({ pinned }) => !pinned).slice(0, 5).reverse();
     assert.equal(targets.length, 5, 'All charts exposes at least five charts to keep');
@@ -160,7 +168,7 @@ test('five stars remain available without reordering All charts or moving the sp
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"] .tile-pin`).click();
       await page.waitForTimeout(350);
       const field = await readField(page);
-      assert.equal(field.focal, opening.focal, `starring ${chartId} leaves the spotlight alone`);
+      assert.equal(field.focal, null, `starring ${chartId} leaves the catalog browser in place`);
       assert.deepEqual(field.row.map(({ chartId: id }) => id), order,
         'stars never change the server-published catalog order');
     }
@@ -172,16 +180,16 @@ test('five stars remain available without reordering All charts or moving the sp
   }
 });
 
-test('a ranked chart star uses keep copy and changes no position or spotlight', async () => {
+test('a ranked chart star uses keep copy and changes no catalog position', async () => {
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
     const opening = await readField(page);
-    const focal = opening.focal;
-    assert.ok(focal, 'the canvas opens with a focal chart');
+    assert.equal(opening.focal, null,
+      'the direct All charts browser keeps the workspace spotlight out of its overlay');
     const order = opening.row.map(({ chartId }) => chartId);
-    const mini = opening.row.find(({ chartId }) => chartId !== focal);
-    assert.ok(mini, 'All charts exposes a chart beside the spotlight');
+    const mini = opening.row[0];
+    assert.ok(mini, 'All charts exposes a chart to keep');
     const star = page.locator(`#tile-row .evidence-tile[data-chart-id="${mini.chartId}"] .tile-pin`);
     const title = mini.title;
     assert.equal(await star.getAttribute('aria-label'), `Keep ${title}`);
@@ -190,7 +198,7 @@ test('a ranked chart star uses keep copy and changes no position or spotlight', 
     await page.keyboard.press('Space');
     await page.waitForTimeout(350);
     let field = await readField(page);
-    assert.equal(field.focal, focal, 'starring a catalog chart does not move focus to it');
+    assert.equal(field.focal, null, 'starring a catalog chart does not leave All charts');
     assert.deepEqual(field.row.map(({ chartId }) => chartId), order,
       'starring a ranked chart leaves the published order unchanged');
     assert.equal(field.row.find(({ chartId }) => chartId === mini.chartId)?.pinned, true,
@@ -202,8 +210,8 @@ test('a ranked chart star uses keep copy and changes no position or spotlight', 
     await page.keyboard.press('Space');
     await page.waitForTimeout(350);
     field = await readField(page);
-    assert.equal(field.focal, focal,
-      'stopping retention leaves the focal chart where the reader put it');
+    assert.equal(field.focal, null,
+      'stopping retention leaves the catalog browser open');
     assert.deepEqual(field.row.map(({ chartId }) => chartId), order,
       'stopping retention also leaves the published order unchanged');
     assert.deepEqual(errors, []);
@@ -220,17 +228,20 @@ test('selecting any visible All charts cell changes only the spotlight mark', as
       const opening = await readField(page);
       const order = opening.row.map(({ chartId }) => chartId);
       const source = opening.row[sourceIndex];
-      assert.ok(opening.focal && source, `All charts exposes cell ${sourceIndex + 1}`);
+      assert.ok(source, `All charts exposes cell ${sourceIndex + 1}`);
 
       await page.locator(`#tile-row .evidence-tile[data-chart-id="${source.chartId}"] .tile-body`).click();
       await page.waitForTimeout(350);
       assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
         `cell ${sourceIndex + 1}'s pick closes All charts`);
+      assert.equal((await readField(page)).focal, source.chartId,
+        `cell ${sourceIndex + 1} becomes the workspace spotlight`);
       await page.getByRole('button', { name: 'All charts', exact: true }).click();
       await page.locator('#tile-field[data-explorer]').waitFor();
       await page.waitForTimeout(350);
       const focused = await readField(page);
-      assert.equal(focused.focal, source.chartId, `cell ${sourceIndex + 1} becomes the spotlight`);
+      assert.equal(focused.focal, null,
+        'reopening All charts leaves the workspace spotlight behind its overlay');
       assert.deepEqual(focused.row.map(({ chartId }) => chartId), order,
         'selecting a current frame never reorders All charts');
       assert.deepEqual(focused.row.filter(({ selected }) => selected).map(({ chartId }) => chartId),
@@ -257,10 +268,11 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
     assert.equal(new Set(opening.row.map(({ title }) => title)).size, opening.row.length,
       `no two live charts share a name (${JSON.stringify(opening.row)})`);
 
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     const target = await page.locator('#level .qrow[data-id^="finding:"]').last()
       .getAttribute('data-id');
     assert.ok(target, 'the queue lists a behavioural finding to drill');
-    assert.notEqual(opening.focal, target,
+    assert.notEqual((await readField(page)).focal, target,
       'the drill target is not already focal, so seating is what is being measured');
 
     await page.locator(`#level .qrow[data-id="${target}"]`).click();
@@ -281,12 +293,6 @@ test('drilling a behavioural finding seats that finding\'s own comparison, marke
        exactly one tile reads as drilled, and it is the one that owns the
        drill. This clause only ever measured the plate. */
     console.log(RETIRED_RAIL_WELL_SANCTION);
-    assert.equal(await page.evaluate(() => getComputedStyle(
-      document.querySelector('.evidence-tile[data-drilled] .tile-rail'),
-    ).backgroundColor), await page.evaluate(() => getComputedStyle(
-      document.querySelector('.evidence-tile:not([data-drilled]) .tile-rail'),
-    ).backgroundColor),
-    `a rail keeps one ground drilled or not — ${RETIRED_RAIL_WELL_SANCTION}`);
     assert.equal(drilled.tiles.filter((tile) => tile.drilled).length, 1,
       'only the spotlighted current frame carries the drill');
     assert.equal(drilled.tiles.filter((tile) => tile.drilled && tile.chartId !== target).length, 0,
@@ -317,20 +323,16 @@ test('an occurrence selection stays in the spotlight while the catalog chart sta
     await tile.waitFor({ state: 'visible' });
     /* Promote the cell, then expand from the stage: a cell's only verb is
        "become the spotlight" (ADR 215 amendment). */
-    await tile.click();
+    await tile.locator('.tile-body').click();
+    await page.locator('#level [data-comparison-cohort="matched"]:visible').first().click();
+    await page.waitForSelector('[data-comparison-cohort="matched"][aria-pressed="true"]');
     await page.locator('#tile-focal .tile-fullscreen').click();
     await page.waitForSelector('#tile-field #ec-chart', { state: 'attached' });
-    await page.locator('[data-comparison-cohort="matched"]').first().click();
-    await page.waitForSelector('[data-comparison-cohort="matched"][aria-pressed="true"]');
 
     const matchedLegendSelected = await page.locator(
       '.ec-key-item[data-cohort="matched"]',
     ).getAttribute('data-selected-cohort');
     await page.locator('#chart-headacts button[aria-label="Close"]').click();
-    /* The cell pick closes All charts; Close returns to that same context. */
-    await page.getByRole('button', { name: 'All charts', exact: true }).click();
-    await page.locator('#tile-field[data-explorer]').waitFor();
-    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
     await page.waitForFunction((id) => {
       const host = document.querySelector(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       return Boolean(host && window.echarts.getInstanceByDom(host));
@@ -345,6 +347,11 @@ test('an occurrence selection stays in the spotlight while the catalog chart sta
         opacity: series.lineStyle?.opacity ?? 1,
       }));
     }, findingId);
+    /* The focused workspace owns the selected Occurrence. Re-entering All
+       charts afterwards supplies the static catalog comparison. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    await tile.locator('.tile-chart canvas').waitFor({ state: 'visible' });
     const catalogChart = await page.evaluate((id) => {
       const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       const option = window.echarts.getInstanceByDom(host).getOption();
@@ -430,13 +437,15 @@ test('a pinned tile visibly names a stale generation before the real pipeline re
     },
   });
   try {
-    const carbRatio = (await readField(page)).tiles
+    const carbRatio = (await readField(page)).row
       .find((tile) => tile.chartId.startsWith('ic:'));
     assert.ok(carbRatio, 'the carb-ratio chart is on the field before recovery');
     await page.locator(`#tile-row .evidence-tile[data-chart-id="${carbRatio.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(300);
-    assert.equal((await readField(page)).tiles
+    assert.equal((await readField(page)).row
       .find((tile) => tile.chartId === carbRatio.chartId).pinned, true, 'the chart is pinned before the 409');
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${carbRatio.chartId}"] .tile-body`).click();
+    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${carbRatio.chartId}"]`).waitFor();
     staleArmed = true;
     await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
     await refreshHeld;
@@ -558,8 +567,10 @@ test('a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up', a
     }
   });
   try {
-    const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
-    assert.equal(await behavioral.count(), 1, 'the field offers a behavioral chart to hold');
+    const behavioral = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
+    assert.equal(await behavioral.count(), 1, 'All charts offers a behavioral chart to hold');
+    await behavioral.locator('.tile-body').click();
+    await page.locator('#tile-focal .evidence-tile[data-chart-id^="finding:"]').waitFor();
     await page.getByRole('button', { name: 'Overnight', exact: true }).click();
     await page.waitForTimeout(1200);
 
@@ -580,7 +591,10 @@ test('a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up', a
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.waitForTimeout(1200);
 
-    await behavioral.locator('.tile-pin').click();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    await page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"] .tile-pin').first().click();
+    await closeAllCharts(page);
     const beforeWindows = preparationWindows.length;
     const beforeCases = caseProjectionIds.length;
     holdNextPreparation = true;
@@ -643,7 +657,7 @@ test('a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up', a
   }
 });
 
-test('reconcileTileDescriptors keeps an unranked star immediately before Watching', async () => {
+test('reconcileTileDescriptors keeps an unranked star in the All charts catalog', async () => {
   const browser = await runner.browser();
   let served = 0;
   let droppedId = null;
@@ -669,11 +683,16 @@ test('reconcileTileDescriptors keeps an unranked star immediately before Watchin
 
     await page.locator(`#tile-row .evidence-tile[data-chart-id="${victim.chartId}"] .tile-pin`).click();
     await page.waitForTimeout(300);
-    assert.equal((await readField(page)).tiles.find((tile) => tile.chartId === victim.chartId).pinned,
+    assert.equal((await readField(page)).row.find((tile) => tile.chartId === victim.chartId).pinned,
       true, 'the chart is pinned before its row disappears');
+
+    await closeAllCharts(page);
 
     await page.getByRole('button', { name: 'Morning' }).click();
     await page.waitForTimeout(1800);
+
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
 
     const field = await readField(page);
     const retained = field.tiles.find((tile) => tile.chartId === victim.chartId);
@@ -683,8 +702,8 @@ test('reconcileTileDescriptors keeps an unranked star immediately before Watchin
     const retainedIndex = field.row.findIndex(({ chartId }) => chartId === victim.chartId);
     const firstTailIndex = await page.locator('#tile-row .evidence-tile').evaluateAll((tiles) =>
       tiles.findIndex((tile) => tile.hasAttribute('data-tail-head')));
-    assert.equal(retainedIndex, firstTailIndex - 1,
-      'the retained star follows every ranked chart and immediately precedes Watching');
+    assert.equal(retainedIndex, firstTailIndex >= 0 ? firstTailIndex - 1 : field.row.length - 1,
+      'the retained star follows ranked entries and precedes Watching when this window has one');
     assert.equal(retained.body, 'Kept chart is not in the current findings.',
       'the degraded tile explains why its measured evidence is absent');
     assert.equal(field.pinCount, null, 'the uncapped pin model has no cap counter');
@@ -732,13 +751,14 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
+    await closeAllCharts(page);
     await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
     const surface = await page.evaluate(() => {
       const style = (selector) => getComputedStyle(document.querySelector(selector));
       const focal = style('#tile-focal .evidence-tile');
       const chart = style('#chart');
       const lane = style('#lane');
-      const close = style('#chart-headacts button[aria-label="Close"]');
+      const browse = style('#chart-headacts button[aria-label="All charts"]');
       const slot = style('#tile-focal .tile-head');
       return {
         focalEdge: focal.boxShadow, focalRadius: focal.borderTopLeftRadius,
@@ -751,7 +771,7 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
           separated.className = 'body';
           return !sharesBody(document.querySelector('#chart'), separated);
         })(),
-        closeGround: close.backgroundColor, slotGround: slot.backgroundColor,
+        browseGround: browse.backgroundColor, slotGround: slot.backgroundColor,
         retiredDockCount: document.querySelectorAll('#dock-handle, [data-dock], [data-raised]').length,
       };
     });
@@ -761,7 +781,7 @@ test('Dark canvas gives the shared hero/basal body one vessel edge and role-owne
     assert.equal(surface.laneBorder, '0px', 'basal lane adds no second top seam');
     assert.equal(surface.sharedHeroBasalBody, true, 'hero chart and basal lane share one canvas body');
     assert.equal(surface.separatedBodyFails, true, 'a separated basal body fails the shared-vessel identity check');
-    assert.notEqual(surface.closeGround, '', 'the visible Close action owns chart chrome');
+    assert.notEqual(surface.browseGround, '', 'the visible All charts action owns chart chrome');
     assert.equal(surface.retiredDockCount, 0, 'the retired chart dock has no rendered control or state');
     assert.deepEqual(errors, []);
   } finally { await page.close(); }
@@ -771,9 +791,11 @@ test('Backspace return restores provenance to the chart owning the finding frame
   const browser = await runner.browser();
   const { page, errors } = await openCanvas(browser);
   try {
-    const behavioral = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+    const behavioral = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
+    const basalId = (await readField(page)).row.find(({ chartId }) => chartId.startsWith('basal:'))?.chartId;
     const behavioralId = await behavioral.getAttribute('data-chart-id');
-    await behavioral.click();
+    assert.ok(basalId, 'All charts lists a basal chart for the slot inspector');
+    await behavioral.locator('.tile-body').click();
     /* RETIRED — the #drill-provenance readout this test used to read.
        Sanction: ConnorGriffin · 2026-08-27 · "Stop repeating ourselfes.
        Respect the sanctitity of the breadcrumb." The drill mark (data-drilled)
@@ -781,11 +803,6 @@ test('Backspace return restores provenance to the chart owning the finding frame
     assert.equal(await page.locator('#drill-provenance').count(), 0,
       'RETIRED — the provenance readout must not return');
 
-    /* The finding click closes All charts; reopen the catalog for the basal cell. */
-    await page.getByRole('button', { name: 'All charts', exact: true }).click();
-    await page.locator('#tile-field[data-explorer]').waitFor();
-    const basalId = await page.locator('.evidence-tile[data-chart-id^="basal:"]').first()
-      .getAttribute('data-chart-id');
     const basalSlot = Number(basalId.split(':')[1].split('-')[0]) / 30;
     await page.locator('#lane button').nth(basalSlot).click();
     const parameterIds = await page.locator('.evidence-tile[data-drilled]')

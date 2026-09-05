@@ -32,11 +32,14 @@ export function seatableChartIds(findings, descriptors, pins = []) {
     && !ranked.includes(chartId))];
 }
 
-/** Every live chart the roster browses: ranked ones first, then the Watching reads. */
-export function rosterChartIds(findings, descriptors) {
+/** Every live chart the roster browses: ranked ones, retained reads, then Watching. */
+export function rosterChartIds(findings, descriptors, pins = []) {
   const ranked = rankedIds(findings, descriptors);
-  return [...ranked, ...descriptors.map(({ chartId }) => chartId)
-    .filter((chartId) => !ranked.includes(chartId))];
+  const live = descriptors.map(({ chartId }) => chartId);
+  const retained = pins.filter((chartId) => live.includes(chartId)
+    && !ranked.includes(chartId));
+  return [...ranked, ...retained, ...live.filter((chartId) => !ranked.includes(chartId)
+    && !retained.includes(chartId))];
 }
 
 /** The chart the top-ranked row publishes, when it publishes one. */

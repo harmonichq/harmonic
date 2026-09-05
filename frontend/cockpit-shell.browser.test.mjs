@@ -1247,7 +1247,7 @@ test('cockpit chrome uses only the locked type ranks and three grounds', async (
   } finally { if (page) await page.close(); }
 });
 
-test('Diagnose and Verify pane headers meet on one seam at every desktop size', async () => {
+test('Verify headers share a seam while Diagnose keeps its overview header with its chart', async () => {
   const mismatches = [];
   if (SHOTS) await mkdir(SHOTS, { recursive: true });
   for (const viewport of VIEWPORTS) {
@@ -1280,6 +1280,11 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size', 
           return {
             canvas,
             inspector,
+            spotlight: selector === '.dw'
+              ? (() => {
+                const box = document.querySelector(`${selector} #tile-field`).getBoundingClientRect();
+                return { top: box.top, bottom: box.bottom };
+              })() : null,
             edge: {
               canvasRight: getComputedStyle(canvasPane).borderRightWidth,
               inspectorLeft: getComputedStyle(inspectorPane).borderLeftWidth,
@@ -1297,7 +1302,13 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size', 
         assert.equal(seam.edge.canvasRight, '0px', `${label} canvas contributes no duplicate seam`);
         assert.equal(seam.edge.inspectorLeft, '1px', `${label} inspector owns one vessel edge`);
         assert.notEqual(seam.edge.inspectorColor, 'rgba(0, 0, 0, 0)', `${label} vessel edge is visible`);
-        if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
+        if (surface === 'diagnose') {
+          assert.ok(seam.spotlight.bottom <= seam.canvas.top + 1,
+            `${label} keeps the overview header after the Spotlight it no longer labels`);
+          assert.equal(seam.canvas.bottom - seam.canvas.top,
+            seam.inspector.bottom - seam.inspector.top,
+            `${label} keeps the shared 30px header-band height`);
+        } else if (seam.canvas.top !== seam.inspector.top || seam.canvas.bottom !== seam.inspector.bottom) {
           mismatches.push({
             label,
             canvas: { top: seam.canvas.top, bottom: seam.canvas.bottom },
@@ -1314,7 +1325,7 @@ test('Diagnose and Verify pane headers meet on one seam at every desktop size', 
     }
   }
   assert.deepEqual(mismatches, [],
-    'canvas and inspector header top and bottom border coordinates must match');
+    'Verify canvas and inspector header coordinates must match');
 });
 
 test('small widths retain a labeled destination drawer without changing desktop cockpit chrome', async () => {

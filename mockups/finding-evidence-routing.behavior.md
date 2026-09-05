@@ -43,6 +43,10 @@ selected chart fullscreen." The catalog covers the complete
 ranked and Watching population, marks the current stage chart, closes with its
 visible control or Escape without changing window or inspector context, and a
 chart pick still drills immediately through the existing chart-to-finding route.
+Returning from a queue-row drill re-seats rank one and re-anchors the queue so
+that row's tier and title are readable, while restoring focus to the originating
+row without scrolling it over rank one. Closing All charts is not a queue return:
+it preserves the inspector's prior scroll and focus unchanged.
 
 The sanctioned premise is that queue minis now supply quick previews while All
 charts retains the broader catalog, including Watching reads. S127 permanently
@@ -2835,7 +2839,9 @@ two-viewport matrix. Synthetic before/after renders are stored under
 filmstrip order and current Spotlight unchanged. If that still-live chart later
 becomes a Watching read, its star keeps it immediately after the ranked charts
 and before the Watching divider. Stopping retention leaves the Spotlight alone
-and returns the chart to its automatic position after the divider. The star's
+and returns the chart to its automatic position after the divider. The divider
+is carried by the first automatic Watching chart, so it is present whenever
+that group is nonempty and absent rather than stranded when no such chart exists. The star's
 keyboard path and accessible copy say **Keep** and **Stop keeping**, never Pin,
 Unpin, or left-most. Evidence: replay S120.
 

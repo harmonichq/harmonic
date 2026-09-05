@@ -20,6 +20,15 @@ findings/details pane. The current range stays by the window presets; Adjust
 window provides a short path back to the lower overview. The wireframe settles
 composition, not new chart styles or clinical copy.
 
+After reviewing the first render, Connor authorized keeping the global window
+selector at the top while grouping the overview-specific header/readout with
+the overview chart and basal lane below the spotlight: "your call just make it
+feel cohesive and professional and makesure it flows with the other states that
+the user can enter when using the app so diagnose doesn't move a control that
+strands a different interfaace". In All charts and single-chart fullscreen,
+that same header row follows the active chart surface and remains above its
+content, so neither return path strands the Close control.
+
 ## ADR 341 — All charts opens fullscreen without a docked strip
 
 On 2026-09-04 Connor confirmed "Exactly." to:
@@ -101,4 +110,3 @@ uses shipped tokens and chart readability floors, verified in the live pass.
 
 Why: this is a reversible layout and navigation-mode revision around unchanged advisory judgments.
 Disposition: copied into this authoritative implementation brief; scope retains the session record.
-

@@ -69,3 +69,7 @@ coordinator's scoped stop and is not a gate result.
 Per the coordinator's latest instruction, the full 163-story replay and broad
 browser gates are deferred until this preview-ready set receives visual
 acceptance.
+
+## Final integrated closure
+
+The complete affected suites now pass: workstation 60/60 and Diagnose 163/163. See [integrated verification closure](../phone-integration-recheck/README.md), which preserves the original failed run and identifies the reviewed test-only corrections. The [final six-viewport matrix](../final-projection/MANIFEST.md) supersedes earlier revision captures containing Adjust window.

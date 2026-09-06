@@ -157,7 +157,7 @@ class TestModuleImports(_Tree):
         self.assertEqual(self.check({"frontend/mirror.test.js"}), [])
 
     def test_bare_package_specifiers_are_not_paths(self) -> None:
-        """`vue` resolves through the browser importmap and `node:test` through
+        """`vue` resolves through Vite and `node:test` through
         the runtime. Neither is a file this tree could have shipped."""
         self.write("frontend/app.js",
                    "import { ref } from 'vue';\n"

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // ADR 94: the shipped router owns the closed page set and the canonical address
@@ -19,6 +19,7 @@ import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingCasePreparation } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
+const { createBuiltShell } = require('./built-shell.js');
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
 // a skipped run exits 0, and a green step that exercised zero browser
 // assertions is the silent-skip failure mode the mock-to-app port process
@@ -42,15 +43,8 @@ if (chromium && !EXECUTABLE && !existsSync(chromium.executablePath())) {
   missing.push(`Chromium executable is missing (no PLAYWRIGHT_EXECUTABLE_PATH and `
     + `${chromium.executablePath()} does not exist — run playwright install chromium)`);
 }
-const VENDOR_DIR = process.env.VENDOR_DIR;
-if (!VENDOR_DIR) {
-  missing.push('VENDOR_DIR is unset (point it at a directory holding vendored '
-    + 'vue.esm-browser.js and echarts.min.js)');
-} else {
-  for (const asset of ['vue.esm-browser.js', 'echarts.min.js']) {
-    if (!existsSync(join(VENDOR_DIR, asset))) missing.push(`VENDOR_DIR=${VENDOR_DIR} is missing ${asset}`);
-  }
-}
+let shell;
+try { shell = createBuiltShell(); } catch (error) { missing.push(error.message); }
 if (missing.length) {
   throw new Error(`cockpit-shell.browser.test.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 }
@@ -77,11 +71,6 @@ const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior
 const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
 const RENDER_PHASE = process.env.COCKPIT_RENDER_PHASE || 'revision';
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
-const CDN = new Map([
-  ['https://unpkg.com/vue@3/dist/vue.esm-browser.js', 'vue.esm-browser.js'],
-  ['https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js', 'echarts.min.js'],
-]);
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
 // Each page's own rendered root, verified in the browser to be visible on that
@@ -309,9 +298,6 @@ async function routeApp(page, options = {}) {
     const fixed = (payload) => options.inputDataAge
       ? { ...payload, input_data_age: options.inputDataAge } : payload;
     const requestUrl = route.request().url();
-    if (CDN.has(requestUrl)) return route.fulfill({
-      body: await readFile(join(VENDOR_DIR, CDN.get(requestUrl))), contentType: 'text/javascript',
-    });
     if (requestUrl.includes('fonts.googleapis.com') || requestUrl.includes('fonts.gstatic.com')) return route.abort();
     const url = new URL(requestUrl);
     if (url.pathname === '/api/verify/trials') {
@@ -441,17 +427,8 @@ async function routeApp(page, options = {}) {
       return route.fulfill({ json: { history: [], focuses: [] } });
     }
     if (url.pathname === '/favicon.ico') return route.fulfill({ status: 204, body: '' });
-    const file = ['/', '/day', '/diagnose', '/verify', '/plan', '/settings', '/guide'].includes(url.pathname)
-      ? join(FRONTEND, 'index.html')
-      : url.pathname.startsWith('/mockups/') ? join(ROOT, url.pathname.replace(/^\/assets\//, ''))
-      : join(FRONTEND, url.pathname.replace(/^\/assets\//, ''));
-    try {
-      return route.fulfill({
-        body: await readFile(file), contentType: MIME[extname(file)] || 'application/octet-stream',
-      });
-    } catch {
-      return route.abort('failed');
-    }
+    const response = shell.serve(url.pathname);
+    return response ? route.fulfill(response) : route.abort('failed');
   });
 }
 
@@ -832,6 +809,7 @@ test('a bare or hash arrival is promoted to a maturing Trial, and a named page i
 test('clean page paths own direct load, refresh, history, canonicalization, and local assets', async () => {
   const browser = await launch();
   const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
+  const requestedAssets = new Set();
   const loadedAssets = new Set();
   const misplacedAssets = [];
   // A roster with no maturing Trial, so this page proves canonicalization and
@@ -846,6 +824,9 @@ test('clean page paths own direct load, refresh, history, canonicalization, and 
   });
   direct.on('request', (request) => {
     const url = new URL(request.url());
+    if (url.origin === 'http://ciq.local' && url.pathname.startsWith('/assets/')) {
+      requestedAssets.add(url.pathname);
+    }
     if (url.origin === 'http://ciq.local' && /\.(?:js|css|svg)$/.test(url.pathname)
         && !url.pathname.startsWith('/assets/')) misplacedAssets.push(url.pathname);
   });
@@ -867,9 +848,10 @@ test('clean page paths own direct load, refresh, history, canonicalization, and 
     assert.equal(await direct.evaluate(() => location.pathname + location.search + location.hash),
       '/diagnose', 'bare / canonicalizes in place to /diagnose');
     assert.deepEqual(misplacedAssets, [], 'the built app requests no local asset outside /assets');
-    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
-      assert.ok(loadedAssets.has(path), `${path} loaded successfully through the built app`);
-    }
+    assert.deepEqual([...loadedAssets].sort(), [...requestedAssets].sort(),
+      'every built-shell asset requested under /assets loaded 200');
+    assert.ok([...loadedAssets].some((path) => path.endsWith('.js')), 'the built shell loaded a JavaScript asset');
+    assert.ok([...loadedAssets].some((path) => path.endsWith('.css')), 'the built shell loaded a stylesheet');
   } finally { await direct.close(); }
 
   const historyPage = await browser.newPage({ viewport: VIEWPORTS[1] });
@@ -1814,12 +1796,15 @@ test('a second stage inside a refused save leaves the button, the badge and the 
     // before reading the surface.
     await page.waitForTimeout(750);
 
-    const settled = await page.evaluate(() => ({
-      dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
-      planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
-      // the reactive draft itself, behind both readings above
-      planDraftItems: document.querySelector('#app')?.__vue_app__?._instance?.setupState?.planItems?.size ?? null,
-    }));
+    const settled = await page.evaluate(async () => {
+      const draft = await fetch('/api/plan').then((response) => response.json());
+      return {
+        dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
+        planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
+        // The persisted draft is the public third reading behind both controls.
+        planDraftItems: draft.items.length,
+      };
+    });
     assert.deepEqual(settled, { dataStaged: 'false', planBadge: '0', planDraftItems: 0 },
       'the control, the Plan step badge and the draft must all report nothing staged '
       + 'once every refused save has answered');

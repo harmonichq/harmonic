@@ -6,15 +6,20 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const { createBrowserRunner } = require('./browser-runner.js');
-const FRONTEND = fileURLToPath(new URL('.', import.meta.url));
-const MIME = { '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript' };
+const { createBuiltShell } = require('./built-shell.js');
+const missing = [];
+let chromium;
+if (!process.env.PLAYWRIGHT_MODULE) missing.push('PLAYWRIGHT_MODULE is unset');
+else {
+  try { chromium = require(process.env.PLAYWRIGHT_MODULE).chromium; }
+  catch (error) { missing.push(`PLAYWRIGHT_MODULE=${process.env.PLAYWRIGHT_MODULE} could not be required (${error.message})`); }
+}
+let shell;
+try { shell = createBuiltShell(); } catch (error) { missing.push(error.message); }
+if (missing.length) throw new Error(`day-surface.browser.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 
 // #554: one Chromium process for the whole command; each subtest still gets
 // its own fresh page (== fresh Playwright context) via runner.browser().
@@ -63,15 +68,13 @@ function fixtureServer(days = [], { readDelay = 0 } = {}) {
     }
     if (url.pathname === '/favicon.ico') { res.writeHead(204); res.end(); return; }
 
-    const file = url.pathname === '/' || url.pathname === '/day'
-      ? 'index.html' : url.pathname.replace(/^\/assets\//, '');
-    try {
-      const body = await readFile(join(FRONTEND, file));
-      res.writeHead(200, { 'content-type': MIME[extname(file)] || 'application/octet-stream' });
-      res.end(body);
-    } catch {
+    const response = shell.serve(url.pathname);
+    if (!response) {
       missingRequests.push(url.pathname);
       res.writeHead(404); res.end('not found');
+    } else {
+      res.writeHead(200, { 'content-type': response.contentType });
+      res.end(response.body);
     }
   });
   return { server, timelineRequests, missingRequests };

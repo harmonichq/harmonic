@@ -38,6 +38,10 @@ This change is where that deferral lands.
 - A browser regression case fixes the band in place: at 761, 768, 800 and 830px
   the first findings-queue rows answer their own hit tests, and at the split
   widths above the new threshold nothing changes.
+- The one border rule the Diagnose stylesheet shares with Verify is split
+  rather than moved, so Diagnose keeps its horizontal seam wherever it stacks
+  while Verify's copy stays exactly where it is, and the Verify replay gains one
+  assertion that observes that carve-out instead of assuming it.
 - The frozen behavior ledger records that the two-pane split now has a floor,
   which is what makes the 2026-08-19 one-line assertion true again.
 
@@ -56,8 +60,10 @@ This change is where that deferral lands.
   run, or any redesign of the narrow layout itself.
 - **Evidence owed:** the new case failing first against the unchanged
   stylesheet for the right reason; the fast gate green with no browser present;
-  the Diagnose workstation browser leg green; the Verify replay green at its
-  own 800px story.
+  the Diagnose workstation browser leg green; the Verify replay green at its own
+  800px story, with that story now asserting the second pane's computed
+  `border-top-width` and `border-left-width` so the carve-out is measured rather
+  than assumed.
 
 ## Impact
 

@@ -62,13 +62,51 @@ side-by-side arrangement trades a usable layout for a symmetrical one.
 stacks, with the narrow layout's touch-sized controls. That layout is designed
 and tested; the split it replaces was not usable at those widths.
 
-**Verify is out of it.** `frontend/diagnose-workstation.css` is loaded on every
-screen, and the widened media block contains exactly one `.vw`-affecting rule —
-`:is(.dw, .vw) .panes > .pane + .pane`, which flips the inter-pane border from
-left to top. That rule keeps its 760px bound so Verify renders identically;
-Verify stacks on its own 900px breakpoint in `frontend/verify-workstation.css`
-and its replay's S7 story runs at exactly 800px, inside the band this change
-moves.
+**Verify is out of it — by splitting that rule, not by pinning it.**
+`frontend/diagnose-workstation.css` is loaded on every screen, and the widened
+media block contains exactly one `.vw`-affecting rule,
+`:is(.dw, .vw) .panes > .pane + .pane`. Only its `border-top` half is live. The
+`border-left: 0` beside it is inert: `frontend/theme.css:150` restates
+`border-left: 1px solid var(--wk-rule)` for the identical selector at identical
+specificity and loads after the Diagnose sheet (`frontend/index.html:1344`
+against `:23`). Measured on the unchanged tree, the second pane's computed
+`border-left-width` is `1px` at 760, 800, 900 and 1024px on both screens, inside
+the media block as well as outside it. Describing the rule as a "border-left to
+border-top flip" is half wrong, and the carve-out must not be reasoned from it.
+
+Pinning that whole rule at 760px would be a new defect. The `border-top` it
+draws is the stacked layout's only horizontal divider, so Diagnose between 761
+and 831px would stack with no line between the panes it has just stacked —
+measured on the unchanged tree, the second Diagnose pane computes
+`border-top-width` `1px` at 760px and `0px` at 761, 800, 830, 831, 832 and
+900px, so a pinned rule leaves the whole newly stacked band reading `0px`. The
+rule is therefore **split**: `.dw .panes > .pane + .pane` travels into the
+widened block and keeps Diagnose's seam wherever Diagnose stacks, and a
+`.vw`-only copy of the same declarations, verbatim, stays behind in its own
+`@media (max-width: 760px)` block. Splitting rather than editing is what makes
+the carve-out auditable — nothing but the selector changes — and the inert
+`border-left: 0` is carried along rather than cleaned up, because removing it
+would be a second, unrelated edit to the Verify-facing copy.
+
+Verify's rendering is then unchanged by construction, and the measurement says
+what is being preserved: on the unchanged tree Verify's second pane reads
+`border-top-width` `1px` at 760px and `0px` at 800, 900 and 1024px, with
+`border-left-width` `1px` throughout. Verify already stacks from 900px down on
+its own `frontend/verify-workstation.css:225` breakpoint, so between 761 and
+900px it stacks with no seam today. That is a pre-existing Verify quirk;
+preserving it exactly is this ticket's business, fixing it is not.
+
+**The Verify replay could not see any of that, so it gains one assertion.** The
+replay's S7 story runs at exactly 800px, inside the band this change moves, but
+it asserts only that the inspector's box sits below the canvas pane's box and
+that `.main-content` scrolls
+(`frontend/verify-660-story-behavior.replay.mjs:225-239`). Both hold whether or
+not the shared rule was widened, because Verify's own 900px breakpoint had
+already stacked it — the one rule that can reach `.vw` is invisible to the story
+offered as its guard, and a hand-split selector is exactly the edit most likely
+to get it wrong. S7 therefore gains one assertion on the second pane's computed
+`border-top-width` (must stay `0px`) and `border-left-width` (must stay `1px`),
+so the carve-out is observed rather than asserted.
 
 **Why a hit test and not a rectangle.** A clipped element still reports its
 unclipped bounding box, so `getBoundingClientRect` comparisons pass on the

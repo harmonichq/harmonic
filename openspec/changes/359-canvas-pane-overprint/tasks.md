@@ -31,12 +31,27 @@
       `frontend/diagnose-workstation.css:1677` from `@media (max-width: 760px)`
       to that measured threshold, so the whole former dead band gets the
       existing narrow layout rather than an unusable split.
-- [ ] Keep Verify out of it: the widened block contains exactly one
-      `.vw`-affecting rule, `:is(.dw, .vw) .panes > .pane + .pane` (the
-      border-left to border-top flip). It must keep its existing 760px bound, so
-      Verify renders identically at every width. Verify has its own 900px
-      stacking breakpoint in `frontend/verify-workstation.css` and is not part
+- [ ] Keep Verify out of it by SPLITTING the one `.vw`-affecting rule in the
+      widened block, `:is(.dw, .vw) .panes > .pane + .pane`
+      (`frontend/diagnose-workstation.css:1699`) — do not pin it at 760px. Its
+      `border-top` is the stacked layout's only horizontal divider, so pinning
+      it would leave the newly stacked 761-831px band with no seam between the
+      panes it has just stacked (measured on the unchanged tree: the second
+      Diagnose pane computes `border-top-width` `1px` at 760px and `0px` at 761,
+      800, 830, 831, 832 and 900px). Move a `.dw .panes > .pane + .pane` copy
+      into the widened block so Diagnose keeps its seam wherever it stacks, and
+      leave a `.vw`-only copy of the same declarations, verbatim, in its own
+      `@media (max-width: 760px)` block. Verify has its own 900px stacking
+      breakpoint in `frontend/verify-workstation.css` and is not otherwise part
       of this change.
+- [ ] Carry the declarations across verbatim, including the `border-left: 0`.
+      That half is inert — `frontend/theme.css:150` restates `border-left: 1px
+      solid var(--wk-rule)` for the identical selector at identical specificity
+      and loads later (`frontend/index.html:1344` against `:23`), and the
+      measured `border-left-width` is `1px` at every width on both screens — so
+      do not describe this rule as a "border-left to border-top flip", and do
+      not clean the inert half up here: that would be a second, unrelated edit
+      to the Verify-facing copy.
 - [ ] Contain the canvas pane horizontally at every width so residual overflow
       clips inside the canvas instead of painting across the pane boundary.
       Prefer `overflow-x: clip` over `overflow-x: hidden`: `hidden` on one axis
@@ -53,9 +68,18 @@
 - [ ] The new case passes at all six widths, and the workstation browser leg
       reports one more passing test than its 60-test baseline with zero
       failures.
-- [ ] The Verify replay passes 8 of 8 stories, which includes its own S7 story
-      at 800px — the width most exposed to a mistake in the Verify carve-out
-      above.
+- [ ] Add one assertion to the Verify replay's S7 story
+      (`frontend/verify-660-story-behavior.replay.mjs:225-239`, which already
+      runs at 800px): the second `.panes > .pane` must compute
+      `border-top-width` `0px` and `border-left-width` `1px`. S7's existing
+      assertions — the inspector's box sits below the canvas pane's, and
+      `.main-content` scrolls — hold whether or not the shared rule was widened,
+      because Verify's own 900px breakpoint already stacked it, so without this
+      the carve-out is asserted and never observed. Both values are the measured
+      behaviour of the unchanged tree; the assertion pins them, it does not
+      change them.
+- [ ] The Verify replay passes 8 of 8 stories, S7 included, with that assertion
+      in place.
 - [ ] The fast gate is green with no browser present and no Playwright
       environment set, proving the regression case cannot leak into it.
 

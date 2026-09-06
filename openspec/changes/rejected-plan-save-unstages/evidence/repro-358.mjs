@@ -10,7 +10,11 @@
 //
 // BASE_URL must be a `harmonic serve --no-fetch` on a committed synthetic
 // database — the QA copy-then-serve command in AGENTS.md, "The data boundary".
-// TOKEN is ignored by a serve started with `--token ''`.
+// Run `uv sync --frozen --extra api --extra sync` first, or that serve dies on a
+// bare virtualenv with `ModuleNotFoundError: No module named 'uvicorn'`. The
+// first page load computes the analysis cold and can exceed this driver's
+// 30-second `networkidle` wait; a second run against the same warm serve
+// succeeds. TOKEN is ignored by a serve started with `--token ''`.
 //
 // FAILS CLOSED: a missing driver, an unreachable app, or a database publishing
 // no stageable finding exits nonzero rather than reporting a pass.
@@ -91,8 +95,14 @@ try {
   const after = await surface();
   console.log('after a refused save:', JSON.stringify(after, null, 1));
 
+  // The dock is reported above but deliberately not asserted on here. When the
+  // served database has a watched Trial, `watchDockView` returns its `trial`
+  // branch and reaches the `plan` branch only when nothing is watched
+  // (`frontend/watched-change-dock.js`), so a `Plan · staged` assertion would be
+  // inert against this database. The dock's own share of the defect is asserted
+  // in the cockpit-shell browser suite, which stubs `/api/outcomes/trend` empty
+  // and so does reach that branch.
   const lies = after.dataStaged === 'true'
-    || /Plan · staged/i.test(after.watchDock)
     || after.planBadge !== '0'
     || after.planDraftItems !== 0;
   console.log(lies

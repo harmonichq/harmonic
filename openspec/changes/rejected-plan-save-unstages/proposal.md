@@ -4,20 +4,28 @@
 
 Diagnose stages a change optimistically and never looks at what the server
 said. The workstation's own staged set is mutated, the stage button repaints as
-`Staged · Undo`, the watch dock prints the `Plan · staged` branch, and the
-shell's Plan draft gains the item and counts it in the step badge — all before
+`Staged · Undo`, the shell's Plan draft gains the item and counts it in the step
+badge, and the watch dock's staged-Plan input gains it too — all before
 `PUT /api/plan` has answered, and nothing awaits or inspects that answer.
 
 - Reproduced with `PUT /api/plan` routed to a synthetic 400, so the
-  reproduction does not depend on #357's backend rejection. It reproduces on
-  both committed synthetic databases and on both staging families: on a basal
-  slot served by the QA showcase, and on the all-day I:C block the ticket
-  reports. In each case the stage control reads `Staged · Undo` with
-  `data-staged="true"` after the refusal, the watch dock prints its
-  `Plan · staged … Staged, not applied — nothing has changed on the pump`
-  branch, and the shell's reactive draft and the Plan step badge both count the
-  refused item. Reloading shows an empty Plan: nothing was saved. The captured
-  run is in `evidence/repro-358.base.stdout.txt`.
+  reproduction does not depend on #357's backend rejection. It reproduces on the
+  one committed synthetic database this branch carries
+  (`mockups/qa-e2e.synthetic/harmonic.sqlite`), on a basal slot — the finding
+  `basal:180-240` — and not only on the all-day I:C block the ticket reports.
+  After the refusal the stage control reads `Staged · Undo` with
+  `data-staged="true"`, and the shell's reactive draft and the Plan step badge
+  both count the refused item. Reloading shows an empty Plan: nothing was saved.
+  The captured run is in `evidence/repro-358.base.stdout.txt`.
+- **The watch dock's share of the defect is asserted in the browser suite, not
+  in that capture.** `watchDockView` returns its `trial` branch whenever a Trial
+  is watched and reaches the `plan` branch only when nothing is
+  (`frontend/watched-change-dock.js`), and this database has a watched Trial —
+  the capture prints `Trial · watching` unchanged on both sides, so a
+  `Plan · staged` assertion there would be inert and the driver makes none. The
+  cockpit-shell browser suite stubs `/api/outcomes/trend` empty, so nothing is
+  watched and the dock's `Plan · staged` branch is reachable; that is where the
+  regression test asserts it.
 - The surface therefore tells the reader that an advisory dosing change is
   staged when the server refused to record it. On a failed write this app's
   standing rule is the opposite: preserve the last internally coherent state and

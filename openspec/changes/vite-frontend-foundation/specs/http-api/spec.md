@@ -31,6 +31,7 @@ lowercase-and-hyphen charset so a request cannot escape its directory.
   content types and bytes
 - **AND** `/api` routes keep their API behaviour and are not claimed by asset delivery
 - **AND** no file under the build output names `unpkg.com` or `jsdelivr.net`
+- **AND** the shell and every page response carry `Cache-Control: no-cache` while an asset response carries the immutable cache header
 - **AND** an unknown `/assets` path, a non-page path and an unknown `/api` path
   answer 404
 

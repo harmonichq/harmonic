@@ -10,6 +10,10 @@ The shape is the smallest one that produces a pinned, locally bundled shell:
 
 - A repository-root `package.json` and committed `package-lock.json` pin exactly
   `vite@8.2.2`, `vue@3.5.42`, `echarts@5.5.0` and `@vitejs/plugin-vue@6.0.8`.
+  The manifest declares no `type`: the tree mixes ESM and CommonJS `.js` files
+  under `frontend/` and relies on Node's per-file detection, which a root
+  manifest with either value would override; the Vite config is therefore
+  `vite.config.mjs`, ESM by extension.
   ECharts stays on the version the CDN tag serves today, so no chart behaviour
   moves. Node 22 is the documented runtime, matching CI and the harness; it is
   written down, not enforced. The dev-only `harness/` keeps its own package.

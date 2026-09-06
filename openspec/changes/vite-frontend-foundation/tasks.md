@@ -3,7 +3,11 @@
 1. [ ] Add the repository-root production package: `package.json` (private,
    exact pins `vite@8.2.2`, `vue@3.5.42`, `echarts@5.5.0`,
    `@vitejs/plugin-vue@6.0.8`, documented `engines.node` 22, scripts `dev` and
-   `build`), the committed `package-lock.json`, `vite.config.js` (root
+   `build`, and no `type` field — the shell's modules are ESM while
+   `frontend/browser-runner.js`, `frontend/harness-api-paths.test.js` and the
+   new `frontend/built-shell.js` are CommonJS, and Node's per-file detection
+   must keep classifying them exactly as it does with no manifest today), the
+   committed `package-lock.json`, `vite.config.mjs` (root
    `frontend/`, base `/`, output `frontend/dist`, `minify` off, the Vue plugin,
    `vue` aliased to the runtime-with-compiler build, dev proxy of `/api` only to
    `http://127.0.0.1:8765`) and a `tsconfig.json` that admits `.ts` and `.vue`
@@ -32,7 +36,9 @@
    `tests/test_frontend_asset_routes.py` (page routes, every asset
    `dist/index.html` references answers with the dist bytes and content type, and, after first
    asserting `frontend/dist/index.html` exists, no file under `frontend/dist`
-   names `unpkg.com` or `jsdelivr.net`, `/api`
+   names `unpkg.com` or `jsdelivr.net`, `Cache-Control: no-cache` on `/` and on
+   each of the six page paths and the immutable cache header on an `/assets`
+   response, `/api`
    isolation, the 404 set, the missing-build 503 proven with the dist location
    redirected to an empty directory), the per-source-asset tests in
    `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile copies

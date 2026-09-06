@@ -522,3 +522,21 @@ unsandboxed attempt first and records a machine limit, never a sandbox refusal;
 the drafting-conventions read gains the same stop-if-missing rule as `ORDER.md`;
 the header says each chunk gets its own worktree on its per-chunk branch.
 Note discarded again: the coordinator-admission sentence in Session fit (template).
+
+### Round 3 — a fresh cold reader with no prior context
+
+The re-check of round 2's one blocker returned no objections. The fresh pass:
+BLOCKED, one blocking, one note.
+
+1. `authoring` — the http-api delta makes `Cache-Control: no-cache` on the shell a
+   SHALL and chunk 2 splits the one middleware that produces it today, yet no test
+   observes any cache header (`grep -rn 'Cache-Control' tests/` finds nothing).
+   Fixed: task 5, the http-api scenario and chunk 2's fence require the contract
+   test to assert `no-cache` on `/` and the six page paths and the immutable
+   header on an `/assets` response.
+
+Note accepted: a root `package.json` with either `type` value would override
+Node's per-file ESM/CommonJS detection that `frontend/browser-runner.js` and
+`frontend/harness-api-paths.test.js` rely on inside the fast gate. Task 1 and ADR
+347 now say the manifest declares no `type` and the Vite config is
+`vite.config.mjs`.

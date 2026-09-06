@@ -7,6 +7,7 @@ const shell = readFileSync(new URL('./shell.css', import.meta.url), 'utf8');
 const favicon = readFileSync(new URL('./favicon.svg', import.meta.url), 'utf8');
 const theme = readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
 const workstation = readFileSync(new URL('./diagnose-workstation.css', import.meta.url), 'utf8');
+const workstationJs = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
 
 test('Dark derives the Diagnose material ladder through the shipped role owners (#255)', () => {
   const root = page.match(/:root \{[\s\S]*?\n    \}/)[0];
@@ -29,10 +30,23 @@ test('the vessel cascade composes one Dark 1px/4px grammar (#255)', () => {
     'the vessel edge resolves through the strong edge role');
   assert.match(workstation, /\.tile-field > \.tile-focal > \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\), var\(--wk-elevation\);/,
     'the spotlight adds only elevation beyond the shared vessel edge');
-  assert.match(workstation, /\.tile-field\[data-dock="docked"\][\s\S]*?\.tile-field\[data-raised\][\s\S]*?\.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
-    'docked, raised, and Explorer cells keep the shared vessel edge and radius');
+  assert.match(workstation, /\.tile-field\[data-explorer\] \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
+    'All charts cells keep the shared vessel edge and radius');
+  assert.doesNotMatch(workstation, /data-dock|data-raised|dock-handle/,
+    'the retired strip has no dormant selector that can resurrect it');
   assert.match(workstation, /\.tile-field:is\(\[data-fullscreen-tile\], \[data-explorer\]\) \.evidence-tile \{[\s\S]*?border-radius: 4px;[\s\S]*?inset 0 0 0 1px var\(--ck-tile-edge\)/,
     'fullscreen cells keep the shared vessel edge and radius');
+});
+
+test('#341 · All charts visibly marks the current chart without changing geometry', () => {
+  assert.match(workstation,
+    /\.tile-field\[data-explorer\] > \.tile-row > \.evidence-tile\[data-selected\] \{\s*box-shadow: inset 0 0 0 2px var\(--ck-focus-mark\), var\(--ck-cell-shadow\);\s*\}/,
+    'the current catalog chart has a token-owned inset mark distinct from an ordinary cell');
+});
+
+test('#341 · All charts announces its actual scroll direction', () => {
+  assert.match(workstationJs, /aria-label="Evidence charts — scrolls vertically"/);
+  assert.doesNotMatch(workstationJs, /Evidence charts — scrolls horizontally/);
 });
 
 test('Diagnose mounts the merged workstation surface (#636)', () => {

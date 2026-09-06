@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ic:720",
+    "kind": "carb-ratio",
+    "chart": {
+      "top": 570.25,
+      "bottom": 662.25,
+      "width": 340,
+      "height": 92
+    },
+    "viewport": {
+      "top": 566,
+      "bottom": 722
+    }
+  },
+  {
+    "id": "basal:30-90",
+    "kind": "basal",
+    "chart": {
+      "top": 570.3125,
+      "bottom": 662.3125,
+      "width": 340,
+      "height": 92
+    },
+    "viewport": {
+      "top": 566,
+      "bottom": 722
+    }
+  },
+  {
+    "id": "basal:330-360",
+    "kind": "basal",
+    "chart": {
+      "top": 570.375,
+      "bottom": 662.375,
+      "width": 340,
+      "height": 92
+    },
+    "viewport": {
+      "top": 566,
+      "bottom": 722
+    }
+  },
+  {
+    "id": "finding:over_treated_low",
+    "kind": "event-comparison",
+    "chart": {
+      "top": 570.015625,
+      "bottom": 662.015625,
+      "width": 340,
+      "height": 92
+    },
+    "viewport": {
+      "top": 566,
+      "bottom": 722
+    }
+  },
+  {
+    "id": "finding:carb_undercount",
+    "kind": "event-comparison",
+    "chart": {
+      "top": 570.40625,
+      "bottom": 662.40625,
+      "width": 340,
+      "height": 92
+    },
+    "viewport": {
+      "top": 566,
+      "bottom": 722
+    }
+  }
+]

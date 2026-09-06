@@ -1,0 +1,429 @@
+COPY	.claude/launch.json	exact-positive: .claude/launch.json
+COPY	.claude/qa/demo_serve.py	exact-positive: .claude/qa/demo_serve.py
+COPY	.claude/qa/gen_synthetic_fixtures.py	exact-positive: .claude/qa/gen_synthetic_fixtures.py
+COPY	.claude/qa/gen_verify_payload.py	exact-positive: .claude/qa/gen_verify_payload.py
+COPY	.dockerignore	exact-positive: .dockerignore
+COPY	.env.example	exact-positive: .env.example
+COPY	.github/ISSUE_TEMPLATE/bug.yml	exact-positive: .github/ISSUE_TEMPLATE/bug.yml
+COPY	.github/ISSUE_TEMPLATE/config.yml	exact-positive: .github/ISSUE_TEMPLATE/config.yml
+COPY	.github/ISSUE_TEMPLATE/enhancement.yml	exact-positive: .github/ISSUE_TEMPLATE/enhancement.yml
+COPY	.github/workflows/ci.yml	exact-positive: .github/workflows/ci.yml
+COPY	.gitignore	exact-positive: .gitignore
+COPY	AGENTS.md	exact-positive: AGENTS.md
+COPY	CLAUDE.md	exact-positive: CLAUDE.md
+COPY	CONTEXT.md	exact-positive: CONTEXT.md
+COPY	DESIGN.md	exact-positive: DESIGN.md
+COPY	Dockerfile	exact-positive: Dockerfile
+COPY	LICENSE	exact-positive: LICENSE
+COPY	PRODUCT.md	exact-positive: PRODUCT.md
+COPY	README.md	exact-positive: README.md
+COPY	ciq_autotune/__init__.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/admission.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyze.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/__init__.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/basal.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/__init__.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/carb_undercount.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/context_gate.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/correction_on_iob.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/correction_stacking.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/late_bolus.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/meal_bolus_short.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/missed_meal.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/suspend.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/classifiers/user_override.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/eating_sequence_config.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/eating_sequences.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/ic.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/ic_regression.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/isf.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/__init__.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/anchors.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/attribute.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/engine.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/evidence_population.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/guide.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/levers.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/meal_suspend.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/model_view.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/narrate.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/opportunities.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/payload.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/preempted.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/priority.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/segment.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario/severity.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/scenario_config.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/analyzers/tuning_priority.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/api.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/backtest.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/basal_night_evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/carbs.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/cli.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/config.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/credentials.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/day_navigator.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/derived_artifacts.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/epochs.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/event_comparison.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/events.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/explore_exposures.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/explore_time_of_day.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/false_low.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/fetch_loop.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/finding_case_file.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/findings_projection.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/harm.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/ic_block_evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/ic_history.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/ic_history_events.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/insulin.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/isf_rest_window_evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/model.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/outcomes.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/outcomes_trend.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/pattern_sweep.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/pending_prompts.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/render.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/replay.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/report.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/rescue_evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/rest_window.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/result.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/result_cache.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/safety.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/settings.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/store.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/sync.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/tandemsource_map.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/timeline.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/trial_evidence.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/uncertainty.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/watched_change.py	glob-positive: ciq_autotune/** {.py}
+COPY	ciq_autotune/window_membership.py	glob-positive: ciq_autotune/** {.py}
+COPY	docker-compose.yml	exact-positive: docker-compose.yml
+COPY	docker-entrypoint.sh	exact-positive: docker-entrypoint.sh
+COPY	docs/kb/reading-day.md	exact-positive: docs/kb/reading-day.md
+COPY	docs/kb/reading-diagnose.md	exact-positive: docs/kb/reading-diagnose.md
+COPY	docs/kb/start-here.md	exact-positive: docs/kb/start-here.md
+COPY	docs/kb/the-plan-tab.md	exact-positive: docs/kb/the-plan-tab.md
+COPY	frontend/__fixtures__/analysis.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/basal-night-evidence.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/daily.day.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/eating-sequence-report.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/engine-annotations.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/episode.carb-undercount.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/findings-projection.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/ic-blocks.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/__fixtures__/missed-meal-comparison.json	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/browser-fixture-population.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/browser-fixture-population.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/browser-gates-fail-closed.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/browser-runner.browser.test.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/browser-runner.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/carb-log.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/carb-log.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/chart-builders.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/chart-builders.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/cockpit-shell.browser.test.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/daily-nav.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/daily-nav.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/data.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/data.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-chart.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-dose-focus.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-dose-focus.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-hero-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-hero-chart.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/day-surface.browser.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-behavior-ledger-parity.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-canvas-composition.browser.test.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-canvas-layout.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-canvas-layout.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-canvas-state.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-canvas-state.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-data-age.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-data-age.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-eating-sequences.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-eating-sequences.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-event-comparison-behavior.replay.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-event-comparison.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-event-comparison.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-event-comparison.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-evidence-charts.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-evidence-charts.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-evidence-row-box.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-finding-case-file-evidence.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-findings-queue.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-findings-queue.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-high-causes-have-no-alignment.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workspaces.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workspaces.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation-behavior.replay.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation-chart.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation-data.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation-data.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation.browser.test.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/diagnose-workstation.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/false-low.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/favicon.svg	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/finding-case-file-validation.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/finding-case-file-validation.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/finding-case-files.fixture.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/findings-projection-mirror.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/guide.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/guide.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/harness-api-paths.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/index.html	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/index.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/kb.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/kb.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/model-view-log.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/model-view-log.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/nav-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/nav-chart.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/occurrence-roster.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/occurrence-roster.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/plan-first-match.browser.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/plan.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/plan.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/prompt-queue.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/prompt-queue.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/rest-window.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/rest-window.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/retired-basal-ribbon.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/scenario-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/scenario-chart.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/scenario.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/serial-gate.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/serial-gate.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/settling.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/settling.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/shell.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/tab-routing.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/tab-routing.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/theme.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-660-story-behavior.replay.mjs	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-trial.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-trial.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation-chart.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation-data.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation-data.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation.css	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/verify-workstation.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/watched-change-dock.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	frontend/watched-change-dock.test.js	glob-positive: frontend/** {.html,.js,.mjs,.css,.svg,.json}
+COPY	githooks/pre-push	exact-positive: githooks/pre-push
+COPY	harness/dev-server.js	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/index.html	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/main.js	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/package-lock.json	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/package.json	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/stories.js	glob-positive: harness/** {.html,.js,.json}
+COPY	harness/vite.config.js	glob-positive: harness/** {.html,.js,.json}
+COPY	mockups/diagnose-event-comparison-support-audit.mjs	exact-positive: mockups/diagnose-event-comparison-support-audit.mjs
+COPY	mockups/diagnose-event-comparison.synthetic/capture.json	glob-positive: mockups/diagnose-event-comparison.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-event-comparison.synthetic/generate.mjs	glob-positive: mockups/diagnose-event-comparison.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-event-comparison.synthetic/project.mjs	glob-positive: mockups/diagnose-event-comparison.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/explore-day.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/explore-exposures.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/finding-case-files.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/ic-blocks-asserting.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/ic-blocks.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/ic-history-events.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/payload.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/diagnose-workstation.synthetic/settings-audit.capture.json	glob-positive: mockups/diagnose-workstation.synthetic/** {.json,.mjs}
+COPY	mockups/explore-investigation.fixture.js	exact-positive: mockups/explore-investigation.fixture.js
+COPY	mockups/findings-projection.mirror.mjs	exact-positive: mockups/findings-projection.mirror.mjs
+COPY	mockups/verify-660-story.synthetic/payload.json	glob-positive: mockups/verify-660-story.synthetic/** {.json,.mjs}
+COPY	mockups/verify-660-story.synthetic/verify-trials.capture.json	glob-positive: mockups/verify-660-story.synthetic/** {.json,.mjs}
+COPY	openspec/specs/backtest/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/basal-suggestion/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/behavioral-layer/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/credentials/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/data-ingest/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/eating-sequences/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/http-api/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/insulin-reconstruction/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/outcomes/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/parameter-analysis/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/plan/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/qa-e2e-database/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/safety/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	openspec/specs/surfaces/spec.md	glob-positive: openspec/specs/** {.md}
+COPY	pyproject.toml	exact-positive: pyproject.toml
+COPY	scripts/allowlist_rules.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/analyze_localized_outcomes.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/build_public_tree.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/check_adr_numbers.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/check_demo_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/check_owned_identifiers.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/check_public_allowlist.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/check_public_links.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/ensure_browser_gate_env.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_annotation_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_basal_night_evidence_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_chart_builder_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_eating_sequence_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_estimator_truth.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_findings_projection_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_ic_block_evidence_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_ic_block_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_ic_history_event_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_isf_rest_window_evidence_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_missed_meal_comparison_fixtures.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/gen_qa_e2e_db.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/profile_cold_shapes.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/public_allowlist.txt	exact-positive: scripts/public_allowlist.txt
+COPY	scripts/public_scan_config.txt	exact-positive: scripts/public_scan_config.txt
+COPY	scripts/qa_e2e_cases.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/replay_stable_era.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/run_estimator_admission.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/scan_public_tree.py	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/screenshots.local.mjs	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/screenshots.local.test.mjs	glob-positive: scripts/** {.py,.mjs}
+COPY	scripts/screenshots.mjs	glob-positive: scripts/** {.py,.mjs}
+COPY	tests/__init__.py	glob-positive: tests/** {.py}
+COPY	tests/conftest.py	glob-positive: tests/** {.py}
+COPY	tests/eating_sequence_streams.py	glob-positive: tests/** {.py}
+COPY	tests/test_admission.py	glob-positive: tests/** {.py}
+COPY	tests/test_analyze_facade.py	glob-positive: tests/** {.py}
+COPY	tests/test_analyzer_basal.py	glob-positive: tests/** {.py}
+COPY	tests/test_analyzer_coverage.py	glob-positive: tests/** {.py}
+COPY	tests/test_analyzer_ic.py	glob-positive: tests/** {.py}
+COPY	tests/test_analyzer_isf.py	glob-positive: tests/** {.py}
+COPY	tests/test_annotation_register.py	glob-positive: tests/** {.py}
+COPY	tests/test_api.py	glob-positive: tests/** {.py}
+COPY	tests/test_audit_dismissals.py	glob-positive: tests/** {.py}
+COPY	tests/test_basal_night_evidence.py	glob-positive: tests/** {.py}
+COPY	tests/test_carbs.py	glob-positive: tests/** {.py}
+COPY	tests/test_check_adr_numbers.py	glob-positive: tests/** {.py}
+COPY	tests/test_check_demo_fixtures.py	glob-positive: tests/** {.py}
+COPY	tests/test_check_public_allowlist.py	glob-positive: tests/** {.py}
+COPY	tests/test_check_public_links.py	glob-positive: tests/** {.py}
+COPY	tests/test_ci_workflow.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_carb_undercount.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_correction_on_iob.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_correction_stacking.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_late_bolus.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_meal_bolus_short.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_missed_meal.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_suspend.py	glob-positive: tests/** {.py}
+COPY	tests/test_classifier_user_override.py	glob-positive: tests/** {.py}
+COPY	tests/test_cli.py	glob-positive: tests/** {.py}
+COPY	tests/test_credentials.py	glob-positive: tests/** {.py}
+COPY	tests/test_day_navigator.py	glob-positive: tests/** {.py}
+COPY	tests/test_deploy_assets.py	glob-positive: tests/** {.py}
+COPY	tests/test_derived_artifacts.py	glob-positive: tests/** {.py}
+COPY	tests/test_eating_sequence_fixture.py	glob-positive: tests/** {.py}
+COPY	tests/test_eating_sequences.py	glob-positive: tests/** {.py}
+COPY	tests/test_eating_sequences_api.py	glob-positive: tests/** {.py}
+COPY	tests/test_epochs.py	glob-positive: tests/** {.py}
+COPY	tests/test_event_comparison.py	glob-positive: tests/** {.py}
+COPY	tests/test_events.py	glob-positive: tests/** {.py}
+COPY	tests/test_evidence_canvas_generator.py	glob-positive: tests/** {.py}
+COPY	tests/test_evidence_population_policy.py	glob-positive: tests/** {.py}
+COPY	tests/test_explore_exposures.py	glob-positive: tests/** {.py}
+COPY	tests/test_explore_time_of_day.py	glob-positive: tests/** {.py}
+COPY	tests/test_false_low.py	glob-positive: tests/** {.py}
+COPY	tests/test_fetch_loop.py	glob-positive: tests/** {.py}
+COPY	tests/test_finding_case_file.py	glob-positive: tests/** {.py}
+COPY	tests/test_finding_case_file_api.py	glob-positive: tests/** {.py}
+COPY	tests/test_findings_projection.py	glob-positive: tests/** {.py}
+COPY	tests/test_frontend_asset_routes.py	glob-positive: tests/** {.py}
+COPY	tests/test_gen_qa_e2e_db.py	glob-positive: tests/** {.py}
+COPY	tests/test_gen_verify_payload_block_ic.py	glob-positive: tests/** {.py}
+COPY	tests/test_guide_catalog.py	glob-positive: tests/** {.py}
+COPY	tests/test_harm.py	glob-positive: tests/** {.py}
+COPY	tests/test_harm_basal_arm.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_block_evidence.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_blocks.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_history_events.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_meal_runs.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_regression.py	glob-positive: tests/** {.py}
+COPY	tests/test_ic_regression_whole_run_ownership.py	glob-positive: tests/** {.py}
+COPY	tests/test_insulin.py	glob-positive: tests/** {.py}
+COPY	tests/test_isf_rest_window_evidence.py	glob-positive: tests/** {.py}
+COPY	tests/test_lever_closed_set_mirrors.py	glob-positive: tests/** {.py}
+COPY	tests/test_localized_outcomes_grounding.py	glob-positive: tests/** {.py}
+COPY	tests/test_meal_bolus_short_attribution.py	glob-positive: tests/** {.py}
+COPY	tests/test_meal_suspend.py	glob-positive: tests/** {.py}
+COPY	tests/test_model.py	glob-positive: tests/** {.py}
+COPY	tests/test_outcomes.py	glob-positive: tests/** {.py}
+COPY	tests/test_outcomes_trend.py	glob-positive: tests/** {.py}
+COPY	tests/test_pattern_sweep.py	glob-positive: tests/** {.py}
+COPY	tests/test_pending_prompts.py	glob-positive: tests/** {.py}
+COPY	tests/test_preempted_lows.py	glob-positive: tests/** {.py}
+COPY	tests/test_priority.py	glob-positive: tests/** {.py}
+COPY	tests/test_qa_e2e_cases.py	glob-positive: tests/** {.py}
+COPY	tests/test_render.py	glob-positive: tests/** {.py}
+COPY	tests/test_replay.py	glob-positive: tests/** {.py}
+COPY	tests/test_replay_fit_meals.py	glob-positive: tests/** {.py}
+COPY	tests/test_report.py	glob-positive: tests/** {.py}
+COPY	tests/test_rescue_evidence.py	glob-positive: tests/** {.py}
+COPY	tests/test_rest_window.py	glob-positive: tests/** {.py}
+COPY	tests/test_result.py	glob-positive: tests/** {.py}
+COPY	tests/test_result_cache.py	glob-positive: tests/** {.py}
+COPY	tests/test_revise_e2e_retired.py	glob-positive: tests/** {.py}
+COPY	tests/test_safety_backtest.py	glob-positive: tests/** {.py}
+COPY	tests/test_scan_public_tree.py	glob-positive: tests/** {.py}
+COPY	tests/test_scenario_engine.py	glob-positive: tests/** {.py}
+COPY	tests/test_scenario_model_view.py	glob-positive: tests/** {.py}
+COPY	tests/test_scenario_narrate.py	glob-positive: tests/** {.py}
+COPY	tests/test_scenario_opportunities.py	glob-positive: tests/** {.py}
+COPY	tests/test_scenario_timeline_hoist.py	glob-positive: tests/** {.py}
+COPY	tests/test_settings.py	glob-positive: tests/** {.py}
+COPY	tests/test_settling.py	glob-positive: tests/** {.py}
+COPY	tests/test_silence_reason.py	glob-positive: tests/** {.py}
+COPY	tests/test_store.py	glob-positive: tests/** {.py}
+COPY	tests/test_sync_partial.py	glob-positive: tests/** {.py}
+COPY	tests/test_tandemsource_map.py	glob-positive: tests/** {.py}
+COPY	tests/test_tandemsource_map_real.py	glob-positive: tests/** {.py}
+COPY	tests/test_timeline.py	glob-positive: tests/** {.py}
+COPY	tests/test_trial_evidence.py	glob-positive: tests/** {.py}
+COPY	tests/test_tuning_priority.py	glob-positive: tests/** {.py}
+COPY	tests/test_uncertainty.py	glob-positive: tests/** {.py}
+COPY	tests/test_user_correction_provenance.py	glob-positive: tests/** {.py}
+COPY	tests/test_verify_block_ic.py	glob-positive: tests/** {.py}
+COPY	tests/test_verify_trials.py	glob-positive: tests/** {.py}
+COPY	tests/test_watched_change.py	glob-positive: tests/** {.py}
+COPY	uv.lock	exact-positive: uv.lock
+
+build-public-tree: 398 file(s) copied, 1684 file(s) excluded, into /private/tmp/harmonic-341-eec92c6-public.r9Xj6W
+build-public-tree: 398 file(s) copied, 1684 file(s) excluded, into /private/tmp/harmonic-341-eec92c6-public.r9Xj6W
+check-public-links: 360 shipping document(s) scanned; every link, path reference and symlink resolves inside the tree.
+
+221 rule5-dose-ratio finding(s) match the acknowledged baseline (digest d6b0025ea3e0…); each was read and judged non-identifying. See scripts/public_scan_config.txt.
+
+suppressed by a pin (the date rule only — reason recorded in the config):
+  frontend/cockpit-shell.browser.test.mjs:136	17 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 12 invented round test dates (§3.1 [R6])
+  frontend/daily-nav.test.js:17	16 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 16 invented round test dates (§3.1 [R6])
+  frontend/day-surface.browser.mjs:36	8 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 8 invented round test dates (§3.1 [R6])
+  frontend/diagnose-workstation-behavior.replay.mjs:176	17 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 9 in-span dates, operator sanction and revision dates quoted in story comments (§3.1 [R6])
+  tests/test_api.py:98	10 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 8 invented round test dates (§3.1 [R6])
+  tests/test_store.py:28	14 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 16 invented round test dates (§3.1 [R6])
+  uv.lock:16	47 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 77 in-span dates, package upload stamps (§3.1 [R6])
+
+prose exemptions in force (plan-ruled, never inferred):
+  scripts/public_scan_config.txt	dose-ratio	the generated baseline records matched dose texts; without this the record of the findings is itself findings (#728)
+
+pins that suppressed nothing on this run:
+  frontend/__fixtures__/ic-blocks.json
+  mockups/diagnose-event-comparison.synthetic/capture.json
+
+scan-public-tree: 398 file(s) scanned, 22 stamped, 7 pinned, 221 acknowledged dose-ratio, 0 finding(s).

@@ -5,7 +5,6 @@ import { readFileSync } from 'node:fs';
 import {
   createCanvasLayout,
   descriptorsFromFindings,
-  dockOrder,
   fieldRange,
   optionForDescriptor,
   pinChart,
@@ -44,20 +43,6 @@ test('placeSeats preserves candidate order after the focal chart', () => {
     { chartId: 'candidate-c', seat: 'mini', pinned: true },
     { chartId: 'held', seat: 'mini', pinned: true },
   ]);
-});
-
-test('dockOrder keeps the whole set stable when focus changes', () => {
-  let layout = createCanvasLayout({ focalId: 'a' });
-  layout = pinChart(layout, 'd');
-  layout = pinChart(layout, 'b');
-  const candidates = ['a', 'b', 'c', 'd', 'e', 'a'];
-  const opening = dockOrder(candidates, layout);
-  const focused = dockOrder(candidates, createCanvasLayout({
-    focalId: 'c', pins: layout.pins,
-  }));
-  assert.deepEqual(opening, ['a', 'b', 'c', 'd', 'e']);
-  assert.deepEqual(focused, opening,
-    'selecting a different current frame does not reorder or remove any dock cell');
 });
 
 test('the live descriptor list follows findings rows without a second chart list', () => {

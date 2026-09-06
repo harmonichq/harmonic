@@ -1,0 +1,25 @@
+✖ #341 · phone Diagnose is one complete vertical reading flow (3758.531416ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3928.125083
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:411:1
+✖ #341 · phone Diagnose is one complete vertical reading flow (3758.531416ms)
+  AssertionError [ERR_ASSERTION]: 360px window label and preset words remain distinct and contained: {"label":{"top":62.5,"bottom":75.5,"height":13},"labels":[{"left":71.78125,"right":127.53125},{"left":129.21875,"right":175.65625},{"left":184.671875,"right":241.09375},{"left":243.125,"right":287.546875},{"left":309.296875,"right":334.25}]}
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/341-c2/frontend/diagnose-workstation.browser.test.mjs:470:14)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

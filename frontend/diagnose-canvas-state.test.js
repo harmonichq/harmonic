@@ -5,13 +5,19 @@
    catch. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
-  DOCK_BOOT_WANT, DOCK_FLOOR, MINI_FLOOR, SPOTLIGHT_FLOOR, chartClickRoute,
-  chartFrameFindingIsLive, dismissRaisedDock,
-  dockPickTransition, dockResizeTransition,
-  dockView, fallbackFocalId, isDrilledSpotlight, popInspector, seatableChartIds,
+  chartClickRoute, chartFrameFindingIsLive, fallbackFocalId, isDrilledSpotlight,
+  popInspector, rosterChartIds, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
+
+test('#341 · the retired dock mode has no remaining public state contract', () => {
+  const source = new URL('./diagnose-canvas-state.js', import.meta.url);
+  const text = readFileSync(source, 'utf8');
+  assert.doesNotMatch(text, /DOCK_(?:BOOT_WANT|FLOOR|WANTS)/);
+  assert.doesNotMatch(text, /dock(?:View|PickTransition|ResizeTransition|Order)/);
+});
 
 test('ranked Findings self-seat in server order while Watching charts require a pin', () => {
   const findings = { rows: [
@@ -33,48 +39,11 @@ test('ranked Findings self-seat in server order while Watching charts require a 
   assert.deepEqual(seatableChartIds(findings, descriptors, ['ic:720']), [
     'finding:carb_undercount', 'isf', 'ic:720',
   ], 'an explicit live Watching pin follows every ranked Finding without reordering them');
+  assert.deepEqual(rosterChartIds(findings, descriptors, ['ic:720']), [
+    'finding:carb_undercount', 'isf', 'ic:720', 'basal:0-30',
+  ], 'All charts puts retained reads after rank and before automatic Watching reads');
 });
 
-test('the dock floor is the room a spotlight and a mini need to sit one above the other', () => {
-  assert.equal(DOCK_FLOOR, SPOTLIGHT_FLOOR + MINI_FLOOR + 8);
-});
-
-/* THE DOCK IS A TOGGLE AT EVERY HEIGHT. The field used to overrule the want in
-   both directions — a short field diverted docked to mounted, a tall one
-   refused to hide the minis at all — and both overrides went with mounted. */
-test('the want is honoured at every height, tall and short alike', () => {
-  for (const height of [DOCK_FLOOR, DOCK_FLOOR - 1, MINI_FLOOR, 150]) {
-    for (const wanted of ['docked', 'hidden']) {
-      assert.equal(dockView(height, wanted).state, wanted,
-        `a ${height}px field honours ${wanted}`);
-    }
-  }
-});
-
-test('the lip offers the state the reader is not in, and the explorer beside it', () => {
-  for (const height of [DOCK_FLOOR, DOCK_FLOOR - 1, 150]) {
-    assert.deepEqual(dockView(height, 'docked').acts, ['hide', 'explore']);
-    assert.deepEqual(dockView(height, 'hidden').acts, ['up', 'explore'],
-      'the hidden lip still reaches every chart without bringing the strip back');
-  }
-});
-
-/* A RAISED DOCK FLOATS; IT NEVER SQUEEZES. Splitting the field below the dock
-   floor gave the spotlight 0px and destroyed the only way out. Floating holds
-   at any height, which is why no second floor is needed to divert to. */
-test('a dock raised in a short field is marked raised, and never is in a tall one', () => {
-  assert.equal(dockView(DOCK_FLOOR - 1, 'docked').raised, true);
-  assert.equal(dockView(150, 'docked').raised, true);
-  assert.equal(dockView(DOCK_FLOOR, 'docked').raised, false);
-  assert.equal(dockView(DOCK_FLOOR - 1, 'hidden').raised, false,
-    'a hidden dock has nothing to float');
-});
-
-test('moving attention to a drill or the spotlight dismisses only a raised dock', () => {
-  assert.equal(dismissRaisedDock('docked', DOCK_FLOOR - 1), 'hidden');
-  assert.equal(dismissRaisedDock('docked', DOCK_FLOOR), 'docked');
-  assert.equal(dismissRaisedDock('hidden', 150), 'hidden');
-});
 
 test('a drill marks its spotlight but not the dock echo of the same chart', () => {
   assert.equal(isDrilledSpotlight({ seat: 'focal' }, 'isf', 'isf'), true);
@@ -142,11 +111,6 @@ test('a chart seated directly from its own registry tile is marked on the stage,
   assert.deepEqual(marks.map((seat) => ({ chartId: seat.chartId, seat: seat.seat })),
     [{ chartId: target, seat: 'focal' }],
     'the seated chart is marked once, on the stage, whatever registry cell it was clicked from');
-});
-
-test('an unknown want is refused rather than silently resolved', () => {
-  assert.throws(() => dockView(600, 'floating'), RangeError);
-  assert.throws(() => dockView(600, 'mounted'), RangeError);
 });
 
 /* THE CHART ROUTE IS THE ROW ROUTE, REACHED BY CHART IDENTITY (ADR 294). A
@@ -305,29 +269,3 @@ test('the fallback focal id resolves to none when the stage has nothing at all',
 
 /* THE DRAWER IS A PICKER THAT OPENS MINIMIZED (ADR 306). Boot never docks the
    drawer on its own — that path is what the operator called "archived." */
-test('the dock boots hidden, never docked', () => {
-  assert.equal(DOCK_BOOT_WANT, 'hidden');
-  assert.equal(dockView(600).state, 'hidden', 'the default want with no field override is hidden');
-});
-
-/* A RESIZE CROSSING BELOW THE FLOOR HIDES THE DOCK; GROWING BACK NEVER
-   RE-DOCKS IT (ADR 306 retires ADR 215's grow-back half). */
-test('a resize crossing below the dock floor hides the dock, and growing back leaves the want alone', () => {
-  assert.equal(dockResizeTransition('docked', DOCK_FLOOR - 1), 'hidden');
-  assert.equal(dockResizeTransition('hidden', DOCK_FLOOR - 1), 'hidden');
-  assert.equal(dockResizeTransition('docked', DOCK_FLOOR), 'docked',
-    'growing back past the floor does not re-dock a docked want');
-  assert.equal(dockResizeTransition('hidden', DOCK_FLOOR), 'hidden',
-    'growing back past the floor does not revive a hidden want either');
-});
-
-/* PICKING A CHART FROM THE DRAWER PUTS IT AWAY (ADR 306): a cell click or
-   Enter, a Watching tail cell, or an explorer pick — every one of them a
-   `mini` or `grid` seat. */
-test('picking a mini or grid seat hides the dock; picking the spotlight does not', () => {
-  assert.equal(dockPickTransition('docked', 'mini'), 'hidden');
-  assert.equal(dockPickTransition('docked', 'grid'), 'hidden');
-  assert.equal(dockPickTransition('hidden', 'mini'), 'hidden');
-  assert.equal(dockPickTransition('docked', 'focal'), 'docked',
-    'the spotlight is already seated, not a pick from the drawer');
-});

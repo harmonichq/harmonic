@@ -1,0 +1,26 @@
+/* Shared prototype scaffold. Current shipped material is _theme-app.css. */
+@import url('./_theme-app.css');
+:root { font-family: Inter, system-ui, sans-serif; }
+.v2-content { min-height:0; overflow:auto; background:var(--wk-canvas); padding:24px 30px 42px; color:var(--text); }
+.v2-content h1 { font-size:1.4rem; line-height:1.25; margin:0 0 12px; font-weight:600; }
+.v2-content h2 { font-size:1.05rem; margin:0 0 12px; font-weight:600; }
+.v2-content h3 { font-size:.92rem; margin:0 0 10px; }
+.v2-content p { font-size:.9rem; line-height:1.6; max-width:68ch; color:var(--wk-ink-body); }
+.v2-content button, .v2-content select, .v2-content textarea { font:inherit; font-size:.85rem; }
+.v2-content button { min-height:36px; border:1px solid var(--wk-rule-strong); border-radius:var(--wk-radius); padding:7px 12px; background:var(--wk-surface); color:var(--wk-ink); }
+.v2-content button.primary { color:var(--primary); border-color:var(--primary); background:var(--wk-signal-well); }
+.v2-content button:hover { background:var(--wk-surface-rail); }
+.v2-content button:focus-visible, .v2-content select:focus-visible, .v2-content textarea:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+.v2-content button:disabled { opacity:.5; cursor:default; }
+.v2-content select, .v2-content textarea { color:var(--text); background:var(--wk-field); border:1px solid var(--wk-rule-strong); border-radius:var(--wk-radius); padding:8px; }
+.v2-content textarea { display:block; width:100%; min-height:88px; margin:12px 0; }
+.mockbar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:8px 0 16px; margin-bottom:24px; border-bottom:1px solid var(--wk-rule); font-size:.75rem; color:var(--muted); }
+.mockbar label { display:flex; align-items:center; gap:8px; }
+.mockbar p { margin:0; font-size:.75rem; }
+.v2-meta { color:var(--wk-ink-meta); font-size:.8rem; line-height:1.5; font-variant-numeric:tabular-nums; }
+.v2-chart { height:380px; width:100%; min-width:0; }
+.v2-actions { display:flex; flex-wrap:wrap; gap:10px; margin:18px 0; }
+.v2-nav { display:flex; align-items:center; gap:4px; }
+.v2-nav button { color:var(--ck-meta); font:inherit; background:transparent; padding:6px 10px; border:1px solid transparent; border-radius:var(--wk-radius); cursor:pointer; }
+.v2-nav button[aria-current=page] { color:var(--ck-text); border-color:var(--ck-accent); }
+@media(max-width:700px) { .v2-content { padding:16px 16px 32px; } .v2-nav { gap:0; } .v2-nav button { padding:7px 6px; font-size:12px; } .v2-chart { height:330px; } .cockpit-identity small, .v2-shell .cockpit-scope, .v2-shell .cockpit-log-carbs { display:none; } .v2-shell .cockpit-topbar { gap:12px; flex-wrap:wrap; height:auto; min-height:64px; align-content:center; } .v2-shell { grid-template-rows:72px minmax(0,1fr) 24px; } }

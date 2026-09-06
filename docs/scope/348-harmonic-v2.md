@@ -22,7 +22,15 @@
 
 - Q5 settled: keep a set-aside priority aside until its recommended action or seriousness meaningfully changes. Routine new data or a changed exact evidence fingerprint alone does not erase this preference. Recorded in ADR 348 — Guidance leads, findings explain. → ADR (discharged)
 
+- Q6 settled: while following an active change, lead with that change and its current progress. Important worsening stays visible alongside it; it does not silently replace the active watch. Recorded in ADR 348 — Guidance leads, findings explain. → ADR (discharged)
+
+- Q7 settled: history preserves a snapshot of what was known then and how the Trial ended. Updated evidence is separate from the original record. Apply the same honest historical account to the already-required Focus journey. Recorded in ADR 348 — Decisions retain their context and ending. → ADR (discharged)
+
 - Q8 disposition: Connor challenged save-recovery design as over-engineering. Remove that question from the product frontier; use ordinary visible failure handling, with no dedicated automatic recovery capability. This is a scope reduction, not a claim that the user selected the offered recovery behavior. inline
+
+- Q9 settled: once a Trial is ready to judge, let the user record a conclusion and finish it so they can choose the next change. This explicitly changes the current non-closing Keep behavior and active-watch admission, while preserving one active watch, maturity authority, and manual pump entry. Recorded in ADR 348 — Reviewing can finish a Trial. → ADR (discharged)
+
+- Q10 settled: the first usable v2 release completes the full loop for settings and habits: one priority, a change, follow-up, and a saved conclusion. A guidance-only release that hands action and follow-up to v1 is insufficient. This milestone may span several ordinary reviewed PRs behind the preview route. Recorded in ADR 348 — A parallel v2 frontend with one Python data owner. → ADR (discharged)
 
 ### Risk contract
 
@@ -40,12 +48,10 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 ## Open questions
 
-- Q6 pending: during an active change, lead with its progress or allow a new more consequential problem to lead. The one-active-watch constraint itself stays settled.
-- Q7 pending: history retains what was known at the decision with updated evidence separate, or presents the latest assessment with a simpler change record.
 - Validate the Overview / Explore / Changes / Day hypothesis against complete setting, habit, and Day investigation journeys.
-- Settle durable review/history behavior, including a Focus that is resolved or preempted and a Trial no longer in the active roster.
+- Specify the minimum snapshot and ending record that implements Q7 for a Trial and Focus, including unknown legacy facts, without building a general event archive.
 - Distinguish retained #340 comparison rules from proposed v2 presentation and explicit changes to that work's history boundary.
-- Select the first useful increment only after all journeys have been mapped; retain full-product coverage in the plan.
+- Review the proposed full-loop delivery sequence after the concrete journeys are rendered; its setting and habit preview increments together meet Q10, and cutover remains a separate explicit decision.
 - Apply the recorded bounded risk contract to the selected implementation sequence; no build is admitted at this checkpoint.
 
 ## Spawned tasks
@@ -55,6 +61,10 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 - Read-only dismissal grounding completed: existing audit dismissal storage has an item ID, exact evidence fingerprint, and timestamp, but no reason or automatic return policy. Production findings do not consume it. The v2 guidance contract must own stable identity, preference consumption, optional reasons, and meaningful return; routine evidence refresh is insufficient.
 
 - Read-only synthetic-coverage grounding completed. Individual analyzer states, Plan reconciliation, Trial views, and Focus invariants have reusable manufactured sources, but no continuous guided-priority or historical Focus walkthrough exists. Parent verified catalog composition and inspected rendered v1 Diagnose/Plan/Verify/Day against the generated showcase; findings are in the design.
+
+- Read-only Trial-ending grounding completed. Current maturity, active selection, bounded review roster, and transient Keep behavior are separate; a mature Trial can still block Focus. Parent verified active detection and the pin-time guard. Q9 settles a new durable finish action; the implementation must reconcile those consumers around one backend verdict.
+
+- UI Craft concept fan-out started after the empty-shell fidelity comparison passed. Three fresh bounded agents own Guided brief, Glucose first, and Change journal HTML explorations; the parent owns the shared scaffold and rendered review. No production edits or visual lock are admitted.
 
 ## Remaining dispositions
 

@@ -1,9 +1,9 @@
 # Harmonic v2 design investigation
 
-Status: interview checkpoint. Q1–Q5 are settled; the save-recovery question was
-removed after Q8. Q6 (active-change precedence) and Q7 (historical context) are
-awaiting answers. Current-app grounding is complete; the v2 journey walkthrough,
-visual design, review, and direction approval are still pending.
+Status: product interview decisions Q1–Q7, Q9 and Q10 are settled. The save-recovery
+question was removed after Q8. Current-app grounding is complete; the complete
+v2 journey walkthrough, visual design, independent review, and direction
+approval remain pending.
 
 ## Grounding
 
@@ -60,6 +60,10 @@ Carry the mechanical approach already agreed in issue #348 into the plan:
   or a permanent diverging application branch.
 - Ship ordinary short-lived PRs to main behind the preview route. Human merge
   and product-direction approval remain separate gates.
+- The first usable v2 release completes the full priority → setting or habit
+  change → follow-up → saved conclusion loop (Q10). This is a product milestone
+  that may span several reviewed PRs. A guidance-only surface handing the action
+  and follow-up back to v1 does not meet it.
 
 ### Why and consequences
 
@@ -77,7 +81,11 @@ authorized by recording this decision.
 
 ### Decision
 
-Center the v2 experience on one concrete, evidence-backed next action. The
+While following an active change, lead with that change and its current progress
+(Q6). Important worsening remains visible alongside it. Viewing another concern
+does not replace the active watch or begin a second change.
+
+Outside that active journey, center v2 on one concrete, evidence-backed next action. The
 opening experience should answer what is most worth addressing, why that is the
 priority, and where the supporting episodes appear in the glucose chart.
 Secondary findings provide explanation and alternatives on demand; they do not
@@ -116,6 +124,80 @@ must help narrow what to address, identify what remains unknown, and keep its
 status distinct from an eligible setting or habit recommendation. Guidance must
 never manufacture stronger certainty to make the app feel decisive.
 
+## ADR 348 — Decisions retain their context and ending
+
+### Decision
+
+Preserve a snapshot of what the user knew at the time and how the Trial ended
+(Q7). A later assessment may be read separately; it must not rewrite the record
+that explains the original decision. The complete Focus journey carries the
+same historical distinction.
+
+Capture the chosen action, its explanation and evidence window, the relevant
+support or uncertainty, and the decision time. Preserve the actual detected
+setting change separately from Plan intent. At the ending, retain when it ended,
+what ended it, and the available final assessment with its limitations. A
+user decision to stop or continue, a new detected setting, and a loss of usable
+follow-up are distinct facts; none is proof that the change worked.
+
+Keep this a bounded record of the decision and its ending, not a copy of the
+database or every intermediate analysis. Existing Plan, Trial, and Focus
+identities stay authoritative. A Trial detected outside Harmonic must not acquire
+an invented earlier Plan or pretend to have a contemporaneous snapshot from
+before Harmonic first observed it. Historical facts that were never stored are
+shown as unavailable, including missing ending times for legacy Focus rows.
+
+### Why and consequences
+
+Connor needs to revisit what the decision was based on and how the attempt
+concluded. The current derived Trial roster and transient Keep feedback cannot
+provide that account. A minimal persisted snapshot and ending record are
+therefore concrete v2 requirements. The exact storage fields and migration must
+be designed around the existing identities before implementation admission.
+
+## ADR 348 — Reviewing can finish a Trial
+
+### Decision
+
+Once a Trial has enough data to judge under the existing backend maturity rule,
+let the user record a conclusion and finish it (Q9). The finished Trial remains
+in history with the context and ending defined in ADR 348 — Decisions retain
+their context and ending. Finishing releases the active slot so the user can
+choose the next supported change. It neither changes a pump setting nor marks
+an observational improvement as caused by the Trial.
+
+This is an explicit change to current watch behavior. All consumers must use one
+backend finish/admission verdict: Overview, Trial review, and the Focus pin
+guard must agree. A refresh must not reopen the same finished Trial, and closing
+it must not promote an older historical Trial into the foreground and block the
+next choice. A genuinely new detected pump change still opens a Trial and
+preempts a Focus under the existing one-active-watch rule.
+
+### Why and consequences
+
+Today `detect_trial` selects an eligible non-reverted change within its watch
+horizon, and `trial_is_active` uses its existence, not whether it is maturing.
+The frontend's Keep handler records no decision. A ready-to-review Trial can
+therefore still block Focus. Merely adding a history card or hiding the Trial
+in v2 would fail the requested behavior.
+
+`watched_change.py:388–523,631–701,1015–1058,1106–1115,1284–1323` also exposes an
+important split: the active singleton and review roster are different
+projections. Captured block-I:C Trials can appear in review while being excluded
+from the singleton. Reconcile those identities and admission semantics through
+the backend before building the new finish action; do not invent a third
+frontend classifier. Preserve actual pump-change detection and the retained
+comparison rules from #340. Treat changed active admission as a deliberate
+review item, not a claim that #340 already authorized this behavior.
+
+A user finish, an observed reversal or superseding change, and an unreviewed
+expiry remain different endings. No missing historical ending is backfilled
+as a successful conclusion.
+
+The complete proposed destination and journey walkthrough is in
+[journeys.md](journeys.md). It applies the decisions above and is pending
+rendered validation and approval.
+
 ## Journey inventory to design
 
 These are required journeys and questions to test, not approved screen layouts.
@@ -135,8 +217,8 @@ This proposed sequence applies the settled product direction. It still needs
 synthetic walkthrough and visual/interaction validation before approval.
 
 1. On arrival, show the one next useful action in the context of data freshness
-   and any draft, pending pump confirmation, or active watched change. An active
-   watch stays visible; reading another finding does not silently replace it.
+   and any draft, pending pump confirmation, or active watched change. Apply
+   the active-change precedence in ADR 348 — Guidance leads, findings explain.
 2. Explain the priority in terms of the recurring glucose problem, its observed
    consequence, support, and the reason it leads the available alternatives.
    Avoid a naked numerical score or a claim about future benefit.
@@ -195,7 +277,7 @@ routes that the graph did not enumerate.
 | Reconciliation | `frontend/plan.js:727–773`, `reconcileDeliverable`, compares proposed and detected schedules with parameter rounding and pending/mismatch/confirmed states | This behavior already has an implementation. Reuse it through a deliberate shared boundary, or explicitly choose one authoritative move when v2 needs it; do not duplicate its rules |
 | Trial review | `/api/verify/trials` calls `watched_change.review_trials` (`api.py:812–836`, `watched_change.py:631–701`) | The shipped roster uses a bounded horizon and at most three candidates. #340 proposes broader derived history and selected-detail loading; a durable user review decision is a separate concrete need |
 | Focus lifecycle | `/api/focus` and `/api/focus/{id}/resolve` (`api.py:1542–1590`); `store.py:417–424,1110–1163` | All pinned Focus rows persist with id, lever, pinned time, and active/resolved/dropped status. No end timestamp is stored. A historical follow-up period cannot be reconstructed from that status alone |
-| One active watch | `watched_change.py:1297–1323` gives Trial precedence and persists Focus preemption; Focus pin rejects conflicts in `api.py:1551–1577` | Retain these authorities. A read-only history view must not call the active resolver merely to inspect history, because that resolver may drop a Focus |
+| One active watch | `watched_change.py:1297–1323` gives Trial precedence and persists Focus preemption; Focus pin rejects conflicts in `api.py:1551–1577` | Implement ADR 348 — Reviewing can finish a Trial in these backend authorities. A read-only history view must not call the active resolver merely to inspect history, because that resolver may drop a Focus |
 | Day investigation | `/api/timeline`, `/api/day-navigator`, existing Day chart, and `frontend/tab-routing.js:47–70` | Reuse the chronology and occurrence rendering. The routing module serializes Day date and destination-specific state; it does not itself provide a complete v2 return-to-priority contract |
 | Set-aside preferences | `store.py:442,1205–1223`, `api.py:1095–1118`, `frontend/data.js:307–310` | Existing audit dismissals store item ID, exact evidence fingerprint, and dismissal time. The production Findings queue does not consume them. Add only the selected journey's stable priority identity, optional reason, selection consumption, and meaningful-return comparison |
 
@@ -265,7 +347,7 @@ Priority: their assembly and queue ordering are not the same contract.
 | --- | --- | --- |
 | #347 production Vite foundation | Pinned local runtime assets, reproducible build, API proxy, packaging, same-origin/auth behavior, Node absent at runtime, built-output checks | Its standalone migration of the current app is not a prerequisite. Attach those delivery obligations to the first meaningful v2 increment |
 | #336 complete Verify feature | Setting and habit coverage; groups before individual events; useful evidence during follow-up; explicit uncertainty | Fit this complete follow-up experience into the broader discovery-to-history journey. Do not treat a lunch example as the whole feature |
-| #340 reviewed comparison design | Treat its pinned ADR 340 as the comparison-design baseline: server-owned periods and populations, lazy selected detail, visible denominators, adherence distinct from outcome, existing active-watch authority, actual component reuse | Its existing Verify-shell placement does not settle v2 navigation. Its exclusion of historical Focus review does not meet #348's broader durable-history goal. Reconcile that extension explicitly before approving the v2 plan |
+| #340 reviewed comparison design | Treat its pinned ADR 340 as the comparison-design baseline: server-owned periods and populations, lazy selected detail, visible denominators, adherence distinct from outcome, one-active-watch constraint, actual component reuse | Its existing Verify-shell placement does not settle v2 navigation. Its exclusion of historical Focus review does not meet #348's broader durable-history goal. The history and explicit Trial-finish extensions are owned by the two corresponding ADR 348 records |
 
 The detailed #340 comparison rules are read at the pinned commit, not copied
 into a second statistical authority here. No shipped implementation is inferred
@@ -338,29 +420,68 @@ another to make a walkthrough appear complete.
 
 The issue explicitly requests a new sibling v2 surface, and no `frontend-v2/`
 implementation exists at the grounding base. UI Craft setup therefore routed
-that future surface to `lock`. No v2 mock, visual lock, or production revision
-was created in this triage checkpoint. Source tokens and rendered v1 chrome
-remain the material baseline for the eventual v2 design round; the required
-predecessor behavior inventory must also cover jobs that v2 will replace.
+that future surface to `lock`. The first synthetic concept round now lives under `mockups/harmonic-v2*`,
+with a shared source-derived scaffold and a brief at
+`mockups/harmonic-v2.exploration/BRIEF.md`. Its empty chrome passed a rendered
+comparison with v1 before the three concept agents were dispatched. No visual
+lock or production revision is claimed. The predecessor behavior inventory
+must also cover jobs that v2 will replace.
 
-## Sequence to settle
+## Proposed delivery sequence
 
-1. Establish the lead unmet need and map all required journeys.
-2. Validate navigation and progressive evidence through synthetic walkthroughs;
-   settle the shared state transitions, history behavior, and risk contract.
-3. Select a complete useful first journey and its minimum backward-compatible
-   data contracts. Include the v2 build and delivery path with that increment.
-4. Sequence remaining complete journeys while verifying that v1 still works
-   against the same API/database. Split at real capability dependencies, not
-   at individual charts or components.
-5. Set cutover evidence, restoration of the previous frontend if cutover fails,
-   and the conditions for retiring v1 routes/assets/docs. Keep v1 until those
-   conditions are met and Connor authorizes cutover.
+Q10 sets one first-release milestone: the full loop for settings and habits.
+The steps below may land in several ordinary reviewed PRs behind `/v2/`;
+intermediate availability is preview work, not fulfillment of that milestone.
+They are proposed capability boundaries for later ticket locks, not an
+executable component backlog or permission to change the related tickets.
+
+1. **Settle selection and decision identity.** Validate the selected experience
+   against complete synthetic journeys. Specify how the backend chooses one
+   supported action or an investigation and explains that choice; identify the
+   persistent subject of a set-aside preference. Define what constitutes a
+   meaningful action or seriousness change. Existing raw fingerprints and queue
+   order are insufficient. Evidence-policy questions that remain unresolved
+   become bounded investigations with an explicit exit criterion before any
+   dependent recommendation ships.
+2. **Complete the setting loop in preview.** Introduce the v2 build and delivery
+   path together with a useful setting journey: guidance and cited evidence,
+   Plan, manual entry, reconciliation, Trial follow-up, conclusion, and history.
+   Reuse the existing setting-specific eligibility and delivery paths; basal,
+   I:C, and ISF do not acquire interchangeable staging rules. Add the snapshot
+   and Trial-ending persistence this journey requires, with one backend verdict
+   consumed by active selection, review, and the Focus admission guard.
+3. **Complete the habit loop in the same preview.** Reuse guidance, navigation,
+   cited episodes and history. Start and follow a Focus through its existing
+   eligibility, distinguish adherence from outcomes, record manual endings and
+   Trial preemption, and preserve the original context and ending. Cover the
+   supported behavioral families rather than blessing one meal example as the
+   complete feature. Do not make a second watch authority or outcome engine.
+4. **Accept the full-loop release.** Complete the limiting-state walkthroughs
+   and evidence coverage across both loops, including held/quiet/failed reads,
+   ordinary failed actions, set aside and meaningful return, direct Day and
+   return to the same concern, restored drafts, settings access, and historical
+   unknowns. Verify the production build served by Python and the retained v1
+   journeys against the same database. The selected visual and behavior records
+   and independent review must agree with the rendered result.
+5. **Cut over and retire separately.** After Connor accepts the complete v2
+   release, authorize the root-route cutover explicitly. Keep the previously
+   served v1 route/assets available during that transition. Verify installations,
+   authentication, direct links and history access after cutover. Retire v1 only
+   when its inventoried jobs are preserved or Connor has explicitly approved
+   their retirement, and remove old routes/assets/docs together. Restoring the
+   prior frontend must not require discarding the shared decision history.
+
+Every backend write continues to follow the existing cache invalidation rule;
+the existing Plan-draft exception is not expanded by analogy. Ordinary failures
+follow the risk contract below; no new recovery subsystem belongs in this plan.
 
 Current backend/Node tests, generated-fixture drift checks, browser gates,
-OpenSpec validation, and ADR/publication guards remain inputs to the eventual
-verification plan. A v2 increment must additionally exercise its built output;
-a successful Vite development server alone will not prove deployment.
+OpenSpec validation, and ADR/publication guards remain the existing verification
+bar. Each future ticket adds checks through the public interface for the
+behavior it actually changes. V2 delivery additionally needs built-output proof
+for `/v2/`, `/v2/assets/`, API authentication and the packaged Python-only runtime;
+a working Vite development server alone does not establish deployment. Exact
+commands and reviewed source pins belong to the eventual implementation locks.
 
 ## Risk contract
 
@@ -378,15 +499,13 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 ## Open decisions
 
-- Q6: whether the active change or a new more consequential problem leads on return.
-- Q7: how the historical decision context and updated assessment are presented.
 - The prioritization contract: how the existing engine chooses one actionable
   candidate, how related episodes inform it, and how other findings remain
   inspectable without creating competing advice.
 - Navigation names, destination boundaries, and settings placement after the
   complete journeys are walked through.
-- Durable decisions/history, terminal timestamps and reasons, legacy unknowns,
-  and their exact relationship to existing Plan/Trial/Focus state.
+- The minimum persistence contract implementing ADR 348 — Decisions retain
+  their context and ending, including links to Plan/Trial/Focus and legacy unknowns.
 - Concrete shared component contracts and any capability extension required
   to retain existing evidence interactions.
 - Explicit reconciliation of #340's history and presentation boundaries.

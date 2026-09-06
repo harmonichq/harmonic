@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Harmonic v2 — design comparison</title><link rel="stylesheet" href="./_theme.css"><style>
+html,body { margin:0; height:100%; overflow:auto; background:var(--wk-canvas); color:var(--text); }
+.review { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--wk-rule); font-size:13px; }
+.review strong { margin-right:8px; } .review label { display:flex; gap:8px; align-items:center; } .review select { font:inherit; color:var(--text); background:var(--wk-field); padding:7px; border:1px solid var(--wk-rule); border-radius:var(--wk-radius); }
+.review a { color:var(--primary); text-decoration:none; } .review .note { flex-basis:100%; color:var(--muted); margin:0; font-size:12px; }
+.stage { display:flex; justify-content:center; padding:0; } iframe { display:block; border:0; width:100%; height:calc(100vh - 96px); min-height:600px; } .stage.narrow iframe { width:390px; height:844px; min-height:844px; border-inline:1px solid var(--wk-rule); }
+</style></head><body><div class="review"><strong>Harmonic v2 · design review</strong><label>Direction <select id="concept"><option value="guided">A · Guided brief</option><option value="glucose">B · Glucose first</option><option value="journal">C · Change journal</option></select></label><label>Width <select id="size"><option value="desktop">Desktop</option><option value="narrow">Narrow · 390px</option></select></label><a id="standalone" target="_blank" rel="noopener">Open on its own ↗</a><p class="note">Choose the hierarchy that makes your next step clearest. These synthetic concepts share the app’s existing visual material; none is a visual lock.</p></div><div class="stage" id="stage"><iframe title="Selected Harmonic v2 concept" id="preview"></iframe></div><script type="module">
+// This comparison wrapper is not part of the real app.
+const params=new URLSearchParams(location.search);
+const concept=document.querySelector('#concept'),size=document.querySelector('#size'),preview=document.querySelector('#preview');
+concept.value=['guided','glucose','journal'].includes(params.get('concept'))?params.get('concept'):'guided';
+size.value=params.get('size')==='narrow'?'narrow':'desktop';
+function render(){const src=`./harmonic-v2-${concept.value}.html?state=${params.get('state')||'investigate'}`;preview.src=src;document.querySelector('#standalone').href=src;document.querySelector('#stage').classList.toggle('narrow',size.value==='narrow');params.set('concept',concept.value);params.set('size',size.value);history.replaceState(null,'',`${location.pathname}?${params}`);}
+concept.onchange=render;size.onchange=render;render();
+</script></body></html>

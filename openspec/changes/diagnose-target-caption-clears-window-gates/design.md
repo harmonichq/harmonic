@@ -53,7 +53,14 @@ removed — against a caption box of 108.8px
 (`estimateTextPx('TARGET 70–180 mg/dL', 10)` = 98.8px plus `padding: [2, 5]`). No
 region fits. At the 768px viewport, where the layout gives the chart 399.6px, the
 gates land at 139.6 and 245.3 and the largest clear region is 101.6px — none fits
-there either. So at two of the five evidence widths a horizontal escape has
+there either. That 768px geometry is a triage measurement taken on the sweep's
+shared synthetic revise-e2e server; this change's own committed
+`evidence/geometry-after.json` was captured on the qa-e2e showcase, where the
+same viewport gives the chart 404px and gates at 141.1 and 248.2, and the node
+test drives a third stand-in again (`clientWidth: 400`, gates 139.8 and 245.5).
+The conclusion does not turn on which of the three is read: the largest clear
+region is 101.6, 103.1 and 101.8px respectively, every one of them short of the
+108.8px caption box. So at two of the five evidence widths a horizontal escape has
 nowhere to land, on a
 window a reader draws with the very grips the frozen ledger pins — and the
 must-prevent outcome, a caption rendering a number other than the configured

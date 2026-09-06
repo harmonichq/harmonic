@@ -19,8 +19,10 @@
 
   **`clientWidth` here is the chart element's width, not the viewport's.** The
   Diagnose layout puts the chart at 390px inside a 390px viewport but at 399.6px
-  inside a 768px one, so `clientWidth: 400` is the node-test stand-in for the
-  768px evidence width — driving `clientWidth: 768` would render a 682px plot in
+  inside a 768px one on the revise-e2e server triage measured, and at 404px
+  inside that same viewport on the qa-e2e showcase the evidence renders were
+  captured on. `clientWidth: 400` is the node-test stand-in for that 768px
+  evidence width; driving `clientWidth: 768` would render a 682px plot in
   which no gate strikes the caption at all, and would prove nothing.
 
   In the first three the test asserts the caption carries the **dropped**
@@ -55,7 +57,11 @@
   No region fits. At the 768px evidence width the chart is 399.6px wide, the
   gates land at 139.6 and 245.3 — the first inside the caption's padded box,
   striking its tail rather than its numerals — and the largest clear region is
-  101.6px, which does not fit either. The
+  101.6px, which does not fit either. That 399.6px geometry is the triage
+  measurement on the revise-e2e server; the qa-e2e showcase the evidence is
+  captured on gives 404px (gates 141.1 and 248.2, largest region 103.1px) and
+  the node test's `clientWidth: 400` a third (139.8 and 245.5, 101.8px). None
+  fits. The
   occluder, by contrast, is vertically pinned at every width and every window:
   `paintBrace` sets `gripTop = Math.min(plotTop + 22, …)` with `PLOT_TOP = 20`
   and `.grip` is 22px tall, so the opaque grip band never reaches below

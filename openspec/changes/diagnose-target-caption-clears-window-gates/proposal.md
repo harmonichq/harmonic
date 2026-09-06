@@ -55,10 +55,12 @@ each grip's opaque half-width is removed the plot is carved into clear regions o
 98.4 / 94.4 / 95.2px — against a caption box of 108.8px
 (`estimateTextPx('TARGET 70–180 mg/dL', 10)` = 98.8px plus `padding: [2, 5]`).
 **No horizontal slot fits.** At the 768px viewport, where this layout gives the
-chart 399.6px, the largest region is 101.6px and none fits either. Sliding the
-caption sideways is therefore not a fix: at two of the five
-evidence widths, on a window a reader can draw with the grips the frozen ledger
-pins, there is nowhere sideways to go.
+chart 399.6px on the revise-e2e server measured above, the largest region is
+101.6px and none fits either — nor on the qa-e2e showcase this change's evidence
+is captured on, where that viewport gives 404px and a 103.1px largest region.
+Sliding the caption sideways is therefore not a fix: at two of the five evidence
+widths, on a window a reader can draw with the grips the frozen ledger pins,
+there is nowhere sideways to go.
 
 ## What changes
 

@@ -47,3 +47,14 @@ the browser reported no console errors. Inputs are generated from the exact
 current source through `generate.py`, whose generation and --check passed.
 The snapshots are session evidence; no claim of a completed v2 walkthrough or
 approved visual lock follows from this empty-shell check.
+
+## Setting-path preparation
+
+The existing `setting-recommendation` QA recipe was also executed through
+`qa_e2e_cases.execute_case` against its generated, read-only store. It yields
+one asserting basal finding for 03:00–04:00, supported by 12 steady nights.
+This is suitable source material for the selected concept's subsequent setting
+choice and Plan walkthrough. The current concept round does not join that
+case, the late-bolus investigation, and the Verify cases into a fictitious
+continuous clinical history. Cross-candidate priority selection remains a
+separate policy question; one asserting fixture row does not establish it.

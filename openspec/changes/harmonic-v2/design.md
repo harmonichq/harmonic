@@ -427,6 +427,16 @@ comparison with v1 before the three concept agents were dispatched. No visual
 lock or production revision is claimed. The predecessor behavior inventory
 must also cover jobs that v2 will replace.
 
+## First concept comparison
+
+The three unlocked directions are reviewed in
+`mockups/harmonic-v2.exploration/REVIEW.md` and available together through
+`mockups/harmonic-v2-review.html`. Six prototype states were rendered at desktop
+and narrow widths; primary episode, set-aside, conclusion and retry flows were
+walked. This is hierarchy evidence only. It does not discharge the complete
+walkthrough obligations above. Q11 is the pending direction choice; the parent
+recommends Guided brief for its clearer next step.
+
 ## Proposed delivery sequence
 
 Q10 sets one first-release milestone: the full loop for settings and habits.

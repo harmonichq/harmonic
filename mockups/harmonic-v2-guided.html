@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harmonic · Guided brief concept</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./_theme.css" />
+  <style>
+    /* Concept layout only. Shared material, chrome and chart remain source-owned. */
+    .gb-page { max-width:1000px; margin:0 auto; min-width:0; }
+    .gb-page [hidden] { display:none !important; }
+    .gb-brief { max-width:760px; padding:4px 0 28px; }
+    .gb-page h1 { max-width:34ch; font-size:1.4rem; line-height:1.35; margin:10px 0 14px; }
+    .gb-page p { margin:9px 0; }
+    .gb-lead { font-size:.95rem !important; max-width:60ch !important; }
+    .gb-context { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; color:var(--wk-ink-meta); font-size:.8rem; line-height:1.5; }
+    .gb-context strong { color:var(--wk-ink); font-weight:600; }
+    .gb-path { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+    .gb-page .gb-text-button { border-color:transparent; background:transparent; color:var(--primary); padding-inline:0; text-align:left; }
+    .gb-page .gb-text-button:hover { background:transparent; text-decoration:underline; }
+    .gb-next { padding:24px 0; border-top:1px solid var(--wk-rule); }
+    .gb-next h2 { margin-bottom:8px; }
+    .gb-next .v2-actions { margin-bottom:0; }
+    .gb-summary { display:flex; gap:20px; flex-wrap:wrap; margin-top:18px; }
+    .gb-summary span { font-size:.85rem; color:var(--wk-ink-body); }
+    .gb-summary strong { font-weight:600; color:var(--wk-ink); }
+    .gb-evidence { margin:0 0 28px; border:1px solid var(--wk-rule-strong); border-radius:var(--wk-radius); background:var(--wk-surface); min-width:0; }
+    .gb-evidence-head { padding:18px 20px 14px; }
+    .gb-evidence-head h2 { margin:0 0 8px; }
+    .gb-evidence-body { padding:18px 20px; }
+    .gb-episode-tools { display:flex; gap:12px; justify-content:space-between; flex-wrap:wrap; align-items:center; margin-top:14px; }
+    .gb-occurrences { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 0; }
+    .gb-occurrences button[aria-pressed=true], .gb-steps button[aria-pressed=true] { border-color:var(--primary); color:var(--primary); background:var(--wk-signal-well); }
+    .gb-steps { display:flex; gap:6px; flex-wrap:wrap; padding:0 20px 14px; }
+    .gb-steps button { flex:1 1 160px; text-align:left; display:flex; gap:10px; align-items:center; line-height:1.5; }
+    .gb-step-number { font-variant-numeric:tabular-nums; font-size:1rem; color:var(--wk-ink-meta); }
+    .gb-step-title { display:block; }
+    .gb-steps small { color:var(--wk-ink-meta); display:block; font-size:.75rem; }
+    .gb-chart-well { background:var(--wk-surface-sunken); padding:8px 0 0; }
+    .gb-chart-legend { display:flex; flex-wrap:wrap; gap:8px 18px; padding:0 20px 14px; color:var(--wk-ink-meta); font-size:.72rem; }
+    .gb-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .gb-dot { width:6px; height:6px; border-radius:50%; background:var(--in-range); display:inline-block; }
+    .gb-dot.bolus { width:8px; height:8px; background:var(--accent); }
+    .gb-line { display:inline-block; width:16px; border-top:1px solid var(--observed); }
+    .gb-line.inferred { border-top-style:dashed; border-color:var(--inferred); }
+    .gb-step-detail { padding:16px 20px; }
+    .gb-step-detail .gb-tier { font-size:.75rem; font-weight:600; }
+    .gb-step-detail p { font-size:.85rem; }
+    .gb-unknown { padding-top:16px; margin-top:18px; border-top:1px solid var(--wk-rule); }
+    .gb-aside-form { margin-top:18px; max-width:640px; }
+    .gb-aside-form label, .gb-conclusion label { font-size:.85rem; color:var(--wk-ink-body); }
+    .gb-notice { color:var(--wk-ink-body); font-size:.85rem; padding:16px 0; border-top:1px solid var(--wk-rule); }
+    .gb-notice strong { color:var(--wk-ink); }
+    .gb-progress { margin:22px 0 6px; max-width:600px; }
+    .gb-progress-head { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:.85rem; }
+    .gb-progress-head strong { font-weight:600; }
+    .gb-progress progress { width:100%; height:8px; display:block; margin:14px 0 10px; appearance:none; border:0; accent-color:var(--primary); }
+    .gb-progress progress::-webkit-progress-bar { background:var(--wk-rule); border-radius:var(--wk-radius); }
+    .gb-progress progress::-webkit-progress-value { background:var(--primary); border-radius:var(--wk-radius); }
+    .gb-progress progress::-moz-progress-bar { background:var(--primary); border-radius:var(--wk-radius); }
+    .gb-compare { width:100%; border-collapse:collapse; text-align:left; font-size:.85rem; line-height:1.5; }
+    .gb-compare caption { text-align:left; color:var(--wk-ink-body); padding:0 0 12px; font-size:.85rem; }
+    .gb-compare th { color:var(--wk-ink-meta); font-weight:500; font-size:.75rem; }
+    .gb-compare th, .gb-compare td { padding:12px 16px 12px 0; border-bottom:1px solid var(--wk-rule); vertical-align:top; }
+    .gb-compare th:first-child { width:42%; }
+    .gb-compare small { display:block; font-size:.73rem; color:var(--wk-ink-meta); }
+    .gb-compare td { font-variant-numeric:tabular-nums; }
+    .gb-periods { display:flex; flex-direction:column; gap:6px; margin:16px 0; }
+    .gb-periods span { font-size:.76rem; color:var(--wk-ink-meta); }
+    .gb-plain-list { padding-left:20px; color:var(--wk-ink-body); font-size:.85rem; line-height:1.6; }
+    .gb-plain-list li { margin:5px 0; }
+    .gb-conclusion { max-width:660px; margin:22px 0 6px; }
+    .gb-conclusion fieldset { margin:0; padding:0; border:0; }
+    .gb-conclusion legend { font-size:.9rem; font-weight:600; margin-bottom:10px; }
+    .gb-choice { display:flex; align-items:flex-start; gap:10px; padding:11px 0; }
+    .gb-choice input { margin:3px 0 0; accent-color:var(--primary); width:16px; height:16px; flex:none; }
+    .gb-conclusion input:focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+    .gb-record { max-width:760px; }
+    .gb-record dl { margin:0; }
+    .gb-record dl > div { display:grid; grid-template-columns:170px 1fr; gap:20px; padding:16px 0; border-top:1px solid var(--wk-rule); }
+    .gb-record dt { color:var(--wk-ink-meta); font-size:.8rem; }
+    .gb-record dd { margin:0; color:var(--wk-ink-body); font-size:.85rem; line-height:1.6; }
+    .gb-record blockquote { margin:0; color:var(--wk-ink); }
+    .gb-history-link { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 0; border-top:1px solid var(--wk-rule); }
+    .gb-history-link span { color:var(--wk-ink-meta); font-size:.8rem; }
+    .gb-status-message { min-height:1.4em; font-size:.8rem; color:var(--wk-ink-meta); }
+    .gb-day-picker { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:16px 0; font-size:.8rem; }
+    @media(max-width:700px) {
+      .gb-page h1 { font-size:1.2rem; }
+      .gb-brief { padding-bottom:20px; }
+      .gb-evidence-head, .gb-evidence-body, .gb-step-detail { padding:16px; }
+      .gb-steps { padding:0 16px 12px; flex-direction:column; }
+      .gb-steps button { flex:auto; }
+      .gb-steps small { display:inline; margin-left:8px; }
+      .gb-step-title { display:inline; }
+      .gb-summary { gap:8px; flex-direction:column; }
+      .gb-compare th, .gb-compare td { padding:11px 8px 11px 0; font-size:.78rem; }
+      .gb-compare th:first-child { width:40%; }
+      .gb-record dl > div { grid-template-columns:1fr; gap:5px; }
+      .gb-chart-legend { padding-inline:16px; }
+      .gb-history-link { align-items:flex-start; flex-direction:column; gap:8px; }
+      .gb-next { padding-top:20px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+  <!-- Unlocked concept. Mock scenario controls and utility buttons are context
+       only. Parent owns rendered review. No full interaction lock is claimed. -->
+  <script type="module" src="./harmonic-v2-guided.js"></script>
+</body>
+</html>

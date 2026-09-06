@@ -48,6 +48,8 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 ## Open questions
 
+- Q11 pending: choose the leading visual hierarchy from the rendered Guided brief, Glucose first, and Change journal concepts. Parent recommends Guided brief; no default selection is recorded as approval.
+
 - Validate the Overview / Explore / Changes / Day hypothesis against complete setting, habit, and Day investigation journeys.
 - Specify the minimum snapshot and ending record that implements Q7 for a Trial and Focus, including unknown legacy facts, without building a general event archive.
 - Distinguish retained #340 comparison rules from proposed v2 presentation and explicit changes to that work's history boundary.
@@ -64,7 +66,7 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 - Read-only Trial-ending grounding completed. Current maturity, active selection, bounded review roster, and transient Keep behavior are separate; a mature Trial can still block Focus. Parent verified active detection and the pin-time guard. Q9 settles a new durable finish action; the implementation must reconcile those consumers around one backend verdict.
 
-- UI Craft concept fan-out started after the empty-shell fidelity comparison passed. Three fresh bounded agents own Guided brief, Glucose first, and Change journal HTML explorations; the parent owns the shared scaffold and rendered review. No production edits or visual lock are admitted.
+- UI Craft concept fan-out started after the empty-shell fidelity comparison passed. Three fresh bounded agents completed Guided brief, Glucose first, and Change journal HTML explorations. The parent rendered all six required states at desktop and narrow widths, walked primary prototype interactions, and verified the journal layout correction. The comparison and its limits are recorded in `mockups/harmonic-v2.exploration/REVIEW.md`. Q11 awaits direction selection. No production edits or visual lock are admitted.
 
 ## Remaining dispositions
 

@@ -31,6 +31,7 @@ import {
   validateHistoryEvents, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
 import {
   createCanvasLayout, descriptorsFromFindings, fieldRange,
@@ -4081,14 +4082,60 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   /* PORT DEVIATION (#654): shared by the public `setError` below and the
      payload guard just past it. Not mock code — the mock never receives a
      malformed capture, since it is driven by static files, not an HTTP
-     response crossing a process boundary. */
-  function showError(message) {
+     response crossing a process boundary.
+
+     #361: what the reader is told is `diagnoseLoadFailure`'s to decide, from
+     the cause's transport status; this builds that composition's DOM. The
+     server's own sentence is a detail line beneath app copy, never the
+     heading. `role="alert"` sits on the block rather than the mount, so a
+     later successful `render()` — which replaces the mount's children
+     wholesale — cannot leave the whole surface announcing as an alert. */
+  function showError(cause) {
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaint = null;
     leaveSurface = null;
     root.className = 'dw dw-error';
-    root.textContent = message;
+    root.textContent = '';
+
+    const failure = diagnoseLoadFailure(cause);
+    const block = document.createElement('div');
+    block.className = 'dw-failure';
+    block.setAttribute('role', 'alert');
+    /* The missing-token placeholder's own lock (frontend/index.html), verbatim
+       — a static literal, so no caught message is ever parsed as markup. */
+    if (failure.icon === 'lock') {
+      block.insertAdjacentHTML('beforeend', '<svg width="40" height="40" viewBox="0 0 24 24" '
+        + 'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" '
+        + 'stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/>'
+        + '<path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>');
+    }
+    const title = document.createElement('h2');
+    title.textContent = failure.title;
+    const body = document.createElement('p');
+    body.textContent = failure.body;
+    block.append(title, body);
+    if (failure.detail) {
+      const detail = document.createElement('p');
+      detail.className = 'dw-failure-detail';
+      detail.textContent = failure.detail;
+      block.append(detail);
+    }
+    /* The route out is the app's, not the surface's: `settings` and `retry`
+       are both callbacks the mount is handed. A mount without the one this
+       failure needs renders the copy without a button rather than throwing. */
+    const route = failure.action === 'settings'
+      ? { run: callbacks.settings, label: 'Open Settings' }
+      : { run: callbacks.retry, label: 'Retry' };
+    if (typeof route.run === 'function') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'dw-failure-action';
+      button.textContent = route.label;
+      button.addEventListener('click', () => route.run());
+      block.append(button);
+    }
+    root.append(block);
   }
 
   function render() {

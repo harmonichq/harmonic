@@ -5357,7 +5357,10 @@
             nextTick(diagnoseMount);
           } catch (e) {
             diagnoseLoaded = false;
-            if (diagnoseView) diagnoseView.setError(e.message);
+            // #361: the surface is handed the error itself, not its message —
+            // the transport status on it is what decides whether the reader is
+            // told their token was rejected or offered a retry.
+            if (diagnoseView) diagnoseView.setError(e);
             else {
               diagnoseReady.value = true;
               await nextTick();
@@ -5367,7 +5370,7 @@
               // never ran), and setData on a null-shaped payload crashed
               // inside boot() before setError got a turn. Mount without
               // feeding it.
-              diagnoseEnsureView()?.setError(e.message);
+              diagnoseEnsureView()?.setError(e);
             }
           }
         }
@@ -5412,6 +5415,10 @@
               day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
                 occurrence.text || occurrence.anchor?.label,
                 occurrence.cause_lever, occurrence.cause_lever), retry: loadAudit,
+              // #361: the route out of a rejected API token, which is the app's
+              // own Settings tab — the same destination the missing-token
+              // placeholder above offers.
+              settings: () => setTab('settings'),
               // Lock term 19: the occurrence level overlays that day's REAL trace
               // when one exists. The app does not ship 30 days of raw CGM, so the
               // one day in view is fetched; a miss keeps the "no trace captured"

@@ -2410,7 +2410,9 @@ test('setError tears down a live render and replaces the mount with a plain fail
               + '<body><div id="wrap"><div class="mount"></div></div>'
               + '<script type="module">import {createDiagnoseWorkstation} from '
               + `'/assets/diagnose-workstation.js';`
-              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), callbacks: {} });`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
               + `window.__ready = true;</script></body></html>`,
             contentType: 'text/html',
           });
@@ -2438,7 +2440,16 @@ test('setError tears down a live render and replaces the mount with a plain fail
       await page.evaluate(() => window.__view.setError('The evidence request failed.'));
       const wrap = page.locator('#wrap');
       assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error');
-      assert.equal(await wrap.evaluate((node) => node.firstElementChild.textContent), 'The evidence request failed.');
+      /* #361: the message is still shown, but as the detail line beneath the
+         app's own copy rather than as the entire surface — and the generic
+         failure now carries the Retry the mount was always handed. */
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error .dw-failure-detail')?.textContent ?? null),
+        'The evidence request failed.');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence");
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1);
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
       assert.deepEqual(errors, [], 'setError does not itself throw, even tearing down a live render');
     } finally { await page.close(); }
   });
@@ -2520,6 +2531,158 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
       const message = await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? '');
       assert.ok(message.length > 0, 'the surface shows a failure message');
       assert.deepEqual(errors, [], 'no uncaught error reaches the page — the surface fails closed, not crashes');
+    } finally { await page.close(); }
+  });
+
+/* #361: a token this server rejects is a token problem, and the reader is told
+   so in the app's own words with the route out the missing-token placeholder
+   already offers. Before this, `loadAudit`'s catch handed `setError` the bare
+   `e.message` and the surface became the API's own `detail` string — lowercase,
+   unpunctuated, flush to the mount's top-left corner, with no control in it.
+   This drives the REAL app path, because the fix spans index.html's catch (it
+   now passes the caught error, which carries the status) and the workstation's
+   own render. Its stub table mirrors the #654 regression's, except every /api
+   read answers 401 the way a server refusing the saved token does. */
+test('a rejected API token names the token and offers Settings, not the backend string', async () => {
+    const payloadPath = process.env.PAYLOAD;
+    assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints before the refusal)');
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.addInitScript(() => {
+        localStorage.setItem('ciq_token', 'not-the-token');
+      });
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        const path = url.pathname;
+        if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
+        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
+        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
+        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+        if (/\.(js|css|svg|html)$/.test(path)) {
+          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
+        }
+        // Every read refused, exactly as ciq_autotune/api.py's require_token
+        // refuses a token the server does not accept. The detail string is
+        // that endpoint's own, verbatim.
+        if (path.startsWith('/api/')) {
+          return route.fulfill({ status: 401, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'missing or invalid bearer token' }) });
+        }
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
+      });
+      await page.goto('http://app.local/?view=glucose');
+      await page.waitForSelector('.dw.dw-error', { timeout: 8000 });
+      await settle(page, 300);
+
+      const heading = await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null);
+      assert.equal(heading, "Diagnose can't use this API token",
+        'the reader is told this is a token problem, in the app\'s own words');
+      assert.notEqual(heading, 'missing or invalid bearer token',
+        'the backend string is never the heading');
+      const bodyText = await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? '');
+      assert.match(bodyText, /Update it in Settings/,
+        'the copy names the route out');
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control, the way out');
+      assert.equal((await controls.first().innerText()).trim(), 'Open Settings');
+
+      // The reported symptom: the surface sat at x=0 with padding: 0px. The
+      // block now sits inside the mount's own padding.
+      const geometry = await page.evaluate(() => {
+        const root = document.querySelector('.dw.dw-error');
+        const block = root.firstElementChild;
+        return {
+          padding: getComputedStyle(root).padding,
+          rootLeft: root.getBoundingClientRect().left,
+          blockLeft: block.getBoundingClientRect().left,
+        };
+      });
+      assert.notEqual(geometry.padding, '0px', 'the mount is no longer unpadded');
+      assert.ok(geometry.blockLeft > geometry.rootLeft,
+        `the failure block is inset from the mount's left edge (${geometry.blockLeft} > ${geometry.rootLeft})`);
+
+      // The control is the app's own Settings route, not a link the surface invented.
+      await controls.first().click();
+      await settle(page, 300);
+      assert.equal(await page.evaluate(() => location.pathname), '/settings',
+        'Open Settings moves the app to Settings through its own routing');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
+    } finally { await page.close(); }
+  });
+
+/* #361: the same frame, and the same way out, for a failure that is NOT a
+   rejected token — the claim this change makes is that EVERY failed load gets
+   one, not only the 401. The server's own sentence survives as the detail line
+   under app copy rather than being the whole screen. Mounted directly so the
+   test owns the `retry` callback and can prove the surface calls it rather than
+   reloading itself; the error is a real ApiTransportError raised by the app's
+   own transport against a stubbed 500, not a hand-built object. */
+test('a non-401 failure keeps the server message as detail and offers Retry through the app callback', async () => {
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname === '/') {
+          return route.fulfill({
+            body: '<!doctype html><html><head></head>'
+              + '<body><div id="wrap"><div class="mount"></div></div>'
+              + '<script type="module">'
+              + `import {createDiagnoseWorkstation} from '/assets/diagnose-workstation.js';`
+              + `import {makeDeps} from '/assets/data.js';`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
+              // The real transport, against the stubbed 500 below: this is the
+              // ApiTransportError loadAudit's catch would hand setError.
+              + 'try { await makeDeps().fetchAnalysis(); }'
+              + 'catch (e) { window.__caught = { status: e.status, message: e.message }; window.__view.setError(e); }'
+              + 'window.__ready = true;</script></body></html>',
+            contentType: 'text/html',
+          });
+        }
+        if (url.pathname.startsWith('/assets/')) {
+          const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
+          try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
+          catch { return route.fulfill({ status: 404, body: 'missing' }); }
+        }
+        if (url.pathname.startsWith('/api/')) {
+          return route.fulfill({ status: 500, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'synthetic server failure for the #361 non-401 arm' }) });
+        }
+        return route.fulfill({ status: 404, body: 'missing' });
+      });
+      await page.goto('http://diagnose.local/');
+      await page.waitForFunction(() => window.__ready === true);
+      await settle(page, 300);
+
+      assert.deepEqual(await page.evaluate(() => window.__caught),
+        { status: 500, message: 'synthetic server failure for the #361 non-401 arm' },
+        'the surface received the transport error itself, status and all');
+
+      const wrap = page.locator('#wrap');
+      assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error',
+        'the mount keeps the class every existing selector matches');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence",
+        'app copy is the heading, for a failure that is not a token refusal');
+      assert.match(await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? ''),
+        /synthetic server failure for the #361 non-401 arm/,
+        "the server's own message stays visible, as detail");
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control — no failure is a dead end');
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
+      await controls.first().click();
+      assert.equal(await page.evaluate(() => window.__retried), 1,
+        'Retry re-runs the app\'s own load through callbacks.retry; the surface reloads nothing itself');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
     } finally { await page.close(); }
   });
 

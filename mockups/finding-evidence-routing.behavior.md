@@ -3216,3 +3216,45 @@ because rank one follows Spotlight and the overview in the same document, that
 anchor is intentionally nonzero. Desktop/tablet pane behavior, queue evidence,
 full-size chart options, clock gestures, ranking, and backend judgments do not
 change.
+
+## Amendment — 2026-09-06, the Diagnose load-failure state (issue #361)
+
+This ledger has never carried a story for what Diagnose shows when its initial
+load fails, because the mock is driven by static capture files and never
+receives an HTTP response. The surface's `setError` path was written for the
+port (#654) and, until now, replaced the whole workstation with the server's own
+`detail` string set as the mount's `textContent`, under a `dw-error` class no
+stylesheet in the tree defined. A token the server rejected therefore blanked
+Diagnose to `missing or invalid bearer token`, flush at the mount's top-left
+corner with no padding and no control, while a token that was merely *absent*
+got the shell's designed placeholder. This amendment records what that state
+shows now. It amends no existing story and retires nothing, so it issues no new
+executable ID and needs no retirement sanction.
+
+A failed Diagnose load now renders the app's own copy inside the surface's own
+padding: a heading, a sentence, and one control that offers a route out. The
+composition is decided by the transport status the failure carries, never by the
+wording of the server's message.
+
+A rejected API token — the server answering `401` — is named as a token problem
+(*Diagnose can't use this API token*), carries the same lock icon the shell's
+missing-token placeholder uses, and offers **Open Settings**, which moves the
+app to Settings exactly as that placeholder's button does. The two states now
+give the same answer to the same user problem.
+
+Every other failure — a `500`, an unreachable server, a malformed payload —
+renders one generic heading (*Diagnose couldn't read this server's evidence*)
+and offers **Retry**, which re-runs the app's own load through the `retry`
+callback the mount was already handed. The surface reloads nothing itself. The
+server's own sentence is kept and shown beneath the app's copy as a detail line,
+so a failure stays diagnosable without the server's message being the entire
+screen. No failed load is left without a way out.
+
+The failure block announces as `role="alert"`, because it interrupted a request
+the reader had already made; the shell's missing-token placeholder keeps its
+`role="status"`, because nothing was interrupted there. The mount keeps its
+`dw dw-error` class, so every existing selector still matches.
+
+The shell's global *No API token set* banner still does not fire for a token
+that is present but rejected: `hasToken` means "a non-empty string is saved" and
+every screen reads it. That is deliberately left alone here.

@@ -64,6 +64,57 @@
 .dw, .dw * { box-sizing: border-box; }
 .dw button { font: inherit; }
 
+/* ---- the mount's failure state (#361) ------------------------------------
+   `showError` has always set `dw dw-error` on the mount, and no stylesheet in
+   the tree ever defined the second class — so a failed load inherited the
+   two-row grid above and rendered the message flush at the mount's top-left
+   corner with `padding: 0px`, which is the reported symptom itself. There is
+   no chrome row to place here, so the failure is one centred area inside the
+   surface's own padding. Every value below is an existing `--mk-*`/`--ck-*`
+   token: no new colour, no new token, so the surface styles itself the same
+   way wherever it mounts (the shell's `.placeholder` and `.btn-primary` live
+   in index.html's inline stylesheet and are absent when the mount is driven
+   on its own). */
+.dw.dw-error {
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+  background: var(--mk-bg);
+  color: var(--mk-text);
+}
+.dw-error .dw-failure {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; max-width: 46ch; text-align: center;
+}
+.dw-error .dw-failure > svg { color: var(--mk-muted); }
+.dw-error .dw-failure > h2 {
+  margin: 0; font-size: 17px; font-weight: 600; color: var(--mk-text);
+}
+.dw-error .dw-failure > p { margin: 0; line-height: 1.5; color: var(--mk-muted); }
+/* The server's own sentence, set apart as quoted machine text so it reads as
+   evidence under the app's copy rather than as more of it. */
+.dw-error .dw-failure > .dw-failure-detail {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--mk-line);
+  border-radius: 5px;
+  background: var(--mk-surface-2);
+  overflow-wrap: anywhere;
+}
+.dw-error .dw-failure > .dw-failure-action {
+  margin-top: 4px;
+  padding: 7px 14px;
+  border: 0; border-radius: 5px;
+  background: var(--mk-primary); color: var(--mk-on-primary);
+  font-weight: 550; cursor: pointer;
+}
+.dw-error .dw-failure > .dw-failure-action:hover { background: var(--mk-primary-600); }
+.dw-error .dw-failure > .dw-failure-action:focus-visible {
+  outline: 2px solid var(--ck-accent); outline-offset: 2px;
+}
+
 /* ---- tokens — VERBATIM from mock 258-298; rescoped from `:root` to `.dw`
        because shell.css already owns a different `--ck-*` set globally —
        scoping keeps the two from colliding. (The mock also carried a second,

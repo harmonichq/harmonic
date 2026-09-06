@@ -10,7 +10,7 @@ The retained set contains nine synthetic screenshots. Repeated viewport matrices
 | Phone, 390×844 | [Before phone correction](phone-flow-followup/before-bc58840-390x844-root.png) | [Continuous page flow](final-projection/final-390x844-root.png) |
 | Phone queue, 390×844 | [Before phone correction](phone-flow-followup/before-bc58840-390x844-scrolled-queue.png) | [Retained queue charts](final-projection/final-390x844-scrolled-queue.png) |
 
-These projection captures use the existing synthetic replay inputs. The desktop baseline is the original ticket baseline; phone baselines are the rejected pre-correction revision `bc58840`. The final captures are from `b7b8ade`, as described in the adjacent manifests. They establish layout comparisons, not passing remote CI: PR #346 subsequently reported two phone-test failures.
+These projection captures use the existing synthetic replay inputs. The desktop baseline is the original ticket baseline; phone baselines are the rejected pre-correction revision `bc58840`. The final captures are from `b7b8ade`, as described in the adjacent manifests. The retained phone root was subsequently refreshed for the [phone CI correction](ci-phone-correction.md); that note records its provenance and verification.
 
 ## Design decision context
 

@@ -18,3 +18,5 @@ PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json CAPTURE_OUTPUT=/tmp/
 ```
 
 `PLAYWRIGHT_MODULE` and `VENDOR_DIR` must point to the existing browser-gate dependencies. Chromium requires an execution environment that permits its launch.
+
+The retained 390×844 root image was subsequently replaced by the [phone CI correction](../ci-phone-correction.md) render; other retained images keep the capture provenance above.

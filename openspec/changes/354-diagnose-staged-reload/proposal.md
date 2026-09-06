@@ -15,6 +15,8 @@ change they staged there.
 
 - The workstation seeds its staged basal slots, I:C blocks and ISF value from the
   shell's existing Plan verdict when it boots, instead of starting empty.
-- The app-only opener gains an opt-in stateful Plan-draft stub, so a browser story
+- The app-only opener gains an opt-in stateful Plan-draft stub, so a replay story
   can carry a draft across a reload.
-- A browser regression story pins the surviving staged marks and the un-stage path.
+- The behaviour ledger gains one story, `C59`, with its replay function: a change
+  staged in Diagnose still reads as staged after a reload and can still be
+  un-staged there. It is marked pending operator sanction at the #350 sweep PR.

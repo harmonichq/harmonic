@@ -11,9 +11,12 @@ local database and is restored by the shell on every load, which is why the
 cockpit's Plan step still counts an item the workstation has forgotten.
 
 The shell already owns the reverse mapping. `frontend/index.html` passes the
-workstation a `isStaged` callback (`diagnoseIsStaged`), which answers "is this
+workstation an `isStaged` callback (`diagnoseIsStaged`), which answers "is this
 parameter item in the Plan draft?" through `stageItemsFor` and the restored
-`planItems`. The workstation has never called it.
+`planItems`. The workstation has never called it: `callbacks.isStaged` appears
+nowhere in the module. The bare token `isStaged` does appear there six times, but
+every one is the module's own panel-spec field, three of which read the very sets
+this change seeds — a name collision, not a call.
 
 **Decision.** The workstation seeds its three collections from that callback at
 boot, once, before the first paint. It does not read the Plan draft itself, does
@@ -43,8 +46,14 @@ ticket reported. The `?mode=slot` and `?mode=icassert` demo states keep their
 existing local pre-staging, which writes nothing to the Plan draft; seeding a set
 they also add to is idempotent because both are sets.
 
-This change amends no behaviour-ledger story. `mockups/finding-evidence-routing.behavior.md`'s
-P39 already states that staging "writes to the Plan draft through the app's own
-callback, updates the cockpit's Plan badge, and re-paints the dock's line with
-what is staged"; the defect is a surface that stopped honouring it after a
-reload, so the fix restores the frozen contract rather than changing it.
+**Ledger.** The frozen behaviour ledger `mockups/finding-evidence-routing.behavior.md`
+does not yet cover this behaviour. Its `P39` row describes what pressing the
+stage button does — the toggle, the write to the Plan draft, the cockpit badge,
+the dock repaint — and cites render and toggle code as its source. Nothing in the
+ledger describes reconstructing staged marks on a page load. Under the `revise`
+lifecycle that makes mount-time seeding an *added* behaviour, which owes one
+STORY and its replay function in the same change. This change registers `C59`,
+amends no existing story and retires nothing; `C58` is reserved by sibling #364
+in the same #350 sweep. There is no attended operator in this sweep, so `C59`'s
+ledger text carries the words *pending operator sanction at the #350 sweep PR*,
+which is where the operator sanctions the addition.

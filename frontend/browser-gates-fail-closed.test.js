@@ -33,6 +33,7 @@ const SUITES = [
   { file: 'diagnose-workstation-behavior.replay.mjs', target: true, payload: true },
   { file: 'diagnose-event-comparison-behavior.replay.mjs', target: true },
   { file: 'verify-660-story-behavior.replay.mjs', target: true, payload: 'mockups/verify-660-story.synthetic/payload.json' },
+  { file: '../mockups/diagnose-event-comparison-support-audit.mjs', target: true },
 ];
 
 function spawnSuite(suite, envOverrides) {

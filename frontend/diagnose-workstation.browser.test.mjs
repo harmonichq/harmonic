@@ -3022,7 +3022,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   // #372: the merged-run member list travels on the payload, so the wiring
   // this guard pins now hands it to the Plan draft's own predicate.

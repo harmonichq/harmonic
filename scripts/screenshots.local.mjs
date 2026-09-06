@@ -2,7 +2,7 @@
 /**
  * Repository-local screenshot wrapper: the canonical harness in
  * scripts/screenshots.mjs does the capturing; this file contributes only the
- * two concerns that are genuinely this repo's —
+ * one concern that is genuinely this repo's —
  *
  *   1. fetchStubFiles: fixture-backed fetch stubs — { "<url-substr>":
  *      { "file": "fixture.json", "key": "nested.value" } } (or a bare file
@@ -52,8 +52,6 @@ function expandFetchStubFiles(shot) {
   return { ...rest, fetchStub: { ...rest.fetchStub, ...expanded } };
 }
 
-const options = {};
-
 const args = process.argv.slice(2);
 if (args[0] && args[0] !== '--self-check') {
   // main() reads the config file itself, so fetchStubFiles is expanded here and
@@ -70,7 +68,7 @@ if (args[0] && args[0] !== '--self-check') {
   }
   if (config.defaults) config.defaults = expandFetchStubFiles(config.defaults);
   config.shots = config.shots.map(expandFetchStubFiles);
-  await runConfig(config, options);
+  await runConfig(config);
 } else {
-  await main(args, options);
+  await main(args);
 }

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // ADR 94: the shipped router owns the closed page set and the canonical address
@@ -71,7 +71,6 @@ const COCKPIT_LEDGER = await readFile(join(ROOT, 'mockups/cockpit-shell.behavior
 const REPLAY_SOURCE = await readFile(fileURLToPath(import.meta.url), 'utf8');
 const SHOTS = process.env.COCKPIT_SHOTS;
 const RENDER_PHASE = process.env.COCKPIT_RENDER_PHASE || 'revision';
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const ADVISORY = 'Advisory only — review with your clinician before changing pump settings.';
 const TABS = ['diagnose', 'plan', 'verify', 'day', 'guide', 'settings'];
 // Each page's own rendered root, verified in the browser to be visible on that
@@ -810,6 +809,7 @@ test('a bare or hash arrival is promoted to a maturing Trial, and a named page i
 test('clean page paths own direct load, refresh, history, canonicalization, and local assets', async () => {
   const browser = await launch();
   const direct = await browser.newPage({ viewport: VIEWPORTS[1] });
+  const requestedAssets = new Set();
   const loadedAssets = new Set();
   const misplacedAssets = [];
   // A roster with no maturing Trial, so this page proves canonicalization and
@@ -824,6 +824,9 @@ test('clean page paths own direct load, refresh, history, canonicalization, and 
   });
   direct.on('request', (request) => {
     const url = new URL(request.url());
+    if (url.origin === 'http://ciq.local' && url.pathname.startsWith('/assets/')) {
+      requestedAssets.add(url.pathname);
+    }
     if (url.origin === 'http://ciq.local' && /\.(?:js|css|svg)$/.test(url.pathname)
         && !url.pathname.startsWith('/assets/')) misplacedAssets.push(url.pathname);
   });
@@ -845,6 +848,8 @@ test('clean page paths own direct load, refresh, history, canonicalization, and 
     assert.equal(await direct.evaluate(() => location.pathname + location.search + location.hash),
       '/diagnose', 'bare / canonicalizes in place to /diagnose');
     assert.deepEqual(misplacedAssets, [], 'the built app requests no local asset outside /assets');
+    assert.deepEqual([...loadedAssets].sort(), [...requestedAssets].sort(),
+      'every built-shell asset requested under /assets loaded 200');
     assert.ok([...loadedAssets].some((path) => path.endsWith('.js')), 'the built shell loaded a JavaScript asset');
     assert.ok([...loadedAssets].some((path) => path.endsWith('.css')), 'the built shell loaded a stylesheet');
   } finally { await direct.close(); }

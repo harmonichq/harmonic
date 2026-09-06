@@ -8,7 +8,7 @@
 // a stale capture stamp.
 import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
@@ -17,10 +17,6 @@ const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const { createBuiltShell } = require('./built-shell.js');
 const SYNTHETIC = join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json');
 const BASE_PAYLOAD = join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json');
-const MIME = {
-  '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
-  '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
-};
 /* #181/#135 — the standalone lens route and global ALIGN control are retired.
    Every event comparison in this ledger is now reached the way a reader reaches
    it: open the unscoped queue, drill a Finding, then open its row-derived

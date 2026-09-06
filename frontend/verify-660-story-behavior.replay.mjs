@@ -20,20 +20,16 @@
 // TARGET must be app — the mock this ledger once ran against is archived; a
 // bare run or TARGET=mock fails loudly rather than silently defaulting.
 //
-// FAILS CLOSED. A missing driver, vendored asset or fixture exits nonzero, and
+// FAILS CLOSED. A missing driver, built shell or fixture exits nonzero, and
 // a run that executed zero stories is a failure — a green step that ran nothing
 // is the silent pass this whole process exists to prevent.
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
-const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const { createBuiltShell } = require('./built-shell.js');
 const VIEWPORT = { width: 1440, height: 900 };   // the lock's viewport (term 17)
-const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 export class ReplayError extends Error {}
 const fail = (msg) => { throw new ReplayError(msg); };

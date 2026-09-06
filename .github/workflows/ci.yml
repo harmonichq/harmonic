@@ -158,8 +158,8 @@ jobs:
   browser-gate-setup:
     name: browser gate setup
     runs-on: ubuntu-latest
-    # Sized for a cold cache: installing Playwright, downloading Chromium and
-    # fetching the two CDN modules, not the ~15s warm-cache path.
+    # Sized for a cold cache: building the shell, installing Playwright, and
+    # downloading Chromium, not the ~15s warm-cache path.
     timeout-minutes: 15
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
@@ -169,6 +169,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
+      - name: Build the delivered frontend shell
+        run: npm ci && npm run build
       # The matrix restores this exact runner + browser bundle after this one job
       # creates it. Keeping the version in both the install and cache key prevents
       # a pinned Playwright upgrade from reusing an incompatible browser download.
@@ -218,7 +221,7 @@ jobs:
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
       # glob never discovers, so it gets its own explicit step. It fails closed —
-      # a missing driver, vendored asset or fixture exits nonzero rather than
+      # a missing driver, built shell or fixture exits nonzero rather than
       # skipping, because a green step that ran zero stories proves nothing.
       #
       # This surface has shipped (#722): the app is now the contract artifact,
@@ -254,6 +257,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
       - name: Build the delivered frontend shell
         run: npm ci && npm run build
       - name: Set up uv for the no-fetch app server

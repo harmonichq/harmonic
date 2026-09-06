@@ -18,12 +18,12 @@
 // TARGET must be app — the mock this ledger once ran against is archived; a
 // bare run or TARGET=mock fails loudly rather than silently defaulting.
 //
-// FAILS CLOSED. A missing driver, vendored asset or fixture exits nonzero. It
+// FAILS CLOSED. A missing driver, built shell or fixture exits nonzero. It
 // never skips: a green run that executed zero stories is the exact silent pass
 // this whole process exists to prevent.
 import { createRequire } from 'node:module';
 import { readFile, access, mkdir } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingCasePreparation } from './browser-fixture-population.js';
@@ -38,7 +38,6 @@ const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const { createBuiltShell } = require('./built-shell.js');
 const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
-const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 const MISSED_MEAL_COMPARISON = JSON.parse(await readFile(
@@ -486,7 +485,7 @@ export async function openApp(browser, {
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, evidenceScenario = null, resizeProbe = false,
   hasTouch = false, isMobile = false,
-  frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
+  fixtureBaseUrl = null,
 } = {}) {
   const shell = createBuiltShell();
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');

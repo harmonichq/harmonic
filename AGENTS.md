@@ -131,6 +131,7 @@ support audit. Reproduce it locally:
 PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
+npm ci && npm run build
 
 # The ten gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs

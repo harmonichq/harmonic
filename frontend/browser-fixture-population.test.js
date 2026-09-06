@@ -81,6 +81,31 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
     'the row and case header carry the same server-published scoped coordinate');
 });
 
+test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
+  const projection = projectFindings({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  });
+  const preparation = structuredClone(caseFiles.preparation);
+  preparation.coordinates.window = projection.window;
+  populateFindingCasePreparation(preparation, projection);
+
+  const projected = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
+  assert.deepEqual(projected.appearances.map(({ family }) => family),
+    ['correction_clusters', 'lows'],
+    'the projection sorts by family name, so the case file\'s family arrives second');
+
+  const row = preparation.rendered_rows.find(({ id }) => id === 'finding:correction_on_iob');
+  assert.deepEqual(row.appearances, [
+    { family: 'lows', m: 10, n: 1, noun: 'lows' },
+    { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 2 },
+  ], 'the case file\'s family leads at the case file\'s counts and the other family keeps the projection\'s');
+  assert.equal(row.headline,
+    'Not ranked in this window yet. Showed up in 1 of 10 lows in this window.',
+    'the served sentence is composed from the leading appearance the row publishes');
+});
+
 test('the cockpit exposure population produces its event-comparison Finding row', () => {
   const projection = projectFindings({
     analysis: payload.analyze,

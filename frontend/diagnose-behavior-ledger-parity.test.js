@@ -85,7 +85,7 @@ function replayInventory(source) {
   return { registered, tags };
 }
 
-const initialIssued = parseList('S01–S144, C41–C57, and D1–D3');
+const initialIssued = parseList('S01–S144, C41–C57, C62, and D1–D3');
 
 function validate(ledgerSource, replaySource) {
   const inventory = ledgerInventory(ledgerSource);
@@ -149,7 +149,7 @@ test('Diagnose behavior ledger rejects a replay story removed without retirement
 
 test('Diagnose behavior ledger rejects an issued ID without a replay story', () => {
   const ledgerWithOrphan = ledger
-    .replace('**164 issued executable IDs:**', '**165 issued executable IDs:**')
+    .replace('**165 issued executable IDs:**', '**166 issued executable IDs:**')
     .replace('S01–S144', 'S01–S145');
   assert.throws(() => validate(ledgerWithOrphan, replay));
 });
@@ -157,8 +157,8 @@ test('Diagnose behavior ledger rejects an issued ID without a replay story', () 
 test('Diagnose behavior ledger accepts a permanent retirement', () => {
   const retiredS91 = ledger
     .replace(
-      '**Active executable IDs:** S01–S116, S118–S144, C41–C57, and D1–D3',
-      '**Active executable IDs:** S01–S90, S92–S116, S118–S144, C41–C57, and D1–D3',
+      '**Active executable IDs:** S01–S116, S118–S144, C41–C57, C62, and D1–D3',
+      '**Active executable IDs:** S01–S90, S92–S116, S118–S144, C41–C57, C62, and D1–D3',
     )
     .replace('**Retired executable IDs:** S117', '**Retired executable IDs:** S91, S117');
   const withoutS91 = replay
@@ -169,7 +169,7 @@ test('Diagnose behavior ledger accepts a permanent retirement', () => {
 
 test('Diagnose behavior ledger rejects coordinated deletion of an issued ID', () => {
   const deletedS91 = ledger
-    .replace('**164 issued executable IDs:**', '**163 issued executable IDs:**')
+    .replace('**165 issued executable IDs:**', '**164 issued executable IDs:**')
     .replace('S01–S144', 'S01–S90, S92–S144');
   const withoutS91 = replay
     .replace("  ['S91', S91, 'drawn'],\n", '')

@@ -421,15 +421,30 @@ def wrap(prepared):
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
-        changed.update({"appearances": [{"family": case["family"],
-                                         "noun": case["summary"]["noun"],
-                                         "n": case["summary"]["claimed"],
-                                         "m": case["summary"]["denominator"]}],
+        anchored = {"family": case["family"], "noun": case["summary"]["noun"],
+                    "n": case["summary"]["claimed"],
+                    "m": case["summary"]["denominator"]}
+        # The case file owns its own family's counts; every other family the
+        # projection published stays, at the projection's counts, because a
+        # finding claimed in two families keeps both.  The anchored family
+        # leads, and the list is NOT re-sorted: `_finding_headline` composes
+        # from `appearances[0]`, and the projection's family-name sort is
+        # exactly what once announced a fifteen-occurrence habit as a
+        # one-occurrence one.
+        # A projection row always carries the key, but a hand-built prepared
+        # row (`scripts/gen_missed_meal_comparison_fixtures.py`) need not.
+        others = [item for item in changed.get("appearances") or ()
+                  if item["family"] != anchored["family"]]
+        changed.update({"appearances": [anchored, *others],
                         "episodes": case["summary"]["claimed"], "evidence": None,
                         "verdict_counts": case["verdict_counts"],
                         "verdict_counts_by_family": {case["family"]: case["verdict_counts"]},
                         "event_chart": header["event_chart"],
                         "case_header": header})
+        # Recomposed from the row the reader is shown, through the projection's
+        # own sanctioned template, so the queue detail, the case header summary
+        # and the served sentence are three printings of one fact.
+        changed["headline"] = findings_projection._finding_headline(changed)
         rendered.append(changed); headers[finding_id] = header
     return {"schema": PREPARATION_SCHEMA, "projection_id": prepared.projection_id,
             "coordinates": {

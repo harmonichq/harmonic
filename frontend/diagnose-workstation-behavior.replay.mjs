@@ -3550,12 +3550,14 @@ export const S127 = async (page) => {
   console.log(`S127 RETIRED — ${SANCTION_RETIRED_CHART_DOCK}`);
 };
 
-/* The served findings queue for the window the page is on, read through the
-   app's own stubbed route so the story compares against the projection the
-   rail and the stage both consumed. */
+/* The served rows the surface actually draws for the window the page is on,
+   read through the app's own stubbed route. The rail and the stage both render
+   the preparation's `rendered_rows` — the case-file-anchored list — never the
+   separate `/api/diagnose/findings` payload, which keeps the projection's own
+   counts and sentence and reaches no surface. */
 const servedRows = (page, window) => page.evaluate(async (query) => {
-  const response = await fetch(`/api/diagnose/findings${query}`);
-  return (await response.json()).rows;
+  const response = await fetch(`/api/diagnose/finding-case-file-preparation${query}`);
+  return (await response.json()).rendered_rows;
 }, window ? `?start_min=${window[0]}&end_min=${window[1]}` : '');
 
 const focalId = (page) => page.locator('#tile-focal .evidence-tile').first().getAttribute('data-chart-id');
@@ -3967,6 +3969,39 @@ export const S144 = async (page) => {
     'S144 the promoted row keeps the served title');
   is(await focalId(page), 'finding:carb_undercount',
     'S144 the promoted row chart moves onto the stage');
+};
+
+/* ---- #353 · one denominator per rendered row --------------------------- */
+
+/* C62 · A finding claimed in two families keeps both on the row the rail and
+   the stage actually read, the case file's own family leads it at the case
+   file's counts, and the stage sentence is composed from that lead — never
+   from the family the case file was not built from. */
+// STORY:finding-evidence-routing:C62
+export const C62 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const row = rows.find((item) => (item.appearances || []).length > 1);
+  ok(row, 'C62 the served rows publish a finding claimed in two families');
+  is(row.appearances.length, 2, 'C62 the second family survives the case-file wrap');
+  const [lead, other] = row.appearances;
+  is(lead.family, row.case_header.family,
+    'C62 the case file\'s own family leads the rendered row');
+  is(`${lead.n} of ${lead.m}`, `${row.case_header.summary.claimed} of ${row.case_header.summary.denominator}`,
+    'C62 the leading family carries the case file\'s own count and denominator');
+  ok(row.headline.includes(`${lead.n} of ${lead.m} ${lead.noun} in this window`),
+    'C62 the served sentence states the leading appearance');
+  ok(!row.headline.includes(`${other.n} of ${other.m} ${other.noun}`),
+    'C62 the served sentence never states the other family\'s count');
+  await clickQueueRow(page, row.title);
+  is(await focalId(page), `finding:${row.case_header.event_chart.lever}`,
+    'C62 drilling the two-family row seats its own chart');
+  const stage = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+    title: node.querySelector('h3')?.textContent.trim() ?? '',
+    sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+  }));
+  is([stage.title, stage.sub].filter(Boolean).join(' '), row.headline,
+    'C62 the stage prints the two-family row\'s served headline verbatim');
 };
 
 // STORY:finding-evidence-routing:C41
@@ -5171,6 +5206,7 @@ export const STORIES = [
         window: structuredClone(body.window) } };
     },
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
+  ['C62', C62, 'typical'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

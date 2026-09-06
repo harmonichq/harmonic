@@ -251904,6 +251904,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:carb_undercount",
     "kind": "habit",
     "label": null,
@@ -251992,6 +251993,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:late_bolus",
     "kind": "habit",
     "label": null,
@@ -252080,6 +252082,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:meal_over_delivery",
     "kind": "habit",
     "label": null,
@@ -252168,6 +252171,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 lows in this window.",
     "id": "finding:over_treated_low",
     "kind": "habit",
     "label": null,
@@ -252256,6 +252260,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 correction clusters in this window.",
     "id": "finding:correction_stacking",
     "kind": "habit",
     "label": null,
@@ -252344,6 +252349,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 lows in this window.",
     "id": "finding:correction_on_iob",
     "kind": "habit",
     "label": null,
@@ -252432,6 +252438,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 highs in this window.",
     "id": "finding:missed_meal",
     "kind": "habit",
     "label": null,
@@ -252520,6 +252527,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:meal_bolus_short",
     "kind": "habit",
     "label": null,

@@ -27,7 +27,7 @@ ticket locks after Connor approves the selected product direction.
 - [x] 3.2 Strictly validate this planning-only change and run its ADR and publication guards. Author capability deltas in subsequent execution locks, once the design is approved.
 - [x] 3.3 Obtain independent review of the planning proposal and resolve verified blocking findings. This countersign covers the stated planning scope, not visual approval or implementation.
 - [ ] 3.4 Obtain Connor's approval of the selected direction; record the exact approved artifacts.
-- [ ] 3.5 Commit the reviewed planning result and post attributed findings on #348, clearly separating agreed design from pending implementation proof.
+- [x] 3.5 Commit the reviewed planning result and post attributed findings on #348, clearly separating agreed design from pending implementation proof.
 
 Connor subsequently requested a draft planning/prototype PR at the end of the
 five-hour session budget. Commit and push the current checkpoint, document the
@@ -43,3 +43,5 @@ preemption evidence is ready, but its surface was not authored before Fable's
 provider limit. Complete habit, direct-Day and utility walkthroughs, the final
 language/polish pass, and Connor's visual approval remain open. The selected
 concept's REVIEW.md and AUDIT.md distinguish observed checks from these gaps.
+
+Published checkpoint: [draft PR #379](https://github.com/harmonichq/harmonic/pull/379), with [attributed findings on #348](https://github.com/harmonichq/harmonic/issues/348#issuecomment-5559540674). The publication completes the requested checkpoint; the open design and approval items above remain open.

@@ -20,10 +20,24 @@ grammar is unsupported, so a saved hash link opens the default page rather than
 the page it names. Programmatic interfaces live below `/api` and local assets
 below `/assets`.
 
+The server SHALL serve the shell at `/` and at exactly the live page paths, and
+SHALL answer every other path 404. A retired page id is therefore not served and
+SHALL NOT be migrated to a live page: its address never reaches the shell. The
+browser router SHALL resolve a live page id to itself and any other id to the
+default page, which is what keeps an unrecognized Guide handoff target on a real
+surface.
+
 #### Scenario: The app is single-page, no-build, no-login HTML and Vue
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+#### Scenario: A retired page id is not served and is not migrated
+
+- **GIVEN** a page id the app no longer has, such as `patterns`, `daily` or `outcomes`
+- **WHEN** that id is requested as a page path
+- **THEN** the server answers 404 and the shell does not load
+- **AND** the browser router grants that id no live page of its own
 
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
@@ -659,3 +673,213 @@ chart controls and return behavior. No browser/OS fullscreen API is required.
 
 - **WHEN** the viewport crosses former dock breakpoints while the workspace, browser or single-chart view is active
 - **THEN** no docked or raised strip, dock toggle or dock-dependent transition becomes available
+
+### Requirement: A rendered Finding row states one denominator
+
+The Finding case-file preparation SHALL publish every rendered finding row with
+a `headline` composed from that row's own published `appearances` and `tier`
+through the findings projection's headline composer, so the row's queue detail
+line, its `case_header` summary and its served headline name the same count,
+denominator and population noun. A rendered row SHALL NOT carry the sentence
+the projection composed from the appearances the preparation replaced.
+
+The rendered row SHALL retain every family appearance the findings projection
+published for that finding. It SHALL substitute the case file's own claimed
+count, denominator and population noun for the case file's own family, and
+SHALL publish that family as the row's first appearance so the composed
+sentence names it. Every other family's appearance SHALL keep the count and
+denominator the projection published for it.
+
+The preparation's own `findings` payload SHALL be published unchanged, and no
+frontend module SHALL compose, recompose or re-derive the sentence.
+
+#### Scenario: The case file's denominator differs from the projection's
+
+- **GIVEN** a prepared window whose case-file population for a finding counts a
+  different denominator than the findings projection published for that finding
+- **WHEN** the preparation renders that finding's row
+- **THEN** the row's first appearance, its `case_header` summary and its
+  `headline` state the same count, denominator and noun
+- **AND** the preparation's `findings` payload keeps the appearances and the
+  headline the projection composed
+
+#### Scenario: The finding appears in more than one family
+
+- **GIVEN** a projection row whose appearances name two families in family-name
+  order, and whose first appearance is not the case file's recurrence family
+- **WHEN** the preparation renders that row
+- **THEN** the rendered row's `appearances` still name both families
+- **AND** the case file's own family is the first appearance, carrying the case
+  file's claimed count, denominator and noun
+- **AND** the other family's appearance keeps the count and denominator the
+  projection published
+- **AND** the rendered `headline` states the case file's own family noun and
+  its counts
+
+### Requirement: A carb-ratio block names its interval the way the server labels it
+
+A Diagnose carb-ratio block SHALL name its interval with the day's far edge
+spelled `24:00`, matching the span label the server publishes for that same
+block, wherever the surface prints that interval — the parameter panel head, the
+watch dock's staged title, the peak-hour block link, the selected-window chip and
+the through-midnight sentence. A block covering the whole day SHALL NOT print a
+zero-length interval.
+
+The surface SHALL derive this name from one formatter, not a second copy of the
+rule. A block's geometry — whether it runs through midnight, and the minute
+ranges the canvas brackets — SHALL be unchanged by how its interval is named.
+
+#### Scenario: The all-day block reads as a whole day
+
+- **GIVEN** the server publishes a carb-ratio block starting at minute 0 and ending at its exclusive minute 1440
+- **WHEN** the reader opens that block's panel from its findings-queue row
+- **THEN** the panel head names the interval `00:00–24:00`
+- **AND** the queue row's own served label for the same block still reads `00:00 to 24:00`
+- **AND** staging the block prints that same interval in the watch dock
+
+#### Scenario: A block that runs through midnight is unaffected
+
+- **GIVEN** the server publishes a carb-ratio block whose end minute falls strictly between minute 0 and its start minute
+- **WHEN** the reader opens that block's panel
+- **THEN** the interval is named from its own start and end, as it is today
+- **AND** the block is still marked as running through midnight
+- **AND** the minute ranges the canvas brackets for it are unchanged
+
+### Requirement: Diagnose evidence charts seat their axis names inside the chart
+
+Every axis name a Diagnose evidence chart draws at full rank SHALL render
+entirely inside that chart's own box, on every mode the chart publishes. No part
+of a name SHALL be painted outside the chart's bounds, whichever grid inset the
+axis sits against.
+
+The names themselves SHALL be unchanged: this is a rule about where a name is
+seated, not about what it says. The evidence canvas's grid geometry — the
+canvas-wide spine inset a tile shares with the glucose strip, and the right inset
+reserved for the last axis label — SHALL NOT be widened to seat a name, and the
+on-chart legend SHALL keep the seat its own configuration gives it. A chart whose
+axis name already renders inside its box SHALL keep the seating it has. The mini
+rank SHALL continue to carry no axis name at all.
+
+#### Scenario: The correction-factor rest-windows chart states both its units
+
+- **GIVEN** the Diagnose evidence canvas showing the correction factor's rest
+  windows at full rank
+- **WHEN** the reader looks at the chart's axis names in each alignment the tile
+  publishes
+- **THEN** the y-axis name reads `glucose change (mg/dL)` in full, with no part of
+  it painted outside the chart, under both event and clock alignment
+- **AND** the x-axis name reads `insulin acted (U)` in full, with no part of it
+  painted outside the chart
+
+#### Scenario: The carb-ratio meal-runs chart states its elapsed-time unit
+
+- **GIVEN** a carb ratio finding's meal runs drawn at full rank
+- **WHEN** the reader looks at the chart's axis names in each alignment the tile
+  publishes
+- **THEN** the name reads `minutes from first meal` in full, with no part of it
+  painted outside the chart
+- **AND** the clock alignment's `meal start` and `Carb ratio (g/U)` are seated by
+  the same rule, from the same shared helper, rather than by a second one
+
+#### Scenario: Seating a name moves nothing that already rendered
+
+- **WHEN** every finding row in the queue is opened in turn, in every alignment
+  its tiles publish, and each drawn axis name is measured against its own chart's
+  bounds
+- **THEN** no axis name overhangs any edge of its chart
+- **AND** the basal chart's axis name keeps the seat it had, unmoved
+- **AND** each chart's grid insets and legend seat are the ones it had before
+- **AND** a chart rendered at mini rank carries no axis name
+
+### Requirement: A findings-queue row is exposed as the control it is
+
+Every Diagnose findings-queue row that drills into a finding SHALL be exposed to
+assistive technology as an activatable control, and SHALL keep its position within
+the queue's list. The row's list membership SHALL NOT be bought by overriding the
+control role: the row element SHALL carry no `role` that replaces its implicit
+`button` role, and list semantics SHALL be carried by an enclosing element
+instead.
+
+This requirement governs exposure only. The queue's rendered geometry, its
+keyboard behaviour — Tab order, Enter and Space activation, and the focus ring —
+and the row identity and state hooks that the shipped browser suites and frozen
+behaviour replays locate SHALL be unchanged by satisfying it.
+
+#### Scenario: A reader navigating by control reaches every finding
+
+- **WHEN** the findings queue has painted its rows
+- **THEN** each row that drills into a finding is exposed with the `button` role
+- **AND** a query for a control by that row's own title matches exactly that row
+- **AND** the row is still exposed as an item of the queue's list
+
+#### Scenario: The queue's ranked and unranked rows are exposed alike
+
+- **WHEN** the queue paints ranked rows, tier captions, the unranked-tail note and
+  unranked tail rows together
+- **THEN** every drilling row, ranked or unranked, is exposed with the `button`
+  role
+- **AND** the rank numeral remains hidden from assistive technology, because the
+  row's list position is still announced
+
+#### Scenario: Restoring the role moves nothing a reader can see
+
+- **WHEN** the queue is painted with ranked rows, a tier caption, the
+  unranked-tail note and two consecutive unranked tail rows
+- **THEN** the vertical gap between each painted piece's rendered box and the next
+  one's is the gap it was before the row's control role was restored, including
+  the tightened gap the tail note and the consecutive tail rows share
+- **AND** Tab reaches every row in visual order, and Enter and Space each drill
+
+### Requirement: A merged parameter finding stages every member the server published
+
+A Diagnose findings row that names a span of several parameter slots SHALL stage
+every member the projection published for that row, and only those members whose
+own backend staging verdict is true. Membership SHALL be read from the row's
+served member list; the surface SHALL derive it from no row id, title, or clock
+arithmetic, and SHALL re-derive no floor, threshold, direction or safety verdict
+for any member. Un-staging SHALL remove exactly the set staging added, and the
+surface's staged tally, its staging control's state, the parameter lane's staged
+marks, the watch dock's line and the Plan badge SHALL all describe that one set.
+A finding whose published membership is a single slot SHALL stage exactly that
+slot, unchanged.
+
+A detail panel that shows one member of such a finding SHALL name the finding's
+span and say that staging acts on the whole run, and SHALL keep printing that
+member's own Current, Estimate and Recommended rather than a span figure. The
+watch dock SHALL name the staged span in every case, and SHALL print a
+current-to-recommended number pair only where every staged member carries the
+same pair.
+
+#### Scenario: A merged basal finding stages both its half hours
+
+- **GIVEN** the findings queue publishes one basal row whose served members are
+  two contiguous half-hour slots, each carrying a true staging verdict with its
+  own current and recommended rate
+- **WHEN** the reader opens that row and uses its staging control
+- **THEN** the Plan draft holds one item per published member, each with that
+  member's own current and recommended value
+- **AND** the watch dock names the row's whole span
+- **AND** the Plan badge counts every staged member
+
+#### Scenario: Un-staging removes exactly what staging added
+
+- **GIVEN** a merged basal finding is staged from its own panel
+- **WHEN** the reader undoes it from that panel
+- **THEN** every item that staging added leaves the Plan draft
+- **AND** no member of the run remains staged in the surface's own tally, lane
+  marks or dock line
+
+#### Scenario: A member panel says which run it belongs to
+
+- **WHEN** the reader opens a panel for one member of a multi-member finding
+- **THEN** the panel names the finding's span and states that staging acts on the
+  whole run
+- **AND** the panel's Current, Estimate and Recommended remain that member's own
+  served numbers
+
+#### Scenario: A single-slot finding is unchanged
+
+- **WHEN** the reader opens and stages a finding whose published membership is one
+  slot
+- **THEN** the Plan draft holds exactly that one item
+- **AND** the panel carries no span statement beyond the slot's own clock span

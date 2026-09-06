@@ -3704,8 +3704,8 @@
     //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
     //     resulting highlight on Day — not a modal itself, but "Back" should
     //     restore/dismiss it like one)
-    // Initial arrival still accepts the retired Patterns / Investigate hash forms
-    // narrowly enough to migrate them once; new navigation never emits hash state.
+    // #94/#352: initial arrival reads no hash form and migrates no retired id;
+    // new navigation never emits hash state either.
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
@@ -3719,18 +3719,20 @@
         // `#/<page>?...` grammar is no longer supported at all.
         const initialRoute = parseRoute(location);
         if (location.pathname === '/') writeRoute(initialRoute, { replace: true });
-        // #132: if the initial URL is a patterns/investigate deep-link, stash the
-        // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
-        // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
+        // #132: the stash a patterns/investigate deep-link used to fill on
+        // arrival. #246 retired that deep-link with the tab, so a stale
+        // `#patterns?mode=investigate` hash lands on Diagnose because a fragment
+        // carries no route at all and Diagnose is the default page — not
+        // because the retired id is read and migrated (#352).
         let pendingScnDeepLink = null;
 
-        // #99: `dashboard` was renamed to `review` and the standalone `pump`
-        // tab folded into Plan; a stale id in a shared link still migrates:
-        // dashboard/pump → review (legacy), daily/modelview → day (#248 merge,
-        // ADR 0027), and outcomes → verify (#245). #246 (ADR 0027) retires
-        // Recommendations + Patterns into Diagnose, so `review`/`patterns` (and
-        // the legacy `dashboard`/`pump`) all migrate to `diagnose`. parseRoute
-        // resolves all of that, so the address alone decides the landing page.
+        // #352: the ids retired by #99/#245/#246/#248 — `dashboard`, `pump`,
+        // `review`, `patterns`, `daily`, `modelview`, `outcomes` — get no page
+        // of their own. The server serves the shell at the live page paths
+        // only, so a retired id's address answers 404 before this file loads,
+        // and parseRoute never sees one. An id it does not recognize resolves
+        // to the default page, which is what keeps a Guide article's `app:<id>`
+        // handoff on a real surface when the article names a page that is gone.
         // #94: the remembered-tab fallback is gone with the hash grammar. ADR 94
         // rules that `/` normalizes in place to the default page, so restoring a
         // different pane here would leave the address naming one page while the
@@ -4227,8 +4229,8 @@
           applyingHash = true;
           try {
             if (parsed.page !== tab.value) setTab(parsed.page);
-            // #248: the Day surface owns the day-picker — back/forward just moves the
-            // picked date (old #daily / #modelview hashes migrate to /day here too).
+            // #248: the Day surface owns the day-picker — back/forward just moves
+            // the picked date.
             if (resolveTab(parsed.page) === 'day' && parsed.date
                 && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
               dailyHighlight.value = null;
@@ -4241,9 +4243,9 @@
               kbCurrent.value = parsed.article;
               kbFetchArticle(parsed.article);
             }
-            // #246: the legacy `patterns` id migrates to `diagnose` in setTab
-            // above; the retired Investigate sub-state (mode/day/ep) no longer
-            // applies.
+            // #246: the retired Investigate sub-state (mode/day/ep) no longer
+            // applies, and #352 retired the legacy-id migration that used to
+            // carry `patterns` into `diagnose` here.
             reopenModalFromHash(parsed.modal);
           } finally {
             nextTick(() => {

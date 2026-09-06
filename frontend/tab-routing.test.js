@@ -3,17 +3,19 @@ import assert from 'node:assert/strict';
 
 import { parseRoute, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
 
-test('resolveTab preserves current and legacy routes, then falls back to Diagnose', () => {
+test('resolveTab keeps a live page and sends every other id to the default page', () => {
   for (const tab of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
     assert.equal(resolveTab(tab), tab);
   }
-  assert.equal(resolveTab('dashboard'), 'diagnose');
-  assert.equal(resolveTab('pump'), 'diagnose');
-  assert.equal(resolveTab('review'), 'diagnose');
-  assert.equal(resolveTab('patterns'), 'diagnose');
-  assert.equal(resolveTab('daily'), 'day');
-  assert.equal(resolveTab('modelview'), 'day');
-  assert.equal(resolveTab('outcomes'), 'verify');
+  // #352: the ids retired by #99/#245/#246/#248 get no page of their own. The
+  // server serves the shell at the live page paths only, so a retired id's
+  // address answers 404 before any script loads and never reaches this.
+  for (const retired of ['dashboard', 'pump', 'review', 'patterns', 'daily', 'modelview', 'outcomes']) {
+    assert.equal(resolveTab(retired), 'diagnose', retired);
+  }
+  // The fallback that does still have an input: a Guide article's `app:<id>`
+  // handoff renders whatever word an author writes, so an unrecognized id has
+  // to land on a real surface.
   assert.equal(resolveTab('doesnotexist'), 'diagnose');
 });
 

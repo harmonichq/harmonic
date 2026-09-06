@@ -340,13 +340,22 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       caption.textContent = row.caption;
       list.append(caption);
     }
+    /* The row IS a control, and ARIA roles are not additive: `listitem` on the
+       button replaces its implicit `button` role, so the screen's primary drill
+       stops being exposed as activatable at all (#363). The enclosing item
+       carries the list position instead — which is what keeps the numeral below
+       legitimately hidden — and the button keeps its own role. The item is also
+       the flex child of `.q`, so the tail's spacing rules address it. */
+    const item = document.createElement('div');
+    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}`;
+    item.setAttribute('role', 'listitem');
     const node = document.createElement('button');
     node.type = 'button';
     node.className = `qrow${row.rank !== null ? ' priced' : row.weight ? ` ${row.weight}` : ''}`;
-    node.setAttribute('role', 'listitem');
     node.dataset.state = row.register;
     node.dataset.tier = row.tier;
     node.dataset.id = row.id;
+    item.append(node);
     // the numeral restates the position a screen reader already announces
     add(node, 'n', row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
@@ -357,7 +366,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     if (row.weight === 'tail') {
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));
-      list.append(node);
+      list.append(item);
       return;
     }
     /* The tag is a SIBLING of the title, not a child of it: it owns the row's right
@@ -384,7 +393,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     node.append(mini);
     miniSlots.push({ host: mini, row: row.raw });
     node.addEventListener('click', () => onDrill(row.raw));
-    list.append(node);
+    list.append(item);
   };
   for (const row of shown) {
     paintRow(row);

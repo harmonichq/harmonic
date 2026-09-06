@@ -16,6 +16,36 @@ const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
 const W = fixture.windows;
 
+/* The render tests paint against a stub DOM. It records the tag each node was
+   created as and the attributes it was set, because what a row is EXPOSED as is
+   the thing this module has to get right (#363) — a stub that discards both
+   cannot see a role at all. */
+class Node {
+  constructor(tag = '') {
+    this.tag = tag;
+    this.children = [];
+    this.dataset = {};
+    this.className = '';
+    this.attributes = {};
+  }
+  append(...nodes) { this.children.push(...nodes); }
+  setAttribute(name, value) { this.attributes[name] = String(value); }
+  addEventListener() {}
+}
+
+/* Paint one projection through the module's own entry point and hand back the
+   host beside what the render returned. */
+const paint = (projection, view = null) => {
+  const previous = globalThis.document;
+  globalThis.document = { createElement: (tag) => new Node(tag) };
+  try {
+    const host = new Node();
+    return { host, ...renderFindingsQueue(host, projection, () => {}, view) };
+  } finally {
+    globalThis.document = previous;
+  }
+};
+
 test('the root filter has no retired Event charts view or state', () => {
   const queue = readFileSync(fileURLToPath(
     new URL('./diagnose-findings-queue.js', import.meta.url)), 'utf8');
@@ -60,26 +90,13 @@ test('Watching rows stay in their disclosure while Sift is active', () => {
 });
 
 test('all-Watching queue keeps its empty line compact above the disclosure', () => {
-  class Node {
-    constructor() { this.children = []; this.dataset = {}; }
-    append(...nodes) { this.children.push(...nodes); }
-    setAttribute() {}
-    addEventListener() {}
-  }
-  const previous = globalThis.document;
-  globalThis.document = { createElement: () => new Node() };
-  try {
-    const host = new Node();
-    renderFindingsQueue(host, W.quiet, () => {});
-    assert.equal(host.children[0].textContent, EMPTY_LINE);
-    assert.equal(host.children[0].className, 'quiet-line sift-empty',
-      'the empty line is compact when the Watching disclosure follows');
-    assert.equal(host.children[1].className, 'q');
-    assert.equal(host.children[1].children[0].className, 'qcollapse');
-    assert.match(host.children[1].children[0].textContent, /^Watching · \d+ reads?$/);
-  } finally {
-    globalThis.document = previous;
-  }
+  const { host } = paint(W.quiet);
+  assert.equal(host.children[0].textContent, EMPTY_LINE);
+  assert.equal(host.children[0].className, 'quiet-line sift-empty',
+    'the empty line is compact when the Watching disclosure follows');
+  assert.equal(host.children[1].className, 'q');
+  assert.equal(host.children[1].children[0].className, 'qcollapse');
+  assert.match(host.children[1].children[0].textContent, /^Watching · \d+ reads?$/);
 });
 
 test('term 45 · singular counts read "1 finding"/"1 day", never "1 findings"/"1 days"', () => {
@@ -136,52 +153,58 @@ test('#302 · weights and captions walk the served rows without assigning a prio
 });
 
 test('#341 · every priced row, including rank one, receives the common mini mount slot', () => {
-  class Node {
-    constructor() { this.children = []; this.dataset = {}; this.className = ''; }
-    append(...nodes) { this.children.push(...nodes); }
-    setAttribute() {}
-    addEventListener() {}
-  }
-  const previous = globalThis.document;
-  globalThis.document = { createElement: () => new Node() };
-  try {
-    const result = renderFindingsQueue(new Node(), W.global, () => {});
-    assert.equal(result.rows.length, W.global.rows.length);
-    assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
-      'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low', 'finding:carb_undercount',
-    ]);
-    assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
-  } finally {
-    globalThis.document = previous;
-  }
+  const result = paint(W.global);
+  assert.equal(result.rows.length, W.global.rows.length);
+  assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
+    'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low', 'finding:carb_undercount',
+  ]);
+  assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
 });
 
 test('#341 · rank one keeps its served tier word within the common priced-row structure', () => {
-  class Node {
-    constructor() { this.children = []; this.dataset = {}; this.className = ''; }
-    append(...nodes) { this.children.push(...nodes); }
-    setAttribute() {}
-    addEventListener() {}
+  const { host } = paint(W.global);
+  const painted = host.children.find((child) => child.className === 'q').children
+    .filter((child) => child.className.startsWith('qitem'))
+    .map((item) => item.children[0]);
+  const [hero] = painted;
+  assert.equal(hero.className, 'qrow priced');
+  // the eyebrow is READ where it is seen: numeral, tier word, then the title
+  assert.deepEqual(hero.children.map((child) => child.className),
+    ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums', 'mini']);
+  assert.equal(hero.children[1].textContent, TIER.next_in_line);
+  // no other weight prints one — a compact row's tier is the caption above it
+  assert.ok(painted.slice(1).every((row) =>
+    !row.children.some((child) => child.className === 'tier')));
+});
+
+test('#363 · every drilling row is painted as a button, inside its own list item', () => {
+  const { host } = paint(W.global);
+  const list = host.children.find((child) => child.className === 'q');
+  assert.equal(list.attributes.role, 'list');
+  /* ARIA roles are not additive. A `listitem` on the row REPLACES its implicit
+     `button` role, so the screen's primary drill stops being exposed as a
+     control at all — the list position is carried by the enclosing item
+     instead, which is what keeps the rank numeral's aria-hidden honest. */
+  assert.deepEqual(list.children.filter((child) => child.className.startsWith('qrow'))
+    .map((child) => [child.className, child.attributes.role]), [],
+    'no row sits in the list itself, carrying a role of its own');
+  const items = list.children.filter((child) => child.className.startsWith('qitem'));
+  assert.deepEqual(items.map((item) => item.className),
+    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem tail', 'qitem tail'],
+    'each shown row is enclosed, and a tail item is marked for the tail spacing');
+  for (const item of items) {
+    assert.equal(item.attributes.role, 'listitem');
+    assert.equal(item.children.length, 1);
+    const [row] = item.children;
+    const title = row.children.find((child) => child.className === 'lab')?.textContent;
+    assert.equal(row.tag, 'button', `${title} is a real control`);
+    assert.equal(row.attributes.role, undefined,
+      `${title} keeps its implicit button role`);
+    assert.equal(row.children.find((child) => child.className === 'n')?.attributes['aria-hidden'],
+      'true', `${title} still hides the rank numeral the item's position announces`);
   }
-  const previous = globalThis.document;
-  globalThis.document = { createElement: () => new Node() };
-  try {
-    const host = new Node();
-    renderFindingsQueue(host, W.global, () => {});
-    const painted = host.children.find((child) => child.className === 'q').children
-      .filter((child) => child.className.startsWith('qrow'));
-    const [hero] = painted;
-    assert.equal(hero.className, 'qrow priced');
-    // the eyebrow is READ where it is seen: numeral, tier word, then the title
-    assert.deepEqual(hero.children.map((child) => child.className),
-      ['n', 'tier', 'lab', 'tag setting', 'go', 'sum', 'den nums', 'mini']);
-    assert.equal(hero.children[1].textContent, TIER.next_in_line);
-    // no other weight prints one — a compact row's tier is the caption above it
-    assert.ok(painted.slice(1).every((row) =>
-      !row.children.some((child) => child.className === 'tier')));
-  } finally {
-    globalThis.document = previous;
-  }
+  // the disclosure is a control of the queue itself, not a finding, so it is bare
+  assert.equal(list.children.at(-1).className, 'qcollapse');
 });
 
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {

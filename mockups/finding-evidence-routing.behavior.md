@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**165 issued executable IDs:** S01–S144, C41–C58, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C58, and D1–D3
+**166 issued executable IDs:** S01–S144, C41–C58, C60, and D1–D3
+**Active executable IDs:** S01–S116, S118–S144, C41–C58, C60, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3301,3 +3301,46 @@ Verify is untouched. The one rule this stylesheet shares with that screen was
 split rather than moved, so Verify's copy stays at its original 760px, and the
 Verify replay's S7 story now measures that carve-out at its own 800px instead of
 assuming it.
+
+## Revision — 2026-09-06, base `b8f4a71e89be1111b71439cea4b8761fbc95c46c` (issue #363: a findings-queue row is exposed as the control it is)
+
+Every findings-queue row is a `<button>`, and each was given `role="listitem"` as
+it was painted. ARIA roles are not additive: `listitem` REPLACED the implicit
+`button` role, so the screen's primary interaction — the drill into a finding's
+case file — was announced as static text and answered no search for a control.
+The only control the queue exposed was the secondary `Watching · N reads`
+toggle.
+
+Measured against the declared no-fetch QA server (`mockups/qa-e2e.synthetic/harmonic.sqlite`,
+served from a scratch copy) at 1440×900 on the 24 h preset — before: `button.qrow`
+in the DOM **4**, rows exposed as `role=button` inside `#level .q` **0**, and
+`getByRole('button', { name })` matching **0** for each of `Basal 03:00 to 04:00 ·
+lower`, `Over-treated low`, `Correction on active insulin` and `Meal bolus fell
+short`. After: **4** exposed, and **exactly 1** per title.
+
+The list position that `listitem` bought is kept rather than reversed — it moves
+to an enclosing item, which is also the flex child of `.q` that the tail's three
+adjacent-sibling spacing rules now address. The rank numeral therefore stays
+hidden from assistive technology on its original grounds. The rendered rhythm is
+unchanged and was re-measured box to box at both ends: 24px, 10px, 24px, 6px,
+4px, 10px. A row's own computed `margin-top` becomes `0px`, which is the spacing
+moving off the row, not the geometry moving.
+
+**Behavior added.** One new executable story:
+
+```
+C60 · A reader navigating by control reaches a finding by its own title, and
+      activating that control opens that finding's case file.
+```
+
+**Fail-first.** Run against the unfixed module after reaching its real browser
+state, C60 reported `FAIL C60 — C60 the queue answers a search for a control
+named Over-treated low: expected 1, got 0`. The pinned lock records
+`app: 163 of 163 stories passed` at base `b8f4a71e89be1111b71439cea4b8761fbc95c46c`;
+with C60 registered the replay reports `app: 164 of 164 stories passed`.
+
+No existing story is amended and none is retired: keyboard reach, focus
+restoration (S76), row identity and state hooks, per-row geometry and the term-44
+hairline count are all unchanged by an exposure fix. Sanction: **pending operator
+sanction at the #350 sweep PR**. This Diagnose QA sweep runs unattended, and the
+sweep's single pull request is where the operator sanctions this addition.

@@ -3610,22 +3610,32 @@ function boot(root, data, callbacks, signal) {
     }
     if (f.k === 'slot') {
       const run = basalRun(f.cell);
-      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) =>
-        stageAndSettle(
+      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
+        /* #372: one press acts on the whole finding. The cells that move are the
+           ones the Plan draft's own predicate admitted for this frame's run —
+           never `cell` alone, and never a set this surface decided — so the
+           tally, the lane marks, the dock line and the Plan badge can only ever
+           describe the basket the draft holds. #358 replays the toggle when the
+           save is refused, and a run can be partially staged (a chip removed on
+           Plan), so the replay restores the exact pre-press membership rather
+           than re-deriving it from the pressed cell. */
+        const before = run.cells.map((member) => [member.i, staged.has(member.i)]);
+        const desired = !staged.has(cell.i);
+        let applied = false;
+        return stageAndSettle(
           () => {
-            /* #372: one press acts on the whole finding. The cells that move are the
-               ones the Plan draft's own predicate admitted for this frame's run —
-               never `cell` alone, and never a set this surface decided — so the
-               tally, the lane marks, the dock line and the Plan badge can only ever
-               describe the basket the draft holds. The toggle is its own inverse
-               over that set, which is what #358's refusal replay relies on. */
-            const desired = !staged.has(cell.i);
-            for (const member of run.cells) {
-              if (desired) staged.add(member.i); else staged.delete(member.i);
+            if (!applied) {
+              for (const member of run.cells) {
+                if (desired) staged.add(member.i); else staged.delete(member.i);
+              }
+            } else {
+              for (const [i, was] of before) { if (was) staged.add(i); else staged.delete(i); }
             }
+            applied = !applied;
           },
           { family: 'basal', key: cell.slot.__planKey, members: run.members },
-          () => staged.has(cell.i)), {
+          () => staged.has(cell.i));
+      }, {
         run,
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,

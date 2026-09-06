@@ -1575,8 +1575,8 @@
    stay title-only; only the box moved, and the 760px block below restores a
    44px touch target where a pointer is a finger. */
 .dw .qrow.tail { min-height: 30px; padding-block: 4px; }
-.dw .tailnote + .qrow.tail { margin-top: -4px; }
-.dw .qrow.tail + .qrow.tail { margin-top: calc(4px - var(--q-gap)); }
+.dw .tailnote + .qitem.tail { margin-top: -4px; }
+.dw .qitem.tail + .qitem.tail { margin-top: calc(4px - var(--q-gap)); }
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
@@ -1709,7 +1709,7 @@
   /* a title-only row is still a target for a finger, so the tail's tightened
      box returns to the touch floor here and its rows keep the list's own gap */
   .dw .qrow.tail { min-height: 44px; padding-block: 8px; }
-  .dw :is(.tailnote + .qrow.tail, .qrow.tail + .qrow.tail) { margin-top: 0; }
+  .dw :is(.tailnote + .qitem.tail, .qitem.tail + .qitem.tail) { margin-top: 0; }
   .dw .qrow:has(> .mini) .mini {
     min-height: 92px; height: 92px;
   }

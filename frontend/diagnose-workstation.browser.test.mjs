@@ -2101,6 +2101,38 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('#363 · every findings-queue row is exposed as the control it is', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      const queue = page.locator('#level .q');
+      const painted = await page.locator('#level .q button.qrow').count();
+      assert.ok(painted > 0, 'the queue painted rows for this window');
+      /* Computed exposure, not markup: `role="listitem"` on the button used to
+         REPLACE its implicit `button` role, so the whole queue answered zero
+         here while every row remained clickable. */
+      assert.equal(await queue.getByRole('button')
+        .evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('qrow')).length),
+      painted, 'every painted row is exposed with the button role');
+      const rows = await page.locator('#level .q button.qrow').evaluateAll((nodes) => nodes.map((node) => ({
+        id: node.dataset.id, title: node.querySelector('.lab').textContent.trim(),
+      })));
+      for (const { id, title } of rows) {
+        const control = queue.getByRole('button', { name: title });
+        assert.equal(await control.count(), 1,
+          `a control named ${title} is reachable in the queue, exactly once`);
+        assert.equal(await control.getAttribute('data-id'), id,
+          `the control named ${title} is that finding's own row`);
+      }
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while reading the queue by role');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 test('the Watching group collapses during a sift and expands again', async () => {
     const browser = await runner.browser();
     try {

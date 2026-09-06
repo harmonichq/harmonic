@@ -3369,6 +3369,28 @@ export const C57 = async (page) => {
     .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
 };
 
+/** C60 · A reader navigating by control reaches a finding by its own title, and
+    activating that control opens that finding's case file. Added by #363: the row
+    is a button whose implicit role an ARIA override used to replace, so nothing
+    in the queue answered a search for a control at all. */
+// STORY:finding-evidence-routing:C60
+export const C60 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  const [{ id, title }] = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => ({
+    id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
+  })));
+  const control = page.locator('#level .q').getByRole('button', { name: title });
+  is(await control.count(), 1, `C60 the queue answers a search for a control named ${title}`);
+  is(await control.getAttribute('data-id'), id,
+    'C60 the control reached by name is that finding\u2019s own row');
+  await control.click();
+  await settle(page, 500);
+  const opened = await state(page);
+  is(opened.crumb.length, 2, 'C60 activating the control drills one level, into the case file');
+  ok(opened.levelWho, `C60 the opened case file prints its own head (${opened.crumb.join(' \u203a ')})`);
+};
+
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
 export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
@@ -5171,6 +5193,7 @@ export const STORIES = [
         window: structuredClone(body.window) } };
     },
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
+  ['C60', C60, 'typical'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

@@ -3505,6 +3505,7 @@ C62 · A finding claimed in two families keeps both on the rendered row, the
       denominator, and the stage prints the sentence composed from that lead.
 ```
 
-**Executable IDs.** This branch issues `C62` and nothing else. `C58`–`C61`
-belong to the sibling children of sweep #350, which is why the issued and active
-lines read `C41–C57` and `C62` rather than a contiguous `C41–C62`.
+**Executable IDs.** Child #353 issues `C62` and nothing else. `C58`–`C61` were
+issued by its sibling children of sweep #350 (#364, #354, #363 and #372), and
+the sweep's integration branch carries all five, which is why the issued and
+active lines read a contiguous `C41–C62`.

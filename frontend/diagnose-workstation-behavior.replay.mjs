@@ -484,7 +484,7 @@ export const withoutIsfProjectionVerdict = (projection) => ({
 export async function openApp(browser, {
   state: want = 'typical', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
-  pumpSettingsInputs = null, onPlanDraft = null,
+  pumpSettingsInputs = null, onPlanDraft = null, statefulPlanDraft = false,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
@@ -545,6 +545,11 @@ export async function openApp(browser, {
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const apiPattern = (path) => new RegExp(`^/api${path}`);
+  /* #354 — the Plan draft is the one stubbed read a story may need to OUTLIVE a
+     reload. Statefulness is opt-in and stays null unless `statefulPlanDraft`
+     asked for it, so every other story's requests are byte-identical to before:
+     the GET below answers the same flat empty draft it always has. */
+  let planDraftSaved = null;
   const STUBS = [
     /* #735: the findings queue is a SERVER-owned projection (ADR 730) and the
        browser gates have no Python, so the stub answers from the fixture-only JS
@@ -565,7 +570,7 @@ export async function openApp(browser, {
     [apiPattern('/explore/time'), () => payload.evidence],
     [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
     [apiPattern('/plan/history'), () => ({ history: [] })],
-    [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+    [apiPattern('/plan'), () => planDraftSaved || ({ items: [], updated_at: null })],
     [apiPattern('/verify/trials'), () => ({ trials: [] })],
     [apiPattern('/catalog'), () => ({ articles: [] })],
     [apiPattern('/carbs'), () => ({ entries: [] })],
@@ -811,9 +816,9 @@ export async function openApp(browser, {
     if (path === '/api/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
       onPlanDraft?.(draft);
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-        items: draft.items || [], updated_at: '2020-03-03 00:01:00',
-      }) });
+      const saved = { items: draft.items || [], updated_at: '2020-03-03 00:01:00' };
+      if (statefulPlanDraft) planDraftSaved = saved;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(saved) });
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -3369,6 +3374,56 @@ export const C57 = async (page) => {
     .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
 };
 
+const stagedLaneCells = (page) => page.evaluate(() =>
+  document.querySelectorAll('#lane button[data-staged="true"]').length);
+
+/** C59 · A change staged in Diagnose is still staged in Diagnose after a page
+    reload — the dock, the lane and the parameter panel all report the persisted
+    Plan draft the cockpit's Plan step already counts — and it can still be taken
+    back out from Diagnose. ADDED #354, pending operator sanction at the #350
+    sweep PR. */
+// STORY:finding-evidence-routing:C59
+export const C59 = async (page) => {
+  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+    .findIndex((b) => b.dataset.verdict === 'up'));
+  ok(idx >= 0, 'C59 precondition: the lane holds a slot that asserts a direction');
+  await page.click(`#lane button:nth-child(${idx + 1})`);
+  await settle(page, 450);
+  await page.click('#level .stagebtn');
+  await settle(page, 450);
+  const staged = await state(page);
+  is(staged.dock.kind, 'Plan · staged', 'C59 precondition: the dock reports the staged object');
+  is(staged.badge, '1', 'C59 precondition: the Plan badge counts it');
+  is(await stagedLaneCells(page), 1, 'C59 precondition: the lane marks the staged slot');
+
+  await page.reload();
+  await page.waitForSelector('.dw');
+  await page.waitForSelector('#lane button');
+  await settle(page, 800);
+  const reloaded = await state(page);
+  is(reloaded.badge, '1', 'C59 the persisted Plan draft still counts the item');
+  /* One assertion, both witnesses: the bug reported an idle dock AND an
+     unmarked lane while that badge still read 1, and either alone would let the
+     other regress unseen. */
+  is({ dock: reloaded.dock.kind, stagedLaneCells: await stagedLaneCells(page) },
+    { dock: 'Plan · staged', stagedLaneCells: 1 },
+    'C59 the dock and the lane still report the staged change after a reload');
+  is(reloaded.dock.what, staged.dock.what,
+    'C59 one object, one claim — the dock names what the badge counts');
+
+  await page.click(`#lane button:nth-child(${idx + 1})`);
+  await settle(page, 450);
+  const drilled = await state(page);
+  is(drilled.stageStaged, 'true', 'C59 the panel does not offer to stage it a second time');
+  ok(/Staged · Undo/.test(drilled.stage || ''), `C59 Undo is reachable again (${drilled.stage})`);
+  await page.click('#level .stagebtn');
+  await settle(page, 450);
+  const undone = await state(page);
+  is(undone.badge, '0', 'C59 the change can still be taken back out from Diagnose');
+  is(undone.dock.kind, 'Nothing being watched', 'C59 the dock follows it back to idle');
+  is(await stagedLaneCells(page), 0, 'C59 the lane mark clears with it');
+};
+
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
 export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
@@ -5171,6 +5226,9 @@ export const STORIES = [
         window: structuredClone(body.window) } };
     },
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
+  /* #354 — the only story that needs the stubbed Plan draft to outlive a
+     reload, so it is the only one that opts into a stateful one. */
+  ['C59', C59, 'typical', { statefulPlanDraft: true }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

@@ -32,10 +32,12 @@ The system SHALL satisfy the following:
 
 If the key file is lost or deleted, the encrypted password in the database becomes unrecoverable — the user must re-enter credentials via the API to decrypt and re-encrypt them with a new key. The historical event data in the database is not affected by key loss; only the credential row itself becomes inaccessible until new credentials are provided.
 
+"Inaccessible" is answered where the row is read: the capability reports no usable credentials rather than failing. `GET /api/credentials` answers `configured: false`, a live pull raises its not-configured error, `.env` is still not consulted, and the stored row is left in place for the user's re-entry to replace. One warning naming the key file and that recovery is logged, and it carries no credential material.
+
 #### Scenario: Losing the encryption key means re-entering credentials, not losing history
 
-- **WHEN** the capability evaluates the behavior described by this requirement
-- **THEN** the stated behavior applies
+- **WHEN** the stored credential row cannot be decrypted with the key file on disk
+- **THEN** the capability reports no usable credentials, leaves the stored row and the event history untouched, does not fall back to `.env`, and logs one warning naming the key file and re-entry through the API as the recovery
 ### Requirement: Credentials change through the API, not by editing configuration files after first use
 
 The system SHALL satisfy the following:

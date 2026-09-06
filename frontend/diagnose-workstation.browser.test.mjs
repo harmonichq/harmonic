@@ -2852,12 +2852,8 @@ test('a rejected API token names the token and offers Settings, not the backend 
         const url = new URL(route.request().url());
         const path = url.pathname;
         if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
-        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-        if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
-        }
+        const response = shell.serve(path);
+        if (response) return route.fulfill(response);
         // Every read refused, exactly as ciq_autotune/api.py's require_token
         // refuses a token the server does not accept. The detail string is
         // that endpoint's own, verbatim.

@@ -440,7 +440,7 @@ function pressPreset(winKey) {
  * single I:C predicate, and which of the two held presentations a block gets
  * comes from the backend's own `state`.
  */
-function buildIcBlocks(blocks) {
+export function buildIcBlocks(blocks) {
   const cells = blocks.map((b) => {
     const wraps = b.end_min <= b.start_min;
     const current = b.current_values[0];
@@ -467,7 +467,7 @@ function buildIcBlocks(blocks) {
       current,
       startMin: b.start_min,
       endMin: b.end_min,
-      span: `${hhmm(b.start_min)}–${hhmm(b.end_min)}`,
+      span: windowSpanText([b.start_min, b.end_min]),
       spans: wraps ? [[b.start_min, 1440], [0, b.end_min]] : [[b.start_min, b.end_min]],
     };
   });

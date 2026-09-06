@@ -307,6 +307,75 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     .filter(([start]) => start.xAxis != null).length, 0);
 });
 
+test("#366 · every parked label anchors on the strip's own ceiling, so it lands on the plot", () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* The ruler comes from the shipped producer, never a literal. Ten of the
+     twelve `range:` injections in this file are [40, 300], the one ruler in the
+     tree tall enough to seat a fixed anchor of 296 inside the plot — which is
+     why the suite stayed green while the label painted off the top of it. */
+  const paint = ({ p90, counts, clientWidth, window: win, windowLabel }) => {
+    const envelope = {
+      labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+      p90: filled(p90), counts: filled(counts), raw: filled(1), days: 12, pool: 45,
+    };
+    renderCanvas({ clientWidth, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, stats: { spread: 27 },
+      range: stripGlucoseRange(envelope), window: win, windowLabel,
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    const data = context.markPoint ? context.markPoint.data : [];
+    assert.ok(data.length, 'the case must actually emit the placement it is about');
+    for (const datum of data) {
+      /* Equality against the axis the chart drew, read back from the emitted
+         option: the ceiling is the one value that seats a label on the line the
+         inside placement occupies, and a `<=` bound admits every value under it. */
+      assert.equal(datum.coord[1], option.yAxis[0].max,
+        'a parked label anchors on the drawn axis maximum');
+    }
+    return data;
+  };
+
+  // a window too narrow for its name at a narrow element width
+  const [narrow] = paint({
+    p90: 215, counts: 12, clientWidth: 600, window: [0, 360], windowLabel: 'OVERNIGHT 00:00–06:00',
+  });
+  assert.equal(option.yAxis[0].max, 220, 'this envelope rules well below the retired constant');
+  assert.equal(narrow.label.formatter, 'OVERNIGHT 00:00–06:00');
+  assert.equal(narrow.label.position, 'right');
+  assert.equal(narrow.label.distance, 6);
+  assert.equal(narrow.label.verticalAlign, 'top');
+  assert.deepEqual(narrow.label.offset, [0, 5],
+    "the parked text hangs below the ceiling on the inside placement's own distance");
+
+  // a window whose thinnest bin is below the support floor: the notice rides along
+  const [thin] = paint({
+    p90: 255, counts: 0, clientWidth: 1396, window: [1080, 1440], windowLabel: 'EVENING 18:00–24:00',
+  });
+  assert.equal(option.yAxis[0].max, 260);
+  assert.match(thin.label.formatter, /INSUFFICIENT SAMPLE — thinnest bin holds 0/);
+  assert.equal(thin.label.position, 'left');
+  assert.equal(thin.label.distance, 6);
+  assert.equal(thin.label.verticalAlign, 'top');
+  assert.deepEqual(thin.label.offset, [0, 5]);
+
+  // a window wrapping midnight: the CONTINUES marker rides the same anchor
+  const wrapped = paint({
+    p90: 215, counts: 12, clientWidth: 1396, window: [1320, 120], windowLabel: '22:00–02:00',
+  }).at(-1);
+  assert.equal(wrapped.label.formatter, 'CONTINUES');
+  assert.equal(wrapped.label.position, 'insideTop');
+  assert.equal(wrapped.label.distance, 5);
+});
+
 test('a tile landing never changes the already-drawn strip range', () => {
   const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
   const filled = (value) => Array.from({ length: 96 }, () => value);

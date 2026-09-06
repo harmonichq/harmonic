@@ -501,3 +501,24 @@ the browser-leg deferral written the way the Docker deferral is; chunk 1 told to
 stop and return a failing exploration `--check` rather than regenerate `mockups/`.
 Note discarded: dropping the coordinator-admission sentence from the Session fit
 blocks, because the work-order template mandates it and the start verb parses it.
+
+### Round 2 — the same cold reader and the same two panel seats re-check the deltas
+
+Cold read: BLOCKED, one blocking. Panel: two approvals, seven notes.
+
+1. `injected` — the tenth matrix leg, the browser-runner lifecycle test, serves
+   inline HTML and no shell, yet its comment names `VENDOR_DIR`, so chunk 3's new
+   completion grep would fail on a file outside its allowlist, and the split-out
+   browser-evidence requirement bound "every browser leg" to a helper that leg
+   cannot use. Fixed: the requirement and its scenarios bind shell-serving legs
+   and name the runner leg as outside them; the file joins chunk 3's Expected
+   diff for its one comment line; the grep reads tracked files only.
+
+Notes accepted: the fail-closed regression test spawns every shell-serving leg
+plus the canvas-composition suite, not three; the completion grep uses `git grep`
+so built third-party bundles cannot fail it; the no-CDN contract assertion first
+requires `frontend/dist/index.html` to exist; the browser-leg waiver requires an
+unsandboxed attempt first and records a machine limit, never a sandbox refusal;
+the drafting-conventions read gains the same stop-if-missing rule as `ORDER.md`;
+the header says each chunk gets its own worktree on its per-chunk branch.
+Note discarded again: the coordinator-admission sentence in Session fit (template).

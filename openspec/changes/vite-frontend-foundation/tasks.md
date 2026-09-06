@@ -30,8 +30,9 @@
    unchanged.
 5. [ ] Retarget the Python contract tests to built output:
    `tests/test_frontend_asset_routes.py` (page routes, every asset
-   `dist/index.html` references answers with the dist bytes and content type, no
-   file under `frontend/dist` names `unpkg.com` or `jsdelivr.net`, `/api`
+   `dist/index.html` references answers with the dist bytes and content type, and, after first
+   asserting `frontend/dist/index.html` exists, no file under `frontend/dist`
+   names `unpkg.com` or `jsdelivr.net`, `/api`
    isolation, the 404 set, the missing-build 503 proven with the dist location
    redirected to an empty directory), the per-source-asset tests in
    `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile copies
@@ -73,10 +74,13 @@
    and that at least one script and one stylesheet did; the workstation suite's
    module-isolation page reads ECharts from
    `node_modules/echarts/dist/echarts.min.js`.
-   `frontend/browser-gates-fail-closed.test.js` spawns each suite with
+   `frontend/browser-gates-fail-closed.test.js` spawns every shell-serving leg
+   (the seven above) and `diagnose-canvas-composition.browser.test.mjs` with
    `HARMONIC_DIST` pointed at an empty directory, once without
    `PLAYWRIGHT_MODULE` (expect both named) and once with it (expect the build
    command named), asserting a nonzero exit each time.
+   `frontend/browser-runner.browser.test.mjs` serves inline HTML and no shell;
+   only its comment naming `VENDOR_DIR` changes.
    `scripts/ensure_browser_gate_env.py` and `scripts/screenshots.local.mjs` stop
    vendoring CDN modules.
 9. [ ] CI browser gates build first: the browser-gate-setup and leg jobs run

@@ -45,7 +45,8 @@ The shape is the smallest one that produces a pinned, locally bundled shell:
 - The browser legs stop serving `frontend/index.html` and `/assets/*.js` from
   source. Five legs route the page through Playwright with the two CDN URLs
   rerouted to `VENDOR_DIR`; two serve it from a `node:http` fixture server and
-  load the CDNs live; two more only consume another leg's opener. One
+  load the CDNs live; two more only consume another leg's opener; the tenth,
+  the browser-runner lifecycle test, serves inline HTML and no shell. One
   dependency-free helper beside `browser-runner.js`, `createBuiltShell({ dist })`,
   answers `/`, the page paths and `/assets/*` from `frontend/dist` as
   `{ body, contentType }` (or `null`), throws naming the build command when the

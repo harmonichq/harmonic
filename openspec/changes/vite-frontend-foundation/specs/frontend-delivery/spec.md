@@ -52,13 +52,16 @@ their drift checks unchanged.
 
 ### Requirement: Browser gates prove the shipped bytes
 
-Every browser leg SHALL load the built shell through one shared dependency-free
-helper that answers `/`, the page paths and `/assets/*` from `frontend/dist` and
-throws, naming the build command, when `frontend/dist/index.html` is absent; the
-helper's dist location SHALL be overridable by one environment variable so its
-fail-closed path can be proven with the build present. Every leg's preflight SHALL
-report a missing build beside a missing Playwright module before any browser
-launches. CI SHALL build before every browser gate and fetch no CDN module. A
+Every browser leg that serves the shell SHALL load the built shell through one
+shared dependency-free helper that answers `/`, the page paths and `/assets/*`
+from `frontend/dist` and throws, naming the build command, when
+`frontend/dist/index.html` is absent; the helper's dist location SHALL be
+overridable by one environment variable so its fail-closed path can be proven
+with the build present. Every shell-serving leg's preflight SHALL report a missing
+build beside a missing Playwright module before any browser launches, and the
+fail-closed regression test SHALL spawn every one of those legs. The
+browser-runner lifecycle leg serves trivial inline HTML and no shell; it is
+outside this requirement. CI SHALL build before every browser gate and fetch no CDN module. A
 behaviour ledger's replay SHALL change only how it serves the page and observes
 its seams, never what a story asserts.
 
@@ -67,12 +70,12 @@ its seams, never what a story asserts.
 - **GIVEN** committed synthetic fixtures, a completed build and the no-fetch app
   for the legs that need it
 - **WHEN** the ten browser legs run as CI runs them
-- **THEN** each loads `frontend/dist/index.html` and its hashed assets
+- **THEN** each shell-serving leg loads `frontend/dist/index.html` and its hashed assets
 - **AND** no leg reads a vendored CDN module or `frontend/index.html` as the served page
 
 #### Scenario: A leg without a build fails closed before Playwright
 
 - **GIVEN** the helper's dist location pointed at an empty directory
-- **WHEN** a page-serving leg runs, with or without a Playwright module configured
+- **WHEN** any shell-serving leg runs, with or without a Playwright module configured
 - **THEN** it exits nonzero naming `npm ci && npm run build`
 - **AND** when the Playwright module is also missing, both are named

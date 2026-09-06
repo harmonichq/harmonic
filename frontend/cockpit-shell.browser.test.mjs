@@ -1796,12 +1796,15 @@ test('a second stage inside a refused save leaves the button, the badge and the 
     // before reading the surface.
     await page.waitForTimeout(750);
 
-    const settled = await page.evaluate(() => ({
-      dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
-      planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
-      // the reactive draft itself, behind both readings above
-      planDraftItems: document.querySelector('#app')?.__vue_app__?._instance?.setupState?.planItems?.size ?? null,
-    }));
+    const settled = await page.evaluate(async () => {
+      const draft = await fetch('/api/plan').then((response) => response.json());
+      return {
+        dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
+        planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
+        // The persisted draft is the public third reading behind both controls.
+        planDraftItems: draft.items.length,
+      };
+    });
     assert.deepEqual(settled, { dataStaged: 'false', planBadge: '0', planDraftItems: 0 },
       'the control, the Plan step badge and the draft must all report nothing staged '
       + 'once every refused save has answered');

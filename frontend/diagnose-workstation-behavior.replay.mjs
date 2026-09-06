@@ -2419,33 +2419,6 @@ export const S70 = async (page) => {
   await assertRetiredGlobalCanvas(page, 'S70');
 };
 
-const historySafetyState = (page, draftWrites) => page.evaluate((writes) => {
-  const setup = document.querySelector('#app')?.__vue_app__?._instance?.setupState;
-  const planItems = setup?.planItems;
-  const tab = setup?.tab?.value ?? setup?.tab ?? null;
-  return {
-    stageCalls: window.__diagnoseStageProbe?.calls ?? null,
-    planDraftWrites: writes,
-    planItems: Number.isFinite(planItems?.size) ? planItems.size : null,
-    planBadge: document.querySelector('#plan-badge')?.dataset.count ?? null,
-    tab,
-    storedTab: localStorage.getItem('tab'),
-    planCurrent: document.querySelector('[data-shell-tab="plan"]')?.getAttribute('aria-current') ?? null,
-  };
-}, draftWrites);
-
-const assertHistorySafety = async (page, draftWrites, label) => {
-  const safety = await historySafetyState(page, draftWrites);
-  ok(Array.isArray(safety.stageCalls), `S71 ${label}: staging callback probe is installed`);
-  is(safety.stageCalls, [], `S71 ${label}: callbacks.stage is not invoked`);
-  is(safety.planDraftWrites, 0, `S71 ${label}: no Plan draft request is written`);
-  is(safety.planItems, 0, `S71 ${label}: reactive Plan draft remains empty`);
-  is(safety.planBadge, '0', `S71 ${label}: rendered Plan state remains empty`);
-  is(safety.tab, 'diagnose', `S71 ${label}: app state remains on Diagnose`);
-  is(safety.storedTab, 'diagnose', `S71 ${label}: persisted navigation remains on Diagnose`);
-  is(safety.planCurrent, null, `S71 ${label}: Plan never becomes the current route`);
-};
-
 // STORY:finding-evidence-routing:S71
 export const S71 = async (page) => {
   await assertRetiredGlobalCanvas(page, 'S71');

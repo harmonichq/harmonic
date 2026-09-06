@@ -23,7 +23,7 @@ ranges the canvas brackets — SHALL be unchanged by how its interval is named.
 
 #### Scenario: A block that runs through midnight is unaffected
 
-- **GIVEN** the server publishes a carb-ratio block whose end minute is at or before its start minute
+- **GIVEN** the server publishes a carb-ratio block whose end minute falls strictly between minute 0 and its start minute
 - **WHEN** the reader opens that block's panel
 - **THEN** the interval is named from its own start and end, as it is today
 - **AND** the block is still marked as running through midnight

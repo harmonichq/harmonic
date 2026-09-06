@@ -1880,7 +1880,7 @@
     overflow: visible;
   }
   .main-content .dw:not([data-canvas-full]) .canvas-pane {
-    grid-template-rows: 350px auto 210px;
+    grid-template-rows: auto auto 210px;
     min-height: 0;
     overflow: visible;
   }
@@ -1890,8 +1890,17 @@
     overflow: hidden;
   }
   .main-content .dw:not([data-canvas-full]) .tile-field {
-    height: 350px;
+    height: auto;
     min-height: 350px;
+  }
+  .main-content .dw:not([data-canvas-full]) .tile-field > .tile-focal,
+  .main-content .dw:not([data-canvas-full]) .tile-field > .tile-focal > .evidence-tile {
+    height: auto;
+    min-height: 350px;
+  }
+  .main-content .dw:not([data-canvas-full]) .tile-field
+    > .tile-focal > .evidence-tile {
+    grid-template-rows: auto minmax(170px, 1fr);
   }
   .main-content .dw:not([data-canvas-full]) .inspector {
     grid-template-rows: auto auto auto;

@@ -85,7 +85,6 @@ _FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 _FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
 _FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
 _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
-_MISSING_FRONTEND_BUILD_LOGGED = False
 SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
@@ -145,6 +144,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     key_path = key_path or configuration.secret_key_path
     if enable_fetch_loop is None:
         enable_fetch_loop = not configuration.no_fetch
+    frontend_built = _FRONTEND_INDEX.is_file()
+    if not frontend_built:
+        logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: "FastAPI"):
@@ -450,11 +452,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
     def built_shell():
-        global _MISSING_FRONTEND_BUILD_LOGGED
-        if not _FRONTEND_INDEX.is_file():
-            if not _MISSING_FRONTEND_BUILD_LOGGED:
-                logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
-                _MISSING_FRONTEND_BUILD_LOGGED = True
+        if not frontend_built:
             return PlainTextResponse(
                 f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
                 status_code=503,

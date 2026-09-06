@@ -108,8 +108,13 @@ class FrontendAssetRoutesTest(unittest.TestCase):
             dist = Path(temporary)
             with patch("ciq_autotune.api._FRONTEND_INDEX", dist / "index.html"), \
                  patch("ciq_autotune.api._FRONTEND_ASSETS", dist / "assets"):
-                client = TestClient(create_app(
-                    db_path=db.name, token=None, enable_fetch_loop=False))
+                with self.assertLogs("ciq_autotune.api", "ERROR") as first_log:
+                    client = TestClient(create_app(
+                        db_path=db.name, token=None, enable_fetch_loop=False))
+                self.assertIn("npm ci && npm run build", first_log.output[0])
+                with self.assertLogs("ciq_autotune.api", "ERROR") as second_log:
+                    create_app(db_path=db.name, token=None, enable_fetch_loop=False)
+                self.assertIn("npm ci && npm run build", second_log.output[0])
                 for path in ["/", "/day"]:
                     response = client.get(path)
                     self.assertEqual(response.status_code, 503, path)

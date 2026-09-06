@@ -350,7 +350,7 @@ jobs:
           load: true
           tags: harmonic:pr-test
       - name: Require the runtime image to exclude Node
-        run: docker run --rm harmonic:pr-test sh -c '! command -v node'
+        run: docker run --rm --entrypoint sh harmonic:pr-test -c '! command -v node'
       - name: Serve the built shell from the runtime image
         run: |
           cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
@@ -358,7 +358,7 @@ jobs:
           docker run --detach --name harmonic-pr-smoke --publish 8765:8765 \
             --env TIMEZONE_NAME=America/Phoenix \
             --volume "$RUNNER_TEMP/harmonic-qa.sqlite:/tmp/harmonic.sqlite" \
-            harmonic:pr-test --no-fetch --token '' --db /tmp/harmonic.sqlite
+            harmonic:pr-test --host 0.0.0.0 --port 8765 --no-fetch --token '' --db /tmp/harmonic.sqlite
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:8765/ | grep --quiet '/assets/index-'; then
               docker rm --force harmonic-pr-smoke

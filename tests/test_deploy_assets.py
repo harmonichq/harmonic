@@ -28,6 +28,16 @@ class DeployAssetsTest(unittest.TestCase):
         self.assertRegex(text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\s+./frontend/dist")
         self.assertIn("FROM node:22", text)
 
+    def test_runtime_copies_only_the_built_frontend_without_node(self):
+        runtime = (_REPO / "Dockerfile").read_text().split(
+            "FROM python:3.12-slim-bookworm AS runtime", 1)[1]
+        with self.assertRaises(AssertionError):
+            self.assertNotRegex("COPY frontend ./frontend", r"(?m)^COPY\s+frontend\b")
+        self.assertNotRegex(runtime, r"(?m)^COPY\s+frontend\b")
+        with self.assertRaises(AssertionError):
+            self.assertNotRegex("RUN npm install", r"(?i)\b(?:node|npm)\b")
+        self.assertNotRegex(runtime, r"(?i)\b(?:node|npm)\b")
+
     def test_dockerignore_does_not_exclude_docs(self):
         di = _REPO / ".dockerignore"
         if di.is_file():

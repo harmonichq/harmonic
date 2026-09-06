@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**166 issued executable IDs:** S01–S144, C41–C58, C60, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C58, C60, and D1–D3
+**167 issued executable IDs:** S01–S144, C41–C60, and D1–D3
+**Active executable IDs:** S01–S116, S118–S144, C41–C60, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3344,3 +3344,34 @@ restoration (S76), row identity and state hooks, per-row geometry and the term-4
 hairline count are all unchanged by an exposure fix. Sanction: **pending operator
 sanction at the #350 sweep PR**. This Diagnose QA sweep runs unattended, and the
 sweep's single pull request is where the operator sanctions this addition.
+
+## Added frozen story — 2026-09-06, a staged change survives a reload (issue #354)
+
+The Plan draft persists across a page reload — `openspec/specs/plan/spec.md`
+requires it — but the Diagnose workstation rebuilt its staged marks empty on
+every mount. After a reload the watched-change dock read *Nothing being watched ·
+No change staged* while the cockpit's Plan step still counted the same item: one
+object carrying two claims on one screen, which is the defect lock term 47 exists
+to remove. Undo lives only on a button that already reads `Staged`, so the reader
+could no longer take the change back out from Diagnose at all.
+
+ADR 354 seeds the workstation's three staged collections from the shell's
+existing `isStaged` verdict when the surface boots. Diagnose decides nothing new
+about what may be staged: the verdict it asks for is the one its own stage button
+already writes through, and it inherits the analysis layer's `asserts_move` test
+unchanged.
+
+`P39` describes what pressing the stage button DOES. Nothing in this ledger
+described reconstructing those marks on a page load, so this is an **added**
+behaviour and takes one new executable ID. No existing story is amended, and none
+is retired.
+
+C59 · A change staged in Diagnose is still staged there after a page reload —
+      the dock names the same object the Plan badge counts, the lane keeps its
+      staged mark, and the parameter panel offers `Staged · Undo` rather than
+      `Stage change` — and it can still be un-staged from Diagnose. Evidence:
+      replay C59.
+
+**Sanction: pending operator sanction at the #350 sweep PR.** An addition to this
+frozen ledger is operator-approved. This sweep runs unattended, so C59 is recorded
+here and sanctioned on the single pull request the #350 Diagnose QA sweep opens.

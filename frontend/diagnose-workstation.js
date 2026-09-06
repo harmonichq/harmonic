@@ -1271,6 +1271,21 @@ function boot(root, data, callbacks, signal) {
   const staged = new Set();        // basal slots staged for Plan
   const icStaged = new Set();      // I:C blocks staged for Plan
   let isfStaged = false;           // the ISF value, staged for Plan
+  /* ADR 354 — the Plan draft outlives the page; these three sets do not. The
+     shell restores the draft on every load and already owns the mapping from a
+     parameter item to it, so the marks are ASKED FOR here rather than rebuilt:
+     `callbacks.isStaged` is the same verdict `callbacks.stage` writes through,
+     in the same three descriptor shapes. This surface still decides nothing
+     about what MAY be staged — that stays with the analysis (term 14), and a
+     held slot yields no Plan item, so it can never seed. No callback, no
+     marks. */
+  for (const cell of lane.cells) {
+    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+  }
+  for (const cell of icBlocks) {
+    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
+  }
+  if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the gate edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user

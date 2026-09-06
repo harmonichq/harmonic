@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**168 issued executable IDs:** S01–S144, C41–C61, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C61, and D1–D3
+**169 issued executable IDs:** S01–S144, C41–C62, and D1–D3
+**Active executable IDs:** S01–S116, S118–S144, C41–C62, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3460,3 +3460,51 @@ reaches the Plan draft with its own served numbers, that the surface's own stage
 tally and the `PUT /api/plan` body name the same members, that the dock names the
 whole span, and that undoing empties the draft again. Issued executable IDs move
 164 → 165.
+
+## Amendment — 2026-09-06, one denominator per rendered row (issue #353)
+
+**Pending operator sanction at the #350 sweep pull request.** Nothing in this
+amendment is sanctioned yet, and no ruling is quoted because none has been
+given.
+
+`ciq_autotune/finding_case_file.wrap` publishes `rendered_rows`, the list the
+rail and the stage both render. It replaced each finding row's appearances with
+a single family built from the prepared case file and left the sentence the
+findings projection had already composed from the appearances it had just
+discarded — so one finding in one window printed `1 of 6 lows` in the rail and
+`1 of 8 lows` in the caption beside it, and a finding claimed in two families
+lost one of them. The wrapped row now keeps every family the projection
+published, leads with the case file's own at the case file's counts, and
+recomposes its headline from that lead through the projection's existing
+composer. No new sentence template is served.
+
+The browser-gate preparation adapter `frontend/browser-fixture-population.js`
+mirrors that row, headline included. Until now it copied the counts and not the
+sentence, so every browser story read the pre-fix sentence and reported no
+problem — a guard measuring a stale input.
+
+**Source corrected — S130, S132 and S139.** The replay's `servedRows` helper
+fetched `/api/diagnose/findings` while claiming in its own comment to read "the
+projection the rail and the stage both consumed". The rail and the stage read
+`rendered_rows`; the two payloads agreed only while the adapter was unfaithful.
+The helper is repointed at `/api/diagnose/finding-case-file-preparation`'s
+`rendered_rows` for all three of its callers. Measured rather than assumed: with
+the adapter faithful and the helper unmoved the replay reported
+`app: 162 of 163 stories passed`, failing only S132, which expected the
+endpoint's `4 of 6 lows` and found the stage's `1 of 10 lows`; repointing the
+helper alone returned `app: 163 of 163`. S130 compares row identity and S139
+asserts a sentence's absence, so both hold on either source — and S139 now
+checks the rail against a string some surface actually prints. No behavior of
+S130, S132 or S139 is retired, and no executable is renumbered.
+
+**Behavior added.** The new executable story is:
+
+```
+C62 · A finding claimed in two families keeps both on the rendered row, the
+      case file's own family leads it at the case file's own count and
+      denominator, and the stage prints the sentence composed from that lead.
+```
+
+**Executable IDs.** This branch issues `C62` and nothing else. `C58`–`C61`
+belong to the sibling children of sweep #350, which is why the issued and active
+lines read `C41–C57` and `C62` rather than a contiguous `C41–C62`.

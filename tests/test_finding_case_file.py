@@ -428,7 +428,7 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
     }
     allowed_changes = {
         "appearances", "episodes", "evidence", "verdict_counts",
-        "verdict_counts_by_family", "event_chart", "case_header",
+        "verdict_counts_by_family", "event_chart", "case_header", "headline",
     }
     assert changed_fields <= allowed_changes
     assert allowed_changes - {"episodes"} <= changed_fields
@@ -440,6 +440,35 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
         original["selection"]
     ).encode()
     assert findings == original
+
+
+def test_two_family_rendered_row_leads_with_the_case_file_and_says_so():
+    lever = Lever.LATE_BOLUS
+    findings = _findings(lever)
+    row = findings["rows"][0]
+    row["tier"] = "worth_a_look"
+    # The projection sorts appearances by family name, so the case file's own
+    # family arrives second on any finding claimed in two families.
+    row["appearances"] = [
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+        {"family": "meals", "noun": "meals", "n": 3, "m": 20},
+    ]
+    row["headline"] = findings_projection._finding_headline(row)
+    prepared = _prepared(lever, findings=findings)
+    summary = prepared.case(row["id"], "clock", None)["summary"]
+    projected = deepcopy(row["appearances"])
+    payload = wrap(prepared)
+    rendered = payload["rendered_rows"][0]
+    assert rendered["appearances"] == [
+        {"family": "meals", "noun": summary["noun"],
+         "n": summary["claimed"], "m": summary["denominator"]},
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+    ]
+    assert rendered["headline"] == (
+        f"Ranks among this window's findings. Showed up in {summary['claimed']} of "
+        f"{summary['denominator']} {summary['noun']} in this window."
+    )
+    assert payload["findings"]["rows"][0]["appearances"] == projected
 
 
 def test_noncanonical_attribution_is_withheld_instead_of_rendered():

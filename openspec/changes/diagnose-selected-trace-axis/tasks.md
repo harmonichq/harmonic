@@ -25,10 +25,21 @@
   `a selected occurrence trace never changes the field range`, `the shipped
   event-comparison mount derives its axis from rendered cohort glucose`, and
   `the event-comparison entry carries the dock mini rank through the registry`.
-- [ ] 5. Run `node --test frontend/diagnose-evidence-charts.test.js
-  frontend/diagnose-event-comparison.test.js` and
-  `node mockups/finding-evidence-routing.exploration/build.mjs --check`, the
-  latter because this change edits a file that generator extracts from.
+- [ ] 5. Provision the worktree once with `uv sync --frozen --extra api --extra
+  sync` — the pytest leg cannot collect without the `api` extra — then run this
+  repository's whole fast gate: `uv run python -m pytest`, `node --test
+  'frontend/**/*.test.js'`, `npx --yes @fission-ai/openspec@1 validate --all
+  --strict`, `python3 scripts/check_adr_numbers.py`, `python3
+  scripts/check_owned_identifiers.py` and `python3
+  scripts/check_public_allowlist.py`. The narrow pair `node --test
+  frontend/diagnose-evidence-charts.test.js
+  frontend/diagnose-event-comparison.test.js` is the fast inner loop for task 1,
+  not the gate: the openspec leg is the only one that reads this `tasks.md`, and
+  the allowlist leg the only one that dispositions the `mockups/INDEX.md`
+  paragraph task 6 writes, so the narrow pair can pass over a diff that breaks
+  them. Also run `node
+  mockups/finding-evidence-routing.exploration/build.mjs --check`, because this
+  change edits a file that generator extracts from.
 - [ ] 6. Add one paragraph to `mockups/INDEX.md` below the surface table, in the
   shape the `#232`, `#226`, `#255` and `#294` paragraphs already use: name issue
   #367, say that the chart drawing a selected occurrence's trace now contains it

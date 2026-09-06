@@ -19,12 +19,15 @@ const DEFAULT_TAB = 'diagnose';
 const TAB_IDS = new Set(TABS.map((tab) => tab.id));
 const DIAGNOSE_KEYS = ['view', 'mode'];
 
+// #352: the ids retired by #99/#245/#246/#248 used to be migrated here, and
+// that mapping had no current input. The server serves the shell at the live
+// page paths only, so a retired id's address answers 404 before any script
+// loads, and the `#/<page>?...` grammar that once carried one was retired
+// outright by #94. The fallback below is a different rule and does have an
+// input: a Guide article's `app:<id>` handoff renders whatever word an author
+// writes, so an unrecognized id still has to land on a real surface.
 export function resolveTab(tab) {
-  const migrated = (tab === 'dashboard' || tab === 'pump' || tab === 'review' || tab === 'patterns') ? 'diagnose'
-    : (tab === 'daily' || tab === 'modelview') ? 'day'
-    : tab === 'outcomes' ? 'verify'
-    : tab;
-  return TAB_IDS.has(migrated) ? migrated : DEFAULT_TAB;
+  return TAB_IDS.has(tab) ? tab : DEFAULT_TAB;
 }
 
 function routeState(page, params) {

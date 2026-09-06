@@ -197,6 +197,10 @@ class FrontendAssetRoutesTest(unittest.TestCase):
                 "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json",
                 "/analyze", "/scenario.css", "/assets/no-such.js", "/api/no-such",
                 "/not-a-page",
+                # #352: the ids retired by #99/#245/#246/#248 are not served,
+                # which is why the browser router migrates none of them.
+                "/dashboard", "/pump", "/review", "/patterns", "/daily",
+                "/modelview", "/outcomes",
             ]:
                 self.assertEqual(client.get(path).status_code, 404, path)
 

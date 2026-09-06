@@ -4,15 +4,22 @@
 
 ### Context
 
-The Diagnose evidence canvas paints four of its full-rank axis names outside the
-chart box. Measured on the declared no-fetch server at 1440×900, over every
-finding row (`evidence/axis-name-seat.before.txt`, exit 1):
+The Diagnose evidence canvas paints its full-rank axis names outside the chart
+box. Measured on the branch's declared no-fetch QA server at 1440×900, over every
+finding row and every alignment a tile publishes
+(`evidence/axis-name-seat.before.txt`, exit 1):
 
-| chart | axis | name | overhang |
-|---|---|---|---|
-| Correction factor · rest windows | y | `glucose change (mg/dL)` | 18px left |
-| Correction factor · rest windows | x | `insulin acted (U)` | 43.4px right |
-| Carb ratio · meal runs | x | `minutes from first meal` | 72px right |
+| chart | axis | alignment | name | overhang |
+|---|---|---|---|---|
+| Correction factor · rest windows | y | event | `glucose change (mg/dL)` | 18px left |
+| Correction factor · rest windows | x | event | `insulin acted (U)` | 43.4px right |
+| Correction factor · rest windows | y | clock | `glucose change (mg/dL)` | 18px left |
+
+Three clipped names, all on one chart, because that is the one clipping chart the
+QA database renders: its queue publishes a basal row, this correction-factor row,
+and one carb-ratio finding whose staged tile is a basal chart. The carb-ratio
+evidence chart, which spreads the same helper on both of its alignments, is not
+rendered anywhere on this database and is therefore not measured here.
 
 `FULL_GRID` reserves 34px on each side and runs `containLabel: false`, so ECharts
 reserves nothing for a name; the shared `axis()` helper leaves `nameLocation` at
@@ -62,8 +69,14 @@ the axis end and dropping to the plot bottom directly above its own tick labels.
   name string are all unchanged, which keeps this a placement fix and keeps the
   diff inside one module.
 - The rule is measurable rather than eyeballed: the committed driver reports
-  every drawn name's overhang and exits nonzero on any, so a later change that
-  widens a name or narrows an inset fails loudly instead of shearing a unit off
-  a dosing-evidence chart.
+  every drawn name's overhang, in every alignment a tile publishes, and exits
+  nonzero on any, so a later change that widens a name or narrows an inset fails
+  loudly instead of shearing a unit off a dosing-evidence chart.
+- What the driver cannot reach, the module's own test does. The carb-ratio chart
+  renders on no queue row of the QA database, so its seat is checked through the
+  registry's `option(mode, ctx)` over committed synthetic captures rather than
+  through the capture. Writing the seat in the shared helper is what makes that
+  check sufficient: there is one implementation of where a name goes, so a
+  builder cannot be seated in the browser and unseated in the test.
 - The basal chart keeps its `middle` seat. Two seatings now coexist on purpose,
   and this record is why.

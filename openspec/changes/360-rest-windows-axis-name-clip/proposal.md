@@ -2,26 +2,32 @@
 
 ## Why
 
-The Diagnose evidence canvas names the units on every full-rank chart, and on
-two of the four kinds those names are painted outside the chart and clipped away.
-On the declared no-fetch server, at 1440×900, walking every finding row in the
-queue reports four clipped names and no seated failure
-(`evidence/axis-name-seat.before.txt`):
+The Diagnose evidence canvas names the units on every full-rank chart, and the
+correction-factor chart paints both of its names outside the chart box, where the
+container clips them away. Measured on the branch's declared no-fetch QA server
+at 1440×900, walking every finding row in the queue and every alignment a tile
+publishes, three drawn names leave their box and none of the seated ones move
+(`evidence/axis-name-seat.before.txt`, exit 1):
 
-- `Correction factor · rest windows` loses the head of its y-axis name: the
-  reader sees `ose change (mg/dL)` because 18px of `glucose change (mg/dL)` is
-  painted left of the chart's own left edge.
+- `Correction factor · rest windows` loses the head of its y-axis name in **both**
+  alignments: the reader sees `ose change (mg/dL)` because 18px of
+  `glucose change (mg/dL)` is painted left of the chart's own left edge.
 - The same chart's x-axis name `insulin acted (U)` overhangs the right edge by
-  43.4px, so its last glyphs are sheared.
-- `Carb ratio · meal runs` overhangs worse: `minutes from first meal` runs 72px
-  past the right edge, on both the ranked I:C row and the watched one.
+  43.4px in event alignment, so its last glyphs are sheared.
 
-The cause is one seating rule, not four defects. `FULL_GRID` runs
+The cause is one seating rule, not two defects. `FULL_GRID` runs
 `containLabel: false`, so nothing reserves room for axis furniture, and the
 shared `axis()` helper leaves `nameLocation` at the ECharts default of `end` —
 which centres a vertical axis's name on the axis end and hangs a horizontal
 axis's name off it. A name wider than the grid's 34px insets is therefore
 painted into space the chart does not own.
+
+That helper is spread by the carb-ratio builder too, on both of its alignments,
+so the same seat is what `minutes from first meal`, `meal start` and
+`Carb ratio (g/U)` inherit. No finding row on the QA database renders a
+carb-ratio evidence chart, so this change claims no measurement for those names;
+it fixes them by writing the seat once, where the module already keeps one, and
+checks them through the builder rather than through the capture.
 
 The file already records this exact failure being fixed twice, both times for a
 narrower case: the mini rank drops the name outright because
@@ -29,7 +35,8 @@ narrower case: the mini rank drops the name outright because
 type rank came down when it sat above the grid's top and was cut off. The full
 rank never got the same treatment. The basal chart is the one that did — its
 x-axis name is set to `nameLocation: 'middle'` and measures fully seated — so
-the canvas today asserts one unit label legibly and three illegibly.
+the canvas today asserts one unit label legibly and its correction-factor
+neighbour illegibly.
 
 This misleads a reader of advisory evidence: a chart whose y-axis reads
 `ose change (mg/dL)` names no unit at all, and the correction-factor tile is
@@ -44,8 +51,8 @@ where a wearer reads dose against glucose response.
   where they are painted, not to what they say.
 - **One seating rule, applied where the module already shares one.** The
   correction-factor and carb-ratio charts read the same `axis()` helper, so the
-  seat is expressed once rather than patched per builder. Both of each chart's
-  modes are covered, not only the mode the queue opens by default.
+  seat is expressed once rather than patched per builder. Both alignments of
+  each chart are covered, not only the one the queue opens by default.
 - **Nothing else on the canvas moves.** The grid keeps the canvas-wide spine
   inset and the right inset it reserves for the last axis label, the legend keeps
   its seat, the mini rank keeps carrying no axis name at all, and the basal

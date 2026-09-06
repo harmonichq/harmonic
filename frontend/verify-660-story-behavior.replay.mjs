@@ -234,6 +234,21 @@ export const S7 = async (open, browser) => {
     return m.scrollHeight > m.clientHeight;
   });
   ok(scrollable, 'stacked layout is not scrollable');
+  /* #359 SPLIT the one Diagnose rule that can reach this screen
+     (`:is(.dw, .vw) .panes > .pane + .pane`) instead of pinning it, and this
+     story's own 800px sits inside the band that moved. The two assertions above
+     hold either way — Verify's own 900px breakpoint had already stacked these
+     panes — so that carve-out was asserted and never observed. Both values are
+     the unchanged tree's measured behaviour: Verify stacks with no horizontal
+     seam here, and the 1px border-left is theme.css's, which loads last. This
+     pins them; it does not change them. */
+  const seam = await page.evaluate(() => {
+    const { borderTopWidth, borderLeftWidth } =
+      getComputedStyle(document.querySelectorAll('.panes > .pane')[1]);
+    return { borderTopWidth, borderLeftWidth };
+  });
+  ok(seam.borderTopWidth === '0px' && seam.borderLeftWidth === '1px',
+    `Verify's stacked pane border moved at 800px: ${JSON.stringify(seam)}`);
   await page.setViewportSize(VIEWPORT);
   await close();
 };

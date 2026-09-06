@@ -48,7 +48,10 @@ Finding is not among that window's rows.
   findings and returns the reader to that window's Findings queue. A failure of
   the preparation request itself is unchanged and still latches the window.
 - One new executable story, `C58`, in the frozen behaviour ledger and its replay,
-  proving the recovery through the built app.
+  proving the recovery through the built app. The ledger's issued count and both
+  inventory ranges move with it, and so does the `initialIssued` literal in
+  `frontend/diagnose-behavior-ledger-parity.test.js`, which pins that issued set
+  so no ID can silently disappear or be renumbered.
 
 ## Impact
 

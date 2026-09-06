@@ -1,12 +1,12 @@
 # Tasks — all-day carb-ratio block span
 
-- [ ] In `frontend/diagnose-workstation.js`, build a carb-ratio block's `span`
+- [x] In `frontend/diagnose-workstation.js`, build a carb-ratio block's `span`
       with `windowSpanText`, the day-edge-aware span formatter the file already
       imports from `./diagnose-workstation-chart.js`, instead of a second copy
       that reduces the block's exclusive end minute modulo one day. Leave the
       block's `wraps` flag and its drawn `spans` untouched, and leave every other
       parameter's span alone.
-- [ ] Export the carb-ratio block builder from `frontend/diagnose-workstation.js`
+- [x] Export the carb-ratio block builder from `frontend/diagnose-workstation.js`
       alongside the panel renderers `frontend/diagnose-workstation.test.js`
       already imports, and add a node test there that builds its cells from block
       payloads rather than hand-setting a span. It fails first against the

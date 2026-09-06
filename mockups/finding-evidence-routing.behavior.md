@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**164 issued executable IDs:** S01–S144, C41–C57, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C57, and D1–D3
+**165 issued executable IDs:** S01–S144, C41–C57, C61, and D1–D3
+**Active executable IDs:** S01–S116, S118–S144, C41–C57, C61, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -3216,3 +3216,46 @@ because rank one follows Spotlight and the overview in the same document, that
 anchor is intentionally nonzero. Desktop/tablet pane behavior, queue evidence,
 full-size chart options, clock gestures, ranking, and backend judgments do not
 change.
+
+## Amendment — 2026-09-06, a merged basal finding stages its whole span (issue #372)
+
+Authorization: issue #372 under the Diagnose QA sweep #350, with ADR 372 in
+`openspec/changes/merged-basal-stages-whole-span/design.md` carrying the decision
+and its risk contract. Nothing is retired here and no shipped behaviour is
+withdrawn, so no retirement sanction is owed: P39's staging behaviour is widened.
+
+The findings projection merges contiguous basal slots sharing a register and a
+direction into one row and publishes that row's members. The shipped surface
+staged only the first of them. On the QA showcase database the queue row **Basal
+03:00 to 04:00 · lower**, whose two members each carry `asserts_move: true` with
+`0.6 → 0.48`, put one half hour into the Plan draft; the panel its control sat on
+was headed `03:00–03:30` and never said the finding covered more.
+
+Staging a basal item now fans out over the row's **served** members, admitting
+each on its own `/api/analyze` `asserts_move` verdict with both numbers present.
+Membership is read from the row; the surface derives it from no row id, no title
+and no clock arithmetic, and re-derives no floor, threshold, direction or safety
+verdict. Un-staging removes exactly the set staging added, and the surface's
+staged tally, the `Stage change` ⇄ `Staged · Undo` state, the lane's staged
+marks, the dock's line and the Plan badge all describe that one set — the same
+set the `PUT /api/plan` body names.
+
+A panel opened on one member of a longer finding states the finding's span and
+that staging acts on the whole span, in the panel's existing reserved scope line.
+Its Current, Estimate and Recommended stay that member's own, because the
+projection deliberately leaves a merged run's numbers on its members rather than
+inventing a span average. The dock keeps naming the staged span in every case and
+prints the current-to-recommended pair only where every staged member carries the
+same pair: a run is merged on register and direction, not on programmed rate.
+
+A finding whose published membership is a single half hour is unchanged in every
+respect, and the correction-factor and carb-ratio staging paths are untouched.
+
+**P39 · Staging** keeps its `kept` verdict and its 2026-08-19 operator ruling;
+what changes is how much one press stages — the opened half hour becomes the
+finding's whole published span. **C61** is this amendment's executable story: it
+stages a merged asserting run from the panel, asserts that every eligible member
+reaches the Plan draft with its own served numbers, that the surface's own staged
+tally and the `PUT /api/plan` body name the same members, that the dock names the
+whole span, and that undoing empties the draft again. Issued executable IDs move
+164 → 165.

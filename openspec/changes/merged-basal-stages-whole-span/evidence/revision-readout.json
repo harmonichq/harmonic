@@ -1,0 +1,72 @@
+{
+  "label": "revision",
+  "port": "8850",
+  "viewports": {
+    "1440x900": {
+      "panelHead": "03:00–03:30\nlower",
+      "panelSay": [
+        "One of 2 half hours in Basal 03:00 to 04:00 — staging here stages the whole span. Current, Estimate and Recommended below are this half hour's own.",
+        "one cautious step down is supported at this time"
+      ],
+      "stageBtnAfter": "Staged · Undo\nstaged for Plan",
+      "planBefore": [],
+      "planAfterKeys": [
+        [
+          6,
+          180,
+          0.6,
+          0.48
+        ],
+        [
+          7,
+          210,
+          0.6,
+          0.48
+        ]
+      ],
+      "badge": "2",
+      "dock": null,
+      "laneStaged": [
+        "03:00 · suggests a lower",
+        "03:30 · suggests a lower",
+        "Staged · Undostaged for Plan"
+      ],
+      "console": [],
+      "failed": [],
+      "planAfterUndo": []
+    },
+    "1280x800": {
+      "panelHead": "03:00–03:30\nlower",
+      "panelSay": [
+        "One of 2 half hours in Basal 03:00 to 04:00 — staging here stages the whole span. Current, Estimate and Recommended below are this half hour's own.",
+        "one cautious step down is supported at this time"
+      ],
+      "stageBtnAfter": "Staged · Undo\nstaged for Plan",
+      "planBefore": [],
+      "planAfterKeys": [
+        [
+          6,
+          180,
+          0.6,
+          0.48
+        ],
+        [
+          7,
+          210,
+          0.6,
+          0.48
+        ]
+      ],
+      "badge": "2",
+      "dock": null,
+      "laneStaged": [
+        "03:00 · suggests a lower",
+        "03:30 · suggests a lower",
+        "Staged · Undostaged for Plan"
+      ],
+      "console": [],
+      "failed": [],
+      "planAfterUndo": []
+    }
+  }
+}

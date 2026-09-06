@@ -436,9 +436,6 @@ export function plotBox(el) {
 
 const CAT_MAX = BIN_COUNT - 1; // 95 — the last category, 23:45
 
-/* The window label owns a reserved band at the top of the plot. */
-const LABEL_Y = 296;
-
 /**
  * Rough px width of a label. There is no measuring context here (the label is
  * drawn by ECharts into a canvas), so this is the same per-character estimate
@@ -1042,23 +1039,32 @@ export function renderCanvas(el, echarts, opts) {
             ...windowAreas,
           ],
         },
-        // the label, when it did not fit inside: parked in the margin beside the
-        // window, on the same band, clear of both dashed edges
+        /* the label, when it did not fit inside: parked in the margin beside
+           the window, on the same band, clear of both dashed edges. Its
+           reserved band is the ruler's OWN CEILING (#366) — `range[1]`, the
+           axis maximum set just above — because the strip's field range is
+           derived from the pooled envelope and moves with the data, so a
+           reserved band stated as a glucose constant lands off the plot on
+           every ruler shorter than it and ECharts paints nothing. The parked
+           label's `position` centres its text on that anchor, so it also takes
+           the inside placement's own distance downward to hang under the
+           ceiling rather than straddle it. */
         markPoint: hasWindow && (!labelInside || wrapped) ? {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{
               coord: [panning ? String(labelSide === 'right' ? endIndex : startIndex)
-                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], range[1]],
               label: {
                 show: true, position: labelSide, distance: 6,
+                verticalAlign: 'top', offset: [0, 5],
                 formatter: labelText, rich: labelRich,
                 align: labelSide === 'right' ? 'left' : 'right',
                 color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
               },
             }] : []),
             ...(wrapped ? [{
-              coord: [envelope.labels[binSpans[1][1]], LABEL_Y],
+              coord: [envelope.labels[binSpans[1][1]], range[1]],
               label: {
                 show: true, position: 'insideTop', distance: 5,
                 formatter: 'CONTINUES', color: colors.muted, fontSize: 9, fontWeight: 600,

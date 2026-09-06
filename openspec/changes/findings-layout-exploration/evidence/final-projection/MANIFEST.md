@@ -1,5 +1,8 @@
 # Final rendered projection
 
+> Retention update: this is a historical capture record. Only the representative images listed in [the retained evidence index](../README.md) remain committed; repeated matrices and intermediate screenshots were removed.
+
+
 Captured from ticket head `b7b8adecc3888e27bf2efc970a309f468549bbdd`; production bytes are unchanged since the reviewed phone correction `a3b46ca`.
 
 These 58 captures supersede earlier revision screenshots containing Adjust window. The original baseline captures remain in the earlier evidence folders. All data are committed synthetic inputs: `mockups/diagnose-workstation.synthetic/payload.json` plus the replay’s existing `twoFamilyInputs`, through `openApp`. These are projection captures, separate from the QA database smoke test.

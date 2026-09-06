@@ -1,5 +1,8 @@
 # Phone-flow follow-up evidence
 
+> Retention update: this is a historical capture record. Only the representative images listed in [the retained evidence index](../README.md) remain committed; repeated matrices and intermediate screenshots were removed.
+
+
 This directory records the bounded phone correction based on integrated ticket
 commit `bc58840`. Every app capture uses the committed synthetic payload
 `mockups/diagnose-workstation.synthetic/payload.json` with the replay opener's

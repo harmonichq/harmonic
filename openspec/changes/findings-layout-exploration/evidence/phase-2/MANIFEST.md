@@ -1,5 +1,8 @@
 # Phase 2 evidence manifest
 
+> Retention update: this is a historical capture record. Only the representative images listed in [the retained evidence index](../README.md) remain committed; repeated matrices and intermediate screenshots were removed.
+
+
 Captured 2026-09-04 from synthetic sources only. Every base/revision pair below
 uses identical source bytes.
 

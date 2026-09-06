@@ -722,12 +722,14 @@ function renderParamLevel(host, spec) {
       <span class="verdict">${spec.headQual ? `${spec.headQual} · ` : ''}${spec.verdict}</span>
     </div>
     ${spec.scopeSay ? `<div class="slot-say">${spec.scopeSay}</div>` : ''}
-    <div class="numrow"><span class="k">Current</span><b>${u(spec.current)}</b>
-      <span class="qual">${spec.unit}, programmed now</span></div>
-    <div class="numrow"><span class="k">Estimate</span><b>${u(e.value)}</b>
-      <span class="qual">${spec.unit} — the interval below brackets THIS number</span></div>
-    <div class="numrow"><span class="k">Recommended</span><b>${u(spec.recommended)}</b>
-      <span class="qual">${spec.recommendedQual}</span></div>
+    <div class="numrows">
+      <div class="numrow"><span class="k">Current</span><b>${u(spec.current)}</b>
+        <span class="qual">${spec.unit}, programmed now</span></div>
+      <div class="numrow"><span class="k">Estimate</span><b>${u(e.value)}</b>
+        <span class="qual">${spec.unit} — the interval below brackets THIS number</span></div>
+      <div class="numrow"><span class="k">Recommended</span><b>${u(spec.recommended)}</b>
+        <span class="qual">${spec.recommendedQual}</span></div>
+    </div>
     <div class="slot-stats">CI ${u(e.lo)}–${u(e.hi)} ${spec.unit} on the estimate
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
@@ -1014,10 +1016,12 @@ function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
       <span class="verdict">${row.span.label}</span>
     </div>
     <div class="history-evidence" aria-label="Past-setting evidence">
-      <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
-        <span class="qual">g/U</span></div>
-      <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
-        <span class="qual">g/U</span></div>
+      <div class="numrows">
+        <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
+          <span class="qual">g/U</span></div>
+        <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
+          <span class="qual">g/U</span></div>
+      </div>
       <div class="slot-stats">CI ${u(estimate.lo)}–${u(estimate.hi)} g/U${estimate.wide ? ' <span>(wide)</span>' : ''}</div>
       <div class="slot-stats">${row.support} meal run${row.support === 1 ? '' : 's'}</div>
     </div>

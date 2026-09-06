@@ -40,7 +40,10 @@
    each of the six page paths and the immutable cache header on an `/assets`
    response, `/api`
    isolation, the 404 set, the missing-build 503 proven with the dist location
-   redirected to an empty directory), the per-source-asset tests in
+   redirected to an empty directory — converting every existing assertion to its
+   built-output equivalent and dropping none, including the `rest-window.js`
+   non-exposure guard and the generated-interface guard on `/api/openapi.json`,
+   `/api/docs` and `/api/redoc`), the per-source-asset tests in
    `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile copies
    `frontend/dist` from the Node stage, copies no `frontend` source, and its
    runtime stage installs no Node).
@@ -54,9 +57,11 @@
    (a 200 whose body references `/assets/index-`);
    README install, run and Docker prose; AGENTS.md install, layout and
    conventions prose; the `ciq_autotune/api.py` cache comment; the
-   `tests/test_check_public_links.py` bare-specifier docstring; and the AGENTS.md
+   `tests/test_check_public_links.py` bare-specifier docstring; the AGENTS.md
    QA copy-then-serve block, which gains `npm ci && npm run build` as the
-   documented prerequisite of the one permitted offline serve.
+   documented prerequisite of the one permitted offline serve; and the Purpose
+   paragraph of `openspec/specs/surfaces/spec.md`, which no requirement delta
+   carries and which still says "no build step".
 7. [ ] One shared built-shell helper for browser legs, `frontend/built-shell.js`
    (dependency-free CommonJS beside `browser-runner.js`), exporting one factory
    `createBuiltShell({ dist })`: `dist` defaults to `frontend/dist` beside the

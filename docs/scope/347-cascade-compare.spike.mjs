@@ -7,7 +7,13 @@
 //
 //   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored vue+echarts> \
 //   BASE_URL=http://127.0.0.1:8791 DIST=<build spike's frontend/dist> \
+//   [SOURCE=<a frontend/ directory holding the PRE-build shell>] \
 //   node docs/scope/347-cascade-compare.spike.mjs
+//
+// SOURCE defaults to this checkout's frontend/. Once the shell has been made a
+// Vite input, that default no longer serves as the source side: export the
+// pre-build shell first, e.g. `git archive origin/main frontend | tar -x -C
+// <scratch>` and pass SOURCE=<scratch>/frontend.
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,7 +24,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || fail('PLAYWRIGHT_M
 const VENDOR = process.env.VENDOR_DIR || fail('VENDOR_DIR is required');
 const DIST = process.env.DIST || fail('DIST is required');
 const BASE = process.env.BASE_URL || fail('BASE_URL is required');
-const FRONTEND = fileURLToPath(new URL('../../frontend/', import.meta.url));
+const FRONTEND = process.env.SOURCE || fileURLToPath(new URL('../../frontend/', import.meta.url));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 const PAGES = ['/diagnose', '/day', '/plan', '/verify'];
 
@@ -37,7 +43,7 @@ async function routeSide(page, side) {
   await page.addInitScript(() => { localStorage.setItem('ciq_token', 'spike'); localStorage.setItem('tab', 'diagnose'); });
 }
 
-const snapshot = () => [...document.querySelectorAll('body *')].map((el) => {
+const snapshot = () => [document.documentElement, document.body, ...document.querySelectorAll('body *')].map((el) => {
   const cs = getComputedStyle(el);
   const props = {};
   for (let i = 0; i < cs.length; i += 1) { const p = cs[i]; props[p] = cs.getPropertyValue(p); }

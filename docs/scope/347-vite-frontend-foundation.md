@@ -583,3 +583,25 @@ TOTAL DIFFERENCES: 4
    `<head>`; every element that exists on both sides matches on every computed
    property. Chunk 1's Done when now requires the coordinator to rerun this
    comparison against the real build.
+
+### Round 4 — the re-check of round 3's second reader, and a fourth fresh reader
+
+Both blocked, on one shared point and two more.
+
+1. `injected` — chunk 1's Done when reran the cascade comparison, whose source
+   side is served from the working tree that chunk 1 itself rewrites, so a
+   correct chunk 1 could never close. Fixed: the spike takes a `SOURCE` override
+   and chunk 1's Done when serves the source side from a scratch export of the
+   pre-build shell (`git archive origin/main frontend`). The snapshot now also
+   covers `<html>` and `<body>`, whose non-inherited properties the first run
+   could not see.
+2. `authoring` — the contract-test rewrite list would have let two live guards
+   vanish: `rest-window.js` non-exposure and the generated interface at
+   `/api/openapi.json`, `/api/docs`, `/api/redoc`. Fixed: task 5 and chunk 2
+   require every existing assertion to be converted, none dropped, naming both.
+3. `authoring` — the surfaces spec's Purpose paragraph still says "no build
+   step" and no requirement delta carries a Purpose. Fixed: chunk 2 edits
+   `openspec/specs/surfaces/spec.md` directly and its allowlist names it.
+
+The spot-check of the generated facts reproduced every tree-fact line byte for
+byte (only the `## HEAD` line moved, as the ledger says it will).

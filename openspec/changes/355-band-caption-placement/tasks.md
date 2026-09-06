@@ -1,6 +1,6 @@
 # Tasks
 
-- [ ] Add a fail-first Node regression through `eventComparisonChartOption`
+- [x] Add a fail-first Node regression through `eventComparisonChartOption`
       (`frontend/diagnose-event-comparison.test.js`, built from the committed
       synthetic case files at
       `mockups/diagnose-workstation.synthetic/finding-case-files.json`): the
@@ -12,7 +12,7 @@
       `frontend/diagnose-evidence-charts.test.js:840-898` already does, so the
       token-resolved ink and plate are assertable with no DOM. Run it against
       the unchanged builder and watch it fail because the label is absent.
-- [ ] Place the caption in the option builder
+- [x] Place the caption in the option builder
       (`frontend/diagnose-event-comparison.js:109`, the target-range series),
       inside the existing `mini ? {} : { … }` spread so a mini stays
       caption-free. Take the rank the app already ships for this exact problem
@@ -27,7 +27,7 @@
       colour: never a `color-mix()` string, which zrender drops silently on
       this path (`frontend/diagnose-workstation.js:331`). Leave the caption
       copy, the band fill, the axes, the legend and the readout unchanged.
-- [ ] Render the By-event chart fullscreen against the repo's declared safe
+- [x] Render the By-event chart fullscreen against the repo's declared safe
       start — the one permitted offline serve, transcribed from
       `AGENTS.md:188-191`:
 
@@ -46,4 +46,4 @@
       renders under `openspec/changes/355-band-caption-placement/evidence/`. A
       sandbox that refuses to launch Chromium is escalated and reported per
       `AGENTS.md`, never worked around in code and never reported as passing.
-- [ ] Run the dependency-free frontend fast gate with zero failures.
+- [x] Run the dependency-free frontend fast gate with zero failures.

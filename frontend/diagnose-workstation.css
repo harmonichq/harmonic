@@ -301,8 +301,16 @@
 /* canvas pane
    At rest the selected evidence leads. The overview's own header/readout then
    travels with its plot and basal lane instead of being stranded above the
-   Spotlight. The global window selector remains in the instrument rail. */
-.canvas-pane { grid-template-rows: minmax(260px, 1fr) auto 210px; }
+   Spotlight. The global window selector remains in the instrument rail.
+
+   `overflow-x: clip` is the width floor's backstop (#359): should this pane's
+   furniture ever outgrow its track again, it clips inside the canvas instead of
+   painting over the inspector beside it. `clip`, not `hidden` — `hidden` on one
+   axis forces the other to `auto`, which would hand this pane a vertical
+   scrollport it does not have. It is earned by measurement, not precaution:
+   four descendants still reach 20px past the pane's right edge at 832px, the
+   narrowest viewport the split may now form at. */
+.canvas-pane { grid-template-rows: minmax(260px, 1fr) auto 210px; overflow-x: clip; }
 .canvas-pane > header.canvas-head { grid-row: 2; }
 .canvas-pane > .body {
   grid-row: 3;
@@ -1572,7 +1580,7 @@
    asserting row's box as leftovers rather than as a deliberately quiet group.
    Consecutive tails close up to a 4px beat and the first one binds to the seam
    sentence, so the sentence and the rows it describes read as one object. They
-   stay title-only; only the box moved, and the 760px block below restores a
+   stay title-only; only the box moved, and the 831px block below restores a
    44px touch target where a pointer is a finger. */
 .dw .qrow.tail { min-height: 30px; padding-block: 4px; }
 .dw .tailnote + .qrow.tail { margin-top: -4px; }
@@ -1674,7 +1682,17 @@
   background: color-mix(in srgb, var(--mk-surface) 94%, transparent);
   color: var(--mk-secondary); font-size: 11.5px;
 }
-@media (max-width: 760px) {
+/* THE SPLIT HAS A MEASURED FLOOR (#359). The canvas pane's own furniture is
+   402px wide and constant across this band — the header's controls set it, not
+   its title, which already truncates under the 2026-08-19 ledger ruling — so
+   beside the fixed 430px inspector column the split needs 832px before it can
+   hold its own content. Below that it formed anyway, and `.pane` carries no
+   overflow rule, so it painted across the findings queue instead: at 768px the
+   canvas pane's right edge was 338px while 47 of its own descendants reached
+   past it, and a hit test inside the first queue rows returned a chart canvas
+   rather than the row. The whole band now gets the narrow layout that already
+   ships, which is designed for it. */
+@media (max-width: 831px) {
   .dw { grid-template-rows: auto minmax(0, 1fr); }
   .instruments {
     display: flex; min-height: 44px; overflow-x: auto; overflow-y: hidden;
@@ -1696,7 +1714,13 @@
   .main-content .dw[data-canvas-full] .panes {
     grid-template-rows: minmax(0, 1fr);
   }
-  :is(.dw, .vw) .panes > .pane + .pane {
+  /* SPLIT from the `.vw` copy below rather than pinned (#359). This sheet loads
+     on every screen, and this was the one rule in this block that could reach
+     Verify. Its `border-top` is the stacked layout's only horizontal divider,
+     so travelling with the widened block is what keeps Diagnose's seam wherever
+     Diagnose stacks; pinning the whole rule at 760px would leave the newly
+     stacked 761-831px band with no line between the panes it had just stacked. */
+  .dw .panes > .pane + .pane {
     border-left: 0; border-top: 1px solid var(--wk-rule);
   }
   .history-case {
@@ -1757,6 +1781,23 @@
   .chart-headacts button {
     min-width: 44px; width: auto; min-height: 44px; height: 44px;
     justify-content: center;
+  }
+}
+
+/* Verify's half of the rule split at #359, verbatim and at its original 760px.
+   The widened block above belongs to Diagnose alone, so Verify's stacked seam
+   keeps the width it has always had. Verify stacks on its own 900px breakpoint
+   in verify-workstation.css, which means it already stacks with no seam between
+   761 and 900px — a pre-existing quirk preserved exactly here, not fixed.
+   `border-left: 0` is inert on both copies: theme.css restates
+   `border-left: 1px solid var(--wk-rule)` for the identical selector at
+   identical specificity and loads after this sheet, and the second pane's
+   computed `border-left-width` measures 1px at every width on both screens. It
+   is carried across unchanged rather than cleaned up, so this carve-out is a
+   selector split and nothing else. */
+@media (max-width: 760px) {
+  .vw .panes > .pane + .pane {
+    border-left: 0; border-top: 1px solid var(--wk-rule);
   }
 }
 

@@ -119,3 +119,50 @@ asserts (2026-08-19) that the canvas header "stays one line at every width the
 two-pane split can produce". That sentence was true and empty: the header did
 stay one line, wider than its column. Giving the split a floor is what makes it
 load-bearing, and the amendment records that.
+
+**Shipped threshold: `@media (max-width: 831px)`, from the measurement below.**
+Re-measured at implementation through the same fixture harness
+(`openApp(..., { state: 'typical', history: true, appSource: 'fixture' })` on
+`mockups/diagnose-workstation.synthetic/payload.json`, height 1024, no server),
+before and after the change:
+
+| viewport | canvas pane right edge (before) | pane minimum content | stacked after | second Diagnose pane `border-top-width` before → after |
+|---|---|---|---|---|
+| 760 | stacked | — | yes | `1px` → `1px` |
+| 761 | 331 | 402 | yes | `0px` → `1px` |
+| 768 | 338 | 402 | yes | `0px` → `1px` |
+| 800 | 370 | 402 | yes | `0px` → `1px` |
+| 830 | 400 | 402 | yes | `0px` → `1px` |
+| 831 | 401 | 402 | yes | `0px` → `1px` |
+| 832 | 402 | 402 | no | `0px` → `0px` |
+| 900 | 470 | 470 | no | `0px` → `0px` |
+| 1024 | 594 | 594 | no | `0px` → `0px` |
+
+The inspector column measures a constant 430px and the canvas pane's minimum
+content a constant 402px across the band, so 832px is the narrowest viewport the
+split can hold and 831px is the widest that must stack. The `border-top-width`
+column is what separates a split selector from a pinned one: a pinned rule would
+have left the whole newly stacked 761-831px band reading `0px`, and it reads
+`1px`.
+
+The containment backstop is proven the same way the defect was, by hit test
+rather than by rectangle. At 832px four descendants still report unclipped boxes
+reaching x=422 against a pane whose right edge is 402 —
+`span#rd-p-n.rd-pair`, `span#rd-n.v` and the two-element `b.t` pair in the pane's
+footer — but with `overflow-x: clip` in place `document.elementFromPoint` at
+x=408 over each of them returns `div#level.level` and `div#watch-dock.watch`,
+neither of which is inside the canvas pane. The pane's computed `overflow-y`
+stays `visible`, confirming that `clip` did not force a scrollport the way
+`hidden` would have.
+
+The regression case brings each row into view before it hit-tests, and that is
+a measurement too. The findings queue is its own scrollport — `#level` computes
+`overflow-y: auto` — and the stacked layout hands it far less height than the
+split does: at 800px the port is 251px tall over 452px of rows, so the second
+row begins below its own fold and a point at its midpoint lands on the watch
+dock beneath the queue rather than on any pane. That is a scroll position, not
+another pane's paint, and reading it as overprint would have made the case fail
+on the fixed surface for a reason the defect has nothing to do with. Scrolling
+each row into its port first leaves the case red on the unchanged stylesheet at
+exactly 761, 768 and 800 — `canvas`, `canvas`, then `button.tile-pin` and
+`span.tile-rail` — so the horizontal defect is still what the case measures.

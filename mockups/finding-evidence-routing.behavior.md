@@ -3216,3 +3216,37 @@ because rank one follows Spotlight and the overview in the same document, that
 anchor is intentionally nonzero. Desktop/tablet pane behavior, queue evidence,
 full-size chart options, clock gestures, ranking, and backend judgments do not
 change.
+
+## Amendment — 2026-09-06, the two-pane split gets a width floor (issue #359)
+
+The 2026-08-19 ruling above ends "the header stays one line at every width the
+two-pane split can produce". That sentence was true and empty: the header did
+stay one line, and the line was simply wider than its column. Nothing clipped
+it, and nothing stopped the split forming at widths that could not hold it, so
+between 761px and about 830px the canvas pane painted straight across the
+findings queue beside it — covering the rank number and the first word of every
+row, and answering the hit tests that belonged to those rows. Measured through
+the browser suite's own fixture harness on the committed synthetic payload at
+768x1024: the canvas pane's right edge was 338px, 47 of its own descendants
+reached past it, and `document.elementFromPoint` six pixels inside the first two
+queue rows returned a chart canvas.
+
+The split now has a measured floor. The canvas pane's own furniture is 402px
+wide and constant across that band — the header's controls set it, not its
+title, which has truncated since 2026-08-19 — so beside the fixed 430px
+inspector column the split needs 832px before it can hold its own content. Below
+832px Diagnose stacks, using the narrow layout that already ships and is already
+designed for those widths, including its touch-sized controls. The canvas pane
+also contains its own paint horizontally at every width, so furniture that
+outgrows its track clips inside the canvas instead of covering the inspector.
+
+This makes the 2026-08-19 assertion load-bearing rather than vacuous: the widths
+the split can now produce are exactly the widths at which the one-line header
+fits its column. The narrow layout itself is unchanged, and so is every width at
+and above 832px. A desktop window narrower than 832px now stacks, which is the
+accepted cost: the split it replaces was not usable at those widths.
+
+Verify is untouched. The one rule this stylesheet shares with that screen was
+split rather than moved, so Verify's copy stays at its original 760px, and the
+Verify replay's S7 story now measures that carve-out at its own 800px instead of
+assuming it.

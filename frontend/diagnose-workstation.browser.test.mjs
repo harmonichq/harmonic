@@ -335,6 +335,62 @@ test('#341 · the overview keeps its full name at the split tablet width', async
   }
 });
 
+/* #359 · the workspace may not paint one pane over the other. Between 761 and
+   about 830px the split still formed while the canvas pane's own furniture was
+   wider than its track, and the pane carries no overflow rule, so it painted
+   across the findings queue: the rank number and the first word of every row
+   were covered, and the covered strip answered to the canvas.
+
+   Asserted with `document.elementFromPoint` inside each row's own box, never by
+   comparing bounding rectangles — a clipped element still reports its unclipped
+   box, so a rectangle assertion passes on the broken surface as readily as on
+   the fixed one. The last two widths are controls: the split above the new
+   floor is untouched. */
+test('#359 · findings-queue rows own their own surface at every tablet width', async () => {
+  const browser = await runner.browser();
+  const measured = [];
+  for (const width of [761, 768, 800, 830, 900, 1024]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport: { width, height: 1024 }, history: true, appSource: 'fixture',
+    });
+    try {
+      measured.push({
+        width,
+        rows: await page.locator('#level .qrow').evaluateAll((rows) => {
+          const name = (node) => {
+            if (!node) return 'nothing';
+            const classes = typeof node.className === 'string' ? node.className.trim() : '';
+            return `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}`
+              + (classes ? `.${classes.split(/\s+/).join('.')}` : '');
+          };
+          return rows.slice(0, 2).map((row) => {
+            /* Each row is brought into its own port before it is hit-tested.
+               `#level` computes `overflow-y: auto`, and once the panes stack it
+               is far shorter than the split leaves it: measured at 800x1024,
+               251px of port over 452px of rows, which puts the second row's
+               midpoint at y=955 against a port that ends at 900. Its midpoint
+               therefore lands on the watched-change dock below the list — a
+               scroll position, not another pane's paint. Without this the case
+               would measure where the queue happens to be scrolled instead of
+               the horizontal ownership it exists to assert. */
+            row.scrollIntoView({ block: 'center' });
+            const box = row.getBoundingClientRect();
+            const hit = document.elementFromPoint(box.left + 6, box.top + box.height / 2);
+            return { row: name(row), hit: name(hit), owns: !!hit && (hit === row || row.contains(hit)) };
+          });
+        }),
+      });
+    } finally {
+      await page.close();
+    }
+  }
+  assert.ok(measured.every(({ rows }) => rows.length === 2),
+    `every width publishes findings-queue rows to test: ${JSON.stringify(measured)}`);
+  const overprinted = measured.filter(({ rows }) => !rows.every((row) => row.owns));
+  assert.deepEqual(overprinted, [],
+    `these widths let another pane answer inside a findings-queue row: ${JSON.stringify(overprinted, null, 2)}`);
+});
+
 test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable', async () => {
   const browser = await runner.browser();
   for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 },

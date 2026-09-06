@@ -10,7 +10,8 @@ ticket locks after Connor approves the selected product direction.
 - [x] 1.2 Read #348 and reconcile the live scope of #347, #336, and #340 without changing them.
 - [x] 1.3 Ground the initial engine/API/storage map and record the agreed parallel-v2 architecture.
 - [x] 1.4 Establish the operator's lead unmet need: one concrete priority with supporting glucose episodes.
-- [ ] 1.5 Settle unsupported-pattern guidance and select the first complete useful journey.
+- [x] 1.5 Settle unsupported-pattern guidance, the leading-priority objective, and set-aside behavior.
+- [ ] 1.6 Select the first complete useful journey after mapping all journeys.
 
 ## 2. Design the complete experience
 

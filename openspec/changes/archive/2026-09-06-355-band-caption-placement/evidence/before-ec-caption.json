@@ -1,0 +1,24 @@
+{
+  "port": "8871",
+  "label": {},
+  "rowId": "finding:over_treated_low",
+  "name": "target 70–180",
+  "chart": {
+    "w": 1416,
+    "h": 714
+  },
+  "y180": 107,
+  "caption": {
+    "text": "target 70–180",
+    "x": 708,
+    "y": 102,
+    "box": {
+      "w": 76,
+      "h": 14
+    },
+    "fill": "#333",
+    "backgroundColor": null
+  },
+  "console": [],
+  "failed": []
+}

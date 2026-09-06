@@ -136,11 +136,12 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
-        active_ids = {
-            occurrence_id
+        cohort_of = {
+            occurrence_id: cohort["key"]
             for cohort in projection["cohorts"]
             for occurrence_id in cohort["occurrence_ids"]
-        } if alignment == "event" else {
+        }
+        active_ids = cohort_of.keys() if alignment == "event" else {
             member.id for member in roster
         }
         selection = {"state": "none", "requested_id": None, "detail": None}
@@ -150,9 +151,7 @@ class PreparedCases:
             if selected is not None and selected.id in active_ids:
                 selection = {"state": "selected", "requested_id": occ,
                              "detail": (_missed_detail(selected, self.cgm, self.basal,
-                                                        self.bolus, self.carbs,
-                                                        "matched" if selected.id in claimed_ids
-                                                        else "nearly_matched")
+                                                       self.bolus, self.carbs)
                                         if lever is Lever.MISSED_MEAL and alignment == "event"
                                         else _detail(selected, lever, self.cgm, self.basal,
                                                      self.bolus, self.carbs))}
@@ -163,6 +162,8 @@ class PreparedCases:
                 if announced is not None:
                     selection = {"state": "selected", "requested_id": occ,
                                  "detail": _announced_detail(announced, self.cgm, self.bolus)}
+            if alignment == "event" and selection["state"] == "selected":
+                selection["detail"]["comparison_cohort"] = cohort_of[occ]
         occurrences = (
             [_missed_occurrence(member, member.id in claimed_ids, self.cgm)
              for member in roster]
@@ -421,15 +422,30 @@ def wrap(prepared):
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
-        changed.update({"appearances": [{"family": case["family"],
-                                         "noun": case["summary"]["noun"],
-                                         "n": case["summary"]["claimed"],
-                                         "m": case["summary"]["denominator"]}],
+        anchored = {"family": case["family"], "noun": case["summary"]["noun"],
+                    "n": case["summary"]["claimed"],
+                    "m": case["summary"]["denominator"]}
+        # The case file owns its own family's counts; every other family the
+        # projection published stays, at the projection's counts, because a
+        # finding claimed in two families keeps both.  The anchored family
+        # leads, and the list is NOT re-sorted: `_finding_headline` composes
+        # from `appearances[0]`, and the projection's family-name sort is
+        # exactly what once announced a fifteen-occurrence habit as a
+        # one-occurrence one.
+        # A projection row always carries the key, but a hand-built prepared
+        # row (`scripts/gen_missed_meal_comparison_fixtures.py`) need not.
+        others = [item for item in changed.get("appearances") or ()
+                  if item["family"] != anchored["family"]]
+        changed.update({"appearances": [anchored, *others],
                         "episodes": case["summary"]["claimed"], "evidence": None,
                         "verdict_counts": case["verdict_counts"],
                         "verdict_counts_by_family": {case["family"]: case["verdict_counts"]},
                         "event_chart": header["event_chart"],
                         "case_header": header})
+        # Recomposed from the row the reader is shown, through the projection's
+        # own sanctioned template, so the queue detail, the case header summary
+        # and the served sentence are three printings of one fact.
+        changed["headline"] = findings_projection._finding_headline(changed)
         rendered.append(changed); headers[finding_id] = header
     return {"schema": PREPARATION_SCHEMA, "projection_id": prepared.projection_id,
             "coordinates": {
@@ -645,7 +661,7 @@ def _detail_markers(anchor, lo, hi, basal, bolus, carbs):
     return markers
 
 
-def _missed_detail(member, cgm, basal, bolus, carbs, cohort="matched"):
+def _missed_detail(member, cgm, basal, bolus, carbs):
     anchor = member.opportunity.reach_start or member.opportunity.anchor_t
     before, after = policy_for(Lever.MISSED_MEAL).comparison_window
     lo = anchor + timedelta(minutes=before)
@@ -655,7 +671,7 @@ def _missed_detail(member, cgm, basal, bolus, carbs, cohort="matched"):
     )["trace"]["cgm"]
     return {"id": member.id, "date": anchor.date().isoformat(),
             "anchor": _rise_onset_anchor(member, cgm),
-            "verdict": member.verdict, "comparison_cohort": cohort, "glucose": trace,
+            "verdict": member.verdict, "glucose": trace,
             "markers": _detail_markers(anchor, lo, hi, basal, bolus, carbs),
             "source_corrections": [], "day_target": {"date": anchor.date().isoformat()}}
 
@@ -669,7 +685,7 @@ def _announced_detail(row, cgm, bolus):
     return {"id": _opaque("m_", row.seq_num), "date": anchor.date().isoformat(),
             "anchor": {"t": anchor.strftime(FMT), "kind": "completed_carb_bolus",
                        "label": "Completed carb bolus", "bg": row.bg},
-            "verdict": "comparison", "comparison_cohort": "comparison", "glucose": trace,
+            "verdict": "comparison", "glucose": trace,
             "markers": [{"kind": "bolus", "t": dose.t.strftime(FMT),
                          "minute": round((dose.t - anchor).total_seconds() / 60, 1),
                          "seq_num": dose.seq_num, "insulin": dose.insulin, "carbs": dose.carbs}

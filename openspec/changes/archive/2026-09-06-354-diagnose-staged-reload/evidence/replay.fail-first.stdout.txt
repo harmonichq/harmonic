@@ -1,0 +1,3 @@
+FAIL C59 — C59 the dock and the lane still report the staged change after a reload: expected {"dock":"Plan · staged","stagedLaneCells":1}, got {"dock":"Nothing being watched","stagedLaneCells":0}
+
+app: 0 of 1 stories passed

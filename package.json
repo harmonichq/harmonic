@@ -1,0 +1,19 @@
+{
+  "name": "harmonic",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.8",
+    "vite": "8.2.2"
+  },
+  "dependencies": {
+    "echarts": "5.5.0",
+    "vue": "3.5.42"
+  }
+}

@@ -6,7 +6,10 @@ with Fernet (the ``api``/``sync`` extras' ``cryptography`` dependency). The
 encryption key is generated on first use and written to a file *outside* the
 DB (``tconnect-data/secret.key`` by default, gitignored alongside ``ciq.db``)
 rather than a required env var, so there's no key to lose and get locked out
-by.
+by. Lose or replace the key and the stored row simply stops being readable:
+:func:`load_credentials` answers "no credentials configured" and logs one
+warning, and re-entering them through ``POST /api/credentials`` re-encrypts
+under the new key.
 
 A ``.env`` (``TCONNECT_EMAIL``/``PASSWORD``/``REGION``, read via tconnectsync's
 ``secret`` module) is a one-time fallback: consulted only while the DB has no
@@ -21,12 +24,15 @@ either extra installed.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from .store import Store
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_KEY_PATH = "tconnect-data/secret.key"
 
@@ -70,10 +76,29 @@ def load_credentials(store: Store, key_path: str = DEFAULT_KEY_PATH) -> Optional
 
     An ``.env`` hit seeds the encrypted store, so the fallback only ever fires
     once per deployment — every call after that reads the DB.
+
+    ``None`` means "no usable credentials", which covers a stored row the key
+    on disk can no longer decrypt as well as an empty table. The unreadable row
+    is left in place and the ``.env`` fallback below is deliberately skipped:
+    that fallback is for an empty table, and letting a stale ``.env`` re-seed
+    over a row set through the API is the very thing it must not do.
     """
     row = store.get_credentials()
     if row is not None:
-        password = _fernet(key_path).decrypt(row["password_encrypted"]).decode("utf-8")
+        # Deferred like every other cryptography import in this module, so core
+        # stays importable without the api/sync extras.
+        from cryptography.fernet import InvalidToken
+
+        try:
+            password = _fernet(key_path).decrypt(row["password_encrypted"]).decode("utf-8")
+        except InvalidToken:
+            logger.warning(
+                "Stored credentials cannot be decrypted with the key at %s "
+                "(lost or replaced); reading as not configured. Re-enter them "
+                "via POST /api/credentials to re-encrypt under the current key.",
+                key_path,
+            )
+            return None
         return Credentials(email=row["email"], password=password, region=row["region"])
 
     try:

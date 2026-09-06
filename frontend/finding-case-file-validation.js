@@ -159,6 +159,9 @@ export function validFindingCaseFile(caseFile) {
       ? projection.cohorts.flatMap((cohort) => cohort.occurrence_ids)
       : occurrences.map((row) => row.id));
     const selectedRosterRow = roster.get(detail?.id);
+    const namedCohort = projection.alignment !== 'event'
+      || Boolean(projection.cohorts.find((cohort) => cohort.key === detail?.comparison_cohort)
+        ?.occurrence_ids.includes(detail.id));
     const comparisonSelection = projection.alignment === 'event'
       && detail?.comparison_cohort === 'comparison'
       && detail?.verdict === 'comparison'
@@ -189,7 +192,7 @@ export function validFindingCaseFile(caseFile) {
         && Array.isArray(detail.markers)
         && detail.markers.every((marker) => marker.minute >= -60 && marker.minute <= 300));
     if (!detail || detail.id !== selection.requested_id
-      || !activeIds.has(detail.id)
+      || !activeIds.has(detail.id) || !namedCohort
       || typeof detail.date !== 'string' || !validAnchor(detail.anchor)
       || !(FINDING_VERDICTS.includes(detail.verdict) || comparisonSelection)
       || !Array.isArray(detail.glucose)

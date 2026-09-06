@@ -53,9 +53,23 @@ const grid = (mini) => ({ ...(mini ? MINI_GRID : FULL_GRID) });
    with a 15px gap — so it drew a rank the canvas does not have, and at that gap
    it sat above the grid's own top and was cut off by the tile ("U/h" losing its
    head, "mg/dL" floating clear of its plot). It comes down to the caps rank the
-   rest of the metadata uses, and close enough to the axis to belong to it. */
-const axis = (colors, mini = false) => ({
-  axisLine: { show: false },
+   rest of the metadata uses, and close enough to the axis to belong to it.
+
+   AND IT IS ANCHORED TO THE AXIS IT NAMES, because nothing here reserves room
+   for it: the grid runs `containLabel: false` behind a 34px inset, while
+   ECharts' own `nameLocation: 'end'` CENTRES a vertical name on the axis end
+   and HANGS a horizontal one past it. So the correction factor read
+   "ose change (mg/dL)" — 18px of the name painted left of the chart — and
+   "insulin acted (U)" was sheared 43px off the right. A vertical name now
+   starts at its axis and a horizontal one ends at its own, and the horizontal
+   axis comes off any zero rule so its name sits with its own labels at the foot
+   of the plot rather than mid-air. The orientation is passed, never defaulted:
+   a default would hand an un-updated call site the other alignment silently.
+   The `middle` idiom the basal chart uses is a different geometry rather than a
+   shared one this declined — rotated, it still clipped against the spine; flat,
+   it landed under the legend (ADR 360). */
+const axis = (colors, orientation, mini = false) => ({
+  axisLine: orientation === 'horizontal' ? { show: false, onZero: false } : { show: false },
   axisTick: { show: false },
   /* AT MINI RANK THERE IS NO AXIS AT ALL — no labels, no split lines and no
      name. Ruled on the built strip: at 8px the tick labels ran together into a
@@ -69,7 +83,8 @@ const axis = (colors, mini = false) => ({
      only made an unreadable thing that still overhung. Every axis object here
      spreads this last, so what a caller set is dropped rather than restyled. */
   axisLabel: { show: !mini, color: colors.muted, fontFamily: MONO, fontSize: 10 },
-  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
+  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9,
+    align: orientation === 'horizontal' ? 'right' : 'left' },
   nameGap: 8,
   splitLine: { show: !mini, lineStyle: { color: colors.line, width: 1 } },
   ...(mini ? { name: undefined } : {}),
@@ -561,7 +576,7 @@ function basalEditorialOption(data, mini, colors, surface) {
        so the step doubles when the ticks would crowd. */
     xAxis: { type: 'value', min: xMin, max: xMax, interval: tickStep,
       name: 'basal rate, U/h', nameLocation: 'middle',
-      ...axis(colors), splitLine: { show: false }, nameGap: 26,
+      ...axis(colors, 'horizontal'), splitLine: { show: false }, nameGap: 26,
       nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
@@ -735,9 +750,10 @@ function isfOption(mode, { data, mini = false } = {}) {
       ...chartBase(description, mini, colors),
       legend: chartLegend(['Qualifying fasting steps'], colors, mini),
       xAxis: { type: 'category', data: windows.map((window) => window.date),
-        ...axis(colors, mini),
+        ...axis(colors, 'horizontal', mini),
         splitLine: { show: false } },
-      yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
+      yAxis: { type: 'value', name: 'glucose change (mg/dL)',
+        ...axis(colors, 'vertical', mini) },
       series: [{ name: 'Qualifying fasting steps', type: 'scatter',
         symbolSize: mini ? 2.5 : 5,
         data: steps.map((step) => [windowIndex.get(step.window_id), step.dbg]),
@@ -747,9 +763,11 @@ function isfOption(mode, { data, mini = false } = {}) {
   return {
     ...chartBase(description, mini, colors),
     legend: chartLegend(['Qualifying fasting steps'], colors, mini),
-    xAxis: { type: 'value', min: 0, name: 'insulin acted (U)', ...axis(colors, mini),
+    xAxis: { type: 'value', min: 0, name: 'insulin acted (U)',
+      ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
-    yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
+    yAxis: { type: 'value', name: 'glucose change (mg/dL)',
+      ...axis(colors, 'vertical', mini) },
     series: [{ name: 'Qualifying fasting steps', type: 'scatter',
       symbolSize: mini ? 2.5 : 5,
       data: steps.map((step) => [step.insulin_acted, step.dbg]),
@@ -773,10 +791,11 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
         { name: 'Directional-only run', icon: 'emptyCircle' },
       ], colors, mini),
       xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
-        ...axis(colors, mini),
-        axisLabel: { ...axis(colors, mini).axisLabel, formatter: frame.label },
+        ...axis(colors, 'horizontal', mini),
+        axisLabel: { ...axis(colors, 'horizontal', mini).axisLabel, formatter: frame.label },
         splitLine: { show: false } },
-      yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)', ...axis(colors, mini) },
+      yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)',
+        ...axis(colors, 'vertical', mini) },
       series: [
         { name: 'Directional-only run', type: 'scatter', symbol: 'emptyCircle',
           symbolSize: mini ? 3 : 6, data: points(false),
@@ -806,10 +825,11 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
       { name: 'Support run', icon: 'diamond' },
       { name: 'Directional-only run', icon: 'emptyDiamond' },
     ], colors, mini),
-    xAxis: { type: 'value', name: 'minutes from first meal', ...axis(colors, mini),
+    xAxis: { type: 'value', name: 'minutes from first meal',
+      ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
-      ...axis(colors, mini) },
+      ...axis(colors, 'vertical', mini) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
         markLine: { symbol: 'none', silent: true,

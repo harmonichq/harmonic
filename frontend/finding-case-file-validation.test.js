@@ -23,6 +23,8 @@ const eventCase = () => independent(capture.cases['finding:meal_over_delivery'].
 const missedMealCase = () => independent(capture.cases['finding:missed_meal'].event);
 const mealBolusShortCase = () => independent(capture.cases['finding:meal_bolus_short'].event);
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
+const selectedEventCase = () => independent(
+  Object.values(capture.cases['finding:over_treated_low'].selected_event)[0]);
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
   const preparation = independent(missedMealFixture.preparation);
@@ -305,6 +307,21 @@ test('rejects missed-meal selected traces outside the fixed comparison window', 
 test('fails closed when selected missed-meal marker families are malformed', () => {
   const caseFile = independent(missedMealFixture.selected_missed);
   delete caseFile.selection.detail.markers;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects an event-aligned selection that names no comparison cohort', () => {
+  const caseFile = selectedEventCase();
+  assert.equal(validFindingCaseFile(caseFile), true);
+  delete caseFile.selection.detail.comparison_cohort;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects an event-aligned selection naming a cohort it was not routed into', () => {
+  const caseFile = selectedEventCase();
+  const { detail } = caseFile.selection;
+  detail.comparison_cohort = caseFile.projection.cohorts
+    .find((cohort) => !cohort.occurrence_ids.includes(detail.id)).key;
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 

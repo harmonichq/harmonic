@@ -10513,6 +10513,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 20:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -12838,6 +12839,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 05:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -15158,6 +15160,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 02:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -17493,6 +17496,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 08:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -19808,6 +19812,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 14:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -22128,6 +22133,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-04 08:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -24428,6 +24434,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 23:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -26748,6 +26755,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -29357,6 +29365,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 17:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -31677,6 +31686,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -41600,6 +41610,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 03:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -42911,6 +42922,7 @@
         "label": "Low excursion",
         "t": "2020-03-04 09:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -44222,6 +44234,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 21:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -45533,6 +45546,7 @@
         "label": "Low excursion",
         "t": "2020-03-01 18:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -46844,6 +46858,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 12:01:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -48288,6 +48303,7 @@
         "label": "Low excursion",
         "t": "2020-03-03 15:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -49599,6 +49615,7 @@
         "label": "Low excursion",
         "t": "2020-03-03 06:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -50910,6 +50927,7 @@
         "label": "Low excursion",
         "t": "2020-03-01 09:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -52221,6 +52239,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 12:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -53701,6 +53720,7 @@
         "label": "Low excursion",
         "t": "2020-03-04 00:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -64779,6 +64799,7 @@
         "label": "Second correction",
         "t": "2020-03-02 04:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -66792,6 +66813,7 @@
         "label": "Second correction",
         "t": "2020-03-01 19:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -68790,6 +68812,7 @@
         "label": "Second correction",
         "t": "2020-03-03 07:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -70788,6 +70811,7 @@
         "label": "Second correction",
         "t": "2020-03-01 10:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -72786,6 +72810,7 @@
         "label": "Second correction",
         "t": "2020-03-02 13:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -75033,6 +75058,7 @@
         "label": "Second correction",
         "t": "2020-03-03 16:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -77031,6 +77057,7 @@
         "label": "Second correction",
         "t": "2020-03-02 22:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -79029,6 +79056,7 @@
         "label": "Second correction",
         "t": "2020-03-02 13:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -81276,6 +81304,7 @@
         "label": "Second correction",
         "t": "2020-03-04 01:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -83274,6 +83303,7 @@
         "label": "Second correction",
         "t": "2020-03-04 10:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -96015,6 +96045,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 20:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -98340,6 +98371,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 05:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -100660,6 +100692,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 02:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -102995,6 +103028,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 08:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -105310,6 +105344,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 14:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -107630,6 +107665,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-04 08:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -109930,6 +109966,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 23:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -112250,6 +112287,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -114859,6 +114897,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 17:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -117179,6 +117218,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -130551,6 +130591,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -133160,6 +133201,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -135769,6 +135811,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 14:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -138089,6 +138132,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 02:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -140424,6 +140468,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 08:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -142739,6 +142784,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-04 08:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -145039,6 +145085,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 23:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -147359,6 +147406,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 20:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -149684,6 +149732,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 05:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -152004,6 +152053,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 17:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -165087,6 +165137,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 20:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -167412,6 +167463,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 05:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -169732,6 +169784,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 02:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -172067,6 +172120,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 08:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -174382,6 +174436,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 14:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -176702,6 +176757,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-04 08:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -179002,6 +179058,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-03 23:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -181322,6 +181379,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -183931,6 +183989,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-01 17:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -186251,6 +186310,7 @@
         "label": "Completed carb bolus",
         "t": "2020-03-02 11:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -237677,6 +237737,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 03:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -238988,6 +239049,7 @@
         "label": "Low excursion",
         "t": "2020-03-04 09:00:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -240299,6 +240361,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 21:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -241610,6 +241673,7 @@
         "label": "Low excursion",
         "t": "2020-03-01 18:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -242921,6 +242985,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 12:01:00"
        },
+       "comparison_cohort": "comparison",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -244365,6 +244430,7 @@
         "label": "Low excursion",
         "t": "2020-03-03 15:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -245676,6 +245742,7 @@
         "label": "Low excursion",
         "t": "2020-03-03 06:00:00"
        },
+       "comparison_cohort": "nearly_matched",
        "date": "2020-03-03",
        "day_target": {
         "date": "2020-03-03"
@@ -246987,6 +247054,7 @@
         "label": "Low excursion",
         "t": "2020-03-01 09:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-01",
        "day_target": {
         "date": "2020-03-01"
@@ -248298,6 +248366,7 @@
         "label": "Low excursion",
         "t": "2020-03-02 12:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-02",
        "day_target": {
         "date": "2020-03-02"
@@ -249778,6 +249847,7 @@
         "label": "Low excursion",
         "t": "2020-03-04 00:00:00"
        },
+       "comparison_cohort": "matched",
        "date": "2020-03-04",
        "day_target": {
         "date": "2020-03-04"
@@ -251904,6 +251974,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:carb_undercount",
     "kind": "habit",
     "label": null,
@@ -251992,6 +252063,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:late_bolus",
     "kind": "habit",
     "label": null,
@@ -252080,6 +252152,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:meal_over_delivery",
     "kind": "habit",
     "label": null,
@@ -252168,6 +252241,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 lows in this window.",
     "id": "finding:over_treated_low",
     "kind": "habit",
     "label": null,
@@ -252256,6 +252330,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 correction clusters in this window.",
     "id": "finding:correction_stacking",
     "kind": "habit",
     "label": null,
@@ -252344,6 +252419,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 lows in this window.",
     "id": "finding:correction_on_iob",
     "kind": "habit",
     "label": null,
@@ -252432,6 +252508,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 highs in this window.",
     "id": "finding:missed_meal",
     "kind": "habit",
     "label": null,
@@ -252520,6 +252597,7 @@
      }
     },
     "evidence": null,
+    "headline": "Ranks among this window's findings. Showed up in 1 of 10 meals in this window.",
     "id": "finding:meal_bolus_short",
     "kind": "habit",
     "label": null,

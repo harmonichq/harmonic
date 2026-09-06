@@ -307,6 +307,75 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     .filter(([start]) => start.xAxis != null).length, 0);
 });
 
+test("#366 · every parked label anchors on the strip's own ceiling, so it lands on the plot", () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* The ruler comes from the shipped producer, never a literal. Ten of the
+     twelve `range:` injections in this file are [40, 300], the one ruler in the
+     tree tall enough to seat a fixed anchor of 296 inside the plot — which is
+     why the suite stayed green while the label painted off the top of it. */
+  const paint = ({ p90, counts, clientWidth, window: win, windowLabel }) => {
+    const envelope = {
+      labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+      p90: filled(p90), counts: filled(counts), raw: filled(1), days: 12, pool: 45,
+    };
+    renderCanvas({ clientWidth, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, stats: { spread: 27 },
+      range: stripGlucoseRange(envelope), window: win, windowLabel,
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    const data = context.markPoint ? context.markPoint.data : [];
+    assert.ok(data.length, 'the case must actually emit the placement it is about');
+    for (const datum of data) {
+      /* Equality against the axis the chart drew, read back from the emitted
+         option: the ceiling is the one value that seats a label on the line the
+         inside placement occupies, and a `<=` bound admits every value under it. */
+      assert.equal(datum.coord[1], option.yAxis[0].max,
+        'a parked label anchors on the drawn axis maximum');
+    }
+    return data;
+  };
+
+  // a window too narrow for its name at a narrow element width
+  const [narrow] = paint({
+    p90: 215, counts: 12, clientWidth: 600, window: [0, 360], windowLabel: 'OVERNIGHT 00:00–06:00',
+  });
+  assert.equal(option.yAxis[0].max, 220, 'this envelope rules well below the retired constant');
+  assert.equal(narrow.label.formatter, 'OVERNIGHT 00:00–06:00');
+  assert.equal(narrow.label.position, 'right');
+  assert.equal(narrow.label.distance, 6);
+  assert.equal(narrow.label.verticalAlign, 'top');
+  assert.deepEqual(narrow.label.offset, [0, 5],
+    "the parked text hangs below the ceiling on the inside placement's own distance");
+
+  // a window whose thinnest bin is below the support floor: the notice rides along
+  const [thin] = paint({
+    p90: 255, counts: 0, clientWidth: 1396, window: [1080, 1440], windowLabel: 'EVENING 18:00–24:00',
+  });
+  assert.equal(option.yAxis[0].max, 260);
+  assert.match(thin.label.formatter, /INSUFFICIENT SAMPLE — thinnest bin holds 0/);
+  assert.equal(thin.label.position, 'left');
+  assert.equal(thin.label.distance, 6);
+  assert.equal(thin.label.verticalAlign, 'top');
+  assert.deepEqual(thin.label.offset, [0, 5]);
+
+  // a window wrapping midnight: the CONTINUES marker rides the same anchor
+  const wrapped = paint({
+    p90: 215, counts: 12, clientWidth: 1396, window: [1320, 120], windowLabel: '22:00–02:00',
+  }).at(-1);
+  assert.equal(wrapped.label.formatter, 'CONTINUES');
+  assert.equal(wrapped.label.position, 'insideTop');
+  assert.equal(wrapped.label.distance, 5);
+});
+
 test('a tile landing never changes the already-drawn strip range', () => {
   const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
   const filled = (value) => Array.from({ length: 96 }, () => value);
@@ -394,6 +463,76 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   for (const point of dims().flat()) {
     assert.ok(option.xAxis[0].data.includes(point), `${point} must be a real category`);
   }
+});
+
+test('#370 · the target caption drops below the grip band when a drawn gate strikes it', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* clientWidth here is the CHART element's width, not the viewport's: the
+     Diagnose layout gives the chart 390px inside a 390px viewport but 399.6px
+     inside a 768px one, so 400 is this test's stand-in for the 768px evidence
+     width. Driving 768 would render a 682px plot no gate reaches. */
+  const render = (clientWidth, window) => {
+    const el = { clientWidth, setAttribute() {} };
+    renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, range: [40, 220],
+      window, windowLabel: windowSpanText(window),
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    // the target band is the entry keyed by yAxis; the window entries are keyed by xAxis
+    const [target] = context.markArea.data.filter(([start]) => start.yAxis != null);
+    return { el, label: target[0].label };
+  };
+  /* Where the gates land, asked of the same exported function the brace itself
+     places them with — never a copied constant. The caption is anchored to the
+     plot's left edge and runs ~99px, so a gate inside that run hides a glyph. */
+  const gates = (el, window) => window.map((minute) => Math.round(xAtMinute(el, minute) * 10) / 10);
+  const dropped = { show: true, position: 'insideBottomLeft', distance: 0 };
+  const shipped = { show: true, position: 'insideStartTop', distance: 10 };
+  const rest = {
+    color: '#555', fontSize: 10, fontWeight: 600, formatter: 'TARGET 70–180 mg/dL',
+    backgroundColor: '#666', padding: [2, 5], borderRadius: 2,
+  };
+
+  // an ordinary 08:00–16:00 daytime window at the two narrowest evidence widths:
+  // the window's own start gate lands in the caption's glyph run, and NO
+  // horizontal slot between the gates is wide enough to hold the caption —
+  // which is why the escape is vertical
+  const daytime = render(390, [480, 960]);
+  assert.deepEqual(gates(daytime.el, [480, 960]), [136.4, 238.8]);
+  assert.deepEqual(daytime.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 390');
+
+  const daytimeWider = render(400, [480, 960]);
+  assert.deepEqual(gates(daytimeWider.el, [480, 960]), [139.8, 245.5]);
+  assert.deepEqual(daytimeWider.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 400');
+
+  // the struck side of the reported Overnight boundary: the window's end gate
+  // sits inside the caption
+  const narrow = render(400, [0, 360]);
+  assert.deepEqual(gates(narrow.el, [0, 360]), [34, 113.3]);
+  assert.deepEqual(narrow.label, { ...dropped, ...rest });
+
+  // and its clear side, where that same gate has slid out past the caption's
+  // tail: the shipped placement, unchanged
+  const wide = render(1010, [0, 360]);
+  assert.deepEqual(gates(wide.el, [0, 360]), [GRID.left, 267.4]);
+  assert.deepEqual(wide.label, { ...shipped, ...rest },
+    'a caption no gate reaches keeps the placement it ships with');
 });
 
 test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {

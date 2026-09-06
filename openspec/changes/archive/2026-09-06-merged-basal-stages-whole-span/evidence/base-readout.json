@@ -1,0 +1,56 @@
+{
+  "label": "base",
+  "port": "8850",
+  "viewports": {
+    "1440x900": {
+      "panelHead": "03:00–03:30\nlower",
+      "panelSay": [
+        "one cautious step down is supported at this time"
+      ],
+      "stageBtnAfter": "Staged · Undo\nstaged for Plan",
+      "planBefore": [],
+      "planAfterKeys": [
+        [
+          6,
+          180,
+          0.6,
+          0.48
+        ]
+      ],
+      "badge": "1",
+      "dock": null,
+      "laneStaged": [
+        "03:00 · suggests a lower",
+        "Staged · Undostaged for Plan"
+      ],
+      "console": [],
+      "failed": [],
+      "planAfterUndo": []
+    },
+    "1280x800": {
+      "panelHead": "03:00–03:30\nlower",
+      "panelSay": [
+        "one cautious step down is supported at this time"
+      ],
+      "stageBtnAfter": "Staged · Undo\nstaged for Plan",
+      "planBefore": [],
+      "planAfterKeys": [
+        [
+          6,
+          180,
+          0.6,
+          0.48
+        ]
+      ],
+      "badge": "1",
+      "dock": null,
+      "laneStaged": [
+        "03:00 · suggests a lower",
+        "Staged · Undostaged for Plan"
+      ],
+      "console": [],
+      "failed": [],
+      "planAfterUndo": []
+    }
+  }
+}

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
+import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
@@ -428,4 +428,45 @@ test('basal night roster preserves a null served roster mean as an em dash', () 
     renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
     assert.match(host.html.join('\n'), /— mg\/dL mean/);
   } finally { globalThis.document = originalDocument; }
+});
+
+test('#356 · a carb-ratio block names the day edge 24:00 and keeps its geometry', () => {
+  /* The findings queue row that opens this panel carries the server's own
+     label for the same block, `00:00 to 24:00`. Naming the block from a bare
+     clock formatter reduced its exclusive end minute modulo one day, so the
+     whole-day block announced a zero-length interval one click below the row
+     that had just named the whole day. The cells are built from block payloads
+     here, not from a hand-set span, so the producer is what is pinned. */
+  const [wholeDay, throughMidnight] = buildIcBlocks([
+    {
+      block_id: 0,
+      label: 'All day',
+      start_min: 0,
+      end_min: 1440,
+      current_values: [5.6],
+      recommended: 5.7,
+      direction: 'raise',
+      asserts_move: true,
+      state: 'numeric',
+    },
+    {
+      block_id: 1200,
+      label: 'Overnight',
+      start_min: 1200,
+      end_min: 360,
+      current_values: [5.6],
+      recommended: 5.5,
+      direction: 'lower',
+      asserts_move: true,
+      state: 'numeric',
+    },
+  ]);
+
+  assert.equal(wholeDay.span, '00:00–24:00');
+  assert.equal(wholeDay.wraps, false);
+  assert.deepEqual(wholeDay.spans, [[0, 1440]]);
+
+  assert.equal(throughMidnight.span, '20:00–06:00');
+  assert.equal(throughMidnight.wraps, true);
+  assert.deepEqual(throughMidnight.spans, [[1200, 1440], [0, 360]]);
 });

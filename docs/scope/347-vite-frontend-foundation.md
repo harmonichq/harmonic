@@ -72,7 +72,8 @@ None.
 
 Every block below is `command → output`. The tree facts are emitted by
 `docs/scope/347-generated-facts.sh`, pasted whole from one run at the commit its
-first block names; rerun the script to regenerate them. The registry, spike and
+first block names (regenerated at the merged ticket branch after the whole-diff
+review); rerun the script to regenerate them. The registry, spike and
 sandbox blocks were run once each on 2026-09-06 and are pasted whole from those
 runs, with the commands exactly as typed.
 
@@ -81,7 +82,7 @@ runs, with the commands exactly as typed.
 ```text
 ## HEAD
 $ git log -1 --format="%h %s"
-1c0d838 Triage #347: pin the Vite frontend foundation change
+31a1384 Align the CI QA server start with the documented recipe; clarify ADR 347's tense
 
 ## Toolchain
 $ node --version; npm --version
@@ -96,160 +97,122 @@ uv 0.11.25 (1fc7de7c4 2026-06-26 aarch64-apple-darwin)
 
 ## The shell today
 $ wc -l < frontend/index.html
-    5571
+    5568
 
 $ grep -n '<script type="importmap">\|cdn.jsdelivr\|<script type="module">' frontend/index.html
-13:  <script type="importmap">
-16:  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-2238:  <script type="module">
+2235:  <script type="module">
 
 $ grep -o -E "from ['\"]/assets/[a-z0-9-]+\.js['\"]" frontend/index.html | sort -u | wc -l
-      23
+       0
 
 $ grep -c 'window.echarts' frontend/*.js | grep -v ':0'
 frontend/diagnose-event-comparison.js:1
 frontend/diagnose-workstation.js:3
+frontend/main.js:1
 
 $ grep -c '@app.get("/assets/' ciq_autotune/api.py
-41
+0
 
 $ grep -n 'SPA_PAGES =' ciq_autotune/api.py
-85:SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
+88:SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 $ grep -n 'assets' frontend/index.test.js
-54:  assert.match(page, /from '\/assets\/diagnose-workspaces\.js'/, 'the workstation renderer is mounted');
-91:  assert.match(page, /<link rel="stylesheet" href="\/assets\/verify-workstation\.css" \/>/,
-103:  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\/assets\/favicon\.svg" \/>/,
 
 ## Browser legs today
 $ grep -n 'openApp\|VENDOR_DIR' mockups/diagnose-event-comparison-support-audit.mjs frontend/diagnose-canvas-composition.browser.test.mjs | head -8
 mockups/diagnose-event-comparison-support-audit.mjs:21:  openApp,
-mockups/diagnose-event-comparison-support-audit.mjs:31:const open = openApp;
+mockups/diagnose-event-comparison-support-audit.mjs:39:const open = openApp;
 frontend/diagnose-canvas-composition.browser.test.mjs:35:  openApp,
-frontend/diagnose-canvas-composition.browser.test.mjs:56:const VENDOR = process.env.VENDOR_DIR;
-frontend/diagnose-canvas-composition.browser.test.mjs:57:if (!VENDOR) missing.push('VENDOR_DIR is unset');
-frontend/diagnose-canvas-composition.browser.test.mjs:60:    if (!existsSync(join(VENDOR, asset))) missing.push(`VENDOR_DIR=${VENDOR} is missing ${asset}`);
-frontend/diagnose-canvas-composition.browser.test.mjs:96:  const page = await openApp(browser, {
-frontend/diagnose-canvas-composition.browser.test.mjs:481:  const page = await openApp(browser, {
+frontend/diagnose-canvas-composition.browser.test.mjs:91:  const page = await openApp(browser, {
+frontend/diagnose-canvas-composition.browser.test.mjs:476:  const page = await openApp(browser, {
 
 $ grep -l 'index.html' frontend/*.browser.mjs frontend/*.browser.test.mjs frontend/*.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs
 frontend/day-surface.browser.mjs
-frontend/plan-first-match.browser.mjs
 frontend/cockpit-shell.browser.test.mjs
 frontend/diagnose-workstation.browser.test.mjs
-frontend/diagnose-event-comparison-behavior.replay.mjs
-frontend/diagnose-workstation-behavior.replay.mjs
-frontend/verify-660-story-behavior.replay.mjs
 
 $ grep -c 'VENDOR_DIR' frontend/day-surface.browser.mjs frontend/plan-first-match.browser.mjs frontend/diagnose-workstation.browser.test.mjs frontend/diagnose-canvas-composition.browser.test.mjs frontend/cockpit-shell.browser.test.mjs frontend/browser-runner.browser.test.mjs frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-event-comparison-behavior.replay.mjs frontend/verify-660-story-behavior.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs
 frontend/day-surface.browser.mjs:0
 frontend/plan-first-match.browser.mjs:0
-frontend/diagnose-workstation.browser.test.mjs:4
-frontend/diagnose-canvas-composition.browser.test.mjs:3
-frontend/cockpit-shell.browser.test.mjs:5
-frontend/browser-runner.browser.test.mjs:1
-frontend/diagnose-workstation-behavior.replay.mjs:3
-frontend/diagnose-event-comparison-behavior.replay.mjs:2
-frontend/verify-660-story-behavior.replay.mjs:2
+frontend/diagnose-workstation.browser.test.mjs:0
+frontend/diagnose-canvas-composition.browser.test.mjs:0
+frontend/cockpit-shell.browser.test.mjs:0
+frontend/browser-runner.browser.test.mjs:0
+frontend/diagnose-workstation-behavior.replay.mjs:0
+frontend/diagnose-event-comparison-behavior.replay.mjs:0
+frontend/verify-660-story-behavior.replay.mjs:0
 mockups/diagnose-event-comparison-support-audit.mjs:0
 
 $ grep -n 'createServer' frontend/day-surface.browser.mjs frontend/plan-first-match.browser.mjs
 frontend/day-surface.browser.mjs:8:import { createServer } from 'node:http';
-frontend/day-surface.browser.mjs:27:  const server = createServer(async (req, res) => {
+frontend/day-surface.browser.mjs:32:  const server = createServer(async (req, res) => {
 frontend/plan-first-match.browser.mjs:16:import { createServer } from 'node:http';
-frontend/plan-first-match.browser.mjs:57:  const server = createServer(async (req, res) => {
+frontend/plan-first-match.browser.mjs:62:  const server = createServer(async (req, res) => {
 
 $ grep -n 'stageProbe && path' frontend/diagnose-workstation-behavior.replay.mjs
-656:      if (stageProbe && path === '/assets/diagnose-workstation.js') {
+652:      if (stageProbe && path.startsWith('/assets/') && path.endsWith('.js')) {
 
 $ grep -n "for (const path of \['/assets/tab-routing.js'" frontend/cockpit-shell.browser.test.mjs
-854:    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
 
 $ grep -n 'cdn.jsdelivr' frontend/diagnose-workstation.browser.test.mjs
-2409:              + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
+2403:              + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
 
 $ grep -n 'PLAYWRIGHT_MODULE\|VENDOR_DIR' frontend/browser-gates-fail-closed.test.js
-10:// Each suite is spawned twice: once with PLAYWRIGHT_MODULE and VENDOR_DIR
-11:// both removed (expect it to name both), and once with VENDOR_DIR pointed at
-35:  delete env.PLAYWRIGHT_MODULE;
-36:  delete env.VENDOR_DIR;
-59:    assert.match(output, /PLAYWRIGHT_MODULE/, `${suite} must name PLAYWRIGHT_MODULE as missing`);
-60:    assert.match(output, /VENDOR_DIR/, `${suite} must name VENDOR_DIR as missing`);
-64:  test(`${suite} fails closed and names the missing vendored assets when VENDOR_DIR is empty`, () => {
-71:        `${suite} must keep its empty VENDOR_DIR outside the frontend source tree`);
-72:      const { status, output } = spawnSuite(suite, { VENDOR_DIR: dir });
+41:  delete env.PLAYWRIGHT_MODULE;
+71:      assert.match(output, /PLAYWRIGHT_MODULE/, `${suite} must name PLAYWRIGHT_MODULE as missing`);
+88:        HARMONIC_DIST: dir, PLAYWRIGHT_MODULE: module,
 
 ## CI facts
 $ grep -n -E 'run: (uv run python (scripts|mockups)/|python3 scripts/|node )' .github/workflows/ci.yml
-35:        run: uv run python scripts/gen_ic_block_fixtures.py --check
-37:        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
-41:        run: uv run python scripts/gen_annotation_fixtures.py --check
-46:        run: uv run python scripts/gen_chart_builder_fixtures.py --check
-51:        run: uv run python scripts/check_demo_fixtures.py
-57:        run: uv run python scripts/gen_qa_e2e_db.py --check
-64:        run: uv run python scripts/gen_findings_projection_fixtures.py --check
-66:        run: uv run python scripts/gen_ic_history_event_fixtures.py --check
-68:        run: uv run python scripts/gen_ic_block_evidence_fixtures.py --check
-70:        run: uv run python scripts/gen_basal_night_evidence_fixtures.py --check
-72:        run: uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
-74:        run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
-76:        run: uv run python scripts/gen_eating_sequence_fixtures.py --check
-88:        run: python3 scripts/check_adr_numbers.py
-90:        run: python3 scripts/check_owned_identifiers.py
-95:        run: python3 scripts/check_public_allowlist.py
-130:        run: node --test 'frontend/**/*.test.js'
-134:        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
-136:        run: node --test scripts/screenshots.local.test.mjs
-150:        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
+41:        run: uv run python scripts/gen_ic_block_fixtures.py --check
+43:        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
+47:        run: uv run python scripts/gen_annotation_fixtures.py --check
+52:        run: uv run python scripts/gen_chart_builder_fixtures.py --check
+57:        run: uv run python scripts/check_demo_fixtures.py
+63:        run: uv run python scripts/gen_qa_e2e_db.py --check
+70:        run: uv run python scripts/gen_findings_projection_fixtures.py --check
+72:        run: uv run python scripts/gen_ic_history_event_fixtures.py --check
+74:        run: uv run python scripts/gen_ic_block_evidence_fixtures.py --check
+76:        run: uv run python scripts/gen_basal_night_evidence_fixtures.py --check
+78:        run: uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
+80:        run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
+82:        run: uv run python scripts/gen_eating_sequence_fixtures.py --check
+94:        run: python3 scripts/check_adr_numbers.py
+96:        run: python3 scripts/check_owned_identifiers.py
+101:        run: python3 scripts/check_public_allowlist.py
+136:        run: node --test 'frontend/**/*.test.js'
+140:        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
+142:        run: node --test scripts/screenshots.local.test.mjs
+156:        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
 
 $ grep -n -E 'gate:|vendor:' .github/workflows/ci.yml
-211:          - gate: Day lifecycle
-212:            vendor: false
-214:          - gate: Diagnose workstation
-215:            vendor: true
-217:          - gate: Diagnose canvas composition
-218:            vendor: true
-220:          - gate: Cockpit shell
-221:            vendor: true
-227:          - gate: Browser runner lifecycle
-228:            vendor: false
-230:          - gate: First-plan reconcile
-231:            vendor: false
-244:          - gate: Diagnose workstation behaviour ledger
-245:            vendor: true
-255:          - gate: Diagnose event comparisons
-256:            vendor: true
-258:          - gate: Diagnose comparison support audit
-259:            vendor: true
-266:          - gate: Verify behaviour ledger
-267:            vendor: true
+206:          - gate: Day lifecycle
+208:          - gate: Diagnose workstation
+210:          - gate: Diagnose canvas composition
+212:          - gate: Cockpit shell
+218:          - gate: Browser runner lifecycle
+220:          - gate: First-plan reconcile
+233:          - gate: Diagnose workstation behaviour ledger
+243:          - gate: Diagnose event comparisons
+245:          - gate: Diagnose comparison support audit
+252:          - gate: Verify behaviour ledger
 
 $ grep -n "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" .github/workflows/ci.yml
-336:    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+349:    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
 $ grep -n 'ciq-vendor\|matrix.vendor' .github/workflows/ci.yml
-191:          path: ${{ runner.temp }}/ciq-vendor
-196:          mkdir -p "$RUNNER_TEMP/ciq-vendor"
-197:          curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$RUNNER_TEMP/ciq-vendor/vue.esm-browser.js"
-198:          curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$RUNNER_TEMP/ciq-vendor/echarts.min.js"
-216:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-219:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-222:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" node --test frontend/cockpit-shell.browser.test.mjs
-247:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-257:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-260:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-268:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
-295:        if: matrix.vendor
-299:          path: ${{ runner.temp }}/ciq-vendor
-302:        if: matrix.vendor && steps.vendor-cache.outputs.cache-hit != 'true'
 
 ## Public tree
 $ grep -n -E '^frontend/|^harness/|^\.dockerignore|^Dockerfile|^uv\.lock|^package|^vite|^tsconfig' scripts/public_allowlist.txt
 22:uv.lock
 23:Dockerfile
 24:.dockerignore
-53:frontend/** {.html,.js,.mjs,.css,.svg,.json}
-59:harness/** {.html,.js,.json}
+25:package.json
+26:package-lock.json
+27:vite.config.mjs
+28:tsconfig.json
+57:frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
+63:harness/** {.html,.js,.json}
 
 $ grep -n -E '^dist/|^node_modules/' .gitignore
 13:dist/
@@ -269,6 +232,9 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .claude/
+node_modules/
+frontend/dist/
+harness/
 
 # Design scratch — not part of the runtime app.
 mockups/
@@ -278,19 +244,23 @@ $ grep -n 'COPY\|FROM' Dockerfile
 12:FROM python:3.12-slim-bookworm AS builder
 15:COPY --from=ghcr.io/astral-sh/uv:0.11.25 /uv /uvx /usr/local/bin/
 32:COPY pyproject.toml uv.lock ./
-37:FROM python:3.12-slim-bookworm AS runtime
-49:COPY --from=builder /app/.venv /app/.venv
-55:# COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
-56:COPY ciq_autotune ./ciq_autotune
-57:COPY frontend ./frontend
-58:COPY docs/kb ./docs/kb
-59:COPY pyproject.toml README.md ./
-60:COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+37:FROM node:22-bookworm-slim AS frontend-builder
+41:COPY package.json package-lock.json ./
+43:COPY vite.config.mjs tsconfig.json ./
+44:COPY frontend ./frontend
+48:FROM python:3.12-slim-bookworm AS runtime
+60:COPY --from=builder /app/.venv /app/.venv
+66:# COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
+67:COPY ciq_autotune ./ciq_autotune
+68:COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+69:COPY docs/kb ./docs/kb
+70:COPY pyproject.toml README.md ./
+71:COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 ## The authorised offline server
 $ grep -n 'harmonic serve --no-fetch' AGENTS.md .github/workflows/ci.yml
-AGENTS.md:191:  uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
-.github/workflows/ci.yml:308:          uv run harmonic serve --no-fetch --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
+AGENTS.md:195:  uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
+.github/workflows/ci.yml:286:          uv run harmonic serve --no-fetch --token '' --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
 ```
 
 Sibling modules import one another relatively (`from './x.js'`); only the inline

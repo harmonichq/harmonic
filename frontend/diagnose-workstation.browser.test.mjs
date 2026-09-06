@@ -524,6 +524,10 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
       .replace('×', '').trim();
     assert.match(drawnWindow, /^Window \d\d:\d\d–\d\d:\d\d$/,
       'the touch drag commits the shown time range');
+    await page.waitForFunction(() => {
+      const previews = [...document.querySelectorAll('#level .qrow.priced > .mini')];
+      return previews.length > 0 && previews.every((preview) => preview.querySelector('canvas'));
+    });
 
     await touchTap(page, page.getByRole('button', { name: 'All charts', exact: true }));
     await page.locator('#tile-field[data-explorer]').waitFor();

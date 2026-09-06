@@ -295,7 +295,7 @@ const scenarios = {
 
 async function routeApp(page, options = {}) {
   const {
-    promptCount = 0, planDraftItems = [], planSaveRefusal = null,
+    promptCount = 0, planDraftItems = [], planSaveRefusal = null, planSaveDelayMs = 0,
     verifyTrials = [maturing, complete],
   } = options;
   const findingsInput = options.findingsInput || {
@@ -426,6 +426,11 @@ async function routeApp(page, options = {}) {
       // detail is served exactly as the API serves its own — a JSON `detail`
       // string, which `frontend/data.js` unwraps into the thrown error.
       if (planSaveRefusal) {
+        // A scenario can also ask for a slow refusal, which is the only way to
+        // hold the save in flight long enough for a second click to land inside
+        // it — the window a reader hits on a slow link and a test cannot
+        // otherwise reach.
+        if (planSaveDelayMs) await new Promise((done) => setTimeout(done, planSaveDelayMs));
         return route.fulfill({ status: 400, contentType: 'application/json',
           body: JSON.stringify({ detail: planSaveRefusal }) });
       }
@@ -1761,5 +1766,62 @@ test('a refused stage gives back the hand-edit it cleared from another family', 
       'the hand-edit the refused stage cleared must be back on the deliverable');
     assert.equal(await isfCell.locator('.muted', { hasText: 'edited' }).count(), 1,
       'the restored cell must still read as edited');
+  } finally { await page.close(); }
+});
+
+/* The stage control keeps its optimistic paint for the whole round trip, so on a
+   slow link it is clickable again — as Undo — before the server has answered. The
+   shell restores the draft as it stood when the save was issued, so a second stage
+   entered inside that window takes the FIRST one's optimistic draft as its own
+   restore point, and two refusals leave the Plan draft holding an item the server
+   refused twice while Diagnose reads unstaged. Whatever the surface does with the
+   second click, the three readings of one fact — the control, the Plan step badge
+   and the draft itself — have to agree once every save has answered. */
+const PLAN_SAVE_DELAY_MS = 1_500;
+
+test('a second stage inside a refused save leaves the button, the badge and the draft agreeing', async () => {
+  const browser = await launch();
+  const page = await openApp(browser,
+    { ...refusedSaveOptions(stageableAnalysis), planSaveDelayMs: PLAN_SAVE_DELAY_MS });
+  // Counted rather than timed: the surface is read once every save this case
+  // provoked has answered, however many the surface chose to issue.
+  const saves = { issued: 0, answered: 0 };
+  const isPlanSave = (request) =>
+    request.method() === 'PUT' && new URL(request.url()).pathname === '/api/plan';
+  page.on('request', (request) => { if (isPlanSave(request)) saves.issued++; });
+  page.on('requestfinished', (request) => { if (isPlanSave(request)) saves.answered++; });
+  try {
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
+    await page.locator('#level .qrow[data-id="basal:60-90"]').click();
+    const stage = page.locator('.stagebtn');
+    await stage.waitFor();
+    await stage.click();
+    // S16's paint lands before the round trip does, which is exactly what leaves
+    // the control clickable again while the first save is still out.
+    await page.waitForFunction(
+      () => document.querySelector('.stagebtn')?.dataset.staged === 'true', null, { timeout: 5_000 });
+    assert.equal(saves.answered, 0,
+      'the delayed refusal must still be in flight, or this case never enters the window it exists for');
+    await stage.click();
+
+    const deadline = Date.now() + 20_000;
+    while (saves.issued === 0 || saves.answered < saves.issued) {
+      if (Date.now() > deadline) throw new Error(`the Plan saves never answered: ${JSON.stringify(saves)}`);
+      await page.waitForTimeout(100);
+    }
+    await page.locator('.toast.err').waitFor();
+    // The refusal's own handlers run off the answer, so give the last one its turn
+    // before reading the surface.
+    await page.waitForTimeout(750);
+
+    const settled = await page.evaluate(() => ({
+      dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
+      planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
+      // the reactive draft itself, behind both readings above
+      planDraftItems: document.querySelector('#app')?.__vue_app__?._instance?.setupState?.planItems?.size ?? null,
+    }));
+    assert.deepEqual(settled, { dataStaged: 'false', planBadge: '0', planDraftItems: 0 },
+      'the control, the Plan step badge and the draft must all report nothing staged '
+      + 'once every refused save has answered');
   } finally { await page.close(); }
 });

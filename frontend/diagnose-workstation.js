@@ -3107,13 +3107,25 @@ function boot(root, data, callbacks, signal) {
      only when the shell's draft save was refused by the server; an absent callback
      and one that answers anything else both count as success and undo nothing
      (ADR 358), which is what keeps the component harness's `stage: () => {}` mount
-     staging. `toggle` is its own inverse, so the refusal path simply replays it. */
+     staging. `toggle` is its own inverse, so the refusal path simply replays it.
+     ONE save at a time, because the shell restores the draft as it stood when the
+     save was issued: a second stage entered inside the first save's round trip
+     would take that first one's optimistic draft as its restore point, so two
+     refusals would hand back a draft the server had refused twice while this
+     surface painted itself unstaged. Dropping the re-entrant click is what keeps
+     every restore point a settled one. The optimistic paint is untouched — the
+     guard is released on the answer, not on the paint. */
+  let saveInFlight = false;
   async function stageAndSettle(toggle, item, isStaged) {
+    if (saveInFlight) return;
     toggle();
     // PORT: reach the app's Plan draft as well as the local tally
     const answer = callbacks.stage?.(item, isStaged());
     paint();
-    if (await answer === false) { toggle(); paint(); }
+    saveInFlight = true;
+    try {
+      if (await answer === false) { toggle(); paint(); }
+    } finally { saveInFlight = false; }
   }
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:

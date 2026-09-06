@@ -33,6 +33,7 @@ public tracker.
 
 ```sh
 uv sync --frozen --extra api --extra sync
+npm ci && npm run build
 ```
 
 The core — store, model, CLI — is deliberately stdlib-only. The `sync` extra
@@ -44,6 +45,7 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 **The fast gate — dependency-free, runs on every pull request:**
 
 ```sh
+npm ci && npm run build                    # production frontend bundle for backend delivery tests
 uv run python -m pytest                    # backend, stdlib unittest
 node --test 'frontend/**/*.test.js'        # frontend, Node's built-in runner
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
@@ -188,6 +190,7 @@ your own database — never a published one, and never a live pull.**
   scratch="${TMPDIR:-/tmp}/harmonic-qa-e2e.sqlite"
   rm -f "$scratch" "$scratch-wal" "$scratch-shm" "$scratch.derived.sqlite"
   cp mockups/qa-e2e.synthetic/harmonic.sqlite "$scratch"
+  npm ci && npm run build
   uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
   ```
 
@@ -261,10 +264,10 @@ manufactured stories, then use the full no-fetch app as the integration proof.
 - `ciq_autotune/fetch_loop.py` — the hourly background fetch loop `serve` runs.
 - `ciq_autotune/result_cache.py` — the in-process cache the heavy read
   endpoints answer from.
-- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves
-  `frontend/index.html` at `/`, on the same port.
-- `frontend/` — a single-page Vue 3 app loaded from a CDN, no build step.
-  ECharts renders the Day chart.
+- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves the
+  built `frontend/dist/index.html` at `/`, on the same port.
+- `frontend/` — a single-page Vue 3 app built with Vite. ECharts renders the
+  Day chart.
 - `harness/` — a dev-only Vite page that opens one shipped chart at a time on
   manufactured data or a running `harmonic serve`. Node 22 is required but not
   enforced; the harness never enters the production app and never gates.
@@ -438,7 +441,7 @@ Hard-won, and expensive to re-derive.
   frontend test take no npm dependency. Pure logic lives in **vue-free** `.js`
   modules so tests import them with no importmap and no DOM. Vue components
   import `vue` plus those modules and are not node-tested, because the bare
-  `vue` specifier only resolves through the browser importmap. The dev-only
+  `vue` specifier resolves through Vite. The dev-only
   `harness/` has its own manifest and lockfile; it is never a gate and never
   runs in CI.
 - **Browser-driven suites are named `*.browser.test.mjs`**, never `*.test.js`,

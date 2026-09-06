@@ -1,8 +1,7 @@
 name: CI
 
 # Test every PR and every push to main; publish the image only when main moves
-# (ADR 0021). No image smoke-test in CI — not worth the complexity for a
-# single-user project.
+# (ADR 0021). Pull requests also build and smoke-test the runtime image.
 on:
   push:
     branches: [main]
@@ -19,6 +18,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Build the production frontend
+        run: npm ci && npm run build
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -328,6 +334,41 @@ jobs:
         env:
           BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
         run: test "$BROWSER_LEGS_RESULT" = success
+
+  docker-pr:
+    name: build + smoke-test image
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image without publishing
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: harmonic:pr-test
+      - name: Require the runtime image to exclude Node
+        run: docker run --rm harmonic:pr-test sh -c '! command -v node'
+      - name: Serve the built shell from the runtime image
+        run: |
+          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
+          chmod 666 "$RUNNER_TEMP/harmonic-qa.sqlite"
+          docker run --detach --name harmonic-pr-smoke --publish 8765:8765 \
+            --env TIMEZONE_NAME=America/Phoenix \
+            --volume "$RUNNER_TEMP/harmonic-qa.sqlite:/tmp/harmonic.sqlite" \
+            harmonic:pr-test --no-fetch --token '' --db /tmp/harmonic.sqlite
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8765/ | grep --quiet '/assets/index-'; then
+              docker rm --force harmonic-pr-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs harmonic-pr-smoke
+          docker rm --force harmonic-pr-smoke
+          exit 1
 
   docker:
     name: build + push image

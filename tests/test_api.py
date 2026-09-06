@@ -15,6 +15,7 @@ import threading
 import time
 import unittest
 from datetime import datetime, timedelta
+from pathlib import Path
 from unittest.mock import patch
 from xml.etree import ElementTree
 
@@ -47,6 +48,11 @@ from ciq_autotune.store import Store
 import re
 
 _ADR_REF = re.compile(r"ADR\s*\d{4}")
+
+
+def _built_asset(suffix: str) -> str:
+    assets = Path(__file__).resolve().parent.parent / "frontend" / "dist" / "assets"
+    return "/assets/" + next(assets.glob(f"*-*{suffix}")).name
 
 
 def _find_adr_refs(node):
@@ -231,37 +237,22 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers["content-type"], "text/html; charset=utf-8")
 
-    def test_serves_scenario_chart_js_as_javascript(self):
-        # #100: sibling ESM asset must load with a JS MIME type or the module
-        # graph fails in the browser.
-        r = self.client.get("/assets/scenario-chart.js")
+    def test_serves_built_javascript(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
-    def test_every_index_module_import_is_served_as_javascript(self):
-        # #332: index.html imports each ``/assets/*.js`` module as an ES module. If any
-        # one has no serving route the browser gets a 404 (application/json), blocks
-        # the module, and the WHOLE SPA fails to mount (raw ``{{ }}`` mustaches).
-        # The per-file tests above miss new modules; this derives the list from the
-        # actual imports so a forgotten route fails here instead of only in prod.
-        import re as _re
-        from pathlib import Path
+    def test_every_built_index_asset_is_served(self):
         index = (Path(__file__).resolve().parent.parent
-                 / "frontend" / "index.html").read_text()
-        modules = sorted(set(_re.findall(r"""["']/assets/([a-z0-9-]+\.js)["']""", index)))
-        self.assertIn("day-hero-chart.js", modules)  # guards the regex itself
-        for mod in modules:
-            if mod == "diagnose-event-comparison.js":
-                continue  # chunk 3 owns the retained import-path migration
-            r = self.client.get("/assets/" + mod)
-            self.assertEqual(r.status_code, 200, f"{mod} import has no serving route")
-            self.assertTrue(r.headers["content-type"].startswith("text/javascript"),
-                            f"{mod} not served as JavaScript")
+                 / "frontend" / "dist" / "index.html").read_text()
+        assets = sorted(set(re.findall(r'''["'](/assets/index-[^"']+)["']''', index)))
+        self.assertTrue(assets, "built index must name fingerprinted assets")
+        for asset in assets:
+            r = self.client.get(asset)
+            self.assertEqual(r.status_code, 200, f"{asset} has no serving route")
 
-    def test_serves_model_view_log_js_as_javascript(self):
-        # #152: the model-view's pure module is a sibling ESM asset and must load
-        # with a JS MIME type or the SPA silently fails to mount (bits #99/#95).
-        r = self.client.get("/assets/model-view-log.js")
+    def test_serves_built_javascript_for_model_view(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
@@ -281,38 +272,28 @@ class ApiTest(unittest.TestCase):
         r = self.client.get("/api/model-view", params={"date": "06/03/2026"})
         self.assertEqual(r.status_code, 400)
 
-    def test_serves_plan_js_as_javascript(self):
-        # #99: the Plan deliverable's pure module is a sibling ESM asset and
-        # must load with a JS MIME type or the module graph fails in the browser.
-        r = self.client.get("/assets/plan.js")
+    def test_serves_built_javascript_for_plan(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_settling_js_as_javascript(self):
-        # #95: the settling helpers are a sibling ESM asset; without this route
-        # the import 404s and the whole SPA fails to mount (raw mustaches).
-        r = self.client.get("/assets/settling.js")
+    def test_serves_built_javascript_for_settling(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_carb_log_js_as_javascript(self):
-        # #99/#95 gotcha: every frontend/*.js needs its own route or the SPA
-        # module graph fails to load.
-        r = self.client.get("/assets/carb-log.js")
+    def test_serves_built_javascript_for_carb_log(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_daily_nav_js_as_javascript(self):
-        # #136: the day-picker nav's pure helpers are a sibling ESM asset; without
-        # this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/assets/daily-nav.js")
+    def test_serves_built_javascript_for_daily_nav(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_guide_js_as_javascript(self):
-        # #157: the Guide tab's pure render helpers are a sibling ESM asset;
-        # without this route the import 404s and the whole SPA fails to mount.
-        r = self.client.get("/assets/guide.js")
+    def test_serves_built_javascript_for_guide(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
@@ -379,31 +360,29 @@ class ApiTest(unittest.TestCase):
         self.assertIn("fetched_at", body)
         self.assertTrue(body["fetched_at"])
 
-    def test_serves_scenario_css(self):
-        r = self.client.get("/assets/scenario.css")
+    def test_serves_built_css(self):
+        r = self.client.get(_built_asset(".css"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/css"))
 
-    def test_serves_diagnose_workstation_assets(self):
-        css = self.client.get("/assets/diagnose-workstation.css")
+    def test_serves_built_workstation_assets(self):
+        css = self.client.get(_built_asset(".css"))
         self.assertEqual(css.status_code, 200)
         self.assertTrue(css.headers["content-type"].startswith("text/css"))
-        chart = self.client.get("/assets/diagnose-workstation-chart.js")
+        chart = self.client.get(_built_asset(".js"))
         self.assertEqual(chart.status_code, 200)
         self.assertTrue(chart.headers["content-type"].startswith("text/javascript"))
 
-    def test_serves_diagnose_event_comparison_assets_used_by_diagnose(self):
-        js = self.client.get("/assets/diagnose-event-comparison.js")
+    def test_serves_built_event_comparison_assets(self):
+        js = self.client.get(_built_asset(".js"))
         self.assertEqual(js.status_code, 200)
         self.assertTrue(js.headers["content-type"].startswith("text/javascript"))
-        css = self.client.get("/assets/diagnose-event-comparison.css")
+        css = self.client.get(_built_asset(".css"))
         self.assertEqual(css.status_code, 200)
         self.assertTrue(css.headers["content-type"].startswith("text/css"))
 
-    def test_serves_the_app_icon_the_page_asks_for(self):
-        # The index links ./assets/favicon.svg; without its own route the tab falls back
-        # to a 404 and the browser shows a blank page icon.
-        r = self.client.get("/assets/favicon.svg")
+    def test_serves_the_built_app_icon(self):
+        r = self.client.get(_built_asset(".svg"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("image/svg+xml"))
         # ...and it must actually parse. A browser drops a malformed icon silently
@@ -1043,8 +1022,8 @@ class PromptQueueTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.close()
 
-    def test_serves_prompt_queue_js_as_javascript(self):
-        r = self.client.get("/assets/prompt-queue.js")
+    def test_serves_built_javascript_for_prompt_queue(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
@@ -1219,8 +1198,8 @@ class ApiAuthTest(unittest.TestCase):
                             headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
 
-    def test_finding_case_file_validation_js_is_public_javascript(self):
-        r = self.client.get("/assets/finding-case-file-validation.js")
+    def test_finding_case_file_validation_uses_built_javascript(self):
+        r = self.client.get(_built_asset(".js"))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 

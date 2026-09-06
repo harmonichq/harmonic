@@ -25,8 +25,8 @@ class DeployAssetsTest(unittest.TestCase):
             "are read from ../docs/kb at runtime; without it every authored Guide "
             "article 404s ('unknown article') in the deployed app.",
         )
-        # ...beside frontend/, the sibling asset resolved the same way (../frontend).
-        self.assertRegex(text, r"COPY\s+frontend\b")
+        self.assertRegex(text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\s+./frontend/dist")
+        self.assertIn("FROM node:22", text)
 
     def test_dockerignore_does_not_exclude_docs(self):
         di = _REPO / ".dockerignore"

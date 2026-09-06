@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Harmonic is a single-page app with no build step and no login — the HTML shell loads unauthenticated, and the browser's embedded Vue interpreter renders four distinct surfaces to answer different questions about the data. Each surface renders read-only server-owned projections; surfaces never re-derive analysis verdicts that belong to the backend.
+Harmonic is a single-page app with a built shell and no login — the HTML shell loads unauthenticated, and the browser renders four distinct surfaces to answer different questions about the data. Each surface renders read-only server-owned projections; surfaces never re-derive analysis verdicts that belong to the backend.
 
 ## Requirements
 

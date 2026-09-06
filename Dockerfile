@@ -3,8 +3,8 @@
 # harmonic serve — FastAPI API + bundled Vue SPA on one port, for
 # single-user self-hosting (issue #6, ADR 0021).
 #
-# Multi-stage: the builder resolves the locked dependency set into a venv; the
-# runtime stage carries only that venv plus the source tree. Both stages share
+# Multi-stage: the builders resolve the locked dependency set and frontend
+# bundle; the runtime carries only their outputs plus the source tree. Both Python stages share
 # the same python:3.12-slim interpreter so the venv copied between them points
 # at an interpreter that exists in the final image.
 
@@ -33,6 +33,16 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project --extra api --extra sync
 
+# ---- frontend builder: compile the shell without shipping Node --------------
+FROM node:22-bookworm-slim AS frontend-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY frontend ./frontend
+RUN npm run build
+
 # ---- runtime: venv + source, non-root -------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
 
@@ -48,13 +58,13 @@ WORKDIR /app
 # The resolved venv from the builder (same interpreter path, so it just works).
 COPY --from=builder /app/.venv /app/.venv
 
-# The app source. frontend/ must sit beside ciq_autotune/ — api.py resolves the
-# SPA as ../frontend/index.html relative to the package (#10). docs/kb/ likewise:
+# The app source. The built frontend must sit beside ciq_autotune/ — api.py resolves
+# the SPA as ../frontend/dist/index.html. docs/kb/ likewise:
 # the #269 Guide-KB serves the authored how-tos as raw markdown from
 # ../docs/kb/<slug>.md, so those files must ship in the image too — without this
 # COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
 COPY ciq_autotune ./ciq_autotune
-COPY frontend ./frontend
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 COPY docs/kb ./docs/kb
 COPY pyproject.toml README.md ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

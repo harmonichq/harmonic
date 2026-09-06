@@ -5,7 +5,7 @@ prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch``
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the frontend SPA (``frontend/index.html``) at ``/`` and its explicit
+It also serves the built frontend SPA (``frontend/dist/index.html``) at ``/`` and its explicit
 page paths, alongside the ``/api`` routes on the same port — there is no separate frontend server and
 no login screen (#10): the SPA shell itself loads unauthenticated, then makes
 bearer-token-gated API calls.
@@ -81,7 +81,11 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 RECOMPUTE_PACE_SECONDS = 0.1
 
-_FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
+_FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
+_FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
+_MISSING_FRONTEND_BUILD_LOGGED = False
 SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
@@ -123,7 +127,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         import contextlib
 
         from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
-        from fastapi.responses import FileResponse, JSONResponse
+        from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+        from fastapi.staticfiles import StaticFiles
     except ImportError as e:  # pragma: no cover - depends on the optional extra
         raise RuntimeError(
             "The HTTP API needs the 'api' extra: `uv sync --extra api` "
@@ -444,245 +449,46 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ADR 94 publishes it at ``/api/openapi.json``, and
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
+    def built_shell():
+        global _MISSING_FRONTEND_BUILD_LOGGED
+        if not _FRONTEND_INDEX.is_file():
+            if not _MISSING_FRONTEND_BUILD_LOGGED:
+                logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
+                _MISSING_FRONTEND_BUILD_LOGGED = True
+            return PlainTextResponse(
+                f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
+                status_code=503,
+            )
+        return FileResponse(_FRONTEND_INDEX)
+
     @app.get("/")
     def index():
-        return FileResponse(_FRONTEND_INDEX)
+        return built_shell()
 
     for _page in SPA_PAGES:
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
-    # The frontend has no build step and no fingerprinted filenames, and these
-    # routes send no Cache-Control — so browsers heuristically cached the ES
-    # modules off Last-Modified and a reloaded page kept running week-old code
-    # while the server served fresh bytes (observed live: one URL, two bodies —
-    # the module map's copy stale, a cache-busted import current). `no-cache`
-    # forces revalidation on every load; the payloads are local files on a
-    # local port, so the cost is nil and stale UI is the only thing spent.
+    # The shell has one stable URL, so it revalidates on every load. Vite
+    # fingerprints assets, so they can stay immutable until their names change.
     @app.middleware("http")
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path.lstrip("/") in SPA_PAGES or path.startswith("/assets/"):
+        if path == "/" or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
+        elif path.startswith("/assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
-    # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
-    # are explicit per-file routes (not a StaticFiles mount) so they can never
-    # shadow an API route or the ``/`` index. No token, same as ``index``.
-    # Content types are pinned because the module graph fails to load if the
-    # browser rejects the .js MIME type.
-    _FRONTEND_DIR = _FRONTEND_INDEX.parent
-
-    @app.get("/assets/tab-routing.js")
-    def tab_routing_js():
-        return FileResponse(_FRONTEND_DIR / "tab-routing.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/scenario-chart.js")
-    def scenario_chart_js():
-        return FileResponse(_FRONTEND_DIR / "scenario-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/chart-builders.js")
-    def chart_builders_js():
-        return FileResponse(_FRONTEND_DIR / "chart-builders.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workspaces.js")
-    def diagnose_workspaces_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workspaces.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation-chart.js")
-    def diagnose_workstation_chart_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation.js")
-    def diagnose_workstation_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-load-failure.js")
-    def diagnose_load_failure_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-load-failure.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/occurrence-roster.js")
-    def occurrence_roster_js():
-        return FileResponse(_FRONTEND_DIR / "occurrence-roster.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-event-comparison.js")
-    def diagnose_event_comparison_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation-data.js")
-    def diagnose_workstation_data_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-evidence-charts.js")
-    def diagnose_evidence_charts_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-evidence-charts.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-canvas-layout.js")
-    def diagnose_canvas_layout_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-layout.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-canvas-state.js")
-    def diagnose_canvas_state_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-state.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/finding-case-file-validation.js")
-    def finding_case_file_validation_js():
-        return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-findings-queue.js")
-    def diagnose_findings_queue_js():  # #735: the inspector's level 1
-        return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/watched-change-dock.js")
-    def watched_change_dock_js():  # #735: the inspector's floor
-        return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/data.js")
-    def data_js():
-        return FileResponse(_FRONTEND_DIR / "data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-data-age.js")
-    def diagnose_data_age_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-data-age.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/plan.js")
-    def plan_js():
-        return FileResponse(_FRONTEND_DIR / "plan.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/settling.js")
-    def settling_js():
-        return FileResponse(_FRONTEND_DIR / "settling.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/carb-log.js")
-    def carb_log_js():
-        return FileResponse(_FRONTEND_DIR / "carb-log.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/prompt-queue.js")
-    def prompt_queue_js():
-        return FileResponse(_FRONTEND_DIR / "prompt-queue.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation.js")
-    def verify_workstation_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation-chart.js")
-    def verify_workstation_chart_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation-data.js")
-    def verify_workstation_data_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation-data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-trial.js")
-    def verify_trial_js():
-        return FileResponse(_FRONTEND_DIR / "verify-trial.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/daily-nav.js")
-    def daily_nav_js():
-        return FileResponse(_FRONTEND_DIR / "daily-nav.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/guide.js")
-    def guide_js():
-        return FileResponse(_FRONTEND_DIR / "guide.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/kb.js")
-    def kb_js():  # #269: Guide-KB shell + markdown render (vue-free)
-        return FileResponse(_FRONTEND_DIR / "kb.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/model-view-log.js")
-    def model_view_log_js():
-        return FileResponse(_FRONTEND_DIR / "model-view-log.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/serial-gate.js")
-    def serial_gate_js():
-        return FileResponse(_FRONTEND_DIR / "serial-gate.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-chart.js")
-    def day_chart_js():
-        return FileResponse(_FRONTEND_DIR / "day-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-hero-chart.js")
-    def day_hero_chart_js():  # #332: mobile glucose-hero Day chart
-        return FileResponse(_FRONTEND_DIR / "day-hero-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-dose-focus.js")
-    def day_dose_focus_js():  # #385: Day-chart insulin-lane dose-focus core
-        return FileResponse(_FRONTEND_DIR / "day-dose-focus.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/nav-chart.js")
-    def nav_chart_js():
-        return FileResponse(_FRONTEND_DIR / "nav-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/scenario.css")
-    def scenario_css():
-        return FileResponse(_FRONTEND_DIR / "scenario.css",
-                            media_type="text/css")
-
-    @app.get("/assets/shell.css")
-    def shell_css():
-        return FileResponse(_FRONTEND_DIR / "shell.css",
-                            media_type="text/css")
-
-    @app.get("/assets/diagnose-workstation.css")
-    def diagnose_workstation_css():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
-                            media_type="text/css")
-
-    @app.get("/assets/diagnose-event-comparison.css")
-    def diagnose_event_comparison_css():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
-                            media_type="text/css")
-
-    @app.get("/assets/verify-workstation.css")
-    def verify_workstation_css():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation.css",
-                            media_type="text/css")
-
-    @app.get("/assets/theme.css")
-    def theme_css():
-        """The Harmonic theme's role rules (#736) — served last, loaded last."""
-        return FileResponse(_FRONTEND_DIR / "theme.css",
-                            media_type="text/css")
-
-    @app.get("/assets/favicon.svg")
-    def favicon_svg():
-        return FileResponse(_FRONTEND_DIR / "favicon.svg",
-                            media_type="image/svg+xml")
+    # One prefix-scoped build directory route serves only fingerprinted assets;
+    # it cannot claim page or API paths outside ``/assets``.
+    if _FRONTEND_ASSETS.is_dir():
+        app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS),
+                  name="frontend-assets")
+    else:
+        @app.get("/assets/{asset_path:path}")
+        def missing_asset(asset_path: str):
+            raise HTTPException(status_code=404)
 
     @app.get("/api/health")
     def health() -> dict:

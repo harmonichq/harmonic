@@ -29,14 +29,14 @@
    `.dockerignore` excludes `node_modules/`, `frontend/dist/` and `harness/`.
    Prove `npm ci && npm run build` from a clean checkout emits
    `frontend/dist/index.html` with no CDN URL anywhere under `frontend/dist`.
-4. [ ] Serve built bytes from Python: `/` and the six page paths answer
+4. [x] Serve built bytes from Python: `/` and the six page paths answer
    `frontend/dist/index.html` with `no-cache`; `/assets` is one prefix-scoped
    directory route over `frontend/dist/assets` with an immutable cache header;
    the forty-one per-file source routes go; an absent `frontend/dist/index.html`
    logs the rebuild instruction once at app construction and the shell routes
    answer 503 with it, never raw source; `/api` routing and token behaviour are
    unchanged.
-5. [ ] Retarget the Python contract tests to built output:
+5. [x] Retarget the Python contract tests to built output:
    `tests/test_frontend_asset_routes.py` (page routes, every asset
    `dist/index.html` references answers with the dist bytes and content type, and, after first
    asserting `frontend/dist/index.html` exists, no file under `frontend/dist`
@@ -51,7 +51,7 @@
    `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile copies
    `frontend/dist` from the Node stage, copies no `frontend` source, and its
    runtime stage installs no Node).
-6. [ ] Deliver the same artifact on every supported path: a `node:22` Dockerfile
+6. [x] Deliver the same artifact on every supported path: a `node:22` Dockerfile
    build stage running `npm ci && npm run build` with the runtime copying only
    `frontend/dist`; the CI backend job sets up Node 22 with an npm cache and
    builds before `pytest`; a pull-request-time Docker job that builds the image

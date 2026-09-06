@@ -719,6 +719,39 @@ class IcBlockProvenancePlanStoreTest(unittest.TestCase):
         result = self.store.apply_plan("2026-06-01 12:00:00")
         self.assertEqual(result["items"], items)
 
+    def test_all_day_block_closing_at_midnight_round_trips(self):
+        # #357: the I:C analyzer publishes a profile carrying one I:C all day as
+        # the single block start_min 0, end_min 1440 — the exclusive end naming
+        # the first minute after the arc. That is the whole of such a wearer's
+        # day, and the only block they can be offered; the bounds check read its
+        # 1440 as an impossible minute of day and refused the save.
+        prov = self._block(start=0, end=1440, members=(0, 420, 660, 1080))
+        items = [
+            {"type": "ic", "start_min": m, "value": 5.7, "ic_block_provenance": prov}
+            for m in (0, 420, 660, 1080)
+        ]
+        self.store.save_plan_draft(items, "2026-06-01 09:00:00")
+        self.assertEqual(self.store.get_plan_draft()["items"], items)
+        result = self.store.apply_plan("2026-06-01 12:00:00")
+        self.assertEqual(result["items"], items)
+        self.assertEqual(self.store.plan_history(), [result])
+
+    def test_block_end_outside_its_own_domain_still_rejected(self):
+        # The end admits midnight and nothing past it: 1441 is off the clock, -1
+        # and 0 are not ends at all, and a bool or a float is not a minute. The
+        # save is refused and no draft is recorded.
+        for end in (1441, -1, 0, True, 1440.0):
+            with self.subTest(block_end_min=end):
+                prov = self._block(start=0, end=end, members=(0, 420, 660, 1080))
+                items = [
+                    {"type": "ic", "start_min": m, "value": 5.7,
+                     "ic_block_provenance": prov}
+                    for m in (0, 420, 660, 1080)
+                ]
+                with self.assertRaises(ValueError):
+                    self.store.save_plan_draft(items, "2026-06-01 09:00:00")
+                self.assertIsNone(self.store.get_plan_draft())
+
     def test_truncated_single_row_claiming_two_members_rejected_on_save(self):
         prov = self._block()
         items = [{"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov}]

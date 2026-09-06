@@ -103,10 +103,26 @@ function legend(surface, caseFile, selected) {
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
 }
 
+/* A LABEL MUST NEVER BE STRUCK BY LINEWORK — the rank the workstation's own
+   target caption already takes (diagnose-workstation-chart.js:1024-1038), not a
+   second treatment of the same fact. Left unplaced, ECharts centres a markArea
+   label on the area's TOP edge, which here is the y = 180 boundary: the rule ran
+   through every glyph and the centre-tick gridline crossed it (#355). Starting
+   the caption at the band's own start, 10px clear of the rule, moves it off both
+   lines and off the median traces; the opaque pad in the panel's ground colour
+   breaks whatever still passes behind it. The pad is a PLAIN resolved colour,
+   never a color-mix() string — zrender's parser silently drops one on the
+   markArea path (diagnose-workstation.js:331), painting no plate and no error. */
+const targetCaption = (surface) => ({
+  show: true, position: 'insideStartTop', distance: 10,
+  color: css(surface, '--mk-muted'), fontSize: 10,
+  backgroundColor: css(surface, '--ck-rail'), padding: [2, 5], borderRadius: 2,
+});
+
 function option(surface, caseFile, selected, range, mini = false) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
-    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } }];
+    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180', label: targetCaption(surface) }) }, { yAxis: 180 }]] } }];
   for (const cohort of projection.cohorts) {
     for (const support of ['supported', 'limited']) {
       if (!cohort.points.some((point) => point.support === support)) continue;

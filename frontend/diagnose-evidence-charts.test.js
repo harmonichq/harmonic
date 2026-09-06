@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { eventComparisonChartOption, renderEventSurface } from './diagnose-event-comparison.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 import {
@@ -1112,6 +1112,35 @@ test('a selected occurrence trace never changes the field range', () => {
     fieldRange([descriptor(selected)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
     'selection-only glucose cannot rescale the shared mini field',
   );
+});
+
+/* The other half of that ruling (#367). The field range excludes the selection,
+   and the `!mini` branch draws it anyway — so the branch that draws the trace is
+   the one that has to hold it. The clone is perturbed to the peak measured on
+   the synthetic QA showcase, where the only occurrence that matched the finding
+   was the only one drawn off the plot. */
+test('a selected occurrence trace is contained by the axis it is drawn against', () => {
+  const cases = caseFiles().cases['finding:carb_undercount'];
+  const [selectedId] = Object.keys(cases.selected_event);
+  const selected = structuredClone(cases.selected_event[selectedId]);
+  const points = selected.selection.detail.glucose;
+  points[Math.floor(points.length / 2)].bg = 260;
+  const injected = [...GLUCOSE_ENVELOPE];
+
+  const option = eventComparisonChartOption(selected, injected, null, false);
+  const trace = option.series.find((series) => series.id === 'selected:trace');
+  assert.equal(trace.data.length, points.length, 'the stage draws the whole selected trace');
+  for (const [minute, bg] of trace.data) {
+    assert.ok(bg >= option.yAxis.min && bg <= option.yAxis.max,
+      `${bg} at ${minute} min falls outside the axis [${option.yAxis.min}, ${option.yAxis.max}]`);
+  }
+
+  /* Outward only: the widened stage still contains the shared field ruler, and
+     the mini rank, which draws no selected trace, keeps it exactly. */
+  assert.ok(option.yAxis.min <= injected[0] && option.yAxis.max >= injected[1],
+    'the widened axis narrowed the injected field range');
+  const mini = eventComparisonChartOption(selected, injected, null, true);
+  assert.deepEqual([mini.yAxis.min, mini.yAxis.max], injected);
 });
 
 test('current I:C event options render every published meal member', () => {

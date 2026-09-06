@@ -9,3 +9,9 @@ A wider-font probe failed before the correction (153.55px host, 86px plot, 12.29
 Both independent Luna review axes converged, six criteria each. Standards covered public tests, locality, generated copies, scroll containment, consistency, and falsifiable readiness. Spec covered touch/window behavior, plot floors, header separation, queue charts, fullscreen/desktop preservation, and evidence. Remote CI remains the final check.
 
 The retained `final-projection/final-390x844-root.png` was replaced with the coordinator’s post-correction render of the same synthetic projection at 390×844. All other retained images keep their earlier provenance. No new screenshot files were added.
+
+## Fractional scroll follow-up
+
+Linux CI passed the original touch and readability assertions after the correction, but exposed a later exact-border scroll assertion. A fractional-layout probe reproduced up to 0.421875 CSS pixels of border offset with all header content visible. Test-only correction `5dfce621d37a83dc97ca51ef0b84d1eda9fb98b6` allows one physical pixel of border rounding, requires strict content containment and nonzero scrolling, and includes measured geometry in failures. No production code changed.
+
+Four focused tests and the complete 60-test workstation suite passed; the independent coordinator check passed. Both Luna review axes converged on all four criteria. The prior 163/163 replay remains applicable to identical production bytes. No images were added or changed in this follow-up.

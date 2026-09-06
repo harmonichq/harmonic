@@ -137,6 +137,7 @@ rg -l -i 'earliest.actionable|earliest.*driver|aggregate.only|eating.sequence|ou
 ./AGENTS.md
 ./CONTEXT.md
 ./docs/kb/reading-day.md
+./mockups/INDEX.md
 ./mockups/finding-evidence-routing.behavior.md
 ./openspec/changes/announced-meal-low-ownership/design.md
 ./openspec/changes/diagnose-finding-case-files/design.md

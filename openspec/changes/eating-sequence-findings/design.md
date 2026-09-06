@@ -88,7 +88,14 @@ most clinically significant CGM reading within its bounded severity interval (th
 nadir when below range, otherwise the peak, earliest timestamp on equality). Associate
 it with an eligible sequence only when that witness lies in that sequence's selected
 half-open measured interval. Preserve that witness in the evaluation so projections
-never guess from a trigger or array position. No CGM witness means no sequence
+never guess from a trigger or array position. Publish its clock minute as
+`outcome_minute` on each associated occurrence. The Python window-membership reader
+and its JS mirror prefer that served field over static lever outcome-kind lookup;
+the normal legacy fallback applies only to legacy occurrences. Both new entries
+use `sequence` as their closed-set outcome-kind marker, meaning an explicit witness
+is required rather than a fixed high/low anchor. Missing required witness withholds
+the new occurrence from scoped membership instead of falling back to its trigger.
+The normative compatibility rule is in behavioral-layer requirement 3. No CGM witness means no sequence
 association. Existing next-sequence overlap exclusions keep admitted intervals from
 reaching into a later sequence. If the two detectors select different periods, each
 candidate must satisfy its own interval; both may attach to the same sequence.
@@ -107,7 +114,16 @@ The evaluation publishes the two closed lever values `high_carb_sequence` and
 episode ids, outcome witness, recurrence population and raw counts. Exposures,
 model-view, outcome tallies, case-file preparation and findings read the same result.
 The population policy owns the sequence noun and cohort comparison reference, rather
-than pretending a sequence is a single meal bolus. Preserve old payload keys and
+than pretending a sequence is a single meal bolus. Both new metadata entries have
+Meals display affinity (`Exposure.MEALS`), but their sequence recurrence population
+is custom (`recurrence_family=None`, noun `sequences`). Deepen that policy to consume
+the shared evaluated sequence records, not the existing custom-policy bolus filter.
+Neither lever enters the legacy clean-rate accounts or `_BEHAVIOR_ORDER`: this ticket
+adds no Verify trend tile or new Exposure family. `compute_clean_rates` must explicitly
+exclude these sequence populations before converting a custom noun to `Exposure`;
+existing custom meal populations retain their current rollup. Existing levers still
+contribute their final winning counts, which may change under the approved competition.
+The normative compatibility rule is in behavioral-layer requirement 3. Preserve old payload keys and
 add versioned/additive fields following each payload's current schema convention.
 
 The new finding rows use the normal server Priority queue and a served short title,

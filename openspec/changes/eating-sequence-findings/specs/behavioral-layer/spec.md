@@ -71,6 +71,16 @@ witness. Finding, report and chart SHALL belong to one analysis generation and
 retain the existing stale-generation retry behavior. Both levers SHALL remain
 outside Plan, tuning schedules and safety-path judgment.
 
+Each new occurrence SHALL serve `outcome_minute` from its evaluated CGM witness.
+The Python window-membership reader and its JS mirror SHALL prefer that field to
+static outcome-kind lookup; the new closed-set marker `sequence` SHALL require an
+explicit witness and SHALL NOT fall back to the trigger when it is missing.
+Legacy occurrences SHALL retain their existing membership behavior. New lever
+metadata SHALL use Meals display affinity with a custom `sequences` recurrence
+population; this SHALL NOT charge sequence counts to a legacy Exposure clean-rate
+account. Neither new lever SHALL enter the existing Verify behavior-trend roster.
+Legacy levers SHALL retain their existing rollup mechanism using final winning counts.
+
 #### Scenario: Analyzer output reaches a scoped finding
 - **GIVEN** sufficient synthetic sequences evaluated through the public analyzer interface
 - **WHEN** the corresponding outcome witness falls inside a clock window while its trigger is outside
@@ -81,3 +91,15 @@ outside Plan, tuning schedules and safety-path judgment.
 - **GIVEN** either new lever is supported and ranked first
 - **WHEN** its finding, catalog metadata and Plan inputs are inspected
 - **THEN** there is no pump-setting mapping, staged item, schedule move or safety assertion from it
+
+#### Scenario: Opposite-direction witnesses share the served membership rule
+- **GIVEN** supported synthetic sequence occurrences with both low and high outcome witnesses inside a drawn window and their triggers outside
+- **WHEN** Python findings and its JS mirror decide membership
+- **THEN** both directions belong to the witness window
+- **AND** removing a required sequence witness withholds membership instead of using the trigger
+
+#### Scenario: Sequence counts do not masquerade as meal clean-rate counts
+- **GIVEN** a sequence owns several episodes while legacy levers retain other winning occurrences
+- **WHEN** clean-rate accounts and the Verify behavior-trend roster are produced
+- **THEN** sequence counts enter neither the legacy Exposure accounts nor a new trend tile
+- **AND** legacy winners keep their existing rollup mechanism without converting the noun sequences to an Exposure

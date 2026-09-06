@@ -60,3 +60,15 @@ Why: behavioral advice must preserve the report's evidence floors and the existi
 - Evaluate predictive candidates on later held-out time blocks, with training-only cohort boundaries and separated overlapping outcome horizons. Compare against the existing outcome baseline, inspect support and winner stability, and report absence of a reliable distinction explicitly. Observational prediction does not establish the effect of changing a behavior.
 - Keep exploratory scripts and event-level outputs in session scratch. Publish only aggregate findings and the eventual decision; build final chart evidence through the frontend harness using independently generated synthetic fixtures.
 - Findings determine whether an implementation lock is supportable or whether further investigation is required. No forecasting model, ranking amendment or new precedence rule has been implemented or admitted.
+
+
+## Plan review — round 1
+
+Opus returned two authoring blockers and two authoring notes; no injected blockers.
+Verified both blockers against the closed-set transcription test and the Python/JS
+window-membership implementations. Expanded the allowed mirror/Guide paths and
+specified explicit witness-minute precedence for both glucose directions. Clarified
+Meals display affinity versus sequence recurrence, excluded sequence counts from
+legacy clean-rate accounts and existing Verify trend tiles, and regenerated the
+complete document inventory. These implement the settled impact and surface scope;
+no precedence or risk decision was reopened. Same-reviewer delta check pending.

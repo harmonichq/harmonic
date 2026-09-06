@@ -1,0 +1,18 @@
+staging finding basal:180-240
+before staging: {
+ "stageButton": "Stage changestaged for Plan",
+ "dataStaged": "false",
+ "watchDock": "Trial · watchingI:C · 12.0 → 10.0 g/UReady to judge — 14 of 14 days since 06-16Open Verify ›",
+ "planBadge": "0",
+ "planDraftItems": 0,
+ "toast": null
+}
+after a refused save: {
+ "stageButton": "Staged · Undostaged for Plan",
+ "dataStaged": "true",
+ "watchDock": "Trial · watchingI:C · 12.0 → 10.0 g/UReady to judge — 14 of 14 days since 06-16Open Verify ›",
+ "planBadge": "1",
+ "planDraftItems": 1,
+ "toast": "Plan save failed: synthetic plan rejection for the #358 reproduction"
+}
+FAIL — the surface reports a change the server refused as staged

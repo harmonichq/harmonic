@@ -3226,6 +3226,36 @@ function boot(root, data, callbacks, signal) {
     return { count: 0, title: '' };
   }
 
+  /* #358 — ONE treatment for the three stage handlers below (basal slot, I:C
+     block, ISF value). The order of operations is deliberate: toggle the local
+     staged state, tell the app, paint, and only THEN look at what the app said.
+     Frozen story S16 reads the button straight after the click, so the staged
+     rendering must not wait on a round trip. `callbacks.stage` answers `false`
+     only when the shell's draft save was refused by the server; an absent callback
+     and one that answers anything else both count as success and undo nothing
+     (ADR 358), which is what keeps the component harness's `stage: () => {}` mount
+     staging. `toggle` is its own inverse, so the refusal path simply replays it.
+     ONE save at a time, because the shell restores the draft as it stood when the
+     save was issued: a second stage entered inside the first save's round trip
+     would take that first one's optimistic draft as its restore point, so two
+     refusals would hand back a draft the server had refused twice while this
+     surface painted itself unstaged. Dropping the re-entrant click is what keeps
+     every restore point settled with respect to Diagnose's own staging. The
+     optimistic paint is untouched — the
+     guard is released on the answer, not on the paint. */
+  let saveInFlight = false;
+  async function stageAndSettle(toggle, item, isStaged) {
+    if (saveInFlight) return;
+    toggle();
+    // PORT: reach the app's Plan draft as well as the local tally
+    const answer = callbacks.stage?.(item, isStaged());
+    paint();
+    saveInFlight = true;
+    try {
+      if (await answer === false) { toggle(); paint(); }
+    } finally { saveInFlight = false; }
+  }
+
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
      it is the pane's floor, not the level's content. The watched object's
      precedence is the server's (Trial XOR Focus, pump wins); the Plan branch is
@@ -3580,21 +3610,22 @@ function boot(root, data, callbacks, signal) {
     }
     if (f.k === 'slot') {
       const run = basalRun(f.cell);
-      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
-        /* #372: one press acts on the whole finding. The cells that move are the
-           ones the Plan draft's own predicate admitted for this frame's run —
-           never `cell` alone, and never a set this surface decided — so the
-           tally, the lane marks, the dock line and the Plan badge can only ever
-           describe the basket the draft holds. */
-        const desired = !staged.has(cell.i);
-        for (const member of run.cells) {
-          if (desired) staged.add(member.i); else staged.delete(member.i);
-        }
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey, members: run.members },
-          desired);
-        paint();
-      }, {
+      renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) =>
+        stageAndSettle(
+          () => {
+            /* #372: one press acts on the whole finding. The cells that move are the
+               ones the Plan draft's own predicate admitted for this frame's run —
+               never `cell` alone, and never a set this surface decided — so the
+               tally, the lane marks, the dock line and the Plan badge can only ever
+               describe the basket the draft holds. The toggle is its own inverse
+               over that set, which is what #358's refusal replay relies on. */
+            const desired = !staged.has(cell.i);
+            for (const member of run.cells) {
+              if (desired) staged.add(member.i); else staged.delete(member.i);
+            }
+          },
+          { family: 'basal', key: cell.slot.__planKey, members: run.members },
+          () => staged.has(cell.i)), {
         run,
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
@@ -3606,21 +3637,17 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'block') {
-      renderIcBlockLevel(host, f.cell, icStaged, (cell) => {
-        if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id);
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'ic', key: cell.block.__planKey }, icStaged.has(cell.id));
-        paint();
-      }, demoNote);
+      renderIcBlockLevel(host, f.cell, icStaged, (cell) => stageAndSettle(
+        () => { if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id); },
+        { family: 'ic', key: cell.block.__planKey },
+        () => icStaged.has(cell.id)), demoNote);
       return;
     }
     if (f.k === 'isf') {
-      renderIsfLevel(host, isf, isfStaged, () => {
-        isfStaged = !isfStaged;
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'isf', raw: isf }, isfStaged);
-        paint();
-      });
+      renderIsfLevel(host, isf, isfStaged, () => stageAndSettle(
+        () => { isfStaged = !isfStaged; },
+        { family: 'isf', raw: isf },
+        () => isfStaged));
       return;
     }
     // 'factor' is the only remaining frame kind: render only the retained

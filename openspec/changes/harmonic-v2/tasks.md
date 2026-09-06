@@ -15,7 +15,7 @@ ticket locks after Connor approves the selected product direction.
 
 ## 2. Design the complete experience
 
-- [ ] 2.1 Complete the product brief and setting, habit, direct-Day, routine-return, and history journeys.
+- [x] 2.1 Complete the product brief and setting, habit, direct-Day, routine-return, and history journeys.
 - [ ] 2.2 Test Overview / Explore / Changes / Day and settings access against those journeys.
 - [ ] 2.3 Settle durable review/history, comparison-design reconciliation, and required backward-compatible contracts.
 - [ ] 2.4 Settle the risk contract and shared component/evidence boundaries without re-deriving engine policy.
@@ -23,12 +23,23 @@ ticket locks after Connor approves the selected product direction.
 
 ## 3. Review and hand off
 
-- [ ] 3.1 Record complete useful increments, v1/v2 coexistence checks, built-asset delivery, cutover, and retirement criteria.
-- [ ] 3.2 Strictly validate the complete OpenSpec proposal and acceptance deltas once authored; run the ADR and publication guards appropriate to its contents.
-- [ ] 3.3 Obtain independent review of the completed plan and resolve verified blocking findings.
+- [x] 3.1 Record complete useful increments, v1/v2 coexistence checks, built-asset delivery, cutover, and retirement criteria.
+- [x] 3.2 Strictly validate this planning-only change and run its ADR and publication guards. Author capability deltas in subsequent execution locks, once the design is approved.
+- [x] 3.3 Obtain independent review of the planning proposal and resolve verified blocking findings. This countersign covers the stated planning scope, not visual approval or implementation.
 - [ ] 3.4 Obtain Connor's approval of the selected direction; record the exact approved artifacts.
 - [ ] 3.5 Commit the reviewed planning result and post attributed findings on #348, clearly separating agreed design from pending implementation proof.
 
-No production implementation, related-ticket mutation, new component backlog,
-planning-only PR, automatic merge, or execution admission belongs to this
-investigation.
+Connor subsequently requested a draft planning/prototype PR at the end of the
+five-hour session budget. Commit and push the current checkpoint, document the
+remaining work, and leave the PR open. No production implementation,
+related-ticket mutation, new component backlog, merge, or execution admission
+belongs to this investigation.
+
+
+## Saved prototype checkpoint
+
+Fable authored the workstation and setting journey. The generated Focus and
+preemption evidence is ready, but its surface was not authored before Fable's
+provider limit. Complete habit, direct-Day and utility walkthroughs, the final
+language/polish pass, and Connor's visual approval remain open. The selected
+concept's REVIEW.md and AUDIT.md distinguish observed checks from these gaps.

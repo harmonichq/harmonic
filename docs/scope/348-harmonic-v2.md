@@ -2,7 +2,7 @@
 
 ## Decisions
 
-- Classify #348 as an attended investigation. Its output is an agreed product/design plan and findings, not an application build or a planning-only pull request. The issue explicitly withholds build authority. inline
+- Classify #348 as an attended investigation. Its output is an agreed product/design plan and findings. The issue explicitly withholds application-build authority. Connor later requested an open draft PR for the planning and prototype checkpoint; that delivery instruction supersedes the original no-planning-PR constraint. inline
 - Use `openspec/changes/harmonic-v2/` as the planning authority. This scope ledger records the interview; proposal, design, and tasks own the resulting plan. inline
 - Route scope to interview mode: the issue supplies a concrete navigation and delivery hypothesis, while the operator's primary unmet need and the first useful journey remain untested. Do not turn this intake into a second epic or a component backlog. inline
 - Preserve the issue's agreed architecture: sibling `frontend-v2/`, Vue/Vite/TypeScript, `/v2/` and `/v2/assets/`, one Python API/database owner, Node for building only, and ordinary human-reviewed increments to main. V1 need not migrate to Vite first. Recorded as ADR 348 — A parallel v2 frontend with one Python data owner. → ADR (discharged)
@@ -32,6 +32,8 @@
 
 - Q10 settled: the first usable v2 release completes the full loop for settings and habits: one priority, a change, follow-up, and a saved conclusion. A guidance-only release that hands action and follow-up to v1 is insufficient. This milestone may span several ordinary reviewed PRs behind the preview route. Recorded in ADR 348 — A parallel v2 frontend with one Python data owner. → ADR (discharged)
 
+- Q11 settled: choose Glucose first. Connor asks for a cohesive premium workstation and explicitly values the existing aggregate event comparisons, including nearly matched events. Keep one leading priority and make the comparison central to its evidence, with continuity into individual episodes and Day. Recorded in ADR 348 — Glucose first as a workstation. → ADR (discharged)
+
 ### Risk contract
 
 This contract uses the repository invariants and ordinary failure handling.
@@ -48,7 +50,7 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 ## Open questions
 
-- Q11 pending: choose the leading visual hierarchy from the rendered Guided brief, Glucose first, and Change journal concepts. Parent recommends Guided brief; no default selection is recorded as approval.
+- Develop the selected Glucose first direction into a cohesive workstation, preserving the aggregate comparison and context through episode and Day inspection. The first-round direction is settled; its final layout and interactions are still open.
 
 - Validate the Overview / Explore / Changes / Day hypothesis against complete setting, habit, and Day investigation journeys.
 - Specify the minimum snapshot and ending record that implements Q7 for a Trial and Focus, including unknown legacy facts, without building a general event archive.
@@ -66,8 +68,31 @@ Disposition: inline; governing plan contract, to be carried into any eventual im
 
 - Read-only Trial-ending grounding completed. Current maturity, active selection, bounded review roster, and transient Keep behavior are separate; a mature Trial can still block Focus. Parent verified active detection and the pin-time guard. Q9 settles a new durable finish action; the implementation must reconcile those consumers around one backend verdict.
 
-- UI Craft concept fan-out started after the empty-shell fidelity comparison passed. Three fresh bounded agents completed Guided brief, Glucose first, and Change journal HTML explorations. The parent rendered all six required states at desktop and narrow widths, walked primary prototype interactions, and verified the journal layout correction. The comparison and its limits are recorded in `mockups/harmonic-v2.exploration/REVIEW.md`. Q11 awaits direction selection. No production edits or visual lock are admitted.
+- UI Craft concept fan-out started after the empty-shell fidelity comparison passed. Three fresh bounded agents completed Guided brief, Glucose first, and Change journal HTML explorations. The parent rendered all six required states at desktop and narrow widths, walked primary prototype interactions, and verified the journal layout correction. The comparison and its limits are recorded in `mockups/harmonic-v2.exploration/REVIEW.md`. Q11 selected Glucose first with the workstation and aggregate-comparison feedback above. No production edits or visual lock are admitted.
+
+- Connor requested Claude Fable 5.1 at high effort as a continuing design partner. The initial read-only review used the orchestrate Claude adapter and is saved in `mockups/harmonic-v2.exploration/FABLE-REVIEW.md`. Connor subsequently promoted Fable to design lead; the write-capable lead session uses the same adapter mechanism and owns the selected prototype. The parent supplies source grounding and rendered feedback. No production or final-lock authority is added.
 
 ## Remaining dispositions
 
-- Product direction, synthetic walkthroughs, visual/interaction review, and final approval remain pending.
+- The first-round visual direction is selected. Complete synthetic walkthroughs, visual/interaction review, the remaining product contracts, and final approval remain pending.
+
+## Selected-design revision and delivery update
+
+On 2026-09-06 Connor rejected the parent's second Glucose first layout: “This
+looks like a child built it.” The direction remains Glucose first; the rejected
+composition is not a visual precedent or approved lock. Connor assigned Claude
+Fable 5.1 at high effort as design lead, responsible for authoring the prototype
+and subsequent visual fixes. The parent supplies grounding, rendered evidence,
+and review rather than independently changing its design.
+
+Connor requires UI Craft and the approved product vocabulary throughout. The
+parent verified that “Nearly matched” is existing case-file output and language
+recorded in ADR 180; the underlying near-miss is described by CONTEXT.md's Silence
+reason. Existing shipped copy is evidence, not blanket approval for the parent's
+new sentences. Any required new v2 wording must be identified explicitly.
+
+Connor also instructed the session to finish within a five-hour budget, then
+stop at its current state, commit and push, and open a draft PR. Leave that PR
+open; no merge. This authorizes a planning/prototype checkpoint PR while all
+unsettled design and implementation acceptance remains recorded. It does not
+admit production implementation or authorize changes to related tickets.

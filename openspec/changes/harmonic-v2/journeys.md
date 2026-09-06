@@ -78,7 +78,8 @@ continuous journey.
    low is not described as an observed treatment; a user's contrary answer stays
    a refutation. Observation-only advice does not acquire a dose recommendation.
 3. Choosing the behavior opens Changes and starts a Focus through the existing
-   backend eligibility and one-active-watch authority. Explain what the user
+   supported-action decision and existing one-active-watch authority. The current
+   pinnable-lever list is not a clinical support gate. Explain what the user
    intends to do and what evidence can observe it.
 4. Follow the Focus. Adherence answers whether the behavior changed at observed
    opportunities. Outcomes answer what happened to glucose. Show them separately;
@@ -161,6 +162,10 @@ visual similarity must never become a shared claim that nothing needs attention.
 These are capability interfaces for the selected journeys. Exact endpoint and
 storage shapes follow the grounded identity/admission design; v1 continues to
 use the same API/database, and no second analysis engine is proposed.
+
+The proposed state precedence and minimal persistence additions are in
+[contracts.md](contracts.md). They remain subject to the same walkthrough and
+review as this journey proposal.
 
 ## Walkthrough completion
 

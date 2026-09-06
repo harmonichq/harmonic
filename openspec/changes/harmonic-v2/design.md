@@ -247,6 +247,10 @@ not assemble a clinical story by joining independently arriving chart requests
 or interpreting a score. Final endpoint shape and persistence writes will follow
 the settled journey; this is not a commitment to a new parallel API service.
 
+The minimum proposed ownership and persistence changes are recorded in
+[contracts.md](contracts.md). That proposal makes the existing Focus admission
+boundary, evidence/advice separation, and historical-period limits explicit.
+
 ## Navigation hypothesis
 
 Test four destinations without treating their names or boundaries as approved:
@@ -434,8 +438,83 @@ The three unlocked directions are reviewed in
 `mockups/harmonic-v2-review.html`. Six prototype states were rendered at desktop
 and narrow widths; primary episode, set-aside, conclusion and retry flows were
 walked. This is hierarchy evidence only. It does not discharge the complete
-walkthrough obligations above. Q11 is the pending direction choice; the parent
-recommends Guided brief for its clearer next step.
+walkthrough obligations above. Q11 selected Glucose first. The parent
+recommendation recorded in the first review is historical; Connor
+asks that the selected direction become a cohesive workstation and retain the
+existing aggregate event comparisons as central evidence.
+
+## ADR 348 — Glucose first as a workstation
+
+**Decision.** Develop the selected Glucose first concept. The primary working
+surface must feel like a cohesive premium workstation: the leading concern,
+its evidence and the next action retain their relationship as the user
+inspects them. A long vertical sequence of narrative sections does not satisfy
+this direction. Resolve the concrete arrangement in the next prototype round
+using the existing Harmonic visual language.
+
+The aggregate event comparison is a valued part of the existing experience.
+Preserve comparison between events that matched the finding, nearly matched
+events, and the eligible comparison population. Make that comparison central
+to understanding the selected concern, with a continuous route into a cohort
+member, its relevant episode and Day, and back to the same context. This
+requirement concerns Diagnose event cohorts; Trial before/after and Focus
+adherence/outcome evidence remain separate jobs with their existing semantics.
+
+Membership, eligibility, denominators, support and anchors remain backend
+owned. A comparison is not a claim of causation, and a nearly matched event
+does not become a recommendation. Retain the shipped distinctions for limited
+and withheld aggregates and their inspectable episodes. Presentation grouping
+must not silently replace the comparison population or reclassify events.
+
+**Why.** Connor selected Glucose first because seeing the glucose evidence is
+valuable, while also asking for stronger curation. One leading priority and
+rich comparison evidence serve the same decision when they share a working
+context. They do not require a competing list of recommendations.
+
+**Boundary.** This settles a direction and retention requirement. The next
+render must prove the arrangement, narrow behavior and active Trial/Focus
+continuity. It does not lock the design, complete the full-loop walkthroughs,
+or authorize production implementation. Connor requested an additional
+Claude Fable 5.1 critique at high effort before the next revision.
+
+### Aggregate comparison reuse grounding
+
+The existing `frontend/diagnose-event-comparison.js` exposes
+`eventComparisonChartOption` and `renderEventSurface` for a server-produced
+`diagnose-finding-case-file-v1` with event alignment. The surface can lend its
+readout to a caller-owned headline. Its caller owns frame sizing and cleanup,
+which gives the next workstation prototype a composition seam without a
+second chart implementation.
+
+`ciq_autotune/finding_case_file.py::_event` supplies matched, nearly matched
+and comparison cohorts, with names, anchors and membership. Its policy in
+`analyzers/scenario/evidence_population.py` determines comparison eligibility.
+Other lever claims can remain comparison members when eligible; the UI must
+not reconstruct membership by pooling verdict labels. Cross-population
+comparisons also have their own population and anchor contract.
+
+`ciq_autotune/event_comparison.py::project_cohort` owns per-cohort and per-point
+support, usable counts, the median and interquartile range. A missing aggregate
+is not zero glucose or evidence that no problem exists. The renderer preserves
+support gaps and uses the cohort values to set its glucose field, so selecting
+one episode does not silently rescale the comparison. That field invariant
+must not be applied to full Day in a way that hides glucose outside the
+comparison range. A shared stage can use the existing renderer for each job.
+
+The case-file producer does not opt into `project_cohort`'s legacy raw-episode
+fallback for withheld aggregates. The renderer can draw such a fallback if
+supplied, but v2 cannot assume the current response contains one. Preserve
+withheld status and available member inspection. Likewise the served
+`not_comparable` count is a roster residue, not a UI formula for deriving who
+belongs to the comparator.
+
+The older `mockups/diagnose-event-comparison.synthetic/project.mjs` emits
+`finding-case-file-event-capture-v1` and the earlier cohort taxonomy. It is
+not a drop-in input for the current case-file renderer. The next generated
+capture must exercise the current producer contract instead of renaming the
+older fixture keys. Any extension to the v2 generator retains its existing
+`--check` CI gate. These are inspected source facts, not an executed v2
+comparison walkthrough.
 
 ## Proposed delivery sequence
 
@@ -461,8 +540,8 @@ executable component backlog or permission to change the related tickets.
    and Trial-ending persistence this journey requires, with one backend verdict
    consumed by active selection, review, and the Focus admission guard.
 3. **Complete the habit loop in the same preview.** Reuse guidance, navigation,
-   cited episodes and history. Start and follow a Focus through its existing
-   eligibility, distinguish adherence from outcomes, record manual endings and
+   cited episodes and history. Start and follow a Focus through the guidance owner’s supported-action
+   decision and the existing pin/watch constraints, distinguish adherence from outcomes, record manual endings and
    Trial preemption, and preserve the original context and ending. Cover the
    supported behavioral families rather than blessing one meal example as the
    complete feature. Do not make a second watch authority or outcome engine.

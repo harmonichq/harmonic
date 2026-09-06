@@ -32,6 +32,12 @@ Produce and agree:
 - A sequence of complete useful increments, v1/v2 coexistence and verification,
   eventual root-route cutover, and v1 retirement.
 
+The draft journey proposal is [journeys.md](journeys.md), the grounded interface
+proposal is [contracts.md](contracts.md), and current-system probes are recorded
+in [evidence.md](evidence.md). The bounded [existing-job inventory](predecessor.md)
+records what the prototype has yet to carry forward. The ADRs in [design.md](design.md) own the settled
+product decisions; these accompanying drafts apply them.
+
 ## Impact
 
 The eventual frontend is `frontend-v2/`, built with Vue/Vite/TypeScript and
@@ -42,9 +48,10 @@ meaningful v2 product increment. Migrating v1 to Vite is not a prerequisite.
 
 This investigation may write planning documents and properly governed synthetic
 design evidence. It changes no production source, analyzer, database schema,
-clinical threshold, deployed service, or existing ticket outside #348. It opens
-no planning-only PR. Approved implementation later uses ordinary short-lived,
-human-reviewed PRs to main behind the preview route.
+clinical threshold, deployed service, or existing ticket outside #348. Connor subsequently requested an open draft PR
+containing the planning and prototype checkpoint, with unfinished work identified and no merge. That later
+delivery instruction governs this investigation. Approved implementation later
+uses ordinary short-lived, human-reviewed PRs to main behind the preview route.
 
 The design records how #347, #336, and #340 relate to v2. Their tracker state
 and branches remain untouched. Connor approves the selected direction before

@@ -58,3 +58,37 @@ choice and Plan walkthrough. The current concept round does not join that
 case, the late-bolus investigation, and the Verify cases into a fictitious
 continuous clinical history. Cross-candidate priority selection remains a
 separate policy question; one asserting fixture row does not establish it.
+
+## Selected direction, round 3
+
+Job: inspect the comparison behind one concern and locate its relevant meal.
+Audience: the same wearer, reading their own glucose and treatment history.
+Direction: Harmonic's Diagnostic Instrument, using shipped material and chart
+renderers. Signature move: one time spine. The comparison and the held
+occurrence's own episode sit in one stage on the same relative extent from the
+served bolus anchor, so the aggregate and the instance read as one object with
+no tab switch, and no cohort dims while a member is held, so the aggregate
+comparison stays whole. The concern is the stage's own header rail; the reading pane
+holds the cohorts, their members and the served moments as lists at Body and
+Label rank. Density: compact, actual event rows, the shipped chart key under
+the comparison; explanation is served text, never a default paragraph.
+Round 3c seats the supported setting journey on the same desk with the same
+move: the shipped basal chart over the held night on one spine, then the
+shipped Plan deliverable and reconciliation, the served Trial and the
+wearer's own conclusion, with each source's review controls kept outside
+product chrome and the two synthetic patients never pooled.
+Constraints: UI Craft's product and design rules, existing role tokens, meaningful
+chart marks, keyboard selection, structural narrow views (one figure seat, the
+reading pane as a sheet), synthetic producers.
+Anti-references: SaaS dashboard furniture, page banners and bottom action bars,
+headline hierarchy, repeated cards or eyebrows, promotional language and
+default paragraphs explaining every chart. Round 2's rejected frame carried
+all of these; round 3 removes them rather than restyling them. Design choices,
+copy provenance and limits: `FABLE-LEAD.md`.
+
+Connor explicitly required the parent and Fable to use UI Craft throughout.
+Fable received the skill and its product, design-rule, lock, sibling-fidelity
+and web references. This iteration is co-design, not the final formal critique.
+The selected prototype uses the current case-file producer for the original
+thin case and repeated manufactured QA shapes; it never renames the old fixture
+cohorts. A distinct full-day timeline comes from the same synthetic store.

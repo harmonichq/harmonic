@@ -30,6 +30,7 @@ lowercase-and-hyphen charset so a request cannot escape its directory.
 - **THEN** the shell and assets answer from the build output with their expected
   content types and bytes
 - **AND** `/api` routes keep their API behaviour and are not claimed by asset delivery
+- **AND** no file under the build output names `unpkg.com` or `jsdelivr.net`
 - **AND** an unknown `/assets` path, a non-page path and an unknown `/api` path
   answer 404
 

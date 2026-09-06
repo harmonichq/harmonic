@@ -11,8 +11,11 @@
 2. [ ] Make the shell a Vite input: `frontend/main.js` installs the one bundled
    ECharts identity on `window.echarts`; `frontend/index.html` drops the importmap
    and the CDN script tag, references `./main.js` ahead of its inline module, and
-   its inline module, stylesheet links and icon reference siblings relatively.
-   Runtime templates and every vue-free module stay byte-identical.
+   its inline module, stylesheet links and icon reference siblings relatively;
+   `frontend/index.test.js` retargets its three `/assets/`-absolute assertions
+   (the workstation import, the Verify stylesheet link, the icon link) to the
+   relative references. Runtime templates and every other vue-free module stay
+   byte-identical.
 3. [ ] Admit the new files and ignore the outputs: `scripts/public_allowlist.txt`
    lists the four root files and admits `.ts` and `.vue` under `frontend/`;
    `.dockerignore` excludes `node_modules/`, `frontend/dist/` and `harness/`.
@@ -27,11 +30,13 @@
    unchanged.
 5. [ ] Retarget the Python contract tests to built output:
    `tests/test_frontend_asset_routes.py` (page routes, every asset
-   `dist/index.html` references answers with the dist bytes and content type,
-   `/api` isolation, the 404 set, the missing-build 503), the per-source-asset
-   tests in `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile
-   copies `frontend/dist` from the Node stage, copies no `frontend` source, and
-   its runtime stage installs no Node).
+   `dist/index.html` references answers with the dist bytes and content type, no
+   file under `frontend/dist` names `unpkg.com` or `jsdelivr.net`, `/api`
+   isolation, the 404 set, the missing-build 503 proven with the dist location
+   redirected to an empty directory), the per-source-asset tests in
+   `tests/test_api.py`, and `tests/test_deploy_assets.py` (the Dockerfile copies
+   `frontend/dist` from the Node stage, copies no `frontend` source, and its
+   runtime stage installs no Node).
 6. [ ] Deliver the same artifact on every supported path: a `node:22` Dockerfile
    build stage running `npm ci && npm run build` with the runtime copying only
    `frontend/dist`; the CI backend job sets up Node 22 with an npm cache and
@@ -39,28 +44,42 @@
    README install, run and Docker prose; AGENTS.md install, layout and
    conventions prose; the `ciq_autotune/api.py` cache comment; the
    `tests/test_check_public_links.py` bare-specifier docstring.
-7. [ ] One shared built-shell route helper for browser legs:
-   `frontend/built-shell.js` (dependency-free CommonJS beside
-   `browser-runner.js`) answers `/`, the six page paths and `/assets/*` from
-   `frontend/dist`, fails closed naming `npm ci && npm run build` when
-   `frontend/dist/index.html` is absent, and ships `frontend/built-shell.test.js`
-   under the dependency-free Node runner.
-8. [ ] Every browser leg serves the built shell through that helper and vendors
-   nothing from a CDN: the nine page-serving legs (`day-surface.browser.mjs`,
-   `plan-first-match.browser.mjs`, `diagnose-workstation.browser.test.mjs`,
-   `diagnose-canvas-composition.browser.test.mjs`,
-   `cockpit-shell.browser.test.mjs`, the three behaviour replays and
-   `mockups/diagnose-event-comparison-support-audit.mjs`) drop `VENDOR_DIR` and
-   source routing; the S71 stage probe instruments the served built chunk that
-   carries the workstation seam instead of `/assets/diagnose-workstation.js`;
-   the cockpit-shell asset assertion checks that every asset the shell requested
-   loaded under `/assets` and that at least one script and one stylesheet did;
-   the workstation suite's module-isolation page reads ECharts from
-   `node_modules/echarts/dist/echarts.min.js`;
-   `frontend/browser-gates-fail-closed.test.js` asserts the new fail-closed
-   messages; `scripts/ensure_browser_gate_env.py` and
-   `scripts/screenshots.local.mjs` stop vendoring CDN modules.
+7. [ ] One shared built-shell helper for browser legs, `frontend/built-shell.js`
+   (dependency-free CommonJS beside `browser-runner.js`), exporting one factory
+   `createBuiltShell({ dist })`: `dist` defaults to `frontend/dist` beside the
+   module and is overridden by the `HARMONIC_DIST` environment variable when set;
+   construction throws `frontend/dist/index.html is missing — run npm ci && npm
+   run build` when that file is absent; `serve(pathname)` returns
+   `{ body, contentType }` for `/`, the six page paths and existing `/assets/*`
+   files and `null` for anything else, so a Playwright route handler and a Node
+   `http` request handler each adapt it in one line. `frontend/built-shell.test.js`
+   covers the throw, the page and asset mapping and the `null` cases against a
+   temporary dist it writes itself, so the dependency-free fast gate passes with
+   `frontend/dist` absent.
+8. [ ] Every browser leg loads the built shell through that helper and vendors
+   nothing from a CDN: the five legs that route the page through Playwright
+   (`cockpit-shell.browser.test.mjs`, `diagnose-workstation.browser.test.mjs`, the
+   workstation, event-comparison and Verify behaviour replays) and the two that
+   serve it from a `node:http` fixture server (`day-surface.browser.mjs`,
+   `plan-first-match.browser.mjs`) answer `/`, the page paths and `/assets/*`
+   from the helper; `diagnose-canvas-composition.browser.test.mjs` drops its
+   `VENDOR_DIR` preflight; `mockups/diagnose-event-comparison-support-audit.mjs`
+   changes only if the replay opener it imports changes shape. Every leg's
+   preflight collects a missing build beside a missing Playwright module, so a run
+   lacking either names both and exits nonzero before any browser launches. The
+   S71 stage probe instruments the served built chunk that carries the workstation
+   seam instead of `/assets/diagnose-workstation.js`; the cockpit-shell asset
+   assertion checks that every asset the shell requested loaded under `/assets`
+   and that at least one script and one stylesheet did; the workstation suite's
+   module-isolation page reads ECharts from
+   `node_modules/echarts/dist/echarts.min.js`.
+   `frontend/browser-gates-fail-closed.test.js` spawns each suite with
+   `HARMONIC_DIST` pointed at an empty directory, once without
+   `PLAYWRIGHT_MODULE` (expect both named) and once with it (expect the build
+   command named), asserting a nonzero exit each time.
+   `scripts/ensure_browser_gate_env.py` and `scripts/screenshots.local.mjs` stop
+   vendoring CDN modules.
 9. [ ] CI browser gates build first: the browser-gate-setup and leg jobs run
    `npm ci && npm run build` with an npm cache keyed on the lockfile and drop the
-   CDN vendor download and its cache; the AGENTS.md browser-gates block drops the
-   two `curl` lines and every `VENDOR_DIR`.
+   CDN vendor download, the `matrix.vendor` flag and the `ciq-vendor` cache; the
+   AGENTS.md browser-gates block drops the two `curl` lines and every `VENDOR_DIR`.

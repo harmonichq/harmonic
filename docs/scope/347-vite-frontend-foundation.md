@@ -45,8 +45,12 @@ contract). Disposition: inline; the proposal is the authoritative copy.
   Docker is absent on the operator's machine, so a pull-request-time `docker
   build` job (no push) is the image proof.
 - Every browser leg serves the built shell through one dependency-free helper
-  beside `browser-runner.js`; `VENDOR_DIR` and the CDN vendor download retire; the
-  workstation suite's module-isolation page reads ECharts from `node_modules`.
+  beside `browser-runner.js`, `createBuiltShell({ dist })`, whose dist location
+  the `HARMONIC_DIST` variable overrides so its fail-closed path is provable with a
+  build present; `VENDOR_DIR` and the CDN vendor download retire; the workstation
+  suite's module-isolation page reads ECharts from `node_modules`.
+- The no-CDN invariant is enforced on every CI run by the Python contract test,
+  not only by the build chunk's one-time check.
 - The backend CI job installs Node and builds before `pytest`; the frontend job
   stays npm-free.
 
@@ -66,48 +70,33 @@ None.
 
 ## Grounding and preflight
 
-Every block below is `command → output`, run in this worktree at
-`b8f4a71 docs: archive findings layout exploration (#349)` on 2026-09-06 unless a
-block says otherwise.
+Every block below is `command → output`. The tree facts are emitted by
+`docs/scope/347-generated-facts.sh`, pasted whole from one run at the commit its
+first block names; rerun the script to regenerate them. The registry, spike and
+sandbox blocks were run once each on 2026-09-06 and are pasted whole from those
+runs, with the commands exactly as typed.
 
-### Toolchain and registry
+### Tree facts (`sh docs/scope/347-generated-facts.sh`)
 
 ```text
+## HEAD
+$ git log -1 --format="%h %s"
+1c0d838 Triage #347: pin the Vite frontend foundation change
+
+## Toolchain
 $ node --version; npm --version
 v26.7.0
 11.19.0
-
-$ for p in vite vue echarts @vitejs/plugin-vue; do printf "%s: " "$p"; npm view "$p" version; done
-vite: 8.2.2
-vue: 3.5.42
-echarts: 6.1.0
-@vitejs/plugin-vue: 6.0.8
-
-$ npm view 'echarts@5' version | tail -2
-echarts@5.5.1 '5.5.1'
-echarts@5.6.0 '5.6.0'
-
-$ npm view vite@8.2.2 engines
-{ node: '^20.19.0 || >=22.12.0' }
-
-$ npm view @vitejs/plugin-vue peerDependencies
-{ vue: '^3.2.25', vite: '^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0' }
 
 $ command -v docker; echo "exit=$?"
 exit=1
 
 $ uv --version
 uv 0.11.25 (1fc7de7c4 2026-06-26 aarch64-apple-darwin)
-```
 
-ECharts is pinned at 5.5.0, the version the CDN tag serves today; the 6.x line is
-a major change #347 does not authorise.
-
-### The shell today
-
-```text
+## The shell today
 $ wc -l < frontend/index.html
-5571
+    5571
 
 $ grep -n '<script type="importmap">\|cdn.jsdelivr\|<script type="module">' frontend/index.html
 13:  <script type="importmap">
@@ -115,9 +104,9 @@ $ grep -n '<script type="importmap">\|cdn.jsdelivr\|<script type="module">' fron
 2238:  <script type="module">
 
 $ grep -o -E "from ['\"]/assets/[a-z0-9-]+\.js['\"]" frontend/index.html | sort -u | wc -l
-23
+      23
 
-$ grep -c "window.echarts" frontend/*.js | grep -v ':0'
+$ grep -c 'window.echarts' frontend/*.js | grep -v ':0'
 frontend/diagnose-event-comparison.js:1
 frontend/diagnose-workstation.js:3
 
@@ -126,16 +115,227 @@ $ grep -c '@app.get("/assets/' ciq_autotune/api.py
 
 $ grep -n 'SPA_PAGES =' ciq_autotune/api.py
 85:SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
+
+$ grep -n 'assets' frontend/index.test.js
+54:  assert.match(page, /from '\/assets\/diagnose-workspaces\.js'/, 'the workstation renderer is mounted');
+91:  assert.match(page, /<link rel="stylesheet" href="\/assets\/verify-workstation\.css" \/>/,
+103:  assert.match(page, /<link rel="icon" type="image\/svg\+xml" href="\/assets\/favicon\.svg" \/>/,
+
+## Browser legs today
+$ grep -n 'openApp\|VENDOR_DIR' mockups/diagnose-event-comparison-support-audit.mjs frontend/diagnose-canvas-composition.browser.test.mjs | head -8
+mockups/diagnose-event-comparison-support-audit.mjs:21:  openApp,
+mockups/diagnose-event-comparison-support-audit.mjs:31:const open = openApp;
+frontend/diagnose-canvas-composition.browser.test.mjs:35:  openApp,
+frontend/diagnose-canvas-composition.browser.test.mjs:56:const VENDOR = process.env.VENDOR_DIR;
+frontend/diagnose-canvas-composition.browser.test.mjs:57:if (!VENDOR) missing.push('VENDOR_DIR is unset');
+frontend/diagnose-canvas-composition.browser.test.mjs:60:    if (!existsSync(join(VENDOR, asset))) missing.push(`VENDOR_DIR=${VENDOR} is missing ${asset}`);
+frontend/diagnose-canvas-composition.browser.test.mjs:96:  const page = await openApp(browser, {
+frontend/diagnose-canvas-composition.browser.test.mjs:481:  const page = await openApp(browser, {
+
+$ grep -l 'index.html' frontend/*.browser.mjs frontend/*.browser.test.mjs frontend/*.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs
+frontend/day-surface.browser.mjs
+frontend/plan-first-match.browser.mjs
+frontend/cockpit-shell.browser.test.mjs
+frontend/diagnose-workstation.browser.test.mjs
+frontend/diagnose-event-comparison-behavior.replay.mjs
+frontend/diagnose-workstation-behavior.replay.mjs
+frontend/verify-660-story-behavior.replay.mjs
+
+$ grep -c 'VENDOR_DIR' frontend/day-surface.browser.mjs frontend/plan-first-match.browser.mjs frontend/diagnose-workstation.browser.test.mjs frontend/diagnose-canvas-composition.browser.test.mjs frontend/cockpit-shell.browser.test.mjs frontend/browser-runner.browser.test.mjs frontend/diagnose-workstation-behavior.replay.mjs frontend/diagnose-event-comparison-behavior.replay.mjs frontend/verify-660-story-behavior.replay.mjs mockups/diagnose-event-comparison-support-audit.mjs
+frontend/day-surface.browser.mjs:0
+frontend/plan-first-match.browser.mjs:0
+frontend/diagnose-workstation.browser.test.mjs:4
+frontend/diagnose-canvas-composition.browser.test.mjs:3
+frontend/cockpit-shell.browser.test.mjs:5
+frontend/browser-runner.browser.test.mjs:1
+frontend/diagnose-workstation-behavior.replay.mjs:3
+frontend/diagnose-event-comparison-behavior.replay.mjs:2
+frontend/verify-660-story-behavior.replay.mjs:2
+mockups/diagnose-event-comparison-support-audit.mjs:0
+
+$ grep -n 'createServer' frontend/day-surface.browser.mjs frontend/plan-first-match.browser.mjs
+frontend/day-surface.browser.mjs:8:import { createServer } from 'node:http';
+frontend/day-surface.browser.mjs:27:  const server = createServer(async (req, res) => {
+frontend/plan-first-match.browser.mjs:16:import { createServer } from 'node:http';
+frontend/plan-first-match.browser.mjs:57:  const server = createServer(async (req, res) => {
+
+$ grep -n 'stageProbe && path' frontend/diagnose-workstation-behavior.replay.mjs
+656:      if (stageProbe && path === '/assets/diagnose-workstation.js') {
+
+$ grep -n "for (const path of \['/assets/tab-routing.js'" frontend/cockpit-shell.browser.test.mjs
+854:    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
+
+$ grep -n 'cdn.jsdelivr' frontend/diagnose-workstation.browser.test.mjs
+2409:              + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
+
+$ grep -n 'PLAYWRIGHT_MODULE\|VENDOR_DIR' frontend/browser-gates-fail-closed.test.js
+10:// Each suite is spawned twice: once with PLAYWRIGHT_MODULE and VENDOR_DIR
+11:// both removed (expect it to name both), and once with VENDOR_DIR pointed at
+35:  delete env.PLAYWRIGHT_MODULE;
+36:  delete env.VENDOR_DIR;
+59:    assert.match(output, /PLAYWRIGHT_MODULE/, `${suite} must name PLAYWRIGHT_MODULE as missing`);
+60:    assert.match(output, /VENDOR_DIR/, `${suite} must name VENDOR_DIR as missing`);
+64:  test(`${suite} fails closed and names the missing vendored assets when VENDOR_DIR is empty`, () => {
+71:        `${suite} must keep its empty VENDOR_DIR outside the frontend source tree`);
+72:      const { status, output } = spawnSuite(suite, { VENDOR_DIR: dir });
+
+## CI facts
+$ grep -n -E 'run: (uv run python (scripts|mockups)/|python3 scripts/|node )' .github/workflows/ci.yml
+35:        run: uv run python scripts/gen_ic_block_fixtures.py --check
+37:        run: uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
+41:        run: uv run python scripts/gen_annotation_fixtures.py --check
+46:        run: uv run python scripts/gen_chart_builder_fixtures.py --check
+51:        run: uv run python scripts/check_demo_fixtures.py
+57:        run: uv run python scripts/gen_qa_e2e_db.py --check
+64:        run: uv run python scripts/gen_findings_projection_fixtures.py --check
+66:        run: uv run python scripts/gen_ic_history_event_fixtures.py --check
+68:        run: uv run python scripts/gen_ic_block_evidence_fixtures.py --check
+70:        run: uv run python scripts/gen_basal_night_evidence_fixtures.py --check
+72:        run: uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
+74:        run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
+76:        run: uv run python scripts/gen_eating_sequence_fixtures.py --check
+88:        run: python3 scripts/check_adr_numbers.py
+90:        run: python3 scripts/check_owned_identifiers.py
+95:        run: python3 scripts/check_public_allowlist.py
+130:        run: node --test 'frontend/**/*.test.js'
+134:        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
+136:        run: node --test scripts/screenshots.local.test.mjs
+150:        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
+
+$ grep -n -E 'gate:|vendor:' .github/workflows/ci.yml
+211:          - gate: Day lifecycle
+212:            vendor: false
+214:          - gate: Diagnose workstation
+215:            vendor: true
+217:          - gate: Diagnose canvas composition
+218:            vendor: true
+220:          - gate: Cockpit shell
+221:            vendor: true
+227:          - gate: Browser runner lifecycle
+228:            vendor: false
+230:          - gate: First-plan reconcile
+231:            vendor: false
+244:          - gate: Diagnose workstation behaviour ledger
+245:            vendor: true
+255:          - gate: Diagnose event comparisons
+256:            vendor: true
+258:          - gate: Diagnose comparison support audit
+259:            vendor: true
+266:          - gate: Verify behaviour ledger
+267:            vendor: true
+
+$ grep -n "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" .github/workflows/ci.yml
+336:    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+$ grep -n 'ciq-vendor\|matrix.vendor' .github/workflows/ci.yml
+191:          path: ${{ runner.temp }}/ciq-vendor
+196:          mkdir -p "$RUNNER_TEMP/ciq-vendor"
+197:          curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$RUNNER_TEMP/ciq-vendor/vue.esm-browser.js"
+198:          curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$RUNNER_TEMP/ciq-vendor/echarts.min.js"
+216:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+219:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
+222:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" node --test frontend/cockpit-shell.browser.test.mjs
+247:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+257:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
+260:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
+268:            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+295:        if: matrix.vendor
+299:          path: ${{ runner.temp }}/ciq-vendor
+302:        if: matrix.vendor && steps.vendor-cache.outputs.cache-hit != 'true'
+
+## Public tree
+$ grep -n -E '^frontend/|^harness/|^\.dockerignore|^Dockerfile|^uv\.lock|^package|^vite|^tsconfig' scripts/public_allowlist.txt
+22:uv.lock
+23:Dockerfile
+24:.dockerignore
+53:frontend/** {.html,.js,.mjs,.css,.svg,.json}
+59:harness/** {.html,.js,.json}
+
+$ grep -n -E '^dist/|^node_modules/' .gitignore
+13:dist/
+166:node_modules/
+
+$ cat .dockerignore
+# Real PHI / secrets — never bake into an image layer.
+tconnect-data/
+.env
+
+# VCS, local venv, caches, and dev-only trees.
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.claude/
+
+# Design scratch — not part of the runtime app.
+mockups/
+
+## Docker
+$ grep -n 'COPY\|FROM' Dockerfile
+12:FROM python:3.12-slim-bookworm AS builder
+15:COPY --from=ghcr.io/astral-sh/uv:0.11.25 /uv /uvx /usr/local/bin/
+32:COPY pyproject.toml uv.lock ./
+37:FROM python:3.12-slim-bookworm AS runtime
+49:COPY --from=builder /app/.venv /app/.venv
+55:# COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
+56:COPY ciq_autotune ./ciq_autotune
+57:COPY frontend ./frontend
+58:COPY docs/kb ./docs/kb
+59:COPY pyproject.toml README.md ./
+60:COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+## The authorised offline server
+$ grep -n 'harmonic serve --no-fetch' AGENTS.md .github/workflows/ci.yml
+AGENTS.md:191:  uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
+.github/workflows/ci.yml:308:          uv run harmonic serve --no-fetch --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
 ```
 
 Sibling modules import one another relatively (`from './x.js'`); only the inline
-module and the stylesheet links use `/assets/`-absolute specifiers.
+module and the stylesheet links use `/assets/`-absolute specifiers. Seven of the
+ten browser matrix rows carry `VENDOR_DIR`; Day lifecycle, Browser runner
+lifecycle and First-plan reconcile set `vendor: false`, and the two page-serving
+legs among them load the CDNs live from their `node:http` fixture servers.
+
+### Registry (network; run from the session scratch directory with `--cache ./npmcache`)
+
+```text
+$ npm --cache ./npmcache view vue version
+3.5.42
+
+$ npm --cache ./npmcache view echarts version
+6.1.0
+
+$ npm --cache ./npmcache view @vitejs/plugin-vue version
+6.0.8
+
+$ npm --cache ./npmcache view vite version 2>/dev/null
+8.2.2
+
+$ npm --cache ./npmcache view 'echarts@5' version 2>/dev/null | tail -2
+echarts@5.5.1 '5.5.1'
+echarts@5.6.0 '5.6.0'
+
+$ npm --cache ./npmcache view vite@8.2.2 engines
+{ node: '^20.19.0 || >=22.12.0' }
+
+$ npm --cache ./npmcache view @vitejs/plugin-vue peerDependencies
+{ vue: '^3.2.25', vite: '^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0' }
+```
+
+ECharts is pinned at 5.5.0, the version the CDN tag serves today; the 6.x line is
+a major change #347 does not authorise. A first `npm view vite version` printed
+only an `npm notice` line to the captured stream; the rerun above with stderr
+dropped is the recorded value.
 
 ### The build spike
 
 `docs/scope/347-vite-build.spike.sh` copies the shipped frontend sources to a
 scratch directory, applies the ADR 347 transform, and builds with the pinned
-toolchain. Output of its run:
+toolchain. Output of its run (that run's config also set `manifest: true`, which
+the committed spike drops because Python does not read the manifest):
 
 ```text
 index.html transformed 360220 -> 359874 chars; /assets/ left: 0
@@ -172,9 +372,6 @@ frontend/dist/index.html
 1335:  <link rel="stylesheet" crossorigin href="/assets/index-D-REnlkk.css">
 ```
 
-That run had `manifest: true` in its config; the committed spike drops it because
-Python does not read the manifest.
-
 ### The mount spike
 
 `docs/scope/347-built-shell-mount.spike.mjs` serves that build from disk through
@@ -197,42 +394,10 @@ the empty payloads and painted nothing; with the stored token empty the shell
 mounted its chrome but the app made six API calls in total and drew no
 workstation. The run above stores a non-empty token, as every existing replay does.
 
-### Browser legs today
-
-```text
-$ grep -l "readFile(join(.*index.html" frontend/*.browser.mjs frontend/*.browser.test.mjs frontend/*.replay.mjs mockups/*.mjs
-frontend/cockpit-shell.browser.test.mjs
-frontend/diagnose-event-comparison-behavior.replay.mjs
-frontend/diagnose-workstation-behavior.replay.mjs
-frontend/diagnose-workstation.browser.test.mjs
-frontend/verify-660-story-behavior.replay.mjs
-
-$ grep -n "'index.html' : url.pathname.replace" frontend/day-surface.browser.mjs frontend/plan-first-match.browser.mjs
-frontend/day-surface.browser.mjs:67:      ? 'index.html' : url.pathname.replace(/^\/assets\//, '');
-frontend/plan-first-match.browser.mjs:90:      ? 'index.html' : url.pathname.replace(/^\/assets\//, '');
-
-$ grep -n "stageProbe && path" frontend/diagnose-workstation-behavior.replay.mjs
-656:      if (stageProbe && path === '/assets/diagnose-workstation.js') {
-
-$ grep -n "for (const path of \['/assets/tab-routing.js'" frontend/cockpit-shell.browser.test.mjs
-854:    for (const path of ['/assets/tab-routing.js', '/assets/data.js', '/assets/shell.css']) {
-
-$ grep -n "cdn.jsdelivr" frontend/diagnose-workstation.browser.test.mjs
-2409:              + '<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script></head>'
-```
-
-Every page-serving leg, including the three `TARGET=app` replays, answers `/`
-and `/assets/*` from `frontend/` source through `page.route` and reroutes the two
-CDN URLs to `VENDOR_DIR`; only `/api/*` reaches the running app. The workstation
-replay's `appSource === 'server'` branch (`BASE_URL` set) lets the app serve the
-page and intercepts `/assets/diagnose-workstation.js` for S71.
-`diagnose-canvas-composition.browser.test.mjs` and `browser-runner.browser.test.mjs`
-serve no `index.html`; the former still requires `VENDOR_DIR`.
-
 ### A sandboxed worker cannot launch Chromium
 
 A Sonnet worker dispatched through `claude-worker.py` in `workspace-write` ran
-`chromium.launch()` against the browser-gate Playwright install:
+`chromium.launch()` against the browser-gate Playwright install and returned:
 
 ```text
 LAUNCH FAILED: Error: browserType.launch: Target page, context or browser has been closed | Browser logs: |
@@ -241,59 +406,8 @@ Exit code: 0
 
 This is the seatbelt failure AGENTS.md documents for Codex `workspace-write`. The
 browser-leg chunk therefore ships a dependency-free unit test its worker can run,
-and the coordinator runs the ten legs and returns verbatim output.
-
-### CI facts
-
-```text
-$ grep -n -E 'run: (uv run python scripts/|python3 scripts/|node )' .github/workflows/ci.yml
-35:        run: uv run python scripts/gen_ic_block_fixtures.py --check
-41:        run: uv run python scripts/gen_annotation_fixtures.py --check
-46:        run: uv run python scripts/gen_chart_builder_fixtures.py --check
-51:        run: uv run python scripts/check_demo_fixtures.py
-57:        run: uv run python scripts/gen_qa_e2e_db.py --check
-64:        run: uv run python scripts/gen_findings_projection_fixtures.py --check
-66:        run: uv run python scripts/gen_ic_history_event_fixtures.py --check
-68:        run: uv run python scripts/gen_ic_block_evidence_fixtures.py --check
-70:        run: uv run python scripts/gen_basal_night_evidence_fixtures.py --check
-72:        run: uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check
-74:        run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
-76:        run: uv run python scripts/gen_eating_sequence_fixtures.py --check
-88:        run: python3 scripts/check_adr_numbers.py
-90:        run: python3 scripts/check_owned_identifiers.py
-95:        run: python3 scripts/check_public_allowlist.py
-130:        run: node --test 'frontend/**/*.test.js'
-134:        run: node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
-136:        run: node --test scripts/screenshots.local.test.mjs
-150:        run: node mockups/finding-evidence-routing.exploration/build.mjs --check
-
-$ grep -n -E 'gate:' .github/workflows/ci.yml | wc -l
-10
-
-$ grep -n "if: github.event_name == 'push' && github.ref == 'refs/heads/main'" .github/workflows/ci.yml
-337:    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-```
-
-Line 37 also runs `uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check`.
-The Docker image builds only on pushes to `main`; nothing builds it on a pull
-request today. The browser legs run on Node 22 with a cached Playwright and a
-cached pair of CDN modules.
-
-### Public tree
-
-```text
-$ grep -n -E '^frontend/|^harness/|^\.dockerignore|^Dockerfile|^uv\.lock' scripts/public_allowlist.txt
-3:uv.lock
-4:Dockerfile
-5:.dockerignore
-21:frontend/** {.html,.js,.mjs,.css,.svg,.json}
-22:harness/** {.html,.js,.json}
-```
-
-Root files are listed one by one; `package.json`, `package-lock.json`,
-`vite.config.js` and `tsconfig.json` are not yet dispositioned, and the
-`frontend/**` glob admits neither `.ts` nor `.vue`. `.gitignore` already ignores
-`dist/` (line 13) and `node_modules/` (line 166).
+proves the fail-closed path without a browser, and leaves the ten legs to the
+coordinator and the pull-request matrix.
 
 ### Closed document inventory
 
@@ -308,12 +422,13 @@ and `CDN`, then dropping archived changes and scope ledgers (history, kept as is
   seven legs); `AGENTS.md:266` — "loaded from a CDN, no build step";
   `AGENTS.md:439-441` — importmap in Conventions; the fast-gate paragraph and
   Install section gain the build.
-- `.github/workflows/ci.yml:156,185-198,294-301` — vendor download and cache.
+- `.github/workflows/ci.yml:156,185-198,294-302` — vendor download and cache.
 - `Dockerfile` — comments on `frontend/` beside the package.
 - `ciq_autotune/api.py:454` — "no build step and no fingerprinted filenames".
 - `scripts/ensure_browser_gate_env.py:5-9,34-35,62` — vendor provisioning.
 - `scripts/screenshots.local.mjs:7,33-42,71` — vendored CDN serving.
 - `tests/test_check_public_links.py:160` — docstring names the importmap (wording).
+- `frontend/index.test.js:54,91,103` — three `/assets/`-absolute assertions.
 - `openspec/specs/surfaces/spec.md:5,9-26` and `openspec/specs/http-api/spec.md:15-24`
   — carried by this change's spec deltas.
 
@@ -339,5 +454,50 @@ agreed or disagreed.
 
 ## Review rounds
 
-Filled by the mandatory `/plan-review` rounds below; each blocker is tagged
-`authoring` (present since the draft) or `injected` (introduced by a fix round).
+Each blocker is tagged `authoring` (present since the draft) or `injected`
+(introduced by a fix round). Reviewer identities stay out of this file.
+
+### Round 1 — one cold read and a two-seat panel on the first draft
+
+Cold read: BLOCKED, five blocking. Panel: two refusals, five blocking, six notes.
+Overlaps collapsed, the distinct blockers were:
+
+1. `authoring` — one acceptance anchor covered Docker, CI and README work owned by
+   chunk 2 while only chunk 3 selected it. Fixed by splitting the delivery-path
+   requirement from the browser-evidence requirement; anchors renumbered 1–5 and
+   partitioned 1,3 / 2,4 / 5.
+2. `authoring` — `frontend/index.test.js` pins three absolute `/assets/` references
+   chunk 1 must make relative and sat in no chunk's allowlist. Fixed: task 2 and
+   chunk 1's Expected diff name it.
+3. `authoring` — the ledger's public-tree block carried hand-typed line numbers.
+   Fixed: every tree fact is now emitted by `347-generated-facts.sh` and pasted
+   whole; the registry and spike blocks state their exact commands.
+4. `authoring` — the order described all nine legs as Playwright-routed with
+   `VENDOR_DIR`; two serve the shell from `node:http` fixture servers with no
+   `VENDOR_DIR`, one only carries the preflight, and one only imports an opener.
+   Fixed: the inventory is stated per leg and the helper's exported interface
+   (`createBuiltShell({ dist })`, `serve(pathname)` → `{ body, contentType }` or
+   `null`) is fixed in task 7 and ADR 347 so both call shapes adapt it.
+5. `authoring` — nothing ran a leg without a build, so the fail-closed scenario
+   was unproven, and the helper's unit test would have needed a build inside the
+   npm-free fast gate. Fixed: the `HARMONIC_DIST` override, preflights that
+   collect the missing build beside the missing Playwright module, the
+   fail-closed test spawning with an empty dist, and chunk 3's verification
+   running the fast gate with `frontend/dist` removed.
+6. `authoring` — the no-CDN invariant had no standing enforcement after chunk 1.
+   Fixed: the Python contract test asserts it on every CI run.
+7. `authoring` — a stale `ORDER.md` from an earlier triage worker sat at the
+   worktree root and no fence said who writes each chunk's `ORDER.md`. Fixed: the
+   file was removed and the header Boundaries name the coordinator as writer.
+8. `authoring` — the `skills/drivers/...` drafting-conventions path does not
+   resolve from the worktree. Disposition: the line is the work-order template's
+   and the installed ticket skill supplies it; the header Context states that the
+   coordinator appends the resolved location to each dispatch.
+
+Notes accepted: the `VENDOR_DIR` matrix fact corrected to seven of ten rows; the
+whole-ticket Verification made a pure shell chain with the browser-leg run moved
+to Expectation; chunk 3's completion grep widened to the vendor cache machinery;
+the browser-leg deferral written the way the Docker deferral is; chunk 1 told to
+stop and return a failing exploration `--check` rather than regenerate `mockups/`.
+Note discarded: dropping the coordinator-admission sentence from the Session fit
+blocks, because the work-order template mandates it and the start verb parses it.

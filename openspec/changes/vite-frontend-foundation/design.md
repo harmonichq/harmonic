@@ -43,11 +43,18 @@ The shape is the smallest one that produces a pinned, locally bundled shell:
   leg, retires the CDN vendor download, and adds a pull-request-time
   `docker build` with no push so the Dockerfile is proven before merge.
 - The browser legs stop serving `frontend/index.html` and `/assets/*.js` from
-  source with vendored CDN modules. One dependency-free helper beside
-  `browser-runner.js` answers the page paths and `/assets/*` from
-  `frontend/dist` and fails closed naming the build command; every page-serving
-  leg routes through it. The one module-isolation page that loads ECharts on its
-  own reads it from `node_modules`.
+  source. Five legs route the page through Playwright with the two CDN URLs
+  rerouted to `VENDOR_DIR`; two serve it from a `node:http` fixture server and
+  load the CDNs live; two more only consume another leg's opener. One
+  dependency-free helper beside `browser-runner.js`, `createBuiltShell({ dist })`,
+  answers `/`, the page paths and `/assets/*` from `frontend/dist` as
+  `{ body, contentType }` (or `null`), throws naming the build command when the
+  shell file is absent, and honours `HARMONIC_DIST` so the fail-closed path can
+  be proven with a build present; both call shapes adapt it in one line. Each
+  leg's preflight collects the missing build beside the missing Playwright module,
+  so the fail-closed test can assert the build message with and without
+  Playwright. The one module-isolation page that loads ECharts on its own reads it
+  from `node_modules`.
 
 **Why.** The templates are runtime templates and the chart modules share one
 ECharts global; requiring their conversion to gain a build would mix a delivery
@@ -75,5 +82,6 @@ the coordinator or an unsandboxed operator session, as today.
 
 **Acceptance anchors.** Locks on this change number the spec-delta requirements
 in file order: 1 — `specs/surfaces/spec.md`, the ADDED requirement; 2 —
-`specs/http-api/spec.md`, the MODIFIED requirement; 3 and 4 — the two ADDED
-requirements of `specs/frontend-delivery/spec.md`, in order.
+`specs/http-api/spec.md`, the MODIFIED requirement; 3, 4 and 5 — the three ADDED
+requirements of `specs/frontend-delivery/spec.md`, in order (the pinned root
+package; every supported delivery path; browser gates on the shipped bytes).

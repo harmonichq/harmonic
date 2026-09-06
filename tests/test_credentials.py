@@ -90,6 +90,48 @@ class CredentialsTest(unittest.TestCase):
             creds = self.creds_mod.load_credentials(self.store, key_path=self.key_path)
         self.assertIsNone(creds)
 
+    def test_undecryptable_row_reads_as_unconfigured(self):
+        # A snapshot moved to another machine, or a regenerated secret.key: the
+        # row stays, the key no longer opens it. That is one more "no usable
+        # credentials" case, not an exception out of the loader (#351).
+        from cryptography.fernet import Fernet
+        self.creds_mod.save_credentials(self.store, "me@example.com", "hunter2", "US",
+                                        key_path=self.key_path)
+        stored = self.store.get_credentials()["password_encrypted"]
+        Path(self.key_path).write_bytes(Fernet.generate_key())
+
+        with self.assertLogs("ciq_autotune.credentials", level="WARNING") as logged:
+            creds = self.creds_mod.load_credentials(self.store, key_path=self.key_path)
+
+        self.assertIsNone(creds)
+        self.assertEqual(len(logged.records), 1)
+        message = logged.records[0].getMessage()
+        # The warning names the key file and the recovery, never the credential.
+        self.assertIn(self.key_path, message)
+        self.assertIn("/api/credentials", message)
+        self.assertNotIn("me@example.com", message)
+        self.assertNotIn("hunter2", message)
+        self.assertNotIn(stored.decode("utf-8"), message)
+
+    def test_undecryptable_row_is_not_reseeded_from_env(self):
+        # The .env fallback is conditioned on an empty table, and an unreadable
+        # row is not one: falling through would let a stale .env overwrite what
+        # was set through the API, and re-entry there is the recovery (#351).
+        from cryptography.fernet import Fernet
+        self.creds_mod.save_credentials(self.store, "db@example.com", "db-pass", "US",
+                                        key_path=self.key_path)
+        stored = self.store.get_credentials()["password_encrypted"]
+        Path(self.key_path).write_bytes(Fernet.generate_key())
+
+        with patch("tconnectsync.secret.TCONNECT_EMAIL", "env@example.com"), \
+             patch("tconnectsync.secret.TCONNECT_PASSWORD", "env-pass"), \
+             patch("tconnectsync.secret.TCONNECT_REGION", "EU"), \
+             self.assertLogs("ciq_autotune.credentials", level="WARNING"):
+            creds = self.creds_mod.load_credentials(self.store, key_path=self.key_path)
+
+        self.assertIsNone(creds)
+        self.assertEqual(self.store.get_credentials()["password_encrypted"], stored)
+
     def test_db_credentials_take_priority_over_env(self):
         self.creds_mod.save_credentials(self.store, "db@example.com", "db-pass", "US",
                                         key_path=self.key_path)

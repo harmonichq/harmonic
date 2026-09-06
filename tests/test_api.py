@@ -447,6 +447,34 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(body["region"], "US")
         self.assertNotIn("password", body)
 
+    def test_credentials_undecryptable_row_reads_as_unconfigured(self):
+        # A key file that no longer opens the stored row answers like every
+        # other unavailable case, rather than a bare 500 on the shell's first
+        # request of every page load (#351).
+        from cryptography.fernet import Fernet
+        from ciq_autotune import credentials
+        from ciq_autotune.api import create_app
+
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "undecryptable.db")
+            key_path = os.path.join(tmp, "secret.key")
+            _seed(db_path)
+            with Store.open(db_path) as store:
+                credentials.save_credentials(store, "me@example.com", "hunter2", "US",
+                                             key_path=key_path)
+            with open(key_path, "wb") as key_file:
+                key_file.write(Fernet.generate_key())
+
+            app = create_app(db_path=db_path, token=None, key_path=key_path,
+                             enable_fetch_loop=False)
+            client = TestClient(app, raise_server_exceptions=False)
+            r = client.get("/api/credentials")
+
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertFalse(body["configured"])
+        self.assertIsNone(body["email"])
+
     def test_pump_settings_returns_active_profile(self):
         r = self.client.get("/api/pump-settings")
         self.assertEqual(r.status_code, 200)

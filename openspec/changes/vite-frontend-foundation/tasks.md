@@ -1,6 +1,6 @@
 # Tasks
 
-1. [ ] Add the repository-root production package: `package.json` (private,
+1. [x] Add the repository-root production package: `package.json` (private,
    exact pins `vite@8.2.2`, `vue@3.5.42`, `echarts@5.5.0`,
    `@vitejs/plugin-vue@6.0.8`, documented `engines.node` 22, scripts `dev` and
    `build`, and no `type` field — the shell's modules are ESM while
@@ -12,7 +12,7 @@
    `vue` aliased to the runtime-with-compiler build, dev proxy of `/api` only to
    `http://127.0.0.1:8765`) and a `tsconfig.json` that admits `.ts` and `.vue`
    under `frontend/` without converting any module.
-2. [ ] Make the shell a Vite input: `frontend/main.js` installs the one bundled
+2. [x] Make the shell a Vite input: `frontend/main.js` installs the one bundled
    ECharts identity on `window.echarts`; `frontend/index.html` drops the importmap
    and the CDN script tag, references `./main.js` ahead of its inline module, and
    its inline module, stylesheet links and icon reference siblings relatively;
@@ -24,7 +24,7 @@
    the stylesheets are hoisted past the inline blocks, stripping the body's
    radial-gradient layer. Runtime templates and every other vue-free module stay
    byte-identical.
-3. [ ] Admit the new files and ignore the outputs: `scripts/public_allowlist.txt`
+3. [x] Admit the new files and ignore the outputs: `scripts/public_allowlist.txt`
    lists the four root files and admits `.ts` and `.vue` under `frontend/`;
    `.dockerignore` excludes `node_modules/`, `frontend/dist/` and `harness/`.
    Prove `npm ci && npm run build` from a clean checkout emits

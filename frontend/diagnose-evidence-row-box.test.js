@@ -25,7 +25,9 @@ import { readFileSync, readdirSync } from 'node:fs';
 const appHtml = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 const stylesheets = [
   ...readdirSync(new URL('.', import.meta.url), { recursive: true })
-    .filter((name) => typeof name === 'string' && name.endsWith('.css'))
+    // frontend/dist/ is the Vite bundle of these same stylesheets (gitignored,
+    // present after `npm run build`): a copy, never a second owner.
+    .filter((name) => typeof name === 'string' && name.endsWith('.css') && !name.startsWith('dist/'))
     .sort()
     .map((name) => ({
       name,

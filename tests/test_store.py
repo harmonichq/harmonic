@@ -739,18 +739,26 @@ class IcBlockProvenancePlanStoreTest(unittest.TestCase):
     def test_block_end_outside_its_own_domain_still_rejected(self):
         # The end admits midnight and nothing past it: 1441 is off the clock, -1
         # and 0 are not ends at all, and a bool or a float is not a minute. The
-        # save is refused and no draft is recorded.
+        # save is refused and no draft is recorded. Each value is pinned to the
+        # bounds message, because a widened bound would still be refused a check
+        # or two later by the empty-arc or member-containment guards — 0 and True
+        # both are, on this fixture — and a bare ValueError cannot tell the two
+        # apart. Each value also gets its own store, so one admitted value
+        # reports as one failure instead of leaking a draft into every subtest
+        # after it.
         for end in (1441, -1, 0, True, 1440.0):
             with self.subTest(block_end_min=end):
+                store = Store.open(":memory:")
+                self.addCleanup(store.close)
                 prov = self._block(start=0, end=end, members=(0, 420, 660, 1080))
                 items = [
                     {"type": "ic", "start_min": m, "value": 5.7,
                      "ic_block_provenance": prov}
                     for m in (0, 420, 660, 1080)
                 ]
-                with self.assertRaises(ValueError):
-                    self.store.save_plan_draft(items, "2026-06-01 09:00:00")
-                self.assertIsNone(self.store.get_plan_draft())
+                with self.assertRaisesRegex(ValueError, "invalid I:C block bounds"):
+                    store.save_plan_draft(items, "2026-06-01 09:00:00")
+                self.assertIsNone(store.get_plan_draft())
 
     def test_truncated_single_row_claiming_two_members_rejected_on_save(self):
         prov = self._block()

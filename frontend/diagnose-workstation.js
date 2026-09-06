@@ -3113,7 +3113,8 @@ function boot(root, data, callbacks, signal) {
      would take that first one's optimistic draft as its restore point, so two
      refusals would hand back a draft the server had refused twice while this
      surface painted itself unstaged. Dropping the re-entrant click is what keeps
-     every restore point a settled one. The optimistic paint is untouched — the
+     every restore point settled with respect to Diagnose's own staging. The
+     optimistic paint is untouched — the
      guard is released on the answer, not on the paint. */
   let saveInFlight = false;
   async function stageAndSettle(toggle, item, isStaged) {

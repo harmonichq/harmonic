@@ -283,7 +283,7 @@ jobs:
         if: matrix.server
         run: |
           cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          uv run harmonic serve --no-fetch --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
+          uv run harmonic serve --no-fetch --token '' --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
           for attempt in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8765/api/health && exit 0
             sleep 1

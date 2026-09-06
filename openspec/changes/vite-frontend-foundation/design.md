@@ -49,10 +49,11 @@ The shape is the smallest one that produces a pinned, locally bundled shell:
   runtime has no Node and serves the built shell, so the Dockerfile is proven
   before merge by execution rather than by reading its text.
 - The browser legs stop serving `frontend/index.html` and `/assets/*.js` from
-  source. Five legs route the page through Playwright with the two CDN URLs
-  rerouted to `VENDOR_DIR`; two serve it from a `node:http` fixture server and
-  load the CDNs live; two more only consume another leg's opener; the tenth,
-  the browser-runner lifecycle test, serves inline HTML and no shell. One
+  source. Before this change five legs routed the page through Playwright with
+  the two CDN URLs rerouted to `VENDOR_DIR`, two served it from a `node:http`
+  fixture server and loaded the CDNs live, two more only consumed another leg's
+  opener, and the tenth, the browser-runner lifecycle test, served inline HTML
+  and no shell; after it, no leg reads a vendored module or `VENDOR_DIR`. One
   dependency-free helper beside `browser-runner.js`, `createBuiltShell({ dist })`,
   answers `/`, the page paths and `/assets/*` from `frontend/dist` as
   `{ body, contentType }` (or `null`), throws naming the build command when the
@@ -73,7 +74,9 @@ and `docs/scope/347-built-shell-mount.spike.mjs`, output recorded in
 mounted all four surfaces against the no-fetch app with zero external requests,
 and `docs/scope/347-cascade-compare.spike.mjs` rendered the source shell and the
 built shell side by side against the same app and compared every element's
-computed style, `<html>` and `<body>` included. Vite hoists the five stylesheet
+computed style, `<html>` and `<body>` included — a measurement taken at triage
+and repeated on the merged build, recorded in the ledger, not a standing CI
+check. Vite hoists the five stylesheet
 links past the inline `<style>` blocks, and that surfaced exactly one change:
 `shell.css`'s `body { background }` declaration, dead today because the inline
 body rule overrides it on every page, won in the build and stripped the body's

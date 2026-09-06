@@ -396,6 +396,76 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   }
 });
 
+test('#370 · the target caption drops below the grip band when a drawn gate strikes it', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* clientWidth here is the CHART element's width, not the viewport's: the
+     Diagnose layout gives the chart 390px inside a 390px viewport but 399.6px
+     inside a 768px one, so 400 is this test's stand-in for the 768px evidence
+     width. Driving 768 would render a 682px plot no gate reaches. */
+  const render = (clientWidth, window) => {
+    const el = { clientWidth, setAttribute() {} };
+    renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, range: [40, 220],
+      window, windowLabel: windowSpanText(window),
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    // the target band is the entry keyed by yAxis; the window entries are keyed by xAxis
+    const [target] = context.markArea.data.filter(([start]) => start.yAxis != null);
+    return { el, label: target[0].label };
+  };
+  /* Where the gates land, asked of the same exported function the brace itself
+     places them with — never a copied constant. The caption is anchored to the
+     plot's left edge and runs ~99px, so a gate inside that run hides a glyph. */
+  const gates = (el, window) => window.map((minute) => Math.round(xAtMinute(el, minute) * 10) / 10);
+  const dropped = { show: true, position: 'insideBottomLeft', distance: 0 };
+  const shipped = { show: true, position: 'insideStartTop', distance: 10 };
+  const rest = {
+    color: '#555', fontSize: 10, fontWeight: 600, formatter: 'TARGET 70–180 mg/dL',
+    backgroundColor: '#666', padding: [2, 5], borderRadius: 2,
+  };
+
+  // an ordinary 08:00–16:00 daytime window at the two narrowest evidence widths:
+  // the window's own start gate lands in the caption's glyph run, and NO
+  // horizontal slot between the gates is wide enough to hold the caption —
+  // which is why the escape is vertical
+  const daytime = render(390, [480, 960]);
+  assert.deepEqual(gates(daytime.el, [480, 960]), [136.4, 238.8]);
+  assert.deepEqual(daytime.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 390');
+
+  const daytimeWider = render(400, [480, 960]);
+  assert.deepEqual(gates(daytimeWider.el, [480, 960]), [139.8, 245.5]);
+  assert.deepEqual(daytimeWider.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 400');
+
+  // the struck side of the reported Overnight boundary: the window's end gate
+  // sits inside the caption
+  const narrow = render(400, [0, 360]);
+  assert.deepEqual(gates(narrow.el, [0, 360]), [34, 113.3]);
+  assert.deepEqual(narrow.label, { ...dropped, ...rest });
+
+  // and its clear side, where that same gate has slid out past the caption's
+  // tail: the shipped placement, unchanged
+  const wide = render(1010, [0, 360]);
+  assert.deepEqual(gates(wide.el, [0, 360]), [GRID.left, 267.4]);
+  assert.deepEqual(wide.label, { ...shipped, ...rest },
+    'a caption no gate reaches keeps the placement it ships with');
+});
+
 test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {
   const labels = Array.from({ length: 96 }, (_, index) =>
     `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);

@@ -1,6 +1,6 @@
 # Tasks — the target caption clears the drawn-window gates (#370)
 
-- [ ] Add a failing-first regression test to
+- [x] Add a failing-first regression test to
   `frontend/diagnose-workstation-chart.test.js`, through the module's public
   interface exactly as the file's existing `renderCanvas` tests do: render with a
   stub element (`{ clientWidth, setAttribute() {} }`) and a stub echarts whose
@@ -35,7 +35,7 @@
   test against the unfixed module first and record that it fails for the right
   reason — the caption keeps its shipped top placement while a gate lies inside
   its box — not merely that it fails.
-- [ ] Make the target-band caption **drop below the grip band** when a drawn gate
+- [x] Make the target-band caption **drop below the grip band** when a drawn gate
   would strike it, in `renderCanvas` (`frontend/diagnose-workstation-chart.js`),
   in the `__context` series' `markArea` target entry.
 
@@ -76,7 +76,7 @@
   The residual crosser at the dropped position is the 1px `.edge`, which is a
   hairline across the glyphs rather than a hidden digit; it is accepted and named
   in the risk contract. Do not widen the change to chase it.
-- [ ] Correct the rule comment above the caption
+- [x] Correct the rule comment above the caption
   (`frontend/diagnose-workstation-chart.js:1026-1032`) so it names all three
   crossers and records why the pad answers only two of them: the gridlines and
   the dashed 180 rule are drawn into the canvas, the drawn-window brace is a DOM
@@ -84,7 +84,7 @@
   drops below the grip band instead. Say that the escape is vertical because the
   grip band is height-pinned while the horizontal slot can vanish. Leave the
   `markLine` numerals' knock-out pad comment as it is.
-- [ ] Capture the revision evidence against the branch's declared safe start —
+- [x] Capture the revision evidence against the branch's declared safe start —
   the one permitted offline serve in `AGENTS.md`, copy-then-serve on the QA
   showcase, with `--no-fetch` and `--token ''` both mandatory:
 

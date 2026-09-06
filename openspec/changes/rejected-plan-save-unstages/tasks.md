@@ -1,6 +1,6 @@
 # Tasks — a rejected Plan save leaves nothing staged (#358)
 
-- [ ] Make the shell's draft save report its outcome. `savePlanDraft()` in
+- [x] Make the shell's draft save report its outcome. `savePlanDraft()` in
   `frontend/index.html` reports whether the draft reached the server —
   successfully saved, or refused — instead of returning nothing on both paths.
   Its failure toast is unchanged: `flash('Plan save failed: ' + e.message,
@@ -12,7 +12,7 @@
   `toggleIsfPlan`, the chip removal path, the accepted-picks writers) keeps
   today's behaviour byte for byte.
 
-- [ ] Undo a refused stage in the shell's Plan draft. `diagnoseStage(item,
+- [x] Undo a refused stage in the shell's Plan draft. `diagnoseStage(item,
   desired)` in `frontend/index.html` captures the reactive draft state before it
   mutates it, awaits the draft save, and on a refusal restores exactly the
   captured state, on every branch: the ISF branch (which stages through
@@ -33,7 +33,7 @@
   version counter on restore too, so the deliverable rows repaint from the
   restored map instead of keeping the cleared render.
 
-- [ ] Undo a refused stage on the Diagnose surface. Each of the three stage
+- [x] Undo a refused stage on the Diagnose surface. Each of the three stage
   handlers in `frontend/diagnose-workstation.js` — the basal slot handler passed
   to `renderSlotLevel`, the I:C block handler passed to `renderIcBlockLevel`,
   and the ISF handler passed to `renderIsfLevel` — keeps today's order of
@@ -58,7 +58,7 @@
   implementation of the undo rule, and no re-derivation of any staging
   eligibility the backend already decided.
 
-- [ ] Cover the whole path with a browser regression test in
+- [x] Cover the whole path with a browser regression test in
   `frontend/cockpit-shell.browser.test.mjs`, whose `routeApp` already serves the
   real `frontend/index.html` with the whole API stubbed and whose `analyze`
   fixture already carries one asserting basal slot (`slot: 2`) and one asserting

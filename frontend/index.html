@@ -4956,6 +4956,24 @@
           if (changed) deliverableEditsVersion.value++;
           return changed;
         }
+        /* #358 — the undo `keepOnlyPlanFamily` above needs when a draft save is
+           refused. It clears BOTH structures, so the checkpoint carries both:
+           `deliverableEdits` is client-only hand-edit state that is never re-read
+           from the server, so restoring the accepted picks alone would hand the
+           reader back their draft while discarding their hand-edits for good. The
+           version counter is bumped on restore so the deliverable rows repaint from
+           the restored map instead of keeping the cleared render. */
+        function planDraftCheckpoint() {
+          const items = new Map(planItems);
+          const edits = { ...deliverableEdits };
+          return () => {
+            planItems.clear();
+            for (const [key, it] of items) planItems.set(key, it);
+            for (const key of Object.keys(deliverableEdits)) delete deliverableEdits[key];
+            Object.assign(deliverableEdits, edits);
+            deliverableEditsVersion.value++;
+          };
+        }
         function inPlan(item, type) {
           // The single fasting ISF applies to every programmed ISF segment, so
           // it's "in plan" only when all of them are picked (see toggleIsfPlan).
@@ -4990,9 +5008,17 @@
               });
             }
           }
-          savePlanDraft();
+          // #358: reported back, so a stage from Diagnose can undo itself on a refusal.
+          return savePlanDraft();
         }
 
+        /* #358 — the outcome is a value: `true` saved, `false` refused. Diagnose
+           paints a change as staged before this answers, so it needs the answer to
+           walk that paint back. The failure message is untouched — the server's own
+           `detail`, unwrapped by `ApiTransportError` (`frontend/data.js`), printed
+           verbatim; today's awkward wording is the backend's to fix (#357), never
+           this side's to tidy. Every caller that stages from the Plan screen ignores
+           the outcome and behaves exactly as before. */
         async function savePlanDraft() {
           try {
             // #581: a chip removal or family swap can leave a raw accepted-picks
@@ -5001,7 +5027,8 @@
             // never carries a stale block claim.
             const items = planNormalizeIcBlockProvenance(Array.from(planItems.values()));
             await dataSavePlanDraft({ items });
-          } catch (e) { flash('Plan save failed: ' + e.message, 'err'); }
+            return true;
+          } catch (e) { flash('Plan save failed: ' + e.message, 'err'); return false; }
         }
 
         function togglePlan(item, type) {
@@ -5375,25 +5402,38 @@
         // Stage → Plan: the same pure lever mapping Diagnose used (#432/#428) —
         // the backend asserts_move holds decide what stages; single-family Plan
         // (ADR 0042) is preserved via keepOnlyPlanFamily.
+        /* #358: the server has the last word on what is staged. The draft is
+           captured before it is touched, and a refused save restores exactly what
+           was captured — including the single-family clearing above — so the Plan
+           badge and the Plan screen agree with the server. The refusal is reported
+           back to the Diagnose surface, which undoes its own staged paint on it
+           (ADR 358); a save that reports no refusal changes nothing here. */
         async function diagnoseStage(item, desired = true) {
+          const undo = planDraftCheckpoint();
+          const saved = await stageIntoPlanDraft(item, desired);
+          if (saved === false) undo();
+          return saved !== false;
+        }
+        /** Stage into the draft and persist it, reporting the server's answer —
+            `undefined` when the pick resolved to nothing to save. */
+        async function stageIntoPlanDraft(item, desired) {
           if (item.family === 'isf') {
             if (!pumpSettings.value) await loadPumpSettings();
-            if (isStageableIsf(item.raw) && isfInPlan() !== desired) toggleIsfPlan(item.raw);
+            if (isStageableIsf(item.raw) && isfInPlan() !== desired) return toggleIsfPlan(item.raw);
             return;
           }
           const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
           if (!items.length) return;
           if (!desired) {
             for (const it of items) planItems.delete(planKeyOf(it));
-            savePlanDraft();
-            return;
+            return savePlanDraft();
           }
           keepOnlyPlanFamily(planItemFamily(items[0]));
           for (const it of items) {
             const k = planKeyOf(it);
             planItems.set(k, it);
           }
-          savePlanDraft();
+          return savePlanDraft();
         }
         function diagnoseIsStaged(item) {
           if (item.family === 'isf') return isfInPlan();

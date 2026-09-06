@@ -1003,6 +1003,77 @@ test('#341 · a chart picked from All charts can expand independently', async ()
   }
 });
 
+test('#365 · one-chart fullscreen lands focus on the chart and returns it to the opener', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  /* WHERE THE KEYBOARD IS, in the ledger's own terms: the expanded chart's
+     container, that chart's own Full control, or neither. Naming the chart in
+     both answers is what separates a stage opener from a catalog cell's — an
+     assertion that only said "an opener" would pass on the wrong chart's. */
+  const focus = () => page.evaluate(() => {
+    const node = document.activeElement;
+    if (!node || node === document.body) return { at: 'body' };
+    if (node.classList.contains('evidence-tile')) return { at: 'chart', chartId: node.dataset.chartId };
+    if (node.classList.contains('tile-fullscreen')) {
+      return { at: 'opener', chartId: node.closest('.evidence-tile')?.dataset.chartId };
+    }
+    return { at: node.id || node.tagName.toLowerCase() };
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    /* FROM THE STAGE, where the verb rides the focal tile's own header. */
+    const stageId = await page.locator('#tile-focal .evidence-tile').getAttribute('data-chart-id');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: stageId },
+      'expanding the stage chart lands the keyboard on the expanded chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'Escape returns the keyboard to the stage chart’s own Full control');
+
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'the header Close control returns the keyboard to the same opener');
+
+    /* FROM AN OPEN All charts CELL, which dismissal repaints back into: the
+       opener to restore is that cell's own rail control, not the stage's. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    const cellId = (await page.locator('#tile-row .evidence-tile:has(.tile-fullscreen)')
+      .evaluateAll((cells) => cells.map((cell) => cell.dataset.chartId)))
+      .find((chartId) => chartId !== stageId);
+    /* A CELL FOR SOME OTHER CHART, so a stage-only implementation cannot pass
+       this half by restoring the stage's control and calling it the opener. */
+    assert.ok(cellId, 'the catalog offers a cell for a chart other than the stage opener');
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: cellId },
+      'expanding a catalog cell lands the keyboard on that cell’s chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 1,
+      'dismissal repaints back into the still-open catalog');
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'Escape returns the keyboard to that catalog cell’s own Full control');
+
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'the header Close control returns the keyboard to the catalog cell’s opener');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #365 fullscreen opener focus');
+});
+
 test('#232 · every registered chart family stays inside one fullscreen frame', async () => {
   const browser = await runner.browser();
   const failures = [];

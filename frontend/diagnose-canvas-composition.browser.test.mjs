@@ -37,6 +37,7 @@ import {
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 
 const missing = [];
 let chromium = null;
@@ -53,13 +54,7 @@ const EXEC = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
 if (chromium && !EXEC && !existsSync(chromium.executablePath())) {
   missing.push('Chromium executable is missing (run playwright install chromium)');
 }
-const VENDOR = process.env.VENDOR_DIR;
-if (!VENDOR) missing.push('VENDOR_DIR is unset');
-else {
-  for (const asset of ['vue.esm-browser.js', 'echarts.min.js']) {
-    if (!existsSync(join(VENDOR, asset))) missing.push(`VENDOR_DIR=${VENDOR} is missing ${asset}`);
-  }
-}
+try { createBuiltShell(); } catch (error) { missing.push(error.message); }
 if (!process.env.PAYLOAD) missing.push('PAYLOAD is unset (the synthetic workstation payload)');
 if (missing.length) {
   throw new Error('diagnose-canvas-composition.browser.test.mjs cannot run — missing prerequisites:\n'

@@ -11,7 +11,7 @@
 // run exits 0, and a green step that exercised zero browser assertions is the
 // silent-skip failure mode the mock-to-app port process forbids for replay
 // scripts, extended to every browser gate in this suite. Serves
-// trivial inline HTML via page.route so this test needs no VENDOR_DIR.
+// trivial inline HTML via page.route so this test needs no built shell.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';

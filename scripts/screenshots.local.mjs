@@ -4,9 +4,7 @@
  * scripts/screenshots.mjs does the capturing; this file contributes only the
  * two concerns that are genuinely this repo's —
  *
- *   1. Vendored CDN assets: with VENDOR_DIR set, the serve hook answers the
- *      app's two exact Vue/ECharts CDN URLs from disk.
- *   2. fetchStubFiles: fixture-backed fetch stubs — { "<url-substr>":
+ *   1. fetchStubFiles: fixture-backed fetch stubs — { "<url-substr>":
  *      { "file": "fixture.json", "key": "nested.value" } } (or a bare file
  *      path) — expanded into the harness's inline fetchStub, so a 100 KB
  *      payload never has to be inlined in a config.
@@ -22,26 +20,12 @@
  */
 
 import { readFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import { main, runConfig } from './screenshots.mjs';
 
 function die(msg) {
   console.error('[screenshots] ' + msg);
   process.exit(1);
-}
-
-// The two CDN assets frontend/index.html loads, matched by exact URL (a substring
-// match would shadow any served-from-disk path containing "vue" or "echarts").
-const VENDORED = {
-  'https://unpkg.com/vue@3/dist/vue.esm-browser.js': 'vue.esm-browser.js',
-  'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js': 'echarts.min.js',
-};
-
-function serveVendored(url) {
-  const vendor = process.env.VENDOR_DIR;
-  const file = vendor && VENDORED[url.split('?')[0]];
-  if (!file) return null;
-  return { body: readFileSync(join(vendor, file)), contentType: 'text/javascript' };
 }
 
 // Resolve one fetchStubFiles entry to its JSON value, failing loudly when the
@@ -68,7 +52,7 @@ function expandFetchStubFiles(shot) {
   return { ...rest, fetchStub: { ...rest.fetchStub, ...expanded } };
 }
 
-const options = { serve: serveVendored };
+const options = {};
 
 const args = process.argv.slice(2);
 if (args[0] && args[0] !== '--self-check') {

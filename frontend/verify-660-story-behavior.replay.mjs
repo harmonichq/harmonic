@@ -12,7 +12,7 @@
 // The same eight functions run against the BUILT APP — that is what makes
 // them evidence about the port.
 //
-//   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
+//   PLAYWRIGHT_MODULE=<playwright> \
 //   TARGET=app PAYLOAD=<payload.json> [ONLY=S1,S5] \
 //   node frontend/verify-660-story-behavior.replay.mjs
 //
@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const VIEWPORT = { width: 1440, height: 900 };   // the lock's viewport (term 17)
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
@@ -48,11 +49,6 @@ function playwright() {
   return require(spec);
 }
 
-async function vendored(name) {
-  const dir = process.env.VENDOR_DIR || fail('VENDOR_DIR is required (echarts.min.js, vue.esm-browser.js)');
-  return readFile(join(dir, name));
-}
-
 /** Let ECharts finish its first frame; the readout latches off a live chart. */
 const settle = (page, ms) => page.waitForTimeout(ms);
 
@@ -66,6 +62,7 @@ const scoped = (page, prefix) => (selector) => page.locator(prefix + selector);
 
 /** The BUILT workstation, its API answered from the same data. */
 export async function openApp(browser, { state = 'complete' } = {}) {
+  const shell = createBuiltShell();
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   const payload = JSON.parse(await readFile(payloadPath, 'utf8'));
   const apiPattern = (path) => new RegExp(`^/api${path}`);
@@ -103,12 +100,8 @@ export async function openApp(browser, { state = 'complete' } = {}) {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-    if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
-    if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    if (path === '/' || path === '/verify') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-    if (/\.(js|css|svg|html)$/.test(path)) {
-      try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through to the stubs */ }
-    }
+    const response = shell.serve(path);
+    if (response) return route.fulfill(response);
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
     }
@@ -276,6 +269,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (target !== 'app') fail(`TARGET must be app, got ${target || '(unset)'} — the mock this ledger once ran against is archived (#722); the app is now the sole contract`);
   const open = openApp;
   const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
+  const missing = [];
+  if (!process.env.PLAYWRIGHT_MODULE) missing.push('PLAYWRIGHT_MODULE is required');
+  try { createBuiltShell(); } catch (error) { missing.push(error.message); }
+  if (missing.length) fail(`missing prerequisites:\n  - ${missing.join('\n  - ')}`);
   const { chromium } = playwright();
   const browser = await chromium.launch();
   let ran = 0, failed = 0;

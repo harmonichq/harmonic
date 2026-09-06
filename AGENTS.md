@@ -122,34 +122,31 @@ behaviour-ledger replays against the built app, and the event-comparison
 support audit. Reproduce it locally:
 
 ```sh
-# One-time setup — an isolated Playwright + Chromium, and the two CDN modules
-# the browser suites route through instead of the network. On a machine that
+# One-time setup — an isolated Playwright + Chromium. On a machine that
 # runs the gates repeatedly, skip the mktemp lines and instead provision a
 # persistent cache once with
 #   eval "$(python3 scripts/ensure_browser_gate_env.py)"
-# which sets PLAYWRIGHT_MODULE and VENDOR_DIR for the legs below and costs
+# which sets PLAYWRIGHT_MODULE for the legs below and costs
 # one stat per piece on reruns.
-PW=$(mktemp -d) VENDOR=$(mktemp -d)
+PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
-curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$VENDOR/vue.esm-browser.js"
-curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$VENDOR/echarts.min.js"
 
 # The ten gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
 # In another terminal, start the QA copy-then-serve command documented below.
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-All ten **fail closed**: a missing driver, vendored asset or fixture exits
+All ten **fail closed**: a missing driver, built shell or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a

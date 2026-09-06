@@ -9,7 +9,7 @@
 // that performs the behaviour for real against the built app and asserts what
 // it actually does. Shipped surfaces under revise have no lock manifest.
 //
-//   PLAYWRIGHT_MODULE=<playwright> VENDOR_DIR=<vendored echarts+vue> \
+//   PLAYWRIGHT_MODULE=<playwright> \
 //   BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=<snapshot.json> \
 //   [ONLY=S01,S07] \
 //   node frontend/diagnose-workstation-behavior.replay.mjs
@@ -36,6 +36,7 @@ import { TABS as ROUTER_TABS } from './tab-routing.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const PAGE_PATHS = new Set(ROUTER_TABS.map((tab) => `/${tab.id}`));
 const MIME = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
@@ -421,11 +422,6 @@ const expectResponse = (page, pattern, status) => {
   expectedResponses.set(page, [...(expectedResponses.get(page) || []), { pattern, status }]);
 };
 
-const vendored = async (name) => {
-  const dir = process.env.VENDOR_DIR || fail('VENDOR_DIR is required (vendored echarts + vue)');
-  return readFile(join(dir, name));
-};
-
 /** Derived ISF analyzer shape shared by ledger and browser stories. The committed
  * payload supplies every untouched field; stories replace only the serialized
  * verdict facts they exercise. */
@@ -492,6 +488,7 @@ export async function openApp(browser, {
   hasTouch = false, isMobile = false,
   frontendRoot = join(ROOT, 'frontend'), fixtureBaseUrl = null,
 } = {}) {
+  const shell = createBuiltShell();
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
      below; browser tests opt into `fixture` per call. Ambient process state
@@ -654,13 +651,13 @@ export async function openApp(browser, {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-    if (url.href.includes('echarts')) return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
-    if (url.href.includes('vue')) return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
     if (appSource === 'server' && url.origin === targetUrl.origin
         && (path === '/' || PAGE_PATHS.has(path) || /\.(js|css|svg|html)$/.test(path))) {
-      if (stageProbe && path === '/assets/diagnose-workstation.js') {
-        const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
-        const seam = 'export function createDiagnoseWorkstation({ root, callbacks = {} }) {';
+      if (stageProbe && path.startsWith('/assets/') && path.endsWith('.js')) {
+        const response = await route.fetch();
+        const source = await response.text();
+        const seam = 'function createDiagnoseWorkstation({ root, callbacks = {} }) {';
+        if (!source.includes(seam)) return route.fulfill({ body: source, contentType: 'text/javascript' });
         if (source.split(seam).length !== 2) fail('S71 staging seam must occur exactly once');
         const instrumented = source.replace(seam, `${seam}
   /* Replay-only wrapper: preserve the real callback and arguments while making
@@ -678,17 +675,8 @@ export async function openApp(browser, {
       return route.continue();
     }
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
-      if (path === '/' || PAGE_PATHS.has(path)) {
-        return route.fulfill({ body: await readFile(join(frontendRoot, 'index.html')), contentType: 'text/html' });
-      }
-      if (/\.(js|css|svg|html)$/.test(path)) {
-        try {
-          return route.fulfill({
-            body: await readFile(join(frontendRoot, path.replace(/^\/assets\//, ''))),
-            contentType: MIME[extname(path)] || 'text/plain',
-          });
-        } catch { /* fall through to the loud unrouted response below */ }
-      }
+      const response = shell.serve(path);
+      if (response) return route.fulfill(response);
     }
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
@@ -5374,9 +5362,12 @@ const isMain = process.argv[1] && import.meta.url === new URL(`file://${resolve(
 if (isMain) {
   const target = process.env.TARGET;
   if (target !== 'app') fail(`TARGET must be app, got ${target || '(unset)'} — the mock this ledger once ran against is archived (#722); the app is now the sole contract`);
-  const modulePath = process.env.PLAYWRIGHT_MODULE || fail('PLAYWRIGHT_MODULE is required');
+  const missing = [];
+  const modulePath = process.env.PLAYWRIGHT_MODULE;
+  if (!modulePath) missing.push('PLAYWRIGHT_MODULE is required');
+  try { createBuiltShell(); } catch (error) { missing.push(error.message); }
+  if (missing.length) fail(`missing prerequisites:\n  - ${missing.join('\n  - ')}`);
   const { chromium } = require(modulePath);
-  await access(join(process.env.VENDOR_DIR || '', 'echarts.min.js'));
   const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
   const viewport = process.env.VIEWPORT
     ? Object.fromEntries(['width', 'height'].map((key, index) => [key, Number(process.env.VIEWPORT.split('x')[index])]))

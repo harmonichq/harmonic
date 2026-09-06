@@ -176,6 +176,42 @@ const expandWatching = async (page) => {
   }
 };
 
+/* #362: the label column of a setting panel is sized by the labels in that panel,
+   so the geometry is measured here rather than pinned to a number — a label that
+   outgrows its column lands on the value beside it, and a two-word one wraps
+   against its neighbour's single line. Both are reported, for every labelled
+   number the opened panel is showing. */
+async function numrowProblems(page) {
+  return page.evaluate(() => {
+    const problems = [];
+    const panels = new Map();
+    for (const row of document.querySelectorAll('#level .numrow')) {
+      const k = row.querySelector('.k');
+      const name = k.textContent.trim();
+      const column = k.getBoundingClientRect().width;
+      if (k.scrollWidth > Math.ceil(column)) {
+        problems.push(`${name}: label ${k.scrollWidth}px overruns its ${Math.round(column)}px column`);
+      }
+      const range = document.createRange();
+      range.selectNodeContents(k);
+      const lines = range.getClientRects().length;
+      if (lines !== 1) problems.push(`${name}: label wraps onto ${lines} lines`);
+      const panel = row.parentElement;
+      if (!panels.has(panel)) panels.set(panel, []);
+      panels.get(panel).push({ name, left: Math.round(row.querySelector('b').getBoundingClientRect().left) });
+    }
+    for (const rows of panels.values()) {
+      const [first, ...rest] = rows;
+      for (const row of rest) {
+        if (row.left !== first.left) {
+          problems.push(`${row.name}: value starts at ${row.left}px, ${first.name} at ${first.left}px`);
+        }
+      }
+    }
+    return problems;
+  });
+}
+
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
   const inputs = await densityHistoryInputs();
@@ -214,6 +250,8 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
     assert.equal(rendered.history.currentCopies, 1,
       'the dense inspector keeps one quieter current-program line');
     assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.deepEqual(await numrowProblems(page), [],
+      'the narrow past-setting read keeps each label on one line inside its own column');
     assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
       `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
   } finally {
@@ -2279,6 +2317,7 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
           estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
           text: await page.locator('#level').innerText(),
           stage: await page.locator('#level .stagebtn').count(),
+          geometry: await numrowProblems(page),
         });
         await page.close();
       }
@@ -2289,6 +2328,8 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
+        assert.deepEqual(reading.geometry, [],
+          `${reading.viewport.width}x${reading.viewport.height}: every label fits its own column and every value shares one edge`);
         assert.match(reading.text, /conservative step rounds to the current Correction factor/);
         assert.doesNotMatch(reading.text, /programmed factor/i);
         assert.match(reading.text, /CI 18\.20–46\.90/,

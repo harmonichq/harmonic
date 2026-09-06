@@ -47,10 +47,16 @@
 6. [ ] Deliver the same artifact on every supported path: a `node:22` Dockerfile
    build stage running `npm ci && npm run build` with the runtime copying only
    `frontend/dist`; the CI backend job sets up Node 22 with an npm cache and
-   builds before `pytest`; a pull-request-time `docker build` job with no push;
+   builds before `pytest`; a pull-request-time Docker job that builds the image
+   with no push, loads it, asserts the runtime image has no `node` on its
+   `PATH`, starts `harmonic serve --no-fetch --token ''` inside it against a
+   copy of the QA showcase database and asserts `/` answers the built shell
+   (a 200 whose body references `/assets/index-`);
    README install, run and Docker prose; AGENTS.md install, layout and
    conventions prose; the `ciq_autotune/api.py` cache comment; the
-   `tests/test_check_public_links.py` bare-specifier docstring.
+   `tests/test_check_public_links.py` bare-specifier docstring; and the AGENTS.md
+   QA copy-then-serve block, which gains `npm ci && npm run build` as the
+   documented prerequisite of the one permitted offline serve.
 7. [ ] One shared built-shell helper for browser legs, `frontend/built-shell.js`
    (dependency-free CommonJS beside `browser-runner.js`), exporting one factory
    `createBuiltShell({ dist })`: `dist` defaults to `frontend/dist` beside the
@@ -88,7 +94,9 @@
    `frontend/browser-runner.browser.test.mjs` serves inline HTML and no shell;
    only its comment naming `VENDOR_DIR` changes.
    `scripts/ensure_browser_gate_env.py` and `scripts/screenshots.local.mjs` stop
-   vendoring CDN modules.
+   vendoring CDN modules; the screenshot wrapper constructs the helper only
+   when it serves a page, never at import, so `scripts/screenshots.local.test.mjs`
+   keeps passing in the build-free `frontend` CI job.
 9. [ ] CI browser gates build first: the browser-gate-setup and leg jobs run
    `npm ci && npm run build` with an npm cache keyed on the lockfile and drop the
    CDN vendor download, the `matrix.vendor` flag and the `ciq-vendor` cache; the

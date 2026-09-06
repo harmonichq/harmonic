@@ -540,3 +540,46 @@ Node's per-file ESM/CommonJS detection that `frontend/browser-runner.js` and
 `frontend/harness-api-paths.test.js` rely on inside the fast gate. Task 1 and ADR
 347 now say the manifest declares no `type` and the Vite config is
 `vite.config.mjs`.
+
+### Round 3, second fresh reader — the panel cap
+
+The round-3 reviewer countersigned its re-check. A second fresh cold reader,
+the third and last panel the procedure allows, returned BLOCKED with four
+objections. Three were `authoring` defects with mechanical fixes and one was a
+claim a measurement could settle; none was an unsettled decision. The operator
+had delegated design decisions to the coordinator on 2026-09-06 and was away, so
+the coordinator dispositioned them as follows and recorded a fourth pass rather
+than posting unreviewed.
+
+1. `authoring` — the pull-request Docker job only built the image, so the spec's
+   "no Node in the runtime, serves the built shell" scenario was unfalsifiable.
+   Fixed: the job loads the image, asserts no `node` on the runtime `PATH`, and
+   serves and curls the built shell.
+2. `authoring` — AGENTS.md's QA copy-then-serve block, the one permitted offline
+   serve, gained no build prerequisite; the closed inventory's grep terms could
+   not have found it. Fixed: chunk 2's inventory names it.
+3. `authoring` — `scripts/screenshots.local.test.mjs` runs in the build-free CI
+   job and execs a wrapper chunk 3 rewrites around a helper that throws without
+   a build. Fixed: the boundary covers every test that job runs, the wrapper
+   constructs the helper lazily, and chunk 3's verification runs that test with
+   `frontend/dist` removed.
+4. Refuted by measurement — Vite hoists the five stylesheet links past the two
+   inline `<style>` blocks, which could reorder the cascade.
+   `docs/scope/347-cascade-compare.spike.mjs` rendered the source shell and the
+   built shell against the same no-fetch app and compared every element's full
+   computed style:
+
+```text
+$ PLAYWRIGHT_MODULE=… VENDOR_DIR=… BASE_URL=http://127.0.0.1:8791 DIST=<build spike>/proj/frontend/dist node docs/scope/347-cascade-compare.spike.mjs
+{"path":"/diagnose","elements":{"source":424,"built":423},"differingProperties":0,"sample":[]}
+{"path":"/day","elements":{"source":385,"built":384},"differingProperties":0,"sample":[]}
+{"path":"/plan","elements":{"source":241,"built":240},"differingProperties":0,"sample":[]}
+{"path":"/verify","elements":{"source":339,"built":338},"differingProperties":0,"sample":[]}
+TOTAL DIFFERENCES: 4
+```
+
+   The four "differences" are the element-count gap of one per page: the source
+   shell's inline module `<script>` sits in `<body>` and the build moves it to
+   `<head>`; every element that exists on both sides matches on every computed
+   property. Chunk 1's Done when now requires the coordinator to rerun this
+   comparison against the real build.

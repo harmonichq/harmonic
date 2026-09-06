@@ -45,7 +45,9 @@ The shape is the smallest one that produces a pinned, locally bundled shell:
 - Docker builds in a `node:22` stage and its Python runtime copies only
   `frontend/dist`. CI builds before the Python tests and before every browser
   leg, retires the CDN vendor download, and adds a pull-request-time
-  `docker build` with no push so the Dockerfile is proven before merge.
+  Docker job that builds the image with no push, loads it, and proves the
+  runtime has no Node and serves the built shell, so the Dockerfile is proven
+  before merge by execution rather than by reading its text.
 - The browser legs stop serving `frontend/index.html` and `/assets/*.js` from
   source. Five legs route the page through Playwright with the two CDN URLs
   rerouted to `VENDOR_DIR`; two serve it from a `node:http` fixture server and
@@ -68,7 +70,11 @@ migration with chart and UI behaviour risk. The runtime-compiler alias, the
 today's bytes behaving as they do. A spike (`docs/scope/347-vite-build.spike.sh`
 and `docs/scope/347-built-shell-mount.spike.mjs`, output recorded in
 `docs/scope/347-vite-frontend-foundation.md`) built the current shell this way and
-mounted all four surfaces against the no-fetch app with zero external requests.
+mounted all four surfaces against the no-fetch app with zero external requests,
+and `docs/scope/347-cascade-compare.spike.mjs` rendered the source shell and the
+built shell side by side against the same app and found zero differing computed
+properties on any element of any surface, so Vite's hoisting of the stylesheet
+links past the inline `<style>` blocks changes no rendered style.
 The per-file route whitelist existed so a file could never shadow `/api` or the
 index; a prefix-scoped mount over a build directory preserves that property
 without enumerating hashed names. The browser legs must load built bytes, or the

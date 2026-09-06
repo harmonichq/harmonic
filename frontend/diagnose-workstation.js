@@ -2678,6 +2678,15 @@ function boot(root, data, callbacks, signal) {
     if (preserveExplorerFocus) el('explorer-trigger')?.focus({ preventScroll: true });
   }
 
+  /* ONE PLACE KNOWS HOW A TILE IS ADDRESSED. The expansion that opens a chart
+     and the repaint that holds it both reach for the same element by the id
+     `paintTiles` stamps on it, so the two reads move together when that
+     stamp does. */
+  function focusTileFor(chartId) {
+    root.querySelector(`.evidence-tile[data-chart-id="${chartId}"]`)
+      ?.focus({ preventScroll: true });
+  }
+
   function paintTiles() {
     const host = el('tile-field');
     const focalHost = el('tile-focal');
@@ -2894,8 +2903,7 @@ function boot(root, data, callbacks, signal) {
              lands on nothing and the reader is left on the document body.
              Fullscreen paints exactly one tile, in the focal seat at `tabIndex`
              −1, and that tile is the container this navigation opened. */
-          root.querySelector(`.evidence-tile[data-chart-id="${descriptor.chartId}"]`)
-            ?.focus({ preventScroll: true });
+          focusTileFor(descriptor.chartId);
         };
         /* THE SPOTLIGHT'S FULLSCREEN RIDES ITS RAIL, where the glucose chart's
            does. The spotlight's nameplate IS a pane header rail now, and the
@@ -3078,10 +3086,7 @@ function boot(root, data, callbacks, signal) {
       (seat.seat === 'focal' ? focalHost : rowHost).append(tile);
     }
     for (const mount of mounts) mount();
-    if (heldFullscreenTile) {
-      root.querySelector(`.evidence-tile[data-chart-id="${heldFullscreenTile}"]`)
-        ?.focus({ preventScroll: true });
-    }
+    if (heldFullscreenTile) focusTileFor(heldFullscreenTile);
   }
 
   function applyCanvasFullState(big) {

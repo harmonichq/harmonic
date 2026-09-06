@@ -503,6 +503,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
                             media_type="text/javascript")
 
+    @app.get("/assets/diagnose-load-failure.js")
+    def diagnose_load_failure_js():
+        return FileResponse(_FRONTEND_DIR / "diagnose-load-failure.js",
+                            media_type="text/javascript")
+
     @app.get("/assets/occurrence-roster.js")
     def occurrence_roster_js():
         return FileResponse(_FRONTEND_DIR / "occurrence-roster.js",

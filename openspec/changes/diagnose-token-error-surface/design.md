@@ -103,3 +103,16 @@ accepts" is a shell-wide change with its own reachability question — which scr
 may probe, and when — and it would touch Day, Plan, Verify and Settings. This
 change deliberately leaves it, and says so, rather than half-doing it from
 Diagnose.
+
+**Why one backend file moves after all, by coordinator ruling.** This change was
+locked on the premise that it touches no Python. That premise was false:
+`ciq_autotune/api.py` serves every frontend ES module through an explicit
+per-file `FileResponse` route — deliberately not a `StaticFiles` mount, so an
+asset can never shadow an API route or the `/` index — and
+`tests/test_frontend_asset_routes.py` walks the module graph from `index.html`
+and asserts the route set equals the reachable set. A new module with no route is
+a 404 the whole Vue app dies on, so `diagnose-load-failure.js` cannot exist
+without its route. The coordinator ruled the registration admitted: four lines
+mirroring its 41 identical tokenless siblings, no API behaviour, no auth change,
+no verdict logic. The rest of `ciq_autotune/` is untouched, and the ruling
+supersedes only the lock's "touches no Python" expectation.

@@ -100,8 +100,12 @@
       *No API token set* banner, `frontend/verify-workstation.js`'s own
       `setError`/`showMessage`, and every non-Diagnose tab stay exactly as they
       are.
-- [x] Change nothing server-side. `ciq_autotune/api.py` keeps answering `401` with
-      its own `detail`; this change only decides how Diagnose reads it.
+- [x] Change no API behaviour. `ciq_autotune/api.py` keeps answering `401` with
+      its own `detail`; this change only decides how Diagnose reads it. Its one
+      backend edit is the static asset route for the new module, admitted by
+      coordinator ruling and recorded in `design.md` — the same four lines its 41
+      tokenless siblings carry, which `tests/test_frontend_asset_routes.py`
+      requires of every module reachable from `index.html`.
 
 ## 4. Prove the rendered state in the browser
 
@@ -145,22 +149,28 @@
       Settings, and that every other failure offers Retry. It amends no existing
       story and retires nothing, so it issues no new executable ID and needs no
       retirement sanction.
-- [ ] Capture paired before/after renders of the affected state — the wrong-token
+- [x] Capture paired before/after renders of the affected state — the wrong-token
       Diagnose surface at 1440×900 and 390×844 — under
       `openspec/changes/diagnose-token-error-surface/evidence/`, with a short
       `evidence/README.md` naming the server, the token used and the commands, in
       the shape `openspec/changes/diagnose-align-hidden-render/evidence/` already
       uses. Dark only: #304 retired the light theme.
-- [ ] Renders come from the synthetic revise-e2e server
-      (`uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`)
-      with a deliberately wrong token. No screenshot, log or fixture in this change
-      may come from a real database.
+- [x] Renders come from a synthetic server with a deliberately wrong token. This
+      change was locked against the revise-e2e server, which no longer exists on
+      this branch: `AGENTS.md`'s data boundary now permits exactly one offline
+      serve, a scratch copy of `mockups/qa-e2e.synthetic/harmonic.sqlite` run with
+      `--no-fetch --token ''`. That serve is what both halves use, and because its
+      mandatory empty token disables `require_token` outright, the `401` is
+      supplied at the transport — where the pinned browser suite supplies it. The
+      `evidence/README.md` records this. No screenshot, log or fixture in this
+      change comes from a real database.
 
 ## 6. Leave the rest alone
 
-- [x] `frontend/data.js`, `ciq_autotune/`, the findings projection, the analyzers
-      and every safety predicate are untouched. This change re-derives no backend
-      verdict: it branches on an HTTP status, never on a threshold, direction or
-      support floor.
+- [x] `frontend/data.js`, the findings projection, the analyzers and every safety
+      predicate are untouched, and `ciq_autotune/` moves only by the admitted
+      asset-route registration above. This change re-derives no backend verdict:
+      it branches on an HTTP status, never on a threshold, direction or support
+      floor.
 - [x] The dead `.ec-error` rule in `frontend/diagnose-event-comparison.css` is not
       this change's to remove.

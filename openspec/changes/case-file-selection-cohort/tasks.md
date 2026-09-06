@@ -28,6 +28,17 @@
   carries no `comparison_cohort`. Run the new assertions against the unmodified
   module first and record that they fail on the missing key.
 
+  Then pin the same pointer once through the public interface, in
+  `tests/test_finding_case_file_api.py`. Today's selected-response check for
+  `finding:over_treated_low` compares `selection["detail"]` to itself and so pins
+  no field, and the file's only real pointer assertion covers
+  `finding:missed_meal` — the one lever that already works. Add exactly one
+  assertion to the `over_treated_low` block: the served
+  `detail["comparison_cohort"]` equals the `key` of the cohort in that same
+  response's `projection["cohorts"]` whose `occurrence_ids` contains
+  `detail["id"]`. Change nothing else in that file, and run it against the
+  unmodified tree first to see it fail on the absent key.
+
 - [ ] 3. In `frontend/finding-case-file-validation.js`, extend
   `validFindingCaseFile` so a case file whose `projection.alignment` is `event`
   and whose `selection.state` is `selected` is valid only when
@@ -51,13 +62,17 @@
   cohort whose `occurrence_ids` contains the selected id, and that every
   `selected_clock` case carries none.
 
-- [ ] 5. Iterate the order's verification command until it matches the stated
-  expectation. Where this session can launch Chromium, also run the three browser
-  legs that replay the regenerated capture —
-  `frontend/diagnose-workstation-behavior.replay.mjs`,
+- [ ] 5. Iterate the order's verification chain until it matches the stated
+  expectation — the full six-command fast gate from `AGENTS.md`, then
+  `scripts/check_demo_fixtures.py`, then the browser legs. Where this session can
+  launch Chromium, run all four: the three that read the regenerated capture —
+  `frontend/cockpit-shell.browser.test.mjs`,
   `frontend/diagnose-event-comparison-behavior.replay.mjs` and
-  `mockups/diagnose-event-comparison-support-audit.mjs`, through the exact
-  commands in `AGENTS.md`. The frozen behaviour ledger is this surface's
+  `frontend/diagnose-workstation-behavior.replay.mjs` (which needs the app served
+  by `AGENTS.md`'s copy-then-serve of `mockups/qa-e2e.synthetic/harmonic.sqlite`
+  with `--no-fetch --token ''`) — plus
+  `mockups/diagnose-event-comparison-support-audit.mjs`, each through the exact
+  command in `AGENTS.md`. The frozen behaviour ledger is this surface's
   contract and is not in this change's expected diff: if a story moves under the
   regenerated capture, stop and report which story and what it now sees, rather
   than editing the ledger or the replay. From a sandboxed session Chromium cannot

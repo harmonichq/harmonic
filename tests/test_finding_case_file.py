@@ -354,12 +354,25 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         detail = case["selection"]["detail"]
         assert set(detail) == {"id", "date", "anchor", "verdict", "glucose",
                                "markers", "source_corrections", "day_target",
-                               *( {"comparison_cohort"} if lever is Lever.MISSED_MEAL else set())}
+                               "comparison_cohort"}
         if lever is Lever.CORRECTION_STACKING:
             assert [row["seq_num"] for row in detail["source_corrections"]] == [21, 22]
             assert detail["source_corrections"][0]["t"] == "2026-08-01 09:30:00"
         else:
             assert detail["source_corrections"] == []
+
+
+def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
+    for lever in Lever:
+        prepared = _prepared(lever)
+        member = prepared.members[lever][0]
+        case = prepared.case(f"finding:{lever.value}", "event", member.id)
+        detail = case["selection"]["detail"]
+        assert [cohort["key"] for cohort in case["projection"]["cohorts"]
+                if detail["id"] in cohort["occurrence_ids"]] == [detail["comparison_cohort"]]
+        clock = prepared.case(f"finding:{lever.value}", "clock", member.id)
+        assert clock["selection"]["state"] == "selected"
+        assert "comparison_cohort" not in clock["selection"]["detail"]
 
 
 def test_claimed_can_be_strictly_less_than_fired_and_clock_counts_only_claims():

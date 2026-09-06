@@ -36,6 +36,24 @@ test('ADR 79 fixture serializes every generated case as one exact population par
   }
 });
 
+test('ADR 376 fixture names every selected event Occurrence its own cohort', () => {
+  for (const [findingId, cases] of Object.entries(fixture.cases)) {
+    for (const [occurrenceId, caseFile] of Object.entries(cases.selected_event)) {
+      const detail = caseFile.selection.detail;
+      assert.deepEqual(
+        caseFile.projection.cohorts
+          .filter((cohort) => cohort.occurrence_ids.includes(detail.id))
+          .map((cohort) => cohort.key),
+        [detail.comparison_cohort],
+        `${findingId} ${occurrenceId}`);
+    }
+    for (const [occurrenceId, caseFile] of Object.entries(cases.selected_clock)) {
+      assert.equal(caseFile.selection.detail.comparison_cohort, undefined,
+        `${findingId} ${occurrenceId}`);
+    }
+  }
+});
+
 test('ADR 79 fixture pins claimed < fired and near-low aggregate withholding', () => {
   const meal = fixture.cases['finding:meal_over_delivery'].event;
   assert.equal(meal.summary.claimed, 1);

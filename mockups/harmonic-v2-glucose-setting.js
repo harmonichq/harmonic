@@ -6,6 +6,8 @@
 // page's memory: v2 persistence for them is proposed, not implemented
 // (setting.json `_note`). Review controls in the mock bar move a manufactured
 // clock and choose a captured pump profile; nothing here fetches or programs.
+// The shared journey (harmonic-v2-glucose-journey.js) owns this module's clock
+// when it is a branch of that history.
 import { buildDeliverable, collapseDeliverable, reconcileDeliverable, formatStartMin, PLAN_PARAMS } from '../frontend/plan.js';
 import { TIER } from '../frontend/diagnose-findings-queue.js';
 import { DIAGNOSE_EVIDENCE_CHARTS } from '../frontend/diagnose-evidence-charts.js';
@@ -24,8 +26,55 @@ const userValue = (param, value) => (value == null || value === '' ? '' : param 
 const hhmm = minutes => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 const PROFILE_SEGMENTS = 16;
 
-export function createSettingJourney(kit) {
+// A pump profile's schedule as the Plan reads it: one row per segment, the
+// deliverable's parameters in its own order. The change pane and the Pump
+// settings utility show the same table.
+export function profileTable(profile, e) {
+  return `<table class="gf-table"><thead><tr><th scope="col">Start</th>${PLAN_PARAMS.map(({ param }) => `<th scope="col">${PLAN_HEAD[param]}</th>`).join('')}</tr></thead><tbody>${profile.segments.map(segment => `<tr><td class="v">${e(formatStartMin(segment.start_min))}</td>${PLAN_PARAMS.map(({ param }) => `<td class="v">${e(userValue(param, segment[param]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+// The shipped basal evidence chart over one slot's served night evidence
+// (diagnose-basal-night-evidence-v1), seated on this desk. The basal exploration
+// draws the same chart for any of the 48 slots.
+export function basalEvidenceOption(data, element, colors) {
+  const option = DIAGNOSE_EVIDENCE_CHARTS.find(entry => entry.kind === 'basal').option(null, { data, surface: element });
+  const head = option.graphic[0];
+  if (head.style.rich) {
+    // The full-rank verdict slug's rich token names its colour with `color`,
+    // which ECharts' graphic text ignores; the consumer sets `fill` so the
+    // word reads in the rail's muted ink like the rows beneath it.
+    head.style.rich.v.fill = colors.muted;
+  } else {
+    // The compact rank seats the axis caption at the height the crossing
+    // count sits at; move the caption down and give the grid the room.
+    option.xAxis.nameGap = 48; option.grid.bottom = 72;
+  }
+  return option;
+}
+// The shipped Day legend shape (chart-key.css) with the marks the builder draws
+// and the slot's edges named. The span is the caller's own label text.
+export function nightKeyHtml(colors, span) {
+  const dot = (color, label) => `<span><i style="background:${color}"></i>${label}</span>`;
+  return `<div class="ds-chart-legend">${dot(colors.inRange, 'in range')}${dot(colors.high, 'high')}${dot(colors.low, 'low')}${dot(colors.accent, 'bolus')}${dot(colors.secondary, 'carbs (bolus)')}<span style="color:${colors.muted}">┆ ${span}</span></div>`;
+}
+// The shipped Day builder over one night: the slot's two hours either side, or
+// the whole day, with the slot's edges marked and named by the key beneath.
+export function nightFigureOption(day, date, { start_min: start, end_min: end }, whole, element, colors) {
+  const at = minutes => `${date}T${hhmm(minutes)}:00`;
+  const [xMin, xMax] = whole
+    ? [day.start.replace(' ', 'T'), day.end.replace(' ', 'T')]
+    : [at(Math.max(0, start - 120)), at(Math.min(1439, end + 120))];
+  const option = buildHeroOption(day, date, { colors, xMin, xMax });
+  const scale = Math.max(.42, element.clientHeight / HERO.H);
+  for (const grid of option.grid) { grid.top *= scale; grid.height *= scale; }
+  // the slot's edges; the key beneath names them, so no label rides the lines
+  option.series[0].markLine.data.push({ xAxis: at(start), label: { show: false } }, { xAxis: at(end), label: { show: false } });
+  return option;
+}
+
+export function createSettingJourney(kit, options = {}) {
   const { surface, mockbar, colors, narrow, view, e, clock, date, shortDate, stamp, period } = kit;
+  const { controls: ownsControls = true, gate = () => null, onSaveFailed = () => {} } = options;
   let data = null;
   // review controls: the manufactured clock, the Jun 13 capture, the next save's fate
   let station = 'before', capture = 'confirmed', saveFails = false;
@@ -77,14 +126,20 @@ export function createSettingJourney(kit) {
   const rowSeg = () => `<div class="seg" role="group" aria-label="Basal row">${analyzerRows().map(row => `<button data-slot="${row.slot}" aria-pressed="${row.slot === analyzerRow().slot}">${e(rowRange(row).label)}</button>`).join('')}</div>`;
 
   /* ---- review controls, outside product chrome ------------------------------ */
+  // The mis-keyed capture's label reads the served mismatch: the segment whose
+  // value differs from the as-planned capture.
+  const mismatchLabel = () => {
+    const off = data.detected.mismatch.segments.find((segment, i) => segment.basal_rate !== data.detected.confirmed.segments[i]?.basal_rate);
+    return off ? `Mis-keyed ${off.basal_rate} U/h at ${hhmm(off.start_min)}` : 'Mismatch';
+  };
   function controls() {
-    if (mockbar.querySelector('.gf-review')) return;
+    if (!ownsControls || mockbar.querySelector('.gf-review[data-source="setting"]')) return;
     const params = new URLSearchParams(location.search);
     if (STATIONS()[params.get('clock')]) station = params.get('clock');
     if (['confirmed', 'mismatch'].includes(params.get('capture'))) capture = params.get('capture');
-    mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" role="group" aria-label="Review controls">
+    mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" data-source="setting" role="group" aria-label="Review controls">
       <label>Clock <select aria-label="Manufactured clock">${Object.entries(STATIONS()).map(([key, item]) => `<option value="${key}" ${key === station ? 'selected' : ''}>${e(item.label)}</option>`).join('')}</select></label>
-      <label>Pump capture <select aria-label="Pump capture"><option value="confirmed">As planned</option><option value="mismatch" ${capture === 'mismatch' ? 'selected' : ''}>Mis-keyed 0.5 U/h at 03:00</option></select></label>
+      <label>Pump capture <select aria-label="Pump capture"><option value="confirmed">As planned</option><option value="mismatch" ${capture === 'mismatch' ? 'selected' : ''}>${e(mismatchLabel())}</option></select></label>
       <label><input type="checkbox" aria-label="Next save fails"> Next save fails</label></span>`);
     const sync = (key, value) => { const url = new URL(location.href); url.searchParams.set(key, value); history.replaceState(null, '', url); };
     mockbar.querySelector('[aria-label="Manufactured clock"]').onchange = event => { station = event.target.value; sync('clock', station); view.sheetOpen = false; kit.render(); };
@@ -97,7 +152,9 @@ export function createSettingJourney(kit) {
     if (destination === 'day' || destination === 'explore') return priorityFrame();
     if (memory.record) return recordFrame();
     if (trial()) return trialFrame();
-    if (destination === 'changes') return memory.staged ? planFrame() : kit.emptyFrame('Changes', 'No change underway', `${e(finding().title)} is supported and can be staged.`, '<button class="gf-btn primary" data-set="stage">Stage change</button>');
+    // the served tier and headline say what this finding is; the staging control
+    // reads the analyzer's own asserting verdict
+    if (destination === 'changes') return memory.staged ? planFrame() : kit.emptyFrame('Changes', 'No change underway', `${e(finding().title)} · ${e(TIER[finding().tier] || finding().tier)}. ${e(finding().headline)}`, '<button class="gf-btn" data-action="explore">Inspect nights</button><button class="gf-btn primary" data-set="stage">Stage change</button>');
     if (memory.aside) return kit.emptyFrame('Overview', 'Set aside', e(memory.aside.reason || 'The nights remain available in Explore.'), '<button class="gf-btn primary" data-action="explore">Revisit nights</button><button class="gf-btn" data-action="restore">Return to Overview</button>',
       'Review control: the late-bolus meals case is a separate synthetic patient. Choose it under Source to open that journey; it is not this patient\'s next priority.');
     // recorded intent: reconciliation is the next step, so the Plan leads
@@ -105,19 +162,26 @@ export function createSettingJourney(kit) {
     return priorityFrame();
   }
 
-  function priorityFrame() {
+  // A caller's pane (the shared journey's roster) replaces the reading pane's
+  // header and leads its body; a caller's gate (the one-watch rule) replaces the
+  // pre-decision controls.
+  function priorityFrame(pane = null) {
     const item = finding(), row = analyzerRow(), selected = selectedNight(), nights = roster();
     const position = `${nights.indexOf(selected) + 1} of ${nights.length}`;
     const group = NIGHT_GROUP_LABEL[nightGroup(selected)];
+    const idle = !trial() && !memory.record && !memory.decision && !memory.staged && !memory.aside;
+    const held = idle && gate();
     const end = trial() || memory.record
       ? '<button class="gf-btn" data-action="watch">Return to Trial</button>'
       : memory.decision ? '<button class="gf-btn" data-set="changes">Open Changes</button>'
         : memory.staged ? `<button class="gf-btn" data-set="unstage">Staged · Undo</button><button class="gf-btn primary" data-set="changes">${memory.draft ? 'Resume draft' : 'Open Changes'}</button>`
-          : memory.aside ? '' : '<button class="gf-btn" data-action="aside">Set aside</button><button class="gf-btn primary" data-set="stage">Stage change</button>';
+          : held ? held.end
+            : memory.aside ? '' : '<button class="gf-btn" data-action="aside">Set aside</button><button class="gf-btn primary" data-set="stage">Stage change</button>';
+    const status = trial() ? `<span>${e(trial().readiness.label)} Trial continues</span>` : held ? held.status : '';
     const head = kit.nameplate({
       kicker: `${SETTING_NAME[item.parameter]} · ${e(shortDate(nights[0].date))} to ${e(date(nights.at(-1).date))}`,
       title: e(item.title),
-      sub: `<b>${item.support.n} ${e(item.support.noun)}</b> · ${item.support.run_days} d basal run · ${e(TIER[item.tier] || item.tier)}${trial() ? ` · <span>${e(trial().readiness.label)} Trial continues</span>` : ''}`,
+      sub: `<b>${item.support.n} ${e(item.support.noun)}</b> · ${item.support.run_days} d basal run · ${e(TIER[item.tier] || item.tier)}${status ? ` · ${status}` : ''}`,
       end,
     });
     const nightLabel = `${e(shortDate(selected.date))} · ${e(clock(selected.t))}`;
@@ -126,51 +190,61 @@ export function createSettingJourney(kit) {
     const seatFigure = kind => `<div class="gf-fig gf-fig2" data-chart="${kind}"><div class="gf-chart-seat"><div class="gf-chart"></div></div>${nightKey()}</div>`;
     const basalFigure = '<div class="gf-fig gf-fig-basal" data-chart="basal"><div class="gf-chart"></div></div>';
     const stage = narrow()
-      ? `<section class="pane gf-stage" aria-label="Evidence">${head}
+      ? `<section class="pane gf-stage" aria-label="Evidence" data-owner="setting">${head}
         <div class="instruments"><div class="instrument"><div class="seg gf-narrow-seat" role="group" aria-label="Figure">${[['basal', 'Basal'], ['night', 'Night'], ['day', 'Day']].map(([key, label]) => `<button data-seat="${key}" aria-pressed="${seat === key}">${label}</button>`).join('')}</div></div><div class="instrument gf-tools">${kit.sheetToggle(nightLabel)}</div></div>
         ${seat === 'basal' ? basalFigure : seatFigure(seat)}</section>`
-      : `<section class="pane gf-stage" aria-label="Evidence">${head}
+      : `<section class="pane gf-stage" aria-label="Evidence" data-owner="setting">${head}
         <div class="instruments"><div class="instrument"><span class="cap">Delivered vs programmed</span><span class="meta">nights at or above each rate · one step per night</span></div><div class="instrument gf-tools"><span class="meta">${row.evidence.excluded_night_count} excluded</span>${rowSeg()}</div></div>
         ${basalFigure}
         <div class="instruments"><div class="instrument"><span class="cap">Night</span><span class="when">${e(stamp(selected.t))}</span><span class="meta">${e(group)} · ${position}</span></div><div class="instrument gf-tools">${stepSeg}${figureSeg}</div></div>
         ${seatFigure(figure)}</section>`;
-    return kit.desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : 'Nights'}">${view.asideOpen ? kit.asideForm() : nightsPane(selected, group, position)}</aside>`);
+    return kit.desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(pane?.title || 'Nights')}">${view.asideOpen ? kit.asideForm() : nightsPane(selected, group, position, pane, held)}</aside>`);
   }
-  // The shipped Day legend shape (chart-key.css) with the marks the builder draws.
-  function nightKey() {
-    const dot = (color, label) => `<span><i style="background:${color}"></i>${label}</span>`;
-    return `<div class="ds-chart-legend">${dot(colors.inRange, 'in range')}${dot(colors.high, 'high')}${dot(colors.low, 'low')}${dot(colors.accent, 'bolus')}${dot(colors.secondary, 'carbs (bolus)')}<span style="color:${colors.muted}">┆ ${e(slotSpan())}</span></div>`;
-  }
-  function nightsPane(selected, group, position) {
+  const nightKey = () => nightKeyHtml(colors, e(slotSpan()));
+  function nightsPane(selected, group, position, pane = null, held = null) {
     const item = finding(), row = analyzerRow(), rows = analyzerRows();
     const groups = new Map();
     for (const entry of roster()) { const key = nightGroup(entry); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(entry); }
     const list = [...groups].map(([key, members]) => `<div class="gf-night-group"><b>${NIGHT_GROUP_LABEL[key]}</b> · ${members.length} ${members.length === 1 ? 'night' : 'nights'}</div>${members.map(entry => `<button class="gf-row gf-member-row" data-night="${e(entry.date)}" aria-pressed="${entry.date === selected.date}"><span class="when">${e(shortDate(entry.date))} · ${e(clock(entry.t))}</span><span class="n">${e(entry.delivered_rate)} U/h</span></button>`).join('')}`).join('');
     const mg = value => (value == null ? 'no reading' : `${Math.round(value)} mg/dL`);
-    return `${kit.readingHeader('Nights', `${roster().length} of ${row.days} nights`)}<div class="gf-pane-body">
+    return `${pane ? kit.readingHeader(e(pane.title), pane.meta) : kit.readingHeader('Nights', `${roster().length} of ${row.days} nights`)}<div class="gf-pane-body">
+      ${pane?.lead || ''}
       <section class="gf-section"><h3>Basal · ${e(slotSpan())} <span class="meta">${rows.indexOf(row) + 1} of ${rows.length} in ${e(item.span.label)}</span></h3>
         ${narrow() ? rowSeg() : ''}
         <div class="gf-figure">${e(changeText())}<small>${row.asserts_move ? 'Supported · ' : ''}${e(row.direction)}</small></div>
         <p>${e(item.headline)}</p>
         <p class="gf-meta">Estimate ${e(row.estimate.value)} U/h, ${e(row.estimate.lo)} to ${e(row.estimate.hi)} · ${e(row.estimate.n)} nights · ${row.evidence.directional_support_count} in the asserted direction</p>
-        ${memory.draft || memory.decision ? `<p class="gf-meta">${memory.decision ? `Decision recorded ${e(stamp(memory.decision.applied_at))}` : `Draft saved ${e(stamp(memory.draft.updated_at))}`}</p>` : ''}</section>
+        ${memory.draft || memory.decision ? `<p class="gf-meta">${memory.decision ? `Decision recorded ${e(stamp(memory.decision.applied_at))}` : `Draft saved ${e(stamp(memory.draft.updated_at))}`}</p>` : ''}
+        ${held?.note ? `<p class="gf-note">${e(held.note)}</p>` : ''}</section>
       <section class="gf-section" role="group" aria-label="Nights">${list}</section>
       <section class="gf-section"><h3>Selected night <span class="meta">${e(position)}</span></h3>
         <div class="gf-nums"><div><span class="when">${e(date(selected.date))} · ${e(slotSpan())}</span> <span class="tier">${e(group)}</span></div>
         <div>${e(selected.delivered_rate)} U/h delivered · ${e(selected.programmed_rate)} U/h programmed</div>
         <div>${mg(selected.glucose_mean)} this night · ${mg(row.evidence.roster_glucose_mean)} roster mean</div>
         <div>${e(Math.round(selected.glucose_entry))} entry · ${e(Math.round(selected.glucose_exit))} exit</div></div>
-        <div class="gf-actions"><button class="gf-btn" data-action="day">Open Day</button></div></section>
+        <div class="gf-actions"><button class="gf-btn" data-action="day" data-date="${e(selected.date)}" data-subject="${e(finding().title)} · night of ${e(date(selected.date))}">Open Day</button></div></section>
     </div>`;
+  }
+
+  // The one phase word for this change, from the page's own memory and the served
+  // Trial: the Plan's word until a Trial exists, then the Trial's. The shared
+  // roster reads the same word, so Explore never names a Trial before one runs.
+  function phase() {
+    if (memory.record) return 'Trial finished';
+    if (trial()) return stationOf().trial === 'ready' ? 'Trial ready' : 'Trial';
+    if (memory.error) return 'Save failed';
+    if (memory.decision) {
+      const result = reconcile();
+      return result.state === 'confirmed' ? 'On pump' : result.state === 'mismatch' ? 'Mismatch' : 'Pending';
+    }
+    return memory.draft ? 'Draft saved' : memory.staged ? 'Staged' : null;
   }
 
   function planFrame() {
     const planned = rows(), result = reconcile(), item = finding();
     // a confirmed pump match ends the re-key instruction; its time stays in the record
     if (result.state === 'confirmed') memory.flash = null;
-    const status = memory.error ? 'Save failed' : memory.decision
-      ? (result.state === 'confirmed' ? 'On pump' : result.state === 'mismatch' ? 'Mismatch' : 'Pending')
-      : memory.draft ? 'Draft saved' : 'Staged';
+    const status = phase() ?? 'Staged';
     const end = memory.decision ? '' : `<button class="gf-btn" data-set="save-draft">Save draft</button><button class="gf-btn primary" data-set="record">Record decision</button>`;
     const head = kit.nameplate({
       kicker: `Plan · <b>${e(status)}</b>`,
@@ -205,11 +279,10 @@ export function createSettingJourney(kit) {
   function changePane(result, status) {
     const profile = capturedProfile() || data.active_profile;
     const profileMeta = capturedProfile() ? `Captured ${e(stamp(data.detected.captured_at))}` : 'Current';
-    const settings = `<table class="gf-table"><thead><tr><th scope="col">Start</th>${PLAN_PARAMS.map(({ param }) => `<th scope="col">${PLAN_HEAD[param]}</th>`).join('')}</tr></thead><tbody>${profile.segments.map(segment => `<tr><td class="v">${e(formatStartMin(segment.start_min))}</td>${PLAN_PARAMS.map(({ param }) => `<td class="v">${e(userValue(param, segment[param]))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     return `${kit.readingHeader('This change', e(status))}<div class="gf-pane-body">
       ${decisionSection(result)}
       ${knownSection()}
-      <section class="gf-section"><h3>Detected pump settings <span class="meta">${profileMeta}</span></h3>${settings}<p class="gf-meta">Detected schedule. The proposed schedule is the Plan beside it.</p></section>
+      <section class="gf-section"><h3>Detected pump settings <span class="meta">${profileMeta}</span></h3>${profileTable(profile, e)}<p class="gf-meta">Detected schedule. The proposed schedule is the Plan beside it.</p></section>
     </div>`;
   }
   function decisionSection(result) {
@@ -264,33 +337,10 @@ export function createSettingJourney(kit) {
       const element = host.querySelector('.gf-chart');
       const chart = echarts.init(element); charts.push(chart);
       const update = () => {
-        let option;
-        if (host.dataset.chart === 'basal') {
-          option = DIAGNOSE_EVIDENCE_CHARTS.find(entry => entry.kind === 'basal').option(null, { data: chartData(), surface: element });
-          const head = option.graphic[0];
-          if (head.style.rich) {
-            // The full-rank verdict slug's rich token names its colour with `color`,
-            // which ECharts' graphic text ignores; the consumer sets `fill` so the
-            // word reads in the rail's muted ink like the rows beneath it.
-            head.style.rich.v.fill = colors.muted;
-          } else {
-            // The compact rank seats the axis caption at the height the crossing
-            // count sits at; move the caption down and give the grid the room.
-            option.xAxis.nameGap = 48; option.grid.bottom = 72;
-          }
-        } else {
-          const selected = selectedNight(), day = data.days[selected.date];
-          const at = minutes => `${selected.date}T${hhmm(minutes)}:00`;
-          const { start_min: start, end_min: end } = rowRange(analyzerRow());
-          const [xMin, xMax] = host.dataset.chart === 'night'
-            ? [at(Math.max(0, start - 120)), at(Math.min(1439, end + 120))]
-            : [day.start.replace(' ', 'T'), day.end.replace(' ', 'T')];
-          option = buildHeroOption(day, selected.date, { colors, xMin, xMax });
-          const scale = Math.max(.42, element.clientHeight / HERO.H);
-          for (const grid of option.grid) { grid.top *= scale; grid.height *= scale; }
-          // the slot's edges; the key beneath names them, so no label rides the lines
-          option.series[0].markLine.data.push({ xAxis: at(start), label: { show: false } }, { xAxis: at(end), label: { show: false } });
-        }
+        const selected = selectedNight();
+        const option = host.dataset.chart === 'basal'
+          ? basalEvidenceOption(chartData(), element, colors)
+          : nightFigureOption(data.days[selected.date], selected.date, rowRange(analyzerRow()), host.dataset.chart === 'day', element, colors);
         chart.setOption(option, true); chart.resize();
       };
       update(); const observer = new ResizeObserver(update); observer.observe(element); observers.push(observer);
@@ -308,11 +358,15 @@ export function createSettingJourney(kit) {
   // ordinary error; nothing is written anywhere.
   function save(kind) {
     memory.flash = null;
-    if (saveFails) { saveFails = false; mockbar.querySelector('[aria-label="Next save fails"]').checked = false; memory.error = kind; return; }
+    if (saveFails) { saveFails = false; if (ownsControls) mockbar.querySelector('[aria-label="Next save fails"]').checked = false; else onSaveFailed(); memory.error = kind; return; }
     memory.error = null;
     if (kind === 'draft' || !memory.draft) memory.draft = { updated_at: station === 'before' ? data.draft.updated_at : stationOf().now };
     if (kind === 'decision') memory.decision = { applied_at: station === 'before' ? data.decision.applied_at : stationOf().now, snapshot: snapshot() };
   }
+  // The one staging of this change: the approved hour, whichever of its slots
+  // the wearer staged it from. The basal exploration stages through here too.
+  function stage() { memory.staged = true; memory.flash = null; }
+  function unstage() { memory.staged = false; memory.draft = null; }
   function moveNight(direction) {
     const list = roster(), at = list.indexOf(selectedNight());
     night = list[(at + direction + list.length) % list.length].date;
@@ -321,12 +375,14 @@ export function createSettingJourney(kit) {
   function bind() {
     for (const button of surface.querySelectorAll('[data-slot]')) button.onclick = () => { slot = Number(button.dataset.slot); view.focusAfterRender = `button[data-slot="${slot}"]`; kit.render(); };
     for (const button of surface.querySelectorAll('[data-night]')) button.onclick = () => { night = button.dataset.night; view.sheetOpen = false; view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : '.gf-member-row[aria-pressed="true"]'; kit.render(); };
-    for (const button of surface.querySelectorAll('[data-figure]')) button.onclick = () => { figure = button.dataset.figure; kit.render(); };
-    for (const button of surface.querySelectorAll('[data-seat]')) button.onclick = () => { seat = button.dataset.seat; kit.render(); };
+    // the figure and seat controls are this journey's only inside its own stage;
+    // on the shared desk another owner's frame keeps the desk's
+    for (const button of surface.querySelectorAll('[data-owner="setting"] [data-figure]')) button.onclick = () => { figure = button.dataset.figure; kit.render(); };
+    for (const button of surface.querySelectorAll('[data-owner="setting"] [data-seat]')) button.onclick = () => { seat = button.dataset.seat; kit.render(); };
     for (const button of surface.querySelectorAll('[data-set]')) button.onclick = () => {
       const action = button.dataset.set;
-      if (action === 'stage') { memory.staged = true; memory.flash = null; kit.navigate('changes'); }
-      else if (action === 'unstage') { memory.staged = false; memory.draft = null; view.focusAfterRender = '[data-set="stage"]'; kit.render(); }
+      if (action === 'stage') { stage(); kit.navigate('changes'); }
+      else if (action === 'unstage') { unstage(); view.focusAfterRender = '[data-set="stage"]'; kit.render(); }
       else if (action === 'changes') kit.navigate('changes');
       else if (action === 'save-draft') { save('draft'); view.focusAfterRender = memory.error ? '[data-set="retry-save"]' : '[data-set="save-draft"]'; kit.render(); }
       else if (action === 'record') { save('decision'); view.focusAfterRender = memory.error ? '[data-set="retry-save"]' : '.gf-status'; kit.render(); }
@@ -338,7 +394,31 @@ export function createSettingJourney(kit) {
   }
   return {
     load(json) { data = json; night = roster()[0].date; controls(); },
-    frame, bind, mountCharts, dispose,
+    frame, priorityFrame, bind, mountCharts, dispose,
+    // the shared journey drives the clock and the save fate in place of the
+    // review controls this module would otherwise own
+    stations: () => STATIONS(), station: () => station,
+    setStation(key) { if (STATIONS()[key]) { station = key; memory.error = null; } },
+    setSaveFails(value) { saveFails = value; },
+    // A later clock on this branch reads as the decision the branch records: the
+    // served draft and decision stamps, with the snapshot of what was known then.
+    assume() { if (!memory.decision) { memory.staged = true; memory.draft = { updated_at: data.draft.updated_at }; memory.decision = { applied_at: data.decision.applied_at, snapshot: snapshot() }; } },
+    trial,
+    phase,
+    stage, unstage, staged: () => memory.staged,
+    // the analyzer slots of the finding's approved hour: the ones a staging covers
+    slots: () => analyzerRows().map(row => row.slot),
+    // the pump profile the Pump settings utility shows: the chosen capture once
+    // the pump was captured, the read's active profile before that
+    detectedProfile: () => (capturedProfile() ? { profile: capturedProfile(), at: data.detected.captured_at, caption: 'Captured' } : null),
+    utilityContext: () => ({ key: 'setting', now: stationOf().now, utilities: null, profile: capturedProfile() ? { profile: capturedProfile(), at: data.detected.captured_at, caption: 'Captured' } : { profile: data.active_profile, at: data.draft.updated_at, caption: 'Read' }, changes: [] }),
+    // The Day desk's set on this source: the roster nights' days, served with the
+    // finding at the draft's time, up to the station clock.
+    dayset: () => ({ days: data.days, recorded: Object.keys(data.days).filter(iso => iso <= stationOf().now.slice(0, 10)).sort(), readAt: data.draft.updated_at, viewedAt: stationOf().now, evidence: null }),
+    // engaged: this branch holds the current change or its record; active: the
+    // change is still underway (staged, drafted, recorded or on Trial)
+    engaged: () => memory.staged || !!memory.draft || !!memory.decision || !!memory.record || station !== 'before',
+    active: () => !memory.record && (memory.staged || !!memory.draft || !!memory.decision || !!trial()),
     onNavigate(next) { if (next === 'day') { figure = 'day'; seat = 'day'; } if (next === 'explore') { figure = 'night'; seat = 'basal'; } },
     setAside(reason) { memory.aside = { reason, at: stationOf().now }; },
     restore() { memory.aside = null; },

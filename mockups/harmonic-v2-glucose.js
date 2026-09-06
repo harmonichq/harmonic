@@ -1,34 +1,44 @@
-// Glucose first, round 3c (#348). Unlocked design exploration.
+// Glucose first, round 4 (#348). Unlocked design exploration.
 // Current Python producers supply every trace, count and support word; the shipped
-// chart builders draw them. Two synthetic sources share one desk and never one
-// history: the May meals investigation (this module) and the June setting journey
-// (harmonic-v2-glucose-setting.js). Navigation, set-aside and new endings live
+// chart builders draw them. Four synthetic sources share one desk: the May meals
+// investigation (this module), the June setting journey
+// (harmonic-v2-glucose-setting.js) and the May habit journey
+// (harmonic-v2-glucose-focus.js) are three separate patients, never one history;
+// the shared journey (harmonic-v2-glucose-journey.js) is one stable May 2024
+// history read through both branches. Navigation, set-aside and new endings live
 // only in this preview's memory.
 import { renderShell, renderMockBar, loadCapture, resolveColors, escapeText } from './_shell.js';
 import { createSettingJourney } from './harmonic-v2-glucose-setting.js';
+import { createFocusJourney } from './harmonic-v2-glucose-focus.js';
+import { createSharedJourney } from './harmonic-v2-glucose-journey.js';
+import { createDayDesk } from './harmonic-v2-glucose-day.js';
+import { createUtilities } from './harmonic-v2-glucose-utilities.js';
 import { renderEventSurface, eventComparisonChartOption, eventComparisonGlucoseValues, glucoseRange } from '../frontend/diagnose-event-comparison.js';
 import { DIAGNOSE_EVIDENCE_CHARTS } from '../frontend/diagnose-evidence-charts.js';
 import { GRID } from '../frontend/diagnose-workstation-chart.js';
 import { TIER } from '../frontend/diagnose-findings-queue.js';
 import { scnBuildEpisodeOption } from '../frontend/scenario-chart.js';
 import { buildHeroOption, HERO } from '../frontend/day-hero-chart.js';
+import { heroOption } from '../frontend/verify-workstation-chart.js';
 
 const main = renderShell();
 main.classList.add('gf-main');
 const surface = document.createElement('div');
 surface.className = 'gf dw';
-let state = renderMockBar(main, 'Glucose first · round 3', changeScenario);
+let state = renderMockBar(main, 'Glucose first · round 4', changeScenario);
 main.append(surface);
 const mockbar = main.querySelector('.mockbar');
 mockbar.querySelector('p').textContent = 'Manufactured evidence. Priority selection and new decisions are illustrative.';
 const params = new URLSearchParams(location.search);
 let variant = params.get('input') === 'thin' ? 'thin' : 'repeated';
-// Review controls, outside product chrome: two separate synthetic patients, never
-// pooled into one ranked queue. The scenario and input selects belong to the meals
-// source; the setting source adds its own clock and capture controls.
-let source = params.get('source') === 'setting' ? 'setting' : 'meals';
+// Review controls, outside product chrome: three separate synthetic patients, never
+// pooled into one ranked queue, and one shared history read as a complete workflow.
+// The scenario and input selects belong to the meals source; the setting, habit and
+// shared sources add their own clock controls.
+const SOURCES = ['meals', 'setting', 'focus', 'journey'];
+let source = SOURCES.includes(params.get('source')) ? params.get('source') : 'meals';
 mockbar.querySelector('label').classList.add('gf-meals-control');
-mockbar.querySelector('label').insertAdjacentHTML('beforebegin', `<label>Source <select aria-label="Evidence source"><option value="meals">Late bolus · May meals case</option><option value="setting" ${source === 'setting' ? 'selected' : ''}>Basal 03:00 · June setting case</option></select></label>`);
+mockbar.querySelector('label').insertAdjacentHTML('beforebegin', `<label>Source <select aria-label="Evidence source"><option value="meals">Late bolus · May meals case</option><option value="setting" ${source === 'setting' ? 'selected' : ''}>Basal 03:00 · June setting case</option><option value="focus" ${source === 'focus' ? 'selected' : ''}>Over-treated low · May habit case</option><option value="journey" ${source === 'journey' ? 'selected' : ''}>Shared May 2024 history · complete workflow</option></select></label>`);
 mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<label class="gf-meals-control">Input <select aria-label="Evidence input"><option value="repeated">Repeated meals</option><option value="thin">Thin evidence</option></select></label>`);
 mockbar.dataset.source = source;
 mockbar.querySelector('[aria-label="Evidence input"]').value = variant;
@@ -38,7 +48,10 @@ mockbar.querySelector('[aria-label="Evidence input"]').onchange = event => {
 mockbar.querySelector('[aria-label="Evidence source"]').onchange = event => {
   source = event.target.value; mockbar.dataset.source = source;
   const url = new URL(location.href); url.searchParams.set('source', source); history.replaceState(null, '', url);
-  view.sheetOpen = false; view.asideOpen = false; destination = 'overview'; render();
+  // the held member belongs to the previous source's case file
+  selectedOcc = null; cohortKey = null; selectedStep = 0; figure = 'episode'; seat = 'comparison';
+  view.sheetOpen = false; view.asideOpen = false; view.utility = null; destination = 'overview'; day.open();
+  if (source === 'journey') shared.arrive(); render();
 };
 
 const e = escapeText;
@@ -50,7 +63,23 @@ const period = value => `${stamp(value.start)} to ${stamp(value.end)}`;
 const pct = value => `${value.toFixed(1)}%`;
 const ms = value => new Date(String(value).replace(' ', 'T')).getTime();
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const colors = { ...resolveColors(), manualCarb:css('--manual-carb'), manualCarbSoft:css('--manual-carb-soft') };
+// warn is the Day anchor's outranked colour (day-chart.anchorStateColor)
+const colors = { ...resolveColors(), warn:css('--warn'), manualCarb:css('--manual-carb'), manualCarbSoft:css('--manual-carb-soft') };
+// The shipped Verify hero's colour binding (verify-workstation.js chartColors),
+// read from the workstation tokens this desk carries, for the Before → Trial
+// comparison and the Focus progress figure.
+function trialColors() {
+  const v = name => getComputedStyle(surface).getPropertyValue(name).trim();
+  const mix = (c, pct) => `color-mix(in srgb, ${c} ${pct}%, transparent)`;
+  return {
+    text: v('--mk-text'), muted: v('--mk-muted'), line: v('--mk-line'), accent: v('--mk-primary'),
+    manual: v('--ck-manual') || '#93701B',
+    accentSoft: mix(v('--mk-primary'), 20), mutedSoft: mix(v('--mk-muted'), 20),
+    targetFill: mix(v('--mk-ok'), 8), targetEdge: mix(v('--mk-ok'), 55),
+    targetText: `color-mix(in srgb, ${v('--mk-ok')} 85%, ${v('--mk-text')})`,
+    rail: v('--ck-rail'), mono: v('--ck-mono'),
+  };
+}
 const narrowQuery = matchMedia('(max-width:700px)');
 const narrow = () => narrowQuery.matches;
 const STEP_TIER = { observed:'Observed', inferred:'Inferred', not_in_data:'Not in data' };
@@ -62,8 +91,9 @@ const SETTING_NAME = { basal_rate:'Basal', isf:'Correction factor', carb_ratio:'
 // structural split of evidence from eligible action text; this is not that policy.
 const stepText = step => step.text.split(' — ')[0];
 // UI state both sources share: the narrow sheet, focus hand-off, the trial
-// evidence view, the set-aside form and the conclusion being written.
-const view = { sheetOpen:false, asideOpen:false, asideReason:'', focusAfterRender:null, evidenceMode:'summary', evidencePeriod:'trial_period', evidenceDay:0, conclusion:'' };
+// evidence view, the set-aside form, the conclusion being written and the
+// utility seated in the reading pane.
+const view = { sheetOpen:false, asideOpen:false, asideReason:'', focusAfterRender:null, evidenceMode:'summary', evidencePeriod:'trial_period', evidenceDay:0, conclusion:'', utility:null };
 
 let capture, verify;
 let charts = [], observers = [], cleanups = [];
@@ -75,15 +105,20 @@ let windowMode = 'near';         // comparison x extent: near = −1 h to +2 h, 
 let setAside = null, finished = null;
 const activeId = 'profile-all-20260623233000', readyId = 'carb_ratio-all-20260607081500';
 
-const bundle = () => capture.variants[variant];
+// The investigation's case file: the meals variant, the habit source's own, or
+// the shared journey's current read of its shown concern.
+const bundle = () => (source === 'focus' ? focus.bundle() : source === 'journey' ? shared.bundle() : capture.variants[variant]);
 const baseCase = () => bundle().case_file;
 const cohorts = () => baseCase().projection.cohorts;
 const cohortOf = id => cohorts().find(row => row.occurrence_ids.includes(id));
 const detail = () => bundle().selections[selectedOcc]?.detail || null;
-const episode = () => {
-  const item = bundle().scenarios.episodes[bundle().episode_ids[selectedOcc]];
+// The generator serves each member's episode link (the unique same-lever
+// episode containing its anchor); a member with no link has no episode.
+const episodeOf = id => {
+  const item = bundle().scenarios.episodes[bundle().episode_ids[id]];
   return item?.lever === baseCase().finding.lever ? item : null;
 };
+const episode = () => episodeOf(selectedOcc);
 const currentTrial = () => finished && state === 'history' ? finished.trial : verify.details[state === 'active' ? activeId : readyId].selected;
 const watched = () => state === 'active' || state === 'ready';
 // The comparison's visible extent. Membership, medians and the y range are the
@@ -99,18 +134,28 @@ function dispose() {
   for (const cleanup of cleanups) cleanup();
   for (const chart of charts) chart.dispose();
   charts = []; observers = []; cleanups = [];
-  setting.dispose();
+  setting.dispose(); focus.dispose(); shared.dispose(); day.dispose(); utilities.dispose();
 }
 function changeScenario(next) {
   state = next; destination = next === 'history' ? 'changes' : 'overview';
   view.sheetOpen = false; view.asideOpen = false; render();
 }
-function navigate(next) {
+// Day opens on its own desk. A subject's Open Day carries the date and the way
+// back; the topbar's Day carries neither, and holds the last day looked at.
+function navigate(next, { date = null, from = null } = {}) {
   destination = next;
   if (source === 'setting') setting.onNavigate(next);
-  else if (next === 'day') { ensureSelection(); figure = 'day'; seat = 'day'; }
+  if (source === 'focus') focus.onNavigate(next);
+  if (source === 'journey') shared.onNavigate(next);
+  utilities.onNavigate();
+  if (next === 'day') day.open({ date, from });
   view.sheetOpen = false; render();
 }
+// where a subject's Open Day returns to: the destination that showed it
+const fromHere = label => ({ label, destination: destination === 'overview' || destination === 'changes' ? destination : 'explore', destinationLabel: { overview: 'Overview', changes: 'Changes' }[destination] || 'Explore' });
+// Whether a setting journey owns the rendered frame: its own source, or the
+// shared journey while its setting branch leads.
+const settingOwned = () => source === 'setting' || (source === 'journey' && shared.owner() === 'setting');
 function syncScenario(next) {
   state = next; main.querySelector('[aria-label="Prototype scenario"]').value = next;
   const url = new URL(location.href); url.searchParams.set('state', next); history.replaceState(null, '', url);
@@ -148,9 +193,9 @@ async function load(retry = false) {
       if (!response.ok) throw new Error('Evidence unavailable');
       return response.json();
     };
-    let settingJson;
-    [capture, verify, settingJson] = await Promise.all([json('workstation'), loadCapture('verify'), json('setting')]);
-    setting.load(settingJson);
+    let settingJson, focusJson, journeyJson, utilitiesJson;
+    [capture, verify, settingJson, focusJson, journeyJson, utilitiesJson] = await Promise.all([json('workstation'), loadCapture('verify'), json('setting'), json('focus'), json('journey'), json('utilities')]);
+    setting.load(settingJson); focus.load(focusJson); shared.load(journeyJson); utilities.load(utilitiesJson);
     if (retry) syncScenario('investigate');
     render();
   } catch { surface.innerHTML = errorFrame(); bind(); }
@@ -164,9 +209,15 @@ function render() {
     if (button.dataset.destination === destination) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
   }
   surface.dataset.sheet = view.sheetOpen ? 'open' : 'closed';
-  if (source === 'setting') surface.innerHTML = setting.frame(destination);
+  // Day is one desk over every source's own recorded days
+  if (destination === 'day' && state !== 'error') surface.innerHTML = day.frame();
+  else if (source === 'setting') surface.innerHTML = setting.frame(destination);
+  // the habit journey hands Explore and Day to the shared investigation
+  else if (source === 'focus') surface.innerHTML = focus.frame(destination) ?? investigationFrame();
+  // the shared journey hands a habit concern's Explore and Day to it likewise
+  else if (source === 'journey') surface.innerHTML = shared.frame(destination) ?? investigationFrame(shared.pane());
   else if (state === 'error') surface.innerHTML = errorFrame();
-  else if (destination === 'day' || destination === 'explore') surface.innerHTML = investigationFrame();
+  else if (destination === 'explore') surface.innerHTML = investigationFrame();
   else if (state === 'history' && destination === 'changes') surface.innerHTML = historyFrame();
   else if (watched()) surface.innerHTML = trialFrame();
   else if (destination === 'changes') surface.innerHTML = emptyFrame('Changes', 'No change underway', 'This example supports a closer look at meals.', '<button class="gf-btn primary" data-action="explore">Inspect meals</button>');
@@ -174,12 +225,22 @@ function render() {
   else if (state === 'quiet') surface.innerHTML = emptyFrame('Overview', 'No priority needs action', 'Day remains available.', '<button class="gf-btn primary" data-action="day">Open Day</button>');
   else if (state === 'history') surface.innerHTML = emptyFrame('Overview', finished ? 'Trial finished' : 'No priority needs action', finished ? e(finished.conclusion) : 'Day and the change record remain available.', '<button class="gf-btn primary" data-action="history">View change record</button><button class="gf-btn" data-action="day">Open Day</button>');
   else surface.innerHTML = investigationFrame();
+  // an open utility takes the reading pane's seat on whichever frame rendered
+  utilities.seat(destination);
   // The narrow reading pane covers the stage; hidden controls cannot take focus.
   surface.querySelector('.gf-stage')?.toggleAttribute('inert', narrow() && view.sheetOpen);
   bind();
-  if (source === 'setting') setting.bind();
+  if (destination === 'day') { day.bind(); day.mountCharts(); }
+  else {
+    // a journey's own handlers bind after the desk's, so a setting-owned frame's
+    // figure and seat controls take that journey's
+    if (source === 'setting') setting.bind(); else if (source === 'focus') focus.bind(); else if (source === 'journey') shared.bind();
+    if (source === 'setting') setting.mountCharts(); else if (source === 'journey') shared.mountCharts(); else mountCharts();
+    if (source === 'focus') focus.mountCharts();
+    mountTrialCharts();
+  }
+  utilities.bind(); utilities.mountCharts();
   const body = surface.querySelector('.gf-pane-body'); if (body) body.scrollTop = scrolled;
-  if (source === 'setting') setting.mountCharts(); else mountCharts();
   if (view.focusAfterRender) { surface.querySelector(view.focusAfterRender)?.focus(); view.focusAfterRender = null; }
 }
 
@@ -198,18 +259,21 @@ function sheetToggle(label) {
 }
 
 /* ---- investigation: the concern, its comparison, the held occurrence ------ */
-function investigationFrame() {
+// A caller's pane (the shared journey's roster) replaces the reading pane's
+// header and leads its body.
+function investigationFrame(pane = null) {
   ensureSelection();
   const base = baseCase(), selected = detail(), cohort = cohortOf(selectedOcc), item = episode();
   const window = bundle().scenarios.window;
   const position = `${cohort.occurrence_ids.indexOf(selectedOcc) + 1} of ${cohort.routed_count}`;
   // the served queue tier is the ranking word; it is not a permission to act
   const tier = bundle().finding_row?.tier;
+  const hook = priority();
   const head = nameplate({
     kicker: `${e(base.family)} · ${e(shortDate(window.start))} to ${e(date(window.end))}`,
     title: e(base.finding.title),
-    sub: `<b>${base.summary.claimed} of ${base.summary.denominator} ${e(base.summary.noun)}</b>${tier ? ` · ${e(TIER[tier] || tier)}` : ''}${watched() ? ` · <span>${e(currentTrial().readiness.label)} Trial continues</span>` : ''}`,
-    end: watched() ? '<button class="gf-btn" data-action="watch">Return to Trial</button>' : setAside ? '' : '<button class="gf-btn" data-action="aside">Set aside</button>',
+    sub: `<b>${base.summary.claimed} of ${base.summary.denominator} ${e(base.summary.noun)}</b>${tier ? ` · ${e(TIER[tier] || (tier === 'noted' ? 'Noted' : tier))}` : ''}${hook.status ? ` · ${hook.status}` : ''}`,
+    end: hook.end,
   });
   const memberLabel = `${e(shortDate(selected.date))} · ${e(clock(selected.anchor.t))}`;
   const figureSeg = `<div class="seg" role="group" aria-label="Figure"><button data-figure="episode" aria-pressed="${figure === 'episode'}" ${item ? '' : 'disabled'}>Episode</button><button data-figure="day" aria-pressed="${figure === 'day'}">Day</button></div>`;
@@ -226,7 +290,18 @@ function investigationFrame() {
         <div class="gf-fig ec-surface" data-chart="comparison"></div>
         <div class="instruments"><div class="instrument"><span class="cap">Occurrence</span><span class="when">${e(stamp(selected.anchor.t))}</span><span class="meta">${e(cohort.name)} · ${position}</span></div><div class="instrument gf-tools">${stepSeg}${figureSeg}</div></div>
         ${seatFigure(figure === 'episode' && item ? 'episode' : 'day')}</section>`;
-  return desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : 'Meals'}">${view.asideOpen ? asideForm() : readingPane(selected, cohort, item)}</aside>`);
+  return desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(pane?.title || hook.title)}">${view.asideOpen ? asideForm() : readingPane(selected, cohort, item, hook, pane)}</aside>`);
+}
+// What the investigation reads from the source's journey: the nameplate's status
+// and end controls, the reading pane's name and its leading section.
+function priority() {
+  if (source === 'focus') return focus.priority();
+  if (source === 'journey') return shared.priority();
+  return {
+    title: 'Meals', lead: '',
+    status: watched() ? `<span>${e(currentTrial().readiness.label)} Trial continues</span>` : '',
+    end: watched() ? '<button class="gf-btn" data-action="watch">Return to Trial</button>' : setAside ? '' : '<button class="gf-btn" data-action="aside">Set aside</button>',
+  };
 }
 
 function windowSeg() {
@@ -245,7 +320,7 @@ function figureKey(kind, selected) {
     : `<div class="ds-chart-legend">${glucose}${doses}<span style="color:${colors.manualCarb}">◗ carbs (logged)</span><span style="color:${colors.muted}">┆ ${e(selected.anchor.label)}</span></div>`;
 }
 
-function readingPane(selected, cohort, item) {
+function readingPane(selected, cohort, item, hook, pane = null) {
   const base = baseCase();
   const supportLine = row => {
     const count = `${row.routed_count} ${row.routed_count === 1 ? 'occurrence' : 'occurrences'}`;
@@ -254,7 +329,7 @@ function readingPane(selected, cohort, item) {
   };
   const members = row => `<div class="gf-members" role="group" aria-label="${e(row.name)} occurrences">${row.occurrence_ids.map(id => {
     const occurrence = bundle().selections[id].detail;
-    return `<button class="gf-row gf-member-row" data-occ="${e(id)}" aria-pressed="${selectedOcc === id}"><span class="when">${e(shortDate(occurrence.date))} · ${e(clock(occurrence.anchor.t))}</span><span class="n">${bundle().episode_ids[id] && bundle().scenarios.episodes[bundle().episode_ids[id]]?.lever === base.finding.lever ? 'episode' : ''}</span></button>`;
+    return `<button class="gf-row gf-member-row" data-occ="${e(id)}" aria-pressed="${selectedOcc === id}"><span class="when">${e(shortDate(occurrence.date))} · ${e(clock(occurrence.anchor.t))}</span><span class="n">${episodeOf(id) ? 'episode' : ''}</span></button>`;
   }).join('')}</div>`;
   // the row's mark is the comparison key's own item, so cohort and legend share one shape
   const groups = cohorts().map(row => `<button class="gf-row gf-cohort-row" data-cohort="${row.key}" data-support="${row.support}" aria-pressed="${cohortKey === row.key}"><span class="ec-key-item" data-cohort="${row.key}" data-support="${row.support}"><i class="ec-key-mark" aria-hidden="true"></i></span><strong>${e(row.name)}</strong><span class="n">${row.routed_count}</span><small>${supportLine(row)}</small></button>${cohortKey === row.key ? members(row) : ''}`).join('');
@@ -262,9 +337,12 @@ function readingPane(selected, cohort, item) {
   const occurrence = item
     ? `<div role="group" aria-label="Model steps">${item.steps.map((step, i) => `<button class="gf-row gf-step-row" data-step="${i}" aria-pressed="${selectedStep === i}"><span class="when">${e(clock(step.t))}</span><span class="tier" data-tier="${e(step.evidence_tier)}">${STEP_TIER[step.evidence_tier] || e(step.evidence_tier)}</span><span class="text">${e(stepText(step))}</span></button>`).join('')}</div>`
     : `<dl><dt>${e(selected.anchor.label)}</dt><dd>${e(clock(selected.anchor.t))}</dd>${bolus ? `<dt>Bolus</dt><dd>${e(bolus.insulin)} U${bolus.carbs ? ` · ${e(bolus.carbs)} g` : ''}</dd>` : ''}<dt>Glucose at anchor</dt><dd>${e(selected.glucose.find(row => row.minute === 0)?.bg ?? '—')} mg/dL</dd></dl>`;
-  return `${readingHeader('Meals', `${base.summary.claimed} of ${base.summary.denominator} ${e(base.summary.noun)}`)}<div class="gf-pane-body">
+  return `${pane ? readingHeader(e(pane.title), pane.meta) : readingHeader(e(hook.title), `${base.summary.claimed} of ${base.summary.denominator} ${e(base.summary.noun)}`)}<div class="gf-pane-body">
+    ${pane?.lead || ''}
+    ${hook.lead}
     <section class="gf-section" role="group" aria-label="Comparison groups">${groups}</section>
-    <section class="gf-section"><h3>${item ? 'Model steps' : 'Occurrence'} <span class="meta">${e(stamp(selected.anchor.t))}</span></h3>${occurrence}</section>
+    <section class="gf-section"><h3>${item ? 'Model steps' : 'Occurrence'} <span class="meta">${e(stamp(selected.anchor.t))}</span></h3>${occurrence}
+      <div class="gf-actions"><button class="gf-btn" data-action="day" data-date="${e(selected.date)}" data-subject="${e(pane?.title || hook.title)} · ${e(shortDate(selected.date))} ${e(clock(selected.anchor.t))}">Open Day</button></div></section>
   </div>`;
 }
 
@@ -354,18 +432,76 @@ function trialTitle(trial) {
   if (changes.length !== 1) return `Profile change · ${changes.length} settings`;
   const [change] = changes;
   const name = `${e(SETTING_NAME[change.parameter] || change.parameter)}${change.slot && !change.uniform ? ` ${e(change.slot)}` : ''}`;
-  return change.before == null ? `${name} · ${e(settingValue(change.parameter, change.after))}` : `${name} · ${e(change.before)} → ${e(settingValue(change.parameter, change.after))}`;
+  // a correction factor reads insulin first on both sides; a rate carries its unit once
+  const before = change.parameter === 'isf' ? settingValue('isf', change.before) : change.before;
+  return change.before == null ? `${name} · ${e(settingValue(change.parameter, change.after))}` : `${name} · ${e(before)} → ${e(settingValue(change.parameter, change.after))}`;
 }
 function trialSub(trial) {
   const progress = trial.maturing;
   return `Detected ${e(stamp(trial.changed_at))} · ${trial.state === 'maturing' ? `<b>${progress.days_elapsed} of ${progress.days_required} days</b>` : `<b>${progress.days_elapsed} days</b> elapsed`} · ${progress.gap_count} data ${progress.gap_count === 1 ? 'gap' : 'gaps'}`;
 }
+// The Trial stage: the shipped Verify hero (Before → Trial glucose by clock) over
+// the measured rows. Narrow seats one of the three: the chart, the Before / Trial
+// table, or the available days.
 function trialStage(trial, { kicker, end, rail, body }) {
-  const seg = rail ?? `<div class="seg" role="group" aria-label="View"><button data-mode="summary" aria-pressed="${view.evidenceMode === 'summary'}">Before / Trial</button><button data-mode="daily" aria-pressed="${view.evidenceMode === 'daily'}">Available days</button></div>`;
-  return `<section class="pane gf-stage gf-stage-table" aria-label="Trial evidence">${nameplate({ kicker, title: trialTitle(trial), sub: trialSub(trial), end })}
-    <div class="instruments"><div class="instrument"><span class="cap gf-desk-only">View</span>${seg}</div><div class="instrument gf-tools"><span class="meta gf-desk-only">Pump-local time</span>${sheetToggle('This trial')}</div></div>
-    <div class="gf-scroll">${body ?? (view.evidenceMode === 'summary' ? evidenceTable(trial) : dailyEvidence(trial))}</div></section>`;
+  stagedTrial = trial;
+  const pairs = trialPairs(trial);
+  const desk = rail ?? `<div class="seg" role="group" aria-label="View"><button data-mode="summary" aria-pressed="${view.evidenceMode === 'summary'}">Before / Trial</button><button data-mode="daily" aria-pressed="${view.evidenceMode === 'daily'}">Available days</button></div>`;
+  const seats = `<div class="seg gf-narrow-seat" role="group" aria-label="View">${[['chart', 'Glucose'], ['summary', 'Before / Trial'], ['daily', 'Days']].map(([key, label]) => `<button data-mode="${key}" aria-pressed="${view.evidenceMode === key}" ${key === 'daily' && body ? 'disabled' : ''}>${label}</button>`).join('')}</div>`;
+  // the hero's own in-chart legend names the two lines; this key names the ribbon
+  const palette = trialColors();
+  const chart = `<div class="gf-fig gf-fig-trial" data-trial-chart><div class="gf-chart-seat"><div class="gf-chart"></div></div><div class="ds-chart-legend">${pairs.pairs.length ? `<span><i style="background:${palette.accentSoft}"></i>Trial above Before</span><span><i style="background:${palette.mutedSoft}"></i>Trial below Before</span>` : '<span>no Trial readings to compare yet</span>'}<span>median glucose by clock · ${e(pairs.days)}</span></div></div>`;
+  const table = body ?? (view.evidenceMode === 'daily' ? dailyEvidence(trial) : evidenceTable(trial));
+  return narrow()
+    ? `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({ kicker, title: trialTitle(trial), sub: trialSub(trial), end })}
+      <div class="instruments"><div class="instrument">${seats}</div><div class="instrument gf-tools">${sheetToggle('This trial')}</div></div>
+      ${view.evidenceMode === 'chart' ? chart : `<div class="gf-scroll">${table}</div>`}</section>`
+    : `<section class="pane gf-stage gf-stage-trial" aria-label="Trial evidence">${nameplate({ kicker, title: trialTitle(trial), sub: trialSub(trial), end })}
+      <div class="instruments"><div class="instrument"><span class="cap">${pairs.trial.length ? 'Before → Trial' : 'Before only'}</span><span class="meta">${pairs.trial.length ? 'median glucose by clock' : 'Trial has no readings yet'}</span></div><div class="instrument gf-tools"><span class="meta">Pump-local time</span></div></div>
+      ${chart}
+      <div class="instruments"><div class="instrument"><span class="cap">View</span>${desk}</div><div class="instrument gf-tools">${sheetToggle('This trial')}</div></div>
+      <div class="gf-scroll">${table}</div></section>`;
 }
+// The shipped Verify binding (verify-workstation.js renderHero): each period's
+// clock envelope, its empty slots dropped, paired where both sides have one. A
+// Trial side with no readings pairs nothing, and stays a Before only figure.
+function trialPairs(trial) {
+  const rows = key => (trial.envelopes?.[key] || []).filter(row => row.n > 0);
+  const before = rows('before_period'), tri = rows('trial_period');
+  const tmin = row => parseInt(row.t) * 60 + parseInt(String(row.t).slice(3));
+  const byT = new Map(before.map(row => [String(row.t), row]));
+  const pairs = tri.filter(row => byT.has(String(row.t))).map(row => ({ t: tmin(row), b: byT.get(String(row.t)).med, v: row.med, d: row.med - byT.get(String(row.t)).med }));
+  const span = item => `${shortDate(item.start)}–${shortDate(item.end)}`;
+  return {
+    pairs, before: before.map(row => [tmin(row), row.med]), trial: tri,
+    beforeLabel: `Before · ${span(trial.before_period)}`, trialLabel: `Trial · ${span(trial.trial_period)}`,
+    days: `days ${trial.days.before_period} → ${trial.days.trial_period}`,
+  };
+}
+function mountTrialCharts() {
+  if (!globalThis.echarts) return;
+  for (const host of surface.querySelectorAll('[data-trial-chart]')) {
+    const element = host.querySelector('.gf-chart');
+    const chart = echarts.init(element); charts.push(chart);
+    const trial = stagedTrial;   // the Trial the rendered stage drew
+    const update = () => {
+      const bound = trialPairs(trial), palette = trialColors();
+      const option = heroOption(palette, { pairs: bound.pairs, arc: false, beforeLabel: bound.beforeLabel, trialLabel: bound.trialLabel });
+      if (!bound.pairs.length) {
+        // Before only: the Before line reads its own envelope; the Trial line has
+        // no data and its legend entry says so
+        const before = option.series.find(series => series.name === bound.beforeLabel);
+        const tri = option.series.find(series => series.name === bound.trialLabel);
+        if (before) before.data = bound.before;
+        if (tri) tri.name = 'Trial · no readings yet';
+        option.legend.data = [bound.beforeLabel, 'Trial · no readings yet'];
+      }
+      chart.setOption(option, true); chart.resize();
+    };
+    update(); const observer = new ResizeObserver(update); observer.observe(element); observers.push(observer);
+  }
+}
+let stagedTrial = null;
 function progressSection(trial) {
   const progress = trial.maturing;
   return `<section class="gf-section"><h3>Evidence accrued</h3><div class="gf-figure">${progress.days_elapsed} of ${progress.days_required} days<small>${progress.gap_count} data ${progress.gap_count === 1 ? 'gap' : 'gaps'}</small></div><progress value="${progress.days_elapsed}" max="${progress.days_required}" aria-label="Trial progress"></progress><p class="gf-meta">${e(trial.readiness.message)}</p>${trial.focus?.message ? `<p class="gf-meta">${e(trial.focus.message)}</p>` : ''}</section>`;
@@ -385,8 +521,8 @@ function trialFrame() {
   return desk(stage, reading);
 }
 // One required, user-written conclusion. The app puts no words in the wearer's mouth.
-function reviewForm() {
-  return `<form id="finish-form" data-form="finish"><label for="conclusion">Conclusion</label><textarea id="conclusion" required aria-required="true">${e(view.conclusion)}</textarea><div class="gf-actions" style="padding:0 0 6px"><button class="gf-btn primary" type="submit" ${view.conclusion.trim() ? '' : 'disabled'}>Record conclusion &amp; finish</button></div></form><p class="gf-note">Observed on the pump. Changes are entered manually.</p>`;
+function reviewForm(label = 'Record conclusion &amp; finish', note = 'Observed on the pump. Changes are entered manually.') {
+  return `<form id="finish-form" data-form="finish"><label for="conclusion">Conclusion</label><textarea id="conclusion" required aria-required="true">${e(view.conclusion)}</textarea><div class="gf-actions" style="padding:0 0 6px"><button class="gf-btn primary" type="submit" ${view.conclusion.trim() ? '' : 'disabled'}>${label}</button></div></form><p class="gf-note">${e(note)}</p>`;
 }
 function historyFrame() {
   const trial = currentTrial();
@@ -415,19 +551,22 @@ function errorFrame() {
 
 /* ---- trial tables ---------------------------------------------------------- */
 // Rows follow the served evidence list and its roles: targets first, then
-// guardrails. A meal arc with no meals in a period prints that, never a null.
+// guardrails. A missing value is read against its own population: no meals or
+// no readings in the period says so; a population with no served value is
+// unavailable, never a null and never "no meals".
 function evidenceTable(trial) {
   const row = (title, role, a, b, aNote, bNote) => `<tr class="${role === 'target' ? 'gf-target' : ''}"><td>${title}<small>${e(role)}</small></td><td class="v">${a}<small>${aNote}</small></td><td class="v">${b}<small>${bNote}</small></td></tr>`;
-  const mg = value => (value == null ? 'no meals' : `${e(value)} mg/dL`);
+  const mg = (value, count) => (value != null ? `${e(value)} mg/dL` : count ? 'unavailable' : 'no meals');
   const meals = count => (count ? `${e(count)} ${count === 1 ? 'meal' : 'meals'}` : 'no meals in period');
   const readings = side => `${e(side.n_readings)} readings`;
+  const rate = side => (side.value != null ? pct(side.value) : side.n_readings ? 'unavailable' : 'no readings');
   const ordered = [...trial.evidence].sort((a, b) => (a.role === 'target' ? 0 : 1) - (b.role === 'target' ? 0 : 1));
   const rows = ordered.flatMap(item => {
-    if (item.key === 'tir') return [row('Time in range', item.role, pct(item.before.value), pct(item.trial.value), readings(item.before), readings(item.trial))];
-    if (item.key === 'tbr') return [row('Time below range', item.role, pct(item.before.value), pct(item.trial.value), readings(item.before), readings(item.trial))];
+    if (item.key === 'tir') return [row('Time in range', item.role, rate(item.before), rate(item.trial), readings(item.before), readings(item.trial))];
+    if (item.key === 'tbr') return [row('Time below range', item.role, rate(item.before), rate(item.trial), readings(item.before), readings(item.trial))];
     if (item.key === 'arc') return [
-      row('Meal glucose peak', item.role, mg(item.before.peak), mg(item.trial.peak), meals(item.before.n_peak), meals(item.trial.n_peak)),
-      row('Meal glucose low point', item.role, mg(item.before.nadir), mg(item.trial.nadir), meals(item.before.n_nadir), meals(item.trial.n_nadir)),
+      row('Meal glucose peak', item.role, mg(item.before.peak, item.before.n_peak), mg(item.trial.peak, item.trial.n_peak), meals(item.before.n_peak), meals(item.trial.n_peak)),
+      row('Meal glucose low point', item.role, mg(item.before.nadir, item.before.n_nadir), mg(item.trial.nadir, item.trial.n_nadir), meals(item.before.n_nadir), meals(item.trial.n_nadir)),
     ];
     return [];
   });
@@ -449,19 +588,32 @@ function detectedSettings(trial, note) {
   return `<section class="gf-section"><h3>What changed</h3><table class="gf-table"><thead><tr><th scope="col">Setting</th><th scope="col">Before</th><th scope="col">Detected</th></tr></thead><tbody>${trial.changes.map(change => `<tr><td>${SETTING_NAME[change.parameter] || e(change.parameter)}${change.slots_changed ? `<small>${e(change.slots_changed)} time slots changed${change.uniform ? ' · uniform' : ` · values shown at ${e(change.slot)}`}</small>` : change.slot ? `<small>${e(change.slot)}</small>` : ''}</td><td class="v">${e(settingValue(change.parameter, change.before))}</td><td class="v">${e(settingValue(change.parameter, change.after))}</td></tr>`).join('')}</tbody></table><p class="gf-meta">${e(note)}</p></section>`;
 }
 
-/* ---- the two sources on one desk ------------------------------------------- */
-const setting = createSettingJourney({
-  surface, mockbar, colors, narrow, view, e, clock, date, shortDate, stamp, period, pct,
-  desk, nameplate, readingHeader, sheetToggle, emptyFrame, asideForm, trialStage, progressSection, evidenceTable, detectedSettings, reviewForm,
-  navigate, render,
-});
+/* ---- the three sources on one desk ----------------------------------------- */
+const kit = {
+  surface, mockbar, colors, trialColors, narrow, view, e, clock, date, shortDate, stamp, period, pct,
+  desk, nameplate, readingHeader, sheetToggle, emptyFrame, asideForm, trialStage, trialTitle, progressSection, evidenceTable, detectedSettings, reviewForm,
+  investigationFrame, mountCharts, navigate, render,
+};
+const setting = createSettingJourney(kit);
+const focus = createFocusJourney(kit);
+const shared = createSharedJourney(kit, { createSettingJourney, createFocusJourney });
+// The Day desk reads each source's own recorded days: a journey's at its clock,
+// the meals case file's at the window it was read over.
+const mealsDayset = () => { const item = capture.variants[variant]; return { days: item.days, recorded: Object.keys(item.days).sort(), readAt: item.scenarios.window.end, viewedAt: item.scenarios.window.end, evidence: item }; };
+const dayset = () => (source === 'setting' ? setting.dayset() : source === 'focus' ? focus.dayset() : source === 'journey' ? shared.dayset() : mealsDayset());
+// The retained utilities read the current source's clock, served questions and
+// detected profile; their page-memory carb entries mark the Day desk.
+const utilityContext = () => (source === 'journey' ? shared.utilityContext() : source === 'setting' ? setting.utilityContext() : source === 'focus' ? focus.utilityContext()
+  : { key: 'meals', now: capture.variants[variant].scenarios.window.end, utilities: null, profile: null, changes: [] });
+const utilities = createUtilities(kit, { context: utilityContext });
+const day = createDayDesk(kit, { dayset, carbEntries: () => utilities.entries() });
 const meals = {
   setAside(reason) { setAside = { reason }; },
   restore() { setAside = null; },
   onExplore() { figure = 'episode'; seat = 'comparison'; },
   finish(conclusion) { finished = { trial: structuredClone(currentTrial()), conclusion, endedAt: new Date().toLocaleString() }; syncScenario('history'); },
 };
-const journey = () => (source === 'setting' ? setting : meals);
+const journey = () => (source === 'setting' ? setting : source === 'focus' ? focus : source === 'journey' ? shared : meals);
 
 /* ---- wiring ---------------------------------------------------------------- */
 function bind() {
@@ -473,7 +625,9 @@ function bind() {
     render();
   };
   for (const button of surface.querySelectorAll('[data-step]')) button.onclick = () => { selectedStep = Number(button.dataset.step); figure = 'episode'; seat = 'episode'; view.sheetOpen = false; view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : '.gf-step-row[aria-pressed="true"]'; render(); };
-  if (source === 'meals') {
+  // the episode/Day figure and the narrow seats belong to the meals desk; the
+  // setting journey names its own
+  if (!settingOwned()) {
     for (const button of surface.querySelectorAll('[data-figure]')) button.onclick = () => { figure = button.dataset.figure; render(); };
     for (const button of surface.querySelectorAll('[data-seat]')) button.onclick = () => { seat = button.dataset.seat; render(); };
   }
@@ -490,28 +644,42 @@ function bind() {
     else if (action === 'aside') { view.asideOpen = true; view.sheetOpen = true; view.focusAfterRender = '#aside-reason'; render(); }
     else if (action === 'cancel-aside') { view.asideOpen = false; view.sheetOpen = false; view.focusAfterRender = '[data-action="aside"]'; render(); }
     else if (action === 'restore') { journey().restore(); navigate('overview'); }
-    else if (action === 'explore') { if (source === 'meals') meals.onExplore(); navigate('explore'); }
-    else if (action === 'day') navigate('day');
+    else if (action === 'explore') { if (!settingOwned()) meals.onExplore(); if (source === 'journey') shared.onExplore(); navigate('explore'); }
+    // a subject's Open Day carries its date and the way back; a frame's plain
+    // Open Day is direct entry
+    else if (action === 'day') navigate('day', button.dataset.date ? { date: button.dataset.date, from: fromHere(button.dataset.subject) } : {});
     else if (action === 'history') navigate('changes');
     else if (action === 'overview' || action === 'watch') navigate('overview');
   };
   const reason = surface.querySelector('#aside-reason'); if (reason) reason.oninput = event => { view.asideReason = event.target.value; };
   const aside = surface.querySelector('[data-form="aside"]'); if (aside) aside.onsubmit = event => { event.preventDefault(); journey().setAside(view.asideReason.trim()); view.asideOpen = false; navigate('overview'); };
-  const text = surface.querySelector('#conclusion'); if (text) text.oninput = event => { view.conclusion = event.target.value; surface.querySelector('[data-form="finish"] [type="submit"]').disabled = !view.conclusion.trim(); };
+  // every control that submits the conclusion — the form's own button and a
+  // Retry after a failed save — waits on the same nonblank text
+  const text = surface.querySelector('#conclusion'); if (text) text.oninput = event => {
+    view.conclusion = event.target.value;
+    for (const button of surface.querySelectorAll('[data-form="finish"] [type="submit"], [type="submit"][form="finish-form"]')) button.disabled = !view.conclusion.trim();
+  };
   const finish = surface.querySelector('[data-form="finish"]'); if (finish) finish.onsubmit = event => {
     event.preventDefault(); if (!view.conclusion.trim()) return;
-    journey().finish(view.conclusion.trim());
-    // the meals record opens in Changes; the setting's original context leads Overview again
-    navigate(source === 'setting' ? 'overview' : 'changes');
+    // a failed save keeps the form in place with its Retry
+    if (journey().finish(view.conclusion.trim()) === false) { view.focusAfterRender = '[data-focus="retry-resolve"]'; render(); return; }
+    // the meals record opens in Changes; the setting's and the habit's original context leads Overview again
+    navigate(source === 'meals' ? 'changes' : 'overview');
   };
   const periodSelect = surface.querySelector('[data-select="evidence-period"]'); if (periodSelect) periodSelect.onchange = event => { view.evidencePeriod = event.target.value; view.evidenceDay = 0; render(); };
   const daySelect = surface.querySelector('[data-select="evidence-day"]'); if (daySelect) daySelect.onchange = event => { view.evidenceDay = Number(event.target.value); render(); };
 }
 window.addEventListener('keydown', event => {
   if (event.key !== 'Escape' || ['TEXTAREA', 'INPUT', 'SELECT'].includes(document.activeElement?.tagName)) return;
+  // a seated utility steps back and closes on its own before the desk's chain
+  if (view.utility) { utilities.escape(); return; }
   if (view.sheetOpen) { view.sheetOpen = false; view.focusAfterRender = view.asideOpen ? '[data-action="aside"]' : '.gf-sheet-toggle'; view.asideOpen = false; }
   else if (view.asideOpen) { view.asideOpen = false; view.focusAfterRender = '[data-action="aside"]'; }
-  else if (source === 'setting') { if (!setting.escape()) return; }
+  // Day steps its month back to the week, then drops its focused log moment
+  else if (destination === 'day') { if (!day.escape()) return; }
+  else if (settingOwned()) { if (!journey().escape()) return; }
+  // a Focus-owned frame steps its own seat back before the desk's figure does
+  else if ((source === 'focus' || source === 'journey') && journey().escape()) { /* stepped */ }
   else if (seat !== 'comparison' && narrow()) seat = 'comparison';
   else if (figure !== 'episode' && episode()) figure = 'episode';
   else return;

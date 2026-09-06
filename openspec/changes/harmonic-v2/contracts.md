@@ -130,6 +130,12 @@ restore the concern at any time.
 
 ## Reuse and delivery boundaries
 
+- Build the new shell, journey surfaces and shared evidence views as Vue
+  single-file components from the first useful v2 increment. Components own
+  composition and interaction; extract shared behavior only where the actual
+  callers need it. This does not require wholesale decomposition of v1 or a
+  component for every fragment of markup. The build brief settles the exact
+  component boundaries.
 - Import the pure `frontend/plan.js` deliverable and reconciliation functions
   through a deliberate shared boundary. Do not port a second copy of their
   schedule-merging, rounding or single-variable rules into v2.

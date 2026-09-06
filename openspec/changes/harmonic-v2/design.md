@@ -47,8 +47,10 @@ in scope.
 Carry the mechanical approach already agreed in issue #348 into the plan:
 
 - Add the eventual v2 app in `frontend-v2/` alongside the existing `frontend/`.
-  Use Vue/Vite/TypeScript. Preserve v1 routes and expose v2 at `/v2/`, with
-  assets at `/v2/assets/`.
+  Use Vue/Vite/TypeScript with single-file components for the new shell,
+  journey surfaces and shared evidence views. Establish those boundaries in
+  the first useful v2 increment, rather than postponing them to cleanup.
+  Preserve v1 routes and expose v2 at `/v2/`, with assets at `/v2/assets/`.
 - Retain one Python API and one database owner. Reuse existing capabilities.
   Add backward-compatible contracts or migrations only for demonstrated v2
   needs. The browser does not re-derive clinical judgments or stageability.
@@ -68,14 +70,22 @@ Carry the mechanical approach already agreed in issue #348 into the plan:
 ### Why and consequences
 
 The frontend can change substantially while retaining the tested analysis
-engine and existing installation. #347's standalone v1-tooling prerequisite
-conflicts with this sequence; its reproducible-build, packaging, local-asset,
-authentication, and synthetic-verification concerns still belong in v2 delivery.
+engine and existing installation. PR #380 merged the v1 Vite foundation on
+September 6, 2026. ADR 347 supersedes ADR 213's buildless production default;
+its build, packaging, local-asset, authentication and built-output checks are
+now existing delivery work for v2 to extend.
 
-This is the explicit future ruling anticipated by ADR 213's buildless default,
-limited to v2. It does not change v1's current buildless delivery. The timing
-and acceptance of final cutover remain open. No application implementation is
-authorized by recording this decision.
+The v2 build owns decomposition of its new shell and extraction of shared
+pieces it actually uses. It does not depend on decomposing every region of
+the retiring v1 shell first. Component boundaries must concentrate a real
+responsibility; exact components belong in the subsequent build brief. Reuse
+one implementation of existing domain and chart behavior, as the contracts
+below require. This clarification follows Connor's September 6 question about
+PR #380 and ADR 213's later decomposition stage; it creates no separate ticket.
+
+V2 remains a sibling application under `/v2/`. The timing and acceptance of
+final cutover remain open. No application implementation is authorized by
+recording this decision.
 
 ## ADR 348 — Guidance leads, findings explain
 
@@ -349,7 +359,7 @@ Priority: their assembly and queue ordering are not the same contract.
 
 | Work | Retain | Re-scope or supersede within the v2 plan |
 | --- | --- | --- |
-| #347 production Vite foundation | Pinned local runtime assets, reproducible build, API proxy, packaging, same-origin/auth behavior, Node absent at runtime, built-output checks | Its standalone migration of the current app is not a prerequisite. Attach those delivery obligations to the first meaningful v2 increment |
+| #347 production Vite foundation, merged in PR #380 | Pinned local runtime assets, reproducible build, API proxy, packaging, same-origin/auth behavior, Node absent at runtime, built-output checks | Extend the merged delivery foundation for `/v2/`. The v2 build establishes its own component boundaries and extracts the shared pieces it uses; wholesale v1 decomposition is not a prerequisite |
 | #336 complete Verify feature | Setting and habit coverage; groups before individual events; useful evidence during follow-up; explicit uncertainty | Fit this complete follow-up experience into the broader discovery-to-history journey. Do not treat a lunch example as the whole feature |
 | #340 reviewed comparison design | Treat its pinned ADR 340 as the comparison-design baseline: server-owned periods and populations, lazy selected detail, visible denominators, adherence distinct from outcome, one-active-watch constraint, actual component reuse | Its existing Verify-shell placement does not settle v2 navigation. Its exclusion of historical Focus review does not meet #348's broader durable-history goal. The history and explicit Trial-finish extensions are owned by the two corresponding ADR 348 records |
 
@@ -532,8 +542,10 @@ executable component backlog or permission to change the related tickets.
    order are insufficient. Evidence-policy questions that remain unresolved
    become bounded investigations with an explicit exit criterion before any
    dependent recommendation ships.
-2. **Complete the setting loop in preview.** Introduce the v2 build and delivery
-   path together with a useful setting journey: guidance and cited evidence,
+2. **Complete the setting loop in preview.** Extend the merged Vite delivery
+   foundation for v2, with single-file component boundaries for its shell,
+   journey and shared evidence views, together with a useful setting journey:
+   guidance and cited evidence,
    Plan, manual entry, reconciliation, Trial follow-up, conclusion, and history.
    Reuse the existing setting-specific eligibility and delivery paths; basal,
    I:C, and ISF do not acquire interchangeable staging rules. Add the snapshot

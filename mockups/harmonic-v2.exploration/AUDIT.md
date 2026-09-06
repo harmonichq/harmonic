@@ -82,3 +82,58 @@ and retirement gates in the planning proposal remain in force.
 Recommended sequence: a targeted UI Craft fix for the two measured P2 findings
 after the unfinished journeys are authored; `/ui-craft audit` to recheck the
 finalist; `/ui-craft polish` before requesting the final visual approval.
+
+## Focus candidate audit, round 3d
+
+This is a bounded follow-up to the checkpoint audit, not a replacement total
+score or an independent final critique. The parent inspected synthetic desktop
+and narrow renders and exercised the candidate's controls on 2026-09-06.
+
+| Finding | Reproduction and impact | Owner/status |
+| --- | --- | --- |
+| P1: narrow reading control is offscreen | At 390 × 624 the This Focus button spans x=430.875–528.859. Root overflow is false, but the control is unreachable by a visible click. Old empty columns lead while the current windows are offscreen | Returned to Fable |
+| P1: Retry bypasses conclusion admission | Fail resolution, clear the textarea with an input event, then Retry. The ordinary submit is disabled but Retry resolves the Focus with empty text | Returned to Fable |
+| P1: history heading adopts live dates | Resolve at the May 30 clock and open history, then advance to June 29. Its table and read label remain the May 30 ending snapshot; the heading changes to June 15–29 | Returned to Fable |
+| P2: active Focus hides the intended action | The full window/metric table and internal priority/effect fields dominate. The action being tried is below the initial reading viewport | Fable owns the visual comparison and hierarchy pass |
+| P2: missing measurement is called missing population | The preempted Trial's Before meal-peak row says no meals beside a source count of one meal. A missing measured value must not erase a nonzero population | Returned to Fable |
+
+Passed observations: failed pin does not create an active Focus and focuses
+Retry; Retry starts it; a failed resolution retains the typed conclusion; a
+normal resolution preserves its conclusion through Overview and Changes;
+preemption displays the actual correction-factor Trial, dropped Focus and no
+invented conclusion. The narrow reading sheet keeps its own scroll and the
+viewport root fits. No console errors occurred in these probes. These passes
+do not excuse the offscreen-control failure.
+
+One driver command could not clear a textarea with an empty `fill` value. That
+was a test-input error, not an app failure. The corrected isolated probe cleared
+it with an input event and reproduced the Retry defect above. The whole failed
+driver run is not counted as a passing gate.
+
+The shared fixture also failed two coverage checks: May 1 and May 2 appear in
+its recorded-date inventory without Day payloads, and all thirty supporting
+night dates are absent from its setting branch's Day map. Terra owns those
+generator corrections and the later Focus case file. These are prototype data
+gaps, separate from #350's shipped Diagnose fixes.
+
+
+## Round 4 verification update
+
+Parent browser checks close the offscreen Focus control, blank Retry admission,
+frozen ending heading, and missing-measurement wording defects above. Focus
+figures and the Trial comparison now render; their final visual hierarchy still
+needs the independent craft assessments. The connected roster, aside/restore,
+one-current-change gates and Trial record were also exercised successfully
+after Fable repaired an undefined episode reference. Exact observations and
+the failed-driver-versus-app distinction are recorded in REVIEW.md.
+
+The generator's missing Day coverage is corrected and independently reviewed;
+the additive basal capture now serves 48 slots and their actual evidence with
+complete night-to-Day links. This proves the supplied data, while the complete
+basal explorer remains in Fable's current desktop pass alongside Day/utilities.
+
+Remaining observations: the compact touch geometry needs the final narrow
+pass; the staged setting's roster status incorrectly says Trial and is assigned
+to Fable; the fractional-hour speech issue belongs to the now-merged #350 QA
+work and will be brought in with the integration baseline, not patched here.
+The separate mobile design round follows the desktop walkthrough and review.

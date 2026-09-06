@@ -164,3 +164,220 @@ The independent document reviewer countersigned the complete planning proposal
 within its admitted scope. That verdict is not a visual approval or permission
 to build v2. The selected design remains unlocked, and the original round-one
 alternatives remain available for context.
+
+## Resumed Focus review, round 3d
+
+Connor explicitly resumed work after the published checkpoint. Fable 5.1 at
+high effort authored the continuous Focus candidate on the same workstation.
+The parent rendered it at 1280 × 720 and 390 × 624 using only manufactured data.
+Pinning, an ordinary failed pin and Retry, fixed-period follow-up, a user
+conclusion and resolution, retained history through Overview/Changes, and the
+alternative detected-setting preemption were exercised. These interactions
+produced no browser console errors. The original action, current assessment,
+manual conclusion and dropped status remain separate. No backend ending or
+persistence implementation is claimed.
+
+The rendered candidate is not accepted as the final follow-up design. Its
+window tables obscure the current comparison at narrow width, and the Focus
+reading control falls outside that viewport. The parent also reproduced Retry
+accepting a cleared conclusion and the saved-history heading adopting a later
+assessment's dates while its table retains the saved assessment. The next Fable
+pass owns these fixes, a curated visual comparison, and the shared priority flow.
+The precise evidence is recorded in AUDIT.md.
+
+The existing Trial producer already supplies envelopes for its actual Before
+and Trial periods, and the shipped Verify chart renders that comparison. The
+next pass reuses it. A new Focus progress chart may use the actual fixed-period
+series; the prohibition on inventing glucose traces does not force Focus into
+a table. Missing opportunities remain unknown and behavior is distinct from
+glucose outcomes.
+
+Terra generated a single manufactured history with a basal finding and an
+over-treated-low finding, plus the other source finding retained in the full
+read. Its Plan/Trial and Focus alternatives begin from backups of the same
+original store. The parent independently executed the generator drift check:
+
+```text
+$ uv run python mockups/harmonic-v2.exploration/generate.py --check
+harmonic-v2 design: current
+```
+
+That proves reproducibility, not a global prioritization policy. The original
+behavioral action is still Worth a look with wide uncertainty; pinnability is
+not a support verdict. Parent review found incomplete Day payloads and missing
+later Focus case files. Terra is adding those source reads before Fable's
+complete navigation walkthrough is evaluated.
+
+The Diagnose QA sweep #350 and frontend foundation PR #380 remain integration
+dependencies. Their shared-chart and delivery changes will be incorporated and
+verified before final integration, visual lock or a build-ready handoff.
+
+
+## Interrupted navigation/comparison candidate
+
+Fable's next high-effort pass reached the provider session limit on 2026-09-06
+before a hand-back. Its Focus progress visual, form admission/snapshot edits
+and Trial comparison binding are saved, but the main module imports a shared
+journey module that was not yet authored. The synthetic candidate is therefore
+not runnable at this point; syntax checks on the three edited scripts are not
+rendered or lifecycle verification. CSS and the unified navigation connection
+remain part of the same pending Fable pass. The parent will resume that same
+session after the provider's 14:30 Phoenix reset and re-run the documented
+Focus findings and both shared-history choices before closing any finding.
+
+The expanded generated data separately passed the parent's drift check,
+including complete Day dates, later episode identities, static utility source
+extraction and question reads at branch clocks. Independent Standards and Spec
+reviews of this bounded data increment are in progress. This does not imply
+that the utility surfaces or final Day journey have been authored.
+
+
+## Independent data review, resumed increment
+
+Scope: the generated shared-history, Focus evidence/Day additions and static/per-clock utility inputs against commit `3ac29cd`. UI wiring and visual approval are outside this bounded review. Two isolated read-only Luna reviewers at medium effort checked the same five-file hash manifest. Neither found a code or scope blocker.
+
+### Standards
+
+Standards verdict: holds — 10/10; violated — 0; not applicable — 0.
+
+- S1 Hold — synthetic provenance stamps in `generate.py:207`, `:297`, `:400`.
+- S2 Hold — all reviewed outputs are generator-owned and included in `outputs()` / `--check` at `generate.py:606-614`, `:618-630`.
+- S3 Hold — source branches use read-only opens and isolated SQLite copies at `generate.py:308-312`, `:548-557`.
+- S4 Hold — staging reads backend `asserts_move` at `generate.py:152-156`; no safety/analyzer edits.
+- S5 Hold — existing case-file, timeline, Plan/Trial, Focus, and prompt producers are reused.
+- S6 Hold — glossary extraction preserves source wording; generated metadata defers presentation labels to `CONTEXT.md`.
+- S7 Hold — helpers remain bounded to current consumers.
+- S8 Hold — shared source identity is checked at `generate.py:573-575`; episode ambiguity is rejected at `:80-87`.
+- S9 Hold — provenance, source paths, dates, and generated outputs are executable metadata.
+- S10 Hold — ambiguous episode matches fail closed; missing data remains distinct from supported evidence.
+
+Findings: none.
+
+Unverified: `generate.py --check` could not complete because the read-only sandbox cannot create its temporary synthetic SQLite directory. JSON parsing and JavaScript syntax checks passed. Manifest hashes remained unchanged, and no files were modified.
+
+Convergence: reached in this targeted round.
+
+The Standards reviewer then closed its execution-evidence item on the parent receipt and unchanged hashes:
+
+Standards review closed.
+
+- Holds: 10/10
+- Violated: 0
+- Not applicable: 0
+- Findings: none
+- Unverified evidence: none
+
+The parent-executed `generate.py --check` passed with `harmonic-v2 design: current`. All five manifest hashes still match. My own sandbox remained unable to run the scratch-producing check, but the parent receipt resolves that evidence gap.
+
+### Spec
+
+Verdict: PASS — 11/11 criteria met.
+
+- C1–C2: Met. Shared May source identity and producer-derived evidence in `journey.json`; generator lines 314–372.
+- C3: Met. Both matched anchors uniquely resolve to `ep-000`/`ep-001`; generator lines 79–94.
+- C4: Met. Original/supporting dates and follow-up Day payloads are present; generator lines 100–110, 545–579.
+- C5: Met. Source and trend clocks remain distinct; generator lines 482–520.
+- C6: Met. Same Trial remains `maturing` → `complete`; Focus alternatives are `resolved` and `dropped`; generator lines 449–462, 521–542.
+- C7: Met. Pending prompts use `build_pending_prompts` at explicit branch clocks; generator lines 374–381, 553–571.
+- C8: Met. Four KB articles are byte-identical, and glossary extraction is marker-guarded; generator lines 384–404.
+- R1: Met. Synthetic/prototype limitations are explicitly stamped; journey metadata lines 1–3.
+- R2: Met. `setting.json`, `workstation.json`, and `evidence.json` remain clean; standalone output values were not altered beyond the declared focus increment.
+- R3: Met. `.venv/bin/python ... --check` passed; output existence/content and source markers fail closed at generator lines 616–630.
+
+Findings: 0
+Unverified: 0
+Scope creep: none observed.
+Convergence: yes — all five manifest hashes matched before and after review; no files were modified.
+
+Termination: **Converged** for this data increment: 10 standards and 11 criteria/risk entries, zero findings and no remaining unverified evidence. The parent separately observed exit 0 and complete output `harmonic-v2 design: current` for the final generator check. This does not establish a rendered pass, a clinical prioritization policy, persistence or execution admission.
+
+
+## Round 4 parent browser check — 2026-09-06
+
+Fable returned the navigation/comparison candidate; all four JavaScript syntax
+checks pass. Parent inspected synthetic renders at 1280×720 and 390×624.
+Focus follow-up and the Trial comparison render their source-backed figures.
+The narrow Focus reading control is now on-screen (left165/right263 within390),
+with no root overflow or page scrolling. A failed Focus conclusion preserves
+the input; blanking it disables both Retry and submit, and refilling permits
+Retry. The Trial table distinguishes an unavailable metric with one meal from
+an empty meal population.
+
+The connected roster/set-aside walkthrough fails: the cohort member renderer
+still calls the removed `episodeId` helper. After setting basal aside, rendering
+throws `ReferenceError: episodeId is not defined` and leaves the old frame
+visible. Findings and restoration are therefore not verified. This was returned
+to the same Fable worker for a bounded repair; no navigation completion is
+claimed. The attempted frozen-ending replay did not reach its initial pin and
+cannot establish a history verdict. It will be rerun after the rendering fix.
+
+The next desktop pass still owns complete Day, utilities and the verified basal
+retention inventory. The separate mobile round follows desktop completion and
+review. These checks are parent verification, not the final independent craft
+assessments or user approval.
+
+
+### Round 4 repair verification
+
+The same Fable session replaced the removed helper with `episodeOf(id)`, using
+the displayed bundle's served episode map and lever. Parent then completed the
+connected browser walkthrough with no console errors: all three source findings
+appear; setting basal aside reveals the over-treated-low concern; its reason
+and Restore remain in the roster; restoring returns basal. A staged setting
+blocks starting Focus, and a pinned Focus blocks staging basal. Finishing the
+ready Trial returns to the current evidence and retains its conclusion in
+Changes. The narrow findings sheet renders at 390 pixels.
+
+The focused frozen-Focus replay also completed successfully with no console
+errors: the original ending heading and conclusion persist after advancing the
+review clock. An earlier driver sequence tried to reopen an already-open
+history view and timed out; the corrected sequence removes that redundant
+click. These observed fixes close parent findings A, B, C, E and F; the action
+hierarchy and new figures still require the final independent craft review.
+
+One new display discrepancy remains for the next pass: after Stage change,
+the roster says Trial although the source state is still a Plan. The one-change
+gate works, but the status must name the actual phase.
+
+### Basal capture addition review
+
+The additive `initial.basal_exploration` capture has all 48 source analysis rows
+and all 48 basal-night projections. It preserves the original asserting slots 6/7,
+the source clock and every supporting-night-to-Day link. Removing the new key
+reconstructs the prior journey JSON byte-for-byte, and all six other generated
+outputs remain unchanged. Parent generator `--check` completed successfully:
+`harmonic-v2 design: current`.
+
+Two isolated Luna medium reviewers converged on this bounded addition:
+Standards 7/7 hold; Spec 8/8 met; zero findings and zero unverified items. Both
+confirmed the pinned generator and journey hashes. Their verdict covers source
+capture and compatibility, not rendered basal retention. The grouped Finding
+projection is an adapter input with three source rows, not a claimed 12-bucket
+basal chart.
+
+
+## Desktop completion pass: pre-integration browser check
+
+Fable 5.1 high returned the Day, full basal lane and retained utilities on
+September 6. The coordinator verified syntax on all seven scripts and
+`git diff --check`; no visual lock or complete-walkthrough claim follows.
+At 1280×720, direct Day opens June 1 from the shared original read, with all
+five tracks and no root overflow/scroll. All 48 basal cells render, and a
+no-data slot has no staging action. The original lane defaults to the aggregate;
+a night must be selected before its Night/Day controls become available.
+
+Carb questions render the correct three questions, but answering No in the
+browser raises `Cannot read properties of null (reading 'getAttribute')` and
+leaves the displayed question unanswered. This is an open runtime defect for
+Fable's next pass. The initial browser script also used two wrong selectors
+(an exact-text match on a multi-line roster row and `:first-of-type` for No);
+those timeouts are driver mistakes, not product failures. A corrected No click
+reproduced the actual runtime error. A separate log-carb entry and Guide article
+rendered, but the mixed run's error means it is not a passing utility replay.
+
+The expanded review controls occupy about 176 pixels above the app at this
+viewport. Their metadata should remain available without continually consuming
+the workstation's chart space; this is coordinator feedback for the design lead.
+The current commit is a review checkpoint before integrating the now-merged
+QA and Vite foundation. Browser repair, regeneration and complete desktop review
+remain pending, followed by the separately requested mobile design round.

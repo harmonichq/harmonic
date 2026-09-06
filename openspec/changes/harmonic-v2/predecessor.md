@@ -31,3 +31,49 @@ No row here is marked retired. Missing prototype coverage is recorded as missing
 it is neither a sanctioned omission from v2 nor evidence that v1 lost the job.
 The original comparison and selected direction remain in
 [the rendered review](../../../mockups/harmonic-v2.exploration/REVIEW.md).
+
+
+## Basal exploration clarification
+
+Connor confirmed that basal slots asserting a change must remain discoverable
+in Explore, with the same graphs available in the current app. The single
+leading priority does not remove access to those slots, their supporting
+observations or contextual Day inspection. This is a retention requirement,
+not a request for a separate manufactured increase example. The backend's
+`asserts_move` verdict continues to own action eligibility.
+
+
+## Investigation name remains open
+
+The investigation job is established: findings, basal slots, comparisons and
+individual episodes remain reachable beyond the single leading priority.
+“Explore” is a proposed destination name, not an approved rename of Diagnose.
+On September 6 Connor asked whether that distinction had been settled. The
+coordinator recommended retaining Diagnose; no naming decision was recorded.
+Do not read the prototype's navigation label as vocabulary approval.
+
+### Basal views to retain
+
+The shipped source inventory identifies these connected views:
+
+- `buildSlotLane` in `frontend/diagnose-workstation-chart.js` supplies the
+  48-cell basal lane; `renderLane` and `pickCell` in
+  `frontend/diagnose-workstation.js` keep each slot selectable independently
+  of the priority queue.
+- When a finding case has clock alignment, `renderCaseClock` shows its 12
+  grouped buckets and counts; `renderCaseHead` links the peak bucket into an
+  existing basal slot. This is a route from finding investigation into basal,
+  not a second clock chart to invent for a basal setting row. The grouped
+  buckets are distinct from the 48 basal slots.
+- `renderSlotLevel` preserves current, estimate, recommendation, interval,
+  support, hold and staging state, plus the supporting-night distribution and
+  roster. The backend continues to own every action verdict.
+- `renderSlotNightSelection` retains delivered and programmed rates, the
+  selected night's glucose, entry/exit and Open Day. The source loader uses
+  `/api/diagnose/basal-night-evidence?slot=` and the supplied Day loader.
+
+At this review, the prototype's setting journey has a two-row slot selector
+and a reused chart option. That demonstrates the representative setting
+journey, but does not prove retention of the complete lane or
+supporting-night views, including links into them from finding investigation. The next desktop pass must close those specific gaps.
+No extra increase scenario is requested.

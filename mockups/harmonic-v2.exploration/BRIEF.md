@@ -77,6 +77,31 @@ move: the shipped basal chart over the held night on one spine, then the
 shipped Plan deliverable and reconciliation, the served Trial and the
 wearer's own conclusion, with each source's review controls kept outside
 product chrome and the two synthetic patients never pooled.
+Round 3d seats the habit Focus loop as a third separate patient on the same
+desk: the served pattern's own action beside the shared investigation, a Focus
+stage whose fixed 14-day windows are columns of two tables (observed behavior,
+then glucose outcomes, with every empty denominator printed as unavailable),
+the wearer's own conclusion, and the served Trial as the alternative ending
+that keeps the Focus's dropped record reachable without resuming it.
+Round 4 corrects the reviewed findings (the narrow reading control, the active
+Focus leading with its action and a real progress figure, the retry admitted
+through the same form, the frozen ending assessment, the missing metric read
+against its population, the tier printed as the rank it is) and seats one
+shared synthetic history (`source=journey`) on the same desk: the served
+findings queue is the roster, one concern leads Overview, set aside moves to
+the next ranked concern with the guided tail held back, one change at a time,
+each branch's later reads served by its own clock, and Changes keeps what was
+decided and how it ended.
+The desktop pass completes the fixed cockpit's remaining jobs on the same
+desk: Day as its own destination (the shipped five-track day beside its
+Episode Log under a week ribbon that opens to its month, every date a served
+day of the current source at its clock, a contextual entry keeping its subject
+and the way back), every basal slot of the original read explorable from the
+roster through the shipped lane, inspector and figures with the setting
+journey's one staging, and the retained utilities (App settings, Pump settings
+from Changes, Log carbs, Carb questions, Guide, Glossary) as one pane that
+takes the reading pane's seat and keeps the destination underneath, with page
+memory that survives navigation and never recalculates the read.
 Constraints: UI Craft's product and design rules, existing role tokens, meaningful
 chart marks, keyboard selection, structural narrow views (one figure seat, the
 reading pane as a sheet), synthetic producers.

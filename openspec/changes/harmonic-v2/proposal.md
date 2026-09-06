@@ -43,8 +43,11 @@ product decisions; these accompanying drafts apply them.
 The eventual frontend is `frontend-v2/`, built with Vue/Vite/TypeScript and
 served under `/v2/`, with built assets under `/v2/assets/`. V1 keeps its routes.
 One Python process/API and one database remain authoritative. Node builds
-production assets but is not a production runtime. Vite arrives with the first
-meaningful v2 product increment. Migrating v1 to Vite is not a prerequisite.
+production assets but is not a production runtime. PR #380 has now supplied
+the Vite foundation for v1. The first meaningful v2 increment extends that
+foundation and uses Vue single-file components for its new shell and journeys,
+reusing the existing domain and chart behavior. Decomposing the entire v1 shell
+is not a prerequisite.
 
 This investigation may write planning documents and properly governed synthetic
 design evidence. It changes no production source, analyzer, database schema,

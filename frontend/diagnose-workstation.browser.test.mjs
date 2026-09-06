@@ -81,15 +81,14 @@ import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
 // a skipped run exits 0, and a green step that exercised zero browser
 // assertions is the silent-skip failure mode the mock-to-app port process
-// forbids for replay scripts, now extended to this suite. This suite did not
-// previously require VENDOR_DIR (CI already passes it); it now does, so a
-// missing vendor asset is caught here instead of failing later inside a real
-// page load. Every missing prerequisite is named explicitly and accumulated,
+// forbids for replay scripts, now extended to this suite. Every missing
+// prerequisite is named explicitly and accumulated,
 // so one failing run points at everything wrong, not just the first thing
 // checked.
 const missing = [];
@@ -109,15 +108,8 @@ if (chromium && !EXEC && !existsSync(chromium.executablePath())) {
   missing.push(`Chromium executable is missing (no PLAYWRIGHT_EXECUTABLE_PATH and `
     + `${chromium.executablePath()} does not exist — run playwright install chromium)`);
 }
-const VENDOR = process.env.VENDOR_DIR;
-if (!VENDOR) {
-  missing.push('VENDOR_DIR is unset (point it at a directory holding vendored '
-    + 'vue.esm-browser.js and echarts.min.js)');
-} else {
-  for (const asset of ['vue.esm-browser.js', 'echarts.min.js']) {
-    if (!existsSync(join(VENDOR, asset))) missing.push(`VENDOR_DIR=${VENDOR} is missing ${asset}`);
-  }
-}
+let shell;
+try { shell = createBuiltShell(); } catch (error) { missing.push(error.message); }
 if (missing.length) {
   throw new Error(`diagnose-workstation.browser.test.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 }
@@ -1560,6 +1552,8 @@ test('populated Diagnose renders readable ink and chart marks', async () => {
 });
 
 test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
+  // A named checkout's frontend directory; openApp serves its built dist so
+  // base-versus-revision evidence cannot accidentally render this checkout.
   const frontendRoot = process.env.DIAGNOSE_FRONTEND_ROOT || join(ROOT, 'frontend');
   const evidenceKind = process.env.DIAGNOSE_EVIDENCE_KIND || 'revision';
   const captureOnly = process.env.DIAGNOSE_CAPTURE_ONLY === '1';
@@ -2723,10 +2717,8 @@ test('setError tears down a live render and replaces the mount with a plain fail
             contentType: 'text/html',
           });
         }
-        if (url.href.includes('echarts')) {
-          if (!VENDOR) return route.continue();
-          return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        }
+        if (url.href.includes('echarts')) return route.fulfill({
+          body: await readFile(join(ROOT, 'node_modules/echarts/dist/echarts.min.js')), contentType: 'text/javascript' });
         if (url.pathname.startsWith('/assets/')) {
           const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
           try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
@@ -2809,12 +2801,8 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
         const url = new URL(route.request().url());
         const path = url.pathname;
         if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
-        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-        if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
-        }
+        const response = shell.serve(path);
+        if (response) return route.fulfill(response);
         // The one deliberately broken endpoint: loadAudit's Promise.all
         // rejects on this, taking the real catch path a live fetch failure
         // (a timeout, a 5xx, a dropped connection) would.
@@ -2864,12 +2852,8 @@ test('a rejected API token names the token and offers Settings, not the backend 
         const url = new URL(route.request().url());
         const path = url.pathname;
         if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
-        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-        if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
-        }
+        const response = shell.serve(path);
+        if (response) return route.fulfill(response);
         // Every read refused, exactly as ciq_autotune/api.py's require_token
         // refuses a token the server does not accept. The detail string is
         // that endpoint's own, verbatim.
@@ -3036,7 +3020,7 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
   // #372: the merged-run member list travels on the payload, so the wiring
   // this guard pins now hands it to the Plan draft's own predicate.

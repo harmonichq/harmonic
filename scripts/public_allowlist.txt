@@ -22,6 +22,10 @@ pyproject.toml
 uv.lock
 Dockerfile
 .dockerignore
+package.json
+package-lock.json
+vite.config.mjs
+tsconfig.json
 docker-compose.yml
 docker-entrypoint.sh
 .gitignore
@@ -50,7 +54,7 @@ tests/** {.py}
 # __fixtures__/ set, including the two stamped exemplars and whatever
 # Phase 0.5.1 regenerates. The global binary deny and the Phase 3.1
 # structural scan are what keep a future real-data JSON out of this rule.
-frontend/** {.html,.js,.mjs,.css,.svg,.json}
+frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
 
 # --- The dev-only component harness ------------------------------------
 # It ships as source so the README and contributor instructions resolve.

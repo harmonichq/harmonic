@@ -1,8 +1,7 @@
 name: CI
 
 # Test every PR and every push to main; publish the image only when main moves
-# (ADR 0021). No image smoke-test in CI — not worth the complexity for a
-# single-user project.
+# (ADR 0021). Pull requests also build and smoke-test the runtime image.
 on:
   push:
     branches: [main]
@@ -19,6 +18,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Build the production frontend
+        run: npm ci && npm run build
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -152,8 +158,8 @@ jobs:
   browser-gate-setup:
     name: browser gate setup
     runs-on: ubuntu-latest
-    # Sized for a cold cache: installing Playwright, downloading Chromium and
-    # fetching the two CDN modules, not the ~15s warm-cache path.
+    # Playwright and Chromium install only on a cache miss. npm ci (warm from
+    # the lockfile-keyed cache) and the Vite build run every time.
     timeout-minutes: 15
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
@@ -163,6 +169,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
+      - name: Build the delivered frontend shell
+        run: npm ci && npm run build
       # The matrix restores this exact runner + browser bundle after this one job
       # creates it. Keeping the version in both the install and cache key prevents
       # a pinned Playwright upgrade from reusing an incompatible browser download.
@@ -182,20 +191,6 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: npx --prefix "$RUNNER_TEMP/ciq-playwright" playwright install --with-deps chromium
-      # Browser legs that route CDN requests through VENDOR_DIR restore this
-      # separate cache; the Day, browser-runner, and first-plan legs never do.
-      - name: Vendor CDN modules for the browser gates
-        id: vendor-cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/ciq-vendor
-          key: browser-gates-${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}-vue-3-echarts-5.5.0-v1
-      - name: Download CDN modules for the browser gates
-        if: steps.vendor-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p "$RUNNER_TEMP/ciq-vendor"
-          curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$RUNNER_TEMP/ciq-vendor/vue.esm-browser.js"
-          curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$RUNNER_TEMP/ciq-vendor/echarts.min.js"
 
   frontend-browser-leg:
     name: browser gates — ${{ matrix.gate }}
@@ -209,30 +204,24 @@ jobs:
       matrix:
         include:
           - gate: Day lifecycle
-            vendor: false
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
           - gate: Diagnose workstation
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
           - gate: Diagnose canvas composition
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
           - gate: Cockpit shell
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" node --test frontend/cockpit-shell.browser.test.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
       # #554: the shared browser-runner.js front door itself — proves it
       # launches Chromium once per command and still isolates scenarios.
       # #672: fails closed like every other browser gate, so it's a
       # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
-            vendor: false
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
           - gate: First-plan reconcile
-            vendor: false
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
       # glob never discovers, so it gets its own explicit step. It fails closed —
-      # a missing driver, vendored asset or fixture exits nonzero rather than
+      # a missing driver, built shell or fixture exits nonzero rather than
       # skipping, because a green step that ran zero stories proves nothing.
       #
       # This surface has shipped (#722): the app is now the contract artifact,
@@ -242,9 +231,8 @@ jobs:
       # leg) has been archived; the anti-drift guarantee lives on in these
       # stories replaying against the built app forever.
           - gate: Diagnose workstation behaviour ledger
-            vendor: true
             server: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
       # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
       # S12 mutates glucose after the mock's former server-owned support facts
       # were computed, so its production aggregation regression is app-only
@@ -253,25 +241,25 @@ jobs:
       # (S1–S12). It fails closed when browser infrastructure or a fixture is
       # absent (#672).
           - gate: Diagnose event comparisons
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
           - gate: Diagnose comparison support audit
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
       # #660: the Verify workstation's own frozen ledger. This surface has
       # shipped (#722): the app is now the contract artifact, so this is the
       # only leg — the regression gate the port owes, rendering the committed
       # synthetic set. It fails closed — a run that executes zero stories
       # exits nonzero.
           - gate: Verify behaviour ledger
-            vendor: true
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" VENDOR_DIR="$RUNNER_TEMP/ciq-vendor" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
           node-version: "22"
+          cache: npm
+      - name: Build the delivered frontend shell
+        run: npm ci && npm run build
       - name: Set up uv for the no-fetch app server
         if: matrix.server
         uses: astral-sh/setup-uv@v6
@@ -291,21 +279,11 @@ jobs:
       - name: Require the browser runner cache
         if: steps.browser-runner-cache.outputs.cache-hit != 'true'
         run: exit 1
-      - name: Restore vendored CDN modules
-        if: matrix.vendor
-        id: vendor-cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/ciq-vendor
-          key: browser-gates-${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}-vue-3-echarts-5.5.0-v1
-      - name: Require the vendored CDN module cache
-        if: matrix.vendor && steps.vendor-cache.outputs.cache-hit != 'true'
-        run: exit 1
       - name: Start the declared synthetic no-fetch app server
         if: matrix.server
         run: |
           cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          uv run harmonic serve --no-fetch --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
+          uv run harmonic serve --no-fetch --token '' --db "$RUNNER_TEMP/harmonic-qa.sqlite" > "$RUNNER_TEMP/harmonic-no-fetch.log" 2>&1 &
           for attempt in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8765/api/health && exit 0
             sleep 1
@@ -328,6 +306,41 @@ jobs:
         env:
           BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
         run: test "$BROWSER_LEGS_RESULT" = success
+
+  docker-pr:
+    name: build + smoke-test image
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image without publishing
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: harmonic:pr-test
+      - name: Require the runtime image to exclude Node
+        run: docker run --rm --entrypoint sh harmonic:pr-test -c '! command -v node'
+      - name: Serve the built shell from the runtime image
+        run: |
+          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
+          chmod 666 "$RUNNER_TEMP/harmonic-qa.sqlite"
+          docker run --detach --name harmonic-pr-smoke --publish 8765:8765 \
+            --env TIMEZONE_NAME=America/Phoenix \
+            --volume "$RUNNER_TEMP/harmonic-qa.sqlite:/tmp/harmonic.sqlite" \
+            harmonic:pr-test --host 0.0.0.0 --port 8765 --no-fetch --token '' --db /tmp/harmonic.sqlite
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8765/ | grep --quiet '/assets/index-'; then
+              docker rm --force harmonic-pr-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs harmonic-pr-smoke
+          docker rm --force harmonic-pr-smoke
+          exit 1
 
   docker:
     name: build + push image

@@ -33,6 +33,7 @@ public tracker.
 
 ```sh
 uv sync --frozen --extra api --extra sync
+npm ci && npm run build
 ```
 
 The core — store, model, CLI — is deliberately stdlib-only. The `sync` extra
@@ -41,11 +42,13 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 **Run.** `uv run harmonic serve` starts the API and the web UI on one port.
 `README.md` has the full command set and the Docker path.
 
-**The fast gate — dependency-free, runs on every pull request:**
+**The pull-request gate:** the dependency-free frontend Node test line and guard
+scripts below are the **fast gate**. Its backend delivery leg needs a built shell.
 
 ```sh
-uv run python -m pytest                    # backend, stdlib unittest
-node --test 'frontend/**/*.test.js'        # frontend, Node's built-in runner
+npm ci && npm run build                    # required before backend delivery tests
+uv run python -m pytest                    # backend, stdlib unittest over the built shell
+node --test 'frontend/**/*.test.js'        # fast gate: dependency-free frontend Node tests
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -119,34 +122,34 @@ behaviour-ledger replays against the built app, and the event-comparison
 support audit. Reproduce it locally:
 
 ```sh
-# One-time setup — an isolated Playwright + Chromium, and the two CDN modules
-# the browser suites route through instead of the network. On a machine that
+# One-time setup — an isolated Playwright + Chromium. On a machine that
 # runs the gates repeatedly, skip the mktemp lines and instead provision a
 # persistent cache once with
 #   eval "$(python3 scripts/ensure_browser_gate_env.py)"
-# which sets PLAYWRIGHT_MODULE and VENDOR_DIR for the legs below and costs
+# which sets PLAYWRIGHT_MODULE for the legs below and costs
 # one stat per piece on reruns.
-PW=$(mktemp -d) VENDOR=$(mktemp -d)
+PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
-curl -fsSL https://unpkg.com/vue@3/dist/vue.esm-browser.js -o "$VENDOR/vue.esm-browser.js"
-curl -fsSL https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js -o "$VENDOR/echarts.min.js"
+
+# Rebuild the shell after any frontend/ change, before the ten CI legs.
+npm ci && npm run build
 
 # The ten gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" node --test frontend/cockpit-shell.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
 # In another terminal, start the QA copy-then-serve command documented below.
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
-PLAYWRIGHT_MODULE="$PW/node_modules/playwright" VENDOR_DIR="$VENDOR" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-All ten **fail closed**: a missing driver, vendored asset or fixture exits
+All ten **fail closed**: a missing driver, built shell or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a
@@ -188,6 +191,7 @@ your own database — never a published one, and never a live pull.**
   scratch="${TMPDIR:-/tmp}/harmonic-qa-e2e.sqlite"
   rm -f "$scratch" "$scratch-wal" "$scratch-shm" "$scratch.derived.sqlite"
   cp mockups/qa-e2e.synthetic/harmonic.sqlite "$scratch"
+  npm ci && npm run build
   uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8765
   ```
 
@@ -261,10 +265,10 @@ manufactured stories, then use the full no-fetch app as the integration proof.
 - `ciq_autotune/fetch_loop.py` — the hourly background fetch loop `serve` runs.
 - `ciq_autotune/result_cache.py` — the in-process cache the heavy read
   endpoints answer from.
-- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves
-  `frontend/index.html` at `/`, on the same port.
-- `frontend/` — a single-page Vue 3 app loaded from a CDN, no build step.
-  ECharts renders the Day chart.
+- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves the
+  built `frontend/dist/index.html` at `/`, on the same port.
+- `frontend/` — a single-page Vue 3 app built with Vite. ECharts renders the
+  Day chart.
 - `harness/` — a dev-only Vite page that opens one shipped chart at a time on
   manufactured data or a running `harmonic serve`. Node 22 is required but not
   enforced; the harness never enters the production app and never gates.
@@ -434,11 +438,12 @@ Hard-won, and expensive to re-derive.
 ## Conventions
 
 - **Backend tests** use stdlib `unittest`, run under pytest.
-- **Frontend tests** use Node's built-in runner: the fast gate and every
-  frontend test take no npm dependency. Pure logic lives in **vue-free** `.js`
+- **Frontend tests** use Node's built-in runner and take no npm dependency; CI's
+  frontend job runs them without an install. Backend pytest delivery tests need
+  `npm ci && npm run build` first. Pure logic lives in **vue-free** `.js`
   modules so tests import them with no importmap and no DOM. Vue components
   import `vue` plus those modules and are not node-tested, because the bare
-  `vue` specifier only resolves through the browser importmap. The dev-only
+  `vue` specifier resolves through Vite. The dev-only
   `harness/` has its own manifest and lockfile; it is never a gate and never
   runs in CI.
 - **Browser-driven suites are named `*.browser.test.mjs`**, never `*.test.js`,

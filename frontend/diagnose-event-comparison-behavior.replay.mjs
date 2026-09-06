@@ -8,18 +8,15 @@
 // a stale capture stamp.
 import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const SYNTHETIC = join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json');
 const BASE_PAYLOAD = join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json');
-const MIME = {
-  '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
-  '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
-};
 /* #181/#135 — the standalone lens route and global ALIGN control are retired.
    Every event comparison in this ledger is now reached the way a reader reaches
    it: open the unscoped queue, drill a Finding, then open its row-derived
@@ -44,12 +41,8 @@ function playwright() {
   return require(process.env.PLAYWRIGHT_MODULE
     ?? fail('PLAYWRIGHT_MODULE is required — this replay never skips'));
 }
-async function vendored(name) {
-  const dir = process.env.VENDOR_DIR
-    ?? fail('VENDOR_DIR is required (echarts.min.js, vue.esm-browser.js)');
-  return readFile(join(dir, name));
-}
 export async function openApp(browser, options = {}) {
+  const shell = createBuiltShell();
   const viewport = options.viewport || { width: 1280, height: 720 };
   const page = await browser.newPage({ viewport });
   const servedByFinding = new Map();
@@ -118,23 +111,8 @@ export async function openApp(browser, options = {}) {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-    if (url.href.includes('echarts')) {
-      return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
-    }
-    if (url.href.includes('vue')) {
-      return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    }
-    if (path === '/' || path === '/diagnose') {
-      return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-    }
-    if (/\.(js|css|svg|html)$/.test(path)) {
-      try {
-        return route.fulfill({
-          body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))),
-          contentType: MIME[extname(path)] || 'text/plain',
-        });
-      } catch { /* named API stubs below */ }
-    }
+    const response = shell.serve(path);
+    if (response) return route.fulfill(response);
     for (const [pattern, body] of stubs) {
       if (pattern.test(path)) {
         return route.fulfill({ body: JSON.stringify(body(url)), contentType: 'application/json' });
@@ -704,8 +682,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (target !== 'app') fail(`TARGET must be app, got ${target || '(unset)'} — the mock this ledger once ran against is archived (#722); the app is now the sole contract`);
   const open = openApp;
   await access(SYNTHETIC);
-  await vendored('echarts.min.js');
-  await vendored('vue.esm-browser.js');
+  const missing = [];
+  if (!process.env.PLAYWRIGHT_MODULE) missing.push('PLAYWRIGHT_MODULE is required');
+  try { createBuiltShell(); } catch (error) { missing.push(error.message); }
+  if (missing.length) fail(`missing prerequisites:\n  - ${missing.join('\n  - ')}`);
   const only = process.env.ONLY
     ? process.env.ONLY.split(',').map((value) => value.trim()).filter(Boolean)
     : Object.keys(STORIES);

@@ -131,6 +131,8 @@ support audit. Reproduce it locally:
 PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
+
+# Rebuild the shell after any frontend/ change, before the ten CI legs.
 npm ci && npm run build
 
 # The ten gate legs, as CI runs them.

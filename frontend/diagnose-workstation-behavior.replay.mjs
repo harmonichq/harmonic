@@ -485,9 +485,11 @@ export async function openApp(browser, {
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, evidenceScenario = null, resizeProbe = false,
   hasTouch = false, isMobile = false,
-  fixtureBaseUrl = null,
+  frontendRoot = null, fixtureBaseUrl = null,
 } = {}) {
-  const shell = createBuiltShell();
+  const shell = frontendRoot
+    ? createBuiltShell({ dist: join(frontendRoot, 'dist') })
+    : createBuiltShell();
   const payloadPath = process.env.PAYLOAD || fail('PAYLOAD is required for TARGET=app');
   /* Source selection belongs to the caller. Standalone replay pins `server`
      below; browser tests opt into `fixture` per call. Ambient process state

@@ -1552,6 +1552,8 @@ test('populated Diagnose renders readable ink and chart marks', async () => {
 });
 
 test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
+  // A named checkout's frontend directory; openApp serves its built dist so
+  // base-versus-revision evidence cannot accidentally render this checkout.
   const frontendRoot = process.env.DIAGNOSE_FRONTEND_ROOT || join(ROOT, 'frontend');
   const evidenceKind = process.env.DIAGNOSE_EVIDENCE_KIND || 'revision';
   const captureOnly = process.env.DIAGNOSE_CAPTURE_ONLY === '1';

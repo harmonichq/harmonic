@@ -55,6 +55,9 @@ import {
   eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
+// #372: the Plan draft's own staging predicate, so this surface's staged
+// tally is built from it rather than from a second copy of the same rule.
+import { stageItemsFor } from './diagnose-workspaces.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
@@ -811,8 +814,18 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   const capped = /capped/i.test(s.annotation || '');
   const thin = (supportFloor != null && e.n < supportFloor) || e.wide;
   const span = `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`;
+  /* #372 — a panel opened on ONE member of a merged finding says so, in the
+     reserved scope line the I:C and ISF panels already use. The numbers below it
+     stay this half hour's own: the projection deliberately leaves a merged run's
+     numbers on its members rather than inventing a span average, and a span
+     figure here could not say which half hour it described. */
+  const run = options.run;
   renderParamLevel(host, {
     head: span,
+    scopeSay: run && run.memberCount > 1
+      ? `One of ${run.memberCount} half hours in Basal ${run.label} — staging here stages `
+        + 'the whole span. Current, Estimate and Recommended below are this half hour\'s own.'
+      : '',
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
@@ -3156,6 +3169,31 @@ function boot(root, data, callbacks, signal) {
      `planItems`, which Vue renders as `step.count`, hidden at zero by
      `.cockpit-badge[data-count="0"]` in shell.css. */
 
+  /**
+   * The run a basal lane cell belongs to, exactly as the server published it.
+   *
+   * The findings row carries the membership (`members`); `/api/analyze` carries
+   * each member's own `asserts_move` verdict; `stageItemsFor` holds the one
+   * eligibility predicate the Plan draft is written from. So this resolves the
+   * owning row and hands both to that predicate rather than deciding anything
+   * here: no floor, no threshold, no direction and no span arithmetic. A cell
+   * inside no published run answers with its own slot, which is what a
+   * single-slot finding already is (#372).
+   */
+  function basalRun(cell) {
+    const row = (findings?.rows || []).find((candidate) => candidate.parameter === 'basal_rate'
+      && candidate.register === 'assert'
+      && (candidate.members || []).some((member) => member.start_min === cell.startMin));
+    const members = row ? (row.members || []).map((member) => member.start_min) : null;
+    const items = stageItemsFor(cell.slot.__planKey, auditState.analysis, members);
+    return {
+      label: row?.span?.label || null,
+      memberCount: members ? members.length : 1,
+      members,
+      cells: lane.cells.filter((c) => items.some((item) => item.start_min === c.startMin)),
+    };
+  }
+
   /** What this surface has staged, named the way the dock prints it (term 49). */
   function stagedDescriptor() {
     const cells = lane.cells.filter((c) => staged.has(c.i));
@@ -3163,9 +3201,16 @@ function boot(root, data, callbacks, signal) {
       const span = cells.length === 1 ? cells[0].label
         : `${cells[0].label} to ${hhmm(cells[cells.length - 1].endMin)}`;
       const head = cells[0].slot;
+      /* #372: a run is merged on register and direction, never on programmed
+         rate, so two staged half hours can carry different numbers. The span is
+         named either way; the pair prints only where every staged half hour
+         carries it, which is the same refusal the merged queue row already
+         makes. */
+      const agreed = cells.every((c) => c.slot.current === head.current
+        && c.slot.recommended === head.recommended);
       // the SAME rounded numbers the item's own detail panel prints — a dock that
       // spells 1.131 beside a panel reading 1.13 is two numbers for one fact
-      const numbers = head.recommended == null ? ''
+      const numbers = head.recommended == null || !agreed ? ''
         : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
       return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
     }
@@ -3534,12 +3579,23 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'slot') {
+      const run = basalRun(f.cell);
       renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
-        if (staged.has(cell.i)) staged.delete(cell.i); else staged.add(cell.i);
+        /* #372: one press acts on the whole finding. The cells that move are the
+           ones the Plan draft's own predicate admitted for this frame's run —
+           never `cell` alone, and never a set this surface decided — so the
+           tally, the lane marks, the dock line and the Plan badge can only ever
+           describe the basket the draft holds. */
+        const desired = !staged.has(cell.i);
+        for (const member of run.cells) {
+          if (desired) staged.add(member.i); else staged.delete(member.i);
+        }
         // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey }, staged.has(cell.i));
+        callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey, members: run.members },
+          desired);
         paint();
       }, {
+        run,
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
         onSelect: (id) => selectNight(f, id),

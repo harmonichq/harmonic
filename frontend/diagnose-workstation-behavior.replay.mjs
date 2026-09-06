@@ -3446,6 +3446,46 @@ export const C59 = async (page) => {
   is(await stagedLaneCells(page), 0, 'C59 the lane mark clears with it');
 };
 
+/* C61 reads the draft the surface actually wrote: `GET /api/plan` is a static
+   stub here, so the PUT bodies the opener intercepts are the only place the
+   staged basket is observable. */
+const C61_DRAFTS = [];
+
+/** C61 · A merged basal finding stages every member the projection published.
+    The Plan draft, the surface's own staged tally and the dock name that one
+    set, and undo takes back exactly it. */
+// STORY:finding-evidence-routing:C61
+export const C61 = async (page) => {
+  await openWholeDay(page);
+  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+  is(await row.count(), 1,
+    'C61 opens on the merged two-member basal row the projection published');
+  await row.click();
+  await settle(page, 500);
+  ok(/one of 2 half hours in Basal 00:30 to 01:30/i.test(
+    await page.locator('#level .slot-say').first().innerText()),
+  'C61 states on the member panel which finding the half hour belongs to');
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
+  await settle(page, 150);
+  const staged = C61_DRAFTS.at(-1).items;
+  is(JSON.stringify(staged.map((item) => [item.start_min, item.current, item.recommended])),
+    JSON.stringify([[30, 0.85, 1.02], [60, 0.85, 1.02]]),
+    'C61 stages every eligible published member with its own served numbers');
+  const tally = await page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+    .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
+  is(JSON.stringify(tally), JSON.stringify(staged.map((item) => item.start_min)),
+    'C61 keeps the surface tally and the PUT /api/plan body over one member set');
+  is(await page.locator('#watch-dock .what').innerText(),
+    'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+    'C61 names the whole staged span in the dock');
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
+    .every((cell) => cell.dataset.staged !== 'true'));
+  await settle(page, 150);
+  is(C61_DRAFTS.at(-1).items.length, 0, 'C61 gives the whole run back on undo');
+};
+
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
 export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
@@ -5286,6 +5326,11 @@ export const STORIES = [
   /* #354 — the only story that needs the stubbed Plan draft to outlive a
      reload, so it is the only one that opts into a stateful one. */
   ['C59', C59, 'typical', { statefulPlanDraft: true }],
+  ['C61', C61, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+    onPlanDraft: (draft) => C61_DRAFTS.push(draft),
+  }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

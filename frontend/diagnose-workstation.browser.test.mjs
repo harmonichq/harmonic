@@ -2569,6 +2569,112 @@ test('an exact true capped ISF verdict stages one unchanged value per generated 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+/* #372: the merged-run staging cross-check. The committed findings fixture
+   publishes `basal:30-90` — slots 1 and 2, both asserting `raise` with their own
+   current and recommended — so the two accumulators this surface keeps (the Plan
+   draft, and the lane's own staged tally) are observable over the same run
+   through the real affordance. A partial stage is what #372 was filed for, and
+   only reading BOTH here can catch it. */
+const stageMergedBasalRun = async (page, drafts) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 400);
+  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+  assert.equal(await row.count(), 1,
+    'the committed findings fixture publishes one merged two-member basal row');
+  await row.click();
+  await settle(page, 450);
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
+  await settle(page, 120);
+  return drafts.at(-1).items;
+};
+
+/** The staged half hours the SURFACE reports, in the lane's own marks. */
+const laneStagedStartMins = (page) => page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+  .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
+
+test('a merged basal finding stages every member the projection published (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: twoFamilyInputs,
+        exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(
+        items.map((item) => [item.type, item.start_min, item.current, item.recommended, item.value]),
+        [['basal', 30, 0.85, 1.02, 1.02], ['basal', 60, 0.85, 1.02, 1.02]],
+        'both published members reach the Plan draft carrying their own served numbers',
+      );
+      assert.deepEqual(await laneStagedStartMins(page), items.map((item) => item.start_min),
+        'the surface\'s staged tally and the PUT /api/plan body name the same members');
+      assert.match(await page.locator('#level .slot-say').first().innerText(),
+        /one of 2 half hours in Basal 00:30 to 01:30/i,
+        'the member panel says which finding it belongs to');
+      assert.equal(await page.locator('#watch-dock .what').innerText(),
+        'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+        'the dock names the staged span with the pair every staged member carries');
+
+      await page.locator('#level .stagebtn').click();
+      await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
+        .every((cell) => cell.dataset.staged !== 'true'));
+      await settle(page, 120);
+      assert.deepEqual(drafts.at(-1).items, [],
+        'undo takes back exactly the set staging added');
+      assert.deepEqual(await laneStagedStartMins(page), [],
+        'no member of the run stays marked in the lane after undo');
+
+      // A finding whose published membership is one half hour is unchanged: the
+      // fixture's slot 11 asserts alone, and its panel says nothing about a span.
+      await page.locator('#lane .lane-cell').nth(11).click();
+      await settle(page, 350);
+      const solo = await page.locator('#level .slot-say').allInnerTexts();
+      assert.ok(solo.length > 0, 'the single-member panel still prints its own sentence');
+      assert.ok(solo.every((line) => !/one of \d+ half hours/i.test(line)),
+        'a single-member finding carries no span statement');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a merged basal run');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('the dock prints no rate pair when staged members disagree on one (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      /* A run is merged on register and direction, never on programmed rate, so
+         its members can carry different current values. The committed fixture's
+         two members agree, so this varies one SERVED number — never a verdict —
+         to reach the branch the fixture cannot pose. */
+      const disagreeingRates = async () => {
+        const inputs = structuredClone(await twoFamilyInputs());
+        const second = inputs.analysis.basal.find((slot) => slot.slot === 2);
+        assert.equal(second.current, 0.85, 'the fixture members agree before this variation');
+        second.current = 0.9;
+        return inputs;
+      };
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: disagreeingRates,
+        exposuresInputs: async () => (await disagreeingRates()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(items.map((item) => [item.start_min, item.current]), [[30, 0.85], [60, 0.9]],
+        'each member still stages its own programmed rate');
+      assert.equal(await page.locator('#watch-dock .what').innerText(), 'Basal 00:30 to 01:30',
+        'the dock names the span and prints no pair the staged members do not share');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a run whose members disagree on rate');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* `setError` is the interface's own failure path — frontend/index.html's
    `loadAudit` catch calls it directly on a rejected fetch (real code, not a
    mock behaviour: the mock is static captures and has no concept of a failed
@@ -2932,7 +3038,9 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
   assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
-  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
+  // #372: the merged-run member list travels on the payload, so the wiring
+  // this guard pins now hands it to the Plan draft's own predicate.
+  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value, item\.members\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);
   assert.match(index, /stage: diagnoseStage, isStaged: diagnoseIsStaged/);
   assert.match(index, /v-show="hasToken && diagnoseReady"/);

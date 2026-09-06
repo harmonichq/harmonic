@@ -7,6 +7,12 @@ const analyze = {
   basal: [
     { slot: 2, label: '01:00', asserts_move: true, current: 1, recommended: 1.1 },
     { slot: 3, label: '01:30', asserts_move: false, current: 1, recommended: 1.1 },
+    // A merged run's members as the projection publishes them (#372): contiguous
+    // slots sharing register and direction, each with its own programmed rate.
+    // Slot 12 sits inside the published run without asserting a move of its own.
+    { slot: 10, label: '05:00', asserts_move: true, current: 0.6, recommended: 0.48 },
+    { slot: 11, label: '05:30', asserts_move: true, current: 0.7, recommended: 0.56 },
+    { slot: 12, label: '06:00', asserts_move: false, current: 0.7, recommended: 0.56 },
   ],
   ic_blocks: [
     { block_id: 720, start_min: 720, end_min: 900, current_values: [5],
@@ -34,6 +40,31 @@ test('backend-qualified basal and I:C items alone map into Plan rows', () => {
   close.basal[0].recommended = close.basal[0].current + 1e-12;
   assert.deepEqual(stageItemsFor('basal:2', close).map((item) => item.key), [2],
     'the backend predicate remains the only staging gate');
+});
+
+test('a merged basal finding maps every eligible published member into Plan rows (#372)', () => {
+  // The finding the projection published is `basal:300-390`: three members, of
+  // which the first two carry a backend move verdict. Membership is the served
+  // list; eligibility is each member's own `asserts_move` with both numbers.
+  const members = [300, 330, 360];
+  const items = stageItemsFor('basal:10', analyze, members);
+  assert.deepEqual(items.map((item) => item.key), [10, 11],
+    'every asserting member of the run stages, and only those');
+  assert.deepEqual(items.map((item) => [item.start_min, item.current, item.recommended]),
+    [[300, 0.6, 0.48], [330, 0.7, 0.56]],
+    'each member keeps its own served numbers rather than the head slot\'s');
+  assert.deepEqual(items.map((item) => item.value), [0.48, 0.56]);
+
+  // Opening on the second member stages the same run, not a different one.
+  assert.deepEqual(stageItemsFor('basal:11', analyze, members).map((item) => item.key), [10, 11]);
+
+  // A run whose members none of them assert stages nothing at all.
+  assert.deepEqual(stageItemsFor('basal:12', analyze, [360]), []);
+
+  // Called without a member list, a slot key stages exactly its own slot.
+  assert.deepEqual(stageItemsFor('basal:10', analyze).map((item) => item.key), [10]);
+  assert.deepEqual(stageItemsFor('basal:10', analyze, []).map((item) => item.key), [10],
+    'an empty member list is no membership, not a request to stage nothing');
 });
 
 test('every staged I:C block member carries an identical ic_block_provenance (#581)', () => {

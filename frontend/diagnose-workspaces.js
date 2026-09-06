@@ -17,12 +17,20 @@ export const hhmm = (minutes) => {
 };
 export const blockKey = (block) =>
   `carb_ratio:${block.block_id}:${(block.current_values || [])[0]}`;
-export function stageItemsFor(key, analyze = {}) {
+export function stageItemsFor(key, analyze = {}, memberStartMins = null) {
   if (String(key).startsWith('basal:')) {
+    /* #372: a merged finding covers a RUN of slots, and the projection publishes
+       that run as the row's `members`. Given those served start minutes, every
+       member the backend qualifies stages together; given none, the key names its
+       own slot, which is what a single-slot finding is. Membership is read from
+       the row — never expanded from the key's own minutes — and eligibility stays
+       the backend's `asserts_move` with both numbers present, which is the ONE
+       predicate the surface's tally is built from too. */
+    const members = memberStartMins?.length ? new Set(memberStartMins) : null;
     return (analyze.basal || [])
       .filter((slot) => slot.asserts_move === true && slot.recommended != null
         && slot.current != null
-        && key === `basal:${slot.slot}`)
+        && (members ? members.has(slot.slot * 30) : key === `basal:${slot.slot}`))
       .map((slot) => ({
         type: 'basal', key: slot.slot, start_min: slot.slot * 30, label: slot.label,
         current: slot.current, recommended: slot.recommended, value: slot.recommended,

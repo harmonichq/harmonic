@@ -5386,7 +5386,9 @@
             if (isStageableIsf(item.raw) && isfInPlan() !== desired) toggleIsfPlan(item.raw);
             return;
           }
-          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
+          // #372: a merged basal finding carries its served members on the
+          // payload, so the whole run reaches the draft in one write.
+          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value, item.members);
           if (!items.length) return;
           if (!desired) {
             for (const it of items) planItems.delete(planKeyOf(it));
@@ -5402,7 +5404,7 @@
         }
         function diagnoseIsStaged(item) {
           if (item.family === 'isf') return isfInPlan();
-          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
+          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value, item.members);
           return items.length > 0 && items.every((it) => planItems.has(planKeyOf(it)));
         }
         // #654 hotfix: mounting (creating the component) is separable from

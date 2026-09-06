@@ -572,6 +572,13 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
                     "state": "selected", "requested_id": selected_id,
                     "detail": selected_response.json()["selection"]["detail"],
                 })
+                selected_case = selected_response.json()
+                selected_detail = selected_case["selection"]["detail"]
+                self.assertEqual(
+                    selected_detail["comparison_cohort"],
+                    next(cohort["key"] for cohort in selected_case["projection"]["cohorts"]
+                         if selected_detail["id"] in cohort["occurrence_ids"]),
+                )
 
     def assert_preparation_tree(self, prepared):
         self.assertEqual(set(prepared), {
@@ -659,6 +666,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             self.assertEqual(set(detail), {
                 "id", "date", "anchor", "verdict", "glucose", "markers",
                 "source_corrections", "day_target",
+                *({"comparison_cohort"} if projection["alignment"] == "event" else set()),
             })
             self.assertEqual(set(detail["anchor"]), {"t", "kind", "label", "bg"})
             self.assertTrue(all(set(point) == {"t", "minute", "bg"}

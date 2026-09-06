@@ -1,6 +1,6 @@
 # Tasks — The case file names the selected Occurrence's comparison cohort (#376)
 
-- [ ] 1. In `ciq_autotune/finding_case_file.py`, make the event projection's own
+- [x] 1. In `ciq_autotune/finding_case_file.py`, make the event projection's own
   cohort membership the single source of the selected Occurrence's cohort.
   Inside `Preparation.case`, where `active_ids` is built for
   `alignment == "event"`, build instead one mapping from occurrence id to the
@@ -17,7 +17,7 @@
   member the `nearly_matched` cohort's, and an `m_`-prefixed announced bolus the
   `comparison` cohort's.
 
-- [ ] 2. Pin the stamped pointer in `tests/test_finding_case_file.py`, through
+- [x] 2. Pin the stamped pointer in `tests/test_finding_case_file.py`, through
   `Preparation.case`. Extend
   `test_factor_specific_event_horizons_and_far_pair_selected_evidence` so the
   expected detail key set includes `comparison_cohort` for every lever, not for
@@ -39,7 +39,7 @@
   `detail["id"]`. Change nothing else in that file, and run it against the
   unmodified tree first to see it fail on the absent key.
 
-- [ ] 3. In `frontend/finding-case-file-validation.js`, extend
+- [x] 3. In `frontend/finding-case-file-validation.js`, extend
   `validFindingCaseFile` so a case file whose `projection.alignment` is `event`
   and whose `selection.state` is `selected` is valid only when
   `selection.detail.comparison_cohort` is a string naming a cohort in
@@ -53,7 +53,7 @@
   event-aligned selected detail has the pointer deleted, and one whose pointer
   names a cohort that does not contain the selected id.
 
-- [ ] 4. Regenerate the committed Diagnose capture from the corrected projection
+- [x] 4. Regenerate the committed Diagnose capture from the corrected projection
   with `uv run python .claude/qa/gen_synthetic_fixtures.py
   mockups/diagnose-workstation.synthetic` and commit the changed
   `mockups/diagnose-workstation.synthetic/finding-case-files.json`. Add an
@@ -62,7 +62,7 @@
   cohort whose `occurrence_ids` contains the selected id, and that every
   `selected_clock` case carries none.
 
-- [ ] 5. Iterate the order's verification chain until it matches the stated
+- [x] 5. Iterate the order's verification chain until it matches the stated
   expectation — the full six-command fast gate from `AGENTS.md`, then
   `scripts/check_demo_fixtures.py`, then the browser legs. Where this session can
   launch Chromium, run all four: the three that read the regenerated capture —

@@ -1,0 +1,13 @@
+seated  ic:0 yAxis "mg/dL" box=1010x169 x=34 w=30.3 over(l,r,t,b)=0,0,0,0
+seated  ic:0 yAxis "mg/dL" box=966x459 x=132.6 w=27.2 over(l,r,t,b)=0,0,0,0
+CLIPPED ic:0 xAxis "minutes from first meal" box=966x459 x=940 w=98 over(l,r,t,b)=0,72,0,0
+seated  basal:120-180 yAxis "mg/dL" box=1010x169 x=34 w=30.3 over(l,r,t,b)=0,0,0,0
+seated  basal:120-180 xAxis "basal rate, U/h" box=966x459 x=337.4 w=69.1 over(l,r,t,b)=0,0,0,0
+seated  isf yAxis "mg/dL" box=1010x169 x=34 w=30.3 over(l,r,t,b)=0,0,0,0
+CLIPPED isf yAxis "glucose change (mg/dL)" box=966x459 x=-18 w=104 over(l,r,t,b)=18,0,0,0
+CLIPPED isf xAxis "insulin acted (U)" box=966x459 x=940 w=69.4 over(l,r,t,b)=0,43.4,0,0
+seated  ich1_WzAsMTQ0MCwiNiJd yAxis "mg/dL" box=1010x169 x=34 w=30.3 over(l,r,t,b)=0,0,0,0
+seated  ich1_WzAsMTQ0MCwiNiJd yAxis "mg/dL" box=966x459 x=132.6 w=27.2 over(l,r,t,b)=0,0,0,0
+CLIPPED ich1_WzAsMTQ0MCwiNiJd xAxis "minutes from first meal" box=966x459 x=940 w=98 over(l,r,t,b)=0,72,0,0
+
+4 clipped axis names across 4 finding rows

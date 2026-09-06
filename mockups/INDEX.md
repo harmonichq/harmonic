@@ -132,6 +132,22 @@ moved-token list and colour pairs the design record names, plus before/after
 renders and the ribbon renders through the committed Trial opener — is stored
 under `openspec/changes/graphite-palette/evidence/`.
 
+Issue [#367](https://github.com/harmonichq/harmonic/issues/367) revises the
+shipped Finding → evidence routing surface so the chart that draws a selected
+occurrence's trace contains it in its own axis. The fullscreen stage and the
+focal comparison tile widen outward over the drawn trace's extent, in the same
+20 mg/dL steps the resting envelope already widens by, and never narrow the
+range they were handed — so a widened chart still contains the shared ruler its
+neighbours are read against. The shared tile field itself is unchanged: a
+selection still cannot rescale the evidence tiles beside it, and the mini rank,
+which draws no selected trace, keeps the injected range exactly (ADR 367 in
+`openspec/changes/diagnose-selected-trace-axis/design.md`). The frozen behaviour
+ledger `mockups/finding-evidence-routing.behavior.md` and its replay
+`frontend/diagnose-workstation-behavior.replay.mjs` are unchanged: the change
+restores what ledger term `C57` already promises rather than issuing a new
+story, and the containment proof lands in the fast gate on the same option
+object the replay reads back.
+
 **Explore** is deliberately absent from this ledger. It is the arbitrary-slicing
 ambition, it has no surface yet, and the #31 exploration excludes it by name; it
 earns a row when it becomes a real job and gets its own round.

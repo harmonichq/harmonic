@@ -49,7 +49,12 @@
       `configured: false`, a live pull raises its not-configured error, `.env` is
       still not consulted, and the stored row is left in place for the operator's
       re-entry to replace.
-- [ ] Give that requirement a scenario in the shape its neighbours already use.
+- [ ] Rewrite that requirement's existing `#### Scenario: Losing the encryption
+      key means re-entering credentials, not losing history` in place: replace its
+      placeholder body (`WHEN the capability evaluates the behavior described by
+      this requirement` / `THEN the stated behavior applies`) with the
+      read-boundary behavior stated above. Keep the scenario's heading as it
+      stands, and add no second scenario.
 - [ ] Change no other requirement, and no other specification.
 
 ## 4. Leave the already-correct documents alone

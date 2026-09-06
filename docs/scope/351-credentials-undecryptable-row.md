@@ -60,7 +60,7 @@ and `re-enter`:
 | Document | Line | Moves? |
 |---|---|---|
 | `ciq_autotune/credentials.py` | 8 | Yes — the docstring states the degradation where it promises it |
-| `openspec/specs/credentials/spec.md` | 29–35 | Yes — the requirement says what "inaccessible" means at the read boundary |
+| `openspec/specs/credentials/spec.md` | 29–38 | Yes — the requirement says what "inaccessible" means at the read boundary, and its existing placeholder scenario is rewritten in place to state it |
 | `README.md` | 190 | No — already describes the fixed behavior |
 | `AGENTS.md` | 431 | No — already describes the fixed behavior |
 | `docker-compose.yml` | 69 | No — already describes the fixed behavior |
@@ -84,4 +84,27 @@ None.
 Instrumented per round below; blockers tagged `authoring` (present since the
 draft) or `injected` (introduced by a prior fix round).
 
-- Round 1: pending the coordinator-dispatched `/plan-review`.
+- Round 1: four blockers, all `authoring` — none injected, there being no prior
+  fix round. Three block posting and one is a note.
+  1. The order's Summary claimed the app is broken today. It is not: the shell's
+     cold load routes `/api/credentials` through `Promise.allSettled`
+     (`frontend/index.html:5242`), catches the rejection into `credentials.value
+     = null` (`:4274-4276`) and renders "No credentials stored yet." (`:1835`).
+     Fixed by stating what actually changes — a traceback and a bare
+     `text/plain` 500 become a 200 and one warning, and no screen moves.
+  2. Task 3 asked for a scenario the requirement already carries at
+     `openspec/specs/credentials/spec.md:35-38`, in the placeholder shape its
+     neighbours use — so "in the shape its neighbours already use" and "expresses
+     the new behavior" could not both be met. Fixed by rewording the task to
+     rewrite that scenario in place, and by widening this ledger's inventory row
+     to 29–38.
+  3. The Summary's "cannot be unlocked with the key on disk" also described a
+     malformed `secret.key`, which raises `ValueError` out of `_fernet()` before
+     `decrypt` is reached and which this change deliberately does not guard (see
+     Decisions above). Fixed by narrowing the Summary to a key that no longer
+     matches the stored row, and by listing the malformed key file under "Not in
+     this ticket".
+  4. Note: a hand-counted generated fact read "57 of its 59 active changes".
+     Regenerated from the tree — 58 of 59 active changes carry `.openspec.yaml`
+     with `skip_specs: true`; the holdout is `openspec/changes/basal-night-drill/`,
+     which has none. Corrected.

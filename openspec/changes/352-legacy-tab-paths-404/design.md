@@ -1,6 +1,6 @@
-# Design — retire the unreachable retired-tab-id migration (#352)
+# Design — retire the retired-tab-id migration (#352)
 
-## ADR 352 — Retire the unreachable tab-id migration rather than serving retired paths
+## ADR 352 — Retire the tab-id migration rather than serving retired paths
 
 ### Context
 
@@ -10,7 +10,8 @@ and `modelview` to Day, `outcomes` to Verify. A comment block in
 `frontend/index.html` presents that mapping as a standing promise about shared
 links.
 
-Three facts, each checked against the tree, say the mapping cannot run:
+Three facts, each checked against the tree, say no address can reach the
+mapping:
 
 1. The server serves the shell at `/` and at exactly the live page ids
    (`ciq_autotune/api.py`, the `SPA_PAGES` tuple and the loop that adds a route
@@ -29,12 +30,14 @@ Three facts, each checked against the tree, say the mapping cannot run:
    the live ids, by that same change and has never held a retired id, so no
    version of this app has ever emitted or honoured a path-form retired address.
 
-Inside the running app the mapping is equally inputless. Page resolution is
-reached from the parsed address, whose id the server has already restricted to a
-live page; from the Guide's `app:<id>` handoff, where the authored corpus names
-only live pages; and from the change dock's route control, which passes live
-pages. The unrecognized-id fallback to the default page is a different rule and
-does have inputs: the Guide handoff admits any word an article author writes.
+Inside the running app the mapping has no current input either. Page resolution
+is reached from the parsed address, whose id the server has already restricted to
+a live page; from the change dock's route control, which passes live pages; and
+from the Guide's `app:<id>` handoff, which is the one channel that could still
+name a retired id, because it renders whatever word an article author writes. No
+shipped article does: `docs/kb` names only `app:day`, `app:diagnose` and
+`app:plan`. The unrecognized-id fallback to the default page is a different rule
+and does have inputs, from that same handoff.
 
 ### Decision
 
@@ -62,10 +65,11 @@ exactly that.
 Page resolution for every input the shipped app can produce is unchanged: live
 ids resolve to themselves before and after, and unrecognized ids resolve to the
 default page before and after. Only the seven retired ids change what they
-return, and no reachable caller supplies one. Four of them (`dashboard`, `pump`,
+return, and no current caller supplies one. Four of them (`dashboard`, `pump`,
 `review`, `patterns`) return Diagnose either way, because Diagnose is also the
 default page; `daily`, `modelview` and `outcomes` are the three whose return
-value changes, and they are what a fail-first test asserts against.
+value changes, and they are what a fail-first test asserts against. Reaching one
+takes authoring that id into a Guide article, which no shipped article does.
 
 Retired ids stay 404 at the server, which is the honest answer for an address the
 app does not have and never issued.

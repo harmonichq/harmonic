@@ -1,4 +1,4 @@
-# Proposal — retire the unreachable retired-tab-id migration (#352)
+# Proposal — retire the retired-tab-id migration (#352)
 
 ## Why
 
@@ -11,7 +11,7 @@ paths, and `tests/test_frontend_asset_routes.py` enforces exactly that: the
 server's page list must equal the browser router's page list, the non-API route
 set is closed, and an unlisted path answers 404. `/patterns` therefore returns
 the bare `{"detail":"Not Found"}` document before any script loads, on every
-server, and the migration never runs.
+server, so no address reaches the migration.
 
 The only address form that ever carried a retired id was the `#/<page>?...`
 fragment grammar, and #94 retired it outright as a recorded operator decision:
@@ -19,8 +19,12 @@ saved hash links are no longer supported and get no rewrite. Path addressing
 never served a retired id — the server's page list arrived whole with the live
 ids and has never held another.
 
-The migration is unreachable code, and the comment beside it promises behavior
-the system does not have. It reads as a server bug, and was filed as one.
+Inside the app, the one channel that could still name a retired id is a Guide
+article's `app:<id>` handoff, which renders whatever word an author writes. No
+shipped article names one: `docs/kb` names only `app:day`, `app:diagnose` and
+`app:plan`. So the migration has no current input, and the comment beside it
+promises behavior the system does not have. It reads as a server bug, and was
+filed as one.
 
 ## What changes
 

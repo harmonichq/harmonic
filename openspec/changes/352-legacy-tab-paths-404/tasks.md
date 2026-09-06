@@ -1,4 +1,4 @@
-# Tasks — retire the unreachable retired-tab-id migration (#352)
+# Tasks — retire the retired-tab-id migration (#352)
 
 - [ ] Assert in `frontend/tab-routing.test.js` that every retired page id resolves to the default page, and observe `daily`, `modelview` and `outcomes` fail against the unchanged module first.
 - [ ] Remove the retired-id mapping from page resolution in `frontend/tab-routing.js`, keeping the fallback that sends an unrecognized id to the default page.

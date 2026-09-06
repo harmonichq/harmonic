@@ -2347,9 +2347,20 @@ function boot(root, data, callbacks, signal) {
 
   function dismissChartFullscreen() {
     if (!fullscreen) return;
+    /* THE OPENER IS THE DISMISSED CHART'S OWN Full CONTROL, and its chart id
+       comes from the state being dismissed rather than from `priorLayout`: the
+       two differ when the chart was expanded from a catalog cell. The repaint
+       below is what re-creates that control — the tile the reader pressed it on
+       was destroyed entering fullscreen — so the focus call follows the paint,
+       the way All charts' own dismissal focuses its trigger after its repaint.
+       `preventScroll` for the same reason it does: `restorePhoneQueuePosition`
+       owns the scroll here, and a scrolling focus call fights it. */
+    const openerId = fullscreen.chartId;
     canvasLayout = dismissFullscreen(fullscreen);
     fullscreen = null;
     paint();
+    root.querySelector(`.evidence-tile[data-chart-id="${openerId}"] .tile-fullscreen`)
+      ?.focus({ preventScroll: true });
     if (!explorerOpen) restorePhoneQueuePosition();
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
@@ -2672,6 +2683,18 @@ function boot(root, data, callbacks, signal) {
     const focalHost = el('tile-focal');
     const rowHost = el('tile-row');
     if (!host || !focalHost || !rowHost) return;
+    /* A REPAINT THAT DID NOT NAVIGATE KEEPS THE READER WHERE THEY ARE (#100).
+       Every tile is destroyed and rebuilt below, so the expansion that just
+       landed the keyboard on the fullscreen chart would lose it again the
+       moment the drill's own case load settles behind the state — dropping the
+       reader on the document body without their having navigated anywhere.
+       `paintChartActions` holds the catalog's trigger across its own rebuild
+       exactly this way. ONLY THE FULLSCREEN CHART'S CONTAINER IS HELD: no
+       repaint has ever preserved focus on a resting tile or a tile control, and
+       this is not the change that widens that. */
+    const heldFullscreenTile = fullscreen
+      && document.activeElement?.classList?.contains('evidence-tile')
+      ? document.activeElement.dataset.chartId : null;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
     /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a star
@@ -2864,6 +2887,15 @@ function boot(root, data, callbacks, signal) {
           fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
           showChartInspector(descriptor);
           paint();
+          /* THE OPENED CONTAINER IS THE EXPANDED CHART'S OWN TILE. Expanding is
+             reader-driven navigation, and the drill inside `showChartInspector`
+             does ask for the opened container — but it asks for the inspector,
+             which entering fullscreen has just marked inert, so that focus call
+             lands on nothing and the reader is left on the document body.
+             Fullscreen paints exactly one tile, in the focal seat at `tabIndex`
+             −1, and that tile is the container this navigation opened. */
+          root.querySelector(`.evidence-tile[data-chart-id="${descriptor.chartId}"]`)
+            ?.focus({ preventScroll: true });
         };
         /* THE SPOTLIGHT'S FULLSCREEN RIDES ITS RAIL, where the glucose chart's
            does. The spotlight's nameplate IS a pane header rail now, and the
@@ -3046,6 +3078,10 @@ function boot(root, data, callbacks, signal) {
       (seat.seat === 'focal' ? focalHost : rowHost).append(tile);
     }
     for (const mount of mounts) mount();
+    if (heldFullscreenTile) {
+      root.querySelector(`.evidence-tile[data-chart-id="${heldFullscreenTile}"]`)
+        ?.focus({ preventScroll: true });
+    }
   }
 
   function applyCanvasFullState(big) {

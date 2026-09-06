@@ -14,6 +14,16 @@ from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
 _AUTHORED_SLUGS = ("start-here", "reading-diagnose", "reading-day", "the-plan-tab")
+_RUNTIME_START = "FROM python:3.12-slim-bookworm AS runtime"
+_NODE_RUN = r"(?im)^\s*RUN\b[^\n]*(?:\bnodejs?\b|\bnpm\b|\bnpx\b)"
+_NODE_FROM = r"(?im)^\s*FROM\s+node(?:[:\s]|$)"
+_NODE_BINARY_COPY = r"(?im)^\s*COPY\b[^\n]*--from=\S+\s+\S*/(?:nodejs?|npm|npx)\b"
+
+
+def _runtime_without_comments(dockerfile):
+    """The runtime Dockerfile stage, with comments removed before instruction checks."""
+    runtime = dockerfile.split(_RUNTIME_START, 1)[1]
+    return "\n".join(line.split("#", 1)[0] for line in (_RUNTIME_START + runtime).splitlines())
 
 
 class DeployAssetsTest(unittest.TestCase):
@@ -29,14 +39,21 @@ class DeployAssetsTest(unittest.TestCase):
         self.assertIn("FROM node:22", text)
 
     def test_runtime_copies_only_the_built_frontend_without_node(self):
-        runtime = (_REPO / "Dockerfile").read_text().split(
-            "FROM python:3.12-slim-bookworm AS runtime", 1)[1]
+        runtime = _runtime_without_comments((_REPO / "Dockerfile").read_text())
         with self.assertRaises(AssertionError):
             self.assertNotRegex("COPY frontend ./frontend", r"(?m)^COPY\s+frontend\b")
         self.assertNotRegex(runtime, r"(?m)^COPY\s+frontend\b")
         with self.assertRaises(AssertionError):
-            self.assertNotRegex("RUN npm install", r"(?i)\b(?:node|npm)\b")
-        self.assertNotRegex(runtime, r"(?i)\b(?:node|npm)\b")
+            self.assertNotRegex("RUN apt-get install -y nodejs", _NODE_RUN)
+        with self.assertRaises(AssertionError):
+            self.assertNotRegex("RUN npm install", _NODE_RUN)
+        self.assertRegex("RUN apt-get install -y nodejs", _NODE_RUN)
+        self.assertRegex("RUN npm install", _NODE_RUN)
+        self.assertNotRegex(_runtime_without_comments(
+            _RUNTIME_START + "\n# No Node in this stage"), _NODE_RUN)
+        self.assertNotRegex(runtime, _NODE_FROM)
+        self.assertNotRegex(runtime, _NODE_RUN)
+        self.assertNotRegex(runtime, _NODE_BINARY_COPY)
 
     def test_dockerignore_does_not_exclude_docs(self):
         di = _REPO / ".dockerignore"

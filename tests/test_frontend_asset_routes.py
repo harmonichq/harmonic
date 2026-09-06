@@ -120,13 +120,16 @@ class FrontendAssetRoutesTest(unittest.TestCase):
                     response = client.get(path)
                     self.assertEqual(response.status_code, 503, path)
                     self.assertIn("npm ci && npm run build", response.text)
+                missing_asset = client.get("/assets/no-such.js")
+                self.assertEqual(missing_asset.status_code, 404)
+                self.assertNotIn("cache-control", missing_asset.headers)
+                self.assertEqual(client.get("/api/health").status_code, 200)
                 assets.mkdir()
                 self.assertEqual(client.get("/assets/main.js").status_code, 404)
                 self.assertEqual(client.get("/assets/index.html").status_code, 404)
                 missing_asset = client.get("/assets/no-such.js")
                 self.assertEqual(missing_asset.status_code, 404)
                 self.assertNotIn("cache-control", missing_asset.headers)
-                self.assertEqual(client.get("/api/health").status_code, 200)
 
 
 if __name__ == "__main__":

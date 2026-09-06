@@ -148,6 +148,18 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     if not frontend_built:
         logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
 
+    class _FrontendAssets(StaticFiles):
+        """Serve assets that appear after an in-place frontend build."""
+
+        async def check_config(self):
+            if Path(self.directory).is_dir():
+                await super().check_config()
+
+        async def get_response(self, path, scope):
+            if not Path(self.directory).is_dir():
+                return PlainTextResponse("Not Found", status_code=404)
+            return await super().get_response(path, scope)
+
     @contextlib.asynccontextmanager
     async def lifespan(app: "FastAPI"):
         loop = asyncio.get_running_loop()
@@ -480,7 +492,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     # One prefix-scoped build directory route serves only fingerprinted assets;
     # it cannot claim page or API paths outside ``/assets``.
-    app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS, check_dir=False),
+    app.mount("/assets", _FrontendAssets(directory=_FRONTEND_ASSETS, check_dir=False),
               name="frontend-assets")
 
     @app.get("/api/health")

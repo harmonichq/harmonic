@@ -42,13 +42,13 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 **Run.** `uv run harmonic serve` starts the API and the web UI on one port.
 `README.md` has the full command set and the Docker path.
 
-**The pull-request gate:** the backend delivery tests need a built shell, while
-the frontend Node tests remain dependency-free.
+**The pull-request gate:** the dependency-free frontend Node test line and guard
+scripts below are the **fast gate**. Its backend delivery leg needs a built shell.
 
 ```sh
 npm ci && npm run build                    # required before backend delivery tests
 uv run python -m pytest                    # backend, stdlib unittest over the built shell
-node --test 'frontend/**/*.test.js'        # dependency-free frontend Node tests
+node --test 'frontend/**/*.test.js'        # fast gate: dependency-free frontend Node tests
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard

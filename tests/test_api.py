@@ -17,6 +17,7 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
+from xml.etree import ElementTree
 
 try:
     from fastapi.testclient import TestClient
@@ -249,6 +250,11 @@ class ApiTest(unittest.TestCase):
             suffix = Path(asset).suffix
             self.assertIn(suffix, content_types, asset)
             self.assertTrue(r.headers["content-type"].startswith(content_types[suffix]), asset)
+            if suffix == ".svg":
+                # A browser drops a malformed icon silently (a stray "--" inside a
+                # comment is enough), leaving the blank page icon.
+                root = ElementTree.fromstring(r.text)
+                self.assertTrue(root.tag.endswith("svg"))
 
     def test_model_view_returns_per_day_payload(self):
         # #152 / ADR 0019: the per-day introspection feed — a day's episodes with

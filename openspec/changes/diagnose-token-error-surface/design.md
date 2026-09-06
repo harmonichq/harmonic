@@ -3,11 +3,28 @@
 ## ADR 361 — A failed Diagnose load renders app copy with a route out, and the server's message is never the headline
 
 **Ruling.** When Diagnose's initial load fails, the surface renders the app's own
-copy — a heading, a sentence, and, for a rejected API token, an **Open Settings**
-control — inside the surface's own padding. The server's `detail` string may
-appear as a secondary detail line; it is never the heading, and it is never the
-only thing on the screen. The composition is decided by one pure module and keyed
-on the HTTP status, not on the wording of the message.
+copy — a heading, a sentence, and a control that offers a route out — inside the
+surface's own padding. For a rejected API token that control is **Open Settings**;
+for every other failure it is **Retry**, driven by the `retry` callback the mount
+is already handed. The server's `detail` string may appear as a secondary detail
+line; it is never the heading, and it is never the only thing on the screen. The
+composition is decided by one pure module and keyed on the HTTP status, not on the
+wording of the message.
+
+**Why every failure gets a control, not only the `401`.** An earlier draft of this
+change gave the non-`401` cases app copy and no control, which left the reader's
+only recovery a manual browser reload the screen does not name — and left
+`callbacks.retry` wired but unread: `frontend/index.html:5414` passes
+`retry: loadAudit`, `createDiagnoseEventComparison` forwards `callbacks` whole
+into the workstation, and no `callbacks.retry` read exists anywhere in
+`frontend/diagnose-workstation.js` (the `retry` button at `:1042-1047` is the
+history level's own, handled by `refreshHistoryPair`). Reading it here costs no
+new plumbing, it re-runs the very load that failed, and it is what makes this
+change's claim — that every failed load gets the same frame — true rather than
+true only of the `401`. Leaving it unread would also leave dead code beside the
+`settings` callback this change adds to the same object, which the repository
+forbids. A mount handed no `retry` callback renders the block without the button
+rather than throwing, exactly the fallback the `settings` control takes.
 
 **Context.** `showError` set `root.textContent` to the raw message under a
 `dw-error` class no stylesheet defined. A wrong token therefore blanked Diagnose
@@ -51,6 +68,19 @@ is exactly how the browser suite drives it. The new `.dw-error` rule lives in
 `frontend/diagnose-workstation.css` beside the surface it belongs to, built from
 the `--mk-*` tokens that file already maps onto the app's theme. No new colour
 value, no new token, and the surface styles itself wherever it mounts.
+
+**Why the failure block announces as `alert`, not `status`.** The shell's
+missing-token placeholder (`frontend/index.html:1596-1602`) carries `role="status"`
+and keeps it: it is the polite, expected state of a screen the reader deliberately
+opened without a token, and nothing was interrupted. The failure block is the
+opposite case — the reader asked for evidence, the request was already in flight,
+and what comes back replaces the whole surface with a dead end. That is an
+assertive announcement, so the block carries `role="alert"`. The tracker asks for
+it by name, and the pre-port component's own selector recorded at
+`frontend/diagnose-workstation.browser.test.mjs:8` was `.dw-error[role="alert"]`,
+so this restores the role that surface was designed with rather than inventing one.
+The two roles therefore coexist deliberately: `status` on the placeholder the
+reader navigated to, `alert` on the failure that interrupted them.
 
 **Why `showError` may be restyled at all.** It is not locked mock code. It carries
 the `PORT DEVIATION (#654)` comment written when the port landed, for the express

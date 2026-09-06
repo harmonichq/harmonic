@@ -49,20 +49,24 @@ state, which is why it was never styled.
 ## What changes
 
 - One new vue-free module composes the failure copy — heading, sentence, optional
-  server detail, and whether a route to Settings applies — from the caught cause.
-  It classifies on `ApiTransportError.status`, which `frontend/data.js:60` already
+  server detail, and which route out applies — from the caught cause. It
+  classifies on `ApiTransportError.status`, which `frontend/data.js:60` already
   carries, never on the wording of the server's `detail`.
 - `showError` renders that composition inside the surface: the existing
   missing-token pattern (icon, heading, sentence, primary button), reusing
   `.dw`'s own `--mk-*` tokens, and `.dw-error` finally gets the rule that centres
   and pads it. The root keeps its `dw dw-error` class, so
-  `.ec-error.dw-error` and every existing selector still match.
+  `.ec-error.dw-error` and every existing selector still match. The block carries
+  `role="alert"` — the interruption it is — while the shell's placeholder keeps
+  the `role="status"` its expected state deserves.
 - A rejected token gets the Settings route the missing-token placeholder already
   gives: a primary button wired through a new `settings` callback, alongside the
   `stage`, `day` and `retry` callbacks the surface is already handed.
 - Every other load failure keeps the server's message, demoted to a detail line
   under app copy, so a 500 is still diagnosable but is no longer the only thing
-  on the screen.
+  on the screen — and it gets a **Retry** button, read from the `retry` callback
+  `frontend/index.html:5414` already passes (`retry: loadAudit`) and that the
+  workstation has never read. No failure state is left with no way out.
 - `frontend/index.html` passes the caught error itself to `setError` instead of
   `e.message`, at both call sites in `loadAudit`'s catch. Nothing else about the
   catch moves.
@@ -76,9 +80,10 @@ state, which is why it was never styled.
   rendered surface or a screenshot; a frontend gate re-deriving a safety verdict,
   threshold or direction (this surface reads transport status only); any change
   to what the server authorizes or to any other screen's behavior.
-- **Must recover:** nothing automatically. Recovery is the reader's: open
-  Settings, correct the token, reload — the same recovery the missing-token
-  placeholder offers.
+- **Must recover:** nothing automatically. Recovery is the reader's, and the
+  screen names it in every arm: open Settings and correct the token for a
+  rejected token, press Retry for anything else. The Retry path re-runs the app's
+  own `loadAudit`; the surface implements no reload of its own.
 - **Accepted failure:** a non-401 failure still shows the server's own sentence,
   now as secondary detail. It is app copy that frames it, not app copy that
   replaces it; a server message nobody wrote for a reader stays imperfect.

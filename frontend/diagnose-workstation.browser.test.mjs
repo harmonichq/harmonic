@@ -613,11 +613,24 @@ test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async (
     await shot(page, 'long-title-spotlight',
       process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', { width: 390, height: 844 });
     await page.locator('#canvas-head').evaluate((node) => node.scrollIntoView({ block: 'start' }));
-    assert.ok(await page.locator('#canvas-head').evaluate((node) => {
+    const overviewReach = await page.locator('#canvas-head').evaluate((node) => {
       const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
       const box = node.getBoundingClientRect();
-      return box.top >= viewport.top && box.bottom <= viewport.bottom;
-    }), 'the overview remains reachable through the phone reading scroll');
+      const content = node.querySelector('.head-rest').getBoundingClientRect();
+      return {
+        scrollTop: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+        top: box.top, bottom: box.bottom,
+        contentTop: content.top, contentBottom: content.bottom,
+        viewportTop: viewport.top, viewportBottom: viewport.bottom,
+        roundingInset: 1 / window.devicePixelRatio,
+      };
+    });
+    assert.ok(overviewReach.scrollTop > 0
+      && overviewReach.top >= overviewReach.viewportTop - overviewReach.roundingInset
+      && overviewReach.bottom <= overviewReach.viewportBottom + overviewReach.roundingInset
+      && overviewReach.contentTop >= overviewReach.viewportTop
+      && overviewReach.contentBottom <= overviewReach.viewportBottom,
+    `the overview remains reachable through the phone reading scroll: ${JSON.stringify(overviewReach)}`);
   } finally {
     await page.close();
   }

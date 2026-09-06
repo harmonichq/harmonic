@@ -636,3 +636,15 @@ Rerunning the widened comparison found the body background layer lost in the
 build (`shell.css:24`, above); deleting that dead declaration and rerunning
 restores zero. Both runs are recorded above in place of the narrower one, the
 ADR states what was measured, and task 2 carries the deletion.
+
+### Close
+
+Both remaining readers countersigned the pinned change after the cascade fix,
+with no blocking objection. The review ran one cold read plus a two-seat panel,
+then three fresh cold readers; the procedure's cap of three panels was passed by
+one under the operator's standing delegation of design decisions on 2026-09-06,
+and every disposition above names its evidence. One note travels to the pull
+request body: the dev-only harness appends the shipped inline styles before it
+links `shell.css`, so it renders `<body>` on the cockpit ground today and will
+show the shipped radial gradient after the deletion — a move toward shipped
+fidelity, not a regression.

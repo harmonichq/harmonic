@@ -72,9 +72,14 @@ and `docs/scope/347-built-shell-mount.spike.mjs`, output recorded in
 `docs/scope/347-vite-frontend-foundation.md`) built the current shell this way and
 mounted all four surfaces against the no-fetch app with zero external requests,
 and `docs/scope/347-cascade-compare.spike.mjs` rendered the source shell and the
-built shell side by side against the same app and found zero differing computed
-properties on any element of any surface, so Vite's hoisting of the stylesheet
-links past the inline `<style>` blocks changes no rendered style.
+built shell side by side against the same app and compared every element's
+computed style, `<html>` and `<body>` included. Vite hoists the five stylesheet
+links past the inline `<style>` blocks, and that surfaced exactly one change:
+`shell.css`'s `body { background }` declaration, dead today because the inline
+body rule overrides it on every page, won in the build and stripped the body's
+radial-gradient layer. Deleting that dead declaration restores zero differing
+computed properties on every element of every surface; the ledger records both
+runs.
 The per-file route whitelist existed so a file could never shadow `/api` or the
 index; a prefix-scoped mount over a build directory preserves that property
 without enumerating hashed names. The browser legs must load built bytes, or the

@@ -569,20 +569,41 @@ than posting unreviewed.
    built shell against the same no-fetch app and compared every element's full
    computed style:
 
+The first run, with the snapshot limited to `body *`, reported zero differing
+properties and an element gap of one per page (the inline module `<script>`,
+last in `<body>`, which the build moves to `<head>`). Widening the snapshot to
+`<html>` and `<body>` exposed one change, all eight sub-properties of one
+`background` shorthand on `<body>`:
+
 ```text
 $ PLAYWRIGHT_MODULE=… VENDOR_DIR=… BASE_URL=http://127.0.0.1:8791 DIST=<build spike>/proj/frontend/dist node docs/scope/347-cascade-compare.spike.mjs
-{"path":"/diagnose","elements":{"source":424,"built":423},"differingProperties":0,"sample":[]}
-{"path":"/day","elements":{"source":385,"built":384},"differingProperties":0,"sample":[]}
-{"path":"/plan","elements":{"source":241,"built":240},"differingProperties":0,"sample":[]}
-{"path":"/verify","elements":{"source":339,"built":338},"differingProperties":0,"sample":[]}
+{"path":"/diagnose","elements":{"source":426,"built":425},"differingProperties":8,"sample":[{"i":1,"key":"BODY#.","prop":"background-attachment","source":"scroll, scroll","built":"scroll"},{"i":1,"key":"BODY#.","prop":"background-blend-mode","source":"normal, normal","built":"normal"},{"i":1,"key":"BODY#.","prop":"background-clip","source":"border-box, border-box","built":"border-box"},{"i":1,"key":"BODY#.","prop":"background-image","source":"radial-gradient(820px 260px at 50% -130px, rgba(43, 78, 59, 0.3), rgba(0, 0, 0, 0) 66%), none","built":"none"},{"i":1,"key":"BODY#.","prop":"background-origin","source":"padding-box, padding-box","built":"padding-box"},{"i":1,"key":"BODY#.","prop":"background-position","source":"0% 0%, 0% 0%","built":"0% 0%"},{"i":1,"key":"BODY#.","prop":"background-repeat","source":"repeat, repeat","built":"repeat"},{"i":1,"key":"BODY#.","prop":"background-size","source":"auto, auto","built":"auto"}]}
+{"path":"/day","elements":{"source":387,"built":386},"differingProperties":8,"sample":[{"i":1,"key":"BODY#.","prop":"background-attachment","source":"scroll, scroll","built":"scroll"},{"i":1,"key":"BODY#.","prop":"background-blend-mode","source":"normal, normal","built":"normal"},{"i":1,"key":"BODY#.","prop":"background-clip","source":"border-box, border-box","built":"border-box"},{"i":1,"key":"BODY#.","prop":"background-image","source":"radial-gradient(820px 260px at 50% -130px, rgba(43, 78, 59, 0.3), rgba(0, 0, 0, 0) 66%), none","built":"none"},{"i":1,"key":"BODY#.","prop":"background-origin","source":"padding-box, padding-box","built":"padding-box"},{"i":1,"key":"BODY#.","prop":"background-position","source":"0% 0%, 0% 0%","built":"0% 0%"},{"i":1,"key":"BODY#.","prop":"background-repeat","source":"repeat, repeat","built":"repeat"},{"i":1,"key":"BODY#.","prop":"background-size","source":"auto, auto","built":"auto"}]}
+{"path":"/plan","elements":{"source":243,"built":242},"differingProperties":8,"sample":[{"i":1,"key":"BODY#.","prop":"background-attachment","source":"scroll, scroll","built":"scroll"},{"i":1,"key":"BODY#.","prop":"background-blend-mode","source":"normal, normal","built":"normal"},{"i":1,"key":"BODY#.","prop":"background-clip","source":"border-box, border-box","built":"border-box"},{"i":1,"key":"BODY#.","prop":"background-image","source":"radial-gradient(820px 260px at 50% -130px, rgba(43, 78, 59, 0.3), rgba(0, 0, 0, 0) 66%), none","built":"none"},{"i":1,"key":"BODY#.","prop":"background-origin","source":"padding-box, padding-box","built":"padding-box"},{"i":1,"key":"BODY#.","prop":"background-position","source":"0% 0%, 0% 0%","built":"0% 0%"},{"i":1,"key":"BODY#.","prop":"background-repeat","source":"repeat, repeat","built":"repeat"},{"i":1,"key":"BODY#.","prop":"background-size","source":"auto, auto","built":"auto"}]}
+{"path":"/verify","elements":{"source":341,"built":340},"differingProperties":8,"sample":[{"i":1,"key":"BODY#.","prop":"background-attachment","source":"scroll, scroll","built":"scroll"},{"i":1,"key":"BODY#.","prop":"background-blend-mode","source":"normal, normal","built":"normal"},{"i":1,"key":"BODY#.","prop":"background-clip","source":"border-box, border-box","built":"border-box"},{"i":1,"key":"BODY#.","prop":"background-image","source":"radial-gradient(820px 260px at 50% -130px, rgba(43, 78, 59, 0.3), rgba(0, 0, 0, 0) 66%), none","built":"none"},{"i":1,"key":"BODY#.","prop":"background-origin","source":"padding-box, padding-box","built":"padding-box"},{"i":1,"key":"BODY#.","prop":"background-position","source":"0% 0%, 0% 0%","built":"0% 0%"},{"i":1,"key":"BODY#.","prop":"background-repeat","source":"repeat, repeat","built":"repeat"},{"i":1,"key":"BODY#.","prop":"background-size","source":"auto, auto","built":"auto"}]}
+TOTAL DIFFERENCES: 36
+```
+
+`frontend/shell.css:24` (`body { background: var(--ck-ground); }`) loses to the
+inline body rule at `frontend/index.html:96-101` on every page today and wins once
+hoisted. With that dead declaration deleted from the scratch copy and the shell
+rebuilt, the same comparison against the unmodified source shell:
+
+```text
+$ PLAYWRIGHT_MODULE=… VENDOR_DIR=… BASE_URL=http://127.0.0.1:8791 DIST=<build spike, shell.css:24 removed>/proj/frontend/dist node docs/scope/347-cascade-compare.spike.mjs
+{"path":"/diagnose","elements":{"source":426,"built":425},"differingProperties":0,"sample":[]}
+{"path":"/day","elements":{"source":387,"built":386},"differingProperties":0,"sample":[]}
+{"path":"/plan","elements":{"source":243,"built":242},"differingProperties":0,"sample":[]}
+{"path":"/verify","elements":{"source":341,"built":340},"differingProperties":0,"sample":[]}
 TOTAL DIFFERENCES: 4
 ```
 
-   The four "differences" are the element-count gap of one per page: the source
-   shell's inline module `<script>` sits in `<body>` and the build moves it to
-   `<head>`; every element that exists on both sides matches on every computed
-   property. Chunk 1's Done when now requires the coordinator to rerun this
-   comparison against the real build.
+   The remaining four "differences" are the element-count gap of one per page:
+   the source shell's inline module `<script>` sits in `<body>` and the build
+   moves it to `<head>`; every element that exists on both sides matches on
+   every computed property. Task 2 deletes the dead `shell.css` declaration, and
+   chunk 1's Done when requires the coordinator to rerun this comparison against
+   the real build.
 
 ### Round 4 — the re-check of round 3's second reader, and a fourth fresh reader
 
@@ -605,3 +626,13 @@ Both blocked, on one shared point and two more.
 
 The spot-check of the generated facts reproduced every tree-fact line byte for
 byte (only the `## HEAD` line moved, as the ledger says it will).
+
+### Round 4 re-checks
+
+One reader countersigned. The other blocked once more: the ADR claimed zero
+differences on any element while the recorded run had excluded `<html>` and
+`<body>`, and the widened script no longer reproduced the recorded counts.
+Rerunning the widened comparison found the body background layer lost in the
+build (`shell.css:24`, above); deleting that dead declaration and rerunning
+restores zero. Both runs are recorded above in place of the narrower one, the
+ADR states what was measured, and task 2 carries the deletion.

@@ -18,7 +18,11 @@
    its inline module, stylesheet links and icon reference siblings relatively;
    `frontend/index.test.js` retargets its three `/assets/`-absolute assertions
    (the workstation import, the Verify stylesheet link, the icon link) to the
-   relative references. Runtime templates and every other vue-free module stay
+   relative references; `frontend/shell.css` loses its `body { background:
+   var(--ck-ground); }` declaration (line 24), which the inline body rule at
+   `index.html:96-101` overrides on every page today and which would win once
+   the stylesheets are hoisted past the inline blocks, stripping the body's
+   radial-gradient layer. Runtime templates and every other vue-free module stay
    byte-identical.
 3. [ ] Admit the new files and ignore the outputs: `scripts/public_allowlist.txt`
    lists the four root files and admits `.ts` and `.vue` under `frontend/`;

@@ -3475,6 +3475,30 @@ export const C55 = async (page) => {
     'C55 the superseded preparation leg cannot strand an active failure');
 };
 
+/** C58 · Pressing a window preset while drilled into a Finding the new window
+    holds no case for. `404 finding_unavailable` is the server's normal answer
+    for that pairing, not a findings failure, so the reader lands on the new
+    window's own queue — the rows the same handshake already fetched. */
+// STORY:finding-evidence-routing:C58
+export const C58 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  /* Two requests carry the absent pairing: the queue's own event probe for that
+     row in the new window, and the drilled frame's shadow request. */
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await settle(page, 250);
+  const after = await state(page);
+  ok(!after.levelText.includes('Findings unavailable for'),
+    `C58 a case-level unavailable answer is not the window's findings failure (${after.levelEmpty || '(no empty line)'})`);
+  is(after.crumb, ['Findings'],
+    `C58 an unavailable case pops the drill back to the Findings queue (${after.crumb.join('›')})`);
+  is(after.levelLoading, 'false', 'C58 the recovered queue settles');
+  is(after.pressed, ['Morning'], 'C58 the pressed Morning window stays selected');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -5171,6 +5195,16 @@ export const STORIES = [
         window: structuredClone(body.window) } };
     },
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
+  ['C58', C58, 'typical', { caseScenario: {
+    /* The served payload holds a case for every Finding in every window, so the
+       one pairing this story needs is posed here: in Morning, and only there,
+       `finding:over_treated_low` has none and the server answers
+       `404 finding_unavailable`. The drill's own 24-hour case still answers, and
+       so does every other Finding in Morning. */
+    case: async ({ url, body }) => (body.window?.start_min === 360
+      && url.searchParams.get('finding_id') === 'finding:over_treated_low'
+      ? structured(404, 'finding_unavailable', 'Finding unavailable.') : { body }),
+  } }],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

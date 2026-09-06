@@ -50,3 +50,13 @@ in the browser the gates drive and in every browser the app already requires for
 CSS grid. The geometry is asserted by measurement in the browser gate rather than
 by a value pinned in a test, so a future label longer than its column fails the
 gate instead of shipping.
+
+This revises a shipped surface, so its frozen behaviour ledger
+(`mockups/finding-evidence-routing.behavior.md`) and replay
+(`frontend/diagnose-workstation-behavior.replay.mjs`) are the contract, and both
+are unamended here: no story's behaviour changes, because this restores geometry
+the panel already promises. That claim is tested rather than asserted — the replay
+runs against the built app on this branch and must pass every frozen story, 163 of
+163 at this change's base. It is deliberately not left to first run on the shared
+sweep pull request, where a failure would arrive attributed across sixteen tickets
+instead of this one.

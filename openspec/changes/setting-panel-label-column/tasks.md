@@ -20,5 +20,12 @@
       occupies one line box (a `Range` over its contents returns one client rect),
       and every value in one panel shares one left edge. Confirm the assertion
       fails on the pre-change stylesheet before keeping it.
-- [ ] Run the frontend fast gate and the Diagnose workstation browser gate with
-      zero failures.
+- [ ] Run the repository's full fast gate (pytest, the frontend tests, `openspec
+      validate --all --strict`, and the three guard scripts) and both browser legs
+      this surface owns, with zero failures: the Diagnose workstation browser gate,
+      and the frozen behaviour replay
+      (`frontend/diagnose-workstation-behavior.replay.mjs`, `TARGET=app`) against
+      the safe-start server `AGENTS.md` declares. The replay must report its full
+      story count — 163 of 163 at this change's base — and exit 0. This surface has
+      shipped, so its ledger is frozen: a failing story means the change is wrong,
+      never that the story should move.

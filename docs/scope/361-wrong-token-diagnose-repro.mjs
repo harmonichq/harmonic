@@ -2,9 +2,12 @@
  *
  * Measures the Diagnose surface under two tokens against a synthetic no-fetch
  * server, and prints what the reader is given in each case. No real database is
- * ever involved: start the server declared in AGENTS.md's data boundary,
+ * ever involved: start the repository's one permitted offline serve, declared in
+ * AGENTS.md's data boundary, from a scratch copy of the committed synthetic QA
+ * database — never the committed file itself:
  *
- *   uv run harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite
+ *   cp mockups/qa-e2e.synthetic/harmonic.sqlite <scratch>/qa-361.sqlite
+ *   uv run harmonic serve --no-fetch --token '' --db <scratch>/qa-361.sqlite --port 88NN
  *
  * then, with the browser-gate environment resolved
  * (`eval "$(python3 scripts/ensure_browser_gate_env.py)"`):
@@ -13,6 +16,14 @@
  *
  * A token argument of `-` means no token at all, which is the designed
  * missing-token placeholder this bug's state is compared against.
+ *
+ * The wrong-token arm needs its `401` supplied at the transport. `--token ''` is
+ * mandatory on the permitted serve, and `require_token` reads
+ * `if token and authorization != f"Bearer {token}"`, so an empty token disables
+ * the check and no `401` is reachable from the server itself. Setting
+ * `localStorage.ciq_token` alone will not produce one: refuse every `/api/**`
+ * read at the transport, as the change's evidence README records and the pinned
+ * browser suite does.
  *
  * Fails closed: no Playwright, no run.
  */

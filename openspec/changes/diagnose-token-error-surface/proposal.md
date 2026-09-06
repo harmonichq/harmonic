@@ -9,10 +9,13 @@ health evidence*, and an **Open Settings** button, under `role="status"`. It is
 gated on `!hasToken`, so it fires only when `localStorage.ciq_token` is absent.
 
 A token that is present but **wrong** is the same user problem and gets none of
-it. Reproduced on the synthetic revise-e2e server
-(`docs/scope/361-wrong-token-diagnose-repro.mjs`, run against
-`harmonic serve --no-fetch --db mockups/revise-e2e.synthetic/harmonic.sqlite`,
-`localStorage.ciq_token = 'not-the-token'`): thirteen API reads answer `401`,
+it. Reproduced on the synthetic QA server
+(`docs/scope/361-wrong-token-diagnose-repro.mjs`, run against the repository's one
+permitted offline serve — a scratch copy of
+`mockups/qa-e2e.synthetic/harmonic.sqlite`, served `--no-fetch --token ''` — with
+`localStorage.ciq_token = 'not-the-token'` and the rejection supplied at the
+transport, because the mandatory empty token disables `require_token`): thirteen
+API reads answer `401`,
 `loadAudit`'s catch calls `setError(e.message)`, and
 `frontend/diagnose-workstation.js:4085-4092` replaces the whole surface with
 

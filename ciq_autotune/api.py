@@ -452,7 +452,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
     def built_shell():
-        if not frontend_built:
+        if not _FRONTEND_INDEX.is_file():
             return PlainTextResponse(
                 f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
                 status_code=503,
@@ -474,19 +474,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         path = request.url.path
         if path == "/" or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
-        elif path.startswith("/assets/"):
+        elif path.startswith("/assets/") and response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
     # One prefix-scoped build directory route serves only fingerprinted assets;
     # it cannot claim page or API paths outside ``/assets``.
-    if _FRONTEND_ASSETS.is_dir():
-        app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS),
-                  name="frontend-assets")
-    else:
-        @app.get("/assets/{asset_path:path}")
-        def missing_asset(asset_path: str):
-            raise HTTPException(status_code=404)
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_ASSETS, check_dir=False),
+              name="frontend-assets")
 
     @app.get("/api/health")
     def health() -> dict:

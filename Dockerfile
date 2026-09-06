@@ -40,6 +40,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
+COPY vite.config.mjs tsconfig.json ./
 COPY frontend ./frontend
 RUN npm run build
 

@@ -42,12 +42,13 @@ adds the live pull; the `api` extra adds the HTTP API and the web UI.
 **Run.** `uv run harmonic serve` starts the API and the web UI on one port.
 `README.md` has the full command set and the Docker path.
 
-**The fast gate — dependency-free, runs on every pull request:**
+**The pull-request gate:** the backend delivery tests need a built shell, while
+the frontend Node tests remain dependency-free.
 
 ```sh
-npm ci && npm run build                    # production frontend bundle for backend delivery tests
-uv run python -m pytest                    # backend, stdlib unittest
-node --test 'frontend/**/*.test.js'        # frontend, Node's built-in runner
+npm ci && npm run build                    # required before backend delivery tests
+uv run python -m pytest                    # backend, stdlib unittest over the built shell
+node --test 'frontend/**/*.test.js'        # dependency-free frontend Node tests
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -437,8 +438,9 @@ Hard-won, and expensive to re-derive.
 ## Conventions
 
 - **Backend tests** use stdlib `unittest`, run under pytest.
-- **Frontend tests** use Node's built-in runner: the fast gate and every
-  frontend test take no npm dependency. Pure logic lives in **vue-free** `.js`
+- **Frontend tests** use Node's built-in runner and take no npm dependency; CI's
+  frontend job runs them without an install. Backend pytest delivery tests need
+  `npm ci && npm run build` first. Pure logic lives in **vue-free** `.js`
   modules so tests import them with no importmap and no DOM. Vue components
   import `vue` plus those modules and are not node-tested, because the bare
   `vue` specifier resolves through Vite. The dev-only

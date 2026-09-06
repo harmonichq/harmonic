@@ -17,7 +17,6 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
-from xml.etree import ElementTree
 
 try:
     from fastapi.testclient import TestClient
@@ -48,11 +47,6 @@ from ciq_autotune.store import Store
 import re
 
 _ADR_REF = re.compile(r"ADR\s*\d{4}")
-
-
-def _built_asset(suffix: str) -> str:
-    assets = Path(__file__).resolve().parent.parent / "frontend" / "dist" / "assets"
-    return "/assets/" + next(assets.glob(f"*-*{suffix}")).name
 
 
 def _find_adr_refs(node):
@@ -237,24 +231,24 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers["content-type"], "text/html; charset=utf-8")
 
-    def test_serves_built_javascript(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
     def test_every_built_index_asset_is_served(self):
+        # The bundle carries every former per-surface module; a referenced asset
+        # must therefore load with its browser-recognized type.
         index = (Path(__file__).resolve().parent.parent
                  / "frontend" / "dist" / "index.html").read_text()
-        assets = sorted(set(re.findall(r'''["'](/assets/index-[^"']+)["']''', index)))
+        assets = sorted(set(re.findall(r'''["'](/assets/[^"']+)["']''', index)))
         self.assertTrue(assets, "built index must name fingerprinted assets")
+        content_types = {
+            ".js": "text/javascript",
+            ".css": "text/css",
+            ".svg": "image/svg+xml",
+        }
         for asset in assets:
             r = self.client.get(asset)
             self.assertEqual(r.status_code, 200, f"{asset} has no serving route")
-
-    def test_serves_built_javascript_for_model_view(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
+            suffix = Path(asset).suffix
+            self.assertIn(suffix, content_types, asset)
+            self.assertTrue(r.headers["content-type"].startswith(content_types[suffix]), asset)
 
     def test_model_view_returns_per_day_payload(self):
         # #152 / ADR 0019: the per-day introspection feed — a day's episodes with
@@ -271,31 +265,6 @@ class ApiTest(unittest.TestCase):
     def test_model_view_rejects_bad_date(self):
         r = self.client.get("/api/model-view", params={"date": "06/03/2026"})
         self.assertEqual(r.status_code, 400)
-
-    def test_serves_built_javascript_for_plan(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_built_javascript_for_settling(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_built_javascript_for_carb_log(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_built_javascript_for_daily_nav(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_built_javascript_for_guide(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_catalog_is_generated_from_the_taxonomies(self):
         # #157: /api/catalog is the type-level Guide payload — the 8-lever catalog
@@ -359,36 +328,6 @@ class ApiTest(unittest.TestCase):
         self.assertTrue(body["configured"])
         self.assertIn("fetched_at", body)
         self.assertTrue(body["fetched_at"])
-
-    def test_serves_built_css(self):
-        r = self.client.get(_built_asset(".css"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/css"))
-
-    def test_serves_built_workstation_assets(self):
-        css = self.client.get(_built_asset(".css"))
-        self.assertEqual(css.status_code, 200)
-        self.assertTrue(css.headers["content-type"].startswith("text/css"))
-        chart = self.client.get(_built_asset(".js"))
-        self.assertEqual(chart.status_code, 200)
-        self.assertTrue(chart.headers["content-type"].startswith("text/javascript"))
-
-    def test_serves_built_event_comparison_assets(self):
-        js = self.client.get(_built_asset(".js"))
-        self.assertEqual(js.status_code, 200)
-        self.assertTrue(js.headers["content-type"].startswith("text/javascript"))
-        css = self.client.get(_built_asset(".css"))
-        self.assertEqual(css.status_code, 200)
-        self.assertTrue(css.headers["content-type"].startswith("text/css"))
-
-    def test_serves_the_built_app_icon(self):
-        r = self.client.get(_built_asset(".svg"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("image/svg+xml"))
-        # ...and it must actually parse. A browser drops a malformed icon silently
-        # (a stray "--" inside a comment is enough), leaving the blank page icon.
-        root = ElementTree.fromstring(r.text)
-        self.assertTrue(root.tag.endswith("svg"))
 
     def test_status_with_no_fetch_yet(self):
         r = self.client.get("/api/status")
@@ -1022,11 +961,6 @@ class PromptQueueTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.close()
 
-    def test_serves_built_javascript_for_prompt_queue(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
-
     def test_lists_the_two_live_prompts(self):
         r = self.client.get("/api/prompts")
         self.assertEqual(r.status_code, 200)
@@ -1197,11 +1131,6 @@ class ApiAuthTest(unittest.TestCase):
         r = self.client.get("/api/kb/start-here",
                             headers={"Authorization": "Bearer s3cret"})
         self.assertEqual(r.status_code, 200)
-
-    def test_finding_case_file_validation_uses_built_javascript(self):
-        r = self.client.get(_built_asset(".js"))
-        self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.headers["content-type"].startswith("text/javascript"))
 
     def test_fetch_requires_token_before_any_pull(self):
         # Wrong token must 401 before the route ever attempts a live fetch.

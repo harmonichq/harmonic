@@ -6,8 +6,12 @@ import { openApp } from './diagnose-workstation-behavior.replay.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE);
 const ROOT = '/private/tmp/harmonic-79-evidence';
+// BASE_FRONTEND names the base checkout's frontend/ directory. Since #347 the
+// app is served from that checkout's frontend/dist, so the base checkout must
+// have been built (`npm ci && npm run build` there); openApp fails closed
+// naming the build when the built shell is absent.
 const BASE_FRONTEND = process.env.BASE_FRONTEND;
-if (!BASE_FRONTEND) throw new Error('BASE_FRONTEND is required');
+if (!BASE_FRONTEND) throw new Error('BASE_FRONTEND is required (a built checkout\'s frontend/ directory)');
 
 const states = [
   'meal-clock-claimed-less-than-fired', 'meal-event-selected',

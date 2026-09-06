@@ -66,7 +66,7 @@
    documented prerequisite of the one permitted offline serve; and the Purpose
    paragraph of `openspec/specs/surfaces/spec.md`, which no requirement delta
    carries and which still says "no build step".
-7. [ ] One shared built-shell helper for browser legs, `frontend/built-shell.js`
+7. [x] One shared built-shell helper for browser legs, `frontend/built-shell.js`
    (dependency-free CommonJS beside `browser-runner.js`), exporting one factory
    `createBuiltShell({ dist })`: `dist` defaults to `frontend/dist` beside the
    module and is overridden by the `HARMONIC_DIST` environment variable when set;
@@ -78,7 +78,7 @@
    covers the throw, the page and asset mapping and the `null` cases against a
    temporary dist it writes itself, so the dependency-free fast gate passes with
    `frontend/dist` absent.
-8. [ ] Every browser leg loads the built shell through that helper and vendors
+8. [x] Every browser leg loads the built shell through that helper and vendors
    nothing from a CDN: the five legs that route the page through Playwright
    (`cockpit-shell.browser.test.mjs`, `diagnose-workstation.browser.test.mjs`, the
    workstation, event-comparison and Verify behaviour replays) and the two that
@@ -106,7 +106,7 @@
    vendoring CDN modules; the screenshot wrapper constructs the helper only
    when it serves a page, never at import, so `scripts/screenshots.local.test.mjs`
    keeps passing in the build-free `frontend` CI job.
-9. [ ] CI browser gates build first: the browser-gate-setup and leg jobs run
+9. [x] CI browser gates build first: the browser-gate-setup and leg jobs run
    `npm ci && npm run build` with an npm cache keyed on the lockfile and drop the
    CDN vendor download, the `matrix.vendor` flag and the `ciq-vendor` cache; the
    AGENTS.md browser-gates block drops the two `curl` lines and every `VENDOR_DIR`.

@@ -159,7 +159,7 @@ jobs:
     name: browser gate setup
     runs-on: ubuntu-latest
     # Playwright and Chromium install only on a cache miss. npm ci (warm from
-    # the lockfile-keyed cache) and the sub-second Vite build run every time.
+    # the lockfile-keyed cache) and the Vite build run every time.
     timeout-minutes: 15
     env:
       PLAYWRIGHT_VERSION: "1.61.1"

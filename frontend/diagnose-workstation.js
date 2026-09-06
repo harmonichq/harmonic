@@ -2138,6 +2138,19 @@ function boot(root, data, callbacks, signal) {
         ))).then((shadowCase) => {
           const occ = desired ? desired.occ : frame.selectedId;
           return { next, shadowCase: matchingCase(shadowCase, next, frame, alignment, occ) };
+        }, (error) => {
+          /* A CASE-LEVEL ANSWER IS NOT THE WINDOW'S FAILURE (#364). `404
+             finding_unavailable` is what the server says when the drilled Finding
+             simply has no member in the window just pressed — the same normal
+             answer `requestCase` already reads. Arriving on this leg it used to
+             reach the shared `catch` below, which marks the WINDOW failed, and
+             that latched every level including the queue root behind "Findings
+             unavailable" until a preset was pressed again. The preparation this
+             chain already resolved carries the window's own rows, so hand it on
+             with no case and let the reader out to that queue. Every other
+             rejection still latches, which is what story C54 pins. */
+          if (error?.status !== 404 || error?.detail?.code !== 'finding_unavailable') throw error;
+          return { next, shadowCase: null };
         });
       })
       .then((shadow) => {
@@ -2145,12 +2158,20 @@ function boot(root, data, callbacks, signal) {
           || currentPreparationKey() !== key || top() !== frame) return;
         if (!adoptFindings(findingsFromPreparation(shadow.next), key)) return;
         preparation = shadow.next;
-        frame.caseFile = shadow.shadowCase;
         frame.pendingCaseRequest = null;
         frame.loading = false;
+        activeCaseError = null;
+        if (!shadow.shadowCase) {
+          /* Nothing for this level to stand on in the new window: drop the case
+             the previous window answered with and pop the drill, so the queue
+             `adoptFindings` just took is what paints. */
+          frame.caseFile = null;
+          popTo(stack.length - 2);
+          return;
+        }
+        frame.caseFile = shadow.shadowCase;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
           ? shadow.shadowCase.selection.requested_id : null;
-        activeCaseError = null;
         paint();
       })
       .catch((error) => {

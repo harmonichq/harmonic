@@ -484,7 +484,7 @@ export const withoutIsfProjectionVerdict = (projection) => ({
 export async function openApp(browser, {
   state: want = 'typical', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
-  pumpSettingsInputs = null, onPlanDraft = null,
+  pumpSettingsInputs = null, onPlanDraft = null, statefulPlanDraft = false,
   findingsDelayMs = 0, findingsDelays = {}, findingsFailures = {}, findingsResponseBarrier = null,
   appSource = 'server',
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
@@ -545,6 +545,11 @@ export async function openApp(browser, {
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const apiPattern = (path) => new RegExp(`^/api${path}`);
+  /* #354 — the Plan draft is the one stubbed read a story may need to OUTLIVE a
+     reload. Statefulness is opt-in and stays null unless `statefulPlanDraft`
+     asked for it, so every other story's requests are byte-identical to before:
+     the GET below answers the same flat empty draft it always has. */
+  let planDraftSaved = null;
   const STUBS = [
     /* #735: the findings queue is a SERVER-owned projection (ADR 730) and the
        browser gates have no Python, so the stub answers from the fixture-only JS
@@ -565,7 +570,7 @@ export async function openApp(browser, {
     [apiPattern('/explore/time'), () => payload.evidence],
     [apiPattern('/status'), () => ({ ok: true, last_fetch: payload.analyze.generated_at, counts: payload.analyze.data_quality?.counts || {} })],
     [apiPattern('/plan/history'), () => ({ history: [] })],
-    [apiPattern('/plan'), () => ({ items: [], updated_at: null })],
+    [apiPattern('/plan'), () => planDraftSaved || ({ items: [], updated_at: null })],
     [apiPattern('/verify/trials'), () => ({ trials: [] })],
     [apiPattern('/catalog'), () => ({ articles: [] })],
     [apiPattern('/carbs'), () => ({ entries: [] })],
@@ -811,9 +816,9 @@ export async function openApp(browser, {
     if (path === '/api/plan' && route.request().method() === 'PUT') {
       const draft = JSON.parse(route.request().postData() || '{}');
       onPlanDraft?.(draft);
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({
-        items: draft.items || [], updated_at: '2020-03-03 00:01:00',
-      }) });
+      const saved = { items: draft.items || [], updated_at: '2020-03-03 00:01:00' };
+      if (statefulPlanDraft) planDraftSaved = saved;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(saved) });
     }
     for (const [pattern, body] of STUBS) {
       if (pattern.test(path)) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body(url)) });
@@ -3369,6 +3374,118 @@ export const C57 = async (page) => {
     .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
 };
 
+/** C60 · A reader navigating by control reaches a finding by its own title, and
+    activating that control opens that finding's case file. Added by #363: the row
+    is a button whose implicit role an ARIA override used to replace, so nothing
+    in the queue answered a search for a control at all. */
+// STORY:finding-evidence-routing:C60
+export const C60 = async (page) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
+  const [{ id, title }] = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => ({
+    id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
+  })));
+  const control = page.locator('#level .q').getByRole('button', { name: title });
+  is(await control.count(), 1, `C60 the queue answers a search for a control named ${title}`);
+  is(await control.getAttribute('data-id'), id,
+    'C60 the control reached by name is that finding\u2019s own row');
+  await control.click();
+  await settle(page, 500);
+  const opened = await state(page);
+  is(opened.crumb.length, 2, 'C60 activating the control drills one level, into the case file');
+  ok(opened.levelWho, `C60 the opened case file prints its own head (${opened.crumb.join(' \u203a ')})`);
+};
+
+const stagedLaneCells = (page) => page.evaluate(() =>
+  document.querySelectorAll('#lane button[data-staged="true"]').length);
+
+/** C59 · A change staged in Diagnose is still staged in Diagnose after a page
+    reload — the dock, the lane and the parameter panel all report the persisted
+    Plan draft the cockpit's Plan step already counts — and it can still be taken
+    back out from Diagnose. ADDED #354, pending operator sanction at the #350
+    sweep PR. */
+// STORY:finding-evidence-routing:C59
+export const C59 = async (page) => {
+  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+    .findIndex((b) => b.dataset.verdict === 'up'));
+  ok(idx >= 0, 'C59 precondition: the lane holds a slot that asserts a direction');
+  await page.click(`#lane button:nth-child(${idx + 1})`);
+  await settle(page, 450);
+  await page.click('#level .stagebtn');
+  await settle(page, 450);
+  const staged = await state(page);
+  is(staged.dock.kind, 'Plan · staged', 'C59 precondition: the dock reports the staged object');
+  is(staged.badge, '1', 'C59 precondition: the Plan badge counts it');
+  is(await stagedLaneCells(page), 1, 'C59 precondition: the lane marks the staged slot');
+
+  await page.reload();
+  await page.waitForSelector('.dw');
+  await page.waitForSelector('#lane button');
+  await settle(page, 800);
+  const reloaded = await state(page);
+  is(reloaded.badge, '1', 'C59 the persisted Plan draft still counts the item');
+  /* One assertion, both witnesses: the bug reported an idle dock AND an
+     unmarked lane while that badge still read 1, and either alone would let the
+     other regress unseen. */
+  is({ dock: reloaded.dock.kind, stagedLaneCells: await stagedLaneCells(page) },
+    { dock: 'Plan · staged', stagedLaneCells: 1 },
+    'C59 the dock and the lane still report the staged change after a reload');
+  is(reloaded.dock.what, staged.dock.what,
+    'C59 one object, one claim — the dock names what the badge counts');
+
+  await page.click(`#lane button:nth-child(${idx + 1})`);
+  await settle(page, 450);
+  const drilled = await state(page);
+  is(drilled.stageStaged, 'true', 'C59 the panel does not offer to stage it a second time');
+  ok(/Staged · Undo/.test(drilled.stage || ''), `C59 Undo is reachable again (${drilled.stage})`);
+  await page.click('#level .stagebtn');
+  await settle(page, 450);
+  const undone = await state(page);
+  is(undone.badge, '0', 'C59 the change can still be taken back out from Diagnose');
+  is(undone.dock.kind, 'Nothing being watched', 'C59 the dock follows it back to idle');
+  is(await stagedLaneCells(page), 0, 'C59 the lane mark clears with it');
+};
+
+/* C61 reads the draft the surface actually wrote: `GET /api/plan` is a static
+   stub here, so the PUT bodies the opener intercepts are the only place the
+   staged basket is observable. */
+const C61_DRAFTS = [];
+
+/** C61 · A merged basal finding stages every member the projection published.
+    The Plan draft, the surface's own staged tally and the dock name that one
+    set, and undo takes back exactly it. */
+// STORY:finding-evidence-routing:C61
+export const C61 = async (page) => {
+  await openWholeDay(page);
+  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+  is(await row.count(), 1,
+    'C61 opens on the merged two-member basal row the projection published');
+  await row.click();
+  await settle(page, 500);
+  ok(/one of 2 half hours in Basal 00:30 to 01:30/i.test(
+    await page.locator('#level .slot-say').first().innerText()),
+  'C61 states on the member panel which finding the half hour belongs to');
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
+  await settle(page, 150);
+  const staged = C61_DRAFTS.at(-1).items;
+  is(JSON.stringify(staged.map((item) => [item.start_min, item.current, item.recommended])),
+    JSON.stringify([[30, 0.85, 1.02], [60, 0.85, 1.02]]),
+    'C61 stages every eligible published member with its own served numbers');
+  const tally = await page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+    .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
+  is(JSON.stringify(tally), JSON.stringify(staged.map((item) => item.start_min)),
+    'C61 keeps the surface tally and the PUT /api/plan body over one member set');
+  is(await page.locator('#watch-dock .what').innerText(),
+    'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+    'C61 names the whole staged span in the dock');
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
+    .every((cell) => cell.dataset.staged !== 'true'));
+  await settle(page, 150);
+  is(C61_DRAFTS.at(-1).items.length, 0, 'C61 gives the whole run back on undo');
+};
+
 /* The ordinary generated projection withholds some case-file rows. A story may
  * pose one generated production-shaped row without changing that roster policy. */
 export const generatedFindingPreparation = (preparation, caseFiles, findingId) => {
@@ -3475,6 +3592,30 @@ export const C55 = async (page) => {
     'C55 the superseded preparation leg cannot strand an active failure');
 };
 
+/** C58 · Pressing a window preset while drilled into a Finding the new window
+    holds no case for. `404 finding_unavailable` is the server's normal answer
+    for that pairing, not a findings failure, so the reader lands on the new
+    window's own queue — the rows the same handshake already fetched. */
+// STORY:finding-evidence-routing:C58
+export const C58 = async (page) => {
+  await openWholeDay(page);
+  await clickQueueRow(page, 'Over-treated low');
+  /* Two requests carry the absent pairing: the queue's own event probe for that
+     row in the new window, and the drilled frame's shadow request. */
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
+  expectResponse(page, /^\/api\/diagnose\/finding-case-file$/, 404);
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+  await settle(page, 250);
+  const after = await state(page);
+  ok(!after.levelText.includes('Findings unavailable for'),
+    `C58 a case-level unavailable answer is not the window's findings failure (${after.levelEmpty || '(no empty line)'})`);
+  is(after.crumb, ['Findings'],
+    `C58 an unavailable case pops the drill back to the Findings queue (${after.crumb.join('›')})`);
+  is(after.levelLoading, 'false', 'C58 the recovered queue settles');
+  is(after.pressed, ['Morning'], 'C58 the pressed Morning window stays selected');
+};
+
 /* ------------------------------------------------------------------- runner */
 
 /* Discovery tags for every exported replay function above. */
@@ -3550,12 +3691,14 @@ export const S127 = async (page) => {
   console.log(`S127 RETIRED — ${SANCTION_RETIRED_CHART_DOCK}`);
 };
 
-/* The served findings queue for the window the page is on, read through the
-   app's own stubbed route so the story compares against the projection the
-   rail and the stage both consumed. */
+/* The served rows the surface actually draws for the window the page is on,
+   read through the app's own stubbed route. The rail and the stage both render
+   the preparation's `rendered_rows` — the case-file-anchored list — never the
+   separate `/api/diagnose/findings` payload, which keeps the projection's own
+   counts and sentence and reaches no surface. */
 const servedRows = (page, window) => page.evaluate(async (query) => {
-  const response = await fetch(`/api/diagnose/findings${query}`);
-  return (await response.json()).rows;
+  const response = await fetch(`/api/diagnose/finding-case-file-preparation${query}`);
+  return (await response.json()).rendered_rows;
 }, window ? `?start_min=${window[0]}&end_min=${window[1]}` : '');
 
 const focalId = (page) => page.locator('#tile-focal .evidence-tile').first().getAttribute('data-chart-id');
@@ -3967,6 +4110,39 @@ export const S144 = async (page) => {
     'S144 the promoted row keeps the served title');
   is(await focalId(page), 'finding:carb_undercount',
     'S144 the promoted row chart moves onto the stage');
+};
+
+/* ---- #353 · one denominator per rendered row --------------------------- */
+
+/* C62 · A finding claimed in two families keeps both on the row the rail and
+   the stage actually read, the case file's own family leads it at the case
+   file's counts, and the stage sentence is composed from that lead — never
+   from the family the case file was not built from. */
+// STORY:finding-evidence-routing:C62
+export const C62 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const row = rows.find((item) => (item.appearances || []).length > 1);
+  ok(row, 'C62 the served rows publish a finding claimed in two families');
+  is(row.appearances.length, 2, 'C62 the second family survives the case-file wrap');
+  const [lead, other] = row.appearances;
+  is(lead.family, row.case_header.family,
+    'C62 the case file\'s own family leads the rendered row');
+  is(`${lead.n} of ${lead.m}`, `${row.case_header.summary.claimed} of ${row.case_header.summary.denominator}`,
+    'C62 the leading family carries the case file\'s own count and denominator');
+  ok(row.headline.includes(`${lead.n} of ${lead.m} ${lead.noun} in this window`),
+    'C62 the served sentence states the leading appearance');
+  ok(!row.headline.includes(`${other.n} of ${other.m} ${other.noun}`),
+    'C62 the served sentence never states the other family\'s count');
+  await clickQueueRow(page, row.title);
+  is(await focalId(page), `finding:${row.case_header.event_chart.lever}`,
+    'C62 drilling the two-family row seats its own chart');
+  const stage = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+    title: node.querySelector('h3')?.textContent.trim() ?? '',
+    sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+  }));
+  is([stage.title, stage.sub].filter(Boolean).join(' '), row.headline,
+    'C62 the stage prints the two-family row\'s served headline verbatim');
 };
 
 // STORY:finding-evidence-routing:C41
@@ -5171,6 +5347,26 @@ export const STORIES = [
         window: structuredClone(body.window) } };
     },
   }, findingsProjectionInputs: generatedFindingProjection('finding:missed_meal') }],
+  ['C58', C58, 'typical', { caseScenario: {
+    /* The served payload holds a case for every Finding in every window, so the
+       one pairing this story needs is posed here: in Morning, and only there,
+       `finding:over_treated_low` has none and the server answers
+       `404 finding_unavailable`. The drill's own 24-hour case still answers, and
+       so does every other Finding in Morning. */
+    case: async ({ url, body }) => (body.window?.start_min === 360
+      && url.searchParams.get('finding_id') === 'finding:over_treated_low'
+      ? structured(404, 'finding_unavailable', 'Finding unavailable.') : { body }),
+  } }],
+  ['C60', C60, 'typical'],
+  /* #354 — the only story that needs the stubbed Plan draft to outlive a
+     reload, so it is the only one that opts into a stateful one. */
+  ['C59', C59, 'typical', { statefulPlanDraft: true }],
+  ['C61', C61, 'typical', {
+    findingsInputs: twoFamilyInputs,
+    exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+    onPlanDraft: (draft) => C61_DRAFTS.push(draft),
+  }],
+  ['C62', C62, 'typical'],
   ['D1', D1, 'dense'], ['D2', D2, 'dense'], ['D3', D3, 'dense'],
 ];
 

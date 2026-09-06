@@ -1,0 +1,41 @@
+✔ backend-qualified basal and I:C items alone map into Plan rows (2.663375ms)
+✖ a merged basal finding maps every eligible published member into Plan rows (#372) (1.598208ms)
+✔ every staged I:C block member carries an identical ic_block_provenance (#581) (0.292417ms)
+✔ the stale aggregate basal key cannot stage sibling slots (0.121625ms)
+✔ Plan rows resolve back to their backend-owned Diagnose item (0.201292ms)
+✔ hhmm pins midnight, wrap, negative, noon, and end boundaries (0.123458ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 547.6525
+
+✖ failing tests:
+
+test at frontend/diagnose-workspaces.test.js:45:1
+✖ a merged basal finding maps every eligible published member into Plan rows (#372) (1.598208ms)
+  AssertionError [ERR_ASSERTION]: every asserting member of the run stages, and only those
+  + actual - expected
+  
+    [
+      10,
+  -   11
+    ]
+  
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/372/frontend/diagnose-workspaces.test.js:51:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1397:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:969:18)
+      at Test.postRun (node:internal/test_runner/test:1537:19)
+      at Test.run (node:internal/test_runner/test:1462:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 10 ],
+    expected: [ 10, 11 ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

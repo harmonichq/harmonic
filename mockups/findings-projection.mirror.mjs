@@ -644,7 +644,7 @@ function icHeadline(r) {
     + `${supportN} meal runs${againstCurrent}.`;
 }
 
-function findingHeadline(r) {
+export function findingHeadline(r) {
   // findRows in this mirror never publishes a row without an appearance
   // (transcribed from `_finding_rows`'s `by_lever` construction), so this
   // is never null.

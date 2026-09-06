@@ -3704,8 +3704,8 @@
     //   modal=occurrence&occt=<ISO ts>&occd=<detail text>        (goToMoment's
     //     resulting highlight on Day — not a modal itself, but "Back" should
     //     restore/dismiss it like one)
-    // Initial arrival still accepts the retired Patterns / Investigate hash forms
-    // narrowly enough to migrate them once; new navigation never emits hash state.
+    // #94/#352: initial arrival reads no hash form and migrates no retired id;
+    // new navigation never emits hash state either.
     const app = createApp({
       setup() {
         // #425: one shared gate for all heavy ResultCache-backed reads so cold
@@ -3719,18 +3719,20 @@
         // `#/<page>?...` grammar is no longer supported at all.
         const initialRoute = parseRoute(location);
         if (location.pathname === '/') writeRoute(initialRoute, { replace: true });
-        // #132: if the initial URL is a patterns/investigate deep-link, stash the
-        // #246: the old Patterns/Investigate deep-link is retired with the tab; a stale
-        // `#patterns?mode=investigate` hash now just lands on Diagnose (resolveTab below).
+        // #132: the stash a patterns/investigate deep-link used to fill on
+        // arrival. #246 retired that deep-link with the tab, so a stale
+        // `#patterns?mode=investigate` hash lands on Diagnose because a fragment
+        // carries no route at all and Diagnose is the default page — not
+        // because the retired id is read and migrated (#352).
         let pendingScnDeepLink = null;
 
-        // #99: `dashboard` was renamed to `review` and the standalone `pump`
-        // tab folded into Plan; a stale id in a shared link still migrates:
-        // dashboard/pump → review (legacy), daily/modelview → day (#248 merge,
-        // ADR 0027), and outcomes → verify (#245). #246 (ADR 0027) retires
-        // Recommendations + Patterns into Diagnose, so `review`/`patterns` (and
-        // the legacy `dashboard`/`pump`) all migrate to `diagnose`. parseRoute
-        // resolves all of that, so the address alone decides the landing page.
+        // #352: the ids retired by #99/#245/#246/#248 — `dashboard`, `pump`,
+        // `review`, `patterns`, `daily`, `modelview`, `outcomes` — get no page
+        // of their own. The server serves the shell at the live page paths
+        // only, so a retired id's address answers 404 before this file loads,
+        // and parseRoute never sees one. An id it does not recognize resolves
+        // to the default page, which is what keeps a Guide article's `app:<id>`
+        // handoff on a real surface when the article names a page that is gone.
         // #94: the remembered-tab fallback is gone with the hash grammar. ADR 94
         // rules that `/` normalizes in place to the default page, so restoring a
         // different pane here would leave the address naming one page while the
@@ -4227,8 +4229,8 @@
           applyingHash = true;
           try {
             if (parsed.page !== tab.value) setTab(parsed.page);
-            // #248: the Day surface owns the day-picker — back/forward just moves the
-            // picked date (old #daily / #modelview hashes migrate to /day here too).
+            // #248: the Day surface owns the day-picker — back/forward just moves
+            // the picked date.
             if (resolveTab(parsed.page) === 'day' && parsed.date
                 && parsed.date !== (pendingDailyDate.value || dailyDate.value)) {
               dailyHighlight.value = null;
@@ -4241,9 +4243,9 @@
               kbCurrent.value = parsed.article;
               kbFetchArticle(parsed.article);
             }
-            // #246: the legacy `patterns` id migrates to `diagnose` in setTab
-            // above; the retired Investigate sub-state (mode/day/ep) no longer
-            // applies.
+            // #246: the retired Investigate sub-state (mode/day/ep) no longer
+            // applies, and #352 retired the legacy-id migration that used to
+            // carry `patterns` into `diagnose` here.
             reopenModalFromHash(parsed.modal);
           } finally {
             nextTick(() => {
@@ -4956,6 +4958,24 @@
           if (changed) deliverableEditsVersion.value++;
           return changed;
         }
+        /* #358 — the undo `keepOnlyPlanFamily` above needs when a draft save is
+           refused. It clears BOTH structures, so the checkpoint carries both:
+           `deliverableEdits` is client-only hand-edit state that is never re-read
+           from the server, so restoring the accepted picks alone would hand the
+           reader back their draft while discarding their hand-edits for good. The
+           version counter is bumped on restore so the deliverable rows repaint from
+           the restored map instead of keeping the cleared render. */
+        function planDraftCheckpoint() {
+          const items = new Map(planItems);
+          const edits = { ...deliverableEdits };
+          return () => {
+            planItems.clear();
+            for (const [key, it] of items) planItems.set(key, it);
+            for (const key of Object.keys(deliverableEdits)) delete deliverableEdits[key];
+            Object.assign(deliverableEdits, edits);
+            deliverableEditsVersion.value++;
+          };
+        }
         function inPlan(item, type) {
           // The single fasting ISF applies to every programmed ISF segment, so
           // it's "in plan" only when all of them are picked (see toggleIsfPlan).
@@ -4990,9 +5010,17 @@
               });
             }
           }
-          savePlanDraft();
+          // #358: reported back, so a stage from Diagnose can undo itself on a refusal.
+          return savePlanDraft();
         }
 
+        /* #358 — the outcome is a value: `true` saved, `false` refused. Diagnose
+           paints a change as staged before this answers, so it needs the answer to
+           walk that paint back. The failure message is untouched — the server's own
+           `detail`, unwrapped by `ApiTransportError` (`frontend/data.js`), printed
+           verbatim; today's awkward wording is the backend's to fix (#357), never
+           this side's to tidy. Every caller that stages from the Plan screen ignores
+           the outcome and behaves exactly as before. */
         async function savePlanDraft() {
           try {
             // #581: a chip removal or family swap can leave a raw accepted-picks
@@ -5001,7 +5029,8 @@
             // never carries a stale block claim.
             const items = planNormalizeIcBlockProvenance(Array.from(planItems.values()));
             await dataSavePlanDraft({ items });
-          } catch (e) { flash('Plan save failed: ' + e.message, 'err'); }
+            return true;
+          } catch (e) { flash('Plan save failed: ' + e.message, 'err'); return false; }
         }
 
         function togglePlan(item, type) {
@@ -5357,7 +5386,10 @@
             nextTick(diagnoseMount);
           } catch (e) {
             diagnoseLoaded = false;
-            if (diagnoseView) diagnoseView.setError(e.message);
+            // #361: the surface is handed the error itself, not its message —
+            // the transport status on it is what decides whether the reader is
+            // told their token was rejected or offered a retry.
+            if (diagnoseView) diagnoseView.setError(e);
             else {
               diagnoseReady.value = true;
               await nextTick();
@@ -5367,7 +5399,7 @@
               // never ran), and setData on a null-shaped payload crashed
               // inside boot() before setError got a turn. Mount without
               // feeding it.
-              diagnoseEnsureView()?.setError(e.message);
+              diagnoseEnsureView()?.setError(e);
             }
           }
         }
@@ -5375,29 +5407,44 @@
         // Stage → Plan: the same pure lever mapping Diagnose used (#432/#428) —
         // the backend asserts_move holds decide what stages; single-family Plan
         // (ADR 0042) is preserved via keepOnlyPlanFamily.
+        /* #358: the server has the last word on what is staged. The draft is
+           captured before it is touched, and a refused save restores exactly what
+           was captured — including the single-family clearing above — so the Plan
+           badge and the Plan screen agree with the server. The refusal is reported
+           back to the Diagnose surface, which undoes its own staged paint on it
+           (ADR 358); a save that reports no refusal changes nothing here. */
         async function diagnoseStage(item, desired = true) {
+          const undo = planDraftCheckpoint();
+          const saved = await stageIntoPlanDraft(item, desired);
+          if (saved === false) undo();
+          return saved !== false;
+        }
+        /** Stage into the draft and persist it, reporting the server's answer —
+            `undefined` when the pick resolved to nothing to save. */
+        async function stageIntoPlanDraft(item, desired) {
           if (item.family === 'isf') {
             if (!pumpSettings.value) await loadPumpSettings();
-            if (isStageableIsf(item.raw) && isfInPlan() !== desired) toggleIsfPlan(item.raw);
+            if (isStageableIsf(item.raw) && isfInPlan() !== desired) return toggleIsfPlan(item.raw);
             return;
           }
-          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
+          // #372: a merged basal finding carries its served members on the
+          // payload, so the whole run reaches the draft in one write.
+          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value, item.members);
           if (!items.length) return;
           if (!desired) {
             for (const it of items) planItems.delete(planKeyOf(it));
-            savePlanDraft();
-            return;
+            return savePlanDraft();
           }
           keepOnlyPlanFamily(planItemFamily(items[0]));
           for (const it of items) {
             const k = planKeyOf(it);
             planItems.set(k, it);
           }
-          savePlanDraft();
+          return savePlanDraft();
         }
         function diagnoseIsStaged(item) {
           if (item.family === 'isf') return isfInPlan();
-          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value);
+          const items = diagnoseStageItemsFor(item.key, diagnoseAnalysis.value, item.members);
           return items.length > 0 && items.every((it) => planItems.has(planKeyOf(it)));
         }
         // #654 hotfix: mounting (creating the component) is separable from
@@ -5412,6 +5459,10 @@
               day: (occurrence) => goToMoment(occurrence.t || occurrence.anchor?.t,
                 occurrence.text || occurrence.anchor?.label,
                 occurrence.cause_lever, occurrence.cause_lever), retry: loadAudit,
+              // #361: the route out of a rejected API token, which is the app's
+              // own Settings tab — the same destination the missing-token
+              // placeholder above offers.
+              settings: () => setTab('settings'),
               // Lock term 19: the occurrence level overlays that day's REAL trace
               // when one exists. The app does not ship 30 days of raw CGM, so the
               // one day in view is fetched; a miss keeps the "no trace captured"

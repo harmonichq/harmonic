@@ -354,12 +354,25 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         detail = case["selection"]["detail"]
         assert set(detail) == {"id", "date", "anchor", "verdict", "glucose",
                                "markers", "source_corrections", "day_target",
-                               *( {"comparison_cohort"} if lever is Lever.MISSED_MEAL else set())}
+                               "comparison_cohort"}
         if lever is Lever.CORRECTION_STACKING:
             assert [row["seq_num"] for row in detail["source_corrections"]] == [21, 22]
             assert detail["source_corrections"][0]["t"] == "2026-08-01 09:30:00"
         else:
             assert detail["source_corrections"] == []
+
+
+def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
+    for lever in Lever:
+        prepared = _prepared(lever)
+        member = prepared.members[lever][0]
+        case = prepared.case(f"finding:{lever.value}", "event", member.id)
+        detail = case["selection"]["detail"]
+        assert [cohort["key"] for cohort in case["projection"]["cohorts"]
+                if detail["id"] in cohort["occurrence_ids"]] == [detail["comparison_cohort"]]
+        clock = prepared.case(f"finding:{lever.value}", "clock", member.id)
+        assert clock["selection"]["state"] == "selected"
+        assert "comparison_cohort" not in clock["selection"]["detail"]
 
 
 def test_claimed_can_be_strictly_less_than_fired_and_clock_counts_only_claims():
@@ -415,7 +428,7 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
     }
     allowed_changes = {
         "appearances", "episodes", "evidence", "verdict_counts",
-        "verdict_counts_by_family", "event_chart", "case_header",
+        "verdict_counts_by_family", "event_chart", "case_header", "headline",
     }
     assert changed_fields <= allowed_changes
     assert allowed_changes - {"episodes"} <= changed_fields
@@ -427,6 +440,35 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
         original["selection"]
     ).encode()
     assert findings == original
+
+
+def test_two_family_rendered_row_leads_with_the_case_file_and_says_so():
+    lever = Lever.LATE_BOLUS
+    findings = _findings(lever)
+    row = findings["rows"][0]
+    row["tier"] = "worth_a_look"
+    # The projection sorts appearances by family name, so the case file's own
+    # family arrives second on any finding claimed in two families.
+    row["appearances"] = [
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+        {"family": "meals", "noun": "meals", "n": 3, "m": 20},
+    ]
+    row["headline"] = findings_projection._finding_headline(row)
+    prepared = _prepared(lever, findings=findings)
+    summary = prepared.case(row["id"], "clock", None)["summary"]
+    projected = deepcopy(row["appearances"])
+    payload = wrap(prepared)
+    rendered = payload["rendered_rows"][0]
+    assert rendered["appearances"] == [
+        {"family": "meals", "noun": summary["noun"],
+         "n": summary["claimed"], "m": summary["denominator"]},
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+    ]
+    assert rendered["headline"] == (
+        f"Ranks among this window's findings. Showed up in {summary['claimed']} of "
+        f"{summary['denominator']} {summary['noun']} in this window."
+    )
+    assert payload["findings"]["rows"][0]["appearances"] == projected
 
 
 def test_noncanonical_attribution_is_withheld_instead_of_rendered():

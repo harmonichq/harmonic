@@ -87,14 +87,26 @@ def _validate_ic_block_groups(items: list) -> None:
     complete, internally consistent group: exactly one row per listed member
     (no duplicates, no stray extra), an identical provenance object and an
     identical proposed value (normalized to 4-decimal precision) on every row,
-    valid integer minute-of-day bounds/members, and every listed member inside
+    an integer ``block_start_min`` and member starts in ``[0, 1440)`` with an
+    integer ``block_end_min`` in ``(0, 1440]``, and every listed member inside
     the block's wrap-aware arc ``[block_start_min, block_end_min)`` (a wrap
     past midnight is signalled by ``block_end_min < block_start_min``; the arc
     must be non-empty). A malformed or inconsistent group is rejected outright
     — this runs on both draft save and apply.
     """
+    # The two bounds are different domains: a start is an inclusive minute of
+    # day, while the end is the arc's *exclusive* close, so the all-day block
+    # the I:C analyzer publishes for a flat profile ends at 1440 (#357). These
+    # are the domains ``ic_history.HistoryIdentity`` enforces on the same
+    # fields — that module is the authority on I:C block identity.
+    def _int(value):
+        return isinstance(value, int) and not isinstance(value, bool)
+
     def _minute(value):
-        return isinstance(value, int) and not isinstance(value, bool) and 0 <= value < 1440
+        return _int(value) and 0 <= value < 1440
+
+    def _exclusive_end(value):
+        return _int(value) and 0 < value <= 1440
 
     groups: dict = {}
     for idx, item in enumerate(items):
@@ -108,7 +120,7 @@ def _validate_ic_block_groups(items: list) -> None:
         start = prov.get("block_start_min")
         end = prov.get("block_end_min")
         members = prov.get("block_member_start_mins")
-        if not _minute(start) or not _minute(end):
+        if not _minute(start) or not _exclusive_end(end):
             raise ValueError(
                 f"plan item {idx} has an invalid I:C block bounds {prov!r}")
         if (not isinstance(members, list) or not members

@@ -1,0 +1,36 @@
+{
+  "port": "8871",
+  "label": {
+    "show": true,
+    "position": "insideStartTop",
+    "distance": 10,
+    "color": "#a49c90",
+    "fontSize": 10,
+    "backgroundColor": "#14120f",
+    "padding": [
+      2,
+      5
+    ],
+    "borderRadius": 2
+  },
+  "rowId": "finding:over_treated_low",
+  "name": "target 70–180",
+  "chart": {
+    "w": 1416,
+    "h": 714
+  },
+  "y180": 107,
+  "caption": {
+    "text": "target 70–180",
+    "x": 34,
+    "y": 107,
+    "box": {
+      "w": 62,
+      "h": 10
+    },
+    "fill": "#a49c90",
+    "backgroundColor": null
+  },
+  "console": [],
+  "failed": []
+}

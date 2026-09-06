@@ -294,7 +294,10 @@ const scenarios = {
 };
 
 async function routeApp(page, options = {}) {
-  const { promptCount = 0, planDraftItems = [], verifyTrials = [maturing, complete] } = options;
+  const {
+    promptCount = 0, planDraftItems = [], planSaveRefusal = null, planSaveDelayMs = 0,
+    verifyTrials = [maturing, complete],
+  } = options;
   const findingsInput = options.findingsInput || {
     analysis: analyze,
     exposures: DIAGNOSE_PAYLOAD.exposures,
@@ -418,6 +421,19 @@ async function routeApp(page, options = {}) {
     if (url.pathname === '/api/outcomes/trend') return route.fulfill({ json: {} });
     if (url.pathname === '/api/catalog') return route.fulfill({ json: options.catalog || {} });
     if (url.pathname === '/api/plan' && route.request().method() === 'PUT') {
+      // #358: the server refusing a draft save is the only thing that can undo
+      // Diagnose's optimistic staged paint, so a scenario can ask for one. The
+      // detail is served exactly as the API serves its own — a JSON `detail`
+      // string, which `frontend/data.js` unwraps into the thrown error.
+      if (planSaveRefusal) {
+        // A scenario can also ask for a slow refusal, which is the only way to
+        // hold the save in flight long enough for a second click to land inside
+        // it — the window a reader hits on a slow link and a test cannot
+        // otherwise reach.
+        if (planSaveDelayMs) await new Promise((done) => setTimeout(done, planSaveDelayMs));
+        return route.fulfill({ status: 400, contentType: 'application/json',
+          body: JSON.stringify({ detail: planSaveRefusal }) });
+      }
       return route.fulfill({ json: { items: route.request().postDataJSON().items } });
     }
     if (url.pathname === '/api/plan') return route.fulfill({ json: { items: planDraftItems } });
@@ -1604,4 +1620,208 @@ test('event comparisons fail closed when the served case file is malformed',
     assert.equal(await page.locator('[data-comparison-cohort]').count(), 0,
       'a malformed case renders no stale comparison cohort rows');
   } finally { if (page) await page.close(); }
+});
+
+/* #358 — Diagnose stages optimistically: the stage control, the watched-change
+   dock and the Plan step badge all repaint before `PUT /api/plan` has answered,
+   and the answer used to be discarded. The server's refusal is the only thing
+   that can walk that paint back, and this is where it is proved. All three
+   tuning families run: they are three stage handlers sharing one treatment, and
+   an untested one is an untreated one. The dock's `Plan · staged` branch is
+   reachable here and only here — `routeApp` stubs `/api/outcomes/trend` empty, so
+   nothing is watched; against a served database with a watched Trial the dock
+   stays on its Trial branch, which is why this change's own committed
+   reproduction asserts the button, the badge and the draft instead. */
+const PLAN_SAVE_REFUSAL = "plan item 0 was refused by this suite's stubbed server";
+
+/* The slot lane divides the day by the number of slots the analysis carries
+   (`buildSlotLane`), while the findings queue names a basal row `slot * 30`. The
+   two agree only on the full 48-slot day the analyzer publishes, so a basal row
+   drilled from this suite's three-slot `analyze` fixture lands on no lane cell and
+   never reaches a stage control. These cases serve the whole day: the fixture's own
+   three slots at their own indices, the rest quiet at "no change", which the
+   projection publishes no queue row for. */
+const stageableAnalysis = {
+  ...analyze,
+  basal: (() => {
+    const bySlot = new Map(analyze.basal.map((slot) => [slot.slot, slot]));
+    return Array.from({ length: 48 }, (_, slot) => bySlot.get(slot) || {
+      slot,
+      label: `${String(Math.floor(slot / 2)).padStart(2, '0')}:${slot % 2 ? '30' : '00'}`,
+      current: 1, recommended: null, asserts_move: false, days: 30,
+      safety_status: 'no change',
+    });
+  })(),
+};
+
+/* That fixture's single ISF row carries `recommended: null` and no `asserts_move`,
+   which is exactly what `isStageableIsf` (frontend/plan.js) and the ISF level's own
+   `isfVerdict` read — so through it the ISF stage handler is unreachable. This row
+   asserts through those same backend fields, in the shape `analyzers/isf.py`
+   publishes (one `start_min: 0` fasting row carrying its direction on the
+   evidence), never through a frontend judgement about what looks stageable. */
+const assertingIsfAnalysis = {
+  ...stageableAnalysis,
+  isf: [{
+    ...analyze.isf[0],
+    recommended: 45,
+    asserts_move: true,
+    annotation: 'Corrections are landing stronger than the fasting data supports.',
+    evidence: {
+      ...analyze.isf[0].evidence,
+      direction: 'weaken',
+      night_fits: [{ date: '2026-07-09', isf: 44.2 }, { date: '2026-07-10', isf: 45.6 }],
+    },
+  }],
+};
+
+// One asserting finding per family, each drilled from the queue the reader uses.
+const REFUSED_STAGES = [
+  { family: 'basal', rowId: 'basal:60-90', analysis: stageableAnalysis },
+  { family: 'I:C', rowId: 'ic:day', analysis: stageableAnalysis },
+  { family: 'ISF', rowId: 'isf', analysis: assertingIsfAnalysis },
+];
+
+function refusedSaveOptions(analysis) {
+  return {
+    promptCount: 2,
+    planSaveRefusal: PLAN_SAVE_REFUSAL,
+    findingsInput: { analysis, exposures: DIAGNOSE_PAYLOAD.exposures, scenarios },
+  };
+}
+
+// Drill an asserting finding and stage it, with the draft save refused. Returns
+// once the failure has been reported, so the caller reads a settled surface.
+async function stageWithRefusedSave(page, rowId) {
+  // 24 h is the unscoped global queue, the same arrival the other drill tests use.
+  await page.locator('#seg-window button', { hasText: '24 h' }).click();
+  await page.locator(`#level .qrow[data-id="${rowId}"]`).click();
+  const stage = page.locator('.stagebtn');
+  await stage.waitFor();
+  await stage.click();
+  // The failure toast is raised inside the save's own catch, so it lands first;
+  // the surface then reverts on the answer that catch reports back.
+  await page.locator('.toast.err').waitFor();
+  try {
+    await page.waitForFunction(
+      () => document.querySelector('.stagebtn')?.dataset.staged === 'false', null, { timeout: 5_000 });
+  } catch (error) {
+    throw new Error('the stage control still reports itself staged after a refused save: '
+      + `${JSON.stringify(await stage.innerText())} data-staged=${await stage.getAttribute('data-staged')}`,
+      { cause: error });
+  }
+  return stage;
+}
+
+// One case per family, rather than one case looping three: a loop stops at the
+// first red, and each of the three handlers has to be proved on its own.
+for (const { family, rowId, analysis } of REFUSED_STAGES) {
+  test(`a refused Plan save leaves nothing staged on Diagnose (${family})`, async () => {
+    const browser = await launch();
+    const page = await openApp(browser, refusedSaveOptions(analysis));
+    try {
+      const stage = await stageWithRefusedSave(page, rowId);
+      assert.equal(await stage.getAttribute('data-staged'), 'false',
+        'the stage control must report itself unstaged after a refused save');
+      assert.match(await stage.innerText(), /^Stage change/,
+        'the stage control must read its unstaged label after a refused save');
+      assert.equal(await page.locator('#watch-dock').getAttribute('data-state'), 'idle',
+        'the dock must leave its Plan · staged branch after a refused save');
+      // `.cockpit-badge[data-count="0"]` is `visibility: hidden` in shell.css, and
+      // Playwright reads '' off a hidden node — the count is the attribute.
+      assert.equal(
+        await page.locator('[data-shell-tab="plan"] .cockpit-badge').getAttribute('data-count'), '0',
+        'the Plan step badge must count nothing after a refused save');
+      // The reader is told what the SERVER said, verbatim: Harmonic does not
+      // rewrite, trim or tidy that sentence (today's wording is the backend's, #357).
+      assert.equal((await page.locator('.toast.err').innerText()).trim(),
+        `Plan save failed: ${PLAN_SAVE_REFUSAL}`,
+        "the failure message must carry the server's own detail unchanged");
+    } finally { await page.close(); }
+  });
+}
+
+/* Staging from Diagnose clears every other family off the Plan before it saves,
+   and that clearing takes the reader's hand-edits with it — `deliverableEdits` is
+   client-only state that is never re-read from the server. So a refusal has to
+   give those back too, not only the accepted picks. */
+test('a refused stage gives back the hand-edit it cleared from another family', async () => {
+  const browser = await launch();
+  const page = await openApp(browser, refusedSaveOptions(stageableAnalysis));
+  try {
+    await chooseTab(page, 'plan');
+    // The deliverable's value cells run basal · ISF · I:C · target, so the hand-edit
+    // goes on ISF and the basal stage below is the cross-family one that clears it.
+    const isfCell = page.locator('tr:has(.deliverable-cell)').first().locator('.deliverable-cell').nth(1);
+    const isfInput = isfCell.locator('input.plan-value');
+    await isfInput.fill('44');
+    await isfInput.blur();
+    await isfCell.locator('.muted', { hasText: 'edited' }).waitFor();
+
+    await chooseTab(page, 'diagnose');
+    await stageWithRefusedSave(page, 'basal:60-90');
+
+    await chooseTab(page, 'plan');
+    assert.equal(await isfInput.inputValue(), '44',
+      'the hand-edit the refused stage cleared must be back on the deliverable');
+    assert.equal(await isfCell.locator('.muted', { hasText: 'edited' }).count(), 1,
+      'the restored cell must still read as edited');
+  } finally { await page.close(); }
+});
+
+/* The stage control keeps its optimistic paint for the whole round trip, so on a
+   slow link it is clickable again — as Undo — before the server has answered. The
+   shell restores the draft as it stood when the save was issued, so a second stage
+   entered inside that window takes the FIRST one's optimistic draft as its own
+   restore point, and two refusals leave the Plan draft holding an item the server
+   refused twice while Diagnose reads unstaged. Whatever the surface does with the
+   second click, the three readings of one fact — the control, the Plan step badge
+   and the draft itself — have to agree once every save has answered. */
+const PLAN_SAVE_DELAY_MS = 1_500;
+
+test('a second stage inside a refused save leaves the button, the badge and the draft agreeing', async () => {
+  const browser = await launch();
+  const page = await openApp(browser,
+    { ...refusedSaveOptions(stageableAnalysis), planSaveDelayMs: PLAN_SAVE_DELAY_MS });
+  // Counted rather than timed: the surface is read once every save this case
+  // provoked has answered, however many the surface chose to issue.
+  const saves = { issued: 0, answered: 0 };
+  const isPlanSave = (request) =>
+    request.method() === 'PUT' && new URL(request.url()).pathname === '/api/plan';
+  page.on('request', (request) => { if (isPlanSave(request)) saves.issued++; });
+  page.on('requestfinished', (request) => { if (isPlanSave(request)) saves.answered++; });
+  try {
+    await page.locator('#seg-window button', { hasText: '24 h' }).click();
+    await page.locator('#level .qrow[data-id="basal:60-90"]').click();
+    const stage = page.locator('.stagebtn');
+    await stage.waitFor();
+    await stage.click();
+    // S16's paint lands before the round trip does, which is exactly what leaves
+    // the control clickable again while the first save is still out.
+    await page.waitForFunction(
+      () => document.querySelector('.stagebtn')?.dataset.staged === 'true', null, { timeout: 5_000 });
+    assert.equal(saves.answered, 0,
+      'the delayed refusal must still be in flight, or this case never enters the window it exists for');
+    await stage.click();
+
+    const deadline = Date.now() + 20_000;
+    while (saves.issued === 0 || saves.answered < saves.issued) {
+      if (Date.now() > deadline) throw new Error(`the Plan saves never answered: ${JSON.stringify(saves)}`);
+      await page.waitForTimeout(100);
+    }
+    await page.locator('.toast.err').waitFor();
+    // The refusal's own handlers run off the answer, so give the last one its turn
+    // before reading the surface.
+    await page.waitForTimeout(750);
+
+    const settled = await page.evaluate(() => ({
+      dataStaged: document.querySelector('.stagebtn')?.dataset.staged ?? null,
+      planBadge: document.querySelector('[data-shell-tab="plan"] .cockpit-badge')?.dataset.count ?? null,
+      // the reactive draft itself, behind both readings above
+      planDraftItems: document.querySelector('#app')?.__vue_app__?._instance?.setupState?.planItems?.size ?? null,
+    }));
+    assert.deepEqual(settled, { dataStaged: 'false', planBadge: '0', planDraftItems: 0 },
+      'the control, the Plan step badge and the draft must all report nothing staged '
+      + 'once every refused save has answered');
+  } finally { await page.close(); }
 });

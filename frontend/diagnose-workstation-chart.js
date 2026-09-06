@@ -436,9 +436,6 @@ export function plotBox(el) {
 
 const CAT_MAX = BIN_COUNT - 1; // 95 — the last category, 23:45
 
-/* The window label owns a reserved band at the top of the plot. */
-const LABEL_Y = 296;
-
 /**
  * Rough px width of a label. There is no measuring context here (the label is
  * drawn by ECharts into a canvas), so this is the same per-character estimate
@@ -872,6 +869,34 @@ export function renderCanvas(el, echarts, opts) {
     sp: { color: colors.muted, fontSize: 9.5, fontWeight: 500, letterSpacing: 0 },
     th: { color: colors.warn || colors.danger, fontSize: 9.5, fontWeight: 700, letterSpacing: 0 },
   };
+
+  /* ---- target caption: fit it above, or drop it below the gates ------------
+     Same fit-or-move act as the window label, for the third thing that crosses
+     the target caption: the drawn window's own gates (#370). Where a gate
+     lands is asked of `xAtMinute` against the window the brace itself draws
+     from, so the two cannot disagree; the caption is anchored to the plot's
+     left edge, so only a gate INSIDE its glyph run hides a character — a gate
+     on the plot's edge merely sits on the pad. The escape is DOWNWARD, never
+     sideways: on an ordinary daytime window at the narrow widths the gates
+     leave no horizontal slot wide enough for the caption, while the grips are
+     pinned to a band at the plot's ceiling at every width, so the band's floor
+     always clears them. */
+  const captionText = `TARGET ${target[0]}–${target[1]} mg/dL`;
+  const CAPTION_PAD_X = 5;   // the caption's own padding, [2, 5]
+  const GRIP_HALF = 4;       // .brace .grip is 7px wide, pulled left by 4
+  const glyphLeft = labelBox.left + CAPTION_PAD_X;
+  const glyphRight = glyphLeft + estimateTextPx(captionText, 10);
+  const captionStruck = hasWindow
+    && (opts.displayWindow || [winStart, winEnd])
+      .map((minute) => xAtMinute(el, minute, displayOffset))
+      .some((x) => x + GRIP_HALF > glyphLeft && x - GRIP_HALF < glyphRight);
+  /* Anchored to the band's FLOOR rather than its ceiling, which lands the box
+     below the grip band without reading a plot height this module has never
+     read. Distance 0 keeps it flush to the plot's left edge, exactly as the
+     shipped placement is flush to the band's ceiling. */
+  const captionPlacement = captionStruck
+    ? { position: 'insideBottomLeft', distance: 0 }
+    : { position: 'insideStartTop', distance: 10 };
   const windowAreas = binSpans.map(([start, end], index) => [
     {
       xAxis: panning ? String(start) : envelope.labels[start],
@@ -1023,17 +1048,23 @@ export function renderCanvas(el, echarts, opts) {
             [
               {
                 yAxis: target[0], itemStyle: { color: colors.targetFill },
-                /* A label must never be struck by linework. Two things crossed
-                   this one: the dashed 180 rule it was sitting on, and the
-                   3-hourly vertical gridlines. It now clears the rule (distance
-                   10 drops it into the band's own clear space) AND carries an
-                   opaque pad in the panel's ground colour, so gridlines and
-                   dashes visibly break behind the text. The pad reads the
-                   ground token, so it follows the panel wherever it moves. */
+                /* A label must never be struck by linework. THREE things cross
+                   this one, and the pad answers only two of them: the dashed
+                   180 rule it sits on and the 3-hourly vertical gridlines are
+                   drawn into this canvas, so an opaque pad in the panel's
+                   ground colour visibly breaks them behind the text (and it
+                   reads the ground token, so it follows the panel wherever it
+                   moves). The third is the drawn window's brace — a DOM
+                   overlay painted ABOVE the canvas, which no `z` in this
+                   option can reach (#370). So the caption clears that one by
+                   moving instead: down to the band's floor, below the grip
+                   band, whenever a gate lands in its glyph run. Downward, not
+                   sideways, because the grips are height-pinned at every width
+                   while the horizontal slot between two gates can vanish. */
                 label: {
-                  show: true, position: 'insideStartTop', distance: 10,
+                  show: true, ...captionPlacement,
                   color: colors.targetText, fontSize: 10, fontWeight: 600,
-                  formatter: `TARGET ${target[0]}–${target[1]} mg/dL`,
+                  formatter: captionText,
                   backgroundColor: colors.rail, padding: [2, 5], borderRadius: 2,
                 },
               },
@@ -1042,23 +1073,32 @@ export function renderCanvas(el, echarts, opts) {
             ...windowAreas,
           ],
         },
-        // the label, when it did not fit inside: parked in the margin beside the
-        // window, on the same band, clear of both dashed edges
+        /* the label, when it did not fit inside: parked in the margin beside
+           the window, on the same band, clear of both dashed edges. Its
+           reserved band is the ruler's OWN CEILING (#366) — `range[1]`, the
+           axis maximum set just above — because the strip's field range is
+           derived from the pooled envelope and moves with the data, so a
+           reserved band stated as a glucose constant lands off the plot on
+           every ruler shorter than it and ECharts paints nothing. The parked
+           label's `position` centres its text on that anchor, so it also takes
+           the inside placement's own distance downward to hang under the
+           ceiling rather than straddle it. */
         markPoint: hasWindow && (!labelInside || wrapped) ? {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{
               coord: [panning ? String(labelSide === 'right' ? endIndex : startIndex)
-                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], range[1]],
               label: {
                 show: true, position: labelSide, distance: 6,
+                verticalAlign: 'top', offset: [0, 5],
                 formatter: labelText, rich: labelRich,
                 align: labelSide === 'right' ? 'left' : 'right',
                 color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
               },
             }] : []),
             ...(wrapped ? [{
-              coord: [envelope.labels[binSpans[1][1]], LABEL_Y],
+              coord: [envelope.labels[binSpans[1][1]], range[1]],
               label: {
                 show: true, position: 'insideTop', distance: 5,
                 formatter: 'CONTINUES', color: colors.muted, fontSize: 9, fontWeight: 600,

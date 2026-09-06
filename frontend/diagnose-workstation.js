@@ -31,6 +31,7 @@ import {
   validateHistoryEvents, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
+import { diagnoseLoadFailure } from './diagnose-load-failure.js';
 import { DIAGNOSE_EVIDENCE_CHARTS, glucoseRange } from './diagnose-evidence-charts.js';
 import {
   createCanvasLayout, descriptorsFromFindings, fieldRange,
@@ -54,6 +55,9 @@ import {
   eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
+// #372: the Plan draft's own staging predicate, so this surface's staged
+// tally is built from it rather than from a second copy of the same rule.
+import { stageItemsFor } from './diagnose-workspaces.js';
 import { watchDockView, paintWatchDock } from './watched-change-dock.js';
 /* ADR 31 part 3 (issue #41) — ALIGN's "By event" mode reuses the lens's own
    canvas-only render rather than a second implementation of the projection's
@@ -440,7 +444,7 @@ function pressPreset(winKey) {
  * single I:C predicate, and which of the two held presentations a block gets
  * comes from the backend's own `state`.
  */
-function buildIcBlocks(blocks) {
+export function buildIcBlocks(blocks) {
   const cells = blocks.map((b) => {
     const wraps = b.end_min <= b.start_min;
     const current = b.current_values[0];
@@ -467,7 +471,7 @@ function buildIcBlocks(blocks) {
       current,
       startMin: b.start_min,
       endMin: b.end_min,
-      span: `${hhmm(b.start_min)}–${hhmm(b.end_min)}`,
+      span: windowSpanText([b.start_min, b.end_min]),
       spans: wraps ? [[b.start_min, 1440], [0, b.end_min]] : [[b.start_min, b.end_min]],
     };
   });
@@ -722,12 +726,14 @@ function renderParamLevel(host, spec) {
       <span class="verdict">${spec.headQual ? `${spec.headQual} · ` : ''}${spec.verdict}</span>
     </div>
     ${spec.scopeSay ? `<div class="slot-say">${spec.scopeSay}</div>` : ''}
-    <div class="numrow"><span class="k">Current</span><b>${u(spec.current)}</b>
-      <span class="qual">${spec.unit}, programmed now</span></div>
-    <div class="numrow"><span class="k">Estimate</span><b>${u(e.value)}</b>
-      <span class="qual">${spec.unit} — the interval below brackets THIS number</span></div>
-    <div class="numrow"><span class="k">Recommended</span><b>${u(spec.recommended)}</b>
-      <span class="qual">${spec.recommendedQual}</span></div>
+    <div class="numrows">
+      <div class="numrow"><span class="k">Current</span><b>${u(spec.current)}</b>
+        <span class="qual">${spec.unit}, programmed now</span></div>
+      <div class="numrow"><span class="k">Estimate</span><b>${u(e.value)}</b>
+        <span class="qual">${spec.unit} — the interval below brackets THIS number</span></div>
+      <div class="numrow"><span class="k">Recommended</span><b>${u(spec.recommended)}</b>
+        <span class="qual">${spec.recommendedQual}</span></div>
+    </div>
     <div class="slot-stats">CI ${u(e.lo)}–${u(e.hi)} ${spec.unit} on the estimate
       <span>${e.wide ? '(wide)' : ''}</span></div>
     ${spansCurrent ? `<div class="hedge">That interval reaches the ${spec.currentNoun} you
@@ -808,8 +814,18 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   const capped = /capped/i.test(s.annotation || '');
   const thin = (supportFloor != null && e.n < supportFloor) || e.wide;
   const span = `${hhmm(cell.startMin)}–${hhmm(cell.endMin)}`;
+  /* #372 — a panel opened on ONE member of a merged finding says so, in the
+     reserved scope line the I:C and ISF panels already use. The numbers below it
+     stay this half hour's own: the projection deliberately leaves a merged run's
+     numbers on its members rather than inventing a span average, and a span
+     figure here could not say which half hour it described. */
+  const run = options.run;
   renderParamLevel(host, {
     head: span,
+    scopeSay: run && run.memberCount > 1
+      ? `One of ${run.memberCount} half hours in Basal ${run.label} — staging here stages `
+        + 'the whole span. Current, Estimate and Recommended below are this half hour\'s own.'
+      : '',
     verdict: canStage ? s.safety_status : VERDICT_KEY[cell.verdict],
     unit: 'U/hr',
     current: s.current,
@@ -1014,10 +1030,12 @@ function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
       <span class="verdict">${row.span.label}</span>
     </div>
     <div class="history-evidence" aria-label="Past-setting evidence">
-      <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
-        <span class="qual">g/U</span></div>
-      <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
-        <span class="qual">g/U</span></div>
+      <div class="numrows">
+        <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
+          <span class="qual">g/U</span></div>
+        <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
+          <span class="qual">g/U</span></div>
+      </div>
       <div class="slot-stats">CI ${u(estimate.lo)}–${u(estimate.hi)} g/U${estimate.wide ? ' <span>(wide)</span>' : ''}</div>
       <div class="slot-stats">${row.support} meal run${row.support === 1 ? '' : 's'}</div>
     </div>
@@ -1267,6 +1285,21 @@ function boot(root, data, callbacks, signal) {
   const staged = new Set();        // basal slots staged for Plan
   const icStaged = new Set();      // I:C blocks staged for Plan
   let isfStaged = false;           // the ISF value, staged for Plan
+  /* ADR 354 — the Plan draft outlives the page; these three sets do not. The
+     shell restores the draft on every load and already owns the mapping from a
+     parameter item to it, so the marks are ASKED FOR here rather than rebuilt:
+     `callbacks.isStaged` is the same verdict `callbacks.stage` writes through,
+     in the same three descriptor shapes. This surface still decides nothing
+     about what MAY be staged — that stays with the analysis (term 14), and a
+     held slot yields no Plan item, so it can never seed. No callback, no
+     marks. */
+  for (const cell of lane.cells) {
+    if (callbacks.isStaged?.({ family: 'basal', key: cell.slot.__planKey })) staged.add(cell.i);
+  }
+  for (const cell of icBlocks) {
+    if (callbacks.isStaged?.({ family: 'ic', key: cell.block.__planKey })) icStaged.add(cell.id);
+  }
+  if (callbacks.isStaged?.({ family: 'isf', raw: isf })) isfStaged = true;
   /* A block selection marks a window SEGMENT, never a two-handle brace (term
      32): the gate edges and their grips are suppressed and the edges stop
      being hit-testable, so a data boundary can never be dragged into a user
@@ -2138,6 +2171,19 @@ function boot(root, data, callbacks, signal) {
         ))).then((shadowCase) => {
           const occ = desired ? desired.occ : frame.selectedId;
           return { next, shadowCase: matchingCase(shadowCase, next, frame, alignment, occ) };
+        }, (error) => {
+          /* A CASE-LEVEL ANSWER IS NOT THE WINDOW'S FAILURE (#364). `404
+             finding_unavailable` is what the server says when the drilled Finding
+             simply has no member in the window just pressed — the same normal
+             answer `requestCase` already reads. Arriving on this leg it used to
+             reach the shared `catch` below, which marks the WINDOW failed, and
+             that latched every level including the queue root behind "Findings
+             unavailable" until a preset was pressed again. The preparation this
+             chain already resolved carries the window's own rows, so hand it on
+             with no case and let the reader out to that queue. Every other
+             rejection still latches, which is what story C54 pins. */
+          if (error?.status !== 404 || error?.detail?.code !== 'finding_unavailable') throw error;
+          return { next, shadowCase: null };
         });
       })
       .then((shadow) => {
@@ -2145,12 +2191,20 @@ function boot(root, data, callbacks, signal) {
           || currentPreparationKey() !== key || top() !== frame) return;
         if (!adoptFindings(findingsFromPreparation(shadow.next), key)) return;
         preparation = shadow.next;
-        frame.caseFile = shadow.shadowCase;
         frame.pendingCaseRequest = null;
         frame.loading = false;
+        activeCaseError = null;
+        if (!shadow.shadowCase) {
+          /* Nothing for this level to stand on in the new window: drop the case
+             the previous window answered with and pop the drill, so the queue
+             `adoptFindings` just took is what paints. */
+          frame.caseFile = null;
+          popTo(stack.length - 2);
+          return;
+        }
+        frame.caseFile = shadow.shadowCase;
         frame.selectedId = shadow.shadowCase.selection.state === 'selected'
           ? shadow.shadowCase.selection.requested_id : null;
-        activeCaseError = null;
         paint();
       })
       .catch((error) => {
@@ -2347,9 +2401,20 @@ function boot(root, data, callbacks, signal) {
 
   function dismissChartFullscreen() {
     if (!fullscreen) return;
+    /* THE OPENER IS THE DISMISSED CHART'S OWN Full CONTROL, and its chart id
+       comes from the state being dismissed rather than from `priorLayout`: the
+       two differ when the chart was expanded from a catalog cell. The repaint
+       below is what re-creates that control — the tile the reader pressed it on
+       was destroyed entering fullscreen — so the focus call follows the paint,
+       the way All charts' own dismissal focuses its trigger after its repaint.
+       `preventScroll` for the same reason it does: `restorePhoneQueuePosition`
+       owns the scroll here, and a scrolling focus call fights it. */
+    const openerId = fullscreen.chartId;
     canvasLayout = dismissFullscreen(fullscreen);
     fullscreen = null;
     paint();
+    root.querySelector(`.evidence-tile[data-chart-id="${openerId}"] .tile-fullscreen`)
+      ?.focus({ preventScroll: true });
     if (!explorerOpen) restorePhoneQueuePosition();
   }
   /* The lane is a shortcut INTO the slot branch: from level 1 it pushes, from a
@@ -2667,11 +2732,32 @@ function boot(root, data, callbacks, signal) {
     if (preserveExplorerFocus) el('explorer-trigger')?.focus({ preventScroll: true });
   }
 
+  /* ONE PLACE KNOWS HOW A TILE IS ADDRESSED. The expansion that opens a chart
+     and the repaint that holds it both reach for the same element by the id
+     `paintTiles` stamps on it, so the two reads move together when that
+     stamp does. */
+  function focusTileFor(chartId) {
+    root.querySelector(`.evidence-tile[data-chart-id="${chartId}"]`)
+      ?.focus({ preventScroll: true });
+  }
+
   function paintTiles() {
     const host = el('tile-field');
     const focalHost = el('tile-focal');
     const rowHost = el('tile-row');
     if (!host || !focalHost || !rowHost) return;
+    /* A REPAINT THAT DID NOT NAVIGATE KEEPS THE READER WHERE THEY ARE (#100).
+       Every tile is destroyed and rebuilt below, so the expansion that just
+       landed the keyboard on the fullscreen chart would lose it again the
+       moment the drill's own case load settles behind the state — dropping the
+       reader on the document body without their having navigated anywhere.
+       `paintChartActions` holds the catalog's trigger across its own rebuild
+       exactly this way. ONLY THE FULLSCREEN CHART'S CONTAINER IS HELD: no
+       repaint has ever preserved focus on a resting tile or a tile control, and
+       this is not the change that widens that. */
+    const heldFullscreenTile = fullscreen
+      && document.activeElement?.classList?.contains('evidence-tile')
+      ? document.activeElement.dataset.chartId : null;
     disposeTiles();
     const byId = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
     /* A SEAT WITHOUT A DESCRIPTOR IS NOT A TILE. Reconciliation gives a star
@@ -2864,6 +2950,14 @@ function boot(root, data, callbacks, signal) {
           fullscreen = enterFullscreen(canvasLayout, descriptor.chartId);
           showChartInspector(descriptor);
           paint();
+          /* THE OPENED CONTAINER IS THE EXPANDED CHART'S OWN TILE. Expanding is
+             reader-driven navigation, and the drill inside `showChartInspector`
+             does ask for the opened container — but it asks for the inspector,
+             which entering fullscreen has just marked inert, so that focus call
+             lands on nothing and the reader is left on the document body.
+             Fullscreen paints exactly one tile, in the focal seat at `tabIndex`
+             −1, and that tile is the container this navigation opened. */
+          focusTileFor(descriptor.chartId);
         };
         /* THE SPOTLIGHT'S FULLSCREEN RIDES ITS RAIL, where the glucose chart's
            does. The spotlight's nameplate IS a pane header rail now, and the
@@ -3046,6 +3140,7 @@ function boot(root, data, callbacks, signal) {
       (seat.seat === 'focal' ? focalHost : rowHost).append(tile);
     }
     for (const mount of mounts) mount();
+    if (heldFullscreenTile) focusTileFor(heldFullscreenTile);
   }
 
   function applyCanvasFullState(big) {
@@ -3074,6 +3169,31 @@ function boot(root, data, callbacks, signal) {
      `planItems`, which Vue renders as `step.count`, hidden at zero by
      `.cockpit-badge[data-count="0"]` in shell.css. */
 
+  /**
+   * The run a basal lane cell belongs to, exactly as the server published it.
+   *
+   * The findings row carries the membership (`members`); `/api/analyze` carries
+   * each member's own `asserts_move` verdict; `stageItemsFor` holds the one
+   * eligibility predicate the Plan draft is written from. So this resolves the
+   * owning row and hands both to that predicate rather than deciding anything
+   * here: no floor, no threshold, no direction and no span arithmetic. A cell
+   * inside no published run answers with its own slot, which is what a
+   * single-slot finding already is (#372).
+   */
+  function basalRun(cell) {
+    const row = (findings?.rows || []).find((candidate) => candidate.parameter === 'basal_rate'
+      && candidate.register === 'assert'
+      && (candidate.members || []).some((member) => member.start_min === cell.startMin));
+    const members = row ? (row.members || []).map((member) => member.start_min) : null;
+    const items = stageItemsFor(cell.slot.__planKey, auditState.analysis, members);
+    return {
+      label: row?.span?.label || null,
+      memberCount: members ? members.length : 1,
+      members,
+      cells: lane.cells.filter((c) => items.some((item) => item.start_min === c.startMin)),
+    };
+  }
+
   /** What this surface has staged, named the way the dock prints it (term 49). */
   function stagedDescriptor() {
     const cells = lane.cells.filter((c) => staged.has(c.i));
@@ -3081,9 +3201,16 @@ function boot(root, data, callbacks, signal) {
       const span = cells.length === 1 ? cells[0].label
         : `${cells[0].label} to ${hhmm(cells[cells.length - 1].endMin)}`;
       const head = cells[0].slot;
+      /* #372: a run is merged on register and direction, never on programmed
+         rate, so two staged half hours can carry different numbers. The span is
+         named either way; the pair prints only where every staged half hour
+         carries it, which is the same refusal the merged queue row already
+         makes. */
+      const agreed = cells.every((c) => c.slot.current === head.current
+        && c.slot.recommended === head.recommended);
       // the SAME rounded numbers the item's own detail panel prints — a dock that
       // spells 1.131 beside a panel reading 1.13 is two numbers for one fact
-      const numbers = head.recommended == null ? ''
+      const numbers = head.recommended == null || !agreed ? ''
         : ` · ${u(head.current)} → ${u(head.recommended)} U/hr`;
       return { count: stagedTotal(), title: `Basal ${span}${numbers}` };
     }
@@ -3097,6 +3224,36 @@ function boot(root, data, callbacks, signal) {
         title: `ISF · ${u(isf.current)} → ${u(isf.recommended)} mg/dL/U` };
     }
     return { count: 0, title: '' };
+  }
+
+  /* #358 — ONE treatment for the three stage handlers below (basal slot, I:C
+     block, ISF value). The order of operations is deliberate: toggle the local
+     staged state, tell the app, paint, and only THEN look at what the app said.
+     Frozen story S16 reads the button straight after the click, so the staged
+     rendering must not wait on a round trip. `callbacks.stage` answers `false`
+     only when the shell's draft save was refused by the server; an absent callback
+     and one that answers anything else both count as success and undo nothing
+     (ADR 358), which is what keeps the component harness's `stage: () => {}` mount
+     staging. `toggle` is its own inverse, so the refusal path simply replays it.
+     ONE save at a time, because the shell restores the draft as it stood when the
+     save was issued: a second stage entered inside the first save's round trip
+     would take that first one's optimistic draft as its restore point, so two
+     refusals would hand back a draft the server had refused twice while this
+     surface painted itself unstaged. Dropping the re-entrant click is what keeps
+     every restore point settled with respect to Diagnose's own staging. The
+     optimistic paint is untouched — the
+     guard is released on the answer, not on the paint. */
+  let saveInFlight = false;
+  async function stageAndSettle(toggle, item, isStaged) {
+    if (saveInFlight) return;
+    toggle();
+    // PORT: reach the app's Plan draft as well as the local tally
+    const answer = callbacks.stage?.(item, isStaged());
+    paint();
+    saveInFlight = true;
+    try {
+      if (await answer === false) { toggle(); paint(); }
+    } finally { saveInFlight = false; }
   }
 
   /* TERM 46/47 — the dock is repainted in place on every paint, at every level:
@@ -3452,12 +3609,34 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'slot') {
+      const run = basalRun(f.cell);
       renderSlotLevel(host, f.cell, staged, auditState.analysis.window_days, supportFloor, (cell) => {
-        if (staged.has(cell.i)) staged.delete(cell.i); else staged.add(cell.i);
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'basal', key: cell.slot.__planKey }, staged.has(cell.i));
-        paint();
+        /* #372: one press acts on the whole finding. The cells that move are the
+           ones the Plan draft's own predicate admitted for this frame's run —
+           never `cell` alone, and never a set this surface decided — so the
+           tally, the lane marks, the dock line and the Plan badge can only ever
+           describe the basket the draft holds. #358 replays the toggle when the
+           save is refused, and a run can be partially staged (a chip removed on
+           Plan), so the replay restores the exact pre-press membership rather
+           than re-deriving it from the pressed cell. */
+        const before = run.cells.map((member) => [member.i, staged.has(member.i)]);
+        const desired = !staged.has(cell.i);
+        let applied = false;
+        return stageAndSettle(
+          () => {
+            if (!applied) {
+              for (const member of run.cells) {
+                if (desired) staged.add(member.i); else staged.delete(member.i);
+              }
+            } else {
+              for (const [i, was] of before) { if (was) staged.add(i); else staged.delete(i); }
+            }
+            applied = !applied;
+          },
+          { family: 'basal', key: cell.slot.__planKey, members: run.members },
+          () => staged.has(cell.i));
       }, {
+        run,
         nightEvidence: slotNightEvidence(f), selectedId: f.selectedId,
         shownCount: f.nightShownRows,
         onSelect: (id) => selectNight(f, id),
@@ -3468,21 +3647,17 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (f.k === 'block') {
-      renderIcBlockLevel(host, f.cell, icStaged, (cell) => {
-        if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id);
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'ic', key: cell.block.__planKey }, icStaged.has(cell.id));
-        paint();
-      }, demoNote);
+      renderIcBlockLevel(host, f.cell, icStaged, (cell) => stageAndSettle(
+        () => { if (icStaged.has(cell.id)) icStaged.delete(cell.id); else icStaged.add(cell.id); },
+        { family: 'ic', key: cell.block.__planKey },
+        () => icStaged.has(cell.id)), demoNote);
       return;
     }
     if (f.k === 'isf') {
-      renderIsfLevel(host, isf, isfStaged, () => {
-        isfStaged = !isfStaged;
-        // PORT: reach the app's Plan draft as well as the local tally
-        callbacks.stage?.({ family: 'isf', raw: isf }, isfStaged);
-        paint();
-      });
+      renderIsfLevel(host, isf, isfStaged, () => stageAndSettle(
+        () => { isfStaged = !isfStaged; },
+        { family: 'isf', raw: isf },
+        () => isfStaged));
       return;
     }
     // 'factor' is the only remaining frame kind: render only the retained
@@ -4081,14 +4256,60 @@ export function createDiagnoseWorkstation({ root, callbacks = {} }) {
   /* PORT DEVIATION (#654): shared by the public `setError` below and the
      payload guard just past it. Not mock code — the mock never receives a
      malformed capture, since it is driven by static files, not an HTTP
-     response crossing a process boundary. */
-  function showError(message) {
+     response crossing a process boundary.
+
+     #361: what the reader is told is `diagnoseLoadFailure`'s to decide, from
+     the cause's transport status; this builds that composition's DOM. The
+     server's own sentence is a detail line beneath app copy, never the
+     heading. `role="alert"` sits on the block rather than the mount, so a
+     later successful `render()` — which replaces the mount's children
+     wholesale — cannot leave the whole surface announcing as an alert. */
+  function showError(cause) {
     if (aborter) { aborter.abort(); aborter = null; }
     teardown = null;
     repaint = null;
     leaveSurface = null;
     root.className = 'dw dw-error';
-    root.textContent = message;
+    root.textContent = '';
+
+    const failure = diagnoseLoadFailure(cause);
+    const block = document.createElement('div');
+    block.className = 'dw-failure';
+    block.setAttribute('role', 'alert');
+    /* The missing-token placeholder's own lock (frontend/index.html), verbatim
+       — a static literal, so no caught message is ever parsed as markup. */
+    if (failure.icon === 'lock') {
+      block.insertAdjacentHTML('beforeend', '<svg width="40" height="40" viewBox="0 0 24 24" '
+        + 'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" '
+        + 'stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/>'
+        + '<path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>');
+    }
+    const title = document.createElement('h2');
+    title.textContent = failure.title;
+    const body = document.createElement('p');
+    body.textContent = failure.body;
+    block.append(title, body);
+    if (failure.detail) {
+      const detail = document.createElement('p');
+      detail.className = 'dw-failure-detail';
+      detail.textContent = failure.detail;
+      block.append(detail);
+    }
+    /* The route out is the app's, not the surface's: `settings` and `retry`
+       are both callbacks the mount is handed. A mount without the one this
+       failure needs renders the copy without a button rather than throwing. */
+    const route = failure.action === 'settings'
+      ? { run: callbacks.settings, label: 'Open Settings' }
+      : { run: callbacks.retry, label: 'Retry' };
+    if (typeof route.run === 'function') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'dw-failure-action';
+      button.textContent = route.label;
+      button.addEventListener('click', () => route.run());
+      block.append(button);
+    }
+    root.append(block);
   }
 
   function render() {

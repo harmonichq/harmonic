@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { eventComparisonChartOption, renderEventSurface } from './diagnose-event-comparison.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 import {
@@ -231,6 +231,83 @@ test('entries build different alignments simultaneously with one optical spine',
   const { containLabel, ...icPlot } = icEvent.grid;
   assert.deepEqual(icPlot, comparison.grid,
     'the comparison shares the other kinds\' plot insets');
+});
+
+/* A FULL-RANK AXIS NAME BELONGS TO ITS OWN AXIS (#360). The grid runs
+   `containLabel: false`, so nothing reserves room for a name, and ECharts' own
+   `nameLocation: 'end'` centres a vertical name on the axis end and hangs a
+   horizontal one past it — which painted `glucose change (mg/dL)` 18px left of
+   the correction-factor chart and sheared `insulin acted (U)` 43px off its
+   right. The seat is written once, in the helper both builders spread, so it is
+   asserted here through the registry in every mode each publishes. That is also
+   the carb-ratio chart's whole guarantee: no finding row on the QA database
+   renders it, so the browser capture cannot reach it (ADR 360). */
+test('every full-rank evidence axis name is anchored to the axis it labels', () => {
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.cross_midnight;
+  const byKind = Object.fromEntries(DIAGNOSE_EVIDENCE_CHARTS.map((entry) => [entry.kind, entry]));
+  const built = (mini) => [
+    ['isf', 'event', byKind.isf.option('event', { data: isf, range: null, mini, window: [1320, 120] })],
+    ['isf', 'clock', byKind.isf.option('clock', { data: isf, range: null, mini, window: [1320, 120] })],
+    ['carb-ratio', 'event',
+      byKind['carb-ratio'].option('event', { data: ic, range: [80, 220], mini, window: [1320, 120] })],
+    ['carb-ratio', 'clock',
+      byKind['carb-ratio'].option('clock', { data: ic, range: [80, 220], mini, window: [1320, 120] })],
+  ];
+
+  const seated = [];
+  for (const [kind, mode, option] of built(false)) {
+    for (const [dim, align] of [['xAxis', 'right'], ['yAxis', 'left']]) {
+      const axis = option[dim];
+      if (!axis.name) continue;
+      seated.push(`${kind}/${mode} ${dim} ${axis.name}`);
+      assert.equal(axis.nameTextStyle.align, align,
+        `${kind}/${mode} ${dim} name starts where its axis does`);
+      assert.equal(Object.hasOwn(axis, 'nameLocation'), false,
+        `${kind}/${mode} ${dim} name stays at the axis end rather than relocated`);
+    }
+    /* The horizontal name joins its own tick labels at the plot bottom instead
+       of riding a zero rule through the middle of the plot. */
+    assert.equal(option.xAxis.axisLine.onZero, false,
+      `${kind}/${mode} x-axis sits with its labels`);
+    /* Nothing that already rendered moves: the canvas-wide spine inset, the
+       right inset the last axis label needs, and the legend's own seat are the
+       ones these entries returned before — and the browser driver sees none of
+       them, because it measures a name against the container box. */
+    assert.deepEqual(option.grid,
+      { left: 34, right: 34, top: 26, bottom: 42, containLabel: false },
+      `${kind}/${mode} keeps its plot insets`);
+    assert.deepEqual([option.legend.left, option.legend.right, option.legend.bottom],
+      [34, 22, 0], `${kind}/${mode} keeps its legend seat`);
+  }
+  /* Every name the two builders draw, unchanged in wording and in reach. */
+  assert.deepEqual(seated, [
+    'isf/event xAxis insulin acted (U)',
+    'isf/event yAxis glucose change (mg/dL)',
+    'isf/clock yAxis glucose change (mg/dL)',
+    'carb-ratio/event xAxis minutes from first meal',
+    'carb-ratio/event yAxis mg/dL',
+    'carb-ratio/clock xAxis meal start',
+    'carb-ratio/clock yAxis Carb ratio (g/U)',
+  ]);
+
+  /* The mini rank still carries no axis name at all — it drops the name rather
+     than seating it, which is the same rule fixed for a cell too small to read
+     one. */
+  for (const [kind, mode, option] of built(true)) {
+    assert.equal(option.xAxis.name, undefined, `${kind}/${mode} mini names no x-axis`);
+    assert.equal(option.yAxis.name, undefined, `${kind}/${mode} mini names no y-axis`);
+  }
+
+  /* And the one chart whose name already measured seated keeps the seat it has. */
+  const basal = byKind.basal.option(null, {
+    data: fixture('./__fixtures__/basal-night-evidence.json').expected,
+  });
+  assert.equal(basal.xAxis.nameLocation, 'middle');
+  assert.equal(basal.xAxis.nameGap, 26);
+  assert.equal(basal.xAxis.nameTextStyle.align, undefined,
+    'the basal name is centred on its own axis rather than anchored to an end');
 });
 
 test('basal routes every legacy mode to editorial', () => {
@@ -1112,6 +1189,35 @@ test('a selected occurrence trace never changes the field range', () => {
     fieldRange([descriptor(selected)], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
     'selection-only glucose cannot rescale the shared mini field',
   );
+});
+
+/* The other half of that ruling (#367). The field range excludes the selection,
+   and the `!mini` branch draws it anyway — so the branch that draws the trace is
+   the one that has to hold it. The clone is perturbed to the peak measured on
+   the synthetic QA showcase, where the only occurrence that matched the finding
+   was the only one drawn off the plot. */
+test('a selected occurrence trace is contained by the axis it is drawn against', () => {
+  const cases = caseFiles().cases['finding:carb_undercount'];
+  const [selectedId] = Object.keys(cases.selected_event);
+  const selected = structuredClone(cases.selected_event[selectedId]);
+  const points = selected.selection.detail.glucose;
+  points[Math.floor(points.length / 2)].bg = 260;
+  const injected = [...GLUCOSE_ENVELOPE];
+
+  const option = eventComparisonChartOption(selected, injected, null, false);
+  const trace = option.series.find((series) => series.id === 'selected:trace');
+  assert.equal(trace.data.length, points.length, 'the stage draws the whole selected trace');
+  for (const [minute, bg] of trace.data) {
+    assert.ok(bg >= option.yAxis.min && bg <= option.yAxis.max,
+      `${bg} at ${minute} min falls outside the axis [${option.yAxis.min}, ${option.yAxis.max}]`);
+  }
+
+  /* Outward only: the widened stage still contains the shared field ruler, and
+     the mini rank, which draws no selected trace, keeps it exactly. */
+  assert.ok(option.yAxis.min <= injected[0] && option.yAxis.max >= injected[1],
+    'the widened axis narrowed the injected field range');
+  const mini = eventComparisonChartOption(selected, injected, null, true);
+  assert.deepEqual([mini.yAxis.min, mini.yAxis.max], injected);
 });
 
 test('current I:C event options render every published meal member', () => {

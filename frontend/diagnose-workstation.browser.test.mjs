@@ -176,6 +176,42 @@ const expandWatching = async (page) => {
   }
 };
 
+/* #362: the label column of a setting panel is sized by the labels in that panel,
+   so the geometry is measured here rather than pinned to a number — a label that
+   outgrows its column lands on the value beside it, and a two-word one wraps
+   against its neighbour's single line. Both are reported, for every labelled
+   number the opened panel is showing. */
+async function numrowProblems(page) {
+  return page.evaluate(() => {
+    const problems = [];
+    const panels = new Map();
+    for (const row of document.querySelectorAll('#level .numrow')) {
+      const k = row.querySelector('.k');
+      const name = k.textContent.trim();
+      const column = k.getBoundingClientRect().width;
+      if (k.scrollWidth > Math.ceil(column)) {
+        problems.push(`${name}: label ${k.scrollWidth}px overruns its ${Math.round(column)}px column`);
+      }
+      const range = document.createRange();
+      range.selectNodeContents(k);
+      const lines = range.getClientRects().length;
+      if (lines !== 1) problems.push(`${name}: label wraps onto ${lines} lines`);
+      const panel = row.parentElement;
+      if (!panels.has(panel)) panels.set(panel, []);
+      panels.get(panel).push({ name, left: Math.round(row.querySelector('b').getBoundingClientRect().left) });
+    }
+    for (const rows of panels.values()) {
+      const [first, ...rest] = rows;
+      for (const row of rest) {
+        if (row.left !== first.left) {
+          problems.push(`${row.name}: value starts at ${row.left}px, ${first.name} at ${first.left}px`);
+        }
+      }
+    }
+    return problems;
+  });
+}
+
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
   const inputs = await densityHistoryInputs();
@@ -214,6 +250,8 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
     assert.equal(rendered.history.currentCopies, 1,
       'the dense inspector keeps one quieter current-program line');
     assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.deepEqual(await numrowProblems(page), [],
+      'the narrow past-setting read keeps each label on one line inside its own column');
     assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
       `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
   } finally {
@@ -333,6 +371,62 @@ test('#341 · the overview keeps its full name at the split tablet width', async
   } finally {
     await page.close();
   }
+});
+
+/* #359 · the workspace may not paint one pane over the other. Between 761 and
+   about 830px the split still formed while the canvas pane's own furniture was
+   wider than its track, and the pane carries no overflow rule, so it painted
+   across the findings queue: the rank number and the first word of every row
+   were covered, and the covered strip answered to the canvas.
+
+   Asserted with `document.elementFromPoint` inside each row's own box, never by
+   comparing bounding rectangles — a clipped element still reports its unclipped
+   box, so a rectangle assertion passes on the broken surface as readily as on
+   the fixed one. The last two widths are controls: the split above the new
+   floor is untouched. */
+test('#359 · findings-queue rows own their own surface at every tablet width', async () => {
+  const browser = await runner.browser();
+  const measured = [];
+  for (const width of [761, 768, 800, 830, 900, 1024]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport: { width, height: 1024 }, history: true, appSource: 'fixture',
+    });
+    try {
+      measured.push({
+        width,
+        rows: await page.locator('#level .qrow').evaluateAll((rows) => {
+          const name = (node) => {
+            if (!node) return 'nothing';
+            const classes = typeof node.className === 'string' ? node.className.trim() : '';
+            return `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}`
+              + (classes ? `.${classes.split(/\s+/).join('.')}` : '');
+          };
+          return rows.slice(0, 2).map((row) => {
+            /* Each row is brought into its own port before it is hit-tested.
+               `#level` computes `overflow-y: auto`, and once the panes stack it
+               is far shorter than the split leaves it: measured at 800x1024,
+               251px of port over 452px of rows, which puts the second row's
+               midpoint at y=955 against a port that ends at 900. Its midpoint
+               therefore lands on the watched-change dock below the list — a
+               scroll position, not another pane's paint. Without this the case
+               would measure where the queue happens to be scrolled instead of
+               the horizontal ownership it exists to assert. */
+            row.scrollIntoView({ block: 'center' });
+            const box = row.getBoundingClientRect();
+            const hit = document.elementFromPoint(box.left + 6, box.top + box.height / 2);
+            return { row: name(row), hit: name(hit), owns: !!hit && (hit === row || row.contains(hit)) };
+          });
+        }),
+      });
+    } finally {
+      await page.close();
+    }
+  }
+  assert.ok(measured.every(({ rows }) => rows.length === 2),
+    `every width publishes findings-queue rows to test: ${JSON.stringify(measured)}`);
+  const overprinted = measured.filter(({ rows }) => !rows.every((row) => row.owns));
+  assert.deepEqual(overprinted, [],
+    `these widths let another pane answer inside a findings-queue row: ${JSON.stringify(overprinted, null, 2)}`);
 });
 
 test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable', async () => {
@@ -907,6 +1001,77 @@ test('#341 · a chart picked from All charts can expand independently', async ()
   } finally {
     await page.close();
   }
+});
+
+test('#365 · one-chart fullscreen lands focus on the chart and returns it to the opener', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  /* WHERE THE KEYBOARD IS, in the ledger's own terms: the expanded chart's
+     container, that chart's own Full control, or neither. Naming the chart in
+     both answers is what separates a stage opener from a catalog cell's — an
+     assertion that only said "an opener" would pass on the wrong chart's. */
+  const focus = () => page.evaluate(() => {
+    const node = document.activeElement;
+    if (!node || node === document.body) return { at: 'body' };
+    if (node.classList.contains('evidence-tile')) return { at: 'chart', chartId: node.dataset.chartId };
+    if (node.classList.contains('tile-fullscreen')) {
+      return { at: 'opener', chartId: node.closest('.evidence-tile')?.dataset.chartId };
+    }
+    return { at: node.id || node.tagName.toLowerCase() };
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    /* FROM THE STAGE, where the verb rides the focal tile's own header. */
+    const stageId = await page.locator('#tile-focal .evidence-tile').getAttribute('data-chart-id');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: stageId },
+      'expanding the stage chart lands the keyboard on the expanded chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'Escape returns the keyboard to the stage chart’s own Full control');
+
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'the header Close control returns the keyboard to the same opener');
+
+    /* FROM AN OPEN All charts CELL, which dismissal repaints back into: the
+       opener to restore is that cell's own rail control, not the stage's. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    const cellId = (await page.locator('#tile-row .evidence-tile:has(.tile-fullscreen)')
+      .evaluateAll((cells) => cells.map((cell) => cell.dataset.chartId)))
+      .find((chartId) => chartId !== stageId);
+    /* A CELL FOR SOME OTHER CHART, so a stage-only implementation cannot pass
+       this half by restoring the stage's control and calling it the opener. */
+    assert.ok(cellId, 'the catalog offers a cell for a chart other than the stage opener');
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: cellId },
+      'expanding a catalog cell lands the keyboard on that cell’s chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 1,
+      'dismissal repaints back into the still-open catalog');
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'Escape returns the keyboard to that catalog cell’s own Full control');
+
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'the header Close control returns the keyboard to the catalog cell’s opener');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #365 fullscreen opener focus');
 });
 
 test('#232 · every registered chart family stays inside one fullscreen frame', async () => {
@@ -2101,6 +2266,38 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+test('#363 · every findings-queue row is exposed as the control it is', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      const queue = page.locator('#level .q');
+      const painted = await page.locator('#level .q button.qrow').count();
+      assert.ok(painted > 0, 'the queue painted rows for this window');
+      /* Computed exposure, not markup: `role="listitem"` on the button used to
+         REPLACE its implicit `button` role, so the whole queue answered zero
+         here while every row remained clickable. */
+      assert.equal(await queue.getByRole('button')
+        .evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('qrow')).length),
+      painted, 'every painted row is exposed with the button role');
+      const rows = await page.locator('#level .q button.qrow').evaluateAll((nodes) => nodes.map((node) => ({
+        id: node.dataset.id, title: node.querySelector('.lab').textContent.trim(),
+      })));
+      for (const { id, title } of rows) {
+        const control = queue.getByRole('button', { name: title });
+        assert.equal(await control.count(), 1,
+          `a control named ${title} is reachable in the queue, exactly once`);
+        assert.equal(await control.getAttribute('data-id'), id,
+          `the control named ${title} is that finding's own row`);
+      }
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while reading the queue by role');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 test('the Watching group collapses during a sift and expands again', async () => {
     const browser = await runner.browser();
     try {
@@ -2279,6 +2476,7 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
           estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
           text: await page.locator('#level').innerText(),
           stage: await page.locator('#level .stagebtn').count(),
+          geometry: await numrowProblems(page),
         });
         await page.close();
       }
@@ -2289,6 +2487,8 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
+        assert.deepEqual(reading.geometry, [],
+          `${reading.viewport.width}x${reading.viewport.height}: every label fits its own column and every value shares one edge`);
         assert.match(reading.text, /conservative step rounds to the current Correction factor/);
         assert.doesNotMatch(reading.text, /programmed factor/i);
         assert.match(reading.text, /CI 18\.20–46\.90/,
@@ -2369,6 +2569,112 @@ test('an exact true capped ISF verdict stages one unchanged value per generated 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+/* #372: the merged-run staging cross-check. The committed findings fixture
+   publishes `basal:30-90` — slots 1 and 2, both asserting `raise` with their own
+   current and recommended — so the two accumulators this surface keeps (the Plan
+   draft, and the lane's own staged tally) are observable over the same run
+   through the real affordance. A partial stage is what #372 was filed for, and
+   only reading BOTH here can catch it. */
+const stageMergedBasalRun = async (page, drafts) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 400);
+  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+  assert.equal(await row.count(), 1,
+    'the committed findings fixture publishes one merged two-member basal row');
+  await row.click();
+  await settle(page, 450);
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
+  await settle(page, 120);
+  return drafts.at(-1).items;
+};
+
+/** The staged half hours the SURFACE reports, in the lane's own marks. */
+const laneStagedStartMins = (page) => page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+  .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
+
+test('a merged basal finding stages every member the projection published (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: twoFamilyInputs,
+        exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(
+        items.map((item) => [item.type, item.start_min, item.current, item.recommended, item.value]),
+        [['basal', 30, 0.85, 1.02, 1.02], ['basal', 60, 0.85, 1.02, 1.02]],
+        'both published members reach the Plan draft carrying their own served numbers',
+      );
+      assert.deepEqual(await laneStagedStartMins(page), items.map((item) => item.start_min),
+        'the surface\'s staged tally and the PUT /api/plan body name the same members');
+      assert.match(await page.locator('#level .slot-say').first().innerText(),
+        /one of 2 half hours in Basal 00:30 to 01:30/i,
+        'the member panel says which finding it belongs to');
+      assert.equal(await page.locator('#watch-dock .what').innerText(),
+        'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+        'the dock names the staged span with the pair every staged member carries');
+
+      await page.locator('#level .stagebtn').click();
+      await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
+        .every((cell) => cell.dataset.staged !== 'true'));
+      await settle(page, 120);
+      assert.deepEqual(drafts.at(-1).items, [],
+        'undo takes back exactly the set staging added');
+      assert.deepEqual(await laneStagedStartMins(page), [],
+        'no member of the run stays marked in the lane after undo');
+
+      // A finding whose published membership is one half hour is unchanged: the
+      // fixture's slot 11 asserts alone, and its panel says nothing about a span.
+      await page.locator('#lane .lane-cell').nth(11).click();
+      await settle(page, 350);
+      const solo = await page.locator('#level .slot-say').allInnerTexts();
+      assert.ok(solo.length > 0, 'the single-member panel still prints its own sentence');
+      assert.ok(solo.every((line) => !/one of \d+ half hours/i.test(line)),
+        'a single-member finding carries no span statement');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a merged basal run');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('the dock prints no rate pair when staged members disagree on one (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      /* A run is merged on register and direction, never on programmed rate, so
+         its members can carry different current values. The committed fixture's
+         two members agree, so this varies one SERVED number — never a verdict —
+         to reach the branch the fixture cannot pose. */
+      const disagreeingRates = async () => {
+        const inputs = structuredClone(await twoFamilyInputs());
+        const second = inputs.analysis.basal.find((slot) => slot.slot === 2);
+        assert.equal(second.current, 0.85, 'the fixture members agree before this variation');
+        second.current = 0.9;
+        return inputs;
+      };
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: disagreeingRates,
+        exposuresInputs: async () => (await disagreeingRates()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(items.map((item) => [item.start_min, item.current]), [[30, 0.85], [60, 0.9]],
+        'each member still stages its own programmed rate');
+      assert.equal(await page.locator('#watch-dock .what').innerText(), 'Basal 00:30 to 01:30',
+        'the dock names the span and prints no pair the staged members do not share');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a run whose members disagree on rate');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* `setError` is the interface's own failure path — frontend/index.html's
    `loadAudit` catch calls it directly on a rejected fetch (real code, not a
    mock behaviour: the mock is static captures and has no concept of a failed
@@ -2410,7 +2716,9 @@ test('setError tears down a live render and replaces the mount with a plain fail
               + '<body><div id="wrap"><div class="mount"></div></div>'
               + '<script type="module">import {createDiagnoseWorkstation} from '
               + `'/assets/diagnose-workstation.js';`
-              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), callbacks: {} });`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
               + `window.__ready = true;</script></body></html>`,
             contentType: 'text/html',
           });
@@ -2438,7 +2746,16 @@ test('setError tears down a live render and replaces the mount with a plain fail
       await page.evaluate(() => window.__view.setError('The evidence request failed.'));
       const wrap = page.locator('#wrap');
       assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error');
-      assert.equal(await wrap.evaluate((node) => node.firstElementChild.textContent), 'The evidence request failed.');
+      /* #361: the message is still shown, but as the detail line beneath the
+         app's own copy rather than as the entire surface — and the generic
+         failure now carries the Retry the mount was always handed. */
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error .dw-failure-detail')?.textContent ?? null),
+        'The evidence request failed.');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence");
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1);
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
       assert.deepEqual(errors, [], 'setError does not itself throw, even tearing down a live render');
     } finally { await page.close(); }
   });
@@ -2523,6 +2840,158 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
     } finally { await page.close(); }
   });
 
+/* #361: a token this server rejects is a token problem, and the reader is told
+   so in the app's own words with the route out the missing-token placeholder
+   already offers. Before this, `loadAudit`'s catch handed `setError` the bare
+   `e.message` and the surface became the API's own `detail` string — lowercase,
+   unpunctuated, flush to the mount's top-left corner, with no control in it.
+   This drives the REAL app path, because the fix spans index.html's catch (it
+   now passes the caught error, which carries the status) and the workstation's
+   own render. Its stub table mirrors the #654 regression's, except every /api
+   read answers 401 the way a server refusing the saved token does. */
+test('a rejected API token names the token and offers Settings, not the backend string', async () => {
+    const payloadPath = process.env.PAYLOAD;
+    assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints before the refusal)');
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.addInitScript(() => {
+        localStorage.setItem('ciq_token', 'not-the-token');
+      });
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        const path = url.pathname;
+        if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
+        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
+        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
+        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
+        if (/\.(js|css|svg|html)$/.test(path)) {
+          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
+        }
+        // Every read refused, exactly as ciq_autotune/api.py's require_token
+        // refuses a token the server does not accept. The detail string is
+        // that endpoint's own, verbatim.
+        if (path.startsWith('/api/')) {
+          return route.fulfill({ status: 401, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'missing or invalid bearer token' }) });
+        }
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
+      });
+      await page.goto('http://app.local/?view=glucose');
+      await page.waitForSelector('.dw.dw-error', { timeout: 8000 });
+      await settle(page, 300);
+
+      const heading = await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null);
+      assert.equal(heading, "Diagnose can't use this API token",
+        'the reader is told this is a token problem, in the app\'s own words');
+      assert.notEqual(heading, 'missing or invalid bearer token',
+        'the backend string is never the heading');
+      const bodyText = await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? '');
+      assert.match(bodyText, /Update it in Settings/,
+        'the copy names the route out');
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control, the way out');
+      assert.equal((await controls.first().innerText()).trim(), 'Open Settings');
+
+      // The reported symptom: the surface sat at x=0 with padding: 0px. The
+      // block now sits inside the mount's own padding.
+      const geometry = await page.evaluate(() => {
+        const root = document.querySelector('.dw.dw-error');
+        const block = root.firstElementChild;
+        return {
+          padding: getComputedStyle(root).padding,
+          rootLeft: root.getBoundingClientRect().left,
+          blockLeft: block.getBoundingClientRect().left,
+        };
+      });
+      assert.notEqual(geometry.padding, '0px', 'the mount is no longer unpadded');
+      assert.ok(geometry.blockLeft > geometry.rootLeft,
+        `the failure block is inset from the mount's left edge (${geometry.blockLeft} > ${geometry.rootLeft})`);
+
+      // The control is the app's own Settings route, not a link the surface invented.
+      await controls.first().click();
+      await settle(page, 300);
+      assert.equal(await page.evaluate(() => location.pathname), '/settings',
+        'Open Settings moves the app to Settings through its own routing');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
+    } finally { await page.close(); }
+  });
+
+/* #361: the same frame, and the same way out, for a failure that is NOT a
+   rejected token — the claim this change makes is that EVERY failed load gets
+   one, not only the 401. The server's own sentence survives as the detail line
+   under app copy rather than being the whole screen. Mounted directly so the
+   test owns the `retry` callback and can prove the surface calls it rather than
+   reloading itself; the error is a real ApiTransportError raised by the app's
+   own transport against a stubbed 500, not a hand-built object. */
+test('a non-401 failure keeps the server message as detail and offers Retry through the app callback', async () => {
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname === '/') {
+          return route.fulfill({
+            body: '<!doctype html><html><head></head>'
+              + '<body><div id="wrap"><div class="mount"></div></div>'
+              + '<script type="module">'
+              + `import {createDiagnoseWorkstation} from '/assets/diagnose-workstation.js';`
+              + `import {makeDeps} from '/assets/data.js';`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
+              // The real transport, against the stubbed 500 below: this is the
+              // ApiTransportError loadAudit's catch would hand setError.
+              + 'try { await makeDeps().fetchAnalysis(); }'
+              + 'catch (e) { window.__caught = { status: e.status, message: e.message }; window.__view.setError(e); }'
+              + 'window.__ready = true;</script></body></html>',
+            contentType: 'text/html',
+          });
+        }
+        if (url.pathname.startsWith('/assets/')) {
+          const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
+          try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
+          catch { return route.fulfill({ status: 404, body: 'missing' }); }
+        }
+        if (url.pathname.startsWith('/api/')) {
+          return route.fulfill({ status: 500, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'synthetic server failure for the #361 non-401 arm' }) });
+        }
+        return route.fulfill({ status: 404, body: 'missing' });
+      });
+      await page.goto('http://diagnose.local/');
+      await page.waitForFunction(() => window.__ready === true);
+      await settle(page, 300);
+
+      assert.deepEqual(await page.evaluate(() => window.__caught),
+        { status: 500, message: 'synthetic server failure for the #361 non-401 arm' },
+        'the surface received the transport error itself, status and all');
+
+      const wrap = page.locator('#wrap');
+      assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error',
+        'the mount keeps the class every existing selector matches');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence",
+        'app copy is the heading, for a failure that is not a token refusal');
+      assert.match(await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? ''),
+        /synthetic server failure for the #361 non-401 arm/,
+        "the server's own message stays visible, as detail");
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control — no failure is a dead end');
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
+      await controls.first().click();
+      assert.equal(await page.evaluate(() => window.__retried), 1,
+        'Retry re-runs the app\'s own load through callbacks.retry; the surface reloads nothing itself');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
+    } finally { await page.close(); }
+  });
+
 test('frontend contains no client-side verdict threshold or direction comparison', async () => {
   const [workspaces, chart, workstation, data] = await Promise.all([
     readFile(join(ROOT, 'frontend/diagnose-workspaces.js'), 'utf8'),
@@ -2569,7 +3038,9 @@ test('frontend contains no client-side verdict threshold or direction comparison
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
   assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
-  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
+  // #372: the merged-run member list travels on the payload, so the wiring
+  // this guard pins now hands it to the Plan draft's own predicate.
+  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value, item\.members\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);
   assert.match(index, /stage: diagnoseStage, isStaged: diagnoseIsStaged/);
   assert.match(index, /v-show="hasToken && diagnoseReady"/);

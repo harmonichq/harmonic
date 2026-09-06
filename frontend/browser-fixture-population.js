@@ -5,6 +5,8 @@
  * the requested window. Keep that join in one place: both browser harnesses must
  * serve the same row/header coordinate pair the real preparation endpoint does.
  */
+import { findingHeadline } from '../mockups/findings-projection.mirror.mjs';
+
 export function populateFindingCasePreparation(preparation, projection) {
   const readyRows = new Map(preparation.rendered_rows
     .filter((row) => row.case_header?.inspectability === 'ready')
@@ -25,15 +27,26 @@ export function populateFindingCasePreparation(preparation, projection) {
       lever: ready.case_header.event_chart.lever,
       window: structuredClone(preparation.coordinates.window),
     };
-    return [{ ...row,
-      appearances: ready.appearances,
+    /* `finding_case_file.wrap` leads the rendered row with the case file's own
+       family at the case file's counts, keeps every other family the projection
+       published at the projection's counts, and composes the row's headline
+       from that lead. The capture holds the case-file population; the other
+       families' counts are window-dependent, so they come from the row the
+       mirror just projected for the requested window. */
+    const anchored = ready.case_header.family;
+    const wrapped = { ...row,
+      appearances: [
+        ...ready.appearances.filter((appearance) => appearance.family === anchored),
+        ...row.appearances.filter((appearance) => appearance.family !== anchored),
+      ],
       episodes: ready.episodes,
       evidence: ready.evidence,
       verdict_counts: ready.verdict_counts,
       verdict_counts_by_family: ready.verdict_counts_by_family,
       event_chart: coordinate,
       case_header: { ...ready.case_header, event_chart: coordinate },
-    }];
+    };
+    return [{ ...wrapped, headline: findingHeadline(wrapped) }];
   });
   preparation.behavioral_case_headers = Object.fromEntries(
     preparation.rendered_rows

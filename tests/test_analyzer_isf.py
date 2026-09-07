@@ -389,6 +389,8 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertEqual(seg.evidence["direction"], "weaken")
         self.assertIsNone(seg.recommended)
         self.assertIs(seg.asserts_move, False)
+        self.assertIsNone(seg.guidance["action"])
+        self.assertEqual(seg.guidance["seriousness"], "recurring_low")
         self.assertIn("fasting data agrees with the set factor", seg.annotation.lower())
         self.assertIn("recurring correction-linked lows call for weaker corrections",
                       seg.annotation.lower())
@@ -451,6 +453,8 @@ class LowsOwnDirectionTest(unittest.TestCase):
                           window_days=30, correction_rescue_days=4)[0]
         self.assertEqual(seg.evidence["direction"], "weaken")
         self.assertIsNone(seg.recommended)                       # direction-only (#468)
+        self.assertIsNone(seg.guidance["action"])
+        self.assertEqual(seg.guidance["seriousness"], "recurring_low")
         self.assertGreater(seg.evidence["impact_inputs"]["priced_target"], 36.0)
 
     def test_four_low_days_fire_the_bar_three_do_not(self):
@@ -464,6 +468,8 @@ class LowsOwnDirectionTest(unittest.TestCase):
                             harm_lows=self._isf_lows([1, 5, 9]), window_days=30)[0]
         self.assertEqual(four.evidence["direction"], "weaken")
         self.assertNotEqual(three.evidence["direction"], "weaken")
+        self.assertEqual(four.guidance["seriousness"], "recurring_low")
+        self.assertIsNone(three.guidance["seriousness"])
 
     def test_well_tuned_confirms_with_no_direction_and_zero_priority(self):
         # Band covers programmed, ≤3 correction low-days, no rescue recurrence:
@@ -489,6 +495,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
                           harm_lows=self._isf_lows([3]), window_days=30)[0]
         self.assertIsNone(seg.recommended)
         self.assertIsNone(seg.evidence["direction"])
+        self.assertIsNone(seg.guidance["action"])
         self.assertIsNone(seg.guidance["seriousness"])
 
     def test_sustained_strengthen_stages_its_existing_numeric_move(self):

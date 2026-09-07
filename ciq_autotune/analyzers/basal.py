@@ -594,7 +594,8 @@ def analyze_basal(
                 if direction is not None and recommended is not None else None
             ),
             "seriousness": (
-                "recurring_low" if status is Status.HARM_LOWER else None
+                "recurring_low"
+                if harm_verdict is not None and harm_verdict["nudged"] else None
             ),
         }
         out.append(SlotEstimate(

@@ -30,6 +30,7 @@ from ciq_autotune.analyzers.tuning_priority import (
     price_ic_blocks,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.model import ModelConfig
 from ciq_autotune.result import IcBlock, SegmentEstimate, SlotEstimate
 from ciq_autotune.safety import Status, cap, SafetyConfig
@@ -394,6 +395,25 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertIsNotNone(s.estimate.value)
         self.assertEqual(s.status, Status.INSUFFICIENT)
         self.assertFalse(s.asserts_move)
+
+    def test_recurring_harm_without_a_current_baseline_keeps_owner_seriousness(self):
+        basal, cgm = combine(*(
+            night(d, rate=0.8, programmed=None) for d in range(1, 13)
+        ))
+        lows = [
+            PrintedLow(datetime(2022, 6, d, 3, 0), 55.0, 0.0, HarmArm.BASAL)
+            for d in (20, 21)
+        ]
+
+        s = slot_at(analyze_basal(
+            basal, cgm, [], [], harm_config=HarmConfig(), harm_lows=lows,
+        ), "03:00")
+
+        self.assertEqual(s.status, Status.NO_BASELINE)
+        self.assertFalse(s.asserts_move)
+        self.assertTrue(s.evidence["harm"]["nudged"])
+        self.assertIsNone(s.guidance["action"])
+        self.assertEqual(s.guidance["seriousness"], "recurring_low")
 
 
 SLOT_0300 = 6  # 03:00 at 30-min slots (180 min // 30)

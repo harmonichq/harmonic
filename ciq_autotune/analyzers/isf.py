@@ -506,6 +506,12 @@ def _day_rate_recurs(days: int, covered: int, cfg: IsfConfig) -> bool:
     return wilson(days, covered)[1] > cfg.low_day_rate_floor
 
 
+def _recurring_low(ch: IsfChannels, cfg: IsfConfig) -> bool:
+    """The ISF owner's existing correction-low/rescue recurrence judgment."""
+    return (_day_rate_recurs(ch.corr_low_days, ch.covered_days, cfg)
+            or _day_rate_recurs(ch.rescue_days, ch.covered_days, cfg))
+
+
 def _strengthen_signal(programmed: Optional[float], est: Estimate,
                        ch: IsfChannels, cfg: IsfConfig) -> bool:
     """Whether this one decision window independently supports stronger ISF.
@@ -562,8 +568,7 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     # correction-caused lows weaken even when the fasting measurement is thin — the
     # target must come from a supporting night median; a manufactured fallback would
     # turn harm evidence into an invented dose recommendation.
-    weaken = (_day_rate_recurs(ch.corr_low_days, ch.covered_days, cfg)
-              or _day_rate_recurs(ch.rescue_days, ch.covered_days, cfg))
+    weaken = _recurring_low(ch, cfg)
     if not weaken and measured is None and median is None:
         return (None, "not enough fasting data yet", None, None)
     if weaken:
@@ -855,6 +860,6 @@ def analyze_isf(
                 }
                 if asserts_move and rec is not None else None
             ),
-            "seriousness": None,
+            "seriousness": "recurring_low" if _recurring_low(channels, cfg) else None,
         },
     )]

@@ -1040,7 +1040,10 @@ Chunk 1 publishes the following additive source contract. Analyzer member payloa
 `null` or `{kind: "setting_instruction", parameter, start_min, end_min, direction,
 units, recommended}`; I:C also carries `member_start_mins`. `action` exists only
 when that owner's existing `asserts_move` verdict is true. `seriousness` is either
-`"recurring_low"` from the owner's existing recurrent nudge verdict or `null`; a
+`"recurring_low"` or `null`, independent of whether an action is available. Basal
+and I:C expose their existing `harm.nudged` judgment; ISF exposes the existing
+`_day_rate_recurs` judgment over its correction-low and correction-rescue channels,
+the same parameter-specific authority that produces direction-only weakening. A
 single-low gate is not categorical seriousness. Instruction values use existing
 accepted-pick Plan precision (basal 0.001 U/h, ISF whole mg/dL/U, I:C 0.1 g/U) with
 positive-half rounding. Scenario Patterns carry `guidance.action_id` (the closed

@@ -635,3 +635,17 @@ the original false pass for a source end extended by 30 minutes; the final
 `basal-span-mutant` pair records the corrected assertion failure, and `parity`
 records the production-backed pass. Each stdout/stderr file is unedited; exit
 outcomes are recorded in the adjacent `exit-statuses.txt` manifest.
+
+### Coordinator integration status
+
+Tasks 3.1.1 and 3.1.2 are implemented and independently reviewed. The
+three serial chunks are integrated on the ticket branch. Task 3.1.3 and
+aggregate 3.1 remain unchecked because the required Docker runtime-image
+proof is unavailable locally. The execution lock permits a draft PR with this
+limitation; the parent remains active. Chunk 3 Standards and Spec reviews
+found no code defects and retained only that outstanding platform evidence.
+
+Coordinator verification of the integrated branch retains complete command
+stdout, stderr, arguments and exit statuses under
+`/private/tmp/harmonic-384-merged-verification/`. Its results will be reported
+in the implementation PR after the run completes.

@@ -9,6 +9,10 @@ verbatim command output and executed producer checks for the current facts.
 
 ## One next step
 
+ADR 383 and ADR 384 in [design.md](design.md) now govern the admitted backend
+guidance and preference increment. The table below remains the broader journey
+proposal; pending-Plan/draft precedence and context/endings are not part of #384.
+
 Overview and Explore read one backend-owned selection. They do not independently
 sort findings, interpret scenario rank, or turn a chart's support stamp into
 permission to recommend a treatment.

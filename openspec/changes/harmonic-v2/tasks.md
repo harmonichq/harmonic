@@ -37,6 +37,9 @@ chart or component. Any split beyond three children needs the epic's written
 dependency or independently shippable-capability justification before filing.
 
 - [ ] 3.1 Build the admitted backend guidance and preference capability through existing eligibility and evidence authorities in [#384](https://github.com/harmonichq/harmonic/issues/384), against ADR 383 and the guidance capability delta.
+  - [ ] 3.1.1 Expose the source-owned action, seriousness and structured evidence contract specified by ADR 384; verify it through public producers on manufactured cases.
+  - [ ] 3.1.2 Implement ADR 383 selection and comparison through the ADR 384 public guidance read and bounded preference Store/API writes; verify coherence, failures, authentication and retained action-time checks.
+  - [ ] 3.1.3 Run the complete repository verification, the Plan contract parity driver and the focused guidance suites; regenerate affected owned artifacts, record evidence and retain the active parent change for the implementation PR.
 - [ ] 3.2 Extend the Vite/SFC foundation with the complete setting preview journey, including manual-entry/reconciliation, actual Trial follow-up, original context and saved ending.
 - [ ] 3.3 Complete the habit preview journey through supported Focus selection, separate adherence/outcomes, manual ending and Trial preemption, and retained context/history.
 - [ ] 3.4 Verify both loops and limiting states against the built Python-served app: set aside/return, held/thin/quiet, ordinary failures, sequential changes, direct Day/return, utilities and legacy unknowns. Attach the required UI Craft fidelity/behavior evidence.

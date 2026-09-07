@@ -925,3 +925,154 @@ This is the second child. Keep the remaining decisions named until a recorded
 ruling or a precise spike owns them. Do not hand off another child before this
 implementation PR is human-merged. The complete setting and habit journeys
 remain the first usable release destination.
+
+
+## ADR 384 — Backend guidance implementation boundary
+
+### Authority and delivery
+
+This implements task 3.1 only. ADR 383 owns selection, subject identity and
+comparison policy; the risk contract above remains unchanged. The public
+interface added here is a backend read and preference writes. This increment
+has no rendered surface and does not complete the first usable v2 release.
+The remaining decisions in tasks 2.2–2.4 are not selected by this ticket.
+
+### Public interface
+
+Extend the existing findings preparation boundary with `FindingsProjection.guidance`
+for the complete, unfiltered source day. It takes authoritative active-watch
+context and stored preferences as explicit inputs and returns one versioned
+JSON object. Keep the current `project` queue contract compatible. Internal
+policy helpers may live in `ciq_autotune/guidance.py`; that module owns candidate
+identity, instruction comparison and selection together, not a second engine.
+The API is the I/O owner; the projection neither opens a Store nor calls HTTP.
+
+Add authenticated `GET /api/guidance` for the existing fixed Diagnose source
+window. Do not add display-clock or arbitrary analysis-window arguments to this
+first read. Return the source window and generation, selected subject (nullable),
+disposition, separate admission/order/return explanations, current active watch,
+candidates/alternatives with preference state, source-owned evidence references,
+and unavailable context. Candidates retain member verdicts, units, source windows,
+populations, denominators and chart/episode identities. A stored preference whose
+subject is currently absent remains visible for Restore. It has no fabricated
+current evidence or action. The response must permit later Overview and Explore
+consumers to render it without independently deciding eligibility or rank.
+
+Evidence is a separate structured field from recommendation text. Extend the
+scenario owners with factual/inferred fields and a closed semantic action ID;
+expose `Confidence.severity` before numeric serialization rounds it. Keep the
+existing scenario text and v1 payload meaning compatible. Only owner-authored
+facts/templates from closed attribution/narration operations enter guidance
+citations; raw Step text, annotations or recommendations are not a fallback.
+A source lacking structured copy remains explicitly unavailable for advice
+presentation. Investigations carry no treatment instruction anywhere in their
+returned presentation, including nested citations and alternatives described as
+investigations. Event references may still open the existing evidence views.
+No prose parser, new classifier, new threshold or re-scoring is introduced.
+
+Setting instructions use staged member verdicts and the existing accepted-pick
+Plan semantics, including basal slot ends, complete I:C block membership and ISF
+fan-out. The legacy analyzer consolidated profile is not the accepted-pick Plan.
+Expose owner-produced action/seriousness state without deriving staging from
+numbers. Guidance comparison canonicalizes those instructions under ADR 383;
+it does not implement an alternative editable Plan or reconciliation engine.
+Use the existing Plan precision and rounding behavior, including positive half
+steps, and verify equivalence against `frontend/plan.js` through its public
+functions. Python runtime must not require Node. Keep the comparison's normalized
+intervals separate from chart identities and from the member staging records.
+Unknown comparison versions retain the preference and explain that Restore is
+required. Returned subjects keep the original stored baseline until another
+Set aside or Restore, so repeated reads retain the reason.
+
+Add `PUT /api/guidance/preferences/{subject}` with an optional reason and the
+last read's generation, and `DELETE /api/guidance/preferences/{subject}` for
+Restore. The PUT captures current comparison state on the server; clients cannot
+supply an action or seriousness baseline. Reject an unknown subject, an active
+watch identity, or a stale generation without writing. A currently absent subject
+cannot acquire a new baseline; its existing preference remains restorable.
+One preference row per canonical subject stores decision time, optional reason,
+comparison version, and bounded action/seriousness JSON. An upsert replaces its
+baseline; DELETE is idempotent. Use Store transactions and the existing revision
+and cache invalidation conventions. Do not convert audit dismissals or retain
+per-refresh histories. Failed writes return errors and leave the previous
+preference intact. A repeated successful PUT cannot create duplicate records.
+
+### Coherence and the current watch
+
+Compose the analysis/scenario/exposure sources with the existing generation and
+input-revision checks. Preferences and watch state must belong to the same
+successful read; a crossing write yields the existing bounded retry/conflict
+behavior, never a mixed successful response. Preference writes invalidate cached
+guidance, including after process restart. Required new owner fields cannot be
+silently absent in an old retained artifact: update its shape/version handling
+or rebuild it through the existing artifact owner.
+
+The existing `active_watched_change` resolver may persist Focus preemption.
+Call that owner on a writable Store before acquiring a stable read snapshot;
+if it changes the revision, invalidate and acquire fresh inputs. Do not call a
+mutating resolver inside a query-only artifact computation. Reuse its current
+Trial/Focus identity and progress and its existing data-tail clock. Guidance
+must not introduce a finished-Trial policy, promote a review-roster Trial, or
+reinterpret Focus adherence. No current watch is a valid result; failure to
+read its authority is an error, not absence. Missing analysis data remains
+explicitly unavailable and cannot be described as quiet.
+
+Existing Plan apply checks draft presence, the one-variable constraint and any
+claimed complete I:C block provenance; Focus pin checks its existing Lever
+universe, live Trial and unique active Focus. Preserve those checks at write
+time. Guidance is a recommendation read, not an action authorization token.
+This ticket adds no Plan/Focus action endpoint and does not retrofit clinical
+support gates onto v1's manually authored Plan or manually selected Focus.
+The later guided-action journey must recheck guidance support before claiming
+that its submitted action remains a supported recommendation.
+
+### Implementation and evidence ownership
+
+Use three serial chunks. The first exposes source-owned comparison inputs and
+structured evidence, with public producer tests. Its shared contract is the
+candidate source data consumed by `FindingsProjection.guidance`: stable identity,
+staged member instructions, owner seriousness and separated citations. Record its
+concrete field shape in this section before handing off; no new policy decision
+is delegated to that handoff.
+
+The second owns guidance selection/comparison and bounded Store/API persistence,
+including current-watch composition, cache invalidation and public API tests.
+Its shared contract is the public guidance/preference API above. It consumes
+only the first chunk's declared public data, not private helper behavior.
+
+The third runs the complete repository gate and corrects regressions exposed by
+that run, regenerates affected artifacts through their committed generators,
+and records implementation evidence in this parent change. Corrections may touch
+the prior chunks' files serially but cannot expand either contract. It owns no new
+product behavior. The coordinator retains the aggregate review, parent checklist
+and the single implementation PR. All chunks use manufactured inputs only.
+
+### Closed change and documentation inventory
+
+The executable source scope is the existing owners `api.py`, `store.py`,
+`result.py`, `analyze.py`, `findings_projection.py`, `derived_artifacts.py`,
+`analyzers/basal.py`, `analyzers/ic.py`, `analyzers/isf.py`, and
+`analyzers/scenario/{payload,levers,attribute,narrate,engine}.py` beneath
+`ciq_autotune/`, plus `ciq_autotune/guidance.py` if needed. Do not change safety,
+harm, uncertainty, Priority, cohort membership, comparison statistics or the
+watched-change policy. Reuse their existing public judgments.
+
+Tests belong in `tests/test_guidance.py`, `tests/test_guidance_api.py`,
+`tests/test_guidance_preferences.py`, the corresponding existing producer/API/Store
+and QA tests. Cross-language Plan precision/interval evidence belongs in
+`scripts/check_guidance_plan_contract.mjs`, run in the backend job with Python
+available. It must not enter the dependency-free frontend test glob.
+
+Documentation changes are limited to this parent change, `CONTEXT.md` for the new
+guidance/preference domain terms, and `README.md` for the backend API additions.
+Historical ADRs and earlier review receipts remain evidence, not editable policy.
+The parent `contracts.md` One next step proposal must point to ADR 383 and this
+implementation boundary for this capability; its pending-Plan/draft ordering and
+durable-context proposals stay deferred. No UI design record changes are owed.
+
+The fixture inventory is the generator-owned sets and extracts listed in
+`.github/workflows/ci.yml`. Regenerate only those whose owned inputs changed,
+with their existing provenance and drift commands. New manufactured cases belong
+in `scripts/qa_e2e_cases.py` with literal complete expectations and the existing
+QA budget checks. Avoid a new committed fixture when an existing recipe can
+exercise the public interface in a temporary Store.

@@ -14,6 +14,14 @@
         "score": 0.0812,
         "wide": true
       },
+      "guidance": {
+        "action_id": "habit:over_treated_low",
+        "citation_episode_ids": [
+          "ep-000",
+          "ep-001"
+        ],
+        "seriousness": "low"
+      },
       "hero_episode": "ep-000",
       "impact": 0.5499,
       "lever": "over_treated_low",
@@ -89215,6 +89223,20 @@
                 "start": "2024-06-22 13:50:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-06-22 13:55:00",
+                        "anchor_kind": "low",
+                        "event_refs": [],
+                        "lever": "over_treated_low",
+                        "logged_carbs_g": null,
+                        "nadir_glucose_mgdl": 48.0,
+                        "rebound_glucose_mgdl": 260.0,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.over_treated_low",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -89222,6 +89244,14 @@
                     "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -89341,6 +89371,20 @@
                 "start": "2024-06-23 13:50:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-06-23 13:55:00",
+                        "anchor_kind": "low",
+                        "event_refs": [],
+                        "lever": "over_treated_low",
+                        "logged_carbs_g": null,
+                        "nadir_glucose_mgdl": 48.0,
+                        "rebound_glucose_mgdl": 260.0,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.over_treated_low",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -89348,6 +89392,14 @@
                     "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -89467,6 +89519,24 @@
                 "start": "2024-06-27 19:00:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-06-27 22:00:00",
+                        "anchor_kind": "low",
+                        "correction_at": "2024-06-27 20:00:00",
+                        "event_refs": [],
+                        "glucose_at_correction_mgdl": 225.0,
+                        "iob_at_correction_u": 5.6536422063271,
+                        "lever": "correction_on_iob",
+                        "minutes_to_low": 120.0,
+                        "nadir_at": "2024-06-27 22:00:00",
+                        "nadir_glucose_mgdl": 54.25,
+                        "pre_correction_slope_mgdl_min": -0.65,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.correction_on_iob",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -89474,6 +89544,14 @@
                     "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -89819,6 +89897,14 @@
                   "rate": 0.3333,
                   "score": 0.0812,
                   "wide": true
+                },
+                "guidance": {
+                  "action_id": "habit:over_treated_low",
+                  "citation_episode_ids": [
+                    "ep-000",
+                    "ep-001"
+                  ],
+                  "seriousness": "low"
                 },
                 "hero_episode": "ep-000",
                 "impact": 0.5499,
@@ -91565,6 +91651,20 @@
             "start": "2024-06-22 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-06-22 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -91572,6 +91672,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -91691,6 +91799,20 @@
             "start": "2024-06-23 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-06-23 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -91698,6 +91820,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -91817,6 +91947,24 @@
             "start": "2024-06-27 19:00:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-06-27 22:00:00",
+                    "anchor_kind": "low",
+                    "correction_at": "2024-06-27 20:00:00",
+                    "event_refs": [],
+                    "glucose_at_correction_mgdl": 225.0,
+                    "iob_at_correction_u": 5.6536422063271,
+                    "lever": "correction_on_iob",
+                    "minutes_to_low": 120.0,
+                    "nadir_at": "2024-06-27 22:00:00",
+                    "nadir_glucose_mgdl": 54.25,
+                    "pre_correction_slope_mgdl_min": -0.65,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.correction_on_iob",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -91824,6 +91972,14 @@
                 "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -92169,6 +92325,14 @@
               "rate": 0.3333,
               "score": 0.0812,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:over_treated_low",
+              "citation_episode_ids": [
+                "ep-000",
+                "ep-001"
+              ],
+              "seriousness": "low"
             },
             "hero_episode": "ep-000",
             "impact": 0.5499,
@@ -102200,6 +102364,20 @@
             "start": "2024-05-23 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-23 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -102207,6 +102385,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -102326,6 +102512,20 @@
             "start": "2024-05-24 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-24 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -102333,6 +102533,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -102452,6 +102660,24 @@
             "start": "2024-05-28 19:00:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-28 22:00:00",
+                    "anchor_kind": "low",
+                    "correction_at": "2024-05-28 20:00:00",
+                    "event_refs": [],
+                    "glucose_at_correction_mgdl": 225.0,
+                    "iob_at_correction_u": 5.6536422063271,
+                    "lever": "correction_on_iob",
+                    "minutes_to_low": 120.0,
+                    "nadir_at": "2024-05-28 22:00:00",
+                    "nadir_glucose_mgdl": 54.25,
+                    "pre_correction_slope_mgdl_min": -0.65,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.correction_on_iob",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -102459,6 +102685,14 @@
                 "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -102804,6 +103038,14 @@
               "rate": 0.3333,
               "score": 0.0812,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:over_treated_low",
+              "citation_episode_ids": [
+                "ep-000",
+                "ep-001"
+              ],
+              "seriousness": "low"
             },
             "hero_episode": "ep-000",
             "impact": 0.5499,
@@ -106216,6 +106458,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "00:00",
           "recommended": null,
           "safety_status": "no data",
@@ -106242,6 +106488,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "00:30",
           "recommended": null,
@@ -106270,6 +106520,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "01:00",
           "recommended": null,
           "safety_status": "no data",
@@ -106296,6 +106550,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "01:30",
           "recommended": null,
@@ -106324,6 +106582,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "02:00",
           "recommended": null,
           "safety_status": "no data",
@@ -106350,6 +106612,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "02:30",
           "recommended": null,
@@ -109740,6 +110006,18 @@
             ],
             "roster_glucose_mean": 120.0
           },
+          "guidance": {
+            "action": {
+              "direction": "lower",
+              "end_min": 210,
+              "kind": "setting_instruction",
+              "parameter": "basal_rate",
+              "recommended": 0.48,
+              "start_min": 180,
+              "units": "U/h"
+            },
+            "seriousness": null
+          },
           "label": "03:00",
           "recommended": 0.48,
           "safety_status": "lower",
@@ -112905,6 +113183,18 @@
             ],
             "roster_glucose_mean": 120.0
           },
+          "guidance": {
+            "action": {
+              "direction": "lower",
+              "end_min": 240,
+              "kind": "setting_instruction",
+              "parameter": "basal_rate",
+              "recommended": 0.48,
+              "start_min": 210,
+              "units": "U/h"
+            },
+            "seriousness": null
+          },
           "label": "03:30",
           "recommended": 0.48,
           "safety_status": "lower",
@@ -112931,6 +113221,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "04:00",
           "recommended": null,
@@ -112959,6 +113253,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "04:30",
           "recommended": null,
           "safety_status": "no data",
@@ -112985,6 +113283,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "05:00",
           "recommended": null,
@@ -113013,6 +113315,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "05:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113039,6 +113345,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "06:00",
           "recommended": null,
@@ -113067,6 +113377,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "06:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113093,6 +113407,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "07:00",
           "recommended": null,
@@ -113121,6 +113439,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "07:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113147,6 +113469,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "08:00",
           "recommended": null,
@@ -113175,6 +113501,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "08:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113201,6 +113531,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "09:00",
           "recommended": null,
@@ -113229,6 +113563,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "09:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113255,6 +113593,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "10:00",
           "recommended": null,
@@ -113283,6 +113625,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "10:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113309,6 +113655,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "11:00",
           "recommended": null,
@@ -113337,6 +113687,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "11:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113363,6 +113717,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "12:00",
           "recommended": null,
@@ -113391,6 +113749,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "12:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113417,6 +113779,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "13:00",
           "recommended": null,
@@ -113445,6 +113811,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "13:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113471,6 +113841,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "14:00",
           "recommended": null,
@@ -113499,6 +113873,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "14:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113525,6 +113903,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "15:00",
           "recommended": null,
@@ -113553,6 +113935,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "15:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113579,6 +113965,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "16:00",
           "recommended": null,
@@ -113607,6 +113997,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "16:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113633,6 +114027,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "17:00",
           "recommended": null,
@@ -113661,6 +114059,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "17:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113687,6 +114089,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "18:00",
           "recommended": null,
@@ -113715,6 +114121,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "18:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113741,6 +114151,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "19:00",
           "recommended": null,
@@ -113769,6 +114183,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "19:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113795,6 +114213,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "20:00",
           "recommended": null,
@@ -113823,6 +114245,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "20:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113849,6 +114275,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "21:00",
           "recommended": null,
@@ -113877,6 +114307,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "21:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113903,6 +114337,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "22:00",
           "recommended": null,
@@ -113931,6 +114369,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "22:30",
           "recommended": null,
           "safety_status": "no data",
@@ -113958,6 +114400,10 @@
             "points": [],
             "roster_glucose_mean": null
           },
+          "guidance": {
+            "action": null,
+            "seriousness": null
+          },
           "label": "23:00",
           "recommended": null,
           "safety_status": "no data",
@@ -113984,6 +114430,10 @@
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
+          },
+          "guidance": {
+            "action": null,
+            "seriousness": null
           },
           "label": "23:30",
           "recommended": null,
@@ -129852,6 +130302,20 @@
             "start": "2024-05-23 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-23 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -129859,6 +130323,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -129978,6 +130450,20 @@
             "start": "2024-05-24 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-24 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -129985,6 +130471,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -130104,6 +130598,24 @@
             "start": "2024-05-28 19:00:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-28 22:00:00",
+                    "anchor_kind": "low",
+                    "correction_at": "2024-05-28 20:00:00",
+                    "event_refs": [],
+                    "glucose_at_correction_mgdl": 225.0,
+                    "iob_at_correction_u": 5.6536422063271,
+                    "lever": "correction_on_iob",
+                    "minutes_to_low": 120.0,
+                    "nadir_at": "2024-05-28 22:00:00",
+                    "nadir_glucose_mgdl": 54.25,
+                    "pre_correction_slope_mgdl_min": -0.65,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.correction_on_iob",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -130111,6 +130623,14 @@
                 "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -130456,6 +130976,14 @@
               "rate": 0.3333,
               "score": 0.0812,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:over_treated_low",
+              "citation_episode_ids": [
+                "ep-000",
+                "ep-001"
+              ],
+              "seriousness": "low"
             },
             "hero_episode": "ep-000",
             "impact": 0.5499,
@@ -135231,6 +135759,18 @@
               ],
               "roster_glucose_mean": 120.0
             },
+            "guidance": {
+              "action": {
+                "direction": "lower",
+                "end_min": 210,
+                "kind": "setting_instruction",
+                "parameter": "basal_rate",
+                "recommended": 0.48,
+                "start_min": 180,
+                "units": "U/h"
+              },
+              "seriousness": null
+            },
             "label": "03:00",
             "recommended": 0.48,
             "safety_status": "lower",
@@ -138396,6 +138936,18 @@
               ],
               "roster_glucose_mean": 120.0
             },
+            "guidance": {
+              "action": {
+                "direction": "lower",
+                "end_min": 240,
+                "kind": "setting_instruction",
+                "parameter": "basal_rate",
+                "recommended": 0.48,
+                "start_min": 210,
+                "units": "U/h"
+              },
+              "seriousness": null
+            },
             "label": "03:30",
             "recommended": 0.48,
             "safety_status": "lower",
@@ -138415,6 +138967,14 @@
             "rate": 0.3333,
             "score": 0.0812,
             "wide": true
+          },
+          "guidance": {
+            "action_id": "habit:over_treated_low",
+            "citation_episode_ids": [
+              "ep-000",
+              "ep-001"
+            ],
+            "seriousness": "low"
           },
           "hero_episode": "ep-000",
           "impact": 0.5499,
@@ -178933,6 +179493,18 @@
           ],
           "roster_glucose_mean": 120.0
         },
+        "guidance": {
+          "action": {
+            "direction": "lower",
+            "end_min": 210,
+            "kind": "setting_instruction",
+            "parameter": "basal_rate",
+            "recommended": 0.48,
+            "start_min": 180,
+            "units": "U/h"
+          },
+          "seriousness": null
+        },
         "label": "03:00",
         "recommended": 0.48,
         "safety_status": "lower",
@@ -182097,6 +182669,18 @@
             }
           ],
           "roster_glucose_mean": 120.0
+        },
+        "guidance": {
+          "action": {
+            "direction": "lower",
+            "end_min": 240,
+            "kind": "setting_instruction",
+            "parameter": "basal_rate",
+            "recommended": 0.48,
+            "start_min": 210,
+            "units": "U/h"
+          },
+          "seriousness": null
         },
         "label": "03:30",
         "recommended": 0.48,
@@ -198672,6 +199256,20 @@
                 "start": "2024-05-23 13:50:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-05-23 13:55:00",
+                        "anchor_kind": "low",
+                        "event_refs": [],
+                        "lever": "over_treated_low",
+                        "logged_carbs_g": null,
+                        "nadir_glucose_mgdl": 48.0,
+                        "rebound_glucose_mgdl": 260.0,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.over_treated_low",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -198679,6 +199277,14 @@
                     "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -198798,6 +199404,20 @@
                 "start": "2024-05-24 13:50:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-05-24 13:55:00",
+                        "anchor_kind": "low",
+                        "event_refs": [],
+                        "lever": "over_treated_low",
+                        "logged_carbs_g": null,
+                        "nadir_glucose_mgdl": 48.0,
+                        "rebound_glucose_mgdl": 260.0,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.over_treated_low",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -198805,6 +199425,14 @@
                     "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -198924,6 +199552,24 @@
                 "start": "2024-05-28 19:00:00",
                 "steps": [
                   {
+                    "citation": {
+                      "facts": {
+                        "anchor_at": "2024-05-28 22:00:00",
+                        "anchor_kind": "low",
+                        "correction_at": "2024-05-28 20:00:00",
+                        "event_refs": [],
+                        "glucose_at_correction_mgdl": 225.0,
+                        "iob_at_correction_u": 5.6536422063271,
+                        "lever": "correction_on_iob",
+                        "minutes_to_low": 120.0,
+                        "nadir_at": "2024-05-28 22:00:00",
+                        "nadir_glucose_mgdl": 54.25,
+                        "pre_correction_slope_mgdl_min": -0.65,
+                        "window": null
+                      },
+                      "operation": "scenario.attribution.correction_on_iob",
+                      "tier": "inferred"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "inferred",
@@ -198931,6 +199577,14 @@
                     "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
                   },
                   {
+                    "citation": {
+                      "facts": {
+                        "glucose_mgdl": 120.0,
+                        "resolved": true
+                      },
+                      "operation": "scenario.narration.resolution",
+                      "tier": "observed"
+                    },
                     "cited_event_refs": [],
                     "cited_window": null,
                     "evidence_tier": "observed",
@@ -199276,6 +199930,14 @@
                   "rate": 0.3333,
                   "score": 0.0812,
                   "wide": true
+                },
+                "guidance": {
+                  "action_id": "habit:over_treated_low",
+                  "citation_episode_ids": [
+                    "ep-000",
+                    "ep-001"
+                  ],
+                  "seriousness": "low"
                 },
                 "hero_episode": "ep-000",
                 "impact": 0.5499,
@@ -200947,6 +201609,20 @@
             "start": "2024-05-23 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-23 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -200954,6 +201630,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -201073,6 +201757,20 @@
             "start": "2024-05-24 13:50:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-24 13:55:00",
+                    "anchor_kind": "low",
+                    "event_refs": [],
+                    "lever": "over_treated_low",
+                    "logged_carbs_g": null,
+                    "nadir_glucose_mgdl": 48.0,
+                    "rebound_glucose_mgdl": 260.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.over_treated_low",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -201080,6 +201778,14 @@
                 "text": "BG bottomed at 48 mg/dL, then rebounded to 260 mg/dL \u2014 the low was likely over-treated with fast carbs"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -201199,6 +201905,24 @@
             "start": "2024-05-28 19:00:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-28 22:00:00",
+                    "anchor_kind": "low",
+                    "correction_at": "2024-05-28 20:00:00",
+                    "event_refs": [],
+                    "glucose_at_correction_mgdl": 225.0,
+                    "iob_at_correction_u": 5.6536422063271,
+                    "lever": "correction_on_iob",
+                    "minutes_to_low": 120.0,
+                    "nadir_at": "2024-05-28 22:00:00",
+                    "nadir_glucose_mgdl": 54.25,
+                    "pre_correction_slope_mgdl_min": -0.65,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.correction_on_iob",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -201206,6 +201930,14 @@
                 "text": "a correction landed with 5.7 U of insulin still on board and BG not high/rising \u2014 it then drove BG to 54 mg/dL 120 min later. Give one correction ~1\u20132 h to act before adding more"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -201551,6 +202283,14 @@
               "rate": 0.3333,
               "score": 0.0812,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:over_treated_low",
+              "citation_episode_ids": [
+                "ep-000",
+                "ep-001"
+              ],
+              "seriousness": "low"
             },
             "hero_episode": "ep-000",
             "impact": 0.5499,

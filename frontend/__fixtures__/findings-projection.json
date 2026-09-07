@@ -667,6 +667,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -786,6 +787,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -905,6 +907,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -1029,6 +1032,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1153,6 +1157,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1277,6 +1282,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1401,6 +1407,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1525,6 +1532,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1649,6 +1657,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1773,6 +1782,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -1897,6 +1907,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2031,6 +2042,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -2155,6 +2167,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2284,6 +2297,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -2408,6 +2422,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2532,6 +2547,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2656,6 +2672,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2780,6 +2797,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -2904,6 +2922,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3028,6 +3047,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3152,6 +3172,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3276,6 +3297,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3400,6 +3422,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3524,6 +3547,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3648,6 +3672,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -3762,6 +3787,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -3876,6 +3902,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -3990,6 +4017,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -4114,6 +4142,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4238,6 +4267,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4362,6 +4392,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4486,6 +4517,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4610,6 +4642,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4734,6 +4767,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4858,6 +4892,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -4982,6 +5017,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5106,6 +5142,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5230,6 +5267,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5354,6 +5392,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5377,6 +5416,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -5400,6 +5440,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -5423,6 +5464,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -5547,6 +5589,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5671,6 +5714,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5795,6 +5839,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -5919,6 +5964,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -6043,6 +6089,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -6167,6 +6214,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -7031,6 +7079,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -7910,6 +7962,21 @@
         "true_ic": 4.286
        }
       ]
+     },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -8977,6 +9044,10 @@
       "slope": -37.6234,
       "strengthen_signal": false
      },
+     "guidance": {
+      "action": null,
+      "seriousness": "recurring_low"
+     },
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,
@@ -9450,6 +9521,13 @@
       "score": 0.0757,
       "wide": true
      },
+     "guidance": {
+      "action_id": "habit:over_treated_low",
+      "citation_episode_ids": [
+       "2026-08-13-ep0"
+      ],
+      "seriousness": "low"
+     },
      "hero_episode": "2026-08-13-ep0",
      "impact": 0.62,
      "lever": "over_treated_low",
@@ -9474,6 +9552,13 @@
       "rate": 0.15,
       "score": 0.0441,
       "wide": true
+     },
+     "guidance": {
+      "action_id": "habit:carb_undercount",
+      "citation_episode_ids": [
+       "ep2"
+      ],
+      "seriousness": "low"
      },
      "hero_episode": "ep2",
      "impact": 0.44,
@@ -12049,6 +12134,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -12168,6 +12254,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -12287,6 +12374,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -12411,6 +12499,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -12535,6 +12624,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -12659,6 +12749,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -12783,6 +12874,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -12907,6 +12999,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13031,6 +13124,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13155,6 +13249,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13279,6 +13374,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13413,6 +13509,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -13537,6 +13634,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13666,6 +13764,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -13790,6 +13889,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -13914,6 +14014,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14038,6 +14139,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14162,6 +14264,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14286,6 +14389,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14410,6 +14514,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14534,6 +14639,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14658,6 +14764,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14782,6 +14889,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -14906,6 +15014,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15030,6 +15139,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15144,6 +15254,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -15258,6 +15369,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -15372,6 +15484,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -15496,6 +15609,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15620,6 +15734,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15744,6 +15859,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15868,6 +15984,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -15992,6 +16109,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16116,6 +16234,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16240,6 +16359,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16364,6 +16484,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16488,6 +16609,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16612,6 +16734,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16736,6 +16859,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -16759,6 +16883,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -16782,6 +16907,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -16805,6 +16931,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -16929,6 +17056,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -17053,6 +17181,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -17177,6 +17306,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -17301,6 +17431,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -17425,6 +17556,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -17549,6 +17681,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -18413,6 +18546,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -19293,6 +19430,21 @@
        }
       ]
      },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
+     },
      "harm": {},
      "held_reason": null,
      "impact_u_day": 0.393,
@@ -19446,6 +19598,7 @@
        "side_n": 5
       }
      },
+     "guidance": null,
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,
@@ -19919,6 +20072,13 @@
       "score": 0.0757,
       "wide": true
      },
+     "guidance": {
+      "action_id": "habit:over_treated_low",
+      "citation_episode_ids": [
+       "2026-08-13-ep0"
+      ],
+      "seriousness": "low"
+     },
      "hero_episode": "2026-08-13-ep0",
      "impact": 0.62,
      "lever": "over_treated_low",
@@ -19943,6 +20103,13 @@
       "rate": 0.15,
       "score": 0.0441,
       "wide": true
+     },
+     "guidance": {
+      "action_id": "habit:carb_undercount",
+      "citation_episode_ids": [
+       "ep2"
+      ],
+      "seriousness": "low"
      },
      "hero_episode": "ep2",
      "impact": 0.44,
@@ -22535,6 +22702,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -22654,6 +22822,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -22773,6 +22942,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -22897,6 +23067,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23021,6 +23192,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23145,6 +23317,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23269,6 +23442,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23393,6 +23567,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23517,6 +23692,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23641,6 +23817,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23765,6 +23942,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -23899,6 +24077,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -24023,6 +24202,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24152,6 +24332,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -24276,6 +24457,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24400,6 +24582,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24524,6 +24707,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24648,6 +24832,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24772,6 +24957,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -24896,6 +25082,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25020,6 +25207,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25144,6 +25332,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25268,6 +25457,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25392,6 +25582,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25516,6 +25707,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -25630,6 +25822,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -25744,6 +25937,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -25858,6 +26052,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -25982,6 +26177,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26106,6 +26302,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26230,6 +26427,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26354,6 +26552,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26478,6 +26677,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26602,6 +26802,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26726,6 +26927,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26850,6 +27052,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -26974,6 +27177,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27098,6 +27302,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27222,6 +27427,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27245,6 +27451,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -27268,6 +27475,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -27291,6 +27499,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -27415,6 +27624,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27539,6 +27749,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27663,6 +27874,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27787,6 +27999,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -27911,6 +28124,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -28035,6 +28249,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -28899,6 +29114,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -29779,6 +29998,21 @@
        }
       ]
      },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
+     },
      "harm": {},
      "held_reason": null,
      "impact_u_day": 0.393,
@@ -29886,6 +30120,7 @@
        "side_n": 5
       }
      },
+     "guidance": null,
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,
@@ -30064,6 +30299,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -30183,6 +30419,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -30302,6 +30539,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -30426,6 +30664,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -30550,6 +30789,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -30674,6 +30914,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -30798,6 +31039,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -30922,6 +31164,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31046,6 +31289,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31170,6 +31414,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31294,6 +31539,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31428,6 +31674,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -31552,6 +31799,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31681,6 +31929,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -31805,6 +32054,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -31929,6 +32179,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32053,6 +32304,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32177,6 +32429,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32301,6 +32554,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32425,6 +32679,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32549,6 +32804,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32673,6 +32929,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32797,6 +33054,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -32921,6 +33179,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -33045,6 +33304,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -33159,6 +33419,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -33273,6 +33534,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -33387,6 +33649,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -33511,6 +33774,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -33635,6 +33899,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -33759,6 +34024,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -33883,6 +34149,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34007,6 +34274,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34131,6 +34399,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34255,6 +34524,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34379,6 +34649,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34503,6 +34774,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34627,6 +34899,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34751,6 +35024,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -34774,6 +35048,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -34797,6 +35072,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -34820,6 +35096,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -34944,6 +35221,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -35068,6 +35346,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -35192,6 +35471,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -35316,6 +35596,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -35440,6 +35721,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -35564,6 +35846,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -36428,6 +36711,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -37308,6 +37595,21 @@
        }
       ]
      },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
+     },
      "harm": {},
      "held_reason": null,
      "impact_u_day": 0.393,
@@ -37461,6 +37763,7 @@
        "side_n": 5
       }
      },
+     "guidance": null,
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,
@@ -37639,6 +37942,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -37758,6 +38062,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -37877,6 +38182,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -38001,6 +38307,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38125,6 +38432,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38249,6 +38557,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38373,6 +38682,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38497,6 +38807,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38621,6 +38932,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38745,6 +39057,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -38869,6 +39182,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39003,6 +39317,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -39127,6 +39442,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39256,6 +39572,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -39380,6 +39697,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39504,6 +39822,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39628,6 +39947,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39752,6 +40072,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -39876,6 +40197,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40000,6 +40322,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40124,6 +40447,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40248,6 +40572,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40372,6 +40697,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40496,6 +40822,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40620,6 +40947,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -40734,6 +41062,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -40848,6 +41177,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -40962,6 +41292,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -41086,6 +41417,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41210,6 +41542,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41334,6 +41667,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41458,6 +41792,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41582,6 +41917,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41706,6 +42042,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41830,6 +42167,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -41954,6 +42292,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42078,6 +42417,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42202,6 +42542,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42326,6 +42667,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42349,6 +42691,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -42372,6 +42715,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -42395,6 +42739,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -42519,6 +42864,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42643,6 +42989,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42767,6 +43114,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -42891,6 +43239,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -43015,6 +43364,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -43139,6 +43489,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -44003,6 +44354,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -44883,6 +45238,21 @@
        }
       ]
      },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
+     },
      "harm": {},
      "held_reason": null,
      "impact_u_day": 0.393,
@@ -45036,6 +45406,7 @@
        "side_n": 5
       }
      },
+     "guidance": null,
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,
@@ -45214,6 +45585,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -45333,6 +45705,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "00:30",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -45452,6 +45825,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:00",
      "recommended": 1.02,
      "safety_status": "capped (raise)",
@@ -45576,6 +45950,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "01:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -45700,6 +46075,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -45824,6 +46200,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "02:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -45948,6 +46325,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46072,6 +46450,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "03:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46196,6 +46575,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46320,6 +46700,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "04:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46444,6 +46825,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46578,6 +46960,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "05:30",
      "recommended": 0.96,
      "safety_status": "capped (raise)",
@@ -46702,6 +47085,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -46831,6 +47215,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "06:30",
      "recommended": 1.2,
      "safety_status": "insufficient evidence",
@@ -46955,6 +47340,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47079,6 +47465,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "07:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47203,6 +47590,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47327,6 +47715,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "08:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47451,6 +47840,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47575,6 +47965,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "09:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47699,6 +48090,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47823,6 +48215,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "10:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -47947,6 +48340,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -48071,6 +48465,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "11:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -48195,6 +48590,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -48309,6 +48705,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "12:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -48423,6 +48820,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:00",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -48537,6 +48935,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "13:30",
      "recommended": 0.95,
      "safety_status": "insufficient evidence",
@@ -48661,6 +49060,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -48785,6 +49185,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "14:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -48909,6 +49310,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49033,6 +49435,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "15:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49157,6 +49560,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49281,6 +49685,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "16:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49405,6 +49810,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49529,6 +49935,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "17:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49653,6 +50060,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49777,6 +50185,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "18:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49901,6 +50310,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "19:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -49924,6 +50334,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "19:30",
      "recommended": null,
      "safety_status": "no data",
@@ -49947,6 +50358,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:00",
      "recommended": null,
      "safety_status": "no data",
@@ -49970,6 +50382,7 @@
      "evidence": {
       "points": []
      },
+     "guidance": null,
      "label": "20:30",
      "recommended": null,
      "safety_status": "no data",
@@ -50094,6 +50507,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -50218,6 +50632,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "21:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -50342,6 +50757,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -50466,6 +50882,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "22:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -50590,6 +51007,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:00",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -50714,6 +51132,7 @@
        }
       ]
      },
+     "guidance": null,
      "label": "23:30",
      "recommended": 1.0,
      "safety_status": "no change",
@@ -51578,6 +51997,10 @@
         "true_ic": 5.0
        }
       ]
+     },
+     "guidance": {
+      "action": null,
+      "seriousness": null
      },
      "harm": {},
      "held_reason": null,
@@ -52458,6 +52881,21 @@
        }
       ]
      },
+     "guidance": {
+      "action": {
+       "direction": "lower",
+       "end_min": 1440,
+       "kind": "setting_instruction",
+       "member_start_mins": [
+        720
+       ],
+       "parameter": "carb_ratio",
+       "recommended": 5.0,
+       "start_min": 720,
+       "units": "g/U"
+      },
+      "seriousness": null
+     },
      "harm": {},
      "held_reason": null,
      "impact_u_day": 0.393,
@@ -52611,6 +53049,7 @@
        "side_n": 5
       }
      },
+     "guidance": null,
      "label": "Fasting",
      "parameter": "isf",
      "recommended": null,

@@ -18,7 +18,7 @@ from typing import Any, Callable
 
 from .store import Store
 
-DERIVED_ARTIFACT_STORE_SCHEMA_VERSION = 3
+DERIVED_ARTIFACT_STORE_SCHEMA_VERSION = 4
 _MAX_SNAPSHOT_ATTEMPTS = 3
 _FINGERPRINT: str | None = None
 _SIDECAR_REBUILDS: dict[int, weakref.ReferenceType] = {}

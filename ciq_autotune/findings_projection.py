@@ -233,6 +233,18 @@ class FindingsProjection:
             message = messages[lifecycle]
         return {"id": selected_id, "disposition": disposition, "message": message}
 
+    def guidance(self, *, active_watch=None, preferences=(),
+                 analysis_generation: str = "standalone:0") -> dict:
+        """Build unfiltered guidance from this projection's coherent owner inputs."""
+        from .guidance import build_guidance
+        return build_guidance(
+            analysis=self._analysis, exposures=self._exposures, scenarios=self._scenarios,
+            preferences=preferences, active_watch=active_watch,
+            generation=analysis_generation,
+            window={"days": self._analysis.get("window_days"),
+                    **(self._exposures.get("window") or {})},
+        )
+
     def _history_rows(self, query: WindowQuery) -> List[dict]:
         """Active analyzer-published past-setting measurements in this clock scope."""
         rows = []

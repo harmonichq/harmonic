@@ -8,6 +8,21 @@
  "start": "2024-03-15 12:00:00",
  "steps": [
   {
+   "citation": {
+    "facts": {
+     "anchor_at": "2024-03-15 12:00:00",
+     "anchor_kind": "meal",
+     "baseline_glucose_mgdl": 100.0,
+     "event_refs": [],
+     "implied_carbs_g": 36.7,
+     "lever": "carb_undercount",
+     "logged_carbs_g": 20.0,
+     "peak_glucose_mgdl": 260.0,
+     "window": null
+    },
+    "operation": "scenario.attribution.carb_undercount",
+    "tier": "inferred"
+   },
    "cited_event_refs": [],
    "cited_window": null,
    "evidence_tier": "inferred",
@@ -15,6 +30,26 @@
    "text": "ran away to 260 mg/dL despite the bolus — the excursion implies ~37 g vs 20 g logged (1.8x), a likely carb undercount"
   },
   {
+   "citation": {
+    "facts": {
+     "event_refs": [
+      "2024-03-15 13:20:00",
+      "2024-03-15 13:25:00",
+      "2024-03-15 13:30:00",
+      "2024-03-15 13:35:00",
+      "2024-03-15 13:40:00",
+      "2024-03-15 13:45:00",
+      "2024-03-15 13:50:00",
+      "2024-03-15 13:55:00",
+      "2024-03-15 14:00:00",
+      "2024-03-15 14:05:00",
+      "2024-03-15 14:10:00",
+      "2024-03-15 14:15:00"
+     ]
+    },
+    "operation": "scenario.narration.suspend",
+    "tier": "observed"
+   },
    "cited_event_refs": [
     "2024-03-15 13:20:00",
     "2024-03-15 13:25:00",
@@ -35,6 +70,16 @@
    "text": "Control-IQ suspended basal for 55 min"
   },
   {
+   "citation": {
+    "facts": {
+     "event_refs": [
+      "2024-03-15 14:15:00"
+     ],
+     "glucose_mgdl": 62.0
+    },
+    "operation": "scenario.narration.nadir",
+    "tier": "inferred"
+   },
    "cited_event_refs": [
     "2024-03-15 14:15:00"
    ],

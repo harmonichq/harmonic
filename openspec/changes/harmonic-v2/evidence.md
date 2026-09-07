@@ -558,3 +558,45 @@ identifier and public allowlist scripts, each run with
 are preserved separately in
 `/private/tmp/harmonic-383-start-20260907/worker/completion/`. The worker leaves
 the completion diff uncommitted for the coordinator's mechanical commit.
+
+## ADR 384 integration verification
+
+The final serial chunk ran the complete repository verification against the
+integrated guidance implementation. The first run demonstrated four stale,
+generator-owned synthetic artifacts; they were regenerated only through their
+committed producers: the QA E2E database, I:C blocks, chart-builder analysis and
+episode inputs, and the findings projection. Each corresponding `--check` then
+passed. No clinical classifier, support floor, score, Priority, or policy was
+changed.
+
+The new `scripts/check_guidance_plan_contract.mjs` executes Python's public
+accepted-pick rounding alongside the public Plan functions. Its verbatim stdout
+was:
+
+```text
+guidance Plan contract: PASS
+```
+
+It covers basal-rate, ISF and carb-ratio positive-half rounding, a one-slot
+basal instruction that restores at the next 30-minute boundary, and a complete
+I:C block that retains every member and its Plan provenance. The backend job
+runs the same driver after pytest.
+
+The completed commands exited 0: `npm ci`; `npm run build`; `uv run python -m
+pytest` (2,260 collected); `node --test 'frontend/**/*.test.js'` (623 passed);
+strict OpenSpec validation (74 passed); all three repository policy guards; the
+new Plan parity driver; all backend and frontend generator drift checks; the
+materialized public-tree build, link check and contamination scan; and all ten
+browser gates. The browser gates ran only through the permitted no-fetch server
+against a temporary copy of `mockups/qa-e2e.synthetic/harmonic.sqlite`; no live
+fetch or real database was opened.
+
+The materialized public-tree scan reported 412 files scanned, 22 stamped, seven
+pinned, and zero findings. Browser receipts include the Day, Diagnose
+workstation/canvas, cockpit, runner lifecycle, first-plan reconciliation,
+workstation behavior, event-comparison behavior/support, and Verify replay legs.
+
+Limitation: the Docker runtime-image build and smoke check could not run locally:
+`docker` is not installed on this host (`zsh:1: command not found: docker`). No
+installation or substitute image build was attempted. CI remains the required
+package-runtime proof for that leg.

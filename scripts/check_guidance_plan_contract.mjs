@@ -78,12 +78,10 @@ function activeProfile(parameter) {
   return { segments: source.profiles[parameter] };
 }
 
-function basalItems(action) {
-  const items = [];
-  for (let start = action.start_min; start < action.end_min; start += 30) {
-    items.push({ type: 'basal', start_min: start, value: action.recommended });
-  }
-  return items;
+function basalItem(action) {
+  return {
+    type: 'basal', start_min: action.start_min, value: action.recommended,
+  };
 }
 
 function icItems(action) {
@@ -104,17 +102,27 @@ function isfItems(action, profile) {
 }
 
 const basalAction = source.actions.basal;
+const acceptedBasal = basalItem(basalAction);
 const basalRows = buildDeliverable({
-  activeProfile: activeProfile('basal'), acceptedItems: basalItems(basalAction),
+  activeProfile: activeProfile('basal'), acceptedItems: [acceptedBasal],
 });
+const deliveredBasal = effectivePlanItems(basalRows)
+  .filter(({ type }) => type === 'basal')
+  .map(({ type, start_min, value }) => ({ type, start_min, value }));
 assert.deepEqual(
-  effectivePlanItems(basalRows).map(({ type, start_min, value }) => ({ type, start_min, value })),
-  basalItems(basalAction),
-  'the source-owned basal action must occupy every one of its Plan slots',
+  deliveredBasal,
+  [{ type: acceptedBasal.type, start_min: acceptedBasal.start_min, value: acceptedBasal.value }],
+  'the source-owned basal action must deliver its one accepted slot',
 );
+const basalEndRow = basalRows.find(({ start_min }) => start_min > deliveredBasal[0].start_min);
 assert.equal(
-  basalRows.find(({ start_min }) => start_min === basalAction.end_min).basal_rate.value,
-  activeProfile('basal').segments[0].basal_rate,
+  basalEndRow.start_min,
+  basalAction.end_min,
+  'the source-owned basal end must match the Plan reversion boundary',
+);
+assert.deepEqual(
+  { value: basalEndRow.basal_rate.value, provenance: basalEndRow.basal_rate.provenance },
+  { value: basalEndRow.basal_rate.current, provenance: 'current' },
   'the source-owned basal end must restore the active profile at its boundary',
 );
 

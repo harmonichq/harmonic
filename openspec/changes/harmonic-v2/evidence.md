@@ -581,12 +581,15 @@ guidance Plan contract: PASS
 ```
 
 It obtains basal, I:C and ISF `guidance.action` values from their production
-owners over manufactured QA cases, then checks the actions' actual slot end,
-I:C member starts/provenance, and whole-day ISF fan-out against public Plan
-functions and a manufactured multi-boundary active profile. Positive-half
-rounding remains supplemental coverage. A deliberate missing ISF fan-out member
-failed with the expected assertion before the unmodified guard passed. The
-backend job runs the same driver after pytest.
+owners over manufactured QA cases. For basal it submits the one actual accepted
+slot to the public Plan functions, then compares that delivered member and the
+Plan-produced reversion boundary with the source action's span; it does not
+expand the source span into accepted picks. It also checks I:C member
+starts/provenance and whole-day ISF fan-out against public Plan functions and a
+manufactured multi-boundary active profile. Positive-half rounding remains
+supplemental coverage. Deliberate missing-ISF-member and extended-basal-end
+mutations failed with their expected assertions before the unmodified guard
+passed. The backend job runs the same driver after pytest.
 
 The completed commands exited 0: `npm ci`; `npm run build`; `uv run python -m
 pytest` (`2259 passed, 1 skipped, 185 warnings in 72.92s` on the final
@@ -625,3 +628,10 @@ passes, every drift check, the materialized-tree manifest/link/scan checks, all
 ten browser legs, the no-fetch server and health receipts, and the Plan parity
 pass and deliberate failure. `docker.stderr` contains the complete unmet
 prerequisite output; `docker.stdout` is empty.
+
+The bounded basal-span correction receipts are under
+`/private/tmp/harmonic-384-c3-basal-span-correction/`. `pre-fix-mutant` records
+the original false pass for a source end extended by 30 minutes; the final
+`basal-span-mutant` pair records the corrected assertion failure, and `parity`
+records the production-backed pass. Each stdout/stderr file is unedited; exit
+outcomes are recorded in the adjacent `exit-statuses.txt` manifest.

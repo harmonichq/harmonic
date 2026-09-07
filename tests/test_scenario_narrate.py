@@ -268,6 +268,13 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(all(len(e.steps) >= 2 for e in eps))
         hero = max(eps, key=lambda e: e.severity)
         self.assertTrue(any("bottomed at" in s.text for s in hero.steps))
+        for episode in eps:
+            for step in episode.steps:
+                citation = step.to_dict()["citation"]
+                self.assertIsNotNone(citation)
+                self.assertIn(citation["tier"], {"observed", "inferred", "not_in_data"})
+                self.assertNotIn("text", citation["facts"])
+                self.assertNotIn("recommendation", citation["facts"])
 
 
 class CitedRefsTest(unittest.TestCase):

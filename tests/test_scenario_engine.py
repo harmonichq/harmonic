@@ -1479,6 +1479,7 @@ class OverTreatedLowPromptAnswerTest(unittest.TestCase):
         self.assertEqual(d["citation"]["operation"], "scenario.attribution.over_treated_low")
         self.assertEqual(d["citation"]["tier"], "observed")
         self.assertEqual(d["citation"]["facts"]["lever"], "over_treated_low")
+        self.assertEqual(d["citation"]["facts"]["logged_carbs_g"], 30.0)
 
 
 class _FakeLowPromptStore:
@@ -2152,6 +2153,50 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
                 else:
                     self.assertEqual(payload["guidance"]["action_id"],
                                      f"habit:{lever.value}")
+
+    def test_every_behavioral_lever_exposes_owner_facts_separate_from_advice(self):
+        required_facts = {
+            Lever.CARB_UNDERCOUNT: {
+                "logged_carbs_g", "implied_carbs_g", "baseline_glucose_mgdl",
+                "peak_glucose_mgdl",
+            },
+            Lever.LATE_BOLUS: {"pre_bolus_slope_mgdl_min", "pre_bolus_glucose_mgdl"},
+            Lever.MEAL_OVER_DELIVERY: {
+                "suspend_start", "suspend_end", "suspend_duration_min",
+                "nadir_glucose_mgdl", "nadir_at",
+            },
+            Lever.OVER_TREATED_LOW: {
+                "nadir_glucose_mgdl", "rebound_glucose_mgdl", "logged_carbs_g",
+            },
+            Lever.CORRECTION_ON_IOB: {
+                "correction_at", "iob_at_correction_u", "pre_correction_slope_mgdl_min",
+                "glucose_at_correction_mgdl", "nadir_glucose_mgdl", "nadir_at",
+                "minutes_to_low",
+            },
+            Lever.CORRECTION_STACKING: {
+                "stack_at", "gap_min", "iob_at_stack_u", "pre_stack_slope_mgdl_min",
+                "glucose_at_stack_mgdl", "nadir_glucose_mgdl", "nadir_at",
+            },
+            Lever.MISSED_MEAL: {"rise_slope_mgdl_min", "digestion_window"},
+            Lever.MEAL_BOLUS_SHORT: {
+                "rise_slope_mgdl_min", "meal_at", "correction_at", "digestion_window",
+            },
+        }
+
+        for lever in Lever:
+            with self.subTest(lever=lever.value):
+                report = self._report(lever)
+                episode = next(item for item in report.episodes.values()
+                               if item.lever is lever)
+                citation = episode.steps[0].to_dict()["citation"]
+                self.assertEqual(citation["operation"],
+                                 f"scenario.attribution.{lever.value}")
+                self.assertTrue(required_facts[lever] <= citation["facts"].keys())
+                self.assertNotIn("text", citation["facts"])
+                self.assertNotIn("recommendation", citation["facts"])
+                if lever is Lever.CORRECTION_STACKING:
+                    self.assertEqual(citation["facts"]["anchor_at"],
+                                     citation["facts"]["stack_at"])
 
     def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
         """Behavioral patterns cannot stage; pin invariance at the basal seam.

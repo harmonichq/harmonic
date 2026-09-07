@@ -2,35 +2,46 @@
 
 ### Requirement: One backend-owned rule selects the leading priority
 
-The backend SHALL decide the one leading priority under a single recorded rule
-over the existing Lever verdicts and Priority, and SHALL return that selection
-with its disposition and its reasons. The disposition SHALL distinguish an
-eligible action, a guided investigation, a quiet result, and an active change
-that leads. The rule SHALL be deterministic, including an explicit tie-break, so
-two runs over the same window select the same subject.
+The backend SHALL decide the one leading priority under a single rule that is
+recorded in this change and reproducible from the existing judgments, and SHALL
+return that selection with its disposition and its reasons. The disposition SHALL
+distinguish an eligible action, a guided investigation, a quiet result, and an
+active change that leads. The rule SHALL be deterministic, including an explicit
+tie-break, so two runs over the same window select the same subject.
+
+The existing Lever verdicts, the existing Priority and the queue's existing order
+are inputs to that rule. None of them is by itself the cross-parameter policy:
+the highest existing Priority SHALL NOT be assumed to be the correct leading
+subject, and the shared `next_in_line` tier SHALL NOT be read as naming a winner.
+The rule that resolves across parameters is the one this spike settles and
+records, not one already established by a score.
 
 The browser SHALL NOT derive the selection from queue order, from the shared
 `next_in_line` tier, or from a Priority it re-ranks itself. The rule SHALL NOT
-promote a Lever the analyzer does not stage, SHALL NOT treat Focus pin
-eligibility as a support verdict, SHALL NOT pool unrelated occurrence counts into
-apparent support, and SHALL NOT claim preventable harm or causation. Setting and
-habit populations SHALL retain their separate identities and their overlapping
-evidence ownership. Clinical support floors, classifiers and scores are
-unchanged inputs to this rule.
+treat Focus pin eligibility as a support verdict, SHALL NOT pool unrelated
+occurrence counts into apparent support, and SHALL NOT claim preventable harm or
+causation. Setting and habit populations SHALL retain their separate identities
+and their overlapping evidence ownership. Clinical support floors, classifiers
+and scores are unchanged inputs to this rule.
 
-#### Scenario: A supported setting leads with its own reason
+Admission stays parameter-specific. A setting Lever SHALL be offered as an
+eligible setting change only where its analyzer stages it. A supported habit is
+admitted for action under its own supported-action and Focus rules, so a setting
+that does not stage SHALL NOT by itself prevent a supported habit from leading.
 
-- **GIVEN** a window whose staged setting Lever carries the highest Priority
-- **WHEN** guidance selects the leading priority
+#### Scenario: A staged setting can lead under the recorded rule
+
+- **GIVEN** a window in which the recorded rule selects a staged setting Lever
+- **WHEN** guidance returns the leading priority
 - **THEN** that Lever is the selected subject under an eligible-action disposition
-- **AND** the stated reason cites that Lever's own evidence rather than a pooled count
+- **AND** the stated reason cites that Lever's own evidence and the recorded rule rather than a pooled count or bare row order
 
-#### Scenario: A supported habit can outrank a setting
+#### Scenario: A supported habit can lead where no setting stages
 
-- **GIVEN** a window whose supported behavioral Lever prices above every staged setting Lever
-- **WHEN** guidance selects the leading priority
-- **THEN** the behavioral Lever leads
-- **AND** the setting Levers remain reachable as alternatives with their own support
+- **GIVEN** a window carrying a supported habit Lever admitted for action and a setting Lever its analyzer does not stage
+- **WHEN** guidance returns the leading priority
+- **THEN** the habit is eligible to lead under the recorded rule
+- **AND** the unstaged setting is not offered as an eligible setting change, and its staging verdict does not by itself withhold the habit
 
 #### Scenario: No supported action yields a guided investigation
 

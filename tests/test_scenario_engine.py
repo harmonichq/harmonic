@@ -667,11 +667,7 @@ class MissedMealAnchorAndWindowTest(unittest.TestCase):
         # A beat that scans no window serializes an explicit null.
         plain = Step(t=self.ONSET, text="x", evidence_tier=EvidenceTier.OBSERVED)
         self.assertIsNone(plain.to_dict()["cited_window"])
-        self.assertEqual(plain.to_dict()["citation"], {
-            "operation": "scenario.narrative_step", "tier": "observed",
-            "at": self.ONSET.strftime("%Y-%m-%d %H:%M:%S"),
-            "event_refs": [], "window": None,
-        })
+        self.assertIsNone(plain.to_dict()["citation"])
 
 
 class SeverityTest(unittest.TestCase):
@@ -749,6 +745,8 @@ class PatternScoringAndPayloadTest(unittest.TestCase):
         collapsed = {p.lever for p in report.low_confidence}
         self.assertNotIn(Lever.MISSED_MEAL, surfaced)
         self.assertIn(Lever.MISSED_MEAL, collapsed)
+        pattern = next(p for p in report.low_confidence if p.lever is Lever.MISSED_MEAL)
+        self.assertEqual(pattern.to_dict()["guidance"]["action_id"], "habit:missed_meal")
 
     def test_payload_shape(self):
         bolus, cgm = self._recurring_missed_meals(4)
@@ -766,6 +764,7 @@ class PatternScoringAndPayloadTest(unittest.TestCase):
             self.assertIn(key, p)
         for key in ("rate", "lo", "hi", "score", "wide"):
             self.assertIn(key, p["confidence"])
+        self.assertEqual(p["guidance"]["action_id"], "habit:missed_meal")
         # Episode contract (#70 §5).
         ep = d["episodes"][p["hero_episode"]]
         for key in ("id", "start", "end", "trigger", "lever", "severity",
@@ -776,6 +775,9 @@ class PatternScoringAndPayloadTest(unittest.TestCase):
             self.assertIn(key, step)
         self.assertIn(step["evidence_tier"],
                       {"observed", "inferred", "not_in_data"})
+        self.assertEqual(step["citation"]["operation"], "scenario.attribution.missed_meal")
+        self.assertEqual(step["citation"]["facts"]["lever"], "missed_meal")
+        self.assertNotIn("recommendation", step["citation"])
 
     def test_window_reuses_timeline_shape(self):
         # The episode window is built by an injected builder (here a stub) — the
@@ -1474,6 +1476,9 @@ class OverTreatedLowPromptAnswerTest(unittest.TestCase):
         self.assertNotIn("over_treated_breakdown", d)
         self.assertIn("logged 30 g", d["text"])
         self.assertEqual(d["cited_event_refs"], [event_ref(ans.carb_t)])
+        self.assertEqual(d["citation"]["operation"], "scenario.attribution.over_treated_low")
+        self.assertEqual(d["citation"]["tier"], "observed")
+        self.assertEqual(d["citation"]["facts"]["lever"], "over_treated_low")
 
 
 class _FakeLowPromptStore:
@@ -2142,6 +2147,11 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
                 payload = pattern.to_dict()
                 self.assertLessEqual(payload["confidence"]["k"],
                                      payload["confidence"]["n"])
+                if lever is Lever.MEAL_BOLUS_SHORT:
+                    self.assertIsNone(payload["guidance"]["action_id"])
+                else:
+                    self.assertEqual(payload["guidance"]["action_id"],
+                                     f"habit:{lever.value}")
 
     def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
         """Behavioral patterns cannot stage; pin invariance at the basal seam.

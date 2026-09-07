@@ -62,6 +62,7 @@ from ..result import (
     IcHistoryRunRecord,
     Occurrence,
     SegmentEstimate,
+    plan_value,
 )
 from ..safety import _MIN_SUPPORTED_BLOCK_RUNS
 from ..settings import Snapshot
@@ -2643,11 +2644,11 @@ def _analyze_ic_blocks_shared(
                         "member_start_mins": list(block.member_start_mins),
                         "direction": direction,
                         "units": "g/U",
-                        "recommended": block.recommended,
+                        "recommended": plan_value(block.recommended, "carb_ratio"),
                     }
                     if direction is not None and block.recommended is not None else None
                 ),
-                "seriousness": "recurring_low" if block.harm else None,
+                "seriousness": "recurring_low" if block.harm.get("nudged") else None,
             },
         )
         if block.asserts_move:

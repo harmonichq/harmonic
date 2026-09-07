@@ -489,6 +489,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
                           harm_lows=self._isf_lows([3]), window_days=30)[0]
         self.assertIsNone(seg.recommended)
         self.assertIsNone(seg.evidence["direction"])
+        self.assertIsNone(seg.guidance["seriousness"])
 
     def test_sustained_strengthen_stages_its_existing_numeric_move(self):
         bolus, basal, cgm, windows = self._nights(24.0)
@@ -503,7 +504,7 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertEqual(seg.guidance["action"], {
             "kind": "setting_instruction", "parameter": "isf",
             "start_min": 0, "end_min": 1440, "direction": "strengthen",
-            "units": "mg/dL/U", "recommended": 29.5,
+            "units": "mg/dL/U", "recommended": 30.0,
         })
 
     def test_rounded_strengthen_no_op_cannot_stage(self):

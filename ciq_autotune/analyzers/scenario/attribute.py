@@ -713,6 +713,17 @@ def attribute(
                 silence = sil
             continue
         lever, step = result
+        step = replace(step, citation={
+            "operation": f"scenario.attribution.{lever.value}",
+            "tier": step.evidence_tier.value,
+            "facts": {
+                "lever": lever.value,
+                "anchor_kind": a.kind.value,
+                "anchor_at": event_ref(trig_t),
+                "event_refs": list(step.cited_event_refs),
+                "window": dict(step.cited_window) if step.cited_window else None,
+            },
+        })
         if driver is None:
             driver_anchor = a
             if lever is Lever.CORRECTION_STACKING and correction_pair is not None:

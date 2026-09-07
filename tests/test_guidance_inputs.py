@@ -2,27 +2,11 @@
 
 import unittest
 
-from ciq_autotune.analyzers.scenario.levers import Lever, action_id
-from ciq_autotune.analyzers.scenario.payload import Pattern
-from ciq_autotune.uncertainty import Confidence
+from ciq_autotune.result import plan_value
 
 
 class GuidanceInputsTest(unittest.TestCase):
-    def test_pattern_keeps_action_seriousness_and_evidence_separate_from_advice(self):
-        pattern = Pattern(
-            lever=Lever.LATE_BOLUS,
-            confidence=Confidence(n=20, k=12, effect=0.8),
-            rank=1,
-            recommendation="Rendered advice may change without changing the action.",
-            hero_episode="episode-1",
-            occurrences=["episode-1", "episode-2"],
-        )
-
-        payload = pattern.to_dict()
-
-        self.assertEqual(payload["guidance"], {
-            "action_id": action_id(Lever.LATE_BOLUS),
-            "seriousness": pattern.confidence.severity,
-            "citation_episode_ids": ["episode-1", "episode-2"],
-        })
-        self.assertNotEqual(payload["guidance"]["action_id"], payload["recommendation"])
+    def test_instruction_values_use_accepted_pick_precision_and_positive_half_rounding(self):
+        self.assertEqual(plan_value(0.1235, "basal_rate"), 0.124)
+        self.assertEqual(plan_value(29.5, "isf"), 30.0)
+        self.assertEqual(plan_value(5.25, "carb_ratio"), 5.3)

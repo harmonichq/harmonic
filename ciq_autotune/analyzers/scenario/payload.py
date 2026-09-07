@@ -99,6 +99,9 @@ class Step:
     evidence_tier: EvidenceTier
     cited_event_refs: List[str] = field(default_factory=list)
     cited_window: Optional[dict] = None
+    # A closed source operation and its factual inputs.  ``None`` means this
+    # legacy step remains readable in v1 but is unavailable as guidance evidence.
+    citation: Optional[Dict] = None
 
     def to_dict(self) -> dict:
         return {
@@ -107,13 +110,7 @@ class Step:
             "evidence_tier": self.evidence_tier.value,
             "cited_event_refs": list(self.cited_event_refs),
             "cited_window": dict(self.cited_window) if self.cited_window else None,
-            "citation": {
-                "operation": "scenario.narrative_step",
-                "tier": self.evidence_tier.value,
-                "at": _fmt(self.t),
-                "event_refs": list(self.cited_event_refs),
-                "window": dict(self.cited_window) if self.cited_window else None,
-            },
+            "citation": dict(self.citation) if self.citation is not None else None,
         }
 
 

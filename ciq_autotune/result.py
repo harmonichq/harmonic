@@ -16,6 +16,7 @@ or consume it.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -51,6 +52,16 @@ from .uncertainty import Confidence, Estimate
 # regime measurements with canonical identities and lifecycle. These records carry
 # no recommendation or assertion fields and cannot enter the action path.
 SCHEMA_VERSION = 9
+
+_PLAN_PRECISION = {"basal_rate": 3, "isf": 0, "carb_ratio": 1}
+
+
+def plan_value(value: Optional[float], parameter: str) -> Optional[float]:
+    """The accepted-pick pump value, matching ``frontend/plan.js`` for positives."""
+    if value is None:
+        return None
+    factor = 10 ** _PLAN_PRECISION[parameter]
+    return math.floor(value * factor + 0.5) / factor
 
 DISCLAIMER = (
     "Advisory only — not medical advice. Every number is shown with its "

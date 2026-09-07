@@ -33,6 +33,7 @@ from ..result import (
     ProfileSegment,
     SegmentEstimate,
     SlotEstimate,
+    plan_value,
 )
 from ..safety import (
     _MIN_DIRECTIONAL_DAYS,
@@ -588,11 +589,13 @@ def analyze_basal(
                     "end_min": (s + 1) * cfg.slot_minutes,
                     "direction": direction,
                     "units": "U/h",
-                    "recommended": recommended,
+                    "recommended": plan_value(recommended, "basal_rate"),
                 }
                 if direction is not None and recommended is not None else None
             ),
-            "seriousness": "recurring_low" if harm_verdict is not None else None,
+            "seriousness": (
+                "recurring_low" if status is Status.HARM_LOWER else None
+            ),
         }
         out.append(SlotEstimate(
             slot=s,

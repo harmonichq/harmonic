@@ -1040,12 +1040,14 @@ Chunk 1 publishes the following additive source contract. Analyzer member payloa
 `null` or `{kind: "setting_instruction", parameter, start_min, end_min, direction,
 units, recommended}`; I:C also carries `member_start_mins`. `action` exists only
 when that owner's existing `asserts_move` verdict is true. `seriousness` is either
-`"recurring_low"` from the owner's existing harm judgment or `null`; it never
-reclassifies support. Scenario Patterns carry `guidance.action_id` (the closed
+`"recurring_low"` from the owner's existing recurrent nudge verdict or `null`; a
+single-low gate is not categorical seriousness. Instruction values use existing
+accepted-pick Plan precision (basal 0.001 U/h, ISF whole mg/dL/U, I:C 0.1 g/U) with
+positive-half rounding. Scenario Patterns carry `guidance.action_id` (the closed
 `habit:<lever>` semantic identity), `guidance.seriousness` (the owner's unrounded
 `Confidence.severity` category), and `guidance.citation_episode_ids`. Every Scenario
-Step carries a separate `citation` object with its closed operation name,
-evidence tier, timestamp, event references and optional source window. Guidance
+Step carries a separate `citation` object from a closed attribution or narration
+operation, with its owner-authored factual fields and evidence tier. Guidance
 consumers use these fields, never recommendation or Step prose, to compare action
 or cite evidence. The later guidance projection owner must rebuild or version its
 retained-artifact boundary before it reads these required fields; this source chunk

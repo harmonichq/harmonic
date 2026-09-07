@@ -77,7 +77,7 @@ from ..harm import (
 from ..insulin import InsulinActivity, basal_microdoses
 from ..rescue_evidence import RescueObservation
 from ..rest_window import RestWindow, RestWindowConfig, detect_rest_windows
-from ..result import SegmentEstimate
+from ..result import SegmentEstimate, plan_value
 from ..uncertainty import (
     DEFAULT_CONFIDENCE,
     Estimate,
@@ -851,10 +851,10 @@ def analyze_isf(
                     "end_min": 1440,
                     "direction": direction,
                     "units": "mg/dL/U",
-                    "recommended": rec,
+                    "recommended": plan_value(rec, "isf"),
                 }
                 if asserts_move and rec is not None else None
             ),
-            "seriousness": "recurring_low" if evidence.get("harm") else None,
+            "seriousness": None,
         },
     )]

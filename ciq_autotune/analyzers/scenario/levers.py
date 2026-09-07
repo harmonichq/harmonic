@@ -188,12 +188,14 @@ def recommendation(lever: "Lever") -> str:
     return _META[lever][2]
 
 
-def action_id(lever: "Lever") -> str:
+def action_id(lever: "Lever") -> Optional[str]:
     """The closed semantic action identity for a behavioral Lever.
 
     Guidance compares this stable owner-produced identifier, never rendered
     recommendation prose. A copy edit therefore cannot manufacture a new action.
     """
+    if lever is Lever.MEAL_BOLUS_SHORT:
+        return None
     return f"habit:{lever.value}"
 
 

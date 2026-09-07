@@ -1,0 +1,482 @@
+/* Glucose first, round 3 (#348). Unlocked design exploration.
+   Every rail, rank and token below is the shipped Diagnose workstation's own
+   (frontend/diagnose-workstation.css, frontend/theme.css); this sheet seats them
+   in a new arrangement and states no new material. theme.css loads last. */
+
+/* ---- frame --------------------------------------------------------------- */
+/* The app's page rule `button { font-family: inherit; cursor: pointer; }`
+   (index.html), which the scaffold restates only inside `.v2-content`: without
+   it the topbar's Log carbs fell to the UA's Arial and lost a pixel of height
+   against the built app. Stated once for the shell, as the app states it. */
+.cockpit-shell button { font-family:inherit; cursor:pointer; }
+.gf-main { padding:0; overflow:hidden; display:grid; grid-template-rows:auto minmax(0,1fr); }
+.gf-main .mockbar { margin:0; padding:3px 14px; gap:2px 12px; border-bottom:1px solid var(--wk-rule); min-height:30px; }
+.gf-main .mockbar strong { font-weight:500; }
+.gf-main .mockbar label { gap:5px; }
+.gf-main .mockbar select { padding:3px 5px; font-size:11px; }
+.gf-main .mockbar p { margin-inline-start:auto; font-size:10.5px; }
+.gf { position:relative; min-width:0; min-height:0; display:grid; grid-template-rows:minmax(0,1fr); overflow:hidden;
+  font-size:var(--ck-body); color:var(--wk-ink-body);
+  --ec-matched:var(--mk-primary); --ec-nearly-matched:var(--mk-warn); --ec-comparison:var(--mk-accent); --ec-focus:var(--mk-text);
+  --gf-reading:300px; }
+.gf * { box-sizing:border-box; }
+.gf p { margin:0; line-height:1.5; }
+.gf h1,.gf h2,.gf h3 { margin:0; }
+
+/* ---- the desk: one stage pane and one reading pane, divided by the shipped
+   hairline (`.panes > .pane + .pane`). No banner above, no bar below. */
+.gf-desk { display:grid; grid-template-columns:minmax(0,1fr) var(--gf-reading); min-height:0; min-width:0; }
+.gf-desk > .pane { min-height:0; min-width:0; overflow:hidden; }
+.gf .pane > header { min-width:0; }
+.gf .pane > header .meta { margin-left:auto; }
+.gf .pane > header .gf-end { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.gf .pane > header .meta + .gf-end { margin-left:0; }
+.gf .pane > header h2:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+
+/* ---- the stage's nameplate is its header rail, as the shipped spotlight's is.
+   Kicker at Label rank, served title at Title rank (1.14rem, under the No-Hero
+   ceiling), the rest at Body rank. `Set aside` sits where the shipped card seats
+   its control: the far end of the rail. */
+.gf-stage { display:grid; grid-template-rows:auto auto minmax(0,1fr) auto var(--gf-fig2,204px); }
+.gf .gf-stage > header.gf-head { align-items:flex-start; padding:7px var(--ck-pad) 7px var(--ck-grid-left); gap:14px; }
+.gf-id { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.gf-kicker { color:var(--mk-muted); font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; line-height:1.2; }
+.gf-kicker b { color:var(--wk-ink-nav); font-weight:700; }
+/* the crumb to the level above, in the kicker's own type so it reads as the trail */
+.gf-kicker .linkbtn { font:inherit; letter-spacing:inherit; text-transform:inherit; vertical-align:baseline; }
+.gf .pane > header .gf-title, .gf .gf-title { color:var(--mk-text); font-family:Inter,system-ui,sans-serif; font-size:1.14rem; font-weight:700; line-height:1.3; letter-spacing:-.01em; text-transform:none; }
+.gf .gf-sheet-close { display:none; }
+.gf .canvas-head[hidden] { display:none; }
+.gf-sub { color:var(--mk-muted); font-size:.9rem; font-weight:400; line-height:1.45; font-variant-numeric:tabular-nums; }
+.gf-sub b { color:var(--wk-ink-body); font-weight:500; }
+
+/* ---- figure rails: the shipped instrument rail (`.instruments` / `.instrument`
+   / `.cap` / `.seg`), opened on the plot's own spine. The hover readout the
+   comparison adapter lends (`.head-live`) swaps in over the rest line. */
+.gf .instruments { grid-template-columns:minmax(0,1fr) auto; min-height:30px; padding:0 var(--ck-pad) 0 var(--ck-grid-left); gap:12px; }
+.gf .instruments > .instrument:first-child { padding-left:0; }
+.gf .instrument { gap:10px; }
+.gf .instrument .meta { font-family:Inter,system-ui,sans-serif; font-size:var(--ck-micro); color:var(--mk-muted); font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gf .instrument .when { font-family:var(--ck-mono); font-size:var(--ck-data); font-variant-numeric:tabular-nums; color:var(--mk-text); font-weight:600; white-space:nowrap; }
+.gf .gf-rest { display:flex; align-items:baseline; gap:10px; min-width:0; }
+.gf .canvas-head { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; align-items:baseline; }
+.gf .canvas-head > * { grid-area:1 / 1; }
+.gf .canvas-head .head-live { display:flex; gap:14px; visibility:hidden; opacity:0; }
+.gf .canvas-head .head-live:empty { display:none; }
+.gf .canvas-head[data-hover="1"] .gf-rest { visibility:hidden; opacity:0; }
+.gf .canvas-head[data-hover="1"] .head-live { visibility:visible; opacity:1; }
+.gf .instruments .gf-tools { display:flex; align-items:center; gap:8px; }
+.gf .seg button { min-height:0; }
+.gf .seg button:hover:not([aria-pressed="true"]) { background:transparent; }
+.gf .seg button:disabled { opacity:.42; cursor:default; }
+
+/* ---- the plots. Figure 1 is the comparison through the shipped adapter, its
+   own key row beneath it; Figure 2 is the selected occurrence on the same
+   spine. Both open at `--ck-grid-left`; the anchor line is continuous. */
+.gf-fig { position:relative; min-height:0; min-width:0; background:var(--wk-field); }
+.gf-fig + .instruments { border-top:1px solid var(--wk-rule); }
+.gf-fig.ec-surface { height:auto; min-height:0; overflow:hidden; display:grid; grid-template-rows:minmax(0,1fr); }
+.gf .ec-event-body { height:100%; }
+.gf .ec-chart { min-height:0; }
+.gf .ec-chart-key { min-height:30px; padding:2px var(--ck-pad) 4px var(--ck-grid-left); gap:4px 18px; display:flex; flex-wrap:wrap; align-items:center; border-top-color:var(--wk-rule); }
+.gf .ec-key-item { grid-template-columns:22px auto auto; gap:0 6px; }
+.gf .ec-key-item small { grid-column:auto; }
+.gf .ec-key-item small::before { content:'· '; }
+/* no cohort is dimmed while a member is held: the aggregate reads whole */
+.gf .ec-chart-key[data-has-selection="true"] .ec-key-item:not([data-cohort="selected"]) { opacity:1; }
+.gf .ec-chart-key .gf-tools { margin-left:auto; }
+/* Figure 2 seats its chart over the shipped Day legend (chart-key.css) */
+.gf-fig2 { display:grid; grid-template-rows:minmax(0,1fr) auto; }
+.gf-chart-seat { position:relative; min-height:0; }
+.gf-chart { position:absolute; inset:0; }
+.gf .ds-chart-legend { margin:0; padding:4px var(--ck-pad) 5px var(--ck-grid-left); gap:3px 14px; border-top:1px solid var(--wk-rule); min-height:26px; align-items:center; }
+.gf .ds-chart-legend span { font-size:var(--ck-micro); color:var(--mk-muted); font-variant-numeric:tabular-nums; }
+.gf .ds-chart-legend .ds-leg-k { margin-left:6px; text-transform:uppercase; letter-spacing:var(--ck-track); font-size:10px; font-weight:700; }
+
+/* ---- the reading pane holds lists and values at Body and Label rank; it never
+   competes with the stage. Rows are the shipped list idiom: full-width, quiet,
+   the held row lit by ground and an inset rule, never by colour alone. */
+.gf-reading { display:grid; grid-template-rows:auto minmax(0,1fr); }
+.gf-pane-body { overflow:auto; min-height:0; scrollbar-gutter:stable; }
+.gf-section { padding:6px 0 8px; border-bottom:1px solid var(--wk-rule); }
+.gf-section:last-child { border-bottom:0; }
+.gf-section > h3 { display:flex; align-items:baseline; gap:8px; padding:6px var(--ck-pad) 4px; font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-secondary); }
+.gf-section > h3 .meta { margin-left:auto; font-family:var(--ck-mono); font-weight:500; font-size:var(--ck-micro); color:var(--mk-muted); letter-spacing:0; font-variant-numeric:tabular-nums; }
+.gf-section > p { padding:2px var(--ck-pad) 6px; color:var(--wk-ink-body); font-size:var(--ck-body); line-height:1.45; }
+.gf-section > p.gf-meta { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf .gf-row { display:grid; width:100%; align-items:center; gap:2px 8px; padding:6px var(--ck-pad); min-height:30px;
+  border:0; border-radius:0; background:transparent; color:var(--wk-ink-body); text-align:start; font:inherit; cursor:pointer; }
+.gf .gf-row:hover { background:var(--wk-surface); }
+.gf .gf-row[aria-pressed="true"] { background:var(--wk-surface); color:var(--wk-ink); box-shadow:inset 2px 0 0 var(--ck-focus-mark); }
+.gf .gf-row:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+.gf .gf-row .when { font-family:var(--ck-mono); font-size:var(--ck-data); font-variant-numeric:tabular-nums; color:var(--mk-text); }
+.gf .gf-row .n { font-family:var(--ck-mono); font-size:var(--ck-micro); font-variant-numeric:tabular-nums; color:var(--mk-muted); text-align:end; }
+.gf .gf-row .tier { font-size:var(--ck-micro); letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
+.gf .gf-row .tier[data-tier="inferred"] { color:var(--inferred); }
+.gf .gf-row .tier[data-tier="observed"] { color:var(--observed); }
+.gf .gf-row .tier[data-tier="not_in_data"] { color:var(--notindata); }
+.gf .gf-row .text { grid-column:1 / -1; color:var(--wk-ink-body); line-height:1.45; }
+.gf .gf-row[aria-pressed="true"] .text { color:var(--wk-ink); }
+/* cohort rows carry the chart key's own mark, so the selector and the legend
+   say one thing in one shape */
+.gf .gf-cohort-row { grid-template-columns:22px minmax(0,1fr) auto; }
+.gf .gf-cohort-row > .ec-key-item { display:inline-grid; grid-template-columns:22px; font:inherit; }
+.gf .gf-cohort-row strong { font-weight:600; color:var(--mk-secondary); }
+.gf .gf-cohort-row[aria-pressed="true"] strong { color:var(--mk-text); }
+.gf .gf-cohort-row small { grid-column:2 / -1; font:500 var(--ck-micro)/1.3 var(--ck-mono); color:var(--mk-muted); }
+.gf .gf-cohort-row[data-support="withheld"] strong { color:var(--ck-insuff); }
+.gf .gf-member-row { grid-template-columns:minmax(0,1fr) auto; }
+.gf .gf-member-row .n { text-transform:none; }
+.gf .gf-step-row { grid-template-columns:auto minmax(0,1fr); }
+.gf-members { max-height:196px; overflow:auto; }
+
+/* ---- forms and values in the reading pane */
+.gf dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:5px 12px; margin:0; padding:4px var(--ck-pad) 8px; align-items:baseline; }
+.gf dt { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf dd { margin:0; color:var(--wk-ink-body); font-variant-numeric:tabular-nums; }
+.gf form { padding:2px var(--ck-pad) 8px; }
+.gf label { display:block; color:var(--mk-muted); font-size:var(--ck-micro); margin-bottom:4px; }
+.gf textarea { margin:0 0 8px; min-height:84px; font-size:var(--ck-body); }
+.gf .gf-actions { display:flex; gap:8px; flex-wrap:wrap; padding:4px var(--ck-pad) 8px; }
+.gf .gf-btn { min-height:28px; padding:4px 10px; font-size:var(--ck-body); border-radius:var(--wk-radius); }
+.gf .gf-btn.primary { min-width:0; }
+.gf .gf-note { padding:0 var(--ck-pad) 6px; color:var(--mk-muted); font-size:var(--ck-micro); line-height:1.45; }
+.gf progress { display:block; width:calc(100% - 2 * var(--ck-pad)); height:6px; margin:2px var(--ck-pad) 8px; accent-color:var(--ck-up); }
+.gf .gf-figure { padding:2px var(--ck-pad) 6px; font-family:var(--ck-mono); font-size:var(--ck-emph); font-weight:600; color:var(--mk-text); font-variant-numeric:tabular-nums; }
+.gf .gf-figure small { font-family:Inter,system-ui,sans-serif; font-size:var(--ck-micro); font-weight:400; color:var(--mk-muted); margin-left:6px; }
+.gf .gf-error { padding:2px var(--ck-pad) 6px; color:var(--mk-danger); font-size:var(--ck-micro); }
+
+/* ---- trial evidence: the stage carries a table on the plot's spine */
+.gf-stage.gf-stage-table { grid-template-rows:auto auto minmax(0,1fr); }
+.gf-scroll { overflow:auto; min-height:0; padding:8px var(--ck-pad) 12px var(--ck-grid-left); background:var(--wk-field); }
+.gf-table { width:100%; border-collapse:collapse; font-size:var(--ck-body); font-variant-numeric:tabular-nums; }
+.gf-table td,.gf-table th { padding:8px 8px 8px 0; border-bottom:1px solid var(--wk-rule); vertical-align:top; text-align:start; }
+.gf-table th { color:var(--mk-secondary); font-weight:700; font-size:var(--ck-micro); letter-spacing:var(--ck-track); text-transform:uppercase; }
+.gf-table td.v { font-family:var(--ck-mono); color:var(--mk-text); }
+.gf-table small { display:block; margin-top:3px; color:var(--mk-muted); font-size:var(--ck-micro); font-family:Inter,system-ui,sans-serif; line-height:1.4; }
+.gf-table tr.gf-target td { background:var(--wk-surface); }
+.gf-day-read { padding:4px 0; }
+.gf-day-read .gf-figure { padding-left:0; }
+.gf-day-read p { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf .gf-select { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:0 0 10px; }
+.gf .gf-select label { display:flex; align-items:center; gap:6px; margin:0; }
+.gf .gf-select select { padding:3px 6px; font-size:var(--ck-micro); }
+.gf-reading .gf-table { font-size:var(--ck-micro); }
+.gf-reading .gf-table td,.gf-reading .gf-table th { padding:5px 6px 5px 0; }
+.gf-reading .gf-section > .gf-table { width:calc(100% - 2 * var(--ck-pad)); margin:0 var(--ck-pad); }
+
+/* ---- the empty stage (quiet, set aside, no change, error): one pane, one
+   sentence, the actions beneath, at Body rank. */
+.gf-empty { align-content:start; padding:18px var(--ck-grid-left); }
+.gf-empty .gf-title { margin-bottom:4px; }
+.gf-empty p { max-width:56ch; color:var(--mk-muted); margin-bottom:12px; }
+.gf-empty .gf-actions { padding:0; }
+.gf-loading { margin:20px; background:var(--wk-field); min-height:200px; }
+
+/* ---- review controls, outside product chrome: the mock bar shows the controls
+   of the chosen synthetic source only. The two sources are separate patients. */
+.gf-main .mockbar .gf-review { display:contents; }
+.gf-main .mockbar[data-source="setting"] .gf-meals-control,
+.gf-main .mockbar[data-source="meals"] .gf-review { display:none; }
+.gf-main .mockbar .gf-review label:last-child { display:flex; align-items:center; gap:5px; }
+.gf-main .mockbar .gf-review input { margin:0; }
+.gf-review-note { padding:0 var(--ck-grid-left) 12px; max-width:56ch; }
+/* The focus source is a third separate patient; its review group is tagged so
+   the setting and focus groups never show together. */
+.gf-main .mockbar[data-source="focus"] .gf-meals-control,
+.gf-main .mockbar[data-source="setting"] .gf-review[data-source="focus"],
+.gf-main .mockbar[data-source="focus"] .gf-review[data-source="setting"] { display:none; }
+/* Review notes: one disclosure at the row's end holds every longer note (fixture
+   limits, page memory); closed by default so the desk keeps its height, and open
+   it takes the row below. A note shows for the source it belongs to. */
+.gf-main .mockbar .gf-review-notes { margin:0; }
+.gf-main .mockbar .gf-review-notes[open] { flex-basis:100%; }
+.gf-main .mockbar .gf-review-notes summary { cursor:pointer; color:var(--mk-muted); font-size:10.5px; }
+.gf-main .mockbar .gf-review-notes summary:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+.gf-main .mockbar .gf-review-notes-body { display:grid; gap:3px; padding:2px 0 4px; max-width:96ch; }
+.gf-main .mockbar .gf-review-memo { display:none; margin:0; color:var(--mk-muted); font-size:var(--ck-micro); line-height:1.35; }
+.gf-main .mockbar .gf-review-memo:not([data-source]),
+.gf-main .mockbar[data-source="journey"] .gf-review-memo[data-source="journey"],
+.gf-main .mockbar[data-source="focus"] .gf-review-memo[data-source="focus"],
+.gf-main .mockbar[data-source] .gf-review-memo[data-source="utilities"] { display:block; }
+
+/* ---- the focus journey. Windows are columns; behavior and glucose outcomes
+   are two tables, never one, so an unavailable window stays visibly unavailable. */
+.gf-scroll .gf-table + .gf-table { margin-top:18px; }
+.gf-trend td.v, .gf-trend th { white-space:nowrap; }
+
+/* ---- the setting journey. The nights list groups by the served sign under the
+   shipped roster words (`Ran below` · 12 nights); the selected night's values
+   are the shipped occ-nums lines; the Plan is the shipped deliverable table with
+   the moved value beside its struck current one, never by colour alone. */
+.gf .gf-night-group { padding:8px var(--ck-pad) 2px; font-size:var(--ck-micro); color:var(--mk-muted); font-variant-numeric:tabular-nums; }
+.gf .gf-night-group b { font-weight:600; color:var(--mk-secondary); }
+.gf .gf-nums { padding:2px var(--ck-pad) 6px; display:grid; gap:3px; font-family:var(--ck-mono); font-size:var(--ck-micro); color:var(--wk-ink-body); font-variant-numeric:tabular-nums; }
+.gf .gf-nums .when { color:var(--mk-text); font-size:var(--ck-data); }
+.gf .gf-nums .tier { font-family:Inter,system-ui,sans-serif; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); margin-left:6px; }
+.gf .gf-nums > div:first-child { display:flex; align-items:baseline; gap:4px; flex-wrap:wrap; }
+.gf-status { padding:0 0 12px; }
+.gf-status > p { max-width:64ch; color:var(--wk-ink-body); }
+.gf-status > p.gf-meta { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf-status[data-state="confirmed"] > p:first-child { color:var(--ck-up); font-weight:500; }
+.gf-status[data-state="mismatch"] > p:first-child { color:var(--mk-danger); font-weight:500; }
+.gf-status .gf-actions { padding:8px 0 0; }
+.gf-status .gf-diff { width:auto; min-width:min(100%, 420px); margin-top:8px; }
+.gf-status .gf-flash { padding-top:8px; }
+.gf-status .gf-error { padding:0; font-size:var(--ck-body); }
+.gf-table td.gf-changed { color:var(--mk-text); font-weight:600; }
+.gf-table td.gf-changed s { color:var(--mk-muted); font-weight:400; margin-right:4px; }
+.gf .gf-pill { display:inline-block; margin-left:6px; padding:1px 6px; border:1px solid var(--wk-rule); border-radius:999px; font:600 10px/1.5 Inter,system-ui,sans-serif; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
+
+/* ---- round 4: the Focus and Trial stages. The progress figure and the shipped
+   Before → Trial hero each seat one chart over its key on the plot's spine; the
+   tables scroll beneath at Body rank. Narrow seats one of chart or table. */
+/* the figure's three tracks (focus.js FIG: 22 + 3×50 + 2×22 + 24 = 240) plus the key */
+.gf-stage-focus { grid-template-rows:auto auto var(--gf-fig-focus,270px) minmax(0,1fr); }
+.gf-stage-trial { grid-template-rows:auto auto var(--gf-fig-trial,220px) auto minmax(0,1fr); }
+.gf-fig-focus,.gf-fig-trial { display:grid; grid-template-rows:minmax(0,1fr) auto; }
+.gf .instrument { min-width:0; }
+/* the source's internal numbers (priority, recurrence, effect, confidence) are
+   one disclosure away from the action, never the reading */
+.gf .gf-detail { margin:0 var(--ck-pad) 6px; font-size:var(--ck-micro); color:var(--mk-muted); }
+.gf .gf-detail summary { cursor:pointer; padding:2px 0; color:var(--mk-secondary); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; font-size:10px; }
+.gf .gf-detail dl { padding:4px 0 2px; }
+/* the narrow windows table reads latest first; its row heads are the windows */
+.gf-windows th[scope="row"] { font-weight:500; color:var(--mk-text); text-transform:none; letter-spacing:0; font-size:var(--ck-micro); }
+
+/* ---- round 4: the shared journey's roster in the reading pane — the queue's
+   rows (rank numeral, title, its one detail line, the tier word), the tier
+   caption and tail note between them, the set-asides beneath with their reason
+   and a restore. The held row is lit as every list row here is. */
+.gf .gf-roster-row { grid-template-columns:auto minmax(0,1fr) auto; }
+.gf .gf-roster-row .rank { font-family:var(--ck-mono); font-size:var(--ck-data); font-variant-numeric:tabular-nums; color:var(--mk-muted); min-width:14px; text-align:end; }
+.gf .gf-roster-row .text { grid-column:auto; display:grid; gap:1px; min-width:0; }
+.gf .gf-roster-row .text strong { font-weight:600; color:var(--mk-text); }
+.gf .gf-roster-row .text small { color:var(--mk-muted); font-size:var(--ck-micro); line-height:1.4; }
+.gf .gf-roster-row[aria-pressed="true"] .text strong { color:var(--wk-ink); }
+.gf .gf-roster-cap { padding:8px var(--ck-pad) 2px; font-size:var(--ck-micro); color:var(--mk-muted); }
+.gf .gf-roster-aside { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; padding-right:var(--ck-pad); }
+.gf .gf-roster-aside .gf-roster-row { padding-right:0; }
+.gf .gf-roster-aside [data-absent] { cursor:default; }
+.gf .gf-roster .gf-note { padding-top:4px; }
+.gf .gf-roster .gf-note .gf-btn { margin-left:6px; min-height:24px; }
+/* the journey's review group; the meals-only controls hide for every other source */
+.gf-main .mockbar[data-source="journey"] .gf-meals-control,
+.gf-main .mockbar[data-source="journey"] .gf-review:not([data-source="journey"]),
+.gf-main .mockbar[data-source="setting"] .gf-review[data-source="journey"],
+.gf-main .mockbar[data-source="focus"] .gf-review[data-source="journey"] { display:none; }
+.gf-main .mockbar .gf-review label:has(input) { display:flex; align-items:center; gap:5px; }
+
+/* ---- round 4: every basal slot. The shipped lane and its key seat between the
+   nameplate and the figure, on the plot's spine (--ck-grid-left, as the
+   workstation seats them); the shipped slot inspector reads in the pane. Both
+   carry the workstation's own tokens through `.dw`, unboxed from its two-row
+   grid so they take this desk's flow. */
+.gf-stage-basal { grid-template-rows:auto auto auto auto minmax(0,1fr); }
+.gf .gf-dw { height:auto; display:block; overflow:visible; grid-template-rows:none; }
+.gf .gf-dw.lane-wrap { padding:8px 0 10px; border-top:1px solid var(--wk-rule); background:var(--wk-field); }
+/* The scaffold's `.v2-content button` (36px min-height, radius, surface fill)
+   outranks the shipped `.lane-cell` box and painted every cell down over the
+   key. The lane's own 11px row and the cell's shipped box are restored here. */
+.gf .gf-dw .lane button.lane-cell { min-height:0; border-radius:1px; background-color:var(--cell, var(--ck-inset)); }
+.gf .gf-dw .lane button.lane-cell:focus-visible { outline:2px solid var(--ck-accent); outline-offset:2px; }
+.gf .gf-slot-level { animation:none; overflow:visible; }
+.gf .gf-slot-level .inner:first-child { padding-top:4px; }
+.gf .gf-slot-level .foot-note { line-height:1.45; }
+.gf .gf-fig-empty { display:grid; align-content:center; padding:18px var(--ck-grid-left); border-top:1px solid var(--wk-rule); }
+.gf .gf-empty-seat { display:grid; gap:4px; max-width:48ch; color:var(--mk-muted); font-size:var(--ck-body); line-height:1.45; }
+.gf .gf-empty-seat b { color:var(--mk-text); }
+
+/* ---- round 4: Day. One stage: the nameplate, the recorded-day rail, the week
+   ribbon (or the month in its place), the five-track lanes chart filling the
+   rest. The ribbon is the shipped navigator's arrangement on the workstation's
+   tokens: seven columns edge to edge, a continuous trace over per-day washes,
+   each column a button. The month expands in place, never as a floating panel;
+   the chart gives up the height and keeps its minimum. */
+.gf-stage-day { grid-template-rows:auto auto auto minmax(var(--gf-day-min,300px),1fr); }
+.gf .gf-month-toggle { min-height:26px; padding:2px 8px; font-size:var(--ck-micro); }
+.gf-nav { border-top:1px solid var(--wk-rule); background:var(--wk-field); min-height:0; }
+.gf-nav[data-open="month"] { max-height:min(46vh, 360px); overflow:auto; scrollbar-gutter:stable; }
+/* the week ribbon: 58px plot, 34px labels */
+.gf-nav-ribbon { position:relative; --gf-rb-plot:58px; --gf-rb-lab:34px; height:calc(var(--gf-rb-plot) + var(--gf-rb-lab)); margin-left:var(--ck-grid-left); margin-right:var(--ck-pad); }
+.gf-nav-washes { position:absolute; top:0; left:0; right:0; height:var(--gf-rb-plot); display:grid; grid-template-columns:repeat(7,1fr); overflow:hidden; }
+.gf-nav-washes i { background:var(--sev); }
+.gf-nav-ribbon > svg { position:absolute; top:0; left:0; width:100%; height:var(--gf-rb-plot); overflow:hidden; pointer-events:none; }
+.gf-nav-ribbon .band { fill:var(--in-range); opacity:.07; }
+.gf-nav-ribbon .guide { stroke:var(--mk-muted); stroke-width:.6; opacity:.4; stroke-dasharray:3 3; vector-effect:non-scaling-stroke; }
+.gf-nav-ribbon .trace { fill:none; stroke:var(--mk-text); stroke-width:1.4; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+.gf-nav-ribbon .low { fill:var(--low); } .gf-nav-ribbon .high { fill:var(--high); }
+.gf-nav-cols { position:absolute; inset:0; display:grid; grid-template-columns:repeat(7,1fr); }
+.gf .gf-nav-col { display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:2px; min-height:0; padding:0 0 4px;
+  border:0; border-right:1px solid var(--wk-rule); border-radius:0; background:transparent; font:inherit; color:var(--mk-muted); cursor:pointer; }
+.gf .gf-nav-col:last-child { border-right:0; }
+.gf .gf-nav-col:hover:not(:disabled) { background:color-mix(in srgb, var(--mk-muted) 10%, transparent); }
+.gf .gf-nav-col:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+.gf .gf-nav-col[aria-pressed="true"] { background:color-mix(in srgb, var(--primary) 12%, transparent); box-shadow:inset 0 -2px 0 var(--primary); }
+.gf .gf-nav-col:disabled { cursor:default; }
+.gf .gf-nav-col .dow { font-size:10px; letter-spacing:var(--ck-track); text-transform:uppercase; }
+.gf .gf-nav-col .dom { font-family:var(--ck-mono); font-size:var(--ck-data); font-weight:700; color:var(--mk-text); line-height:1; font-variant-numeric:tabular-nums; }
+.gf .gf-nav-col .sev { font-size:10px; font-weight:600; color:var(--mk-secondary); font-variant-numeric:tabular-nums; }
+.gf .gf-nav-col .sev .g { color:var(--sev); }
+.gf .gf-nav-col:disabled .dom, .gf .gf-nav-col:disabled .sev { color:var(--mk-muted); opacity:.55; }
+/* the month: seven columns on the same spine, one row per week */
+.gf-nav-month { padding:6px var(--ck-pad) 8px var(--ck-grid-left); }
+.gf-nav-month-head { display:flex; align-items:center; gap:10px; padding-bottom:6px; }
+.gf-nav-month-head .meta { font-size:var(--ck-micro); color:var(--mk-muted); font-variant-numeric:tabular-nums; }
+.gf-nav-dow { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding-bottom:2px; }
+.gf-nav-dow span { font-size:10px; font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); text-align:center; }
+.gf-nav-cells { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.gf .gf-nav-cell { position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto 30px; align-items:center; gap:0 4px; min-height:48px; padding:2px 5px 2px;
+  border:1px solid var(--wk-rule); border-radius:var(--wk-radius); background:color-mix(in srgb, var(--sev, transparent) 7%, var(--wk-surface)); color:var(--mk-text); font:inherit; text-align:start; cursor:pointer; overflow:hidden; }
+.gf .gf-nav-cell.blank { border:0; background:transparent; }
+.gf .gf-nav-cell:disabled { background:var(--wk-surface-sunken, var(--wk-surface)); opacity:.5; cursor:default; }
+.gf .gf-nav-cell:hover:not(:disabled) { border-color:var(--sev); }
+.gf .gf-nav-cell:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+.gf .gf-nav-cell[aria-pressed="true"] { border-color:var(--primary); box-shadow:inset 0 0 0 1px var(--primary); }
+.gf .gf-nav-cell .dom { font-family:var(--ck-mono); font-size:var(--ck-micro); font-weight:700; font-variant-numeric:tabular-nums; }
+.gf .gf-nav-cell .sev { font-size:10px; font-weight:700; color:var(--mk-secondary); font-variant-numeric:tabular-nums; text-align:end; }
+.gf .gf-nav-cell .sev .g { color:var(--sev); }
+.gf .gf-nav-cell svg { grid-column:1 / -1; display:block; width:100%; height:30px; }
+.gf .gf-nav-cell .band { fill:var(--in-range); opacity:.08; }
+.gf .gf-nav-cell .area { fill:var(--sev); opacity:.13; }
+.gf .gf-nav-cell .trace { fill:none; stroke:var(--sev); stroke-width:1.3; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+/* the figure: the chart over the shipped Day key */
+.gf-fig-day { display:grid; grid-template-rows:minmax(0,1fr) auto; border-top:1px solid var(--wk-rule); }
+/* the Episode Log: the shipped ledger's bands, each row a moment at Data rank
+   with its state word; the focused row lights the chart's hairline */
+.gf .gf-log-cap { padding:8px var(--ck-pad) 2px; font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-muted); }
+.gf .gf-log-row { grid-template-columns:auto auto minmax(0,1fr); }
+.gf .gf-log-row .text { grid-column:auto; }
+.gf .gf-log-row .tier[data-state="fired"] { color:var(--mk-primary); }
+.gf .gf-log-row .tier[data-state="outranked"] { color:var(--mk-warn); }
+.gf .gf-log-row .tier[data-state="near_miss"] { color:var(--mk-accent); }
+.gf .gf-log-row .tier[data-state="not_in_data"] { color:var(--notindata); }
+
+/* ---- the sheet: at narrow widths the reading pane becomes a sheet over the
+   figure, opened from the member button in the figure rail. Structural, not a
+   third switch row. */
+.gf-sheet-toggle,.gf-narrow-seat { display:none; }
+
+@media (max-width:1100px) and (min-width:701px) {
+  .gf { --gf-reading:256px; --gf-fig2:186px; --gf-fig-trial:190px; }
+  .gf .instrument .meta { display:none; }
+}
+@media (max-width:700px) {
+  .gf-main .mockbar { display:none; }
+  .gf-main { grid-template-rows:minmax(0,1fr); }
+  .gf-desk { grid-template-columns:minmax(0,1fr); }
+  .gf-stage { grid-template-rows:auto auto minmax(0,1fr); }
+  .gf-stage > header.gf-head { padding:8px var(--ck-pad); gap:10px; }
+  .gf-title { font-size:1.05rem; }
+  .gf-sub { font-size:var(--ck-body); }
+  .gf .instruments { padding:0 var(--ck-pad); min-height:38px; }
+  .gf .instruments .gf-desk-only { display:none; }
+  .gf-narrow-seat { display:flex; }
+  .gf-sheet-toggle { display:inline-flex; align-items:center; gap:6px; }
+  .gf .seg button { min-height:28px; }
+  .gf .ec-chart-key { gap:2px 14px; min-height:0; padding-bottom:6px; }
+  .gf .ec-chart-key .gf-tools { flex-basis:100%; display:flex; justify-content:flex-end; padding-top:4px; }
+  .gf .ds-chart-legend { padding:4px var(--ck-pad) 6px; }
+  .gf-reading { position:absolute; inset:0; z-index:2; background:var(--wk-surface); border-left:0; box-shadow:var(--ck-tile-shadow); transform:translateY(100%); transition:transform .16s ease; visibility:hidden; }
+  .gf[data-sheet="open"] .gf-reading { transform:none; visibility:visible; }
+  .gf .gf-sheet-close { display:inline-flex; }
+  .gf-stage.gf-stage-table { grid-template-rows:auto auto minmax(0,1fr); }
+  /* one seat: the progress figure or the windows table; the Trial hero or its table */
+  .gf-stage.gf-stage-focus,.gf-stage.gf-stage-trial { grid-template-rows:auto auto minmax(0,1fr); }
+  .gf .gf-roster-row .text small { white-space:normal; }
+  .gf .gf-row { min-height:40px; }
+  .gf-members { max-height:none; }
+  .gf-scroll { padding:8px var(--ck-pad) 12px; }
+  .gf-empty { padding:16px var(--ck-pad); }
+  /* Day: the hero composition takes the figure; the ribbon keeps its spine at
+     the pane edge and its columns at touch height; the month scrolls in place */
+  .gf-stage.gf-stage-day { grid-template-rows:auto auto auto minmax(var(--gf-day-min,220px),1fr); }
+  /* the lane's cells are the touch targets for 48 slots: taller here, with the
+     slot arrows beside; the key wraps rather than clipping */
+  .gf-stage.gf-stage-basal { grid-template-rows:auto auto auto auto minmax(0,1fr); }
+  .gf .gf-dw.lane-wrap .lane { height:20px; margin-left:var(--ck-pad); margin-right:var(--ck-pad); }
+  .gf .gf-dw.lane-wrap .lane-key { margin-left:var(--ck-pad); margin-right:var(--ck-pad); flex-wrap:wrap; white-space:normal; }
+  .gf-nav-ribbon { margin-left:0; margin-right:0; --gf-rb-plot:48px; --gf-rb-lab:40px; }
+  .gf-nav-month { padding:6px var(--ck-pad) 8px; }
+  /* Day's rail stacks. Under 831px the shipped sheet turns `.instruments`
+     into a sideways-scrolling flex strip (`display:flex; overflow-x:auto`,
+     each `.instrument` `flex:0 0 auto`), which is the workstation's own narrow
+     rail; on this desk it carried Month to x 403–462 and Episode Log past it,
+     reachable only by scrolling the strip. The Day rail is a grid of two rows
+     instead: the day steps, then the week or month label with its two
+     switches, every control at touch height and inside the viewport. */
+  .gf .gf-stage-day .instruments { display:grid; grid-template-columns:minmax(0,1fr); overflow:visible; gap:2px; padding:4px var(--ck-pad); }
+  .gf .gf-stage-day .instruments .gf-tools { justify-content:space-between; min-height:36px; }
+  .gf .gf-stage-day .instruments .gf-tools .meta { flex:1 1 auto; }
+  .gf .gf-stage-day .seg button { min-height:36px; min-width:36px; }
+  .gf .gf-stage-day .gf-month-toggle, .gf .gf-stage-day .gf-sheet-toggle { min-height:36px; }
+  /* An open month takes the stage's flexible row and scrolls inside it; the
+     hero figure holds a floor beneath while dates are browsed, and the
+     calendar's cells sit at 40px so three or four weeks show at 624px. */
+  .gf-stage.gf-stage-day:has(.gf-nav[data-open="month"]) { grid-template-rows:auto auto minmax(0,1fr) minmax(160px,auto); }
+  .gf-nav[data-open="month"] { max-height:none; }
+  .gf .gf-nav-cell { min-height:40px; }
+}
+
+/* ---- utilities: one pane where the reading pane sits (the sheet, narrow),
+   holding a form, a list or an article at the reading pane's ranks. Fields
+   are the shipped page's own rule (frontend/index.html `input, select`). */
+.gf-utility input:not([type="checkbox"]), .gf-utility select { padding:9px 11px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:.9rem; width:100%; background:var(--surface); color:var(--text); font-family:inherit; transition:border-color .15s, box-shadow .15s; }
+.gf-utility input:focus, .gf-utility select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--ring); }
+.gf-utility form { display:grid; gap:2px; }
+.gf-utility form .gf-meta { padding:6px 0 4px; color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf-utility label { margin:6px 0 0; }
+.gf-utility .gf-check { display:flex; align-items:center; gap:8px; margin:0; color:var(--wk-ink-body); font-size:var(--ck-body); min-height:28px; }
+.gf-utility .gf-field { display:flex; gap:6px; align-items:center; padding:2px var(--ck-pad) 6px; }
+.gf-utility form .gf-field { padding:0; }
+.gf-utility .gf-field input { min-width:0; flex:1; }
+.gf-utility .gf-chips { display:flex; flex-wrap:wrap; gap:6px; padding:2px var(--ck-pad) 6px; }
+.gf-utility .gf-chip { display:inline-flex; }
+.gf-utility .gf-chip .gf-btn:first-child { border-start-end-radius:0; border-end-end-radius:0; }
+.gf-utility .gf-chip .gf-btn:last-child { border-start-start-radius:0; border-end-start-radius:0; border-inline-start:0; min-width:30px; }
+.gf-utility .linkbtn { display:inline; margin:0 var(--ck-pad) 6px; padding:0; font-size:var(--ck-micro); }
+.gf-utility .gf-seg { margin:2px var(--ck-pad) 6px; flex-wrap:wrap; }
+.gf-utility .gf-seg button { flex:1 1 auto; min-height:28px; }
+.gf-visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+/* entries and questions: the reading pane's row idiom; the tools sit under the text */
+.gf .gf-entry-row { grid-template-columns:auto minmax(0,1fr); cursor:default; }
+.gf .gf-entry-row:hover { background:transparent; }
+.gf .gf-row-tools { grid-column:1 / -1; display:flex; gap:12px; }
+.gf .gf-row-tools .linkbtn { margin:0; }
+.gf .gf-question > p { padding:2px var(--ck-pad) 4px; }
+.gf .gf-question .gf-answered { color:var(--wk-ink-body); }
+/* the answers are one row; the way into the day sits under them on its own */
+.gf .gf-question .gf-question-day { padding-top:0; }
+.gf .gf-spark { height:120px; margin:0 var(--ck-pad) 2px; }
+.gf .gf-status .gf-actions { padding-top:2px; }
+/* the article reads at Body rank on the reading pane's measure */
+.gf .gf-article { padding:0 var(--ck-pad) 14px; color:var(--wk-ink-body); line-height:1.5; }
+.gf .gf-article .gf-title { margin:0 0 8px; }
+.gf .gf-article h2:not(.gf-title), .gf .gf-article h3 { margin:14px 0 4px; font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; color:var(--mk-secondary); }
+.gf .gf-article h3 small { margin-left:6px; font-family:var(--ck-mono); font-weight:500; letter-spacing:0; text-transform:none; color:var(--mk-muted); }
+.gf .gf-article p { margin:0 0 8px; }
+.gf .gf-article p.gf-meta { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf .gf-article ul { margin:0 0 8px; padding-left:18px; }
+.gf .gf-article li { margin:0 0 4px; }
+.gf .gf-article blockquote { margin:0 0 8px; padding:2px 0 2px 10px; border-left:2px solid var(--wk-rule); color:var(--mk-muted); }
+.gf .gf-article code { font-family:var(--ck-mono); font-size:var(--ck-micro); }
+.gf .gf-article .linkbtn { margin:0; font-size:inherit; }
+.gf .gf-article small { color:var(--mk-muted); font-size:var(--ck-micro); }
+.gf .gf-glossary { grid-template-columns:minmax(0,1fr); gap:2px; }
+.gf .gf-glossary dt { color:var(--mk-text); font-size:var(--ck-body); font-weight:600; margin-top:6px; }
+.gf .gf-glossary dt small { margin-left:6px; font-family:var(--ck-mono); font-weight:500; font-size:var(--ck-micro); color:var(--mk-muted); }
+.gf .gf-glossary dd { margin-bottom:4px; }
+/* the narrow strip: the shell hides its footer utilities and topbar Log carbs
+   under 760px, so the desk carries them as one row at touch height */
+.gf-utility-strip { display:none; }
+.gf-main .mockbar[data-source] .gf-review[data-source="utilities"] { display:contents; }
+@media (max-width:700px) {
+  .gf { grid-template-rows:minmax(0,1fr) auto; }
+  .gf-utility-strip { display:flex; border-top:1px solid var(--wk-rule); background:var(--wk-surface); }
+  .gf-utility-strip button { flex:1 1 0; min-height:44px; padding:4px 2px; border:0; border-radius:0; background:transparent; color:var(--wk-ink-body); font:inherit; font-size:var(--ck-micro); font-weight:600; cursor:pointer; }
+  .gf-utility-strip button[aria-pressed="true"] { color:var(--wk-ink); box-shadow:inset 0 2px 0 var(--ck-focus-mark); }
+  .gf-utility-strip button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+  .gf-utility-strip .cockpit-count { margin-left:3px; }
+  .gf-utility .gf-btn, .gf-utility .gf-seg button { min-height:36px; }
+  .gf-utility .linkbtn { min-height:36px; display:inline-flex; align-items:center; }
+}

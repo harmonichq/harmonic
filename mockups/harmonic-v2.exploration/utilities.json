@@ -1,0 +1,319 @@
+{
+  "_generated_by": "mockups/harmonic-v2.exploration/generate.py",
+  "_note": "SYNTHETIC static source capture. Glossary wording is preserved verbatim from v1; presentation labels remain governed by CONTEXT.md.",
+  "glossary": {
+    "module_path": "mockups/harmonic-v2.exploration/glossary.js",
+    "source_path": "frontend/index.html",
+    "start_line": 3757
+  },
+  "guide": {
+    "articles": {
+      "reading-day": {
+        "markdown": "The **Day** tab is the forensic replay: *I crashed on Tuesday \u2014 what happened?*\nIt pairs one day's glucose chart with a chronological **Episode Log**.\n\n## The chart\n\nThe sticky glucose curve runs the width of the day, banded by target range.\nBoluses, carbs, and basal changes are marked on the timeline \u2014 every color is\npaired with a shape or label so the marks read without relying on color alone.\n\n## The Episode Log\n\nDown the right, each **episode** the engine assembled is a card in time order: an\nanchor (a meal bolus, a low, an unexplained rise), the window around it, and the\n**one lever** attributed to it \u2014 its earliest actionable driver. Behaviors that\nalso fired are folded in as *consequences* of that lever, never stacked as\nseparate blame.\n\nClick an episode to highlight its window on the chart above. That handoff \u2014 log\nrow \u2194 chart region \u2014 is how you read *why* a moment went the way it did.\n\n> **Open your [Day surface](app:day)** to replay a specific date.\n",
+        "source_path": "docs/kb/reading-day.md"
+      },
+      "reading-diagnose": {
+        "markdown": "The **Diagnose** tab answers one question: *what should I look at first?* It is a\nsingle ranked queue of **levers** \u2014 one honest list, tuning and behavioral\nmixed, most worth-your-attention at the top.\n\n## The rank\n\nEach row is scored by `\u221b(severity \u00d7 recurrence \u00d7 confidence)` \u2014 how bad, how\noften, how sure. A big score means a lever that hurt a lot, happened repeatedly,\nand the engine is confident about. The equation sits behind the per-lever\nexpander; the factor bars on the card show you the three inputs at a glance.\n\n## Setting vs. habit\n\nEvery lever is chipped **\u2699 Setting** or **\u25c8 Habit**. That flavor is a chip, never\na lane \u2014 the rank stays honest across both. What differs is where \"accept\" sends\nyou:\n\n- **\u2699 Setting** findings (basal, ISF, or I:C) flow to\n  [The Plan tab](#the-plan-tab) as a proposed settings change.\n- **\u25c8 Habit** levers (late bolus, over-treated low) flow to Focus / Verify, because\n  no pump setting fixes them.\n\n## \"Why so few?\"\n\nA short queue is a *good* sign, not a broken one. The tail of the surface tells\nyou how many opportunities the engine looked at and chose to stay quiet on, and\nwhy \u2014 thin windows, upstream causes, near-misses under threshold. Read it before\nyou assume nothing's wrong.\n\n> **Open your [Diagnose surface](app:diagnose)** to see your own ranked levers.\n",
+        "source_path": "docs/kb/reading-diagnose.md"
+      },
+      "start-here": {
+        "markdown": "This tool reads *your own* Control-IQ history and tells you where your basal,\nISF, and I:C settings might be off \u2014 and where your habits, not your settings,\nare driving the highs and lows. It is **advisory**. It never touches your pump;\nit hands you a specific number and the evidence behind it to take to your\nclinician.\n\n## How to read any verdict here\n\nEvery claim carries an **evidence tier**, and the tier is the first thing to\nread:\n\n- **Observed** \u2014 a hard fact from the feed (a 4.5 U bolus at 19:15, BG hitting\n  58). Trust it plainly.\n- **Inferred** \u2014 derived from the *shape* of the curve, so it is hedged\n  (\"likely rescue carbs\"). Weigh it, don't bank on it.\n- **Not in data** \u2014 an explicit unknown the feed can't show, flagged rather than\n  guessed.\n\nThe engine would rather stay silent than assert something the feed can't\nsupport. **Silence is a verdict**, not a gap \u2014 see [How the engine reasons](#the-pipeline).\n\n## Where to go next\n\n- [Reading the Diagnose surface](#reading-diagnose) \u2014 the ranked list of what to\n  fix first. Start here on most days.\n- [Reading a Day](#reading-day) \u2014 replay a single day when you crashed and want\n  to know *why*.\n- [The Plan tab](#the-plan-tab) \u2014 the suggested basal profile, and how to act on\n  it with your clinician.\n",
+        "source_path": "docs/kb/start-here.md"
+      },
+      "the-plan-tab": {
+        "markdown": "The **Plan** tab is the payoff: a **suggested basal profile** you can read next to\nyour current one, built from what Control-IQ actually delivered during clean\nwindows.\n\n## Why these numbers\n\nFor each time slot the engine takes the **median** of clean delivered basal \u2014 not\nthe mean. Control-IQ's clean delivery is right-skewed (a tail of corrective\nbasal), so the mean over-suggests; the median is the honest center. Thin slots\nget a wider interval and their `n`, never a confident-looking number over three\nreadings.\n\n## How to act on it\n\nThis is a **conversation starter for your clinician**, not a dose. The tool won't\nchange a pump setting and neither should you on its say-so alone. Bring the\nsuggested profile, the window it was built from, and the evidence \u2014 the clinician\nmakes the call.\n\n> **Open your [Plan surface](app:plan)** to see your suggested profile.\n",
+        "source_path": "docs/kb/the-plan-tab.md"
+      }
+    },
+    "catalog": {
+      "engine": {
+        "is": [
+          "A local, advisory read of your Control-IQ history. It explains your report; it does not drive your pump.",
+          "One actionable cause per episode: the earliest driver, with the other co-occurring behaviors narrated as its consequences.",
+          "Every claim is tagged Observed, Inferred, or Not-in-data, and any inference is hedged, never asserted as fact."
+        ],
+        "name": "Scenario engine",
+        "tagline": "It reads your own Control-IQ feed and names the most likely driver behind each high or low, one actionable cause at a time. It also marks what it's only inferring, or can't see at all.",
+        "wont": [
+          "Won't dose for you or change a pump setting. It only suggests where to look.",
+          "Won't invent what the feed can't show. Rescue carbs are invisible on Tandem Source, so anything leaning on them is Inferred at best.",
+          "Won't pile on blame. Co-occurring behaviors collapse into one attributed lever, never a stack of separate flags.",
+          "Won't grow its vocabulary casually. The lever set and the silence taxonomy are both closed, so adding one is a deliberate act."
+        ]
+      },
+      "exposures": [
+        {
+          "denominator": "Scored against every meal in the window: how often a meal ran into this.",
+          "label": "Meals",
+          "value": "meals"
+        },
+        {
+          "denominator": "Scored against every low in the window: how often a low ran into this.",
+          "label": "Lows",
+          "value": "lows"
+        },
+        {
+          "denominator": "Scored against every run of back-to-back corrections.",
+          "label": "Correction clusters",
+          "value": "correction_clusters"
+        },
+        {
+          "denominator": "Scored against every unexplained high in the window.",
+          "label": "Unexplained highs",
+          "value": "highs"
+        }
+      ],
+      "levers": [
+        {
+          "exposure": "meals",
+          "meaning": "You bolused for a meal, but glucose still ran away high afterward. The dose covered fewer carbs than the meal actually held.",
+          "measured": "meals",
+          "recommendation": "Carbs were likely undercounted \u2014 estimate higher, or split the dose for big meals.",
+          "title": "Carb undercount",
+          "value": "carb_undercount"
+        },
+        {
+          "exposure": "meals",
+          "meaning": "Glucose was already climbing when the meal bolus landed, so the insulin spent its first stretch just catching up to a rise already underway.",
+          "measured": "meals",
+          "recommendation": "Glucose was already climbing at the dose \u2014 try bolusing ~15 min before eating.",
+          "title": "Late bolus",
+          "value": "late_bolus"
+        },
+        {
+          "exposure": "meals",
+          "meaning": "The meal dose was a touch strong, so glucose dropped toward a low afterward, leaving something to walk back.",
+          "measured": "meals",
+          "recommendation": "The meal dose ran glucose near-low \u2014 a slightly smaller dose may leave less to walk back.",
+          "title": "Meal over-delivery",
+          "value": "meal_over_delivery"
+        },
+        {
+          "exposure": "lows",
+          "meaning": "A low got more fast carbs than it needed and rebounded high.",
+          "measured": "lows",
+          "recommendation": "The low rebounded high \u2014 follow your usual low-treatment plan and recheck in 15 min before treating again.",
+          "title": "Over-treated low",
+          "value": "over_treated_low"
+        },
+        {
+          "exposure": "correction_clusters",
+          "meaning": "Corrections landed back-to-back before the first had finished working, and the combined insulin overshot into a low.",
+          "measured": "correction_clusters",
+          "recommendation": "Corrections stacked, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "title": "Correction stacking",
+          "value": "correction_stacking"
+        },
+        {
+          "exposure": "lows",
+          "meaning": "A correction landed while an earlier dose was still active; together they carried you low.",
+          "measured": "lows",
+          "recommendation": "A correction landed on insulin still working, then went low \u2014 give one ~1\u20132 h to act before adding more.",
+          "title": "Correction on active insulin",
+          "value": "correction_on_iob"
+        },
+        {
+          "exposure": "highs",
+          "meaning": "Glucose rose with the shape of a meal but no bolus sits near it. A meal that went un-bolused, or was bolused very late.",
+          "measured": "highs",
+          "recommendation": "Glucose rose like a meal with no bolus near it \u2014 bolusing (even late) keeps the peak down.",
+          "title": "Missed / unannounced meal",
+          "value": "missed_meal"
+        },
+        {
+          "exposure": "highs",
+          "meaning": "You bolused for the meal, glucose climbed anyway, and a correction was needed afterward. The dose did not cover what followed. This says nothing about how many carbs the meal held \u2014 only that the dose given fell short of the outcome.",
+          "measured": "meals",
+          "recommendation": "A correction was needed behind this meal dose \u2014 worth watching how often that happens before changing anything.",
+          "title": "Meal bolus fell short",
+          "value": "meal_bolus_short"
+        }
+      ],
+      "pipeline": {
+        "chain": [
+          {
+            "body": "The engine scans your feed for anchors: a meal bolus, a low, a correction, an unexplained rise. Each is a candidate moment, not yet a judgment.",
+            "color": "--primary",
+            "one_liner": "A moment worth examining.",
+            "step": "Anchor"
+          },
+          {
+            "body": "Around each anchor the engine assembles an episode: the glucose curve, the insulin on board, and every behavior that fired in the window. That's the full context of what happened.",
+            "color": "--secondary",
+            "one_liner": "The story around an anchor.",
+            "step": "Episode"
+          },
+          {
+            "body": "Exactly one lever is attributed per episode: its earliest actionable driver (root-cause-by-time). Other behaviors that also tripped are narrated as consequences of that lever, not as separate causes.",
+            "color": "--accent",
+            "one_liner": "The one actionable cause.",
+            "step": "Lever"
+          },
+          {
+            "body": "When one lever recurs across episodes, it becomes a pattern with a rate (\"ran away high in ~28% of your meals\"), scored against how many opportunities of that kind you actually had.",
+            "color": "--warn",
+            "one_liner": "The same lever, again and again.",
+            "step": "Pattern"
+          }
+        ],
+        "suppression_truths": [
+          {
+            "body": "A single dinner can trip three detectors at once. The engine does not report three problems. It attributes the earliest actionable driver and folds the rest in as its downstream consequences. A behavior that genuinely happened can be outranked by an earlier cause and suppressed. Fewer, truer flags beat a longer list.",
+            "title": "One episode, one lever."
+          },
+          {
+            "body": "Sometimes a behavior doesn't clear its bar. Sometimes an observable low or suspend upstream already explains the move, or a prior bolus owns the rise. In each case the engine stays silent and records why. Every quiet episode carries a reason (below). It would rather say nothing than assert something the feed can't support.",
+            "title": "Silence is a verdict, not a gap."
+          }
+        ]
+      },
+      "silence_reasons": [
+        {
+          "body": "The window was too sparse to judge, with not enough readings to say anything honest.",
+          "label": "Insufficient data",
+          "tier": "not_in_data",
+          "value": "insufficient_data"
+        },
+        {
+          "body": "The behavior plainly didn't happen: a flat slope, no stack, no correction, no low. A genuinely clean opportunity.",
+          "label": "No trigger",
+          "tier": "observed",
+          "value": "no_trigger"
+        },
+        {
+          "body": "It happened but fell short of the firing bar: the near-miss where a mis-tuned threshold hides.",
+          "label": "Under threshold",
+          "tier": "observed",
+          "value": "under_threshold"
+        },
+        {
+          "body": "An observable recent low and/or a defensive suspend explains the move. A recovery, not the behavior itself.",
+          "label": "Upstream cause",
+          "tier": "inferred",
+          "value": "upstream_cause"
+        },
+        {
+          "body": "The rise started from an already-high level, not from flat, so it isn't the from-flat run this detector looks for.",
+          "label": "Prior high baseline",
+          "tier": "observed",
+          "value": "prior_high_baseline"
+        },
+        {
+          "body": "A completed carb bolus in the recent lookback already owns the rise this dose landed into. A real excursion already covered, not a late meal bolus.",
+          "label": "Owned by prior bolus",
+          "tier": "inferred",
+          "value": "owned_by_prior_bolus"
+        },
+        {
+          "body": "A substantial announced meal at the low owns the rebound, so fast-carb treatment cannot be isolated from the meal response.",
+          "label": "Owned by announced meal",
+          "tier": "inferred",
+          "value": "owned_by_announced_meal"
+        },
+        {
+          "body": "The outcome never arrived inside the detector's window. The story ran past the edge of what it watches.",
+          "label": "Horizon expired",
+          "tier": "observed",
+          "value": "horizon_expired"
+        }
+      ],
+      "tiers": [
+        {
+          "body": "A hard fact straight from the feed, like a bolus of 10 U at 15:48, or BG hitting 64. Asserted plainly.",
+          "label": "Observed",
+          "value": "observed"
+        },
+        {
+          "body": "Shape-derived, and therefore hedged (\"likely rescue carbs\"). Never asserted as fact.",
+          "label": "Inferred",
+          "value": "inferred"
+        },
+        {
+          "body": "An explicit unknowable, flagged as such rather than guessed.",
+          "label": "Not in data",
+          "value": "not_in_data"
+        }
+      ],
+      "worked": {
+        "episode": {
+          "attributed": "Carb undercount",
+          "peak": 247,
+          "peak_state": "high",
+          "spark_meta": "Bolus at **18:40**, then a **slow, sustained climb**. The curve keeps rising long after the dose should have caught it.",
+          "title": "Dinner ran away high",
+          "when": "Tue \u00b7 18:40 bolus \u00b7 peak +2h05m"
+        },
+        "intro": "Here's how those four stages play out on one made-up dinner. It's a walkthrough to read, not feedback on your own data.",
+        "pattern": {
+          "body": "This same lever recurred in ~28% of your meals this window. That rate is the pattern, scored against how many meals you actually had.",
+          "rate": "~28%",
+          "stage": "Pattern"
+        },
+        "steps": [
+          {
+            "cited_label": "from the feed:",
+            "hedged": false,
+            "pills": [
+              {
+                "kind": "insulin",
+                "v": "9.0 U"
+              },
+              {
+                "kind": "cgm",
+                "v": "BG 132"
+              }
+            ],
+            "stage": "Anchor",
+            "t": "18:40 \u00b7 meal bolus",
+            "text": "You bolused **9.0 U** for dinner. A meal bolus is a candidate moment, so the engine flags it to watch, no judgment yet.",
+            "tier": "observed"
+          },
+          {
+            "cited_label": "from the feed:",
+            "hedged": false,
+            "pills": [
+              {
+                "kind": "cgm",
+                "v": "+115 mg/dL"
+              },
+              {
+                "kind": "basal",
+                "v": "IOB 6.1 U"
+              }
+            ],
+            "stage": "Episode",
+            "t": "18:40 \u2192 20:45 \u00b7 the window",
+            "text": "The engine assembles the context: the CGM curve, insulin still on board, and every behavior that fired. Glucose climbs from **132 \u2192 247** and never turns. No correction, no low.",
+            "tier": "observed"
+          },
+          {
+            "cited_label": "reasoned from shape:",
+            "hedged": true,
+            "note": "A late bolus and a missed meal both also leave a rise, but the bolus was on time and sits right on the climb, so those are ruled out. One driver survives.",
+            "pills": [
+              {
+                "v": "on-time bolus"
+              },
+              {
+                "v": "flat start"
+              },
+              {
+                "v": "sustained rise"
+              }
+            ],
+            "stage": "Lever",
+            "t": "the earliest actionable driver",
+            "text": "The dose landed on time and glucose was flat at the meal, yet it still ran away. The likeliest driver is that the dose covered **fewer carbs than the meal held**.",
+            "tier": "inferred"
+          }
+        ],
+        "verdict": {
+          "body": "Exactly one lever per episode. Anything else that co-occurred is folded in as a consequence, never reported as a second problem.",
+          "label": "Attributed lever",
+          "stage": "Lever",
+          "title": "Carb undercount"
+        }
+      }
+    }
+  }
+}

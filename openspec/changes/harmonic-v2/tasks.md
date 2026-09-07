@@ -16,7 +16,7 @@ ticket locks after Connor approves the selected product direction.
 ## 2. Design the complete experience
 
 - [x] 2.1 Complete the product brief and setting, habit, direct-Day, routine-return, and history journeys.
-- [ ] 2.2 Test Overview / Explore / Changes / Day and settings access against those journeys.
+- [x] 2.2 Test the desktop Overview / Explore / Changes / Day and settings access against those journeys. The destination name remains provisional.
 - [ ] 2.3 Settle durable review/history, comparison-design reconciliation, and required backward-compatible contracts.
 - [ ] 2.4 Settle the risk contract and the first useful v2 increment's single-file component/evidence boundaries, reusing authoritative domain and chart behavior without re-deriving engine policy or requiring wholesale v1 decomposition.
 - [ ] 2.5 Obtain the required synthetic walkthroughs and rendered visual/interaction evidence through the applicable UI Craft lifecycle.
@@ -38,11 +38,10 @@ belongs to this investigation.
 
 ## Saved prototype checkpoint
 
-Fable authored the workstation and setting journey. The generated Focus and
-preemption evidence is ready, but its surface was not authored before Fable's
-provider limit. Complete habit, direct-Day and utility walkthroughs, the final
-language/polish pass, and Connor's visual approval remain open. The selected
-concept's REVIEW.md and AUDIT.md distinguish observed checks from these gaps.
+At the original five-hour checkpoint, Fable had authored the workstation and
+setting journey; Focus, direct-Day and utilities were still incomplete. The
+resumed rounds below supersede those implementation gaps. Connor's exact visual
+approval remains open; the checkpoint was not a visual lock.
 
 Published checkpoint: [draft PR #379](https://github.com/harmonichq/harmonic/pull/379), with [attributed findings on #348](https://github.com/harmonichq/harmonic/issues/348#issuecomment-5559540674). The publication completes the requested checkpoint; the open design and approval items above remain open.
 
@@ -72,7 +71,7 @@ full-screen flow with the polish of an application. This adds a separate
 design round after the complete desktop journeys and their review. The existing
 390-pixel usability checks do not fulfill that round.
 
-- [ ] M1. Complete the current desktop prototype and its full journey/craft review before starting the dedicated mobile design work.
+- [x] M1. Complete the current desktop prototype and its full journey/craft review before starting the dedicated mobile design work. Round 9 passed both isolated craft assessments and the affected browser journeys; exact visual approval remains separate.
 - [ ] M2. Continue with Fable 5.1 at high effort as design lead, using UI Craft, the original brief, DESIGN.md and approved CONTEXT.md language. Explore and review coherent mobile composition and navigation as their own design.
 - [ ] M3. Prototype the complete setting and habit journeys, set aside and return, comparisons, individual episodes, Day, conclusions/history and retained utilities as full-screen app flows. Define touch interaction, transitions and context retention together.
 - [ ] M4. Ground the mobile design in the same source evidence and reusable clinical/chart boundaries. Preserve cohort membership, dates, uncertainty and original/ending context.
@@ -86,8 +85,11 @@ the #350 and #380 dependency gates above.
 Dependency update, September 6: [the QA sweep PR #381](https://github.com/harmonichq/harmonic/pull/381)
 merged at 20:52 UTC, followed by [its archive PR #382](https://github.com/harmonichq/harmonic/pull/382)
 at 21:47 UTC. PR #380 merged at 23:26:54 UTC as
-`002e633b17673a25fec1b08c281472f580d16cd1`. Prototype integration,
-regeneration and affected-journey replay remain pending against that baseline.
+`002e633b17673a25fec1b08c281472f580d16cd1`. The design branch incorporated
+that baseline in `bb066fcf9a24f17226dffb0a90d959e413504734` and regenerated
+the extracted app material. The generator check, Vite build, affected-journey replay and independent
+desktop craft review passed. The dedicated mobile round and exact visual
+approval remain open.
 The build foundation is available; the eventual v2 build owns its new shell's
 component boundaries and extraction of the shared pieces it uses. It does not
 require a separate wholesale decomposition of the retiring v1 shell.

@@ -284,8 +284,9 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
   function controls() {
     if (mockbar.querySelector('.gf-review[data-source="journey"]')) return;
     const options = GROUPS.map(([label, keys]) => `<optgroup label="${e(label)}">${keys.map(key => `<option value="${key}" ${key === clockKey ? 'selected' : ''}>${e(CLOCKS()[key].label)}</option>`).join('')}</optgroup>`).join('');
+    mockbar.querySelector('.gf-review-notes-body').insertAdjacentHTML('beforeend', `<p class="gf-review-memo" data-source="journey">One synthetic history. A branch clock serves that branch's later reads and sets the other branch back to the decision point; set-asides, a staged change, a pin and a conclusion are this page's memory and survive the clock.</p>
+      <p class="gf-review-memo" data-source="journey">Fixture limits: the following read shows the follow-up review time as its read time (the capture serves none), and the capture holds no decision after the first, so a second change cannot stage in this history.</p>`);
     mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" data-source="journey" role="group" aria-label="Journey review controls">
-      <span class="gf-review-memo">One synthetic history. A branch clock serves that branch's later reads and sets the other branch back to the decision point; set-asides, a staged change, a pin and a conclusion are this page's memory and survive the clock. Fixture limits: the following read shows the follow-up review time as its read time (the capture serves none), and the capture holds no decision after the first, so a second change cannot stage in this history.</span>
       <label>Clock <select aria-label="Journey clock">${options}</select></label>
       <label><input type="checkbox" aria-label="Next journey save fails"> Next save fails</label>
       <label><input type="checkbox" aria-label="Next read fails"> Next read fails</label></span>`);
@@ -307,7 +308,10 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
 
   /* ---- wiring ------------------------------------------------------------------ */
   function bind() {
-    for (const button of surface.querySelectorAll('[data-row]')) button.onclick = () => { explore.id = button.dataset.row; view.sheetOpen = false; view.focusAfterRender = kit.narrow() ? '.gf-sheet-toggle' : '.gf-roster-row[aria-pressed="true"]'; kit.render(); };
+    // A row that opens a new subject sends focus to that subject's pane head, so
+    // focus and the pane's scroll reset land in the same place; re-pressing the
+    // open row keeps focus where the hand is.
+    for (const button of surface.querySelectorAll('[data-row]')) button.onclick = () => { const opened = explore.id !== button.dataset.row; explore.id = button.dataset.row; view.sheetOpen = false; view.focusAfterRender = kit.narrow() ? '.gf-sheet-toggle' : opened ? '.gf-reading > header h2' : '.gf-roster-row[aria-pressed="true"]'; kit.render(); };
     for (const button of surface.querySelectorAll('[data-restore]')) button.onclick = () => { restore(button.dataset.restore); kit.navigate(destination === 'explore' ? 'explore' : 'overview'); };
     for (const button of surface.querySelectorAll('[data-journey]')) button.onclick = () => {
       if (button.dataset.journey === 'retry-read') { refresh(); view.focusAfterRender = memory.error ? '[data-journey="retry-read"]' : null; kit.render(); }

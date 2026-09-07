@@ -958,3 +958,182 @@ Limits and gaps (desktop pass):
   Guide keeps the v1 wording identifiable rather than rewriting it.
 * Mobile design is a later phase; the narrow rules here keep the jobs
   reachable, nothing more.
+
+### The desktop browser-repair pass
+
+Against the merged checkout (bb066fc, regenerated inputs read-only), from the
+parent's 1280×720 evidence on `?source=journey`.
+
+**The Carb questions defect.** Root cause, from source: the question card's
+sparkline host carried `data-chart="prompt"`. `data-chart` is how every desk
+figure finds its mounter, and the desk mounters (`setting.mountCharts` on the
+journey, the main `mountCharts` on the meals source) claim every `[data-chart]`
+in the surface and hand `host.querySelector('.gf-chart')` to `echarts.init` —
+`null` for a sparkline host, which ECharts rejects inside `getInstanceByDom`
+as `Cannot read properties of null (reading 'getAttribute')`. The throw left
+`render()` before `utilities.bind()` ran, so the pane painted with no
+handlers (No, Not sure, Close and Open all dead) and no sparklines, which is
+what the screenshot shows; the click did not start it, opening the pane did.
+Fix: the host is `data-utility-chart="prompt"` and only the utilities module
+mounts it (`harmonic-v2-glucose-utilities.js`). No guard was added; the
+mounters are unchanged. A stub smoke asserts no utility body carries
+`data-chart`, `data-trial-chart`, `data-focus-chart`, `data-day-chart` or
+`data-level`, that the questions pane carries three `data-utility-chart`
+hosts, and that a stub `echarts.init` that throws on a null host mounts all
+three; then No → `2 of 3 open` with Undo, Undo → `3 of 3 open`, Log carbs at
+a question → one entry, Undo → none.
+
+**Compact review controls.** The mock bar is one row: concept, Source, the
+source's clock and capture selects, the three failure checkboxes,
+`Manufactured evidence.` and a `Review notes` disclosure at the row's end
+(`<details class="gf-review-notes">`, native keyboard toggle). Every longer
+note moved into the disclosure as a `.gf-review-memo[data-source]` paragraph
+shown for its own source: the journey's page-memory sentence and its fixture
+limits (now two paragraphs), the Focus memo, the utilities memo, and the
+illustrative-decisions caveat that used to sit in the provenance line. Open,
+the disclosure takes the row below the controls; closed, the bar is the
+control row alone (expected to wrap once on the journey and setting sources
+at 1280; unmeasured here). Click path:
+`.mockbar .gf-review-notes summary` opens and closes it; the selectors
+`[aria-label="Journey clock"]`, `[aria-label="Next journey save fails"]`,
+`[aria-label="Next read fails"]`, `[aria-label="Next utility save fails"]`,
+`[aria-label="Manufactured clock"]`, `[aria-label="Pump capture"]`,
+`[aria-label="Focus clock"]` and `[aria-label="Evidence source"]` are
+unchanged and stay in the visible row. Narrow still hides the bar.
+
+**Basal arrival.** `render()` restored the reading pane's scroll on every
+render, so Overview's roster position (scrolled to `All basal slots`) carried
+into the slot pane and the inspector opened off the top. The scroll now
+survives only while the pane keeps its subject (`destination` plus the pane's
+`aria-label`): stepping questions or nights keeps the place, opening a slot,
+a utility or another destination arrives at the head, where current,
+estimate, recommendation and staging lead. The lane, inspector and figure
+geometry are unchanged and remain the shipped values.
+
+Checks: `node --check` clean on the four changed scripts; `git diff --check`
+clean; `smoke-repair.mjs` output `row controls aria-label="Next utility save
+fails" aria-label="Journey review controls" aria-label="Journey clock"
+aria-label="Next journey save fails" aria-label="Next read fails"` then
+`smoke ok`.
+
+Not verifiable here (Chromium cannot launch in this sandbox): console
+cleanliness on open and on No; the bar's height at 1280×720 and the Day
+chart's regained height; the disclosure's open layout; the slot pane arriving
+at its head; sparklines drawn at 120px; the setting and meals sources' rows.
+
+### The measured desktop presentation pass
+
+Three repairs from the coordinator's 1280×720 measurements, plus one trim.
+`mockups/harmonic-v2-glucose-journey.js`, `mockups/harmonic-v2-glucose.js`,
+`mockups/harmonic-v2-glucose.css`, `mockups/harmonic-v2-glucose-day.js`,
+`mockups/harmonic-v2-glucose-utilities.js`.
+
+**Basal arrival, again.** The pane's scroll reset held, then the roster
+click's `focusAfterRender` focused the newly pressed `[data-row=basal]` at
+the foot of the roster, and that focus scrolled the pane 302px back down. A
+roster row that changes `explore.id` now focuses the new subject's pane head
+(`.gf-reading > header h2`, which `readingHeader` gives `tabindex="-1"`) so
+focus and the reset agree at the top; re-pressing the open row keeps row
+focus; the narrow sheet toggle, the selected-night `.case-occurrence` focus
+and every context return keep their targets. Keyboard focus shows on the
+head through `.gf .pane > header h2:focus-visible`.
+
+**Lane cells over the key.** The scaffold's `.v2-content button` in
+`mockups/_theme.css` (min-height 36px, `--wk-radius`, surface fill) outranks
+the shipped `.lane-cell` box, so each cell grew to 36px inside the 11px lane
+and painted down over the 22px key. `.gf .gf-dw .lane button.lane-cell`
+restores the shipped box (min-height 0, radius 1px, `--cell` fill) in the
+basal desk's own framing; the shipped lane, key and verdict rules are
+untouched.
+
+**Day time labels.** `buildLanesOption` writes its five strips as fractions
+of a 524px host (`index.html .ds-chart`) and leaves the time labels the
+bottom 3%; at this desk's 380px row that is 11px for an 8px margin plus 11px
+text, so the labels fell under the legend. `mountCharts` now re-seats the
+strips into the height above a 24px label reserve (`AXIS_RESERVE`) and passes
+the hairline a span scaled the same way; the option's series, axes and the
+builder are untouched, the page does not scroll, and the resize observer
+re-derives the seat on every size. Checked against the builder's own
+synthetic day: at 380px the strips end at 345.3px and the labels at 364.3px;
+at 524px, 485.0 and 504.0; at 300px, 267.7 and 286.7. Hairline spans
+matched the seated strips at each height.
+
+**Trim.** The questions note reads `N of M open · oldest first.`
+
+Checks: `node --check` clean on the four changed scripts; `git diff --check`
+clean; the seat check above (a throwaway Node script over
+`frontend/__fixtures__/daily.day.json`, not committed).
+
+Not verifiable here (Chromium cannot launch in this sandbox): the slot pane's
+`scrollTop` and `activeElement` after the roster click; the lane's rendered
+cell height and the key's visibility; the rendered clock labels above the
+legend at 1280×720; the head's focus ring under keyboard use.
+
+### Round 7: the four verified repairs
+
+`mockups/harmonic-v2-glucose.css`, `mockups/harmonic-v2-glucose.js`,
+`mockups/harmonic-v2-glucose-day.js`, `mockups/harmonic-v2-glucose-basal.js`,
+`mockups/harmonic-v2-glucose-utilities.js`. Dispositions taken as given: the
+Basal and Trial axes keep their fixed clinical scales and the source's own
+values; cohort members and distribution counts stay open; the change,
+progress and conclusion lead above the fold with the pane scrolling beneath;
+the review bar stays as it is.
+
+**D1 · Month reachable at 390 (second pass; the first failed in Chromium).**
+The first pass set `grid-template-columns` on a rail that is not a grid at
+that width: under 831px the shipped sheet turns `.instruments` into a
+sideways-scrolling flex strip (`diagnose-workstation.css` `@media
+(max-width:831px)`: `display:flex; overflow-x:auto`, each `.instrument`
+`flex:0 0 auto`). That is the workstation's own narrow rail, and on this desk
+it carried Month to x 403–462 and Episode Log past it, reachable only by
+scrolling the strip. Under 700px the Day rail is now declared a grid of two
+rows with overflow visible (`.gf .gf-stage-day .instruments`): the day steps,
+then the week or month label with Month/Week and Episode Log, the label
+taking the slack and the two switches at the right; steps, Month/Week and
+Episode Log are 36px tall, the ‹ › steps 36px wide. The open month was a
+one-row strip for a related reason: the stage's rows are `auto auto auto
+minmax(220px,1fr)`, so at 624px the calendar's auto row got what the hero
+figure's 220px floor left. With a month open the stage now gives the
+calendar the flexible row (`.gf-stage-day:has(.gf-nav[data-open="month"])`),
+the hero figure holds a 160px floor beneath it, and the calendar scrolls
+inside its row (`.gf-nav` keeps `overflow:auto`; the narrow `max-height`
+cap is lifted so the row bounds it). Cells are 40px at that width so three
+or four weeks show before scrolling. The page itself does not scroll.
+Desktop rules are unchanged.
+
+**D2 · Focus after a contextual return.** The Day's Return handler navigated
+without a focus target, so the re-rendered frame left `activeElement` on
+`body`. `from` now names its row: `fromHere` gives the meals' Open Day
+`.gf-member-row[aria-pressed="true"]`, and the basal night's Open Day names
+`.case-occurrence[aria-pressed="true"]` (the selected-night focus it already
+retains). On return, desktop focuses that row, or the reading pane's head if
+the row is not rendered; narrow focuses the sheet toggle and leaves the sheet
+closed, as every other narrow selection does. `render()` now accepts an
+ordered list of candidates and focuses the first present; a single selector
+behaves as before.
+
+**D3 · Log carbs geometry.** The built app's page rule
+`button { font-family: inherit; cursor: pointer; }` (index.html) is what puts
+Inter on the topbar button; the scaffold restates it only inside
+`.v2-content`, so the topbar's Log carbs fell to the UA's Arial and measured
+24px against the app's 25px. `.cockpit-shell button { font-family:inherit;
+cursor:pointer; }` in this sheet states it once for the shell. `_theme-app.css`
+is untouched. The shell theme's own font-family rules address spans
+(`.cockpit-step-number`, `.cockpit-count`, `.cockpit-profile-facts`), so no
+button loses a family to the new rule.
+
+**D4 · The three answers as one group.** The unanswered card put Open
+<date> in the same action row as Log carbs, No and Not sure, and the answered
+card put it beside Undo; at narrow widths they wrapped into one line. Open
+<date> keeps its label and target and sits on its own row after the answers
+(or after Undo), directly beneath them; the "Or, this reading wasn't real"
+line and its Not real action stay the separate exceptional path. No new
+labels. No/Undo, log-at-question, Retry and Close/focus are unchanged.
+
+Checks: `node --check` clean on the four changed scripts; `git diff --check`
+clean; the answer buttons in source are exactly Log carbs, No, Not sure, then
+Not real, with the day row emitted once by `openDay()`.
+
+Not verifiable here (Chromium cannot launch in this sandbox): the Month
+button's box at 390×624; `activeElement` after Return to Overview; the Log
+carbs computed font and 25px height; the narrow card's rows.

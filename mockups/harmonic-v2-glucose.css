@@ -4,8 +4,13 @@
    in a new arrangement and states no new material. theme.css loads last. */
 
 /* ---- frame --------------------------------------------------------------- */
+/* The app's page rule `button { font-family: inherit; cursor: pointer; }`
+   (index.html), which the scaffold restates only inside `.v2-content`: without
+   it the topbar's Log carbs fell to the UA's Arial and lost a pixel of height
+   against the built app. Stated once for the shell, as the app states it. */
+.cockpit-shell button { font-family:inherit; cursor:pointer; }
 .gf-main { padding:0; overflow:hidden; display:grid; grid-template-rows:auto minmax(0,1fr); }
-.gf-main .mockbar { margin:0; padding:4px 14px; gap:12px; border-bottom:1px solid var(--wk-rule); min-height:30px; }
+.gf-main .mockbar { margin:0; padding:3px 14px; gap:2px 12px; border-bottom:1px solid var(--wk-rule); min-height:30px; }
 .gf-main .mockbar strong { font-weight:500; }
 .gf-main .mockbar label { gap:5px; }
 .gf-main .mockbar select { padding:3px 5px; font-size:11px; }
@@ -26,6 +31,7 @@
 .gf .pane > header .meta { margin-left:auto; }
 .gf .pane > header .gf-end { margin-left:auto; display:flex; align-items:center; gap:8px; }
 .gf .pane > header .meta + .gf-end { margin-left:0; }
+.gf .pane > header h2:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
 
 /* ---- the stage's nameplate is its header rail, as the shipped spotlight's is.
    Kicker at Label rank, served title at Title rank (1.14rem, under the No-Hero
@@ -178,7 +184,19 @@
 .gf-main .mockbar[data-source="focus"] .gf-meals-control,
 .gf-main .mockbar[data-source="setting"] .gf-review[data-source="focus"],
 .gf-main .mockbar[data-source="focus"] .gf-review[data-source="setting"] { display:none; }
-.gf-main .mockbar .gf-review-memo { color:var(--mk-muted); font-size:var(--ck-micro); }
+/* Review notes: one disclosure at the row's end holds every longer note (fixture
+   limits, page memory); closed by default so the desk keeps its height, and open
+   it takes the row below. A note shows for the source it belongs to. */
+.gf-main .mockbar .gf-review-notes { margin:0; }
+.gf-main .mockbar .gf-review-notes[open] { flex-basis:100%; }
+.gf-main .mockbar .gf-review-notes summary { cursor:pointer; color:var(--mk-muted); font-size:10.5px; }
+.gf-main .mockbar .gf-review-notes summary:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+.gf-main .mockbar .gf-review-notes-body { display:grid; gap:3px; padding:2px 0 4px; max-width:96ch; }
+.gf-main .mockbar .gf-review-memo { display:none; margin:0; color:var(--mk-muted); font-size:var(--ck-micro); line-height:1.35; }
+.gf-main .mockbar .gf-review-memo:not([data-source]),
+.gf-main .mockbar[data-source="journey"] .gf-review-memo[data-source="journey"],
+.gf-main .mockbar[data-source="focus"] .gf-review-memo[data-source="focus"],
+.gf-main .mockbar[data-source] .gf-review-memo[data-source="utilities"] { display:block; }
 
 /* ---- the focus journey. Windows are columns; behavior and glucose outcomes
    are two tables, never one, so an unavailable window stays visibly unavailable. */
@@ -246,7 +264,6 @@
 .gf-main .mockbar[data-source="setting"] .gf-review[data-source="journey"],
 .gf-main .mockbar[data-source="focus"] .gf-review[data-source="journey"] { display:none; }
 .gf-main .mockbar .gf-review label:has(input) { display:flex; align-items:center; gap:5px; }
-.gf-main .mockbar .gf-review-memo { max-width:44ch; line-height:1.3; }
 
 /* ---- round 4: every basal slot. The shipped lane and its key seat between the
    nameplate and the figure, on the plot's spine (--ck-grid-left, as the
@@ -256,6 +273,10 @@
 .gf-stage-basal { grid-template-rows:auto auto auto auto minmax(0,1fr); }
 .gf .gf-dw { height:auto; display:block; overflow:visible; grid-template-rows:none; }
 .gf .gf-dw.lane-wrap { padding:8px 0 10px; border-top:1px solid var(--wk-rule); background:var(--wk-field); }
+/* The scaffold's `.v2-content button` (36px min-height, radius, surface fill)
+   outranks the shipped `.lane-cell` box and painted every cell down over the
+   key. The lane's own 11px row and the cell's shipped box are restored here. */
+.gf .gf-dw .lane button.lane-cell { min-height:0; border-radius:1px; background-color:var(--cell, var(--ck-inset)); }
 .gf .gf-dw .lane button.lane-cell:focus-visible { outline:2px solid var(--ck-accent); outline-offset:2px; }
 .gf .gf-slot-level { animation:none; overflow:visible; }
 .gf .gf-slot-level .inner:first-child { padding-top:4px; }
@@ -374,10 +395,25 @@
   .gf .gf-dw.lane-wrap .lane { height:20px; margin-left:var(--ck-pad); margin-right:var(--ck-pad); }
   .gf .gf-dw.lane-wrap .lane-key { margin-left:var(--ck-pad); margin-right:var(--ck-pad); flex-wrap:wrap; white-space:normal; }
   .gf-nav-ribbon { margin-left:0; margin-right:0; --gf-rb-plot:48px; --gf-rb-lab:40px; }
-  .gf-nav[data-open="month"] { max-height:min(48vh, 320px); }
   .gf-nav-month { padding:6px var(--ck-pad) 8px; }
-  .gf .gf-nav-cell { min-height:44px; }
-  .gf .gf-month-toggle { min-height:28px; }
+  /* Day's rail stacks. Under 831px the shipped sheet turns `.instruments`
+     into a sideways-scrolling flex strip (`display:flex; overflow-x:auto`,
+     each `.instrument` `flex:0 0 auto`), which is the workstation's own narrow
+     rail; on this desk it carried Month to x 403–462 and Episode Log past it,
+     reachable only by scrolling the strip. The Day rail is a grid of two rows
+     instead: the day steps, then the week or month label with its two
+     switches, every control at touch height and inside the viewport. */
+  .gf .gf-stage-day .instruments { display:grid; grid-template-columns:minmax(0,1fr); overflow:visible; gap:2px; padding:4px var(--ck-pad); }
+  .gf .gf-stage-day .instruments .gf-tools { justify-content:space-between; min-height:36px; }
+  .gf .gf-stage-day .instruments .gf-tools .meta { flex:1 1 auto; }
+  .gf .gf-stage-day .seg button { min-height:36px; min-width:36px; }
+  .gf .gf-stage-day .gf-month-toggle, .gf .gf-stage-day .gf-sheet-toggle { min-height:36px; }
+  /* An open month takes the stage's flexible row and scrolls inside it; the
+     hero figure holds a floor beneath while dates are browsed, and the
+     calendar's cells sit at 40px so three or four weeks show at 624px. */
+  .gf-stage.gf-stage-day:has(.gf-nav[data-open="month"]) { grid-template-rows:auto auto minmax(0,1fr) minmax(160px,auto); }
+  .gf-nav[data-open="month"] { max-height:none; }
+  .gf .gf-nav-cell { min-height:40px; }
 }
 
 /* ---- utilities: one pane where the reading pane sits (the sheet, narrow),
@@ -407,6 +443,8 @@
 .gf .gf-row-tools .linkbtn { margin:0; }
 .gf .gf-question > p { padding:2px var(--ck-pad) 4px; }
 .gf .gf-question .gf-answered { color:var(--wk-ink-body); }
+/* the answers are one row; the way into the day sits under them on its own */
+.gf .gf-question .gf-question-day { padding-top:0; }
 .gf .gf-spark { height:120px; margin:0 var(--ck-pad) 2px; }
 .gf .gf-status .gf-actions { padding-top:2px; }
 /* the article reads at Body rank on the reading pane's measure */

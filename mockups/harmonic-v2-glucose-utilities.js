@@ -142,18 +142,21 @@ export function createUtilities(kit, { context }) {
   function questionsBody() {
     const mem = memory(), list = pending(), at = context().utilities?.event_clock;
     if (!list.length) return { meta: readMeta(at), html: `<section class="gf-section"><p>No open questions at this read.</p><p class="gf-meta">A question is pinned where the read saw a low or a rise with no bolus; answering one de-biases the fasting windows.</p></section>` };
-    return { meta: readMeta(at), html: `<p class="gf-note">${openCount()} of ${list.length} open · oldest first. Each sits where it happened.</p>${list.map(prompt => questionCard(prompt, mem)).join('')}` };
+    return { meta: readMeta(at), html: `<p class="gf-note">${openCount()} of ${list.length} open · oldest first.</p>${list.map(prompt => questionCard(prompt, mem)).join('')}` };
   }
+  // the way into the day itself, on its own row after the answers (or Undo) so
+  // the three answers read as one group and this stays the secondary step
+  const openDay = prompt => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(prompt.anchor_t.slice(0, 10))}" data-subject="Carb questions">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
   function questionCard(prompt, mem) {
     const held = answerOf(prompt), key = questionKey(prompt), logging = mem.draft.question === key;
     const entry = held?.entry ? mem.entries.find(item => item.id === held.entry) : null;
     return `<section class="gf-section gf-question" data-question-card="${e(key)}">
       <h3>${e(detectorKicker(prompt.detector))} <span class="meta">${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))} · ${Math.round(prompt.age_days)} d before the read</span></h3>
-      <div class="gf-spark" data-chart="prompt" data-question="${e(key)}" role="img" aria-label="Glucose two hours either side of ${e(clock(prompt.anchor_t))}, ${Math.round(prompt.key_bg)} at the low"></div>
+      <div class="gf-spark" data-utility-chart="prompt" data-question="${e(key)}" role="img" aria-label="Glucose two hours either side of ${e(clock(prompt.anchor_t))}, ${Math.round(prompt.key_bg)} at the low"></div>
       <p><b>${e(prompt.question)}</b></p><p class="gf-meta">${e(prompt.context)}</p>
-      ${held ? `<p class="gf-meta gf-answered">Answered: ${e(answerLabel(held.answer))}${entry ? ` · ${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`} at ${e(clock(entry.t))}` : ''}</p><div class="gf-actions"><button class="gf-btn" data-utility-undo="${e(key)}">Undo</button><button class="gf-btn" data-action="day" data-date="${e(prompt.anchor_t.slice(0, 10))}" data-subject="Carb questions">Open ${e(shortDate(prompt.anchor_t))}</button></div>`
+      ${held ? `<p class="gf-meta gf-answered">Answered: ${e(answerLabel(held.answer))}${entry ? ` · ${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`} at ${e(clock(entry.t))}` : ''}</p><div class="gf-actions"><button class="gf-btn" data-utility-undo="${e(key)}">Undo</button></div>${openDay(prompt)}`
         : logging ? `${amountControls(prompt)}<div class="gf-actions"><button class="gf-btn" data-utility-cancel-log>Cancel</button></div>`
-        : `<div class="gf-actions"><button class="gf-btn primary" data-utility-answer-carbs="${e(key)}">Log carbs</button><button class="gf-btn" data-utility-answer="no" data-question="${e(key)}">No</button><button class="gf-btn" data-utility-answer="not-sure" data-question="${e(key)}">Not sure</button><button class="gf-btn" data-action="day" data-date="${e(prompt.anchor_t.slice(0, 10))}" data-subject="Carb questions">Open ${e(shortDate(prompt.anchor_t))}</button></div>
+        : `<div class="gf-actions"><button class="gf-btn primary" data-utility-answer-carbs="${e(key)}">Log carbs</button><button class="gf-btn" data-utility-answer="no" data-question="${e(key)}">No</button><button class="gf-btn" data-utility-answer="not-sure" data-question="${e(key)}">Not sure</button></div>${openDay(prompt)}
           ${prompt.detector === 'low' ? `<p class="gf-meta">Or, this reading wasn't real:</p><div class="gf-actions"><button class="gf-btn" data-utility-answer="false-low" data-question="${e(key)}">Not real (sensor noise / compression low)</button></div>` : ''}`}
     </section>`;
   }
@@ -239,7 +242,8 @@ export function createUtilities(kit, { context }) {
     }
     const log = document.querySelector('.cockpit-log-carbs'); if (log) log.onclick = () => open('carbs', log);
     if (mockbar.querySelector('.gf-review[data-source="utilities"]')) return;
-    mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" data-source="utilities"><label><input type="checkbox" aria-label="Next utility save fails"> Next utility save fails</label><span class="gf-review-memo">Utility writes stay in this page; the read does not recalculate.</span></span>`);
+    mockbar.querySelector('.gf-review-notes-body').insertAdjacentHTML('beforeend', '<p class="gf-review-memo" data-source="utilities">Utility writes stay in this page; the read does not recalculate.</p>');
+    mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" data-source="utilities"><label><input type="checkbox" aria-label="Next utility save fails"> Next utility save fails</label></span>`);
     mockbar.querySelector('[aria-label="Next utility save fails"]').onchange = event => { saveFails = event.target.checked; };
   }
   function bind() {
@@ -270,8 +274,11 @@ export function createUtilities(kit, { context }) {
     const credentials = surface.querySelector('[data-utility-form="credentials"]'); if (credentials) credentials.onsubmit = event => { event.preventDefault(); view.focusAfterRender = '#ut-email'; commit('settings', m => { m.settings.credentialsSaved = { region: m.settings.region, at: context().now }; m.settings.password = ''; m.flash = 'Credentials saved in this page'; }); };
     const dev = surface.querySelector('[data-utility-form="dev"] input'); if (dev) dev.onchange = event => { settings.dev = event.target.checked; };
   }
+  // The sparkline hosts are the utility's own (`data-utility-chart`), never
+  // `data-chart`: that attribute is how each desk figure finds its mounter, and a
+  // desk mounter reads a `.gf-chart` seat the sparkline host does not have.
   function mountCharts() {
-    for (const host of surface.querySelectorAll('[data-chart="prompt"]')) {
+    for (const host of surface.querySelectorAll('[data-utility-chart="prompt"]')) {
       if (!globalThis.echarts) return;
       const prompt = pending().find(item => questionKey(item) === host.dataset.question);
       const chart = echarts.init(host, null, { renderer: 'svg' });

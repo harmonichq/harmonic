@@ -18,6 +18,12 @@ import { coldArrivalDay, clampDay, weekdayLabel } from '../frontend/daily-nav.js
 // and the month cell sparklines scale to their columns, strokes stay one pixel.
 const RIBBON = { w: 980, h: 58 };
 const CELL = { w: 100, h: 30 };
+// The five-strip layout's fractions are written for the shipped 524px host
+// (index.html .ds-chart), whose bottom 3% holds the time labels. This desk's
+// chart row is whatever height the viewport leaves, so the strips are re-seated
+// into the height above a label reserve (the axis's 8px margin, 11px labels and
+// a little air), and the hairline span follows the same seat.
+const AXIS_RESERVE = 24;
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // The Episode Log's band words and the verdict words the ledger sorts rows by.
@@ -165,21 +171,30 @@ export function createDayDesk(kit, { dayset, carbEntries = () => [] }) {
         for (const grid of option.grid) { grid.top *= scale; grid.height *= scale; }
       } else {
         option = buildLanesOption(day, iso, { colors, carbEntries: logged, restWindows: day.rest_windows || [] });
+        const usable = seatedHeight(element);
+        for (const grid of option.grid) { grid.top = parseFloat(grid.top) / 100 * usable; grid.height = parseFloat(grid.height) / 100 * usable; }
         const model = modelDay(iso), rows = buildRows(model);
-        const focus = focusUpdate(chart, { day: model, rows, colors, focusT: null, preempted: preemptedTimes(model), selectedLever: null, laneSpan: LANE_SPAN });
+        const focus = focusUpdate(chart, { day: model, rows, colors, focusT: null, preempted: preemptedTimes(model), selectedLever: null, laneSpan: seatedSpan(element) });
         option.series.push(...focus.series);
       }
       chart.setOption(option, true); chart.resize();
-      if (memory.focusT && host.dataset.dayChart === 'lanes') spotlight(chart, iso);
+      if (memory.focusT && host.dataset.dayChart === 'lanes') spotlight(chart, iso, element);
     };
     update(); const observer = new ResizeObserver(update); observer.observe(element); observers.push(observer);
     // a marker on the evidence strip picks its log row
     chart.on('click', params => { if (params.data?._t) { memory.focusT = params.data._t; view.focusAfterRender = `[data-day-row="${memory.focusT}"]`; kit.render(); } });
   }
+  // the strip stack's height once the time labels have their reserve, and the
+  // hairline's span of the full element expressed over that seat
+  function seatedHeight(element) { return Math.max(0, element.clientHeight - AXIS_RESERVE); }
+  function seatedSpan(element) {
+    const seat = element.clientHeight ? seatedHeight(element) / element.clientHeight : 1;
+    return { top: LANE_SPAN.top * seat, bottom: LANE_SPAN.bottom * seat };
+  }
   // the one cross-track hairline, merged into the live chart, never a rebuild
-  function spotlight(chart, iso) {
+  function spotlight(chart, iso, element) {
     const model = modelDay(iso), rows = buildRows(model);
-    const { series, graphic } = focusUpdate(chart, { day: model, rows, colors, focusT: memory.focusT, preempted: preemptedTimes(model), selectedLever: null, laneSpan: LANE_SPAN });
+    const { series, graphic } = focusUpdate(chart, { day: model, rows, colors, focusT: memory.focusT, preempted: preemptedTimes(model), selectedLever: null, laneSpan: seatedSpan(element) });
     chart.setOption({ series, graphic }, { replaceMerge: ['graphic'] });
   }
 
@@ -199,7 +214,12 @@ export function createDayDesk(kit, { dayset, carbEntries = () => [] }) {
         if (m < 1) { m = 12; y -= 1; } else if (m > 12) { m = 1; y += 1; }
         memory.month = { y, m };
       }
-      else if (action === 'return') { const from = memory.from; memory.from = null; kit.navigate(from.destination); return; }
+      else if (action === 'return') {
+        // back to the subject's own row; narrow keeps the sheet closed and focuses its toggle
+        const from = memory.from; memory.from = null;
+        view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : [from.focus, '.gf-reading > header h2'].filter(Boolean);
+        kit.navigate(from.destination); return;
+      }
       view.focusAfterRender = action === 'month' ? '.gf-month-toggle' : `[data-day="${action}"]:not(:disabled), .gf-month-toggle`;
       kit.render();
     };

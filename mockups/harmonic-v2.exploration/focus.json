@@ -88565,6 +88565,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-27 22:00:00"
               },
+              "comparison_cohort": "matched",
               "date": "2024-06-27",
               "day_target": {
                 "date": "2024-06-27"
@@ -88772,6 +88773,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-22 13:55:00"
               },
+              "comparison_cohort": "comparison",
               "date": "2024-06-22",
               "day_target": {
                 "date": "2024-06-22"
@@ -88979,6 +88981,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-26 16:10:00"
               },
+              "comparison_cohort": "comparison",
               "date": "2024-06-26",
               "day_target": {
                 "date": "2024-06-26"
@@ -89186,6 +89189,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-25 12:10:00"
               },
+              "comparison_cohort": "comparison",
               "date": "2024-06-25",
               "day_target": {
                 "date": "2024-06-25"
@@ -89393,6 +89397,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-23 13:55:00"
               },
+              "comparison_cohort": "comparison",
               "date": "2024-06-23",
               "day_target": {
                 "date": "2024-06-23"
@@ -89600,6 +89605,7 @@
                 "label": "Low excursion",
                 "t": "2024-06-24 12:10:00"
               },
+              "comparison_cohort": "comparison",
               "date": "2024-06-24",
               "day_target": {
                 "date": "2024-06-24"
@@ -90833,6 +90839,7 @@
             "label": "Low excursion",
             "t": "2024-06-27 22:00:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-06-27",
           "day_target": {
             "date": "2024-06-27"
@@ -91040,6 +91047,7 @@
             "label": "Low excursion",
             "t": "2024-06-22 13:55:00"
           },
+          "comparison_cohort": "matched",
           "date": "2024-06-22",
           "day_target": {
             "date": "2024-06-22"
@@ -91247,6 +91255,7 @@
             "label": "Low excursion",
             "t": "2024-06-26 16:10:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-06-26",
           "day_target": {
             "date": "2024-06-26"
@@ -91454,6 +91463,7 @@
             "label": "Low excursion",
             "t": "2024-06-25 12:10:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-06-25",
           "day_target": {
             "date": "2024-06-25"
@@ -91661,6 +91671,7 @@
             "label": "Low excursion",
             "t": "2024-06-23 13:55:00"
           },
+          "comparison_cohort": "matched",
           "date": "2024-06-23",
           "day_target": {
             "date": "2024-06-23"
@@ -91868,6 +91879,7 @@
             "label": "Low excursion",
             "t": "2024-06-24 12:10:00"
           },
+          "comparison_cohort": "nearly_matched",
           "date": "2024-06-24",
           "day_target": {
             "date": "2024-06-24"
@@ -101294,6 +101306,7 @@
             "label": "Low excursion",
             "t": "2024-05-23 13:55:00"
           },
+          "comparison_cohort": "matched",
           "date": "2024-05-23",
           "day_target": {
             "date": "2024-05-23"
@@ -101501,6 +101514,7 @@
             "label": "Low excursion",
             "t": "2024-05-26 12:10:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-05-26",
           "day_target": {
             "date": "2024-05-26"
@@ -101708,6 +101722,7 @@
             "label": "Low excursion",
             "t": "2024-05-27 16:10:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-05-27",
           "day_target": {
             "date": "2024-05-27"
@@ -101915,6 +101930,7 @@
             "label": "Low excursion",
             "t": "2024-05-25 12:10:00"
           },
+          "comparison_cohort": "nearly_matched",
           "date": "2024-05-25",
           "day_target": {
             "date": "2024-05-25"
@@ -102122,6 +102138,7 @@
             "label": "Low excursion",
             "t": "2024-05-28 22:00:00"
           },
+          "comparison_cohort": "comparison",
           "date": "2024-05-28",
           "day_target": {
             "date": "2024-05-28"
@@ -102329,6 +102346,7 @@
             "label": "Low excursion",
             "t": "2024-05-24 13:55:00"
           },
+          "comparison_cohort": "matched",
           "date": "2024-05-24",
           "day_target": {
             "date": "2024-05-24"

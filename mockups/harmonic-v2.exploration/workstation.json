@@ -25247,6 +25247,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-16 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-16",
             "day_target": {
               "date": "2024-05-16"
@@ -25643,6 +25644,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-10 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-10",
             "day_target": {
               "date": "2024-05-10"
@@ -26039,6 +26041,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-07 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-07",
             "day_target": {
               "date": "2024-05-07"
@@ -26435,6 +26438,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-15 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-15",
             "day_target": {
               "date": "2024-05-15"
@@ -26831,6 +26835,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-28",
             "day_target": {
               "date": "2024-05-28"
@@ -27227,6 +27232,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-17 12:05:00"
             },
+            "comparison_cohort": "nearly_matched",
             "date": "2024-05-17",
             "day_target": {
               "date": "2024-05-17"
@@ -27623,6 +27629,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-26",
             "day_target": {
               "date": "2024-05-26"
@@ -28019,6 +28026,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
             },
+            "comparison_cohort": "nearly_matched",
             "date": "2024-05-27",
             "day_target": {
               "date": "2024-05-27"
@@ -28415,6 +28423,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-24",
             "day_target": {
               "date": "2024-05-24"
@@ -28811,6 +28820,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-01",
             "day_target": {
               "date": "2024-05-01"
@@ -29147,6 +29157,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-08 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-08",
             "day_target": {
               "date": "2024-05-08"
@@ -29543,6 +29554,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-06 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-06",
             "day_target": {
               "date": "2024-05-06"
@@ -29939,6 +29951,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-14 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-14",
             "day_target": {
               "date": "2024-05-14"
@@ -30335,6 +30348,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-09 12:05:00"
             },
+            "comparison_cohort": "nearly_matched",
             "date": "2024-05-09",
             "day_target": {
               "date": "2024-05-09"
@@ -30731,6 +30745,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-25",
             "day_target": {
               "date": "2024-05-25"
@@ -31127,6 +31142,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-18 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-18",
             "day_target": {
               "date": "2024-05-18"
@@ -42046,6 +42062,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-28 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-28",
             "day_target": {
               "date": "2024-05-28"
@@ -42442,6 +42459,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-26 12:05:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-26",
             "day_target": {
               "date": "2024-05-26"
@@ -42838,6 +42856,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-27 12:05:00"
             },
+            "comparison_cohort": "nearly_matched",
             "date": "2024-05-27",
             "day_target": {
               "date": "2024-05-27"
@@ -43234,6 +43253,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-24 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-24",
             "day_target": {
               "date": "2024-05-24"
@@ -43630,6 +43650,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-01 00:00:00"
             },
+            "comparison_cohort": "comparison",
             "date": "2024-05-01",
             "day_target": {
               "date": "2024-05-01"
@@ -43966,6 +43987,7 @@
               "label": "Completed carb bolus",
               "t": "2024-05-25 12:05:00"
             },
+            "comparison_cohort": "matched",
             "date": "2024-05-25",
             "day_target": {
               "date": "2024-05-25"

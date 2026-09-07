@@ -381,3 +381,139 @@ the workstation's chart space; this is coordinator feedback for the design lead.
 The current commit is a review checkpoint before integrating the now-merged
 QA and Vite foundation. Browser repair, regeneration and complete desktop review
 remain pending, followed by the separately requested mobile design round.
+
+
+## Merged foundation: generated-material review
+
+The branch incorporated the merged QA sweep and Vite foundation in
+`bb066fcf9a24f17226dffb0a90d959e413504734`, then regenerated the design inputs.
+Two isolated Luna medium read-only reviewers converged: Standards 4/4 holds,
+Spec 5/5 met, no findings or unverified items within the six-file generation
+delta. They independently confirmed 76 new source-owned `comparison_cohort`
+fields (22 workstation, 18 Focus, 36 shared journey), unchanged existing values,
+byte-identical setting data, and the theme/glossary extraction changes. Neither
+review supplied UI approval. The coordinator ran the generator `--check` and
+it reported current.
+
+The merged production build passed locally with Node 26.7.0; the project and
+CI target Node 22. The frontend suite passed 623 tests, OpenSpec passed 74
+items, and owned-name, ADR and public-allowlist guards passed. Backend pytest
+passed 2222 tests and 125 subtests with one skipped test. The cockpit browser
+suite passed 19 tests, with its two optional render-capture tests skipped.
+These integration results do not close the prototype's open browser defect or
+replace the forthcoming desktop craft review.
+
+
+## Integrated desktop runtime repair: browser results
+
+The question-chart host had shared the desk's generic chart selector, causing
+the desk renderer to initialize ECharts on a missing child. Fable gave utility
+charts their own host selector; no error-swallowing guard was added. The
+coordinator's subsequent browser run passed opening three sparklines, No/Undo,
+failed log-at-question/Retry/Undo, with no console errors. Actual branch-clock
+question counts were 2, 0, 3 and 1 for captured, active Trial, following and
+preempted. Credential failure/retry retained the draft, cleared the password on
+success and did not echo the email; Glossary used the approved labels.
+
+At 390×624 the utility strip's question control was 78×44 pixels and in view;
+its sheet fit, made the stage inert and returned focus to the visible opener
+on Close, with no root overflow or console error. This is a narrow usability
+check, not the separate mobile design round. At 1280×720, compact review
+controls measured 49 pixels high and the Day figure 406 pixels.
+
+The 48-slot view preserved slot 7 and the May 3 night through Day and back;
+Stage change then opened Changes with a staged Plan. Three presentation defects
+remain with Fable: the newly focused roster row scrolls the basal detail's head
+away, 36-pixel slot buttons overflow an 11-pixel lane over its legend, and the
+Day plot clips its bottom time labels. These measurements, not a general style
+judgment, define the pending repair.
+
+Two more driver corrections matter when reading the check record: the bundled
+`set` command fills text inputs, so select controls were retested through their
+native change event; and May's previous-month control correctly disables at the
+source's earliest month. Neither mistaken click is a product defect. Capture
+charts after their animation settles; one early screenshot captured a partial
+sparkline. Full independent craft review is still pending.
+
+The merged production Diagnose workstation/composition browser suites also
+passed all 81 tests, and the materialized public-tree contamination scan found
+zero new findings across 407 published files. The private prototype files are
+excluded from that public tree, so the scan is not a substitute for their
+synthetic provenance and generation checks.
+
+
+## Independent desktop craft review, rounds 7–8
+
+Method: dual-agent, isolated CLI reviewers with actual screenshot attachments.
+Assessment A (`01a0794f-3d59-7cc1-9b3e-fb014efbd831`) completed before
+Assessment B (`01a0794f-41cc-77c3-93ba-b29d7a727b58`) entered synthesis.
+Both were Luna medium and read-only. They reviewed eleven current synthetic
+states and explicitly used the parent's browser evidence; neither claimed its
+own Chromium run. The combined critique is saved in
+`.impeccable/critique/2026-09-07T00-50-22Z__mockups-harmonic-v2-glucose-html.md`.
+
+A accepted the diagnostic cockpit and scored 31/40. The detector ran on mounted
+DOM, returning 34 stylistic findings: 17 overused-font, 11 single-font, one
+em-dash-overuse, two flat-type-hierarchy and three numbered-section-markers.
+These concern the approved Inter/single-family typography, compact date/case
+copy and deliberate non-hero hierarchy; none demonstrated a product defect.
+No overlay is bundled or claimed.
+
+The coordinator rejected proposals to crop the clinical axes around flat
+manufactured histories or collapse the comparison cohorts by default. Those
+would conflict with the source chart contract and Connor's explicit request to
+retain useful aggregate comparisons. No new bulk basal workflow or keyboard
+shortcut requirement was admitted. The review controls remain outside product
+chrome.
+
+The combined review retained four concrete repairs. Fresh round 8 Chromium
+proved three closed: contextual Meals/Nearly matched → Day → return restores
+focus to the held occurrence; the header Log carbs button now computes Inter
+and 25px exactly like the built app; and Carb questions separates the three
+answers from its dated Day link and false-reading exception. Both setting and
+habit paths again reached saved conclusions, and No/Undo still worked. Console
+error arrays were empty.
+
+The fourth repair, narrow Day navigation, failed its actual viewport assertion:
+Month remained outside the 390px right edge. The opened calendar also occupied
+a clipped strip. Fable received the exact failed render and DOM for a bounded
+repair. This is an unresolved layout defect, not a passing narrow audit.
+The first probe attempt before round 8 clicked the iframe before its page was
+mounted; it was repeated after loading and is not evidence of an app failure.
+
+A live built-app versus prototype comparison at 1280×720 found matching shared
+chrome materials except the now-corrected Log carbs font. Scope width and
+advisory position differ with the intentionally changed content/navigation.
+The temporary synthetic offline server was stopped and its database copy was
+removed. The user's separate private preview was untouched.
+
+Desktop approval and the dedicated mobile design remain open at this point.
+
+
+## Desktop review closure, round 9
+
+The same isolated A/B reviewers received twelve new screenshot attachments and
+current source hashes, including the open narrow calendar. A passed with
+34/40 and no remaining concrete P0–P2 finding. B passed, reporting 37 detector
+findings across twelve states: 18 overused-font, 12 single-font, one
+em-dash-overuse, two flat-type-hierarchy and four numbered-section-markers.
+The additional date state accounts for the count change; the same approved
+font/hierarchy and date-content dispositions apply. Neither review is a final
+visual lock or an independent browser claim.
+
+Fable repaired the narrow rail at the actual cascade: a shipped media rule
+made it a sideways flex strip, so setting grid columns alone had no effect.
+The new rail explicitly uses two grid rows. Chromium measured Month inside
+the 390px viewport, with no root scroll. The calendar retains inner scrolling;
+its last May date is hit-testable and selects the correct Day. An initial
+strict rectangle assertion rejected a 0.328px fractional edge difference;
+the subsequent hit test established reachability without a product change.
+The selected meal return, shared font and question grouping repairs remained
+passing, as did both full setting and habit conclusion journeys. All successful
+runs reported empty console error arrays.
+
+The desktop design and review are complete enough to begin the separately
+requested mobile design round. This does not approve the exact visuals,
+settle the pending Explore/Diagnose label, prove a second sequential clinical
+change, or admit production implementation. Fable 5.1 at high effort remains
+the mobile design lead.

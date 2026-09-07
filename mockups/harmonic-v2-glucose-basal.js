@@ -151,7 +151,7 @@ export function createBasalExploration(kit, { setting, gate, viewedAt }) {
         onSelect: id => { memory.night[cell.i] = id; if (memory.figure === 'basal') memory.figure = 'night'; view.focusAfterRender = '.case-occurrence[aria-pressed="true"]'; kit.render(); },
         onMore: () => { memory.shown = memory.shown > EVIDENCE_CAP ? EVIDENCE_CAP : Infinity; view.focusAfterRender = '[data-level] .more'; kit.render(); },
         onClear: () => { delete memory.night[cell.i]; memory.figure = 'basal'; view.focusAfterRender = '.case-occurrence'; kit.render(); },
-        onDay: night => kit.navigate('day', { date: night.date, from: { label: `Basal ${span(cell)} · night of ${date(night.date)}`, destination: 'explore', destinationLabel: 'Explore' } }),
+        onDay: night => kit.navigate('day', { date: night.date, from: { label: `Basal ${span(cell)} · night of ${date(night.date)}`, destination: 'explore', destinationLabel: 'Explore', focus: '.case-occurrence[aria-pressed="true"]' } }),
       });
       lockFoot(host);
       host.onkeydown = event => {

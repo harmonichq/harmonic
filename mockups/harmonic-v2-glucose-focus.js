@@ -72,8 +72,8 @@ export function createFocusJourney(kit, options = {}) {
     if (!ownsControls || mockbar.querySelector('.gf-review[data-source="focus"]')) return;
     const params = new URLSearchParams(location.search);
     if (STATIONS()[params.get('clock')]) station = params.get('clock');
+    mockbar.querySelector('.gf-review-notes-body').insertAdjacentHTML('beforeend', `<p class="gf-review-memo" data-source="focus">Pin time and status are the source's; the decision snapshot, conclusion and ending are this page's memory.</p>`);
     mockbar.querySelector('p').insertAdjacentHTML('beforebegin', `<span class="gf-review" data-source="focus" role="group" aria-label="Focus review controls">
-      <span class="gf-review-memo">Pin time and status are the source's; the decision snapshot, conclusion and ending are this page's memory.</span>
       <label>Clock <select aria-label="Focus clock">${Object.entries(STATIONS()).map(([key, item]) => `<option value="${key}" ${key === station ? 'selected' : ''}>${e(item.label)}</option>`).join('')}</select></label>
       <label><input type="checkbox" aria-label="Next Focus save fails"> Next save fails</label></span>`);
     mockbar.querySelector('[aria-label="Focus clock"]').onchange = event => {

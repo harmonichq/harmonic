@@ -28,8 +28,12 @@ surface.className = 'gf dw';
 let state = renderMockBar(main, 'Glucose first · round 4', changeScenario);
 main.append(surface);
 const mockbar = main.querySelector('.mockbar');
-mockbar.querySelector('p').textContent = 'Manufactured evidence. Priority selection and new decisions are illustrative.';
-const params = new URLSearchParams(location.search);
+// The bar is one compact row: provenance, the source and its clock, the failure
+// controls. Every longer review note — what a source's fixture can and cannot
+// show, what is page memory — folds into one disclosure at the row's end, so the
+// desk below keeps its height and no caveat sits in product copy.
+mockbar.querySelector('p').textContent = 'Manufactured evidence.';
+mockbar.querySelector('p').insertAdjacentHTML('afterend', '<details class="gf-review-notes"><summary>Review notes</summary><div class="gf-review-notes-body"><p class="gf-review-memo">Priority selection and new decisions are illustrative.</p></div></details>');const params = new URLSearchParams(location.search);
 let variant = params.get('input') === 'thin' ? 'thin' : 'repeated';
 // Review controls, outside product chrome: three separate synthetic patients, never
 // pooled into one ranked queue, and one shared history read as a complete workflow.
@@ -151,8 +155,9 @@ function navigate(next, { date = null, from = null } = {}) {
   if (next === 'day') day.open({ date, from });
   view.sheetOpen = false; render();
 }
-// where a subject's Open Day returns to: the destination that showed it
-const fromHere = label => ({ label, destination: destination === 'overview' || destination === 'changes' ? destination : 'explore', destinationLabel: { overview: 'Overview', changes: 'Changes' }[destination] || 'Explore' });
+// where a subject's Open Day returns to: the destination that showed it, with
+// focus back on the selected occurrence's row
+const fromHere = label => ({ label, destination: destination === 'overview' || destination === 'changes' ? destination : 'explore', destinationLabel: { overview: 'Overview', changes: 'Changes' }[destination] || 'Explore', focus: '.gf-member-row[aria-pressed="true"]' });
 // Whether a setting journey owns the rendered frame: its own source, or the
 // shared journey while its setting branch leads.
 const settingOwned = () => source === 'setting' || (source === 'journey' && shared.owner() === 'setting');
@@ -203,7 +208,11 @@ async function load(retry = false) {
 
 function render() {
   if (!capture || !verify) return;
-  const scrolled = surface.querySelector('.gf-pane-body')?.scrollTop || 0;
+  // the reading pane keeps its scroll only while it stays on the same subject:
+  // a pane that changes subject (a roster row opening a slot, a utility opening)
+  // arrives at its head, so what leads it is what shows
+  const paneKey = () => { const pane = surface.querySelector('.gf-desk > .gf-reading'); return `${destination}|${pane?.getAttribute('aria-label') || pane?.querySelector('header h2')?.textContent || ''}`; };
+  const was = paneKey(), scrolled = surface.querySelector('.gf-pane-body')?.scrollTop || 0;
   dispose();
   for (const button of document.querySelectorAll('[data-destination]')) {
     if (button.dataset.destination === destination) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
@@ -240,8 +249,9 @@ function render() {
     mountTrialCharts();
   }
   utilities.bind(); utilities.mountCharts();
-  const body = surface.querySelector('.gf-pane-body'); if (body) body.scrollTop = scrolled;
-  if (view.focusAfterRender) { surface.querySelector(view.focusAfterRender)?.focus(); view.focusAfterRender = null; }
+  const body = surface.querySelector('.gf-pane-body'); if (body) body.scrollTop = paneKey() === was ? scrolled : 0;
+  // one selector, or candidates in order of preference: the first present takes focus
+  if (view.focusAfterRender) { for (const target of [].concat(view.focusAfterRender)) { const found = surface.querySelector(target); if (found) { found.focus(); break; } } view.focusAfterRender = null; }
 }
 
 /* ---- the frame: one stage pane beside one reading pane ------------------- */
@@ -252,7 +262,8 @@ function nameplate({ kicker, title, sub, end = '' }) {
   return `<header class="gf-head"><div class="gf-id"><div class="gf-kicker">${kicker}</div><h2 class="gf-title">${title}</h2><div class="gf-sub">${sub}</div></div>${end ? `<div class="gf-end">${end}</div>` : ''}</header>`;
 }
 function readingHeader(title, meta = '') {
-  return `<header><h2>${title}</h2>${meta ? `<span class="meta">${meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-sheet-close" data-action="close-sheet">Close</button></div></header>`;
+  // the head takes programmatic focus when navigation opens a new subject
+  return `<header><h2 tabindex="-1">${title}</h2>${meta ? `<span class="meta">${meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-sheet-close" data-action="close-sheet">Close</button></div></header>`;
 }
 function sheetToggle(label) {
   return `<button class="gf-btn gf-sheet-toggle" data-action="open-sheet" aria-expanded="${view.sheetOpen}">${label} <span aria-hidden="true">▾</span></button>`;

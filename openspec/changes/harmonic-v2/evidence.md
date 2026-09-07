@@ -565,9 +565,12 @@ The final serial chunk ran the complete repository verification against the
 integrated guidance implementation. The first run demonstrated five stale,
 generator-owned synthetic files; they were regenerated only through their
 committed producers: the QA E2E database, I:C blocks, chart-builder analysis,
-chart-builder episode inputs, and the findings projection. Each corresponding
-`--check` then passed. No clinical classifier, support floor, score, Priority,
-or policy was changed.
+chart-builder episode inputs, and the findings projection. A final-tree replay
+then exposed the same additive `guidance` serialization drift in the v2
+exploration's generated `setting.json`, `focus.json`, `journey.json`,
+`evidence.json`, and `workstation.json`; its committed generator regenerated
+those five files and its `--check` passed. No clinical classifier, support
+floor, score, Priority, or policy was changed.
 
 The new `scripts/check_guidance_plan_contract.mjs` executes Python's public
 accepted-pick rounding alongside the public Plan functions. Its verbatim stdout
@@ -586,8 +589,8 @@ failed with the expected assertion before the unmodified guard passed. The
 backend job runs the same driver after pytest.
 
 The completed commands exited 0: `npm ci`; `npm run build`; `uv run python -m
-pytest` (the coordinator observed `2259 passed, 1 skipped, 185 warnings in
-72.09s` at `/private/tmp/harmonic-384-c3-initial-backend.txt`); `node --test
+pytest` (`2259 passed, 1 skipped, 185 warnings in 72.92s` on the final
+verification run); `node --test
 'frontend/**/*.test.js'` (623 passed);
 strict OpenSpec validation (74 passed); all three repository policy guards; the
 new Plan parity driver; all backend and frontend generator drift checks; the
@@ -596,7 +599,7 @@ browser gates. The browser gates ran only through the permitted no-fetch server
 against a temporary copy of `mockups/qa-e2e.synthetic/harmonic.sqlite`; no live
 fetch or real database was opened.
 
-The materialized public-tree scan reported 412 files scanned, 22 stamped, seven
+The materialized public-tree scan reported 413 files scanned, 22 stamped, seven
 pinned, and zero findings. Browser receipts include the Day, Diagnose
 workstation/canvas, cockpit, runner lifecycle, first-plan reconciliation,
 workstation behavior, event-comparison behavior/support, and Verify replay legs.
@@ -614,3 +617,11 @@ Raw unedited correction receipts are retained at
 `/private/tmp/harmonic-384-c3-correction/parity.stdout`, and
 `/private/tmp/harmonic-384-c3-correction/parity.stderr`. The mutation exited 1;
 the unmodified parity command exited 0.
+
+The final-tree replay retains complete, unedited stdout and stderr for every
+successful required command under `/private/tmp/harmonic-384-c3-final/`, one
+pair per command. That directory includes the second full pytest/frontend
+passes, every drift check, the materialized-tree manifest/link/scan checks, all
+ten browser legs, the no-fetch server and health receipts, and the Plan parity
+pass and deliberate failure. `docker.stderr` contains the complete unmet
+prerequisite output; `docker.stdout` is empty.

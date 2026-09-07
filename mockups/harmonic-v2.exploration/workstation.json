@@ -21177,6 +21177,19 @@
             "start": "2024-05-06 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-06 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -21184,6 +21197,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-06 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-06 12:20:00"
                 ],
@@ -21193,6 +21216,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -21765,6 +21796,19 @@
             "start": "2024-05-07 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-07 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -21772,6 +21816,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-07 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-07 12:20:00"
                 ],
@@ -21781,6 +21835,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -22353,6 +22415,21 @@
             "start": "2024-05-08 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-08 12:05:00",
+                    "anchor_kind": "meal",
+                    "baseline_glucose_mgdl": 145.0,
+                    "event_refs": [],
+                    "implied_carbs_g": 56.9,
+                    "lever": "carb_undercount",
+                    "logged_carbs_g": 30.0,
+                    "peak_glucose_mgdl": 360.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.carb_undercount",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -22360,6 +22437,14 @@
                 "text": "ran away to 360 mg/dL despite the bolus \u2014 the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -22479,6 +22564,19 @@
             "start": "2024-05-14 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-14 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -22486,6 +22584,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-14 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-14 12:20:00"
                 ],
@@ -22495,6 +22603,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -23067,6 +23183,19 @@
             "start": "2024-05-15 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-15 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -23074,6 +23203,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-15 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-15 12:20:00"
                 ],
@@ -23083,6 +23222,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -23655,6 +23802,21 @@
             "start": "2024-05-16 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-16 12:05:00",
+                    "anchor_kind": "meal",
+                    "baseline_glucose_mgdl": 145.0,
+                    "event_refs": [],
+                    "implied_carbs_g": 56.9,
+                    "lever": "carb_undercount",
+                    "logged_carbs_g": 30.0,
+                    "peak_glucose_mgdl": 360.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.carb_undercount",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -23662,6 +23824,14 @@
                 "text": "ran away to 360 mg/dL despite the bolus \u2014 the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -23781,6 +23951,19 @@
             "start": "2024-05-24 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-24 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -23788,6 +23971,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-24 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-24 12:20:00"
                 ],
@@ -23797,6 +23990,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -24369,6 +24570,19 @@
             "start": "2024-05-25 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-25 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -24376,6 +24590,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-25 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-25 12:20:00"
                 ],
@@ -24385,6 +24609,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -24957,6 +25189,21 @@
             "start": "2024-05-26 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-26 12:05:00",
+                    "anchor_kind": "meal",
+                    "baseline_glucose_mgdl": 145.0,
+                    "event_refs": [],
+                    "implied_carbs_g": 56.9,
+                    "lever": "carb_undercount",
+                    "logged_carbs_g": 30.0,
+                    "peak_glucose_mgdl": 360.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.carb_undercount",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -24964,6 +25211,14 @@
                 "text": "ran away to 360 mg/dL despite the bolus \u2014 the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -25089,6 +25344,15 @@
               "score": 0.031,
               "wide": true
             },
+            "guidance": {
+              "action_id": "habit:carb_undercount",
+              "citation_episode_ids": [
+                "ep-003",
+                "ep-010",
+                "ep-017"
+              ],
+              "seriousness": "info"
+            },
             "hero_episode": "ep-003",
             "impact": 0.3297,
             "lever": "carb_undercount",
@@ -25140,6 +25404,18 @@
               "rate": 0.375,
               "score": 0.0,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:late_bolus",
+              "citation_episode_ids": [
+                "ep-001",
+                "ep-002",
+                "ep-008",
+                "ep-009",
+                "ep-015",
+                "ep-016"
+              ],
+              "seriousness": "info"
             },
             "hero_episode": "ep-001",
             "impact": 0.0,
@@ -40684,6 +40960,19 @@
             "start": "2024-05-24 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-24 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -40691,6 +40980,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-24 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-24 12:20:00"
                 ],
@@ -40700,6 +40999,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -41272,6 +41579,19 @@
             "start": "2024-05-25 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-25 12:05:00",
+                    "anchor_kind": "meal",
+                    "event_refs": [],
+                    "lever": "late_bolus",
+                    "pre_bolus_glucose_mgdl": 150.0,
+                    "pre_bolus_slope_mgdl_min": 2.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.late_bolus",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -41279,6 +41599,16 @@
                 "text": "glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it \u2014 bolusing ~15 min before eating would blunt the spike"
               },
               {
+                "citation": {
+                  "facts": {
+                    "event_refs": [
+                      "2024-05-25 12:20:00"
+                    ],
+                    "glucose_mgdl": 180.0
+                  },
+                  "operation": "scenario.narration.peak",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [
                   "2024-05-25 12:20:00"
                 ],
@@ -41288,6 +41618,14 @@
                 "text": "BG peaked at 180 mg/dL"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": false
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -41860,6 +42198,21 @@
             "start": "2024-05-26 12:05:00",
             "steps": [
               {
+                "citation": {
+                  "facts": {
+                    "anchor_at": "2024-05-26 12:05:00",
+                    "anchor_kind": "meal",
+                    "baseline_glucose_mgdl": 145.0,
+                    "event_refs": [],
+                    "implied_carbs_g": 56.9,
+                    "lever": "carb_undercount",
+                    "logged_carbs_g": 30.0,
+                    "peak_glucose_mgdl": 360.0,
+                    "window": null
+                  },
+                  "operation": "scenario.attribution.carb_undercount",
+                  "tier": "inferred"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "inferred",
@@ -41867,6 +42220,14 @@
                 "text": "ran away to 360 mg/dL despite the bolus \u2014 the excursion implies ~57 g vs 30 g logged (1.9x), a likely carb undercount"
               },
               {
+                "citation": {
+                  "facts": {
+                    "glucose_mgdl": 120.0,
+                    "resolved": true
+                  },
+                  "operation": "scenario.narration.resolution",
+                  "tier": "observed"
+                },
                 "cited_event_refs": [],
                 "cited_window": null,
                 "evidence_tier": "observed",
@@ -41991,6 +42352,14 @@
               "rate": 0.3333,
               "score": 0.0,
               "wide": true
+            },
+            "guidance": {
+              "action_id": "habit:late_bolus",
+              "citation_episode_ids": [
+                "ep-001",
+                "ep-002"
+              ],
+              "seriousness": "info"
             },
             "hero_episode": "ep-001",
             "impact": 0.0,

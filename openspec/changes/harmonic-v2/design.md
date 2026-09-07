@@ -1,9 +1,10 @@
 # Harmonic v2 design investigation
 
-Status: product interview decisions Q1–Q7, Q9 and Q10 are settled. The save-recovery
-question was removed after Q8. Current-app grounding is complete; the complete
-v2 journey walkthrough, visual design, independent review, and direction
-approval remain pending.
+Status: the desktop prototype and completed cold-QA repairs are the selected
+direction. The complete desktop journeys and review records from merged PR #379
+are adopted below. Product interview decisions remain settled. Backend selection,
+durable identity/endings and comparison integration still need bounded decisions;
+production implementation and UI Craft fidelity evidence are not yet complete.
 
 ## Grounding
 
@@ -18,6 +19,45 @@ and the one-active-change constraint. Current capability specifications in
 `openspec/specs/plan/`, `outcomes/`, and `http-api/` constrain reuse. Existing
 OpenSpec decision records are the standing-decision source; no additional
 external decision store is configured for this ticket.
+
+
+## ADR 348 — Adopt the reviewed desktop direction
+
+On September 7, 2026, Connor instructed: “The desktop prototype and completed
+cold-QA repairs are the selected design direction.” PR #379 was human-merged
+as `ee0460eca3618aac0977f65a286ccb4357504544`. This continuation adopts the
+existing change rather than starting a new product plan.
+
+The selected artifacts at that commit are the journey and contract documents
+in this change; `mockups/harmonic-v2.exploration/BRIEF.md`; the desktop prototype
+`mockups/harmonic-v2-glucose-journey.html` and its generated inputs; and
+`REVIEW.md`, `FABLE-REVIEW.md`, `AUDIT.md`, `COLD-WALKTHROUGHS.md` and
+`OPUS-QA-REPAIRS.md` in the exploration directory. The completed repair record
+governs the repaired navigation and acknowledgment behavior where earlier
+rounds differ. The existing comparison graphs and their authority remain intact.
+
+Keep the selected Overview / Explore / Changes / Day destinations, the premium
+desktop cockpit, original Trial evidence, saved conclusions, precise Day return,
+and the visible Set aside/Restore behavior. Continue using CONTEXT.md and the
+existing app's prose. No new concept or navigation debate is required.
+
+This closes direction selection and the completed desktop walkthrough work.
+It does not turn page-memory prototype state into durable production behavior,
+prove a second sequential change, or supply a formal UI Craft build/fidelity
+record. The implementing ticket formalizes that contract from these artifacts
+and verifies the built surface. It does not redesign the selected direction.
+
+The v2 architecture, both-loop first-release boundary and risk contract below
+remain controlling. Vite and single-file components own the new v2 boundaries;
+wholesale v1 decomposition is not a prerequisite. Mobile is deferred. V1 stays
+available during `/v2/` development; cutover and retirement remain later gates.
+
+Connor then authorized autonomous orchestration while AFK and asked for best
+judgment without over-engineering a one-person tool. Use Opus 5 medium for
+design and Codex Sol medium for browser walkthroughs when needed. Carry routine
+implementation choices through review under that delegation. Agents leave PRs
+open for human review and never merge. One implementation child may be in flight;
+the next implementation handoff waits for its human merge.
 
 ## Product brief
 
@@ -598,21 +638,56 @@ Connor rejected treating save recovery as a separate product-design project (Q8)
 Why: the advisory consequences require truthful state, while speculative recovery work does not serve the requested care-improvement journey.
 Disposition: inline; governing plan contract, to be carried into any eventual implementation admission.
 
-## Open decisions
+## Remaining implementation decisions
 
-- The prioritization contract: how the existing engine chooses one actionable
-  candidate, how related episodes inform it, and how other findings remain
-  inspectable without creating competing advice.
-- Navigation names, destination boundaries, and settings placement after the
-  complete journeys are walked through.
-- The minimum persistence contract implementing ADR 348 — Decisions retain
-  their context and ending, including links to Plan/Trial/Focus and legacy unknowns.
-- Concrete shared component contracts and any capability extension required
-  to retain existing evidence interactions.
-- Explicit reconciliation of #340's history and presentation boundaries.
-- Visual/behavior contracts, bounded implementation risks, full coexistence
-  verification, cutover, and retirement criteria.
+### Priority selection and set-aside return — promoted to #383
 
-The issue's safety, architecture, manual-pump, and one-active-watch constraints
-are settled inputs, not questions to reopen. The remaining decisions prevent
-an execution lock at this checkpoint.
+[#383](https://github.com/harmonichq/harmonic/issues/383) owns the explicit
+cross-parameter selection and tie-break, action/investigation/quiet dispositions,
+stable preference subject, and exact action/seriousness return comparison.
+It must demonstrate the rule on synthetic evidence before a dependent build.
+The existing Priority and eligibility predicates are inputs; neither shared
+queue tier nor an evidence fingerprint settles this policy. Resolve the existing
+evidence/advice distinction without parsing clinical sentences in the browser.
+
+### Durable Trial/Focus context and endings
+
+Decide the minimum storage fields and public writes that implement the two
+existing context/ending ADRs. Reconcile detected Trial identity and the review
+roster with one backend finish/admission verdict, so a finished Trial cannot
+reopen or promote an older Trial into the active slot. Preserve true new-change
+preemption, user conclusion versus observed reversal/supersession/expiry,
+Focus end times, and unavailable legacy facts. Establish the actual Plan match
+with existing reconciliation, never temporal proximity. A bounded versioned
+decision and ending record is sufficient; no event archive or refresh snapshots.
+
+### Follow-up comparisons and exact Focus periods
+
+Reuse #340's reviewed comparison policy at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3`; read its design rather than copying
+its statistics into another authority. Reconcile only the v2 Changes placement,
+historical Focus and explicit Trial finish extensions from ADR 348. Name the
+minimal actual shared-chart extension and its retained interactions in the build
+brief. #336/#340 remain the existing follow-up work to reuse, not a new chart
+backlog. Any changed ticket remit or parent relationship is recorded on GitHub
+before its next handoff.
+
+Decide exact pin-to-ending Focus periods and source context for both adherence
+and outcome. Resolve the correction-family inference-context discrepancy
+documented in contracts.md before blessing those habit summaries. Keep zero
+opportunities unknown, periods/populations/denominators server-owned, descriptive
+spread distinct from outcome uncertainty, and observation distinct from causation.
+
+### Production surface and delivery proof
+
+The selected desktop settles the product direction. Its UI Craft build contract,
+exact component reuse interfaces and changed-surface verification belong to the
+implementing brief. Preserve both setting and habit loops in the first usable
+release, including sequential changes and durable history. Extend the existing
+Vite production checks to `/v2/` while retaining v1. Mobile, root cutover and
+v1 retirement do not block a bounded desktop preview increment.
+
+The safety, architecture, manual-pump, active-watch and accepted-failure rules are
+settled inputs. A build is admitted only when its own outcome cannot be
+invalidated by a remaining question; no production behavior is inferred from
+the design checklist.

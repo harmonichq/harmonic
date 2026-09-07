@@ -1,5 +1,10 @@
 # Existing jobs carried into v2
 
+This is the initial investigation's historical inventory. Its pending desktop
+journey and utility notes are superseded by the completed REVIEW.md rounds,
+COLD-WALKTHROUGHS.md and OPUS-QA-REPAIRS.md adopted in design.md. The current
+checked sequence is tasks.md; this inventory is not a second backlog.
+
 This is a bounded planning inventory, not a behavior lock or a retirement
 sanction. V2 is a separately requested frontend; v1 remains shipped. The
 selected prototype must not become an accidental specification of everything

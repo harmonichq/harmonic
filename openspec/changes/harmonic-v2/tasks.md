@@ -1,105 +1,56 @@
-# Harmonic v2 planning sequence
+# Harmonic v2 implementation sequence
 
-This is #348's attended investigation checklist, not an application build order.
-The implementation sequence becomes executable only through subsequent reviewed
-ticket locks after Connor approves the selected product direction.
+The selected desktop direction is established. This checklist reconciles the
+original planning checkpoint against the committed review records and Connor's
+September 7 continuation. A checked design item is completed design evidence,
+not shipped production behavior. Child type, status, dependencies and closing
+PRs are read from GitHub.
 
-## 1. Establish the current facts
+## 1. Adopt the completed desktop work
 
-- [x] 1.1 Verify the selected checkout's Codebase Memory is alive and usable.
-- [x] 1.2 Read #348 and reconcile the live scope of #347, #336, and #340 without changing them.
-- [x] 1.3 Ground the initial engine/API/storage map and record the agreed parallel-v2 architecture.
-- [x] 1.4 Establish the operator's lead unmet need: one concrete priority with supporting glucose episodes.
-- [x] 1.5 Settle unsupported-pattern guidance, the leading-priority objective, and set-aside behavior.
-- [x] 1.6 Select the full-loop first usable release for both settings and habits (Q10), informed by the complete journey proposal.
+- [x] 1.1 Verify Codebase Memory for the current planning checkout and ground the existing engine/API/storage map.
+- [x] 1.2 Retain the product decisions: one useful priority, active-change precedence, set aside until meaningful change, original context and ending, and both complete loops for the first usable release.
+- [x] 1.3 Complete the setting, Focus, direct-Day, routine-return, history and utility desktop journeys. REVIEW.md's resumed rounds and round 9 close the earlier missing journeys.
+- [x] 1.4 Incorporate the merged Vite foundation and Diagnose QA repairs and regenerate extracted material. REVIEW.md records the integrated baseline and executed checks.
+- [x] 1.5 Complete independent desktop craft review and cold walkthrough repairs. COLD-WALKTHROUGHS.md and OPUS-QA-REPAIRS.md record the final browser rechecks, original Trial evidence, saved conclusions, exact Day return, and visible Set aside/Restore.
+- [x] 1.6 Record Connor's selection of the desktop prototype and completed cold-QA repairs in ADR 348 — Adopt the reviewed desktop direction. No new concept or navigation round is required.
+- [x] 1.7 Retain the accepted risk contract and the v2 component/evidence boundaries. Exact shared interfaces and production verification belong to the implementing child's reviewed brief.
 
-## 2. Design the complete experience
+## 2. Settle the remaining implementation decisions
 
-- [x] 2.1 Complete the product brief and setting, habit, direct-Day, routine-return, and history journeys.
-- [x] 2.2 Test the desktop Overview / Explore / Changes / Day and settings access against those journeys. The destination name remains provisional.
-- [ ] 2.3 Settle durable review/history, comparison-design reconciliation, and required backward-compatible contracts.
-- [ ] 2.4 Settle the risk contract and the first useful v2 increment's single-file component/evidence boundaries, reusing authoritative domain and chart behavior without re-deriving engine policy or requiring wholesale v1 decomposition.
-- [ ] 2.5 Obtain the required synthetic walkthroughs and rendered visual/interaction evidence through the applicable UI Craft lifecycle.
+- [ ] 2.1 Resolve backend priority selection and stable set-aside identity/return in [#383](https://github.com/harmonichq/harmonic/issues/383), with a synthetic replay and reviewed decision in this change.
+- [ ] 2.2 Settle the minimum durable Plan/Trial/Focus context and ending records, canonical Trial identity, legacy unknowns, and one backend finish/admission verdict. Preserve first-observed context for a Trial without a Plan.
+- [ ] 2.3 Reconcile the retained [#340 comparison design](https://github.com/harmonichq/harmonic/issues/340) under [#336](https://github.com/harmonichq/harmonic/issues/336) with v2 Changes and historical Focus. Retain its statistical rulings and actual chart reuse; settle exact-period Focus evidence and the documented correction-family context discrepancy.
+- [ ] 2.4 Formalize the selected desktop's applicable UI Craft build contract and predecessor behavior mapping in the implementing ticket. Use the existing brief, prototype and repair records; do not mistake a direction selection for production fidelity evidence.
 
-## 3. Review and hand off
+## 3. Deliver the first usable release behind /v2/
 
-- [x] 3.1 Record complete useful increments, v1/v2 coexistence checks, built-asset delivery, cutover, and retirement criteria.
-- [x] 3.2 Strictly validate this planning-only change and run its ADR and publication guards. Author capability deltas in subsequent execution locks, once the design is approved.
-- [x] 3.3 Obtain independent review of the planning proposal and resolve verified blocking findings. This countersign covers the stated planning scope, not visual approval or implementation.
-- [ ] 3.4 Obtain Connor's approval of the selected direction; record the exact approved artifacts.
-- [x] 3.5 Commit the reviewed planning result and post attributed findings on #348, clearly separating agreed design from pending implementation proof.
+File builds only when no remaining decision can invalidate their acceptance.
+Use coherent capability boundaries and normal ticket sizing, not a ticket per
+chart or component. Any split beyond three children needs the epic's written
+dependency or independently shippable-capability justification before filing.
 
-Connor subsequently requested a draft planning/prototype PR at the end of the
-five-hour session budget. Commit and push the current checkpoint, document the
-remaining work, and leave the PR open. No production implementation,
-related-ticket mutation, new component backlog, merge, or execution admission
-belongs to this investigation.
+- [ ] 3.1 Build the admitted backend guidance and preference capability through existing eligibility and evidence authorities.
+- [ ] 3.2 Extend the Vite/SFC foundation with the complete setting preview journey, including manual-entry/reconciliation, actual Trial follow-up, original context and saved ending.
+- [ ] 3.3 Complete the habit preview journey through supported Focus selection, separate adherence/outcomes, manual ending and Trial preemption, and retained context/history.
+- [ ] 3.4 Verify both loops and limiting states against the built Python-served app: set aside/return, held/thin/quiet, ordinary failures, sequential changes, direct Day/return, utilities and legacy unknowns. Attach the required UI Craft fidelity/behavior evidence.
+- [ ] 3.5 Verify v1/v2 coexistence, authentication, built assets and the packaged Python-only runtime. Obtain human acceptance of the complete first usable release.
 
+## 4. Later acceptance
 
-## Saved prototype checkpoint
+- [ ] 4.1 Revisit the deferred mobile design only after the desktop release is settled and mobile work is requested.
+- [ ] 4.2 Obtain explicit root-route cutover approval while keeping the prior frontend recoverable with shared history intact.
+- [ ] 4.3 Retire v1 only after its existing jobs are preserved or explicitly retired; archive this change only after the epic's live completion predicates pass.
 
-At the original five-hour checkpoint, Fable had authored the workstation and
-setting journey; Focus, direct-Day and utilities were still incomplete. The
-resumed rounds below supersede those implementation gaps. Connor's exact visual
-approval remains open; the checkpoint was not a visual lock.
+## Reconciliation receipt
 
-Published checkpoint: [draft PR #379](https://github.com/harmonichq/harmonic/pull/379), with [attributed findings on #348](https://github.com/harmonichq/harmonic/issues/348#issuecomment-5559540674). The publication completes the requested checkpoint; the open design and approval items above remain open.
-
-## Resumed design work and integration dependencies
-
-On 2026-09-06 Connor explicitly requested continuing from the published
-checkpoint, retaining Fable 5.1 at high effort as design lead. The earlier
-five-hour checkpoint is complete; the resumed work has no newly specified
-deadline. His approval covers the workstation direction, with complete setting
-and habit follow-up, navigation and history still to review. PR #379 remains
-open and draft, and does not need to merge for this work to continue.
-
-The [Diagnose QA sweep #350](https://github.com/harmonichq/harmonic/issues/350)
-and [frontend foundation PR #380](https://github.com/harmonichq/harmonic/pull/380)
-have now landed. The sweep owns the shared chart, staging, selection, keyboard
-and responsive bug fixes; this investigation does not duplicate them. Before
-final integration, visual lock or a build-ready handoff, incorporate both merged
-changes, regenerate extracted app material and replay the affected journeys
-against the resulting baseline.
-
-
-## Subsequent mobile design round
-
-On 2026-09-06 Connor requested the same design process for a mobile-first,
-app-feeling version after the current designs are complete: a cohesive
-full-screen flow with the polish of an application. This adds a separate
-design round after the complete desktop journeys and their review. The existing
-390-pixel usability checks do not fulfill that round.
-
-- [x] M1. Complete the current desktop prototype and its full journey/craft review before starting the dedicated mobile design work. Round 9 passed both isolated craft assessments and the affected browser journeys; exact visual approval remains separate.
-- [ ] M2. Continue with Fable 5.1 at high effort as design lead, using UI Craft, the original brief, DESIGN.md and approved CONTEXT.md language. Explore and review coherent mobile composition and navigation as their own design.
-- [ ] M3. Prototype the complete setting and habit journeys, set aside and return, comparisons, individual episodes, Day, conclusions/history and retained utilities as full-screen app flows. Define touch interaction, transitions and context retention together.
-- [ ] M4. Ground the mobile design in the same source evidence and reusable clinical/chart boundaries. Preserve cohort membership, dates, uncertainty and original/ending context.
-- [ ] M5. Repeat rendered walkthroughs, independent review and attended refinement for the mobile experience. Record exact artifacts and obtain the applicable visual approval; do not infer it from the desktop direction or narrow-screen audit.
-
-Both design rounds remain within #348's planning/prototype scope. PR #379 stays
-open and draft, with no merge. Final integration and build-ready claims retain
-the #350 and #380 dependency gates above.
-
-
-Dependency update, September 6: [the QA sweep PR #381](https://github.com/harmonichq/harmonic/pull/381)
-merged at 20:52 UTC, followed by [its archive PR #382](https://github.com/harmonichq/harmonic/pull/382)
-at 21:47 UTC. PR #380 merged at 23:26:54 UTC as
-`002e633b17673a25fec1b08c281472f580d16cd1`. The design branch incorporated
-that baseline in `bb066fcf9a24f17226dffb0a90d959e413504734` and regenerated
-the extracted app material. The generator check, Vite build, affected-journey replay and independent
-desktop craft review passed. The dedicated mobile round and exact visual
-approval remain open.
-The build foundation is available; the eventual v2 build owns its new shell's
-component boundaries and extraction of the shared pieces it uses. It does not
-require a separate wholesale decomposition of the retiring v1 shell.
-
-
-## Paused at Connor's request
-
-Connor subsequently asked to stop and defer the mobile refactor until the
-desktop is settled. The coordinator stopped the same Fable worker through its
-scoped adapter and verified termination. No mobile source files were written.
-M2–M5 are deferred; they are not running in the background. The desktop remains
-an unlocked design prototype for Connor to inspect. PR #379 stays open and
-draft, and no merge is authorized.
+The original 2.3 mixed settled product history decisions with unresolved storage
+and comparison implementation. Their product decisions are retained in 1.2;
+the remaining contracts are 2.2–2.3. Original 2.4's risk and broad component
+boundary are complete in 1.7; an exact build brief remains owed. Original 2.5's
+desktop walkthroughs are complete in 1.3–1.5; formal build and fidelity proof
+remain 2.4 and 3.4. Original 3.4's direction selection is complete in 1.6 under
+Connor's current instruction. The earlier statements that Focus is unfinished,
+PR #379 is open/draft, or mobile is the next active round are superseded by the
+merged review records and this continuation. Historical review files remain
+unchanged evidence of what each round established at the time.

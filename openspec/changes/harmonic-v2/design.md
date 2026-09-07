@@ -30,7 +30,7 @@ existing change rather than starting a new product plan.
 
 The selected artifacts at that commit are the journey and contract documents
 in this change; `mockups/harmonic-v2.exploration/BRIEF.md`; the desktop prototype
-`mockups/harmonic-v2-glucose-journey.html` and its generated inputs; and
+`mockups/harmonic-v2-glucose.html` at `source=journey` and its generated inputs; and
 `REVIEW.md`, `FABLE-REVIEW.md`, `AUDIT.md`, `COLD-WALKTHROUGHS.md` and
 `OPUS-QA-REPAIRS.md` in the exploration directory. The completed repair record
 governs the repaired navigation and acknowledgment behavior where earlier
@@ -650,19 +650,16 @@ The existing Priority and eligibility predicates are inputs; neither shared
 queue tier nor an evidence fingerprint settles this policy. Resolve the existing
 evidence/advice distinction without parsing clinical sentences in the browser.
 
-That investigation's steps are [tasks.md](tasks.md) 2.1.1–2.1.6, which are its
-acceptance. The settled policy must satisfy the shape this section and the
-guidance capability boundary above already require: one backend-owned
-deterministic rule with an explicit tie-break, a stable set-aside subject that
-survives routine recomputation, an action or seriousness comparison that returns
-that subject with a reason, and cited evidence kept distinct from advice. The
-rule, the tie-break and the comparison are #383's to choose. It records them as
-an ADR identified by that issue in this document, with its replay receipts in
-[evidence.md](evidence.md).
-
-This change declares `skip_specs`, so it carries no capability delta and #383
-adds none. The `guidance` capability delta is owed by the implementing build in
-task 3.1, which is where a shipped capability change belongs.
+That investigation's acceptance is the `guidance` capability delta in
+[specs/guidance/spec.md](specs/guidance/spec.md), and its steps are
+[tasks.md](tasks.md) 2.1.1–2.1.6. The delta states the shape the settled policy
+must satisfy: one backend-owned deterministic rule with an explicit tie-break, a
+stable set-aside subject that survives routine recomputation, an action or
+seriousness comparison that returns that subject with a stated reason, and cited
+evidence kept distinct from advice. It deliberately does not choose the rule, the
+tie-break or the comparison. #383 settles those and records them as an ADR
+identified by that issue in this document, with its replay receipts in
+[evidence.md](evidence.md). Task 3.1 then builds against that same delta.
 
 ### Durable Trial/Focus context and endings
 

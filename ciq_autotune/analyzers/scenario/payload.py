@@ -99,6 +99,9 @@ class Step:
     evidence_tier: EvidenceTier
     cited_event_refs: List[str] = field(default_factory=list)
     cited_window: Optional[dict] = None
+    # A closed source operation and its factual inputs.  ``None`` means this
+    # legacy step remains readable in v1 but is unavailable as guidance evidence.
+    citation: Optional[Dict] = None
 
     def to_dict(self) -> dict:
         return {
@@ -107,6 +110,7 @@ class Step:
             "evidence_tier": self.evidence_tier.value,
             "cited_event_refs": list(self.cited_event_refs),
             "cited_window": dict(self.cited_window) if self.cited_window else None,
+            "citation": dict(self.citation) if self.citation is not None else None,
         }
 
 
@@ -197,6 +201,7 @@ class Pattern:
 
     def to_dict(self) -> dict:
         c = self.confidence
+        from .levers import action_id
         return {
             "lever": self.lever.value,
             "title": _lever_title(self.lever),
@@ -218,6 +223,11 @@ class Pattern:
             **behavioral_priority(c).to_dict(),
             "rank": self.rank,
             "recommendation": self.recommendation,
+            "guidance": {
+                "action_id": action_id(self.lever),
+                "seriousness": c.severity,
+                "citation_episode_ids": list(self.occurrences),
+            },
             "hero_episode": self.hero_episode,
             "occurrences": list(self.occurrences),
             "occurrence_groups": [dict(group) for group in self.occurrence_groups],

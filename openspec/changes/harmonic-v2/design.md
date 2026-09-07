@@ -1035,6 +1035,54 @@ staged member instructions, owner seriousness and separated citations. Record it
 concrete field shape in this section before handing off; no new policy decision
 is delegated to that handoff.
 
+Chunk 1 publishes the following additive source contract. Analyzer member payloads
+(`basal[]`, `isf[]`, and `ic_blocks[]`) carry `guidance`, with `action` either
+`null` or `{kind: "setting_instruction", parameter, start_min, end_min, direction,
+units, recommended}`; I:C also carries `member_start_mins`. `action` exists only
+when that owner's existing `asserts_move` verdict is true. `seriousness` is either
+`"recurring_low"` or `null`, independent of whether an action is available. Basal
+and I:C expose their existing `harm.nudged` judgment; ISF exposes the existing
+`_day_rate_recurs` judgment over its correction-low and correction-rescue channels,
+the same parameter-specific authority that produces direction-only weakening. A
+single-low gate is not categorical seriousness. Instruction values use existing
+accepted-pick Plan precision (basal 0.001 U/h, ISF whole mg/dL/U, I:C 0.1 g/U) with
+positive-half rounding. Scenario Patterns carry `guidance.action_id` (the closed
+`habit:<lever>` semantic identity, or `null` for observation-only
+`meal_bolus_short`), `guidance.seriousness` (the owner's unrounded
+`Confidence.severity` category), and `guidance.citation_episode_ids`. An action ID
+is a source semantic identity, not an admission verdict; the guidance owner still
+applies ADR 383's surfaced, Priority and Focus admission rules.
+
+Every production Scenario Step carries a separate `citation` object shaped as
+`{operation, tier, facts}`. `tier` is the source `EvidenceTier`. Attribution
+operations are `scenario.attribution.<lever>` and all carry `lever`, `anchor_kind`,
+`anchor_at`, `event_refs`, and `window`, plus these operation-specific facts:
+
+| Attribution operation | Additional `facts` fields |
+| --- | --- |
+| `carb_undercount` | `logged_carbs_g`, `implied_carbs_g`, `baseline_glucose_mgdl`, `peak_glucose_mgdl` |
+| `late_bolus` | `pre_bolus_slope_mgdl_min`, `pre_bolus_glucose_mgdl` |
+| `meal_over_delivery` | `suspend_start`, `suspend_end`, `suspend_duration_min`, `nadir_glucose_mgdl`, `nadir_at` |
+| `over_treated_low` | `nadir_glucose_mgdl`, `rebound_glucose_mgdl`, `logged_carbs_g` |
+| `correction_on_iob` | `correction_at`, `iob_at_correction_u`, `pre_correction_slope_mgdl_min`, `glucose_at_correction_mgdl`, `nadir_glucose_mgdl`, `nadir_at`, `minutes_to_low` |
+| `correction_stacking` | `stack_at`, `gap_min`, `iob_at_stack_u`, `pre_stack_slope_mgdl_min`, `glucose_at_stack_mgdl`, `nadir_glucose_mgdl`, `nadir_at`, `previous_bolus_seq_num`, `second_bolus_seq_num` |
+| `missed_meal` | `rise_slope_mgdl_min`, `digestion_window` |
+| `meal_bolus_short` | `rise_slope_mgdl_min`, `meal_at`, `correction_at`, `digestion_window` |
+
+Narration operations are `scenario.narration.peak` with `glucose_mgdl` and
+`event_refs`; `scenario.narration.correction` with `count`, `insulin_u`, and
+`event_refs`; `scenario.narration.suspend` with `event_refs`;
+`scenario.narration.nadir` with `glucose_mgdl` and `event_refs`; and
+`scenario.narration.resolution` with `glucose_mgdl` and `resolved`. Nullable facts
+remain explicit `null`; timestamps and windows use the existing event-reference
+format. A legacy manually constructed Step may serialize `citation: null`, which
+makes it unavailable to guidance rather than falling back to its text.
+
+Guidance consumers use these fields, never recommendation or Step prose, to
+compare action or cite evidence. The later guidance projection owner must rebuild
+or version its retained-artifact boundary before it reads these required fields;
+this source chunk does not advance the deferred scenario-fixture envelope.
+
 The second owns guidance selection/comparison and bounded Store/API persistence,
 including current-watch composition, cache invalidation and public API tests.
 Its shared contract is the public guidance/preference API above. It consumes

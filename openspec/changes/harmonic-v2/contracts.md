@@ -124,8 +124,9 @@ Keep it aside through ordinary evidence refresh. A return needs a reviewed,
 versioned determination that the recommended action or seriousness materially
 changed, plus a plain explanation of that change. A raw evidence fingerprint,
 small count fluctuation, or a new analysis generation alone is insufficient.
-The numerical comparison policy is unresolved; settle it through representative
-cases before the dependent feature ships. The user can explicitly revisit or
+ADR 383 in `design.md` settles the comparison as policy `383:1`, verified by
+the synthetic replay in `evidence.md`. Task 3.1 implements that policy; it adds
+no numerical materiality threshold. The user can explicitly revisit or
 restore the concern at any time.
 
 ## Reuse and delivery boundaries

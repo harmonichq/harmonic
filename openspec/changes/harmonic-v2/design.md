@@ -900,3 +900,28 @@ remain the already named downstream decisions, outside this spike. Reuse #340 at
 cohort membership, overlap ownership, observation anchors, chart support,
 statistical assessments or adherence/outcome separation. No clinical threshold,
 classifier, analyzer result or production file changed in this investigation.
+
+
+## Backend guidance build admission
+
+[#384](https://github.com/harmonichq/harmonic/issues/384) owns task 3.1: the
+backend guidance read and bounded Set aside/Restore persistence under ADR 383.
+The verified #383 result supplies the selection, admission, identity and return
+policy. Its four concrete production gaps are implementation obligations in
+this build, not open product questions. The guidance delta remains its acceptance
+source; normal ticket triage independently grounds the executable scope.
+
+This capability consumes the existing authoritative active watched change. It
+neither defines finished-Trial identity/admission nor records a Plan/Trial/Focus
+context or ending. The named durable-context decision will change its upstream
+watch authority without changing the admitted selection or preference policy.
+It does not claim the complete sequential-change journey. Historical Focus
+periods and correction-family follow-up context do not enter this capability's
+selection or set-aside comparison; the existing comparison authorities remain
+unchanged. No rendered surface is included, so the implementing surface ticket
+still owes its UI Craft contract and production evidence.
+
+This is the second child. Keep the remaining decisions named until a recorded
+ruling or a precise spike owns them. Do not hand off another child before this
+implementation PR is human-merged. The complete setting and habit journeys
+remain the first usable release destination.

@@ -60,8 +60,10 @@ not satisfy the first-release milestone.
 
 ## Delivery
 
-Begin with [#383](https://github.com/harmonichq/harmonic/issues/383), the bounded
-priority-selection and set-aside spike. Reuse #347's merged delivery foundation
+The reviewed priority-selection and set-aside policy from
+[#383](https://github.com/harmonichq/harmonic/issues/383) admits the bounded backend
+guidance and preference build in
+[#384](https://github.com/harmonichq/harmonic/issues/384). Reuse #347's merged delivery foundation
 and #340's reviewed comparison policy under #336; do not duplicate their work.
 The open durable-context, ending and comparison-integration questions remain
 named in design.md until a recorded decision or a spike owns them.

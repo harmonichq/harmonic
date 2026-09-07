@@ -137,3 +137,29 @@ pass; the staged setting's roster status incorrectly says Trial and is assigned
 to Fable; the fractional-hour speech issue belongs to the now-merged #350 QA
 work and will be brought in with the integration baseline, not patched here.
 The separate mobile design round follows the desktop walkthrough and review.
+
+
+## Integrated desktop checkpoint, round 9
+
+The later desktop walkthrough and isolated craft review supersede the missing
+Focus, direct-Day, utility and complete basal-exploration gaps above. Both
+change journeys reached saved conclusions; the full findings roster, aside
+and restore, all basal slots, date navigation and utilities are implemented.
+The shared queue stage label was corrected. Round 9 closed the measured Day
+control, context-return focus, header-font and question-grouping repairs.
+REVIEW.md records exact evidence and the reviewers' scoped PASS verdicts.
+
+The earlier expectation that the QA merge would fix fractional-hour speech was
+incorrect. A fresh keyboard probe still speaks `+0.08333333333333333 h` after
+ArrowRight on the meal comparison. A separate read-only lookup confirmed that
+this comes from the shipped comparison renderer's private axis formatter and
+that its public interface exposes no replacement formatter. It is inherited
+behavior, not a regression from these prototype changes. No production formatter
+or prototype speech-string workaround has been added. A subsequent build must
+address it in the authoritative renderer; this remains an explicit P2 limit of
+the keyboard presentation, alongside the unperformed screen-reader walkthrough.
+
+Compact touch geometry is now a concern of the separately requested dedicated
+mobile design. The desktop narrow checks establish access and intentional
+inner scrolling; they do not constitute an approved mobile application design.
+Exact visual approval and production execution admission remain open.

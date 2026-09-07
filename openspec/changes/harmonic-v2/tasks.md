@@ -93,3 +93,13 @@ approval remain open.
 The build foundation is available; the eventual v2 build owns its new shell's
 component boundaries and extraction of the shared pieces it uses. It does not
 require a separate wholesale decomposition of the retiring v1 shell.
+
+
+## Paused at Connor's request
+
+Connor subsequently asked to stop and defer the mobile refactor until the
+desktop is settled. The coordinator stopped the same Fable worker through its
+scoped adapter and verified termination. No mobile source files were written.
+M2–M5 are deferred; they are not running in the background. The desktop remains
+an unlocked design prototype for Connor to inspect. PR #379 stays open and
+draft, and no merge is authorized.

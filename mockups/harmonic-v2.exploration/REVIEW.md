@@ -517,3 +517,12 @@ requested mobile design round. This does not approve the exact visuals,
 settle the pending Explore/Diagnose label, prove a second sequential clinical
 change, or admit production implementation. Fable 5.1 at high effort remains
 the mobile design lead.
+
+
+## Session stop
+
+Connor asked to stop here and defer mobile until the desktop is settled. The
+mobile worker was stopped and its termination verified; it had written no
+mobile source files. The reviewed desktop remains available in the synthetic
+preview. No exact visual approval or merge is inferred from this checkpoint.
+The inherited fractional-hour keyboard wording remains documented in AUDIT.md.

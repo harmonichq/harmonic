@@ -576,6 +576,24 @@ def analyze_basal(
             evidence["onesided"] = verdict
         if harm_verdict is not None:
             evidence["harm"] = harm_verdict
+        direction = None
+        if status.actionable:
+            direction = "raise" if recommended > current else "lower"
+        guidance = {
+            "action": (
+                {
+                    "kind": "setting_instruction",
+                    "parameter": "basal_rate",
+                    "start_min": s * cfg.slot_minutes,
+                    "end_min": (s + 1) * cfg.slot_minutes,
+                    "direction": direction,
+                    "units": "U/h",
+                    "recommended": recommended,
+                }
+                if direction is not None and recommended is not None else None
+            ),
+            "seriousness": "recurring_low" if harm_verdict is not None else None,
+        }
         out.append(SlotEstimate(
             slot=s,
             label=_slot_label(s, cfg.slot_minutes),
@@ -586,6 +604,7 @@ def analyze_basal(
             days=len(per_day),
             evidence=evidence,
             status=status,
+            guidance=guidance,
         ))
     return out
 

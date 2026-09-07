@@ -500,6 +500,11 @@ class LowsOwnDirectionTest(unittest.TestCase):
         self.assertEqual(seg.evidence["direction"], "strengthen")
         self.assertEqual(seg.recommended, 29.5)
         self.assertIs(seg.asserts_move, True)
+        self.assertEqual(seg.guidance["action"], {
+            "kind": "setting_instruction", "parameter": "isf",
+            "start_min": 0, "end_min": 1440, "direction": "strengthen",
+            "units": "mg/dL/U", "recommended": 29.5,
+        })
 
     def test_rounded_strengthen_no_op_cannot_stage(self):
         bolus, basal, cgm, windows = self._nights(36.85)

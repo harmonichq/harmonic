@@ -1035,6 +1035,22 @@ staged member instructions, owner seriousness and separated citations. Record it
 concrete field shape in this section before handing off; no new policy decision
 is delegated to that handoff.
 
+Chunk 1 publishes the following additive source contract. Analyzer member payloads
+(`basal[]`, `isf[]`, and `ic_blocks[]`) carry `guidance`, with `action` either
+`null` or `{kind: "setting_instruction", parameter, start_min, end_min, direction,
+units, recommended}`; I:C also carries `member_start_mins`. `action` exists only
+when that owner's existing `asserts_move` verdict is true. `seriousness` is either
+`"recurring_low"` from the owner's existing harm judgment or `null`; it never
+reclassifies support. Scenario Patterns carry `guidance.action_id` (the closed
+`habit:<lever>` semantic identity), `guidance.seriousness` (the owner's unrounded
+`Confidence.severity` category), and `guidance.citation_episode_ids`. Every Scenario
+Step carries a separate `citation` object with its closed operation name,
+evidence tier, timestamp, event references and optional source window. Guidance
+consumers use these fields, never recommendation or Step prose, to compare action
+or cite evidence. The later guidance projection owner must rebuild or version its
+retained-artifact boundary before it reads these required fields; this source chunk
+does not advance the deferred scenario-fixture envelope.
+
 The second owns guidance selection/comparison and bounded Store/API persistence,
 including current-watch composition, cache invalidation and public API tests.
 Its shared contract is the public guidance/preference API above. It consumes

@@ -667,6 +667,11 @@ class MissedMealAnchorAndWindowTest(unittest.TestCase):
         # A beat that scans no window serializes an explicit null.
         plain = Step(t=self.ONSET, text="x", evidence_tier=EvidenceTier.OBSERVED)
         self.assertIsNone(plain.to_dict()["cited_window"])
+        self.assertEqual(plain.to_dict()["citation"], {
+            "operation": "scenario.narrative_step", "tier": "observed",
+            "at": self.ONSET.strftime("%Y-%m-%d %H:%M:%S"),
+            "event_refs": [], "window": None,
+        })
 
 
 class SeverityTest(unittest.TestCase):

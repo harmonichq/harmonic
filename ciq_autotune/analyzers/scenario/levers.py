@@ -188,6 +188,15 @@ def recommendation(lever: "Lever") -> str:
     return _META[lever][2]
 
 
+def action_id(lever: "Lever") -> str:
+    """The closed semantic action identity for a behavioral Lever.
+
+    Guidance compares this stable owner-produced identifier, never rendered
+    recommendation prose. A copy edit therefore cannot manufacture a new action.
+    """
+    return f"habit:{lever.value}"
+
+
 def meaning(lever: "Lever") -> str:
     """The plain-language read of what this lever says happened (#157 Guide copy)."""
     return _META[lever][3]

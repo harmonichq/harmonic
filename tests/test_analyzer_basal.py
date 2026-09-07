@@ -303,6 +303,7 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertEqual(s.status, Status.INSUFFICIENT)
         self.assertFalse(s.asserts_move)             # held everywhere that keys on it
         self.assertEqual(_deliverable_rate(s), s.current)  # no move into the schedule
+        self.assertIsNone(s.guidance["action"])
 
     def test_eight_informative_nights_meet_support_but_not_multiplicity(self):
         # Eight non-tie nights meet the support floor, but the exact tail does not
@@ -325,6 +326,9 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertTrue(s.asserts_move)
         self.assertIs(s.to_dict()["asserts_move"], True)  # Plan staging reads this
         self.assertEqual(_deliverable_rate(s), s.recommended)
+        self.assertEqual(s.guidance["action"]["parameter"], "basal_rate")
+        self.assertEqual(s.guidance["action"]["start_min"], s.slot * 30)
+        self.assertEqual(s.guidance["action"]["end_min"], (s.slot + 1) * 30)
         lever = build_tuning_levers(
             analyze_basal(basal, cgm, [], []), [], [], slot_minutes=30
         )[0]

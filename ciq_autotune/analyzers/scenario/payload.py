@@ -107,6 +107,13 @@ class Step:
             "evidence_tier": self.evidence_tier.value,
             "cited_event_refs": list(self.cited_event_refs),
             "cited_window": dict(self.cited_window) if self.cited_window else None,
+            "citation": {
+                "operation": "scenario.narrative_step",
+                "tier": self.evidence_tier.value,
+                "at": _fmt(self.t),
+                "event_refs": list(self.cited_event_refs),
+                "window": dict(self.cited_window) if self.cited_window else None,
+            },
         }
 
 
@@ -197,6 +204,7 @@ class Pattern:
 
     def to_dict(self) -> dict:
         c = self.confidence
+        from .levers import action_id
         return {
             "lever": self.lever.value,
             "title": _lever_title(self.lever),
@@ -218,6 +226,11 @@ class Pattern:
             **behavioral_priority(c).to_dict(),
             "rank": self.rank,
             "recommendation": self.recommendation,
+            "guidance": {
+                "action_id": action_id(self.lever),
+                "seriousness": c.severity,
+                "citation_episode_ids": list(self.occurrences),
+            },
             "hero_episode": self.hero_episode,
             "occurrences": list(self.occurrences),
             "occurrence_groups": [dict(group) for group in self.occurrence_groups],

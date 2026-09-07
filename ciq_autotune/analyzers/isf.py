@@ -831,6 +831,7 @@ def analyze_isf(
         # rescue channel actually ran over (#467).
         evidence["rescue_evidence"] = rescue_observation.to_dict()
 
+    asserts_move = isf_asserts_move(programmed, direction, rec)
     return [SegmentEstimate(
         start_min=0,
         label="Fasting",
@@ -840,5 +841,20 @@ def analyze_isf(
         recommended=rec,
         annotation=ann,
         evidence=evidence,
-        asserts_move=isf_asserts_move(programmed, direction, rec),
+        asserts_move=asserts_move,
+        guidance={
+            "action": (
+                {
+                    "kind": "setting_instruction",
+                    "parameter": "isf",
+                    "start_min": 0,
+                    "end_min": 1440,
+                    "direction": direction,
+                    "units": "mg/dL/U",
+                    "recommended": rec,
+                }
+                if asserts_move and rec is not None else None
+            ),
+            "seriousness": "recurring_low" if evidence.get("harm") else None,
+        },
     )]

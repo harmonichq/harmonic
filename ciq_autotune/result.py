@@ -152,6 +152,9 @@ class SlotEstimate:
     # ``Optional`` + ``None`` default keeps legacy rows (and light test fixtures)
     # constructible; a ``None`` status reads as "no direction asserted".
     status: Optional["Status"] = None
+    # Owner-produced source inputs for guidance.  Kept optional for retained
+    # result artifacts created before this additive contract.
+    guidance: Optional[Dict] = None
 
     @property
     def asserts_move(self) -> bool:
@@ -200,6 +203,7 @@ class SlotEstimate:
             # gate)", …) — the Settings audit spine keys each slot's state on it
             # (#495). None when no direction was ever computed (legacy rows).
             "safety_status": status,
+            "guidance": dict(self.guidance) if self.guidance is not None else None,
         }
 
 
@@ -229,6 +233,7 @@ class SegmentEstimate:
     # own `start_min`. `None` for ISF rows and legacy payloads. The surface uses it to
     # say which stretch reads for a segment that has no number of its own.
     block_id: Optional[int] = None
+    guidance: Optional[Dict] = None
 
     def to_dict(self) -> dict:
         return {
@@ -242,6 +247,7 @@ class SegmentEstimate:
             "evidence": self.evidence,
             "asserts_move": self.asserts_move,
             "block_id": self.block_id,
+            "guidance": dict(self.guidance) if self.guidance is not None else None,
         }
 
 
@@ -321,6 +327,7 @@ class IcBlock:
     # verdict reads this before falling through to `confirm`, so a block whose
     # evidence disagrees with its setting can never render a check (#523).
     held_reason: Optional[str] = None
+    guidance: Optional[Dict] = None
 
     @property
     def current(self) -> Optional[float]:
@@ -356,6 +363,7 @@ class IcBlock:
             "regime": self.regime,
             "evidence": self.evidence,
             "held_reason": self.held_reason,
+            "guidance": dict(self.guidance) if self.guidance is not None else None,
         }
         # Collecting and asserting blocks carry the observed run age; only the
         # collecting state carries a countdown target (see the class docstring).

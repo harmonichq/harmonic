@@ -2628,6 +2628,28 @@ def _analyze_ic_blocks_shared(
         # Stamp the one eligibility decision here, off the evidence just assembled —
         # its RESULT and nothing else, so no consumer ever re-applies a condition.
         block = replace(block, asserts_move=ic_asserts_move(block))
+        direction = None
+        if block.asserts_move and block.current is not None and block.recommended is not None:
+            direction = "raise" if block.recommended > block.current else "lower"
+        block = replace(
+            block,
+            guidance={
+                "action": (
+                    {
+                        "kind": "setting_instruction",
+                        "parameter": "carb_ratio",
+                        "start_min": block.start_min,
+                        "end_min": block.end_min,
+                        "member_start_mins": list(block.member_start_mins),
+                        "direction": direction,
+                        "units": "g/U",
+                        "recommended": block.recommended,
+                    }
+                    if direction is not None and block.recommended is not None else None
+                ),
+                "seriousness": "recurring_low" if block.harm else None,
+            },
+        )
         if block.asserts_move:
             block = replace(block, days_observed=observed)
         # #523: display-only held_reason, transcribed from the annotation this block

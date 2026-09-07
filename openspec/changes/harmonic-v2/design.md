@@ -702,3 +702,198 @@ The safety, architecture, manual-pump, active-watch and accepted-failure rules a
 settled inputs. A build is admitted only when its own outcome cannot be
 invalidated by a remaining question; no production behavior is inferred from
 the design checklist.
+
+## ADR 383 — Select one admitted concern and retain a bounded set-aside choice
+
+### Decision and status
+
+Policy version `383:1`, investigated at
+`cfc3e9e36ca3ad17c2318051ab643c34469b26a7`. This is the worker's settled
+policy for independent review, not shipped guidance. The replay and its limits
+are recorded in [evidence.md](evidence.md#adr-383-policy-replay).
+Task 2.1 remains open until coordinator review closes.
+
+### One selection rule
+
+1. Use the existing backend's active watched change first, with its identity and
+   progress. A new concern remains inspectable alongside it and cannot open a
+   second change. Guidance neither chooses between competing Trial identities
+   nor finishes one. The separate durable-watch decision remains controlling.
+2. Build candidates from one coherent backend analysis: the setting analyzers,
+   scenario report and Findings projection. A setting action requires its own
+   final `asserts_move`; use only those staged members and their existing delivery
+   path. Basal, I:C and ISF retain their different predicates. A held or
+   direction-only setting cannot borrow another member's permission.
+3. A habit action requires its existing surfaced scenario Pattern, its existing
+   active Priority admission (`priority >= priority_active_threshold`), a
+   behavioral action under the closed Lever recommendation contract, and Focus
+   admission. `low_confidence` members and observation-only `meal_bolus_short`
+   are investigations. `pinnable_levers()` is only the last admission constraint,
+   never clinical support. `wide` remains visible uncertainty; it is not a new
+   exclusion, since `assemble` explicitly does not use it to hide a Pattern.
+   Behavioral findings without this supported-action contract remain evidence.
+4. Remove subjects still set aside under the comparison below. Among remaining
+   admitted actions, choose the greatest existing integer Priority. Break an
+   exact tie by ascending canonical subject string, using code-point order and
+   no localized title. Do not use episode counts, flavor, a queue register or
+   display order as an additional preference. Two basal rows do not compete as
+   independent copies of the same parameter Priority.
+5. If no action remains, choose a guided investigation from evidenced concerns,
+   priced before unpriced, descending existing Priority, then the same subject
+   tie-break. Read held/thin analyzer results as well as queue rows: the whole-day
+   queue deliberately drops held settings. A nonzero observed support count with
+   an explicit insufficient/held verdict is inspectable uncertainty, not a new
+   support floor. Preserve named held reasons, direction-only verdicts, unknown
+   causes and observation-only findings. If none remains, return quiet with
+   its reason: no current concern, or all current concerns set aside. Missing
+   data stays explicitly unavailable; a failed read is an error, never quiet.
+
+The selected result explains both admission and ordering. It cites the selected
+Lever's own impact, recurrence, denominators and held/support verdict, and says
+that it leads the **available admitted actions**. It does not call Priority a
+predicted benefit, preventable harm, proof of causation or a clinical urgency
+scale. An investigation contains no actionable dose/timing recommendation.
+
+### Why this cross-parameter rule
+
+Admission before ordering is the substantive choice. Raw highest Priority would
+promote the observation-only meal-bolus-short case (47); `next_in_line` misses
+supported habits altogether. Reusing only queue rows also loses the seven-night
+basal concern and held I:C evidence. Neither raw order nor the shared tier meets
+the product decision.
+
+After admission, existing Priority is the smallest defensible ordering input:
+it combines recurrence discounted for uncertainty with the existing
+hypo-weighted behavioral impact or tuning insulin currency. It already permits
+both flavors on one scale. Choosing the largest such value serves the accepted
+objective of consequential recurring problems without inventing a second
+clinical weighting scheme. A universal lows-first override would require a new
+cross-family severity rule; counting events as a tie-break would compare nights,
+meals and lows as if interchangeable. Neither is added. The canonical tie-break
+makes no medical claim and remains stable across copy changes.
+
+The mixed replay chose basal (97) over the supported habit (38), and the same
+habit over an unstaged seven-night basal estimate. Setting basal aside selected
+the habit. These are consistency checks on manufactured inputs, not clinical
+calibration of Priority. Its limitations remain visible in the explanation.
+
+### Stable subject and minimum preference
+
+The subject is one tuning variable or one behavioral Lever in this local
+wearer's database, independent of action eligibility:
+
+| Concern | Canonical subject | Scope of Set aside |
+| --- | --- | --- |
+| Basal | `setting:basal_rate` | The basal concern across the day |
+| I:C | `setting:carb_ratio` | The carb-ratio concern across its current blocks |
+| ISF | `setting:isf` | The correction-factor concern |
+| Behavioral Lever | `habit:<lever enum value>` | That Lever and its own populations |
+| Uncaused highs | `investigation:uncaused_highs` | The existing uncaused-high concern, with no invented action |
+
+An investigation of a setting or habit keeps that same subject when support
+arrives. It does not get a new identity from its disposition. The four problem
+shapes remain explanation groupings, never preference keys or pooled support.
+An active watched change has its existing identity and is not set aside through
+this preference operation.
+
+The deliberate tuning granularity is the variable, not a mutable queue span.
+The choice must say, for example, “Set aside the basal concern,” and show its
+scope. All relevant hours remain inspectable. This avoids losing a preference
+when adjacent slots merge or an I:C block identifier changes. It also means the
+choice is broader than one selected chart row; the interface must disclose that
+scope rather than silently promising a per-row dismissal. Selecting a variable
+never automatically stages all its members or combines unrelated changes.
+
+Persist one upserted row per subject: subject, decision time, optional user reason,
+comparison version, and the bounded action/seriousness state set aside. Restore
+removes that row and returns the subject to ordinary selection, subject to current
+eligibility and active-watch precedence. Viewing evidence does not restore it.
+No event archive, analysis copy or per-refresh history is needed.
+
+### Return comparison, version 383:1
+
+Always compare the full subject's current backend state, before any display-clock
+filter, with the saved state. A clock-window move, generation, fingerprint,
+occurrence identity, title, evidence count or raw Priority change alone cannot
+return it. A temporary disappearance, quiet result, weaker support or failed
+read does not delete the preference or reset its saved comparison.
+
+* **Setting action:** retain the ordered, canonical pump-entry instructions for
+  its staged members: affected clock intervals, direction, units and the
+  existing deliverable's recommended values. Merge adjacent identical
+  instructions for comparison; exclude current values and mere source block
+  IDs. A newly admitted interval, changed direction or changed deliverable value
+  on an interval is a changed action. An unrounded estimate change is not.
+  Disappearing instructions alone do not return a concern. A narrowed interval
+  is compared on its surviving hours, not treated as a new instruction merely
+  because a row boundary moved. This uses existing delivery precision, not a new
+  numerical materiality threshold. A different actual pump-entry value can
+  return even when numerically close; that is the cost of this threshold-free
+  definition. Its reason names the hours and old/new instruction.
+* **Habit action:** retain its closed semantic action identifier, currently the
+  Lever's own recommendation identity, only when admitted. Promotion from an
+  investigation to that action returns it. Copy edits do not change the action;
+  a future semantic recommendation change must deliberately version its action
+  identifier. Low-confidence recommendation strings are not action identifiers.
+* **Seriousness:** use existing categorical judgments, never raw count/score
+  movement. For settings, a newly asserted recurring-low/harm verdict on an
+  affected interval returns the concern even if the instruction is identical.
+  Preserve the parameter owner's harm/hold semantics; ordinary caps and support
+  changes are not new seriousness. For habits, an increase in the existing
+  `Confidence.severity` order (`info`, `low`, `medium`, `high`) returns it.
+  Expose that judgment from the owner before serialization rounding; do not
+  duplicate its thresholds or classify rounded JSON in production. A decrease
+  alone keeps the user's choice. Uncaused highs have no categorical seriousness
+  authority here and cannot auto-return on count growth; explicit Restore
+  remains available. No new seriousness classifier is introduced for them.
+
+Return is permission to compete again, not guaranteed selection or action.
+A seriousness change in a held subject still yields investigation. Explain the
+specific changed action or categorical worsening, with its current uncertainty.
+The preference remains stored, so repeated reads can retain that explanation;
+Set aside again replaces its baseline. Restore clears it. A comparison-version
+change alone never restores anything: migrate semantic equivalents or retain the
+preference and require explicit Restore where equivalence is unknown.
+
+### Smallest implementation boundary and concrete gaps
+
+Extend the existing findings preparation/projection boundary with one public
+backend guidance read that consumes the same analysis/scenario/exposure inputs,
+current authoritative active-watch context and stored preferences. Return the
+selected canonical subject, disposition, admission/order/return reasons,
+source-owned evidence references, alternatives and unavailable context together.
+Keep one candidate per tuning variable while retaining each member's separate
+verdict and chart identity. Overview and Explore consume this result verbatim.
+Existing Plan/Focus writes must recheck their authorities at action time; a
+previous guidance read grants no permanent permission.
+
+The build needs these additions; none exists merely because this ADR names it:
+
+* A guidance projection that includes held/thin analyzer evidence omitted from
+  the global queue, and enforces the supported-action/observation distinction.
+  Existing `prepare_findings_projection` supplies composition, not this policy.
+* A bounded preference table and Set aside/Restore writes through the existing
+  Store/API owner, with normal cache invalidation. `audit_dismissals.item_id` is
+  its primary key and upsert target, while `evidence_fingerprint` scopes the
+  legacy dismissal. That behavior cannot represent this preference; do not
+  silently migrate a legacy evidence-scoped dismissal into a durable choice.
+* Owner-produced semantic action and categorical seriousness fields, including
+  canonical delivered setting instructions and habit severity before rounding.
+  The replay exercises the existing judgments, but the current serialized
+  Pattern does not expose its severity label. This is an exposure requirement,
+  not permission to invent a new score or support gate.
+* Structured factual/inferred citations separated from recommendation text.
+  Current scenario steps can embed treatment advice. Guidance must use explicit
+  owner-authored factual fields/templates keyed by the existing closed source
+  operation; no punctuation splitting and no arbitrary step-text passthrough.
+  A low-confidence source remains readable through its cited observations and
+  uncertainty without acquiring advice. Missing structured copy blocks that
+  source's production advice presentation, not an excuse to promote raw prose.
+
+These are concrete implementation obligations, not an unresolved selection
+policy. Canonical finished-Trial admission and exact historical Focus periods
+remain the already named downstream decisions, outside this spike. Reuse #340 at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3` for comparisons. Selection never changes
+cohort membership, overlap ownership, observation anchors, chart support,
+statistical assessments or adherence/outcome separation. No clinical threshold,
+classifier, analyzer result or production file changed in this investigation.

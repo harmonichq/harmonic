@@ -708,10 +708,13 @@ the design checklist.
 ### Decision and status
 
 Policy version `383:1`, investigated at
-`cfc3e9e36ca3ad17c2318051ab643c34469b26a7`. This is the worker's settled
-policy for independent review, not shipped guidance. The replay and its limits
-are recorded in [evidence.md](evidence.md#adr-383-policy-replay).
-Task 2.1 remains open until coordinator review closes.
+`cfc3e9e36ca3ad17c2318051ab643c34469b26a7`. Independent Standards and Spec
+review converged with zero findings on
+`a6ea888f8f9d51e4707f85847fc76acdc3c5a1c9`. The coordinator verified the
+[tracker result](https://github.com/harmonichq/harmonic/issues/383#issuecomment-5565889507)
+and authorized completion of task 2.1. This is a verified investigation result,
+not shipped guidance. The replay and its limits are recorded in
+[evidence.md](evidence.md#adr-383-policy-replay).
 
 ### One selection rule
 

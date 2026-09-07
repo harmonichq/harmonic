@@ -18,7 +18,7 @@ PRs are read from GitHub.
 
 ## 2. Settle the remaining implementation decisions
 
-- [ ] 2.1 Resolve backend priority selection and stable set-aside identity/return in [#383](https://github.com/harmonichq/harmonic/issues/383), with a synthetic replay and reviewed decision in this change. Its acceptance is the `guidance` capability delta in [specs/guidance/spec.md](specs/guidance/spec.md).
+- [x] 2.1 Resolve backend priority selection and stable set-aside identity/return in [#383](https://github.com/harmonichq/harmonic/issues/383), with a synthetic replay and reviewed decision in this change. Its acceptance is the `guidance` capability delta in [specs/guidance/spec.md](specs/guidance/spec.md).
   - [x] 2.1.1 Settle the one backend selection rule and its deterministic tie-break over the existing Lever verdicts and Priority, and the eligible-action, guided-investigation, quiet and active-change dispositions.
   - [x] 2.1.2 Settle the stable set-aside subject for supported settings, supported habits and guided investigations: the minimum stored choice, the optional reason, and explicit Restore.
   - [x] 2.1.3 Settle the action/seriousness comparison that returns a set-aside subject with an understandable reason, without a new numerical materiality threshold and without changing a support floor, classifier or score.

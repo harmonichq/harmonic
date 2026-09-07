@@ -83,7 +83,7 @@ export function createUtilities(kit, { context }) {
   function pane() {
     const kind = view.utility;
     const body = { settings: settingsBody, pump: pumpBody, carbs: carbsBody, questions: questionsBody, guide: guideBody, glossary: glossaryBody }[kind]();
-    return `<aside class="pane gf-reading gf-utility" data-utility="${kind}" aria-label="${TITLE[kind]}"><header><h2>${TITLE[kind]}</h2>${body.meta ? `<span class="meta">${body.meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-utility-close" data-utility-close>Close</button></div></header><div class="gf-pane-body">${status()}${body.html}</div></aside>`;
+    return `<aside class="pane gf-reading gf-utility" data-utility="${kind}" aria-label="${TITLE[kind]}"><header><h2 tabindex="-1">${TITLE[kind]}</h2>${body.meta ? `<span class="meta">${body.meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-utility-close" data-utility-close>Close</button></div></header><div class="gf-pane-body">${status()}${body.html}</div></aside>`;
   }
   function status() {
     const mem = memory();
@@ -136,7 +136,7 @@ export function createUtilities(kit, { context }) {
         ${draft.when === 'custom' ? `<div class="gf-field"><label for="ut-custom" class="gf-visually-hidden">Custom time</label><input id="ut-custom" type="datetime-local" value="${e(draft.customAt)}"></div>` : ''}
         <p class="gf-meta">One tap logs · defaults to now, ${e(clock(context().now))} on ${e(shortDate(context().now))}.</p></section>
       <section class="gf-section"><h3>Logged in this page <span class="meta">${entries.length}</span></h3>
-        ${entries.length ? entries.map(entry => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(entry.t.slice(0, 10))}" data-subject="Log carbs">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
+        ${entries.length ? entries.map(entry => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(entry.t.slice(0, 10))}" data-subject="Log carbs · ${e(shortDate(entry.t))} ${e(clock(entry.t))}" data-utility-from="carbs" data-utility-label="Log carbs" data-return-focus="[data-utility-remove='${entry.id}']">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
       </section>` };
   }
   function questionsBody() {
@@ -146,7 +146,9 @@ export function createUtilities(kit, { context }) {
   }
   // the way into the day itself, on its own row after the answers (or Undo) so
   // the three answers read as one group and this stays the secondary step
-  const openDay = prompt => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(prompt.anchor_t.slice(0, 10))}" data-subject="Carb questions">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
+  // The day opens under the questions, which stay open beside it: the entry names
+  // the question it came from, and the way back is this pane on that same question.
+  const openDay = prompt => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(prompt.anchor_t.slice(0, 10))}" data-subject="Carb questions · ${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))}" data-utility-from="questions" data-utility-label="Carb questions" data-return-focus="[data-question-card='${e(questionKey(prompt))}'] [data-action='day']">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
   function questionCard(prompt, mem) {
     const held = answerOf(prompt), key = questionKey(prompt), logging = mem.draft.question === key;
     const entry = held?.entry ? mem.entries.find(item => item.id === held.entry) : null;
@@ -290,6 +292,9 @@ export function createUtilities(kit, { context }) {
     seat, bind, mountCharts,
     dispose() { for (const chart of charts) chart.dispose(); charts = []; },
     open,
+    // A return from Day puts the utility back where it was left; the caller owns
+    // the focus and the render, so the return lands on its own originating row.
+    reopen(kind) { view.utility = kind; },
     // the Day desk draws this page's entries for the current source as manual carb marks
     entries: () => memory().entries,
     // a destination change keeps the utility on the desk; the narrow sheet closes with it

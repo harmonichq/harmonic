@@ -53,8 +53,9 @@ export function createBasalExploration(kit, { setting, gate, viewedAt }) {
     const cell = selected(), nights = nightsOf(cell), night = nightOf(cell), staged = stagedSet();
     const at = viewedAt(), later = String(at).slice(0, 16) !== String(readAt()).slice(0, 16);
     const counts = VERDICT_ORDER.filter(key => lane.counts[key]).map(key => `${lane.counts[key]} ${VERDICT_PLURAL[key]}`);
+    // the lane is a level under the roster, so its head carries the way back to it
     const head = kit.nameplate({
-      kicker: `Basal · ${e(shortDate(window_().start))} to ${e(date(window_().end))} · read <b>${e(stamp(readAt()))}</b>${later ? ` · viewed ${e(stamp(at))}` : ''}`,
+      kicker: `<button class="linkbtn" data-journey="findings">Findings</button> · Basal · ${e(shortDate(window_().start))} to ${e(date(window_().end))} · read <b>${e(stamp(readAt()))}</b>${later ? ` · viewed ${e(stamp(at))}` : ''}`,
       title: `All ${cells().length} basal slots`,
       sub: `<b>${e(counts[0] || '')}</b>${counts.slice(1).map(text => ` · ${e(text)}`).join('')} · ${e(window_().days)} d basal run`,
       end: setting.staged() ? '<button class="gf-btn" data-set="changes">Open Changes</button>' : '',
@@ -186,6 +187,15 @@ export function createBasalExploration(kit, { setting, gate, viewedAt }) {
       memory.cell = cells().find(cell => cell.asserts)?.i ?? 0;
     },
     frame, bind, mountCharts, dispose,
+    // A contextual entry names the slot it wants by its start time, the way the
+    // Trial's own change names it, and says where it came from. The read stays
+    // the original one this lane always shows; nothing else about the slot moves.
+    hold(starts = [], note = null) {
+      const cell = cells().find(item => starts.includes(hhmm(item.startMin)));
+      if (!cell) return false;
+      memory.cell = cell.i; memory.notice = note;
+      return true;
+    },
     // the slot lane's own summary line, for the roster row that opens it
     readAt,
     summary: () => `${cells().length} slots · ${VERDICT_ORDER.filter(key => lane.counts[key]).map(key => `${lane.counts[key]} ${VERDICT_SHORT[key]}`).join(' · ')} · read ${shortDate(readAt())} · ${clock(readAt())}`,

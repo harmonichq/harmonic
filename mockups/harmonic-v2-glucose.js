@@ -146,18 +146,33 @@ function changeScenario(next) {
 }
 // Day opens on its own desk. A subject's Open Day carries the date and the way
 // back; the topbar's Day carries neither, and holds the last day looked at.
-function navigate(next, { date = null, from = null } = {}) {
+function navigate(next, { date = null, from = null, utility = null } = {}) {
   destination = next;
   if (source === 'setting') setting.onNavigate(next);
   if (source === 'focus') focus.onNavigate(next);
   if (source === 'journey') shared.onNavigate(next);
   utilities.onNavigate();
+  if (utility) utilities.reopen(utility);
   if (next === 'day') day.open({ date, from });
+  // Arriving at a destination puts the hand on its subject: the reading pane's
+  // head, else the stage's title. A caller that already named its target — the
+  // Day return's originating row, a roster row — set it before navigating, and
+  // that always wins.
+  if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '.gf-stage .gf-title'];
   view.sheetOpen = false; render();
 }
 // where a subject's Open Day returns to: the destination that showed it, with
 // focus back on the selected occurrence's row
-const fromHere = label => ({ label, destination: destination === 'overview' || destination === 'changes' ? destination : 'explore', destinationLabel: { overview: 'Overview', changes: 'Changes' }[destination] || 'Explore', focus: '.gf-member-row[aria-pressed="true"]' });
+// A utility's Open Day is the same contextual entry, and its way back is that
+// utility: the destination underneath is the one it was opened over, and the
+// utility reopens on the moment it was read from.
+const fromHere = (label, { utility = null, utilityLabel = '', focus = '' } = {}) => ({
+  label,
+  destination: utility ? destination : destination === 'overview' || destination === 'changes' ? destination : 'explore',
+  destinationLabel: utility ? utilityLabel : { overview: 'Overview', changes: 'Changes' }[destination] || 'Explore',
+  utility,
+  focus: focus || '.gf-member-row[aria-pressed="true"]',
+});
 // Whether a setting journey owns the rendered frame: its own source, or the
 // shared journey while its setting branch leads.
 const settingOwned = () => source === 'setting' || (source === 'journey' && shared.owner() === 'setting');
@@ -187,7 +202,15 @@ function moveMeal(direction) {
   select(ids[(at + direction + ids.length) % ids.length]);
   render(); surface.querySelector('.gf-member-row[aria-pressed="true"]')?.scrollIntoView({ block:'nearest' });
 }
-for (const button of document.querySelectorAll('[data-destination]')) button.onclick = () => navigate(button.dataset.destination);
+// The topbar is the global way in. Pressing the current destination again is the
+// way back up: Explore returns to its findings index rather than sitting on
+// whatever subject was drilled into. A contextual return never comes through
+// here, so it keeps its own subject.
+for (const button of document.querySelectorAll('[data-destination]')) button.onclick = () => {
+  const next = button.dataset.destination;
+  if (next === destination && next === 'explore' && source === 'journey') shared.toIndex();
+  navigate(next);
+};
 narrowQuery.addEventListener('change', () => { view.sheetOpen = false; render(); });
 
 async function load(retry = false) {
@@ -259,8 +282,17 @@ function desk(stage, reading) {
   return `<div class="panes gf-desk">${stage}${reading}</div>`;
 }
 function nameplate({ kicker, title, sub, end = '' }) {
-  return `<header class="gf-head"><div class="gf-id"><div class="gf-kicker">${kicker}</div><h2 class="gf-title">${title}</h2><div class="gf-sub">${sub}</div></div>${end ? `<div class="gf-end">${end}</div>` : ''}</header>`;
+  // the title takes programmatic focus when a frame has no reading pane to land in
+  return `<header class="gf-head"><div class="gf-id"><div class="gf-kicker">${kicker}</div><h2 class="gf-title" tabindex="-1">${title}</h2><div class="gf-sub">${sub}</div></div>${end ? `<div class="gf-end">${end}</div>` : ''}</header>`;
 }
+// The two destinations' jobs, in one predicate and one control. Overview carries
+// the decision — what leads, how it is going, and the way to its evidence — and
+// only where the source actually serves that lead; a concern with no served
+// action keeps its evidence pane. Explore carries the roster and the detail.
+const briefing = () => destination === 'overview';
+// The route out of the brief, named for the concern's own evidence, in the words
+// Changes already uses for the same step.
+const inspectRoute = noun => `<div class="gf-actions"><button class="gf-btn primary" data-action="explore">Inspect ${e(String(noun).toLowerCase())}</button></div>`;
 function readingHeader(title, meta = '') {
   // the head takes programmatic focus when navigation opens a new subject
   return `<header><h2 tabindex="-1">${title}</h2>${meta ? `<span class="meta">${meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-sheet-close" data-action="close-sheet">Close</button></div></header>`;
@@ -301,7 +333,8 @@ function investigationFrame(pane = null) {
         <div class="gf-fig ec-surface" data-chart="comparison"></div>
         <div class="instruments"><div class="instrument"><span class="cap">Occurrence</span><span class="when">${e(stamp(selected.anchor.t))}</span><span class="meta">${e(cohort.name)} · ${position}</span></div><div class="instrument gf-tools">${stepSeg}${figureSeg}</div></div>
         ${seatFigure(figure === 'episode' && item ? 'episode' : 'day')}</section>`;
-  return desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(pane?.title || hook.title)}">${view.asideOpen ? asideForm() : readingPane(selected, cohort, item, hook, pane)}</aside>`);
+  const paneTitle = pane?.title || (briefing() && hook.lead ? 'Action' : hook.title);
+  return desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(paneTitle)}">${view.asideOpen ? asideForm() : readingPane(selected, cohort, item, hook, pane)}</aside>`);
 }
 // What the investigation reads from the source's journey: the nameplate's status
 // and end controls, the reading pane's name and its leading section.
@@ -333,6 +366,14 @@ function figureKey(kind, selected) {
 
 function readingPane(selected, cohort, item, hook, pane = null) {
   const base = baseCase();
+  // Overview reads the decision, Explore reads the evidence. On Overview the
+  // concern's own action and its progress lead, with one named route into the
+  // detail; the cohorts, their members and the model steps are Explore's job.
+  // The stage keeps its comparison and its figure either way.
+  if (briefing() && hook.lead) return `${readingHeader('Action',`${base.summary.claimed} of ${base.summary.denominator} ${e(base.summary.noun)}`)}<div class="gf-pane-body">
+    ${hook.lead}
+    ${inspectRoute(hook.title)}
+  </div>`;
   const supportLine = row => {
     const count = `${row.routed_count} ${row.routed_count === 1 ? 'occurrence' : 'occurrences'}`;
     return row.support === 'supported' ? count : row.support === 'limited' ? `${count} · limited support`
@@ -515,7 +556,14 @@ function mountTrialCharts() {
 let stagedTrial = null;
 function progressSection(trial) {
   const progress = trial.maturing;
-  return `<section class="gf-section"><h3>Evidence accrued</h3><div class="gf-figure">${progress.days_elapsed} of ${progress.days_required} days<small>${progress.gap_count} data ${progress.gap_count === 1 ? 'gap' : 'gaps'}</small></div><progress value="${progress.days_elapsed}" max="${progress.days_required}" aria-label="Trial progress"></progress><p class="gf-meta">${e(trial.readiness.message)}</p>${trial.focus?.message ? `<p class="gf-meta">${e(trial.focus.message)}</p>` : ''}</section>`;
+  // Both figures are served. While the Trial is still maturing the days read
+  // against what it still needs; once the source's own readiness says it is past
+  // that, elapsed days are the fact and the requirement is what was met, so the
+  // bar reads full instead of overfilled.
+  const met = trial.state !== 'maturing';
+  const figure = met ? `${progress.days_elapsed} days<small>${progress.days_required} required · ${progress.gap_count} data ${progress.gap_count === 1 ? 'gap' : 'gaps'}</small>`
+    : `${progress.days_elapsed} of ${progress.days_required} days<small>${progress.gap_count} data ${progress.gap_count === 1 ? 'gap' : 'gaps'}</small>`;
+  return `<section class="gf-section"><h3>Evidence accrued</h3><div class="gf-figure">${figure}</div><progress value="${Math.min(progress.days_elapsed, progress.days_required)}" max="${progress.days_required}" aria-label="Trial progress"></progress><p class="gf-meta">${e(trial.readiness.message)}</p>${trial.focus?.message ? `<p class="gf-meta">${e(trial.focus.message)}</p>` : ''}</section>`;
 }
 function trialFrame() {
   const trial = currentTrial(), active = state === 'active';
@@ -603,7 +651,7 @@ function detectedSettings(trial, note) {
 const kit = {
   surface, mockbar, colors, trialColors, narrow, view, e, clock, date, shortDate, stamp, period, pct,
   desk, nameplate, readingHeader, sheetToggle, emptyFrame, asideForm, trialStage, trialTitle, progressSection, evidenceTable, detectedSettings, reviewForm,
-  investigationFrame, mountCharts, navigate, render,
+  investigationFrame, mountCharts, navigate, render, briefing, inspectRoute,
 };
 const setting = createSettingJourney(kit);
 const focus = createFocusJourney(kit);
@@ -658,12 +706,21 @@ function bind() {
     else if (action === 'explore') { if (!settingOwned()) meals.onExplore(); if (source === 'journey') shared.onExplore(); navigate('explore'); }
     // a subject's Open Day carries its date and the way back; a frame's plain
     // Open Day is direct entry
-    else if (action === 'day') navigate('day', button.dataset.date ? { date: button.dataset.date, from: fromHere(button.dataset.subject) } : {});
+    else if (action === 'day') navigate('day', button.dataset.date
+      ? { date: button.dataset.date, from: fromHere(button.dataset.subject, { utility: button.dataset.utilityFrom, utilityLabel: button.dataset.utilityLabel, focus: button.dataset.returnFocus }) }
+      : {});
     else if (action === 'history') navigate('changes');
     else if (action === 'overview' || action === 'watch') navigate('overview');
   };
   const reason = surface.querySelector('#aside-reason'); if (reason) reason.oninput = event => { view.asideReason = event.target.value; };
-  const aside = surface.querySelector('[data-form="aside"]'); if (aside) aside.onsubmit = event => { event.preventDefault(); journey().setAside(view.asideReason.trim()); view.asideOpen = false; navigate('overview'); };
+  // Setting aside keeps the wearer on the concern they just set aside, where the
+  // acknowledgment is: its own Restore, its reason, and the roster's set-aside
+  // group with the next ranked concern one press above it. A source with no
+  // roster says so on Overview, as it already did.
+  const aside = surface.querySelector('[data-form="aside"]'); if (aside) aside.onsubmit = event => {
+    event.preventDefault(); journey().setAside(view.asideReason.trim()); view.asideOpen = false; view.asideReason = '';
+    if (source === 'journey') { view.focusAfterRender = '[data-restore]'; navigate('explore'); } else navigate('overview');
+  };
   // every control that submits the conclusion — the form's own button and a
   // Retry after a failed save — waits on the same nonblank text
   const text = surface.querySelector('#conclusion'); if (text) text.oninput = event => {
@@ -674,16 +731,23 @@ function bind() {
     event.preventDefault(); if (!view.conclusion.trim()) return;
     // a failed save keeps the form in place with its Retry
     if (journey().finish(view.conclusion.trim()) === false) { view.focusAfterRender = '[data-focus="retry-resolve"]'; render(); return; }
-    // the meals record opens in Changes; the setting's and the habit's original context leads Overview again
-    navigate(source === 'meals' ? 'changes' : 'overview');
+    // a finished change opens on its own saved record, so the conclusion is
+    // acknowledged before any other concern is offered: the meals and the
+    // journey's setting branch in Changes, the habit's on its resolved Overview
+    navigate(journey().finishRoute?.() || (source === 'meals' ? 'changes' : 'overview'));
   };
   const periodSelect = surface.querySelector('[data-select="evidence-period"]'); if (periodSelect) periodSelect.onchange = event => { view.evidencePeriod = event.target.value; view.evidenceDay = 0; render(); };
   const daySelect = surface.querySelector('[data-select="evidence-day"]'); if (daySelect) daySelect.onchange = event => { view.evidenceDay = Number(event.target.value); render(); };
 }
 window.addEventListener('keydown', event => {
-  if (event.key !== 'Escape' || ['TEXTAREA', 'INPUT', 'SELECT'].includes(document.activeElement?.tagName)) return;
-  // a seated utility steps back and closes on its own before the desk's chain
+  if (event.key !== 'Escape') return;
+  // A seated utility steps back and closes on its own before the desk's chain,
+  // and it does so from inside its own fields too: one Escape always leaves the
+  // utility and hands focus back to what opened it. What was typed and not saved
+  // stays in the page, as it does when Close is pressed.
   if (view.utility) { utilities.escape(); return; }
+  // elsewhere a field owns the key, so a stray Escape cannot drop a draft
+  if (['TEXTAREA', 'INPUT', 'SELECT'].includes(document.activeElement?.tagName)) return;
   if (view.sheetOpen) { view.sheetOpen = false; view.focusAfterRender = view.asideOpen ? '[data-action="aside"]' : '.gf-sheet-toggle'; view.asideOpen = false; }
   else if (view.asideOpen) { view.asideOpen = false; view.focusAfterRender = '[data-action="aside"]'; }
   // Day steps its month back to the week, then drops its focused log moment

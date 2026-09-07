@@ -42,6 +42,8 @@
 .gf-id { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .gf-kicker { color:var(--mk-muted); font-size:var(--ck-micro); font-weight:700; letter-spacing:var(--ck-track); text-transform:uppercase; line-height:1.2; }
 .gf-kicker b { color:var(--wk-ink-nav); font-weight:700; }
+/* the crumb to the level above, in the kicker's own type so it reads as the trail */
+.gf-kicker .linkbtn { font:inherit; letter-spacing:inherit; text-transform:inherit; vertical-align:baseline; }
 .gf .pane > header .gf-title, .gf .gf-title { color:var(--mk-text); font-family:Inter,system-ui,sans-serif; font-size:1.14rem; font-weight:700; line-height:1.3; letter-spacing:-.01em; text-transform:none; }
 .gf .gf-sheet-close { display:none; }
 .gf .canvas-head[hidden] { display:none; }

@@ -31,7 +31,9 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
   const focusB = createFocusJourney(kit, { controls: false, gate, onSaveFailed });
   // The slot lane stages the setting branch's change, so it reads that change's
   // gate whether or not the current read still ranks the concern.
-  const settingGate = () => gateFor(rowById(data.setting_branch.finding.id) || { id: data.setting_branch.finding.id, raw: { kind: 'setting' } });
+  // The lane reads the staging gate only: a set-aside concern is acknowledged
+  // where it is shown, and never silently blocks a stage from the slot lane.
+  const settingGate = () => { const held = gateFor(rowById(data.setting_branch.finding.id) || { id: data.setting_branch.finding.id, raw: { kind: 'setting' } }); return held?.aside ? null : held; };
   const basalB = createBasalExploration(kit, { setting: settingB, gate: settingGate, viewedAt: () => now() });
   const laneShown = () => destination === 'explore' && explore.id === 'basal';
 
@@ -141,7 +143,12 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
   // Copy here is the product rule the brief sets — one change at a time — in the
   // established words; the Trial's own message is the served one.
   function gateFor(row) {
-    if (!row || asideOf(row)) return null;
+    if (!row) return null;
+    // A set-aside concern says so wherever it is shown — including the setting
+    // journey's own frame, which builds its head from this — and carries its
+    // restore and the wearer's reason with it.
+    const aside = asideOf(row);
+    if (aside) return { aside: true, status: '<span>Set aside</span>', end: `<button class="gf-btn" data-restore="${e(row.id)}">Restore</button>`, note: `Set aside ${stamp(aside.at)}${aside.reason ? ` · ${aside.reason}` : ''}` };
     const kind = isSetting(row) ? 'setting' : 'focus';
     const lead = settingB.active() ? 'setting' : focusB.active() ? 'focus' : null;
     if (lead && lead !== kind) {
@@ -228,10 +235,24 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
     else if (isSetting(row)) hook = { title: 'Nights', status: gateFor(row)?.status || '', end: gateFor(row)?.end ?? '<button class="gf-btn" data-action="aside">Set aside</button>', lead: settingLead(row) };
     else hook = { title: 'Lows', status: '', end: row.rank == null ? '' : '<button class="gf-btn" data-action="aside">Set aside</button>', lead: guidedLead(row) };
     const aside = asideOf(row);
-    if (aside) { hook.status = '<span>Set aside</span>'; hook.end = `<button class="gf-btn" data-restore="${e(row.id)}">Restore</button>`; }
+    if (aside) {
+      hook.status = '<span>Set aside</span>';
+      hook.end = `<button class="gf-btn" data-restore="${e(row.id)}">Restore</button>`;
+      hook.lead = asideLead(row, aside);
+    }
     return hook;
   }
   const priority = () => priorityFor(shown());
+  // What a set-aside concern says while it is the subject in hand: that it is set
+  // aside, the wearer's own reason if they gave one, and the concern that now
+  // leads, by name and in one press. Restore sits on the nameplate beside it.
+  function asideLead(row, aside) {
+    const following = next();
+    return `<section class="gf-section"><h3>Set aside <span class="meta">${e(stamp(aside.at))}</span></h3>
+      ${aside.reason ? `<p>${e(aside.reason)}</p>` : ''}
+      <p class="gf-meta">It stays in Findings with its reason until it is restored.</p>
+      ${following ? `<div class="gf-actions"><button class="gf-btn primary" data-row="${e(following.id)}">Open ${e(following.title)}</button></div>` : ''}</section>`;
+  }
   function settingLead(row) {
     const s = row.raw.support || {};
     return `<section class="gf-section"><h3>Action <span class="meta">${e(tierWord(row))}</span></h3>
@@ -316,6 +337,18 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
     for (const button of surface.querySelectorAll('[data-journey]')) button.onclick = () => {
       if (button.dataset.journey === 'retry-read') { refresh(); view.focusAfterRender = memory.error ? '[data-journey="retry-read"]' : null; kit.render(); }
       if (button.dataset.journey === 'lane') { explore.id = 'basal'; view.focusAfterRender = '.lane-cell[aria-pressed="true"]'; kit.navigate('explore'); }
+      if (button.dataset.journey === 'findings') { toIndex(); kit.navigate('explore'); }
+      // A Trial's Inspect nights opens the evidence that Trial was decided from,
+      // not whatever the current read now ranks first: the slot lane at the
+      // original read, held on the slot the change moved, with the read it came
+      // from and the time it is being viewed at already in the lane's own head.
+      if (button.dataset.journey === 'trial-nights') {
+        const starts = settingB.changedSlots();
+        const held = basalB.hold(starts, `From the Trial${settingB.finished() ? ' record' : ''}${starts[0] ? ` · Basal ${starts[0]}` : ''}`);
+        explore.id = 'basal';
+        view.focusAfterRender = held ? '.lane-cell[aria-pressed="true"]' : '.gf-reading > header h2';
+        kit.navigate('explore');
+      }
     };
     // the lane binds first: its foot's way into Changes takes the setting journey's handler
     basalB.bind(); settingB.bind(); focusB.bind();
@@ -335,6 +368,10 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
     return isSetting(row) && evidenceOf(row) === 'setting' ? 'setting' : 'shared';
   }
   function restore(id = memory.aside.at(-1)?.id) { memory.aside = memory.aside.filter(item => item.id !== id); }
+  // The way back up. Explore's index is the roster with no subject drilled into:
+  // the leading concern reads beside it, and the slot lane is left. The global
+  // Explore control and every Findings crumb come through here.
+  function toIndex() { explore.id = null; view.focusAfterRender = '.gf-reading > header h2'; }
 
   return {
     load(json) {
@@ -365,8 +402,16 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
     onExplore() { explore.id = (destination === 'explore' ? exploreRow() : leadRow())?.id ?? null; },
     // set aside is the shared desk's: the concern stays in the roster with its
     // reason, an ordinary new read keeps it there, and only a restore returns it
-    setAside(reason) { const row = shown(); if (!row || asideOf(row)) return; memory.aside.push({ id: row.id, title: row.title, reason, at: now() }); },
-    restore,
+    setAside(reason) {
+      const row = shown(); if (!row || asideOf(row)) return;
+      memory.aside.push({ id: row.id, title: row.title, reason, at: now() });
+      // the concern stays the subject in hand, so its acknowledgment is what shows
+      explore.id = row.id;
+    },
+    restore, toIndex,
+    // A finished change opens on its own record: the setting branch's is in
+    // Changes, the habit's resolved Overview already carries its own.
+    finishRoute: () => (settingB.finished() && branch() === 'setting' ? 'changes' : 'overview'),
     finish(conclusion) {
       const lead = settingB.active() ? settingB : focusB.active() ? focusB : null;
       if (!lead) return false;
@@ -378,7 +423,9 @@ export function createSharedJourney(kit, { createSettingJourney, createFocusJour
     },
     finished: () => settingB.finished() || focusB.finished(),
     escape() {
-      if (owner() === 'basal') return basalB.escape();
+      // the lane steps its own night and figure back first, then leaves for the
+      // index it was opened from — the same step the Findings crumb takes
+      if (owner() === 'basal') { if (basalB.escape()) return true; toIndex(); return true; }
       if (owner() === 'setting') return settingB.escape();
       if (owner() === 'focus') return focusB.escape();
       return false;

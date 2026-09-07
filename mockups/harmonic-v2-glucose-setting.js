@@ -198,7 +198,8 @@ export function createSettingJourney(kit, options = {}) {
         ${basalFigure}
         <div class="instruments"><div class="instrument"><span class="cap">Night</span><span class="when">${e(stamp(selected.t))}</span><span class="meta">${e(group)} · ${position}</span></div><div class="instrument gf-tools">${stepSeg}${figureSeg}</div></div>
         ${seatFigure(figure)}</section>`;
-    return kit.desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(pane?.title || 'Nights')}">${view.asideOpen ? kit.asideForm() : nightsPane(selected, group, position, pane, held)}</aside>`);
+    const paneTitle = pane?.title || (kit.briefing() ? 'Action' : 'Nights');
+    return kit.desk(stage, `<aside class="pane gf-reading" aria-label="${view.asideOpen ? 'Set aside' : e(paneTitle)}">${view.asideOpen ? kit.asideForm() : nightsPane(selected, group, position, pane, held)}</aside>`);
   }
   const nightKey = () => nightKeyHtml(colors, e(slotSpan()));
   function nightsPane(selected, group, position, pane = null, held = null) {
@@ -207,15 +208,20 @@ export function createSettingJourney(kit, options = {}) {
     for (const entry of roster()) { const key = nightGroup(entry); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(entry); }
     const list = [...groups].map(([key, members]) => `<div class="gf-night-group"><b>${NIGHT_GROUP_LABEL[key]}</b> · ${members.length} ${members.length === 1 ? 'night' : 'nights'}</div>${members.map(entry => `<button class="gf-row gf-member-row" data-night="${e(entry.date)}" aria-pressed="${entry.date === selected.date}"><span class="when">${e(shortDate(entry.date))} · ${e(clock(entry.t))}</span><span class="n">${e(entry.delivered_rate)} U/h</span></button>`).join('')}`).join('');
     const mg = value => (value == null ? 'no reading' : `${Math.round(value)} mg/dL`);
-    return `${pane ? kit.readingHeader(e(pane.title), pane.meta) : kit.readingHeader('Nights', `${roster().length} of ${row.days} nights`)}<div class="gf-pane-body">
-      ${pane?.lead || ''}
-      <section class="gf-section"><h3>Basal · ${e(slotSpan())} <span class="meta">${rows.indexOf(row) + 1} of ${rows.length} in ${e(item.span.label)}</span></h3>
+    // the decision this concern asks for: the change, why, and how far it has got
+    const decision = `<section class="gf-section"><h3>Basal · ${e(slotSpan())} <span class="meta">${rows.indexOf(row) + 1} of ${rows.length} in ${e(item.span.label)}</span></h3>
         ${narrow() ? rowSeg() : ''}
         <div class="gf-figure">${e(changeText())}<small>${row.asserts_move ? 'Supported · ' : ''}${e(row.direction)}</small></div>
         <p>${e(item.headline)}</p>
         <p class="gf-meta">Estimate ${e(row.estimate.value)} U/h, ${e(row.estimate.lo)} to ${e(row.estimate.hi)} · ${e(row.estimate.n)} nights · ${row.evidence.directional_support_count} in the asserted direction</p>
         ${memory.draft || memory.decision ? `<p class="gf-meta">${memory.decision ? `Decision recorded ${e(stamp(memory.decision.applied_at))}` : `Draft saved ${e(stamp(memory.draft.updated_at))}`}</p>` : ''}
-        ${held?.note ? `<p class="gf-note">${e(held.note)}</p>` : ''}</section>
+        ${held?.note ? `<p class="gf-note">${e(held.note)}</p>` : ''}</section>`;
+    // Overview reads the decision and the way to its nights; the roster of nights
+    // and the selected one are Explore's, where the findings index is.
+    if (kit.briefing() && !pane) return `${kit.readingHeader('Action', e(phase() || TIER[item.tier] || item.tier))}<div class="gf-pane-body">${decision}${kit.inspectRoute('nights')}</div>`;
+    return `${pane ? kit.readingHeader(e(pane.title), pane.meta) : kit.readingHeader('Nights', `${roster().length} of ${row.days} nights`)}<div class="gf-pane-body">
+      ${pane?.lead || ''}
+      ${decision}
       <section class="gf-section" role="group" aria-label="Nights">${list}</section>
       <section class="gf-section"><h3>Selected night <span class="meta">${e(position)}</span></h3>
         <div class="gf-nums"><div><span class="when">${e(date(selected.date))} · ${e(slotSpan())}</span> <span class="tier">${e(group)}</span></div>
@@ -249,7 +255,8 @@ export function createSettingJourney(kit, options = {}) {
     const head = kit.nameplate({
       kicker: `Plan · <b>${e(status)}</b>`,
       title: `${e(SETTING_NAME[item.parameter])} ${e(item.span.label)} · ${e(changeText())}`,
-      sub: `<b>${planned.length} / ${PROFILE_SEGMENTS} segments</b> · Nothing here is sent to your pump.`,
+      // the deliverable's own rows against the profile's capacity, said as that
+      sub: `<b>${planned.length} of ${PROFILE_SEGMENTS} segments used</b> · Nothing here is sent to your pump.`,
       end,
     });
     const cell = (row, param) => {
@@ -266,7 +273,9 @@ export function createSettingJourney(kit, options = {}) {
   // Shipped Plan reconciliation copy (index.html), verbatim, chosen by the shipped
   // reconcile function's state.
   function planStatus(result) {
-    if (memory.error) return `<div class="gf-status" role="alert"><p class="gf-error">Plan save failed: no response from the store.</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">Retry</button></div></div>`;
+    // the retry names the save that failed, so it never reads as a rival to the
+    // other one still offered in the head
+    if (memory.error) return `<div class="gf-status" role="alert"><p class="gf-error">${memory.error === 'draft' ? 'Saving the draft failed' : 'Recording the decision failed'}: no response from the store.</p><div class="gf-actions"><button class="gf-btn primary" data-set="retry-save">${memory.error === 'draft' ? 'Retry saving the draft' : 'Retry recording the decision'}</button></div></div>`;
     const flash = memory.flash ? `<p class="gf-meta gf-flash" role="status">${e(memory.flash)}</p>` : '';
     if (!memory.decision) return `<div class="gf-status"><p class="gf-meta">${memory.draft ? `Draft saved ${e(stamp(memory.draft.updated_at))}. Recording the decision preserves what was known then.` : 'Draft not saved. Saving the draft preserves consideration.'}</p></div>`;
     if (result.state === 'confirmed') return `<div class="gf-status" data-state="confirmed" tabindex="-1"><p>✓ On pump as of ${e(stamp(result.matchedAt))} — the pump matches your plan.</p>${flash}</div>`;
@@ -304,7 +313,7 @@ export function createSettingJourney(kit, options = {}) {
 
   function trialFrame() {
     const item = trial(), ready = item.state === 'complete';
-    const stage = kit.trialStage(item, { kicker: `Trial · <b>${e(item.readiness.label)}</b>`, end: '<button class="gf-btn" data-action="explore">Inspect nights</button>' });
+    const stage = kit.trialStage(item, { kicker: `Trial · <b>${e(item.readiness.label)}</b>`, end: nightsRoute() });
     const reading = `<aside class="pane gf-reading" aria-label="This trial">${kit.readingHeader('This trial', e(item.readiness.label))}<div class="gf-pane-body">
       ${kit.progressSection(item)}
       ${ready ? `<section class="gf-section"><h3>Conclusion</h3>${kit.reviewForm()}</section>` : ''}
@@ -317,9 +326,16 @@ export function createSettingJourney(kit, options = {}) {
   const changedNote = () => (memory.decision
     ? `Observed on the pump. The decision was recorded ${stamp(memory.decision.applied_at)}.`
     : 'Observed on the pump. No earlier Plan decision was recorded; Harmonic first saw this change at detection.');
+  // A Trial's way back to the nights it was decided from — its own original
+  // evidence, never the current read's next concern. On the shared desk that is
+  // the slot lane at the original read, held on the slot this change moved; the
+  // standalone source has only its own concern, which its Explore already opens.
+  const nightsRoute = () => `<button class="gf-btn" data-${ownsControls ? 'action="explore"' : 'journey="trial-nights"'}>Inspect nights</button>`;
   function recordFrame() {
     const record = memory.record;
-    const stage = kit.trialStage(record.trial, { kicker: 'Trial · <b>Finished</b>', end: '<button class="gf-btn" data-action="explore">Inspect nights</button>', rail: '<span class="meta">Ending snapshot</span>', body: kit.evidenceTable(record.trial) });
+    // the record is where a finished Trial lands, so it carries the way on: the
+    // nights it was read from, and — on the shared desk — the current findings
+    const stage = kit.trialStage(record.trial, { kicker: 'Trial · <b>Finished</b>', end: `${nightsRoute()}${ownsControls ? '' : '<button class="gf-btn primary" data-journey="findings">Findings</button>'}`, rail: '<span class="meta">Ending snapshot</span>', body: kit.evidenceTable(record.trial) });
     const reading = `<aside class="pane gf-reading" aria-label="This trial">${kit.readingHeader('This trial', 'Finished')}<div class="gf-pane-body">
       <section class="gf-section"><h3>Conclusion</h3><p>${e(record.conclusion)}</p><dl><dt>Finished</dt><dd>${e(stamp(record.endedAt))}</dd><dt>Original priority</dt><dd>${e(finding().title)}</dd></dl></section>
       ${decisionSection({ state: record.onPumpAt ? 'confirmed' : 'pending', matchedAt: record.onPumpAt })}
@@ -408,6 +424,8 @@ export function createSettingJourney(kit, options = {}) {
     stage, unstage, staged: () => memory.staged,
     // the analyzer slots of the finding's approved hour: the ones a staging covers
     slots: () => analyzerRows().map(row => row.slot),
+    // the start times this change moved, as the Trial's own changes name them
+    changedSlots: () => ((memory.record?.trial || trial())?.changes || []).map(change => change.slot).filter(Boolean),
     // the pump profile the Pump settings utility shows: the chosen capture once
     // the pump was captured, the read's active profile before that
     detectedProfile: () => (capturedProfile() ? { profile: capturedProfile(), at: data.detected.captured_at, caption: 'Captured' } : null),

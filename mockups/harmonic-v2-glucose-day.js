@@ -218,7 +218,8 @@ export function createDayDesk(kit, { dayset, carbEntries = () => [] }) {
         // back to the subject's own row; narrow keeps the sheet closed and focuses its toggle
         const from = memory.from; memory.from = null;
         view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : [from.focus, '.gf-reading > header h2'].filter(Boolean);
-        kit.navigate(from.destination); return;
+        // a utility's entry returns to that utility, over the destination it was opened on
+        kit.navigate(from.destination, { utility: from.utility || null }); return;
       }
       view.focusAfterRender = action === 'month' ? '.gf-month-toggle' : `[data-day="${action}"]:not(:disabled), .gf-month-toggle`;
       kit.render();

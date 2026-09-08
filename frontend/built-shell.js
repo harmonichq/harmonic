@@ -14,9 +14,6 @@ const V2_ASSET_PREFIX = '/v2/assets/';
 const CONTENT_TYPES = {
   '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript',
   '.svg': 'image/svg+xml', '.json': 'application/json',
-  // #389: the v2 desk packages Inter rather than reaching a CDN for it, and a
-  // font served as an opaque byte stream is a font the browser may decline.
-  '.woff2': 'font/woff2',
 };
 
 function createBuiltShell({

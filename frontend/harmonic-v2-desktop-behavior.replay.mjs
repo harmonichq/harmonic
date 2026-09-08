@@ -398,6 +398,11 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   ok(response.ok(), `${target} answered ${response.status()}`);
 
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
+  // Arrival is not finished while the desk is still reading. The mock had every
+  // capture in hand before it drew; the app draws a loading frame first, so the
+  // opener waits for the desk's own loading state to clear before it asserts
+  // what arrived. It waits on the desk's markup, never on a fixed delay.
+  await page.waitForFunction(() => !document.querySelector('.gf .gf-loading'), null, { timeout: 20000 });
 
   if (unrouted.length) {
     fail(`the built app requested ${[...new Set(unrouted)].join(', ')} — production needs no CDN (HV2-01)`);
@@ -1949,7 +1954,7 @@ export const S75b = async (page, ctx) => {
     'the reloaded form carries a password; a saved credential is never echoed back');
 };
 
-export const S76 = async (page) => {
+export const S76 = async (page, ctx) => {
   // Corrected. Root's capture shows Day opened with Carb questions STILL OPEN in
   // the reading pane and no visible return — because the seated utility takes
   // that pane (glucose.js:301) and the Day desk's "Opened from" section, which
@@ -1965,6 +1970,12 @@ export const S76 = async (page) => {
   ok(label, 'the utility\'s Open Day carries no origin label to return to');
   await open.click();
   await page.waitForTimeout(350);
+  // The prototype had its day in hand already; the app reads it. Waiting on the
+  // Day desk's own public selector is waiting for the state this story is about
+  // to assert — not a longer sleep, and not a weaker assertion. Until it
+  // arrives the desk shows a truthful loading frame with the utility still
+  // seated over it, which is the continuity this story goes on to require.
+  if (ctx.target === 'app') await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
 
   ok(await destinationOf(page) === 'day', 'the utility\'s Open Day did not reach the Day desk');
   ok(await countOf(page, `.gf-utility[data-utility="${origin}"]`) === 1,

@@ -63,13 +63,13 @@ frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
 # Its built output is generated during packaging and is untracked, so it is
 # never a candidate input here.
 #
-# .woff2 is deliberate and is the ONLY binary class in this rule: HV2-08 keeps
-# Inter as the single UI family and HV2-01 forbids a CDN, so the font ships in
-# the tree or the surface cannot render its own type. These files are upstream
-# Inter, under the SIL Open Font License reproduced beside them; their
-# provenance record is frontend-v2/fonts/inter-provenance.json, cleared by the
-# .json extension above.
-frontend-v2/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json,.woff2}
+# No binary class is added here. HV2-08 keeps Inter as the single UI family and
+# HV2-01 forbids a CDN, so the font travels in the tree — as a CSS resource
+# carrying its bytes as data URLs (frontend-v2/fonts/inter.css), cleared by the
+# .css extension below. That keeps every shipping file text, which is what the
+# contamination scan reads; a WOFF2 beside it would fail that scan closed, and
+# the scan is right to do so.
+frontend-v2/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
 # The font licence must travel with the font. Exact-path, because .txt is not in
 # the extension set above and should not be widened for one file.
 frontend-v2/fonts/OFL.txt

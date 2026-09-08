@@ -42,6 +42,11 @@ let seatLayer = null;
 // setter each.
 export const view = { sheetOpen: false, focusAfterRender: null };
 
+// The one focus this desk last placed, and the element it landed on. Read only
+// by render(), to carry the reader's hand across a re-render that destroys what
+// it is on; see the focus step there for the two guards that bound it.
+let placed = null;
+
 let narrowQuery = null;
 export const narrow = () => Boolean(narrowQuery && narrowQuery.matches);
 
@@ -164,6 +169,9 @@ export function render() {
   if (!surface) return;
   const was = paneKey();
   const scrolled = surface.querySelector('.gf-pane-body')?.scrollTop || 0;
+  // What this render is about to destroy, if the reader's hand is still on the
+  // thing the desk last put it on. See the focus step at the end.
+  const carried = placed && placed.element === document.activeElement ? placed.selector : null;
   disposeDesk();
 
   for (const button of document.querySelectorAll('[data-destination]')) {
@@ -189,18 +197,31 @@ export function render() {
   // One selector, or candidates in order of preference: the first present takes
   // focus. A caller-supplied precise target is a single selector and always wins.
   //
-  // THE REQUEST OUTLIVES A RENDER THAT CANNOT SATISFY IT. A pane that has to
-  // fetch renders its loading state first, so the target the caller named does
-  // not exist yet; clearing the request there dropped focus to the document
-  // body and left it there when the real content arrived. It is held instead
-  // until either the target appears or nothing is still being read — so it can
-  // never linger and grab focus on some later, unrelated frame.
-  if (view.focusAfterRender) {
-    let landed = false;
-    for (const target of [].concat(view.focusAfterRender)) {
+  // A RENDER MUST NOT TAKE THE READER'S HAND OFF WHAT IT IS ON. Every render
+  // replaces the markup wholesale, so the focused element is destroyed and focus
+  // falls to the document body. Where the desk itself placed that focus and the
+  // reader has not since moved it, the same target is re-applied to the markup
+  // that replaced it — which is what carries focus through a pane that renders
+  // once while its content is still being read and again when it arrives. The
+  // Guide's article is the case that measured it: the heading took focus while
+  // the article still said it was loading, and the render that replaced it with
+  // the served text dropped focus to the body.
+  //
+  // Two guards keep this from becoming recovery machinery. It only ever re-uses
+  // the selector the desk last placed — nothing is remembered about the reader —
+  // and it does nothing at all unless that exact element is still the one in
+  // hand, so a later focus choice of the reader's own is never overridden.
+  //
+  // A request also outlives a render that cannot satisfy it, while a read is
+  // still open: the target a caller named may not exist until its content does.
+  const wanted = view.focusAfterRender || carried;
+  if (wanted) {
+    let landed = null;
+    for (const target of [].concat(wanted)) {
       const found = surface.querySelector(target);
-      if (found) { found.focus(); landed = true; break; }
+      if (found) { found.focus(); landed = { selector: target, element: found }; break; }
     }
+    if (landed) placed = landed;
     if (landed || !loading()) view.focusAfterRender = null;
   }
 }

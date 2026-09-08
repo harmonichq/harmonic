@@ -669,8 +669,57 @@ Comparison chunk2 additionally owns the existing
 and parity proof. Its existing scenario package/engine/test, comparison,
 outcomes-trend and trial-evidence paths remain owned there. No recommendation or
 classifier policy amendment is authorized. Keep one ticket and three serial chunks:
-completed chunk1 Store; remaining chunk2 comparison; chunk3 lifecycle/API only.
-This proposal and its source partition require independent review before implementation.
+completed chunk1 Store and chunk2 comparison; remaining chunk3 lifecycle/API
+integration. The verification-maintenance handoff below is the sole exception to
+completed comparison test-path ownership; it does not reopen comparison policy.
+
+### Existing verification maintenance (owner: lifecycle/API integration)
+
+The completed Store and comparison tasks remain completed. During final integration,
+`tests/test_outcomes_trend.py` transfers from the completed comparison owner to the
+integration owner solely for test-double and synthetic lifecycle setup compatibility.
+Supply the already-admitted Store frontier/read interface and establish lifecycle
+state through the admitted setup/write boundary before exercising read-only trend
+and API reads. Preserve the existing outcome, denominator, timing and legacy payload
+assertions; where an assertion expects reconciliation/preemption as a read side
+effect, perform the admitted lifecycle action first and assert the same transition
+plus read-only projection. Use eligible synthetic Focus setup for successful pin
+cases; retain rejection cases. Do not hand-set comparison/classifier verdicts or
+change production to accommodate a fake Store. No completed production comparison
+path transfers or reopens.
+
+The only additional artifact/setup paths owned by this integration maintenance are:
+
+- `mockups/verify-660-story.synthetic/payload.json`
+- `mockups/verify-660-story.synthetic/verify-trials.capture.json`
+- `mockups/qa-e2e.synthetic/harmonic.sqlite`
+- `mockups/harmonic-v2.exploration/generate.py`
+- `mockups/harmonic-v2.exploration/setting.json`
+- `mockups/harmonic-v2.exploration/focus.json`
+- `mockups/harmonic-v2.exploration/journey.json`
+
+Regenerate the two verify captures with the existing
+`.claude/qa/gen_verify_payload.py --synthetic --out mockups/verify-660-story.synthetic`
+generator and verify with `scripts/check_demo_fixtures.py`. Refresh the existing QA
+showcase database with `scripts/gen_qa_e2e_db.py --out mockups/qa-e2e.synthetic/harmonic.sqlite`
+and verify its existing `--check` gate and generator tests. These generator sources
+are unchanged and gain no edit allowance.
+
+Within the existing v2 generator, change only synthetic lifecycle setup to call the
+admitted reconciliation/admission/ending boundary before read-only capture, including
+the Focus and alternative setting-preemption branches. Retain the original synthetic
+inputs, assertions and UI composition. Regenerate only its three listed JSON outputs
+using that existing generator and run its complete `--check`. Generated provenance
+text may reflect the now-admitted lifecycle instead of claiming it is absent;
+this is not permission for a new scenario, outcome, presentation or hand-edited data.
+Other generator outputs must remain byte-identical. If generator execution would
+change another path, report the exact difference before extending this closed list.
+
+No new fixture family, generator, workflow, browser relaxation, production interface,
+algorithm, threshold or UI layout/component is authorized. Existing generator
+provenance, contamination checks and QA budgets remain. All owned tests and complete
+integration, browser, public-tree and packaging gates remain required; a maintenance
+pass is not a substitute for those gates. No real data is involved.
 
 ### Lifecycle and integration interface (owner: lifecycle/API boundary)
 

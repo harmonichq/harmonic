@@ -1515,3 +1515,16 @@ partition. The completed Store task and three serial chunks remain intact. Norma
 independent plan review of this amendment and its successor lock precedes production
 admission; no further readiness study or design round is a prerequisite. Private
 history, prior study material and instrumentation stay out of tracked artifacts.
+
+
+## ADR 387 — Include existing verification maintenance in final integration
+
+Full integration exposed test doubles that lack the admitted Store frontier read,
+synthetic Focus setup that relied on read-time reconciliation, and generated captures
+that predate additive lifecycle fields/schema. These are execution-inventory defects,
+not new product requirements. The closed path list and semantic restrictions live in
+contracts.md “Existing verification maintenance”. The final integration owner takes
+one existing outcomes-trend test file for compatibility setup and refreshes only the
+named existing derived artifacts with their existing generators. Completed Store and
+comparison tasks and all accepted comparison decisions remain intact. No production
+comparison edit, UI work, new fixture family or weaker delivery gate is admitted.

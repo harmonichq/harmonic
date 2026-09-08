@@ -66,7 +66,7 @@ existing records; no schema or endpoint is implemented by this document.
 | Applied Plan | Existing `applied_at` key and items; bounded `decision_context`; complete pump-entry deliverable including its source profile and captured I:C provenance | Extend Store apply/history and authenticated `/api/plan/apply`, `/api/plan/history` |
 | Trial | Existing Verify id, parameter/slot, detected time, before/after settings, captured block/members where present; `first_observed_at`, bounded `observed_context`; nullable reconciled Plan key and match receipt | Backend watch reconciliation persists through Store; selected reads extend `/api/verify/trials` |
 | Focus | Existing stored id/lever/pinned time; bounded `decision_context`; retained `comparison_context` | Extend Store pin/list and authenticated `/api/focus` |
-| Plan intent withdrawal | Applied Plan key, withdrawn time and optional user reason; original intent remains readable | New authenticated Plan-history withdrawal operation through Store; route spelling belongs to the build brief |
+| Plan intent withdrawal | Applied Plan key, withdrawn time and optional user reason; original intent remains readable | Authenticated `/api/plan/history/withdraw` through Store; see #387 implementation interfaces |
 | Trial or Focus ending | Kind, effective time, recorded time, optional user conclusion, bounded final assessment with its actual periods/context/limits | Proposed authenticated `/api/verify/trials/{trial_id}/finish`; extend `/api/focus/{focus_id}/resolve`; automatic endings are written by watch reconciliation |
 | Admission frontier | Newest admitted canonical Trial id and detected time; retained after ending | Same backend watch owner and Store; read by active selection, Verify, guidance and Focus pin guard |
 
@@ -226,8 +226,8 @@ restore the concern at any time.
   the built result before release; a Vite development page is insufficient.
 
 The first usable release requires both setting and habit loops, with these
-contracts and the rendered limiting states reviewed. The exact migration and
-endpoint shapes belong in subsequent execution locks, after product approval.
+contracts and the rendered limiting states reviewed. The #387 backend migration and endpoint interfaces are fixed below; rendered
+delivery remains subject to its later execution lock.
 
 
 ## #386 shared-chart and production handoff
@@ -280,3 +280,192 @@ passing scratch assertions. Mandatory independent review of findings commit
 `11610c0ae7c8fd3e1753d79d6e340a3977be5274` is complete, with the qualified
 coverage recorded in evidence.md. Next child admission remains with the epic
 coordinator; production and UI verification remain owed.
+
+
+## #387 implementation interfaces
+
+This section fixes the build interfaces under ADR 386 and the #387 production
+risk contract in design.md. It specifies planned additions, not shipped behavior.
+The existing identity, context, reconciliation, ending and period rules above
+remain normative. The build uses the three ownership boundaries below; a consumer
+cannot revise its provider's files. An interface change requires a revised lock.
+
+### Public requests and responses
+
+Every operation below uses the existing token authentication. Read routes return
+`input_revision` (the Store's input-data revision) and the one `admission` verdict.
+Guidance retains its existing `analysis_generation` and `input_revision` fields.
+New durable writes carry `request_id` (nonempty opaque string) and
+`input_revision` (integer). Apply and pin also carry `subject` and
+`analysis_generation` from the current guidance read. These select a backend
+source; they never supply clinical prose, settings context or an assessment.
+
+On existing write routes, the presence of `request_id` selects the durable
+contract. All durable fields required for that operation must then be supplied;
+a partial durable request is rejected by ordinary API validation (422). A request
+with none of those fields retains the legacy request shape and documented error
+behavior. It still runs through the common lifecycle owner and cannot bypass
+admission; missing source fields are captured and revalidated server-side. The
+legacy Plan draft remains `{items}` and still has its cache exception. Legacy
+apply still accepts no body; legacy pin still accepts `{lever}`; legacy resolve
+still accepts no body and returns 404 if its Focus is already closed. New callers
+use the durable contract to receive the idempotent result on retry.
+
+A successful durable mutation returns its existing response fields, where any,
+plus `record`, `input_revision`, and `admission`. `record` is the retained Plan,
+Trial or Focus described above, with its canonical identity and versioned context,
+reconciliation/withdrawal or ending. The first accepted result is retained against
+`request_id`; retry of that operation and identity returns that result unchanged.
+Reusing a request id for a different operation or identity is 409. For an already
+ended subject or withdrawn Plan, a new request id also returns the first retained
+ending/withdrawal, ignoring a changed conclusion/reason or stale revision. It does
+not save another assessment. An apply/pin retry returns the original Plan/Focus
+identity even after the draft is cleared or that watch ends. Responses to retries
+retain the original result's revision; obtain a fresh read for current admission.
+
+Before a first mutation, compare `input_revision` inside the reserved Store write
+transaction, reconcile the captured observed input, then revalidate admission and
+source action against that same input. Apply also checks the draft's `updated_at`
+against required `draft_updated_at` from GET `/api/plan`; saving a draft does not
+advance the input-data revision. A stale draft or source cannot apply. A missing
+known-identity target is 404; a stale source, stale draft, unavailable admission,
+nonactive/immature first Trial finish, or invalid lifecycle transition is 409.
+An existing record with missing evidence is a successful explicit unavailable
+record, not 404. Invalid legacy lever/draft remains 400. Durable errors keep the
+FastAPI `detail` field and add a machine-readable `code` in its object, with
+`input_revision` and `admission` on 409; legacy `detail` strings remain compatible.
+Unexpected computation/transaction failures remain errors, never successful
+unavailable assessments. No receipt is saved for a failed request.
+
+| Method and route | Identity, revision and selection input | Additive success and error/compatibility behavior |
+| --- | --- | --- |
+| GET `/api/plan` | None | Existing `items`, `updated_at`; add revision/admission. No write. |
+| PUT `/api/plan` | Existing `{items}` | Existing `{items, updated_at}` and validation; draft-only, no watch mutation. |
+| POST `/api/plan/apply` | Durable body `{request_id, input_revision, subject, analysis_generation, draft_updated_at}`; draft is server-stored | Existing `applied_at`, `items`; add retained applied record, full deliverable and decision context. Duplicate id returns same apply; empty draft is 400, changed draft/source or occupied admission is 409. No Plan decision is inferred from draft equality. |
+| GET `/api/plan/history` | None | Existing `history` list with additive context, reconciliation and withdrawal per row, plus revision/admission. Does not reconcile. |
+| POST `/api/plan/history/withdraw` | Body `{applied_at, request_id, input_revision, reason?}` | `{applied_at, record, input_revision, admission}`; unknown Plan 404; first request on a confirmed/nonpending Plan 409; prior withdrawal returns saved withdrawal. Does not end/reverse a Trial. |
+| GET `/api/focus` | None | Existing `focuses`, `pinnable`; add retained fields per row and revision/admission. `pinnable` remains the lever universe, not permission. |
+| POST `/api/focus` | Existing `lever`; durable body adds `{request_id, input_revision, subject, analysis_generation}` | Existing `id, lever, pinned_at, status` plus record/revision/admission. Canonical subject must match lever; invalid lever 400; a pending Plan, active watch or ineligible source is 409. Retry returns same Focus id. |
+| POST `/api/focus/{focus_id}/resolve` | Stored integer id; durable body `{request_id, input_revision, conclusion?}` | Existing `id, status` plus record/revision/admission with saved manual ending/assessment. Unknown 404; durable retry of any recorded ending returns it; legacy already-closed request remains 404. No maturity gate. |
+| POST `/api/verify/trials/{trial_id}/finish` | URL-encoded canonical Verify id; body `{request_id, input_revision, conclusion?}` | `{id, record, input_revision, admission}` with saved `user_finished` ending/assessment; unknown 404; invalid first finish 409; prior automatic/manual ending wins on retry. |
+| GET `/api/verify/trials` | Existing `selected`; `kind=trial|focus` defaults to trial; `assessment=original|retained|current` defaults to original | Existing `trials, selected`; add lazy `focuses` roster, revision/admission. `selected` uses the #340 common envelope and retains existing Trial fields and `plan_route`. Unknown selected identity 404, invalid kind/mode 422. No selection returns summaries only and rejects a nondefault assessment mode (422). Retained records remain selectable outside the derived roster's old cap/horizon. |
+| GET `/api/guidance` | Existing arguments | Existing guidance fields plus the common admission verdict and pending Plan/draft context using the precedence above. No second permission calculation. Existing preference writes are unchanged. |
+
+The selected detail always carries `original` (the saved decision or first-observed
+context and ending assessment, with explicit availability). `assessment=original`
+returns `reassessment: null`; on an active record without an ending snapshot that
+original assessment is unavailable. `retained` requests a read-only reassessment
+under the stored comparison context. `current` explicitly requests current-policy
+reassessment. Both return `reassessment: {mode, computed_at, input_revision,
+comparison_context, comparison}` separately from `original`. An unavailable
+retained executable context is not silently substituted with current policy.
+A current-policy result labels that context and cannot claim like-for-like
+improvement. Live/legacy Trial detail fields continue to use their existing
+projection; the additional original/reassessment fields do not relabel them.
+Cache keys include kind, id, assessment mode and revision/context identity.
+
+The common comparison object follows #340: `periods.before/after`, `views`,
+`outcomes`, `denominators` and `availability`; Focus adds `adherence` separately.
+Each period contains full pump-local start/end, boundary reasons, data cutoff and
+source revision. Every outcome retains its unit, named denominator, observed
+difference, assessment state/reasons and interval/method where estimable. The
+assessment states remain #340's `favorable`, `concerning`, `unclear`, `context`;
+record/data availability remains `available` or `unavailable`. Available data with
+an unclear inference is not an unavailable record or a favorable conclusion.
+
+### Store persistence interface (owner: durable Store boundary)
+
+Extend the existing Store, preserving its legacy methods and return types. Its
+new boundary owns storage, transaction mechanics and immutable-field enforcement;
+it does not detect candidates, select admission or compute an assessment. No
+second persistence module, generic event store or background recovery service.
+
+| Interface | Contract consumed by lifecycle/API and comparison owners |
+| --- | --- |
+| `Store.follow_up_transaction(*, expected_revision=None)` | Context manager on a writable Store; reserve the SQLite writer with `BEGIN IMMEDIATE` before checking the existing integer input revision. A mismatch raises `FollowUpConflict`. The outer scope commits changed rows with one revision advance, or rolls back everything on exception; a no-op does not advance revision. Existing apply/pin/resolve methods join this scope without an inner commit. Read-only Store rejects it. The transaction exposes the same Store, not a second session type. |
+| `Store.follow_up_record(kind, id)` and `Store.follow_up_records(kind)` | Read-only retrieval; kinds are `plan`, `trial`, `focus`; ids are applied_at string, canonical Trial string, and Focus integer respectively. Missing returns None; records lists use existing newest-first ordering with canonical identity ties. Merge legacy base rows into explicit unavailable envelopes without persisting during reads. |
+| `Store.save_follow_up_record(record)` | Transaction-only insert/update of the retained envelope. Identity and first-captured context are insert-once; an eligible later Plan receipt may fill an absent relationship. Ending and withdrawal are first-wins; attempts cannot overwrite their effective/recorded times, conclusion or assessment. Return the stored winner. Reject invalid identity/kind and orphan Plan/Focus base rows. Record validation is bounded to the fields in this contract. |
+| `Store.follow_up_frontier()` and `Store.advance_follow_up_frontier(trial_id, detected_at, *, reconciled_input_revision)` | Read `{trial_id, detected_at, reconciled_input_revision}` or None; nullable Trial fields permit recording an empty-candidate reconciliation. Transactional monotonic advance preserves ADR 386's canonical-id tie rule and retains the frontier when no new candidate exists. Candidate selection remains outside Store; a referenced Trial must exist. Return stored winner. The reconciliation revision identifies the committed input state, including this transaction's own durable changes. |
+| `Store.follow_up_request(request_id)` and `Store.save_follow_up_request(request_id, *, operation, kind, id, result)` | Read or transactionally save the first bounded successful public result and operation/identity. Duplicate mismatch raises `FollowUpConflict`; exact retry returns original result. No raw inputs, evidence series or per-refresh history. |
+
+Retained records extend the existing identities: `kind`, `id`, `version`,
+`decision_context` (Plan/Focus), `observed_context` and `first_observed_at` (Trial),
+`comparison_context` (Trial/Focus), `deliverable` (Plan), `reconciliation` (Plan/Trial),
+`withdrawal` (Plan), and `ending` (Trial/Focus). Preserve the legacy row fields.
+The context/ending availability envelopes use the minimum fields already defined
+above. A Trial record additionally freezes parameter, slot, detected time,
+before/after values and captured block/members for later read-only comparison.
+Schema columns/table organization are private to Store; consumers never issue SQL
+against these records. `FollowUpConflict` carries a reason code and actual input
+revision; HTTP translation belongs to the lifecycle/API owner. SQL errors remain
+errors. Writable startup owns migration; history uses the existing readonly or
+query-only opening without DDL.
+
+### Comparison interface (owner: exact-period comparison boundary)
+
+Add `ciq_autotune/follow_up_comparison.py` with these read-only front doors:
+
+| Interface | Input and result |
+| --- | --- |
+| `capture_comparison_context(store, *, at, input_revision)` | Capture the existing programmed-profile ISF selection, units/source snapshot and executable code/configuration identity as the `386:1` envelope. The Store is already bound to the caller's source revision. Missing input is explicitly unavailable. |
+| `compare_follow_up(store, *, record, data_cutoff, input_revision, context_mode="retained")` | `record` is the Store envelope above, with a proposed ending when computing a finish. `context_mode` is retained or current. Return the common comparison object and the actual comparison-context envelope. Read only; no resolver, migration, persistence, admission or cache mutation. |
+
+This is a deep comparison module shared by final-ending capture and selected
+reassessment. It owns continuous setting-period selection, exact Focus periods,
+shared populations/denominators and #340 assessment composition. Removing it would
+split that coupled period/context/population calculation across ending and history
+callers. It is not a façade over the legacy rolling trend. Factor reusable
+observation/metric computation inside `outcomes_trend.py` and `trial_evidence.py`
+for both their existing callers and this real caller; never call the writable
+legacy trend/watch resolver from comparison, and never duplicate classifier or
+metric policy. Preserve the old default producer signatures and output shapes.
+
+Implement #340's already-settled setting as well as Focus assessment: I:C captured
+block membership, basal relevant hours, ISF rest windows, whole-profile
+constituents, and mapped Focus outcomes. Use the exact #340 selected period,
+coverage and day-grouped uncertainty rules at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3`,
+`openspec/changes/verify-change-comparison/design.md`, “One selected-detail
+interface” and “Narrow outcome assessment”. The ADR 386 period/context refinements
+above apply. Neither maturity nor an analyzer recommendation floor becomes a
+comparison support rule. Synthetic producer tests must exercise an available
+setting comparison and an available Focus comparison, unclear/degenerate cases,
+zero opportunities, positive denominators with zero unwanted events, exact
+boundaries, context changes, and original-versus-current differences.
+
+### Lifecycle and integration interface (owner: lifecycle/API boundary)
+
+Keep the single semantic owner in `watched_change.py`. Add
+`reconcile_follow_up(store, *, now, recorded_at)` for an already reserved
+`follow_up_transaction`; it derives candidates with the existing detection and
+canonical-id owners, saves first-observed records/actual Plan matches, computes
+needed ending comparisons, and updates the frontier and Focus statuses together.
+It returns the common `admission` verdict, never commits or bumps cache itself.
+Add `follow_up_admission(store, *, now)` as its read-only projection. Its result is
+`{state, reason, active_kind, active_id, maturity, can_finish_trial, focus_pin,
+ending}`, where `focus_pin` contains `available, reason`. A read whose captured
+input has not been reconciled returns unavailable admission, never quiet or
+permission. The Store frontier interface above retains the last reconciled input
+revision, including an empty-candidate reconciliation.
+
+The API owns authentication, backend guidance capture, durable request retry/error
+translation and post-commit cache invalidation. It consumes the Store and
+comparison interfaces above. `active_watched_change`, Verify, guidance and pin
+adapt the same verdict; they do not make independent eligibility decisions.
+The ingestion completion path and pre-mutation path invoke the same reconciliation
+inside the Store transaction. Run only committed synthetic ingestion mocks in
+tests; do not exercise a live pull. Cache invalidation follows the outer commit,
+including a committed ingestion followed by failed reconciliation; failed ending
+transactions publish no partial lifecycle state. Readers cannot serve an old
+admission after input revision changes.
+
+This owner alone integrates the HTTP routes, guidance precedence, legacy adapters,
+fetch completion and history rosters. It runs the complete merged verification;
+failures in provider-owned files return to that same provider worker. It does not
+patch those files itself. Extend `scripts/check_guidance_plan_contract.mjs` to
+check the backend deliverable and actual schedule comparison against `frontend/plan.js` using manufactured
+split/merged boundaries, pump precision, whole-profile and captured-block cases.
+This extends the existing executable parity check without a committed capture.
+
+The coordinator owns only parent task checkbox bookkeeping and
+collection/review/PR delivery, not missing integration code.

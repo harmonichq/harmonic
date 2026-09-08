@@ -136,13 +136,13 @@ statistical policy.
 #### Scenario: Restart retains one real lifecycle record and legacy unknowns
 
 - **GIVEN** a synthetic pre-migration store containing existing Plan or Focus rows
-  and a newly recorded Plan, Trial, or Focus lifecycle record
-- **WHEN** the Store migrates, the process restarts, and authenticated public reads
-  retrieve both records
-- **THEN** the newly recorded context, frontier and first ending retain their
-  identities and explicit availability fields
-- **AND** unstored legacy context, ending and assessment facts remain unavailable
-  rather than being inferred from migration time, current data or a later model run
+  and newly recorded Plan, Trial and Focus context through the Store interface
+- **WHEN** the Store migrates, writes a bounded record/receipt/frontier transaction,
+  restarts and reads the records through its public persistence interface
+- **THEN** their canonical identities and first context/ending/assessment fields
+  survive unchanged, and a failed transaction leaves no partial durable result
+- **AND** legacy unknowns remain unavailable without writing during a history read;
+  an earlier ending cannot be overwritten and one active Focus remains enforced
 
 #### Scenario: Competing lifecycle requests preserve one authoritative result
 
@@ -153,28 +153,36 @@ statistical policy.
   and every losing or stale request returns that recorded result or an explicit
   conflict without a duplicate ending, released different watch, stale cache or
   partially persisted assessment
-- **AND** an ingestion-triggered reconciliation uses the same ownership and cache
-  path before a later mutation is admitted
+- **AND** unique versus ambiguous actual Plan matches, pending intent withdrawal,
+  canonical block/tie identities and sequential changes use the one verdict;
+  ingestion reconciliation uses that same owner before admitting a later mutation
 
-#### Scenario: History and assessment remain bounded and distinguish original from later work
+#### Scenario: Setting and Focus comparisons use their exact retained inputs
 
-- **GIVEN** a retained Trial or ended Focus with an original context and ending
-  snapshot, including a record whose assessment is unavailable for missing evidence
-- **WHEN** an authenticated history or selected-record read and a separately
-  requested reassessment are served
-- **THEN** the original snapshot stays distinct and immutable, the read performs no
-  active resolution, migration, reconciliation or Focus mutation, and a reassessment
-  is labeled with its later source revision
-- **AND** an available Focus assessment uses the exact half-open retained periods,
-  common retained inference context, owned anchors and named denominators, while
-  zero opportunities and missing evidence are explicitly unavailable
+- **GIVEN** synthetic retained setting Trial and Focus records with available
+  evidence, and records with missing context, coverage or opportunities
+- **WHEN** the read-only comparison interface computes their selected periods
+  under retained context or an explicitly requested current-policy context
+- **THEN** both an available setting assessment and an available Focus assessment
+  are produced where evidence exists, using the #340 policy and ADR 386 refinements
+- **AND** full half-open periods, captured setting membership, owned anchors,
+  named denominators and common inference context agree across evidence and
+  scalar rows; unclear inference and unavailable data remain distinct
+- **AND** zero unwanted events with positive opportunities is an observed zero;
+  zero opportunities, legacy missing endings and unsupported retained execution
+  remain explicitly unavailable without inventing an assessment
 
-#### Scenario: Existing clients remain compatible while the backend capability is added
+#### Scenario: Public history is immutable and existing clients remain compatible
 
-- **GIVEN** synthetic callers of the existing Plan, Focus and Verify operations
-- **WHEN** the durable-follow-up operations are added and exercised through the
-  public API
-- **THEN** existing response fields and v1 behavior remain available, while new
-  lifecycle fields are additive and backend-owned
-- **AND** all production acceptance cases run without live vendor access, patient
-  data, credentials or a rendered v2 surface
+- **GIVEN** retained Trial and Focus records, including ended and legacy records,
+  an active watch and synthetic existing v1 callers
+- **WHEN** authenticated history/selected reads and explicit reassessments are
+  served through the contracts.md #387 public interfaces after restart
+- **THEN** original context and ending assessments remain separate and immutable,
+  later work carries its own revision/context, and reads perform no resolution,
+  migration, reconciliation, frontier advance or Focus mutation
+- **AND** available setting and Focus ending assessments are saved atomically by
+  public writes; raw evidence loss leaves the retained record readable
+- **AND** existing request/response fields and legacy validation behavior remain
+  compatible while durable fields and operations are added; the complete existing
+  repository verification runs on synthetic data without a rendered v2 surface

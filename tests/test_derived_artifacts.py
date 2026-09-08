@@ -254,7 +254,7 @@ class DerivedArtifactsTest(unittest.TestCase):
 
     def test_layout_marker_change_misses(self):
         self.load(lambda store: {"first": True}, ("layout",))
-        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 4):
+        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 5):
             self.assertEqual(self.load(lambda store: {"second": True}, ("layout",)),
                              {"second": True})
 

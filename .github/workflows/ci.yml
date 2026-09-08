@@ -33,6 +33,8 @@ jobs:
         run: uv sync --frozen --extra api --extra sync
       - name: Run tests
         run: uv run python -m pytest
+      - name: Check guidance instruction and Plan parity
+        run: node scripts/check_guidance_plan_contract.mjs
       # The frontend's I:C block fixtures are real analyzer output, not literals
       # (#518). If a gate moves and the fixture isn't regenerated, the frontend tests
       # keep asserting a verdict the analyzer no longer produces — the #273 trap in a

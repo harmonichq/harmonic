@@ -459,6 +459,16 @@ CREATE TABLE IF NOT EXISTS audit_dismissals (
     dismissed_at TEXT NOT NULL
 );
 
+-- ADR 383's durable user choice.  This is intentionally one bounded row per
+-- subject, not a history of refreshes or a copy of analyzer output.
+CREATE TABLE IF NOT EXISTS guidance_preferences (
+    subject TEXT PRIMARY KEY,
+    decided_at TEXT NOT NULL,
+    reason TEXT,
+    comparison_version TEXT NOT NULL,
+    state_json TEXT NOT NULL
+);
+
 -- Monotonic generation for durable derivations.  It advances in the same
 -- transaction as every Store-owned committed mutation, so a sidecar artifact
 -- can never claim a primary-store snapshot it did not read.
@@ -1168,6 +1178,43 @@ class Store:
         rows = self.conn.execute(
             "SELECT * FROM focus ORDER BY pinned_at DESC, id DESC").fetchall()
         return [self._focus_row(r) for r in rows]
+
+    # --- Guidance set-aside preferences (ADR 383) --------------------------
+
+    def guidance_preferences(self) -> List[dict]:
+        rows = self.conn.execute("SELECT * FROM guidance_preferences ORDER BY subject").fetchall()
+        return [{"subject": row["subject"], "decided_at": row["decided_at"],
+                 "reason": row["reason"], "comparison_version": row["comparison_version"],
+                 "state": json.loads(row["state_json"])} for row in rows]
+
+    def save_guidance_preference(self, subject: str, *, decided_at: str,
+                                 reason: Optional[str], comparison_version: str,
+                                 state: dict, expected_revision: Optional[int] = None) -> None:
+        starts_transaction = not self.conn.in_transaction
+        with self.conn:
+            if starts_transaction:
+                # Reserve the one WAL writer before reading the generation.  A
+                # deferred transaction would not lock until INSERT and would
+                # leave a check-to-write window for another Store connection.
+                self.conn.execute("BEGIN IMMEDIATE")
+            if (expected_revision is not None
+                    and self.input_data_revision() != expected_revision):
+                raise ValueError("guidance changed; read it again")
+            self.conn.execute(
+                "INSERT INTO guidance_preferences (subject, decided_at, reason, comparison_version, state_json) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT(subject) DO UPDATE SET "
+                "decided_at=excluded.decided_at, reason=excluded.reason, "
+                "comparison_version=excluded.comparison_version, state_json=excluded.state_json",
+                (subject, decided_at, reason, comparison_version, json.dumps(state, sort_keys=True)),
+            )
+            self._advance_revision()
+
+    def restore_guidance_preference(self, subject: str) -> bool:
+        with self.conn:
+            cur = self.conn.execute("DELETE FROM guidance_preferences WHERE subject=?", (subject,))
+            if cur.rowcount:
+                self._advance_revision()
+        return bool(cur.rowcount)
 
     @staticmethod
     def _focus_row(row: sqlite3.Row) -> dict:

@@ -1,3 +1,3 @@
 schema: spec-driven
-# Planning and synthetic design exploration; no shipped capability changes.
-skip_specs: true
+# Planning change. It carries one guidance capability delta, whose requirements
+# are the admission acceptance for the #383 selection and set-aside spike.

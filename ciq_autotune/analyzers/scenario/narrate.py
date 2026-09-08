@@ -276,7 +276,11 @@ def narrate(
                 peak_t,
                 Step(t=peak_t, text=f"BG peaked at {peak_bg:.0f} mg/dL",
                      evidence_tier=EvidenceTier.OBSERVED,
-                     cited_event_refs=[event_ref(peak_t)]),
+                     cited_event_refs=[event_ref(peak_t)],
+                     citation={"operation": "scenario.narration.peak",
+                               "tier": "observed",
+                               "facts": {"glucose_mgdl": peak_bg,
+                                         "event_refs": [event_ref(peak_t)]}}),
             ))
 
     # --- User intervention(s) (observed) — aggregate when ≥2. ------------------
@@ -295,7 +299,11 @@ def narrate(
                 Step(t=c.t,
                      text=f"{units:.0f}U correction at {_hhmm(c.t)}",
                      evidence_tier=EvidenceTier.OBSERVED,
-                     cited_event_refs=[event_ref(c.t)]),
+                     cited_event_refs=[event_ref(c.t)],
+                     citation={"operation": "scenario.narration.correction",
+                               "tier": "observed",
+                               "facts": {"count": 1, "insulin_u": units,
+                                         "event_refs": [event_ref(c.t)]}}),
             ))
         else:
             total = sum(c.insulin or 0.0 for c in corrections)
@@ -305,7 +313,11 @@ def narrate(
                      text=(f"corrected {len(corrections)}×, ~{total:.0f}U total, "
                            "chasing it down"),
                      evidence_tier=EvidenceTier.OBSERVED,
-                     cited_event_refs=event_refs([c.t for c in corrections])),
+                     cited_event_refs=event_refs([c.t for c in corrections]),
+                     citation={"operation": "scenario.narration.correction",
+                               "tier": "observed",
+                               "facts": {"count": len(corrections), "insulin_u": total,
+                                         "event_refs": event_refs([c.t for c in corrections])}}),
             ))
 
     # --- Suspend fired (observed) — a distinctive device beat. -----------------
@@ -326,7 +338,10 @@ def narrate(
                 refs = [a.t]
             beats.append((a.t, Step(t=a.t, text=text,
                                     evidence_tier=EvidenceTier.OBSERVED,
-                                    cited_event_refs=event_refs(refs))))
+                                    cited_event_refs=event_refs(refs),
+                                    citation={"operation": "scenario.narration.suspend",
+                                              "tier": "observed",
+                                              "facts": {"event_refs": event_refs(refs)}})))
             break
 
     # --- Nadir (observed value + inferred causal clause) — the composed beat. ---
@@ -345,7 +360,11 @@ def narrate(
                     Step(t=n_t,
                          text=f"BG bottomed at {nadir_bg:.0f} mg/dL — {clause}",
                          evidence_tier=EvidenceTier.INFERRED,
-                         cited_event_refs=[event_ref(n_t)]),
+                         cited_event_refs=[event_ref(n_t)],
+                         citation={"operation": "scenario.narration.nadir",
+                                   "tier": "inferred",
+                                   "facts": {"glucose_mgdl": nadir_bg,
+                                             "event_refs": [event_ref(n_t)]}}),
                 ))
 
     # --- Resolution (observed) — back to range, or unresolved. -----------------
@@ -363,7 +382,11 @@ def narrate(
         else:
             text = f"settled at {last.bg:.0f} mg/dL"
         beats.append((last.t, Step(t=last.t, text=text,
-                                   evidence_tier=EvidenceTier.OBSERVED)))
+                                   evidence_tier=EvidenceTier.OBSERVED,
+                                   citation={"operation": "scenario.narration.resolution",
+                                             "tier": "observed",
+                                             "facts": {"glucose_mgdl": last.bg,
+                                                       "resolved": resolved}})))
 
     beats.sort(key=lambda tb: tb[0])
     steps = _dedup_and_cap([s for _t, s in beats], scenario_config=scenario_config)

@@ -1,61 +1,75 @@
-# Harmonic v2 product plan
+# Harmonic v2
 
 ## Why
 
 Harmonic should help a Control-IQ user understand recurring adverse outcomes,
 choose one supported setting or habit change, and return to see how it is going.
-Connor's lead unmet need is prioritization: one concrete next action, with the
-related glucose episodes showing why it matters. Today's many findings and
-charts leave that synthesis to the user. A fresh frontend needs complete
-journeys through those jobs. A new toolchain or a rearrangement of today's
-charts does not establish a better experience.
+The first usable release completes the priority → change → follow-up → saved
+conclusion loop for both settings and habits. A rearranged findings list or a
+new toolchain alone does not meet that destination.
 
-[Issue #348](https://github.com/harmonichq/harmonic/issues/348) requests an
-attended planning investigation. This change is its planning authority. It is
-an open draft, not an execution lock, approved visual design, or permission to
-build the application.
+[Issue #348](https://github.com/harmonichq/harmonic/issues/348) is the epic.
+This existing change remains the planning authority. The desktop prototype and
+completed cold-QA repairs from [merged PR #379](https://github.com/harmonichq/harmonic/pull/379)
+are the selected direction. ADR 348 — Adopt the reviewed desktop direction
+records Connor's selection and the exact artifacts.
 
 ## What changes
 
-Produce and agree:
+Deliver the selected Overview / Explore / Changes / Day journeys:
 
-- A product brief and journey map spanning discovery, one-change selection,
-  manual pump entry and reconciliation, setting and habit follow-up, durable
-  review/history, Day investigation, and app/pump settings access.
-- Synthetic walkthroughs for held, thin, quiet, maturing, reconciliation,
-  unavailable, and failed states. Show adherence separately from outcomes and
-  preserve uncertainty throughout the journey.
-- A navigation and component design, with evidence contracts, that tests the
-  Overview / Explore / Changes / Day hypothesis against those journeys.
-- A grounded map of reusable engine, API, and storage capabilities, plus only
-  the concrete contract or persistence changes the chosen journeys require.
-- A sequence of complete useful increments, v1/v2 coexistence and verification,
-  eventual root-route cutover, and v1 retirement.
+- One backend-selected supported priority, or a guided investigation when no
+  action is supported, with the cited glucose evidence and alternatives.
+- A setting journey through Plan, manual pump entry, reconciliation, detected
+  Trial, follow-up, conclusion and retained history.
+- A habit journey through eligible Focus, adherence and outcomes shown
+  separately, manual ending or Trial preemption, and retained history.
+- Set aside, its optional reason, Restore and meaningful return; direct Day and
+  exact return to the concern; freshness, held/thin/quiet and failed states;
+  retained app and pump settings, Carb questions, Guide and Glossary.
 
-The draft journey proposal is [journeys.md](journeys.md), the grounded interface
-proposal is [contracts.md](contracts.md), and current-system probes are recorded
-in [evidence.md](evidence.md). The bounded [existing-job inventory](predecessor.md)
-records what the prototype has yet to carry forward. The ADRs in [design.md](design.md) own the settled
-product decisions; these accompanying drafts apply them.
+[journeys.md](journeys.md) and the prototype brief describe those jobs.
+[contracts.md](contracts.md) maps the existing authorities and concrete gaps.
+[design.md](design.md) owns decisions and the remaining implementation questions;
+[tasks.md](tasks.md) owns the checked sequence and child links. Historical
+grounding remains in [evidence.md](evidence.md) and [predecessor.md](predecessor.md).
 
 ## Impact
 
-The eventual frontend is `frontend-v2/`, built with Vue/Vite/TypeScript and
-served under `/v2/`, with built assets under `/v2/assets/`. V1 keeps its routes.
-One Python process/API and one database remain authoritative. Node builds
-production assets but is not a production runtime. PR #380 has now supplied
-the Vite foundation for v1. The first meaningful v2 increment extends that
-foundation and uses Vue single-file components for its new shell and journeys,
-reusing the existing domain and chart behavior. Decomposing the entire v1 shell
+Build `frontend-v2/` alongside `frontend/` with Vue/Vite/TypeScript and
+single-file components. Extend the merged Vite foundation for `/v2/` and
+`/v2/assets/`. V1 remains available on its existing routes. One Python API and
+one database remain authoritative; Node builds production assets but is not a
+production runtime. The v2 increment owns its new component boundaries and
+extracts shared behavior only where it uses it. Wholesale decomposition of v1
 is not a prerequisite.
 
-This investigation may write planning documents and properly governed synthetic
-design evidence. It changes no production source, analyzer, database schema,
-clinical threshold, deployed service, or existing ticket outside #348. Connor subsequently requested an open draft PR
-containing the planning and prototype checkpoint, with unfinished work identified and no merge. That later
-delivery instruction governs this investigation. Approved implementation later
-uses ordinary short-lived, human-reviewed PRs to main behind the preview route.
+Preserve the premium desktop cockpit and existing comparison graphs. Reuse
+actual domain and chart implementations, their interactions, server-owned
+eligibility and evidence populations. The browser derives no clinical rule.
+Harmonic records decisions; the wearer enters pump settings manually.
 
-The design records how #347, #336, and #340 relate to v2. Their tracker state
-and branches remain untouched. Connor approves the selected direction before
-execution; no implementation order is posted while that approval is pending.
+The accepted risk contract is in design.md. Ordinary visible failure and retry
+are sufficient; no offline write queue, recovery engine, event archive or new
+analysis service belongs in this effort. Use synthetic evidence and the
+repository's declared safe offline workflow.
+
+Mobile is deferred. Root-route cutover and v1 retirement require later explicit
+acceptance of the full v2 release. Intermediate PRs behind the preview route do
+not satisfy the first-release milestone.
+
+## Delivery
+
+The reviewed priority-selection and set-aside policy from
+[#383](https://github.com/harmonichq/harmonic/issues/383) admits the bounded backend
+guidance and preference build in
+[#384](https://github.com/harmonichq/harmonic/issues/384). Reuse #347's merged delivery foundation
+and #340's reviewed comparison policy under #336; do not duplicate their work.
+The open durable-context, ending and comparison-integration questions remain
+named in design.md until a recorded decision or a spike owns them.
+
+Keep this active change on the pushed epic planning branch. It travels with
+the implementation PR that realizes it; no planning-only PR is opened. Each
+child receives normal ticket triage and independent review. Connor authorized
+autonomous orchestration while AFK; routine decisions may use that delegation.
+Agents leave implementation PRs open for human review and never merge.

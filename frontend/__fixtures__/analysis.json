@@ -3214,6 +3214,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "00:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -6460,6 +6464,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "00:30",
    "recommended": 0.6,
@@ -9737,6 +9745,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "01:00",
    "recommended": 0.6,
@@ -13127,6 +13139,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "01:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -16515,6 +16531,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "02:00",
    "recommended": 0.6,
@@ -19905,6 +19925,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "02:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -23293,6 +23317,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "03:00",
    "recommended": 0.6,
@@ -26683,6 +26711,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "03:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -30071,6 +30103,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "04:00",
    "recommended": 0.6,
@@ -33461,6 +33497,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "04:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -36849,6 +36889,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "05:00",
    "recommended": 0.6,
@@ -40239,6 +40283,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "05:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -43627,6 +43675,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "06:00",
    "recommended": 0.75,
@@ -47017,6 +47069,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "06:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -50405,6 +50461,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "07:00",
    "recommended": 0.75,
@@ -53795,6 +53855,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "07:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -53821,6 +53885,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "08:00",
    "recommended": null,
@@ -53849,6 +53917,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "08:30",
    "recommended": null,
    "safety_status": "no data",
@@ -53875,6 +53947,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "09:00",
    "recommended": null,
@@ -53903,6 +53979,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "09:30",
    "recommended": null,
    "safety_status": "no data",
@@ -53929,6 +54009,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "10:00",
    "recommended": null,
@@ -57319,6 +57403,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "10:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -60707,6 +60795,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "11:00",
    "recommended": 0.75,
@@ -64097,6 +64189,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "11:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -67486,6 +67582,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "12:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -67512,6 +67612,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "12:30",
    "recommended": null,
@@ -67540,6 +67644,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "13:00",
    "recommended": null,
    "safety_status": "no data",
@@ -67566,6 +67674,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "13:30",
    "recommended": null,
@@ -67594,6 +67706,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "14:00",
    "recommended": null,
    "safety_status": "no data",
@@ -67620,6 +67736,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "14:30",
    "recommended": null,
@@ -71010,6 +71130,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "15:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -74398,6 +74522,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "15:30",
    "recommended": 0.65,
@@ -77788,6 +77916,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "16:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -81176,6 +81308,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "16:30",
    "recommended": 0.65,
@@ -84566,6 +84702,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "17:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -87954,6 +88094,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "17:30",
    "recommended": 0.65,
@@ -91344,6 +91488,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "18:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -91370,6 +91518,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "18:30",
    "recommended": null,
@@ -91398,6 +91550,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "19:00",
    "recommended": null,
    "safety_status": "no data",
@@ -91424,6 +91580,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "19:30",
    "recommended": null,
@@ -91452,6 +91612,10 @@
     "points": [],
     "roster_glucose_mean": null
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "20:00",
    "recommended": null,
    "safety_status": "no data",
@@ -91478,6 +91642,10 @@
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "20:30",
    "recommended": null,
@@ -94868,6 +95036,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "21:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -98256,6 +98428,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "21:30",
    "recommended": 0.7,
@@ -101646,6 +101822,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "22:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -104922,6 +105102,10 @@
      }
     ],
     "roster_glucose_mean": 120.0
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "22:30",
    "recommended": 0.7,
@@ -108200,6 +108384,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "23:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -111472,6 +111660,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "23:30",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -111517,6 +111709,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "00:00",
    "parameter": "carb_ratio",
    "recommended": null,
@@ -111560,6 +111753,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "06:00",
    "parameter": "carb_ratio",
    "recommended": null,
@@ -112084,6 +112278,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "12:00",
    "parameter": "carb_ratio",
    "recommended": 5.5,
@@ -112608,6 +112803,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "18:00",
    "parameter": "carb_ratio",
    "recommended": 5.0,
@@ -113736,6 +113932,10 @@
     ],
     "slope": 0.0,
     "strengthen_signal": false
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "Fasting",
    "parameter": "isf",

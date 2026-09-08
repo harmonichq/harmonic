@@ -1,9 +1,10 @@
 # Harmonic v2 design investigation
 
-Status: product interview decisions Q1–Q7, Q9 and Q10 are settled. The save-recovery
-question was removed after Q8. Current-app grounding is complete; the complete
-v2 journey walkthrough, visual design, independent review, and direction
-approval remain pending.
+Status: the desktop prototype and completed cold-QA repairs are the selected
+direction. The complete desktop journeys and review records from merged PR #379
+are adopted below. Product interview decisions remain settled. Backend selection,
+durable identity/endings and comparison integration still need bounded decisions;
+production implementation and UI Craft fidelity evidence are not yet complete.
 
 ## Grounding
 
@@ -18,6 +19,45 @@ and the one-active-change constraint. Current capability specifications in
 `openspec/specs/plan/`, `outcomes/`, and `http-api/` constrain reuse. Existing
 OpenSpec decision records are the standing-decision source; no additional
 external decision store is configured for this ticket.
+
+
+## ADR 348 — Adopt the reviewed desktop direction
+
+On September 7, 2026, Connor instructed: “The desktop prototype and completed
+cold-QA repairs are the selected design direction.” PR #379 was human-merged
+as `ee0460eca3618aac0977f65a286ccb4357504544`. This continuation adopts the
+existing change rather than starting a new product plan.
+
+The selected artifacts at that commit are the journey and contract documents
+in this change; `mockups/harmonic-v2.exploration/BRIEF.md`; the desktop prototype
+`mockups/harmonic-v2-glucose.html` at `source=journey` and its generated inputs; and
+`REVIEW.md`, `FABLE-REVIEW.md`, `AUDIT.md`, `COLD-WALKTHROUGHS.md` and
+`OPUS-QA-REPAIRS.md` in the exploration directory. The completed repair record
+governs the repaired navigation and acknowledgment behavior where earlier
+rounds differ. The existing comparison graphs and their authority remain intact.
+
+Keep the selected Overview / Explore / Changes / Day destinations, the premium
+desktop cockpit, original Trial evidence, saved conclusions, precise Day return,
+and the visible Set aside/Restore behavior. Continue using CONTEXT.md and the
+existing app's prose. No new concept or navigation debate is required.
+
+This closes direction selection and the completed desktop walkthrough work.
+It does not turn page-memory prototype state into durable production behavior,
+prove a second sequential change, or supply a formal UI Craft build/fidelity
+record. The implementing ticket formalizes that contract from these artifacts
+and verifies the built surface. It does not redesign the selected direction.
+
+The v2 architecture, both-loop first-release boundary and risk contract below
+remain controlling. Vite and single-file components own the new v2 boundaries;
+wholesale v1 decomposition is not a prerequisite. Mobile is deferred. V1 stays
+available during `/v2/` development; cutover and retirement remain later gates.
+
+Connor then authorized autonomous orchestration while AFK and asked for best
+judgment without over-engineering a one-person tool. Use Opus 5 medium for
+design and Codex Sol medium for browser walkthroughs when needed. Carry routine
+implementation choices through review under that delegation. Agents leave PRs
+open for human review and never merge. One implementation child may be in flight;
+the next implementation handoff waits for its human merge.
 
 ## Product brief
 
@@ -598,21 +638,489 @@ Connor rejected treating save recovery as a separate product-design project (Q8)
 Why: the advisory consequences require truthful state, while speculative recovery work does not serve the requested care-improvement journey.
 Disposition: inline; governing plan contract, to be carried into any eventual implementation admission.
 
-## Open decisions
+## Remaining implementation decisions
 
-- The prioritization contract: how the existing engine chooses one actionable
-  candidate, how related episodes inform it, and how other findings remain
-  inspectable without creating competing advice.
-- Navigation names, destination boundaries, and settings placement after the
-  complete journeys are walked through.
-- The minimum persistence contract implementing ADR 348 — Decisions retain
-  their context and ending, including links to Plan/Trial/Focus and legacy unknowns.
-- Concrete shared component contracts and any capability extension required
-  to retain existing evidence interactions.
-- Explicit reconciliation of #340's history and presentation boundaries.
-- Visual/behavior contracts, bounded implementation risks, full coexistence
-  verification, cutover, and retirement criteria.
+### Priority selection and set-aside return — promoted to #383
 
-The issue's safety, architecture, manual-pump, and one-active-watch constraints
-are settled inputs, not questions to reopen. The remaining decisions prevent
-an execution lock at this checkpoint.
+[#383](https://github.com/harmonichq/harmonic/issues/383) owns the explicit
+cross-parameter selection and tie-break, action/investigation/quiet dispositions,
+stable preference subject, and exact action/seriousness return comparison.
+It must demonstrate the rule on synthetic evidence before a dependent build.
+The existing Priority and eligibility predicates are inputs; neither shared
+queue tier nor an evidence fingerprint settles this policy. Resolve the existing
+evidence/advice distinction without parsing clinical sentences in the browser.
+
+That investigation's acceptance is the `guidance` capability delta in
+[specs/guidance/spec.md](specs/guidance/spec.md), and its steps are
+[tasks.md](tasks.md) 2.1.1–2.1.6. The delta states the shape the settled policy
+must satisfy: one backend-owned deterministic rule with an explicit tie-break, a
+stable set-aside subject that survives routine recomputation, an action or
+seriousness comparison that returns that subject with a stated reason, and cited
+evidence kept distinct from advice. It deliberately does not choose the rule, the
+tie-break or the comparison. #383 settles those and records them as an ADR
+identified by that issue in this document, with its replay receipts in
+[evidence.md](evidence.md). Task 3.1 then builds against that same delta.
+
+### Durable Trial/Focus context and endings
+
+Decide the minimum storage fields and public writes that implement the two
+existing context/ending ADRs. Reconcile detected Trial identity and the review
+roster with one backend finish/admission verdict, so a finished Trial cannot
+reopen or promote an older Trial into the active slot. Preserve true new-change
+preemption, user conclusion versus observed reversal/supersession/expiry,
+Focus end times, and unavailable legacy facts. Establish the actual Plan match
+with existing reconciliation, never temporal proximity. A bounded versioned
+decision and ending record is sufficient; no event archive or refresh snapshots.
+
+### Follow-up comparisons and exact Focus periods
+
+Reuse #340's reviewed comparison policy at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3`; read its design rather than copying
+its statistics into another authority. Reconcile only the v2 Changes placement,
+historical Focus and explicit Trial finish extensions from ADR 348. Name the
+minimal actual shared-chart extension and its retained interactions in the build
+brief. #336/#340 remain the existing follow-up work to reuse, not a new chart
+backlog. Any changed ticket remit or parent relationship is recorded on GitHub
+before its next handoff.
+
+Decide exact pin-to-ending Focus periods and source context for both adherence
+and outcome. Resolve the correction-family inference-context discrepancy
+documented in contracts.md before blessing those habit summaries. Keep zero
+opportunities unknown, periods/populations/denominators server-owned, descriptive
+spread distinct from outcome uncertainty, and observation distinct from causation.
+
+### Production surface and delivery proof
+
+The selected desktop settles the product direction. Its UI Craft build contract,
+exact component reuse interfaces and changed-surface verification belong to the
+implementing brief. Preserve both setting and habit loops in the first usable
+release, including sequential changes and durable history. Extend the existing
+Vite production checks to `/v2/` while retaining v1. Mobile, root cutover and
+v1 retirement do not block a bounded desktop preview increment.
+
+The safety, architecture, manual-pump, active-watch and accepted-failure rules are
+settled inputs. A build is admitted only when its own outcome cannot be
+invalidated by a remaining question; no production behavior is inferred from
+the design checklist.
+
+## ADR 383 — Select one admitted concern and retain a bounded set-aside choice
+
+### Decision and status
+
+Policy version `383:1`, investigated at
+`cfc3e9e36ca3ad17c2318051ab643c34469b26a7`. Independent Standards and Spec
+review converged with zero findings on
+`a6ea888f8f9d51e4707f85847fc76acdc3c5a1c9`. The coordinator verified the
+[tracker result](https://github.com/harmonichq/harmonic/issues/383#issuecomment-5565889507)
+and authorized completion of task 2.1. This is a verified investigation result,
+not shipped guidance. The replay and its limits are recorded in
+[evidence.md](evidence.md#adr-383-policy-replay).
+
+### One selection rule
+
+1. Use the existing backend's active watched change first, with its identity and
+   progress. A new concern remains inspectable alongside it and cannot open a
+   second change. Guidance neither chooses between competing Trial identities
+   nor finishes one. The separate durable-watch decision remains controlling.
+2. Build candidates from one coherent backend analysis: the setting analyzers,
+   scenario report and Findings projection. A setting action requires its own
+   final `asserts_move`; use only those staged members and their existing delivery
+   path. Basal, I:C and ISF retain their different predicates. A held or
+   direction-only setting cannot borrow another member's permission.
+3. A habit action requires its existing surfaced scenario Pattern, its existing
+   active Priority admission (`priority >= priority_active_threshold`), a
+   behavioral action under the closed Lever recommendation contract, and Focus
+   admission. `low_confidence` members and observation-only `meal_bolus_short`
+   are investigations. `pinnable_levers()` is only the last admission constraint,
+   never clinical support. `wide` remains visible uncertainty; it is not a new
+   exclusion, since `assemble` explicitly does not use it to hide a Pattern.
+   Behavioral findings without this supported-action contract remain evidence.
+4. Remove subjects still set aside under the comparison below. Among remaining
+   admitted actions, choose the greatest existing integer Priority. Break an
+   exact tie by ascending canonical subject string, using code-point order and
+   no localized title. Do not use episode counts, flavor, a queue register or
+   display order as an additional preference. Two basal rows do not compete as
+   independent copies of the same parameter Priority.
+5. If no action remains, choose a guided investigation from evidenced concerns,
+   priced before unpriced, descending existing Priority, then the same subject
+   tie-break. Read held/thin analyzer results as well as queue rows: the whole-day
+   queue deliberately drops held settings. A nonzero observed support count with
+   an explicit insufficient/held verdict is inspectable uncertainty, not a new
+   support floor. Preserve named held reasons, direction-only verdicts, unknown
+   causes and observation-only findings. If none remains, return quiet with
+   its reason: no current concern, or all current concerns set aside. Missing
+   data stays explicitly unavailable; a failed read is an error, never quiet.
+
+The selected result explains both admission and ordering. It cites the selected
+Lever's own impact, recurrence, denominators and held/support verdict, and says
+that it leads the **available admitted actions**. It does not call Priority a
+predicted benefit, preventable harm, proof of causation or a clinical urgency
+scale. An investigation contains no actionable dose/timing recommendation.
+
+### Why this cross-parameter rule
+
+Admission before ordering is the substantive choice. Raw highest Priority would
+promote the observation-only meal-bolus-short case (47); `next_in_line` misses
+supported habits altogether. Reusing only queue rows also loses the seven-night
+basal concern and held I:C evidence. Neither raw order nor the shared tier meets
+the product decision.
+
+After admission, existing Priority is the smallest defensible ordering input:
+it combines recurrence discounted for uncertainty with the existing
+hypo-weighted behavioral impact or tuning insulin currency. It already permits
+both flavors on one scale. Choosing the largest such value serves the accepted
+objective of consequential recurring problems without inventing a second
+clinical weighting scheme. A universal lows-first override would require a new
+cross-family severity rule; counting events as a tie-break would compare nights,
+meals and lows as if interchangeable. Neither is added. The canonical tie-break
+makes no medical claim and remains stable across copy changes.
+
+The mixed replay chose basal (97) over the supported habit (38), and the same
+habit over an unstaged seven-night basal estimate. Setting basal aside selected
+the habit. These are consistency checks on manufactured inputs, not clinical
+calibration of Priority. Its limitations remain visible in the explanation.
+
+### Stable subject and minimum preference
+
+The subject is one tuning variable or one behavioral Lever in this local
+wearer's database, independent of action eligibility:
+
+| Concern | Canonical subject | Scope of Set aside |
+| --- | --- | --- |
+| Basal | `setting:basal_rate` | The basal concern across the day |
+| I:C | `setting:carb_ratio` | The carb-ratio concern across its current blocks |
+| ISF | `setting:isf` | The correction-factor concern |
+| Behavioral Lever | `habit:<lever enum value>` | That Lever and its own populations |
+| Uncaused highs | `investigation:uncaused_highs` | The existing uncaused-high concern, with no invented action |
+
+An investigation of a setting or habit keeps that same subject when support
+arrives. It does not get a new identity from its disposition. The four problem
+shapes remain explanation groupings, never preference keys or pooled support.
+An active watched change has its existing identity and is not set aside through
+this preference operation.
+
+The deliberate tuning granularity is the variable, not a mutable queue span.
+The choice must say, for example, “Set aside the basal concern,” and show its
+scope. All relevant hours remain inspectable. This avoids losing a preference
+when adjacent slots merge or an I:C block identifier changes. It also means the
+choice is broader than one selected chart row; the interface must disclose that
+scope rather than silently promising a per-row dismissal. Selecting a variable
+never automatically stages all its members or combines unrelated changes.
+
+Persist one upserted row per subject: subject, decision time, optional user reason,
+comparison version, and the bounded action/seriousness state set aside. Restore
+removes that row and returns the subject to ordinary selection, subject to current
+eligibility and active-watch precedence. Viewing evidence does not restore it.
+No event archive, analysis copy or per-refresh history is needed.
+
+### Return comparison, version 383:1
+
+Always compare the full subject's current backend state, before any display-clock
+filter, with the saved state. A clock-window move, generation, fingerprint,
+occurrence identity, title, evidence count or raw Priority change alone cannot
+return it. A temporary disappearance, quiet result, weaker support or failed
+read does not delete the preference or reset its saved comparison.
+
+* **Setting action:** retain the ordered, canonical pump-entry instructions for
+  its staged members: affected clock intervals, direction, units and the
+  existing deliverable's recommended values. Merge adjacent identical
+  instructions for comparison; exclude current values and mere source block
+  IDs. A newly admitted interval, changed direction or changed deliverable value
+  on an interval is a changed action. An unrounded estimate change is not.
+  Disappearing instructions alone do not return a concern. A narrowed interval
+  is compared on its surviving hours, not treated as a new instruction merely
+  because a row boundary moved. This uses existing delivery precision, not a new
+  numerical materiality threshold. A different actual pump-entry value can
+  return even when numerically close; that is the cost of this threshold-free
+  definition. Its reason names the hours and old/new instruction.
+* **Habit action:** retain its closed semantic action identifier, currently the
+  Lever's own recommendation identity, only when admitted. Promotion from an
+  investigation to that action returns it. Copy edits do not change the action;
+  a future semantic recommendation change must deliberately version its action
+  identifier. Low-confidence recommendation strings are not action identifiers.
+* **Seriousness:** use existing categorical judgments, never raw count/score
+  movement. For settings, a newly asserted recurring-low/harm verdict on an
+  affected interval returns the concern even if the instruction is identical.
+  Preserve the parameter owner's harm/hold semantics; ordinary caps and support
+  changes are not new seriousness. For habits, an increase in the existing
+  `Confidence.severity` order (`info`, `low`, `medium`, `high`) returns it.
+  Expose that judgment from the owner before serialization rounding; do not
+  duplicate its thresholds or classify rounded JSON in production. A decrease
+  alone keeps the user's choice. Uncaused highs have no categorical seriousness
+  authority here and cannot auto-return on count growth; explicit Restore
+  remains available. No new seriousness classifier is introduced for them.
+
+Return is permission to compete again, not guaranteed selection or action.
+A seriousness change in a held subject still yields investigation. Explain the
+specific changed action or categorical worsening, with its current uncertainty.
+The preference remains stored, so repeated reads can retain that explanation;
+Set aside again replaces its baseline. Restore clears it. A comparison-version
+change alone never restores anything: migrate semantic equivalents or retain the
+preference and require explicit Restore where equivalence is unknown.
+
+### Smallest implementation boundary and concrete gaps
+
+Extend the existing findings preparation/projection boundary with one public
+backend guidance read that consumes the same analysis/scenario/exposure inputs,
+current authoritative active-watch context and stored preferences. Return the
+selected canonical subject, disposition, admission/order/return reasons,
+source-owned evidence references, alternatives and unavailable context together.
+Keep one candidate per tuning variable while retaining each member's separate
+verdict and chart identity. Overview and Explore consume this result verbatim.
+Existing Plan/Focus writes must recheck their authorities at action time; a
+previous guidance read grants no permanent permission.
+
+The build needs these additions; none exists merely because this ADR names it:
+
+* A guidance projection that includes held/thin analyzer evidence omitted from
+  the global queue, and enforces the supported-action/observation distinction.
+  Existing `prepare_findings_projection` supplies composition, not this policy.
+* A bounded preference table and Set aside/Restore writes through the existing
+  Store/API owner, with normal cache invalidation. `audit_dismissals.item_id` is
+  its primary key and upsert target, while `evidence_fingerprint` scopes the
+  legacy dismissal. That behavior cannot represent this preference; do not
+  silently migrate a legacy evidence-scoped dismissal into a durable choice.
+* Owner-produced semantic action and categorical seriousness fields, including
+  canonical delivered setting instructions and habit severity before rounding.
+  The replay exercises the existing judgments, but the current serialized
+  Pattern does not expose its severity label. This is an exposure requirement,
+  not permission to invent a new score or support gate.
+* Structured factual/inferred citations separated from recommendation text.
+  Current scenario steps can embed treatment advice. Guidance must use explicit
+  owner-authored factual fields/templates keyed by the existing closed source
+  operation; no punctuation splitting and no arbitrary step-text passthrough.
+  A low-confidence source remains readable through its cited observations and
+  uncertainty without acquiring advice. Missing structured copy blocks that
+  source's production advice presentation, not an excuse to promote raw prose.
+
+These are concrete implementation obligations, not an unresolved selection
+policy. Canonical finished-Trial admission and exact historical Focus periods
+remain the already named downstream decisions, outside this spike. Reuse #340 at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3` for comparisons. Selection never changes
+cohort membership, overlap ownership, observation anchors, chart support,
+statistical assessments or adherence/outcome separation. No clinical threshold,
+classifier, analyzer result or production file changed in this investigation.
+
+
+## Backend guidance build admission
+
+[#384](https://github.com/harmonichq/harmonic/issues/384) owns task 3.1: the
+backend guidance read and bounded Set aside/Restore persistence under ADR 383.
+The verified #383 result supplies the selection, admission, identity and return
+policy. Its four concrete production gaps are implementation obligations in
+this build, not open product questions. The guidance delta remains its acceptance
+source; normal ticket triage independently grounds the executable scope.
+
+This capability consumes the existing authoritative active watched change. It
+neither defines finished-Trial identity/admission nor records a Plan/Trial/Focus
+context or ending. The named durable-context decision will change its upstream
+watch authority without changing the admitted selection or preference policy.
+It does not claim the complete sequential-change journey. Historical Focus
+periods and correction-family follow-up context do not enter this capability's
+selection or set-aside comparison; the existing comparison authorities remain
+unchanged. No rendered surface is included, so the implementing surface ticket
+still owes its UI Craft contract and production evidence.
+
+This is the second child. Keep the remaining decisions named until a recorded
+ruling or a precise spike owns them. Do not hand off another child before this
+implementation PR is human-merged. The complete setting and habit journeys
+remain the first usable release destination.
+
+
+## ADR 384 — Backend guidance implementation boundary
+
+### Authority and delivery
+
+This implements task 3.1 only. ADR 383 owns selection, subject identity and
+comparison policy; the risk contract above remains unchanged. The public
+interface added here is a backend read and preference writes. This increment
+has no rendered surface and does not complete the first usable v2 release.
+The remaining decisions in tasks 2.2–2.4 are not selected by this ticket.
+
+### Public interface
+
+Extend the existing findings preparation boundary with `FindingsProjection.guidance`
+for the complete, unfiltered source day. It takes authoritative active-watch
+context and stored preferences as explicit inputs and returns one versioned
+JSON object. Keep the current `project` queue contract compatible. Internal
+policy helpers may live in `ciq_autotune/guidance.py`; that module owns candidate
+identity, instruction comparison and selection together, not a second engine.
+The API is the I/O owner; the projection neither opens a Store nor calls HTTP.
+
+Add authenticated `GET /api/guidance` for the existing fixed Diagnose source
+window. Do not add display-clock or arbitrary analysis-window arguments to this
+first read. Return the source window and generation, selected subject (nullable),
+disposition, separate admission/order/return explanations, current active watch,
+candidates/alternatives with preference state, source-owned evidence references,
+and unavailable context. Candidates retain member verdicts, units, source windows,
+populations, denominators and chart/episode identities. A stored preference whose
+subject is currently absent remains visible for Restore. It has no fabricated
+current evidence or action. The response must permit later Overview and Explore
+consumers to render it without independently deciding eligibility or rank.
+
+Evidence is a separate structured field from recommendation text. Extend the
+scenario owners with factual/inferred fields and a closed semantic action ID;
+expose `Confidence.severity` before numeric serialization rounds it. Keep the
+existing scenario text and v1 payload meaning compatible. Only owner-authored
+facts/templates from closed attribution/narration operations enter guidance
+citations; raw Step text, annotations or recommendations are not a fallback.
+A source lacking structured copy remains explicitly unavailable for advice
+presentation. Investigations carry no treatment instruction anywhere in their
+returned presentation, including nested citations and alternatives described as
+investigations. Event references may still open the existing evidence views.
+No prose parser, new classifier, new threshold or re-scoring is introduced.
+
+Setting instructions use staged member verdicts and the existing accepted-pick
+Plan semantics, including basal slot ends, complete I:C block membership and ISF
+fan-out. The legacy analyzer consolidated profile is not the accepted-pick Plan.
+Expose owner-produced action/seriousness state without deriving staging from
+numbers. Guidance comparison canonicalizes those instructions under ADR 383;
+it does not implement an alternative editable Plan or reconciliation engine.
+Use the existing Plan precision and rounding behavior, including positive half
+steps, and verify equivalence against `frontend/plan.js` through its public
+functions. Python runtime must not require Node. Keep the comparison's normalized
+intervals separate from chart identities and from the member staging records.
+Unknown comparison versions retain the preference and explain that Restore is
+required. Returned subjects keep the original stored baseline until another
+Set aside or Restore, so repeated reads retain the reason.
+
+Add `PUT /api/guidance/preferences/{subject}` with an optional reason and the
+last read's generation, and `DELETE /api/guidance/preferences/{subject}` for
+Restore. The PUT captures current comparison state on the server; clients cannot
+supply an action or seriousness baseline. Reject an unknown subject, an active
+watch identity, or a stale generation without writing. A currently absent subject
+cannot acquire a new baseline; its existing preference remains restorable.
+One preference row per canonical subject stores decision time, optional reason,
+comparison version, and bounded action/seriousness JSON. An upsert replaces its
+baseline; DELETE is idempotent. Use Store transactions and the existing revision
+and cache invalidation conventions. Do not convert audit dismissals or retain
+per-refresh histories. Failed writes return errors and leave the previous
+preference intact. A repeated successful PUT cannot create duplicate records.
+
+### Coherence and the current watch
+
+Compose the analysis/scenario/exposure sources with the existing generation and
+input-revision checks. Preferences and watch state must belong to the same
+successful read; a crossing write yields the existing bounded retry/conflict
+behavior, never a mixed successful response. Preference writes invalidate cached
+guidance, including after process restart. Required new owner fields cannot be
+silently absent in an old retained artifact: update its shape/version handling
+or rebuild it through the existing artifact owner.
+
+The existing `active_watched_change` resolver may persist Focus preemption.
+Call that owner on a writable Store before acquiring a stable read snapshot;
+if it changes the revision, invalidate and acquire fresh inputs. Do not call a
+mutating resolver inside a query-only artifact computation. Reuse its current
+Trial/Focus identity and progress and its existing data-tail clock. Guidance
+must not introduce a finished-Trial policy, promote a review-roster Trial, or
+reinterpret Focus adherence. No current watch is a valid result; failure to
+read its authority is an error, not absence. Missing analysis data remains
+explicitly unavailable and cannot be described as quiet.
+
+Existing Plan apply checks draft presence, the one-variable constraint and any
+claimed complete I:C block provenance; Focus pin checks its existing Lever
+universe, live Trial and unique active Focus. Preserve those checks at write
+time. Guidance is a recommendation read, not an action authorization token.
+This ticket adds no Plan/Focus action endpoint and does not retrofit clinical
+support gates onto v1's manually authored Plan or manually selected Focus.
+The later guided-action journey must recheck guidance support before claiming
+that its submitted action remains a supported recommendation.
+
+### Implementation and evidence ownership
+
+Use three serial chunks. The first exposes source-owned comparison inputs and
+structured evidence, with public producer tests. Its shared contract is the
+candidate source data consumed by `FindingsProjection.guidance`: stable identity,
+staged member instructions, owner seriousness and separated citations. Record its
+concrete field shape in this section before handing off; no new policy decision
+is delegated to that handoff.
+
+Chunk 1 publishes the following additive source contract. Analyzer member payloads
+(`basal[]`, `isf[]`, and `ic_blocks[]`) carry `guidance`, with `action` either
+`null` or `{kind: "setting_instruction", parameter, start_min, end_min, direction,
+units, recommended}`; I:C also carries `member_start_mins`. `action` exists only
+when that owner's existing `asserts_move` verdict is true. `seriousness` is either
+`"recurring_low"` or `null`, independent of whether an action is available. Basal
+and I:C expose their existing `harm.nudged` judgment; ISF exposes the existing
+`_day_rate_recurs` judgment over its correction-low and correction-rescue channels,
+the same parameter-specific authority that produces direction-only weakening. A
+single-low gate is not categorical seriousness. Instruction values use existing
+accepted-pick Plan precision (basal 0.001 U/h, ISF whole mg/dL/U, I:C 0.1 g/U) with
+positive-half rounding. Scenario Patterns carry `guidance.action_id` (the closed
+`habit:<lever>` semantic identity, or `null` for observation-only
+`meal_bolus_short`), `guidance.seriousness` (the owner's unrounded
+`Confidence.severity` category), and `guidance.citation_episode_ids`. An action ID
+is a source semantic identity, not an admission verdict; the guidance owner still
+applies ADR 383's surfaced, Priority and Focus admission rules.
+
+Every production Scenario Step carries a separate `citation` object shaped as
+`{operation, tier, facts}`. `tier` is the source `EvidenceTier`. Attribution
+operations are `scenario.attribution.<lever>` and all carry `lever`, `anchor_kind`,
+`anchor_at`, `event_refs`, and `window`, plus these operation-specific facts:
+
+| Attribution operation | Additional `facts` fields |
+| --- | --- |
+| `carb_undercount` | `logged_carbs_g`, `implied_carbs_g`, `baseline_glucose_mgdl`, `peak_glucose_mgdl` |
+| `late_bolus` | `pre_bolus_slope_mgdl_min`, `pre_bolus_glucose_mgdl` |
+| `meal_over_delivery` | `suspend_start`, `suspend_end`, `suspend_duration_min`, `nadir_glucose_mgdl`, `nadir_at` |
+| `over_treated_low` | `nadir_glucose_mgdl`, `rebound_glucose_mgdl`, `logged_carbs_g` |
+| `correction_on_iob` | `correction_at`, `iob_at_correction_u`, `pre_correction_slope_mgdl_min`, `glucose_at_correction_mgdl`, `nadir_glucose_mgdl`, `nadir_at`, `minutes_to_low` |
+| `correction_stacking` | `stack_at`, `gap_min`, `iob_at_stack_u`, `pre_stack_slope_mgdl_min`, `glucose_at_stack_mgdl`, `nadir_glucose_mgdl`, `nadir_at`, `previous_bolus_seq_num`, `second_bolus_seq_num` |
+| `missed_meal` | `rise_slope_mgdl_min`, `digestion_window` |
+| `meal_bolus_short` | `rise_slope_mgdl_min`, `meal_at`, `correction_at`, `digestion_window` |
+
+Narration operations are `scenario.narration.peak` with `glucose_mgdl` and
+`event_refs`; `scenario.narration.correction` with `count`, `insulin_u`, and
+`event_refs`; `scenario.narration.suspend` with `event_refs`;
+`scenario.narration.nadir` with `glucose_mgdl` and `event_refs`; and
+`scenario.narration.resolution` with `glucose_mgdl` and `resolved`. Nullable facts
+remain explicit `null`; timestamps and windows use the existing event-reference
+format. A legacy manually constructed Step may serialize `citation: null`, which
+makes it unavailable to guidance rather than falling back to its text.
+
+Guidance consumers use these fields, never recommendation or Step prose, to
+compare action or cite evidence. The later guidance projection owner must rebuild
+or version its retained-artifact boundary before it reads these required fields;
+this source chunk does not advance the deferred scenario-fixture envelope.
+
+The second owns guidance selection/comparison and bounded Store/API persistence,
+including current-watch composition, cache invalidation and public API tests.
+Its shared contract is the public guidance/preference API above. It consumes
+only the first chunk's declared public data, not private helper behavior.
+
+The third runs the complete repository gate and corrects regressions exposed by
+that run, regenerates affected artifacts through their committed generators,
+and records implementation evidence in this parent change. Corrections may touch
+the prior chunks' files serially but cannot expand either contract. It owns no new
+product behavior. The coordinator retains the aggregate review, parent checklist
+and the single implementation PR. All chunks use manufactured inputs only.
+
+### Closed change and documentation inventory
+
+The executable source scope is the existing owners `api.py`, `store.py`,
+`result.py`, `analyze.py`, `findings_projection.py`, `derived_artifacts.py`,
+`analyzers/basal.py`, `analyzers/ic.py`, `analyzers/isf.py`, and
+`analyzers/scenario/{payload,levers,attribute,narrate,engine}.py` beneath
+`ciq_autotune/`, plus `ciq_autotune/guidance.py` if needed. Do not change safety,
+harm, uncertainty, Priority, cohort membership, comparison statistics or the
+watched-change policy. Reuse their existing public judgments.
+
+Tests belong in `tests/test_guidance.py`, `tests/test_guidance_api.py`,
+`tests/test_guidance_preferences.py`, the corresponding existing producer/API/Store
+and QA tests. Cross-language Plan precision/interval evidence belongs in
+`scripts/check_guidance_plan_contract.mjs`, run in the backend job with Python
+available. It must not enter the dependency-free frontend test glob.
+
+Documentation changes are limited to this parent change, `CONTEXT.md` for the new
+guidance/preference domain terms, and `README.md` for the backend API additions.
+Historical ADRs and earlier review receipts remain evidence, not editable policy.
+The parent `contracts.md` One next step proposal must point to ADR 383 and this
+implementation boundary for this capability; its pending-Plan/draft ordering and
+durable-context proposals stay deferred. No UI design record changes are owed.
+
+The fixture inventory is the generator-owned sets and extracts listed in
+`.github/workflows/ci.yml`. Regenerate only those whose owned inputs changed,
+with their existing provenance and drift commands. New manufactured cases belong
+in `scripts/qa_e2e_cases.py` with literal complete expectations and the existing
+QA budget checks. Avoid a new committed fixture when an existing recipe can
+exercise the public interface in a temporary Store.

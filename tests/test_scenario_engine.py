@@ -119,6 +119,20 @@ def suspend_run(day, h, m, rows=8, cadence=5, profile_rate=0.9):
 ISF = 40.0
 
 
+class AttributedOccurrencesTest(unittest.TestCase):
+    def test_context_precedes_ownership_and_high_owns_peak(self):
+        from ciq_autotune.analyzers.scenario import attributed_occurrences
+        cgm = cgm_ramp(11, 15, 40, 180, 1.4, 140)
+        prior = meal(11, 15, 13, carbs=35, dose=7)
+        self.assertEqual(attributed_occurrences([prior], cgm, isf=40), ())
+        rows = attributed_occurrences([], cgm, isf=40)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].lever, Lever.MISSED_MEAL)
+        self.assertEqual(rows[0].anchor_t, datetime(2026, 6, 11, 18))
+        self.assertEqual(rows[0].driver_family, Exposure.HIGHS)
+        self.assertIsNone(rows[0].unavailable_reason)
+
+
 class PostMealSuspendAttributionTest(unittest.TestCase):
     def test_later_qualifying_suspend_attributes_meal_over_delivery(self):
         m = meal(15, 11, 45, carbs=50.0, dose=5.0)
@@ -2244,3 +2258,108 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AttributedOccurrenceOwnershipTest(unittest.TestCase):
+    def test_completed_meal_deduplicates_two_attributed_episodes(self):
+        from ciq_autotune.analyzers.scenario import attributed_occurrences, tally_attributions
+        from tests.test_meal_bolus_short_attribution import DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM
+        rows = [r for r in attributed_occurrences(DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, isf=45)
+                if r.lever is Lever.MEAL_BOLUS_SHORT]
+        self.assertEqual(len(rows), 2)
+        self.assertEqual({r.recurrence_id for r in rows}, {"meal-7001"})
+        self.assertEqual({r.anchor_t for r in rows}, {DOUBLE_HIGH_BOLUS[0].t})
+        self.assertEqual({r.driver_family for r in rows}, {Exposure.HIGHS})
+        self.assertEqual(tally_attributions(DOUBLE_HIGH_BOLUS, DOUBLE_HIGH_CGM, isf=45)[1][Lever.MEAL_BOLUS_SHORT], 1)
+
+    def test_actual_correction_pair_owns_second_correction(self):
+        from dataclasses import replace
+        from ciq_autotune.analyzers.scenario import attributed_occurrences
+        from tests.test_meal_bolus_short_attribution import CHAINED_CGM, CHAINED_BOLUS
+        bolus = [replace(b, seq_num=100+i) for i, b in enumerate(CHAINED_BOLUS)]
+        rows = [r for r in attributed_occurrences(bolus, CHAINED_CGM, isf=45)
+                if r.lever is Lever.CORRECTION_STACKING]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].driver_source_key, (102, 103))
+        self.assertEqual(rows[0].anchor_t, bolus[-1].t)
+
+    def test_rebound_owns_original_nadir_and_answers_and_config_reach_tally(self):
+        from ciq_autotune.analyzers.scenario import attributed_occurrences, tally_attributions
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        cgm = OverTreatedLowTest()._low_rebound(17, 11, 30, nadir=48, rebound=189)
+        nadir = datetime(2026, 6, 17, 12, 10)
+        for answers in ([], [LowPromptAnswer(anchor_t=nadir, answer="no")]):
+            for config in (ScenarioConfig(), ScenarioConfig(engine_context_pad_min=180)):
+                rows = attributed_occurrences([], cgm, isf=40, low_answers=answers, scenario_config=config)
+                _, tally = tally_attributions([], cgm, isf=40, low_answers=answers, scenario_config=config)
+                actual = {}
+                for lever, recurrence in {(r.lever, r.recurrence_id) for r in rows}:
+                    actual[lever] = actual.get(lever, 0) + 1
+                self.assertEqual(actual, tally)
+                if not answers:
+                    row = next(r for r in rows if r.lever is Lever.OVER_TREATED_LOW)
+                    self.assertEqual(row.anchor_t, nadir)
+                    self.assertEqual(row.driver_family, Exposure.LOWS)
+                else:
+                    self.assertNotIn(Lever.OVER_TREATED_LOW, tally)
+
+    def test_split_rebound_retains_nadir_and_unassociated_near_low_is_not_dropped(self):
+        from ciq_autotune.analyzers.scenario import attributed_occurrences, tally_attributions
+        cgm = (cgm_flat(19,18,40,120,20) + cgm_ramp(19,19,0,120,1.75,40)
+               + cgm_ramp(19,19,40,190,-1.4,100) + cgm_ramp(19,21,20,50,4,40)
+               + cgm_ramp(19,22,0,210,-1.2,80))
+        rows = attributed_occurrences([meal(19,19,0,40,6),corr(19,20,0,4)],cgm,isf=40)
+        rebound = next(r for r in rows if r.lever is Lever.OVER_TREATED_LOW)
+        self.assertEqual(rebound.anchor_t,datetime(2026,6,19,21,20))
+        self.assertEqual(rebound.driver_family,Exposure.LOWS)
+        near = _arc_cgm(3,4,_DEEP_REBOUND_CGM)
+        bolus = [_arc_bolus(3,4,17,50,5.8,32), _arc_bolus(3,4,20,20,1.5,None)]
+        rows = attributed_occurrences(bolus,near,isf=None)
+        row = next(r for r in rows if r.lever is Lever.OVER_TREATED_LOW)
+        self.assertIsNone(row.anchor_t)
+        self.assertEqual(row.unavailable_reason,"unassociated_recurrence_anchor")
+        self.assertEqual(tally_attributions(bolus,near,isf=None)[1][Lever.OVER_TREATED_LOW],1)
+
+
+class FollowUpObservationTest(unittest.TestCase):
+    def test_no_high_meal_needs_readable_onset_domain(self):
+        from ciq_autotune.analyzers.scenario import recurrence_observations
+        dose = meal(15,12,0,carbs=45,dose=10)
+        missing = recurrence_observations([dose], [], lever="meal_bolus_short", isf=40)
+        self.assertEqual(len(missing), 1)
+        self.assertFalse(missing[0]["measured"])
+        self.assertEqual(missing[0]["n"], 1)
+        observed = recurrence_observations([dose], cgm_flat(15,11,0,120,600), lever="meal_bolus_short", isf=40)
+        self.assertTrue(observed[0]["measured"])
+        self.assertEqual(observed[0]["k"], 0)
+
+    def test_no_high_domain_rejects_internal_gap_and_candidate_high(self):
+        from ciq_autotune.analyzers.scenario import recurrence_observations
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        dose=meal(15,12,0,carbs=45,dose=10)
+        full=cgm_flat(15,11,0,120,600)
+        gap=[r for r in full if not datetime(2026,6,15,13) <= r.t <= datetime(2026,6,15,14)]
+        row=recurrence_observations([dose],gap,lever='meal_bolus_short')[0]
+        self.assertFalse(row['measured'])
+        high=cgm_flat(15,11,0,120,60)+cgm_flat(15,12,5,300,600)
+        row=recurrence_observations([dose],high,lever='meal_bolus_short')[0]
+        self.assertFalse(row['measured'])
+        self.assertEqual(row['measurement_reason'],'candidate_high_without_closed_attribution')
+        sparse=full[::4]
+        self.assertFalse(recurrence_observations([dose],sparse,lever='meal_bolus_short',
+                         scenario_config=ScenarioConfig(cgm_max_stale_min=5))[0]['measured'])
+
+    def test_known_positive_and_empty_domain_keep_existing_policy(self):
+        from ciq_autotune.analyzers.scenario import recurrence_observations, tally_attributions, Lever
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        dose=meal(15,12,40,carbs=45,dose=10)
+        cgm=[CgmReading(datetime(2026,6,15,12,15)+timedelta(minutes=5*i),value)
+             for i,value in enumerate((100,110,120,130,140,150,160,170,180,175,165,150,135))]
+        rows=recurrence_observations([dose],cgm,lever='late_bolus',isf=40)
+        self.assertEqual(sum(r['k'] for r in rows),1)
+        self.assertEqual(sum(r['k'] for r in rows),tally_attributions([dose],cgm,isf=40)[1][Lever.LATE_BOLUS])
+        self.assertTrue(rows[0]['measured'])
+        row=recurrence_observations([dose],[],lever='meal_bolus_short',
+             scenario_config=ScenarioConfig(meal_bolus_short_digestion_lookback_min=0))[0]
+        self.assertTrue(row['measured'])
+        self.assertEqual(row['k'],0)

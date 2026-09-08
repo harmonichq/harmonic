@@ -170,3 +170,25 @@ class CountOverridesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OverrideObservationTest(unittest.TestCase):
+    def test_missing_provenance_exclusion_fallback_and_harm(self):
+        from dataclasses import replace
+        from ciq_autotune.analyzers.classifiers.user_override import override_observations
+        from ciq_autotune.analyzers.scenario import recurrence_observations
+        positive = override_correction(at(12), requested=5, user_override=None)
+        missing = replace(positive,food_insulin=None)
+        excluded = replace(missing,user_override=0)
+        for dose, known, k in ((positive,True,1),(missing,False,0),(excluded,True,0)):
+            rows = override_observations([dose],[])
+            self.assertEqual(count_overrides([dose],[]), (sum(r['k'] for r in rows),sum(r['harm'] for r in rows)))
+            row = recurrence_observations([dose],[],lever='user_override')[0]
+            self.assertEqual((row['measured'],row['k']), (known,k))
+            self.assertEqual(row['harm_measured'], dose is excluded)
+        full = cgm_seg(at(11),120,0,420)
+        gapped = [r for r in full if not at(13) <= r.t <= at(14)]
+        for cgm, measured in ((full,True),(gapped,False),(full[:15],False),([CgmReading(at(13),60)],True)):
+            row=recurrence_observations([positive],cgm,lever='user_override')[0]
+            self.assertTrue(row['measured'])
+            self.assertEqual(row['harm_measured'],measured)

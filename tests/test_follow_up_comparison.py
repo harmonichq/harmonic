@@ -96,7 +96,7 @@ class FollowUpComparisonTest(unittest.TestCase):
             with Store.open_readonly(path) as store:
                 context = capture_comparison_context(store, at=SWITCH, input_revision=1)
                 record = {"kind":"trial", "id":"synthetic", "parameter":"carb_ratio", "slot":"12:00",
-                          "block":[720,900], "detected_at":str(SWITCH), "before":5.0, "after":4.4,
+                          "block":[720,900], "members":[720], "detected_at":str(SWITCH), "before":5.0, "after":4.4,
                           "comparison_context":context, "ending":{"effective_at":str(SWITCH + timedelta(days=1))}}
                 original = copy.deepcopy(record)
                 result = self.compare(store, record, NOW)
@@ -110,6 +110,45 @@ class FollowUpComparisonTest(unittest.TestCase):
                     with store.follow_up_transaction():
                         pass
             self.assertEqual(path.read_bytes(), before_bytes)
+
+    def test_persisted_ic_members_constrain_real_analyzer_population(self):
+        from ciq_autotune.watched_change import reconcile_ingested_follow_up
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "synthetic.sqlite"
+            _seed_block_ic_switch(path)
+            with Store.open(path) as store:
+                reconcile_ingested_follow_up(store)
+                recorded = next(r for r in store.follow_up_records("trial") if r.get("block"))
+                self.assertEqual(recorded["members"], [720])
+                self.assertNotIn("member_start_mins", recorded)
+                different = {**recorded, "id": recorded["id"] + "-different-members", "members": [720, 780]}
+                with store.follow_up_transaction():
+                    store.save_follow_up_record(different)
+            original_bytes = path.read_bytes()
+            with Store.open_readonly(path) as store:
+                matched = store.follow_up_record("trial", recorded["id"])
+                mismatched = store.follow_up_record("trial", different["id"])
+                self.assertEqual(matched["block"], mismatched["block"])
+                original_records = copy.deepcopy((matched, mismatched))
+                accepted = self.compare(store, matched, NOW)
+                rejected = self.compare(store, mismatched, NOW)
+                self.assertEqual(accepted["periods"], rejected["periods"])
+                self.assertEqual(accepted["denominators"], rejected["denominators"])
+                self.assertEqual(accepted["denominators"]["after"]["contributing_meals"], 4)
+                self.assertGreater(accepted["denominators"]["after"]["readings"], 0)
+                self.assertTrue(accepted["readiness"]["after"]["available"])
+                self.assertEqual(accepted["readiness"]["after"]["captured_members"], [720])
+                for arm in ("before", "after"):
+                    self.assertFalse(rejected["readiness"][arm]["available"])
+                    self.assertEqual(rejected["readiness"][arm]["reason"], "unmatchable_captured_membership")
+                    self.assertEqual(rejected["readiness"][arm]["observed"], 0)
+                    self.assertFalse(rejected["readiness"][arm]["criterion_met"])
+                legacy = {k: v for k, v in matched.items() if k not in ("members", "comparison_context")}
+                unavailable = self.compare(store, legacy, NOW)
+                self.assertEqual(unavailable["availability"]["reason"], "missing_comparison_context")
+                self.assertEqual(unavailable["periods"], {})
+                self.assertEqual((matched, mismatched), original_records)
+            self.assertEqual(path.read_bytes(), original_bytes)
 
 
 class SupportedComparisonTest(unittest.TestCase):
@@ -245,7 +284,7 @@ class SupportedComparisonTest(unittest.TestCase):
                                 snapshot(pin+timedelta(days=1),9,8),
                                 snapshot(pin+timedelta(days=2),9,8,isf=50)])
         record={"kind":"trial","id":"block","parameter":"carb_ratio","slot":"12:00",
-                "block":[720,900],"before":10,"after":9,"detected_at":str(pin),
+                "block":[720,900],"members":[720],"before":10,"after":9,"detected_at":str(pin),
                 "comparison_context":capture_comparison_context(store,at=pin,input_revision=1)}
         result=self.compare(store,record,end)
         self.assertEqual(result["periods"]["before"]["start"],str(pin-timedelta(days=90)))
@@ -405,7 +444,7 @@ class PracticalComparisonTest(unittest.TestCase):
         store=self.store(cgm,[meal(2,23,0,carbs=40,dose=4)])
         store._snaps=[snapshot(0,10,12),snapshot(1,9,12),snapshot(2,9,13),snapshot(3,8,13)]
         pin=start+timedelta(days=1)
-        record={'kind':'trial','parameter':'carb_ratio','block':[1320,120],'detected_at':str(pin),
+        record={'kind':'trial','parameter':'carb_ratio','block':[1320,120],'members':[1320,0],'detected_at':str(pin),
                 'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
         result=self.compare(store,record,start+timedelta(days=4))
         self.assertEqual(result['periods']['after']['end'],str(start+timedelta(days=3)))
@@ -458,7 +497,7 @@ class PracticalComparisonTest(unittest.TestCase):
             bolus=bolus+[replace(b,t=b.t+shift,seq_num=(b.seq_num or 0)+100000,
                                 carb_ratio=5.8 if b.t.hour<12 else b.carb_ratio) for b in bolus],
             snaps=snaps+[Snapshot(pin,changed)])
-        record={'kind':'trial','parameter':'carb_ratio','block':[0,720],'detected_at':str(pin),
+        record={'kind':'trial','parameter':'carb_ratio','block':[0,720],'members':[0],'detected_at':str(pin),
                 'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
         result=self.compare(store,record,pin+shift)
         for arm in ('before','after'):

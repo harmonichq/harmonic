@@ -725,6 +725,23 @@ this is not permission for a new scenario, outcome, presentation or hand-edited 
 Other generator outputs must remain byte-identical. If generator execution would
 change another path, report the exact difference before extending this closed list.
 
+The sole remaining packaging follow-up permits `.github/workflows/ci.yml` only to
+correct the existing `docker-pr` synthetic smoke database bind-mount destination
+and matching `--db` path into the image's existing app-owned `/app/tconnect-data`
+directory. The observed PR image built and excluded Node, but startup failed in
+`Store.open` at the WAL pragma with a readonly-database error. This is a smoke-test
+placement correction; no kernel cause is asserted. Preserve the nonroot runtime,
+existing synthetic fixture, no-fetch invocation, no-Node assertion, built-shell
+check, cleanup and fail-closed behavior. No new job/workflow, timeout extension,
+privilege change, Dockerfile/production/schema change, dependency/tool installation,
+fixture/test family, parser or alternate runtime is allowed. Other maintenance
+permissions above remain historical; this follow-up actively edits only that CI
+file and reopens no completed capability. Final verification is the actual final-PR
+`docker-pr` pass. Existing successful backend/frontend/browser/generator receipts
+remain evidence for unchanged work; they do not prove image startup and need not
+be rerun solely for this placement correction. Return any different provider defect
+to the coordinator rather than changing production or broadening the correction.
+
 No new fixture family, generator, workflow, browser relaxation, production interface,
 algorithm, threshold or UI layout/component is authorized. Existing generator
 provenance, contamination checks and QA budgets remain. All owned tests and complete

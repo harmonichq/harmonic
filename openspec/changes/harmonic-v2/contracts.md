@@ -496,6 +496,97 @@ original available setting and Focus comparisons, unavailable-versus-unclear
 states, retained-context and readonly tests; this is an additional provider proof,
 not a replacement for them.
 
+#### Type-specific comparison readiness (ADR 387 refinement)
+
+The operator's latest clarification reopens #340's universal readiness floor for
+follow-up only, covering both setting Trials and habit Focus. I:C's eight effective
+qualifying meal runs stays fixed; other readiness criteria require real-history
+and placebo validation before selection.
+Measurement availability, comparison readiness, inferential confidence, analyzer
+recommendation support and watch lifecycle are separate facts. Keep readable
+values and progress visible before readiness; meeting a count alone never proves
+benefit, independence or a confident conclusion. Recommendation predicates,
+clinical thresholds and their existing support floors do not change.
+
+| Selected change | Readiness evidence in each exact comparison arm |
+| --- | --- |
+| Basal | Use qualifying clean nights for the affected slot, from the existing basal analyzer's clean-night roster. Fourteen was an arbitrary starting hypothesis and is not locked; select a count only after the validation below. Do not substitute detected Rest-window count or directional-support count, and do not sum different slots on the same night into independent nights. Preserve the relevant programmed-regime and clean/readable evidence rules for each arm. |
+| Carb ratio | Eight effective qualifying closed meal runs for the captured block, using the existing I:C run eligibility and ownership weights. Raw bolus/meal counts, excluded runs and partial cross-block ownership do not become whole independent runs. Retain run membership, regime provenance and contributing dates. |
+| Correction factor | Name qualifying fasting Rest windows and qualifying steps separately, with their contributing night/date clusters. The existing ISF producer owns step eligibility and window membership. Thirty windows was an illustrative operator example, not an approved threshold; the required comparison count remains an explicit unresolved decision. |
+| Whole profile | Retain whole-period glucose context and constituent setting evidence separately. Thirty elapsed days is an observation-duration hypothesis, not an approved readiness criterion or attribution rule. Validate the outcome-specific evidence/readiness policy below. Do not add component counts together, require one invented profile-wide evidence count, or infer an overall causal score. |
+| Focus | Retain each lever's own recurrence opportunities, measured behavior and separately measured mapped outcomes. Fourteen elapsed days is a possible observation/closure policy, not approved proof of a successful habit; validate readiness and accumulating looks below. An opportunity lacking the measurement needed to judge it is not an informative observed zero. No universal glucose gate may erase a behavior proven from bolus records. |
+
+Extend the existing comparison-owned `trial_evidence.comparison_evidence` read
+with arm-local readiness facts consumed by `compare_follow_up`: named evidence
+unit, qualifying count, required count (null while unresolved), contributing-date
+count, nullable criterion-met result and reason. Reuse public analyzer-owned
+populations; never infer eligibility from chart support or reimplement meal-run,
+clean-night or fasting-step rules. Historical Before/After arms use their own
+exact periods and retained provenance, not today's analyzer's rolling/current-block
+counts. Missing measurement and unresolved criteria stay explicit while readable
+observations remain available. No new Store or HTTP ownership is introduced.
+
+Once selected and independently reviewed, type-specific requirements replace the
+generic readiness count in the directional-assessment gate. Preserve #340's date-clustered resampling,
+interval/statistic agreement, non-estimable/degenerate/zero-crossing uncertainty,
+outcome polarity, separate outcomes and low-exposure limitations. Reaching eight
+runs on too few independent readable dates cannot make an interval estimable or
+a result favorable. Other outcome-specific coverage requirements still apply;
+do not convert recommendation confidence or a descriptive spread into comparison
+confidence.
+
+An observation period may finish inconclusively; a significant or favorable result
+is never a prerequisite for an ending. After continues beyond fourteen elapsed days until its existing effective ending,
+next relevant setting change or data cutoff, as appropriate to the record. There
+is no automatic day-fourteen ending, no silent fourteen-day clipping and no
+calendar-day substitute for qualifying evidence. The existing watch expiry is a
+separate recorded lifecycle event; it does not truncate a setting comparison's
+settled bounds. The lifecycle/API owner consumes these comparison facts and must
+not turn the legacy maturity indicator into an ending or a confidence verdict.
+Downstream UI contracts must name the unit and preserve these distinctions.
+
+Public tests in the already-owned comparison and trial-evidence suites must prove
+continued accumulation beyond fourteen days, different units for basal/I:C/ISF,
+unchanged recommendation floors, fractional/excluded I:C support, per-slot basal
+night ownership, and count-met with insufficient independent/readable evidence.
+Retain every original setting and Focus acceptance and full delivery gate.
+
+Before locking any non-I:C criterion, review a validation design that fixes candidate
+rules, analysis endpoints and reporting before inspecting their outcomes. Replay
+no-change/placebo splits within continuous relevant setting regimes, retaining
+complete dates, meal runs and episode/context membership; never shuffle individual
+CGM points or count correlated steps as independent trials. A no-setting-change
+interval is an observational negative control, not proof that physiology or habits
+were unchanged. Separate those replays from genuinely null synthetic data and
+known synthetic improvement/worsening signals. Include unreadable/partial data and
+count-met-but-correlated evidence at the admitted measurement boundary.
+
+Evaluate both each prespecified accumulating-data look and the chance of any
+favorable/concerning declaration along a whole follow-up path. Compare that with
+its fixed-endpoint result; do not pick an ending or tune a count after seeing a
+favorable result. Keep candidate exploration separate from reserved evaluation
+regimes/recipes. Report failed/unavailable comparisons in the denominator of the
+validation account, distinguish false improvement from false worsening, and report
+signal detection separately from null behavior. State what error-control objective
+and observation/closure rule remains undecided rather than inventing a pass limit
+or silently changing the bootstrap. One person's history grounds collection and
+availability; it cannot establish clinical/general-population validity. I:C's eight
+runs is fixed while its readiness/inference behavior is tested by the same method.
+Private real-data aggregates and validation instrumentation never enter tracked
+artifacts or public logs; synthetic regressions remain independently manufactured.
+
+**Remaining admission boundary:** the completed-meal shortfall provider has no
+settled per-meal negative-observation eligibility contract when no high is
+attributed. Stacking/override aggregate harm counts do not distinguish an unreadable
+tail from an observed zero; preserve their existing positive behavior and explicit
+record-proven exclusions. Neither chart readability nor a glucose-rate coverage
+threshold settles those missing negative-observation predicates. Before resuming
+the comparison implementation, independently settle those two measurement
+criteria and the remaining non-I:C follow-up readiness/closure criteria through the parent
+review handoff after the validation below. Do not
+invent a window, threshold, classifier verdict, denominator or feed-completeness
+policy to close them. No new correction-on-IOB slope requirement is authorized.
+
 ### Lifecycle and integration interface (owner: lifecycle/API boundary)
 
 Keep the single semantic owner in `watched_change.py`. Add

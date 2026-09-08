@@ -1464,3 +1464,35 @@ gates. The refinement changes no clinical/statistical policy, recurrence meaning
 source-context policy or public lifecycle API. Its executable proof and the new
 public-interface test obligations are recorded in the contract; implementation
 and independent review remain required before this comparison boundary is done.
+
+## ADR 387 — Keep comparison readiness specific to the change
+
+The operator's latest clarification is FOLLOW-UP READINESS ONLY, for both Trials
+and Focus. Eight qualifying I:C meal runs stays fixed. Basal fourteen, ISF thirty
+fasting windows, multi-setting thirty elapsed days and Focus fourteen elapsed days
+are hypotheses to reassess, not approved evidence thresholds. This supersedes the
+earlier interpretation that basal fourteen was fixed or that only observation
+duration was being clarified. Recommendation eligibility, safety predicates and
+classifier policy remain unchanged. The normative validation/readiness contract
+and remaining admission questions live in contracts.md, “Type-specific comparison
+readiness”.
+
+Existing public producers own different populations: basal publishes per-slot
+clean-night rosters separately from directional sign support; I:C publishes
+closed-run eligibility and fractional block ownership; ISF retains fasting steps
+inside detected Rest-window night clusters. These populations must not be
+replaced by elapsed days, raw meals or micro-step counts. Local immutable-history
+grounding informs evidence availability only; it does not calibrate thresholds,
+validate a clinical rule or turn current-regime rolling analyzer outputs into
+exact historical comparison arms. Record-level data and private measurement
+receipts remain outside the repository.
+
+The measurement inquiry also reproduced missing glucose and observed-flat glucose
+collapsing to the same completed-meal shortfall rate, and unreadable correction
+harm tails collapsing to zero. Existing record-proven behavior and exclusions
+survive missing outcome data. The remaining negative-observation criteria need
+explicit source authority or a bounded decision; a generic CGM gate or a copied
+classifier walk would change the settled policy. This is a comparison-provider
+boundary, not a Store regression. The completed Store task and three serial
+owners remain intact; this refinement is not implementation admission until the
+remaining questions in contracts.md are resolved and independently reviewed.

@@ -24,15 +24,13 @@ from .outcomes import CGM_CADENCE_MIN, CONSENSUS_MIN_COVERAGE, _pct, compute_met
 from .outcomes_trend import (
     _profile_settings, behavior_observations, meal_measurements,
     glycemic_rate_counts, day_rate_clears, newcombe_diff_interval,
-    _CONTEXT_PAD_MIN, ARC_NADIR_HORIZON_MIN,
     post_meal_rescue_context,
 )
 from .rescue_evidence import eligible_carb_entries, first_observation, observe
-from .trial_evidence import comparison_evidence
+from .trial_evidence import comparison_evidence, _in_block
 
 _VERSION = "386:1"
 _FMT = "%Y-%m-%d %H:%M:%S"
-_MIN_DATES = 14
 _RESAMPLES = 2000
 
 
@@ -97,7 +95,7 @@ def _setting_period(store, record, cutoff, earliest):
     block = _block(record)
     minutes = None
     if block:
-        minutes = [m for m in range(1440) if (m - block[0]) % 1440 < block[1] - block[0]]
+        minutes = [m for m in range(1440) if _in_block(datetime(2000, 1, 1) + timedelta(minutes=m), block)]
     elif slot:
         lo = int(slot[:2]) * 60 + int(slot[3:5])
         minutes = list(range(lo, lo + 30))
@@ -159,29 +157,11 @@ def _period(start, end, start_reason, end_reason, cutoff, revision):
             "source_revision": revision}
 
 
-def _dates(start, end):
-    day = start.replace(hour=0, minute=0, second=0, microsecond=0)
-    while day < end:
-        yield day, day + timedelta(days=1)
-        day += timedelta(days=1)
-
-
 def _glycemic(population, start, end):
-    rows = population["readings"]
     by_day = {}
-    coverage = []
-    for lo, hi in _dates(start, end):
-        minutes = sum(max(0, (min(hi, right) - max(lo, left)).total_seconds()) / 60
-                      for left, right in population["intervals"])
-        if minutes <= 0:
-            continue
-        values = [r for r in rows if lo <= r.t < hi]
-        fraction = min(1.0, len(values) / (minutes / CGM_CADENCE_MIN))
-        coverage.append({"date": lo.date().isoformat(), "eligible_minutes": minutes,
-                         "n_readings": len(values), "coverage": fraction})
-        if values:
-            by_day[lo.date().isoformat()] = values
-    return by_day, coverage
+    for reading in population["readings"]:
+        by_day.setdefault(reading.t.date().isoformat(), []).append(reading)
+    return by_day, population["coverage"]
 
 
 def _quantile(values, fraction):
@@ -191,7 +171,7 @@ def _quantile(values, fraction):
     return values[lower] + (values[upper] - values[lower]) * (position - lower)
 
 
-def _assess(before, after, groups, statistic, polarity, informative=None):
+def _assess(before, after, groups, statistic, polarity, ready=True):
     assessment = {"state": "context" if polarity is None else "unclear",
                   "interval": None, "confidence": 0.95,
                   "method": "independent pump-date percentile bootstrap; 2000 resamples",
@@ -199,9 +179,8 @@ def _assess(before, after, groups, statistic, polarity, informative=None):
     if before is None or after is None:
         assessment["reasons"].append("No readable observations or opportunities in one period.")
         return assessment
-    supported = min(informative if informative is not None else [len(g) for g in groups]) >= _MIN_DATES
-    if not supported:
-        assessment["reasons"].append("Fewer than 14 informative pump dates in one period.")
+    if not ready:
+        assessment["reasons"].append("Type-specific follow-up readiness is not met in both arms.")
     if min(len(g) for g in groups) < 2:
         assessment["reasons"].append("Fewer than two contributing dates; the interval is not estimable.")
         return assessment
@@ -222,18 +201,23 @@ def _assess(before, after, groups, statistic, polarity, informative=None):
         assessment["reasons"].append("The interval is degenerate; direction is unclear.")
     elif low <= 0 <= high:
         assessment["reasons"].append("The interval includes zero; direction is unclear.")
-    elif polarity is not None and supported:
+    elif polarity is not None and ready:
         assessment["state"] = "favorable" if (low > 0) == (polarity == "up") else "concerning"
     return assessment
 
 
-def _row(key, label, unit, values, counts, groups, statistic, polarity, noun, informative=None):
+def _row(key, label, unit, values, counts, groups, statistic, polarity, noun, informative=None, ready=True):
     before, after = values
+    assessment = _assess(before, after, groups, statistic, polarity, ready)
+    if polarity is not None and informative is not None and min(informative) < 2:
+        assessment["state"] = "unclear"
+        assessment["reasons"].append("Fewer than two coverage-qualified contributing dates; no directional glucose claim.")
     return {"key": key, "label": label, "unit": unit, "before": before, "after": after,
             "denominator": noun, "denominators": dict(zip(("before", "after"), counts)),
             "informative_dates": dict(zip(("before", "after"), informative if informative is not None else map(len, groups))),
             "difference": after - before if before is not None and after is not None else None,
-            "assessment": _assess(before, after, groups, statistic, polarity, informative)}
+            "availability": _availability("no_readable_outcome" if before is None or after is None else None),
+            "assessment": assessment}
 
 
 def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mode="retained"):
@@ -317,10 +301,6 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         "before": _period(start, changed, before_reason, "pin" if kind == "focus" else "setting_change", cutoff, input_revision),
         "after": _period(changed, end, "pin" if kind == "focus" else "setting_change", end_reason, cutoff, input_revision),
     }
-    pad = timedelta(minutes=_CONTEXT_PAD_MIN + ARC_NADIR_HORIZON_MIN)
-    cgm = [r for r in cgm if start - pad <= r.t < end + pad]
-    bolus = [b for b in bolus if start - pad <= b.t < end + pad]
-    basal = [b for b in basal if start - pad <= b.t < end + pad]
     populations, groups, coverages, observations = [], [], [], []
     for name, lo, hi in (("before", start, changed), ("after", changed, end)):
         eligible_carbs = [c for c in eligible_carb_entries(carbs, hi) if c.t < cutoff]
@@ -328,6 +308,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             parameter=parameter, slot=slot, block=block, changed_at=changed,
             before=record.get("before"), after=record.get("after"), start=lo, end=hi,
             cgm=cgm, bolus=bolus, basal=basal, carbs=eligible_carbs, snapshots=snapshots,
+            pump_events=[e for e in store.pump_events() if e.t < cutoff] if hasattr(store, "pump_events") else (),
+            isf=programmed["value"], captured_members=record.get("member_start_mins"), focus=kind == "focus",
         )
         populations.append(population)
         day_groups, coverage = _glycemic(population, lo, hi)
@@ -354,6 +336,27 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                 owned_cgm, ctx_meals=ctx_meals,
             ).to_dict(),
         }
+    comparison["readiness"] = dict(zip(("before", "after"), [p["readiness"] for p in populations]))
+    if kind == "focus":
+        for name, lo, hi in (("before", start, changed), ("after", changed, end)):
+            observed = behavior_observations(
+                bolus, cgm, basal, lever=record["lever"], start=lo, end=hi,
+                isf=programmed["value"], scenario_config=ScenarioConfig(**context["configuration"]),
+                low_answers=[a for a in low_prompt_answers(store, earliest, cutoff)
+                             if a.answer == "false-low" or (a.answered_at or a.anchor_t) <= hi],
+            )
+            populations[0 if name == "before" else 1]["behavior"] = observed
+            n = sum(r["n"] for r in observed["rows"])
+            measured = sum(r["n"] for r in observed["rows"] if r["measured"])
+            elapsed = max(0., (hi-lo).total_seconds()/86400)
+            comparison["readiness"][name] = {
+                "unit": observed["denominator"], "observed": n,
+                "measured": measured, "unmeasured": n-measured, "elapsed_days": elapsed,
+                "required_elapsed_days": 14, "criterion_met": elapsed>=14 and n>0 and measured==n,
+                "contributing_dates": sorted({r["t"].date().isoformat() for r in observed["rows"] if r["measured"]}),
+                "reason": observed["reason"] or ("zero_opportunities" if not n else "collecting" if elapsed<14 else None),
+            }
+    ready = all(r["criterion_met"] for r in comparison["readiness"].values())
     metrics = [compute_metrics(p["readings"]) for p in populations]
     specs = [("tir", "Time in range", "tir", "up"),
              ("tbr", "Time below range", "tbr_lvl1", "down"),
@@ -372,7 +375,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         comparison["outcomes"].append(_row(
             key, label, "mg/dL" if key == "mean" else "%", [getattr(m, attr) for m in metrics],
             [m.n_readings for m in metrics], rate_groups, statistic, polarity, "observed CGM readings in eligible windows",
-            [sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage) for coverage in coverages],
+            [sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage) for coverage in coverages], ready=ready,
         ))
     if parameter in ("basal_rate", "isf"):
         arms = []
@@ -395,10 +398,10 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         if all(ns):
             low, high = newcombe_diff_interval(ks[1], ns[1], ks[0], ns[0])
             assessment["interval"] = {"low": 100 * low, "high": 100 * high, "unit": "percentage points"}
-            if min(ns) >= _MIN_DATES and day_rate_clears(ks[1], ns[1], ks[0], ns[0]):
+            if ready and day_rate_clears(ks[1], ns[1], ks[0], ns[0]):
                 assessment["state"] = "favorable" if high < 0 else "concerning"
             else:
-                assessment["reasons"].append("The informative-night or day-rate clearance requirement is not met.")
+                assessment["reasons"].append("Type-specific readiness or day-rate clearance is not met.")
         comparison["outcomes"].append({
             "key": "nights_with_low", "label": "Rest windows with a low", "unit": "%",
             "before": values[0], "after": values[1],
@@ -422,18 +425,12 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             statistic = lambda values: statistics.median(values) if values else None
             comparison["outcomes"].append(_row(
                 key, label, "mg/dL", [statistic(a) for a in arms], list(map(len, arms)), day_groups,
-                statistic, None, f"meals with readable {key}",
+                statistic, None, f"meals with readable {key}", ready=ready,
             ))
     if kind == "focus":
         day_groups, adherence = [], {}
         for name, lo, hi in (("before", start, changed), ("after", changed, end)):
-            answers = low_prompt_answers(store, earliest, cutoff)
-            answers = [a for a in answers if a.answer == "false-low" or (a.answered_at or a.anchor_t) <= hi]
-            observed = behavior_observations(
-                bolus, cgm, basal, lever=record["lever"], start=lo, end=hi,
-                isf=programmed["value"], scenario_config=ScenarioConfig(**context["configuration"]),
-                low_answers=answers,
-            )
+            observed = populations[0 if name == "before" else 1]["behavior"]
             rows, reason = observed["rows"], observed["reason"]
             n, k = sum(r["n"] for r in rows), sum(r["k"] for r in rows)
             by_day = {}
@@ -445,13 +442,16 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             adherence[name] = {"lever": record["lever"], "numerator": k, "denominator": observed["denominator"],
                                "opportunities": n, "unit": "proportion", "rate": k / n if n and not reason else None,
                                "harm": sum(r["harm"] for r in rows),
+                               "measured_opportunities": sum(r["n"] for r in rows if r["measured"]),
+                               "unmeasured_opportunities": sum(r["n"] for r in rows if not r["measured"]),
+                               "harm_availability": _availability(next((r["harm_measurement_reason"] for r in rows if not r["harm_measured"]), None) or ("zero_opportunities" if not n else None)),
                                "informative_dates": len(by_day),
                                "availability": _availability(reason or ("zero_opportunities" if not n else None))}
             if reason:
                 comparison["availability"] = _availability(reason)
         statistic = lambda rows: sum(r["k"] for r in rows) / sum(r["n"] for r in rows) if rows else None
         adherence["assessment"] = {
-            **_assess(adherence["before"]["rate"], adherence["after"]["rate"], day_groups, statistic, "down"),
+            **_assess(adherence["before"]["rate"], adherence["after"]["rate"], day_groups, statistic, "down", ready),
             "unit": "proportion", "denominator": adherence["before"]["denominator"],
         }
         comparison["adherence"] = adherence

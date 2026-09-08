@@ -117,13 +117,14 @@ class SupportedComparisonTest(unittest.TestCase):
     store = FollowUpComparisonTest.store
     focus = FollowUpComparisonTest.focus
 
-    def dense_profile(self, *, constant=False):
+    def dense_profile(self, *, constant=False, days=16):
         from ciq_autotune.settings import ProfileSegment, ProfileSettings, PumpSettings, Snapshot
-        start, pin, end = datetime(2026,1,1), datetime(2026,1,17), datetime(2026,2,2)
+        start = datetime(2026,1,1)
+        pin, end = start+timedelta(days=days), start+timedelta(days=2*days)
         cgm = []
-        for day in range(32):
-            high = 100 + day % 7 if day < 16 else 15 + day % 5
-            low = 3 + day % 3 if day < 16 else 12 + day % 3
+        for day in range(2*days):
+            high = 100 + day % 7 if day < days else 15 + day % 5
+            low = 3 + day % 3 if day < days else 12 + day % 3
             for i in range(288):
                 bg = 120 if constant else 60 if i < low else 220 if i < low+high else 120
                 cgm.append(CgmReading(start+timedelta(days=day,minutes=5*i),bg=bg))
@@ -136,7 +137,7 @@ class SupportedComparisonTest(unittest.TestCase):
         return store,record,end
 
     def test_supported_opposite_outcomes_remain_mixed(self):
-        store,record,end = self.dense_profile()
+        store,record,end = self.dense_profile(days=30)
         result = self.compare(store,record,end)
         rows = {r["key"]:r for r in result["outcomes"]}
         self.assertEqual(result["availability"]["state"],"available")
@@ -144,7 +145,7 @@ class SupportedComparisonTest(unittest.TestCase):
         self.assertEqual(rows["tbr"]["assessment"]["state"],"concerning")
         self.assertTrue(result["assessment"]["mixed"])
         self.assertEqual(result["assessment"]["state"],"concerning")
-        self.assertEqual(rows["tir"]["informative_dates"],{"before":16,"after":16})
+        self.assertEqual(rows["tir"]["informative_dates"],{"before":30,"after":30})
         self.assertEqual(rows["mean"]["assessment"]["state"],"context")
         self.assertEqual(result,self.compare(store,record,end))
 
@@ -339,3 +340,102 @@ class MeasurementComparisonTest(unittest.TestCase):
                 self.assertTrue(all("assessment" in r for r in result["outcomes"]))
                 self.assertIn("assessment", result["adherence"])
                 self.assertTrue(any(r["role"] == "context" for r in result["outcomes"]))
+
+
+class PracticalComparisonTest(unittest.TestCase):
+    store = FollowUpComparisonTest.store
+    focus = FollowUpComparisonTest.focus
+    compare = FollowUpComparisonTest.compare
+
+    def test_wrapping_membership_ignores_outside_change_and_cuts_inside_change(self):
+        from ciq_autotune.settings import ProfileSegment,ProfileSettings,PumpSettings,Snapshot
+        start=datetime(2026,6,1)
+        def snapshot(day, inside, outside):
+            segments=(ProfileSegment(0,1,40,inside,110),ProfileSegment(120,1,40,outside,110),
+                      ProfileSegment(1320,1,40,inside,110))
+            return Snapshot(start+timedelta(days=day),PumpSettings(1,(ProfileSettings(1,'synthetic',300,True,15,segments),)))
+        cgm=[CgmReading(start+timedelta(hours=i),120) for i in range(96)]
+        store=self.store(cgm,[meal(2,23,0,carbs=40,dose=4)])
+        store._snaps=[snapshot(0,10,12),snapshot(1,9,12),snapshot(2,9,13),snapshot(3,8,13)]
+        pin=start+timedelta(days=1)
+        record={'kind':'trial','parameter':'carb_ratio','block':[1320,120],'detected_at':str(pin),
+                'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
+        result=self.compare(store,record,start+timedelta(days=4))
+        self.assertEqual(result['periods']['after']['end'],str(start+timedelta(days=3)))
+        self.assertEqual(result['denominators']['after']['contributing_meals'],1)
+        self.assertGreater(result['denominators']['after']['readings'],0)
+
+    def test_profile_progress_withholds_direction_before_thirty_days(self):
+        helper=SupportedComparisonTest()
+        store,record,end=helper.dense_profile()
+        result=self.compare(store,record,end)
+        self.assertFalse(result['readiness']['after']['criterion_met'])
+        self.assertEqual(result['readiness']['after']['required_elapsed_days'],30)
+        self.assertEqual(result['readiness']['after']['elapsed_days'],16)
+        tir=next(r for r in result['outcomes'] if r['key']=='tir')
+        self.assertIsNotNone(tir['assessment']['interval'])
+        self.assertEqual(tir['assessment']['state'],'unclear')
+
+    def test_focus_known_override_remains_visible_without_harm_measurement(self):
+        from tests.test_classifier_user_override import override_correction
+        start=datetime(2026,5,1)
+        bolus=[override_correction(start+timedelta(days=d,hours=12),requested=5) for d in range(40)]
+        store=self.store([],bolus)
+        record=self.focus(store,start+timedelta(days=20),lever='user_override')
+        result=self.compare(store,record,start+timedelta(days=40))
+        self.assertTrue(result['readiness']['after']['criterion_met'])
+        arm=result['adherence']['after']
+        self.assertEqual(arm['rate'],1)
+        self.assertEqual(arm['measured_opportunities'],20)
+        self.assertEqual(arm['harm_availability']['state'],'unavailable')
+        self.assertIsNone(next(r for r in result['outcomes'] if r['role']=='mapped_outcome')['after'])
+        self.assertEqual(result['periods']['after']['end'],str(start+timedelta(days=40)))
+
+    def test_ic_eight_effective_runs_on_thirteen_dates_have_no_generic_floor(self):
+        from dataclasses import replace
+        from scripts.gen_estimator_truth import chained_run_sets
+        from ciq_autotune.settings import Snapshot
+        truth=chained_run_sets()[0]
+        removed={datetime.fromisoformat(t).date() for t in
+                 ('2026-01-31','2026-02-03','2026-02-06','2026-02-21','2026-02-24')}
+        bolus=[b for b in truth['events'] if b.t.date() not in removed]
+        pin=truth['analysis_end']
+        shift=timedelta(days=90)
+        cgm=truth['cgm_readings']
+        snaps=truth['snapshots']
+        settings=snaps[-1].settings
+        changed=replace(settings,profiles=tuple(replace(p,segments=tuple(
+            replace(s,carb_ratio=5.8) if s.start_min==0 else s for s in p.segments))
+            for p in settings.profiles))
+        store=_FakeStore(cgm=cgm+[replace(r,t=r.t+shift) for r in cgm],
+            bolus=bolus+[replace(b,t=b.t+shift,seq_num=(b.seq_num or 0)+100000,
+                                carb_ratio=5.8 if b.t.hour<12 else b.carb_ratio) for b in bolus],
+            snaps=snaps+[Snapshot(pin,changed)])
+        record={'kind':'trial','parameter':'carb_ratio','block':[0,720],'detected_at':str(pin),
+                'comparison_context':capture_comparison_context(store,at=pin,input_revision=1)}
+        result=self.compare(store,record,pin+shift)
+        for arm in ('before','after'):
+            self.assertAlmostEqual(result['readiness'][arm]['observed'],8)
+            self.assertEqual(len(result['readiness'][arm]['contributing_dates']),13)
+            self.assertTrue(result['readiness'][arm]['criterion_met'])
+        self.assertTrue(all(r['assessment']['state'] in ('unclear','context') for r in result['outcomes']))
+        self.assertFalse(any('14 informative' in reason for r in result['outcomes'] for reason in r['assessment']['reasons']))
+        # A manufactured dense known-signal trace exercises the directional gate,
+        # not just its progress label, with the same eight source-owned runs.
+        dense={r.t:r for r in store._cgm}
+        for b in store._bolus:
+            if not b.carbs:
+                continue
+            for minute in range(-10, 556, 5):
+                t=b.t+timedelta(minutes=minute)
+                dense.setdefault(t,CgmReading(t,120))
+        for b in store._bolus:
+            if b.t < pin and b.t.hour < 12 and b.carbs:
+                for minute in range(60,120+5*(b.t.day%3),5):
+                    t=b.t+timedelta(minutes=minute)
+                    dense[t]=CgmReading(t,220)
+        store._cgm=sorted(dense.values(),key=lambda r:r.t)
+        store._cgm=[replace(r,bg=r.bg-40) if r.t>=pin and r.bg is not None else r for r in store._cgm]
+        signal=self.compare(store,record,pin+shift)
+        self.assertTrue(all(r['criterion_met'] for r in signal['readiness'].values()))
+        self.assertEqual(next(r for r in signal['outcomes'] if r['key']=='tir')['assessment']['state'],'favorable')

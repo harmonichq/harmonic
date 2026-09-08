@@ -190,3 +190,23 @@ class RecoveryGateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StackObservationTest(unittest.TestCase):
+    def test_shared_decisions_preserve_totals_and_owned_pair(self):
+        from ciq_autotune.analyzers.classifiers.correction_stacking import correction_stack_observations, count_correction_stacks
+        from ciq_autotune.analyzers.scenario import recurrence_observations
+        pair = [correction(15,12,0,seq_num=1), correction(15,12,30,seq_num=2)]
+        for cgm in ([], cgm_ramp(15,11,0,120,0,420), cgm_ramp(15,11,0,300,1.5,420)):
+            rows = correction_stack_observations(pair, pair, cgm)
+            self.assertEqual(count_correction_stacks(pair,pair,cgm),
+                             (sum(r['k'] for r in rows),sum(r['harm'] for r in rows)))
+            self.assertEqual(rows[0]['source_key'], (1,2))
+            self.assertEqual(rows[0]['t'], pair[1].t)
+            observed = recurrence_observations(pair,cgm,lever='correction_stacking')
+            self.assertTrue(observed[0]['measured'])
+            self.assertEqual(observed[0]['harm_measured'], bool(cgm))
+        separated = [pair[0], correction(15,18,0,seq_num=2)]
+        row = recurrence_observations(separated,[],lever='correction_stacking')[0]
+        self.assertEqual((row['k'],row['harm']), (0,0))
+        self.assertTrue(row['harm_measured'])

@@ -1298,7 +1298,10 @@ class ExactPeriodObservationsTest(unittest.TestCase):
         cgm = _cgm([120] * 24 + [60] * 6, start=start - timedelta(minutes=60))
         result = behavior_observations(bolus, cgm, [], lever="correction_stacking",
                                        start=start, end=start + timedelta(minutes=45), isf=40)
-        self.assertEqual(result["rows"], [{"t":start, "n":1, "k":1, "harm":0}])
+        self.assertEqual([{k: r[k] for k in ("t", "n", "k", "harm")} for r in result["rows"]],
+                         [{"t":start, "n":1, "k":1, "harm":0}])
+        self.assertTrue(result["rows"][0]["measured"])
+        self.assertFalse(result["rows"][0]["harm_measured"])
         self.assertIsNone(result["reason"])
 
     def test_meal_measurements_share_legacy_arc_and_keep_separate_support(self):
@@ -1373,3 +1376,17 @@ class ComparisonMeasurementTest(unittest.TestCase):
                 self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
                 self.assertEqual(sum(row["k"] for row in observed["rows"]), 0)
                 self.assertEqual(observed["reason"], reason)
+
+    def test_partial_override_measurement_retains_original_population(self):
+        from dataclasses import replace
+        from tests.test_classifier_user_override import override_correction
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start=datetime(2026,6,1,12)
+        positive=override_correction(start,requested=5)
+        missing=replace(positive,t=start+timedelta(hours=1),food_insulin=None)
+        result=behavior_observations([positive,missing],[],[],lever='user_override',
+                                    start=start,end=start+timedelta(days=1),isf=40)
+        self.assertEqual(sum(r['n'] for r in result['rows']),2)
+        self.assertEqual(sum(r['k'] for r in result['rows']),1)
+        self.assertEqual(sum(r['measured'] for r in result['rows']),1)
+        self.assertEqual(result['reason'],'missing_override_provenance')

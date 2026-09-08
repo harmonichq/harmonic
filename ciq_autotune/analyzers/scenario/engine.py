@@ -159,6 +159,13 @@ def attributed_occurrences(
     Context-only opportunities remain available to classification. Consumers apply
     their half-open periods to ``anchor_t``, then deduplicate recurrence ids.
     """
+    groups, families = _recurrence_context(bolus_events, cgm_readings, basal_events,
+                                           isf, scenario_config, low_answers)
+    return _attributed_recurrences(bolus_events, cgm_readings, basal_events, isf,
+                                  scenario_config, low_answers, groups, families)
+
+
+def _recurrence_context(bolus_events, cgm_readings, basal_events, isf, scenario_config, low_answers):
     anchors = collect_anchors(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
     )
@@ -178,6 +185,11 @@ def attributed_occurrences(
     families = opportunities.build_opportunities(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
     )
+    return ep_anchor_groups, families
+
+
+def _attributed_recurrences(bolus_events, cgm_readings, basal_events, isf,
+                            scenario_config, low_answers, ep_anchor_groups, families):
     rows = []
     for index, ep_anchors in enumerate(ep_anchor_groups):
         start = ep_anchors.start
@@ -910,3 +922,142 @@ def _effective_isf(
         settings.active_schedule(snaps, "isf"),
     )
     return settings.effective_isf(isf_rows, snaps)
+
+
+def observation_span_readable(cgm, start, end, *, scenario_config=ScenarioConfig()):
+    """ADR 387 union of finite CGM nearest-valid intervals; no interpolation."""
+    import math
+    if end <= start:
+        return True
+    reach = start
+    stale = timedelta(minutes=scenario_config.cgm_max_stale_min)
+    for reading in sorted(cgm, key=lambda r: r.t):
+        if reading.bg is None or not math.isfinite(reading.bg):
+            continue
+        left, right = reading.t - stale, reading.t + stale
+        if right < reach:
+            continue
+        if left > reach:
+            return False
+        reach = max(reach, right)
+        if reach >= end:
+            return True
+    return False
+
+
+def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
+                            scenario_config=ScenarioConfig(), low_answers=(), harm_cutoff=None):
+    """Policy-owned recurrence facts and independent behavior/harm availability.
+
+    Classify with full context before selecting periods. The optional harm cutoff
+    limits measured outcomes, never the preceding behavior classification context.
+    """
+    from ..classifiers.correction_stacking import correction_stack_observations
+    from ..classifiers.user_override import override_observations
+
+    if lever in ("user_override", "correction_stacking"):
+        observed_cgm = [r for r in cgm if harm_cutoff is None or r.t < harm_cutoff]
+        if lever == "user_override":
+            facts = override_observations(bolus, cgm, basal, scenario_config=scenario_config)
+            harms = override_observations(bolus, observed_cgm, basal, scenario_config=scenario_config)
+        else:
+            facts = correction_stack_observations(bolus, bolus, cgm, basal, scenario_config=scenario_config)
+            harms = correction_stack_observations(bolus, bolus, observed_cgm, basal, scenario_config=scenario_config)
+        rows = []
+        for fact, harm in zip(facts, harms):
+            measured = fact["reason"] != "missing_override_provenance"
+            harm_measured = measured and (bool(harm["harm"]) or harm["harm_excluded"] or
+                ((harm_cutoff is None or fact["harm_interval"][1] <= harm_cutoff) and
+                 observation_span_readable(observed_cgm, *fact["harm_interval"], scenario_config=scenario_config)))
+            rows.append({**fact, "recurrence_id": str(fact["source_key"]), "anchor_t": fact["t"],
+                         "n": 1, "harm": harm["harm"], "measured": measured,
+                         "measurement_reason": None if measured else fact["reason"],
+                         "harm_measured": harm_measured,
+                         "harm_measurement_reason": None if harm_measured else "unreadable_harm_interval"})
+        return tuple(rows)
+
+    lv = Lever(lever)
+    policy = policy_for(lv)
+    groups, families = _recurrence_context(bolus, cgm, basal, isf, scenario_config, low_answers)
+    owned = policy.recurrence_population(families, bolus, scenario_config=scenario_config)
+    rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
+             "anchor_t": item.t if policy.recurrence_family is None else item.anchor_t,
+             "recurrence_id": policy.occurrence_id(item) if policy.recurrence_family is None else str(item.source_key),
+             "n": 1, "k": 0, "harm": 0, "measured": True,
+             "harm_measured": True, "measurement_reason": None, "harm_measurement_reason": None}
+            for item in owned]
+    # A recurrence record does not by itself establish that the classifier
+    # could measure it. Preserve the population, but do not turn its silence
+    # into a clean rate when the existing verdict says it could not judge.
+    from ..classifiers import (
+        classify_carb_undercount, classify_late_bolus, classify_missed_meal,
+    )
+    from ..classifiers.evidence import SilenceReason
+    from .meal_suspend import classify_meal_owned_suspend
+    from .attribute import match_low_answer, over_treated_rebound_judgment
+
+    for item, row in zip(owned, rows):
+        verdict = None
+        if lv is Lever.LATE_BOLUS:
+            verdict = classify_late_bolus(
+                item.members[0], cgm, basal, bolus, scenario_config=scenario_config,
+            )
+        elif lv is Lever.CARB_UNDERCOUNT:
+            verdict = classify_carb_undercount(
+                item.members[0], cgm, basal, bolus, isf=isf,
+                scenario_config=scenario_config,
+            )
+        elif lv is Lever.MEAL_OVER_DELIVERY:
+            verdict = classify_meal_owned_suspend(
+                item.members[0], bolus, cgm, basal, scenario_config=scenario_config,
+            )
+        elif lv is Lever.MISSED_MEAL:
+            verdict = classify_missed_meal(
+                item.reach_start, cgm, bolus, basal, scenario_config=scenario_config,
+            )
+        elif lv is Lever.OVER_TREATED_LOW:
+            answer = match_low_answer(low_answers, item.anchor_t)
+            if answer is None or answer.answer != "no":
+                verdict = over_treated_rebound_judgment(
+                    cgm, item.anchor_t, item.anchor_bg, bolus,
+                    scenario_config=scenario_config,
+                ).verdict
+        if verdict is not None:
+            row["measured"] = verdict.silence_reason is not SilenceReason.INSUFFICIENT_DATA
+
+    occurrences = [r for r in _attributed_recurrences(
+        bolus, cgm, basal, isf, scenario_config, low_answers, groups, families,
+    ) if r.lever is lv]
+    seen = set()
+    association_reason = None
+    for occurrence in occurrences:
+        if occurrence.unavailable_reason:
+            association_reason = occurrence.unavailable_reason
+            continue
+        if occurrence.recurrence_id in seen:
+            continue
+        seen.add(occurrence.recurrence_id)
+        match = next((r for r in rows if r["t"] == occurrence.anchor_t and not r["k"]), None)
+        if match is None:
+            association_reason = "attribution_exceeds_owned_population"
+            continue
+        match["k"] = 1
+        match["measured"] = True
+    for item, row in zip(owned, rows):
+        if lv is Lever.MEAL_BOLUS_SHORT and not row["k"]:
+            end = item.t + timedelta(minutes=scenario_config.meal_bolus_short_digestion_lookback_min)
+            end = min([end] + [m.t for m in owned if m.t > item.t])
+            candidates = [a for group in groups for a in group.anchors
+                          if a.kind is AnchorKind.HIGH and item.t < a.reach_start <= end]
+            row["measured"] = not candidates and observation_span_readable(
+                cgm, item.t, end, scenario_config=scenario_config,
+            )
+            if candidates:
+                row["measurement_reason"] = "candidate_high_without_closed_attribution"
+        if not row["measured"] and row["measurement_reason"] is None:
+            row["measurement_reason"] = "insufficient_measurement"
+    if association_reason:
+        for row in rows:
+            row["measured"] = False
+            row["measurement_reason"] = association_reason
+    return tuple(rows)

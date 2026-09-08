@@ -1371,106 +1371,15 @@ def meal_measurements(meals, cgm, *, ctx_meals=None):
 
 def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,
                           scenario_config=ScenarioConfig(), low_answers=()):
-    """Own exact-period recurrence observations after full-context attribution.
-
-    Each row retains its pump date for comparison resampling. Stacking's behavior
-    and harm remain separate under their existing producer, including pairs whose
-    first correction precedes the period. No active-watch or Store write occurs.
-    """
-    from .analyzers.scenario import attributed_occurrences
-    from .analyzers.scenario.opportunities import build_opportunities
-
-    if lever == OVERRIDE_LEVER:
-        rows = []
-        for dose in bolus:
-            if start <= dose.t < end:
-                k, harm = count_overrides(
-                    [dose], [r for r in cgm if r.t < end], basal,
-                    scenario_config=scenario_config,
-                )
-                rows.append({"t": dose.t, "n": 1, "k": k, "harm": harm})
-        return {"rows": rows, "denominator": OVERRIDE_EXPOSURE, "reason": None}
-    lv = Lever(lever)
-    policy = policy_for(lv)
-    families = build_opportunities(bolus, cgm, basal, scenario_config=scenario_config)
-    population = policy.recurrence_population(
-        families, bolus, scenario_config=scenario_config,
-    )
-    owned = [item for item in population
-             if start <= (item.t if policy.recurrence_family is None else item.anchor_t) < end]
-    rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
-             "n": 1, "k": 0, "harm": 0} for item in owned]
-    # A recurrence record does not by itself establish that the classifier
-    # could measure it. Preserve the population, but do not turn its silence
-    # into a clean rate when the existing verdict says it could not judge.
-    from .analyzers.classifiers import (
-        classify_carb_undercount, classify_late_bolus, classify_missed_meal,
-    )
-    from .analyzers.classifiers.evidence import SilenceReason
-    from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
-    from .analyzers.scenario.attribute import match_low_answer, over_treated_rebound_judgment
-
-    for item, row in zip(owned, rows):
-        verdict = None
-        if lv is Lever.LATE_BOLUS:
-            verdict = classify_late_bolus(
-                item.members[0], cgm, basal, bolus, scenario_config=scenario_config,
-            )
-        elif lv is Lever.CARB_UNDERCOUNT:
-            verdict = classify_carb_undercount(
-                item.members[0], cgm, basal, bolus, isf=isf,
-                scenario_config=scenario_config,
-            )
-        elif lv is Lever.MEAL_OVER_DELIVERY:
-            verdict = classify_meal_owned_suspend(
-                item.members[0], bolus, cgm, basal, scenario_config=scenario_config,
-            )
-        elif lv is Lever.MISSED_MEAL:
-            verdict = classify_missed_meal(
-                item.reach_start, cgm, bolus, basal, scenario_config=scenario_config,
-            )
-        elif lv is Lever.OVER_TREATED_LOW:
-            answer = match_low_answer(low_answers, item.anchor_t)
-            if answer is None or answer.answer != "no":
-                verdict = over_treated_rebound_judgment(
-                    cgm, item.anchor_t, item.anchor_bg, bolus,
-                    scenario_config=scenario_config,
-                ).verdict
-        if verdict is not None:
-            row["measured"] = verdict.silence_reason is not SilenceReason.INSUFFICIENT_DATA
-    if lv is Lever.CORRECTION_STACKING:
-        for item, row in zip(owned, rows):
-            row["k"], _ = count_correction_stacks(
-                item.members, bolus, cgm, basal, scenario_config=scenario_config,
-            )
-            _, row["harm"] = count_correction_stacks(
-                item.members, bolus, [r for r in cgm if r.t < end], basal,
-                scenario_config=scenario_config,
-            )
-    else:
-        occurrences = [row for row in attributed_occurrences(
-            bolus, cgm, basal, isf=isf, scenario_config=scenario_config,
-            low_answers=low_answers,
-        ) if row.lever is lv]
-        if any(row.unavailable_reason for row in occurrences):
-            return {"rows": rows, "denominator": policy.recurrence_noun,
-                    "reason": "unassociated_recurrence_anchor"}
-        seen = set()
-        for occurrence in occurrences:
-            if not start <= occurrence.anchor_t < end:
-                continue
-            if occurrence.recurrence_id in seen:
-                continue
-            seen.add(occurrence.recurrence_id)
-            # Attribution and denominator use the provider's same owned time.
-            match = next((row for row in rows if row["t"] == occurrence.anchor_t
-                          and row["k"] == 0), None)
-            if match is None:
-                return {"rows": rows, "denominator": policy.recurrence_noun,
-                        "reason": "attribution_exceeds_owned_population"}
-            match["k"] = 1
-    return {"rows": rows, "denominator": policy.recurrence_noun,
-            "reason": "insufficient_measurement" if any(not row.get("measured", True) for row in rows) else None}
+    """Select exact owned recurrence rows after the provider's contextual read."""
+    from .analyzers.scenario import recurrence_observations
+    rows = [row for row in recurrence_observations(
+        bolus, cgm, basal, lever=lever, isf=isf, scenario_config=scenario_config,
+        low_answers=low_answers, harm_cutoff=end,
+    ) if start <= row["anchor_t"] < end]
+    return {"rows": rows,
+            "denominator": OVERRIDE_EXPOSURE if lever == OVERRIDE_LEVER else policy_for(lever).recurrence_noun,
+            "reason": next((row["measurement_reason"] for row in rows if not row["measured"]), None)}
 
 
 def glycemic_rate_counts(readings, attribute):

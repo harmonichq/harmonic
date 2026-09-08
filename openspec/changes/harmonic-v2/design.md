@@ -1596,3 +1596,88 @@ work does not do. Watch fourteen-day maturity and twenty-eight-day expiry remain
 accepted lifecycle metadata and are not reopened. This is a formal design
 contract; it is not fidelity evidence, built-app acceptance or release approval,
 and it authorizes no production edit on its own.
+
+## ADR 389 — Freeze the desktop behavior contract and admit four bounded production chunks
+
+The v2 desktop now has both halves of its build contract. The 34-term visual lock
+was already frozen; its executable half is now
+`mockups/harmonic-v2-desktop.behavior.md`, `★ FROZEN`, with the fail-closed
+replay `frontend/harmonic-v2-desktop-behavior.replay.mjs`. Task 2.4 is complete,
+in triage, before any production implementation — which is the sequencing the
+lock itself demands: the ledger and replay are frozen **before** a production UI
+edit, not discovered during one.
+
+**What the freeze rests on.** The replay ran against the unchanged locked
+prototype at both accepted desktop sizes: 111 passed, 0 failed, 18 deferred, 129
+selected, one Chromium launch each. Every mock-applicable story then carried one
+feature-specific perturbation and was required to fail for its own reason — 111
+proved, 0 not proved. All 17 retirements keep their externally sourced sanctions
+and their premises, and each asserts absence and premise while printing its
+sanction. Twenty-five capture ids were recorded at both sizes. The raw command
+output, the captures and the seven retained fixture hashes are committed under
+`mockups/sweep/harmonic-v2-desktop/`. No sanction originates in the ledger, and
+none was added.
+
+**Eighteen stories have never passed, and cannot here.** `S53` (HV2-25), `S73b`
+and `S80b` (HV2-32) and `S86`–`S100` name behavior this prototype has no
+exercisable path for: durable persistence, packaged delivery, a failed durable
+Trial finish, and two caller-supplied focus targets that are not focusable. Each
+records the mechanism that was observed rather than assumed. They are obligations
+on the build. The app opener was exercised against the absent `/v2/` and exits
+nonzero having run zero stories, so an unbuilt surface can never satisfy them
+silently. No locked term was lowered to accommodate them.
+
+**Why four chunks, and where the seams are.** The slicing rubric fires on
+multiple deliverable artifacts, a live run inside the ticket, split-path evidence,
+lockstep copies of one fact, and a lifecycle-gated surface. Both loops stay in one
+child because ADR 348 settled that they share one desk, one navigation contract,
+one active-change seat and one history surface. Within that child the work splits
+four ways, each owning one coherent capability:
+
+1. **The desk, its shared contracts, and delivery.** The second Vite root and its
+   `base: '/v2/'` build, the Python `/v2/` and `/v2/assets/` routes and the
+   closed non-API route set, packaging and public-tree inputs, the persistent
+   chrome and all four destinations **including Day**, **every utility**, the
+   route and return state, and the keyboard, focus and Escape behavior. It
+   extends the existing `frontend/data.js` client and `frontend/tab-routing.js`
+   rather than adding a second of either.
+2. **Selected priority, its evidence, and Plan.** Overview's leading concern,
+   durable Set aside and Restore through their existing endpoints, Explore's
+   roster and comparison, the three setting evidence families and all 48 basal
+   slots, and Plan's complete lifecycle over the existing `frontend/plan.js`.
+3. **Trial and Focus follow-up and history.** Both arms, including the durable
+   conclusion, Revert-to-Plan, separate adherence and outcomes, preemption, and
+   the original / ending / reassessment history.
+4. **Generated and live delivery evidence, and the close.** The fewest existing
+   synthetic generators extended to reach the twelve scenario obligations with
+   provenance and drift gates, the frozen ledger replayed against the built app
+   at both sizes including the eighteen app-only stories, one fidelity row per
+   `HV2-*` term with paired renders, the HV2-32 shared repair with its coupled
+   Event S8 expectation and inherited ledger amendment, the packaged-runtime and
+   route proofs, the bounded archival close, and the Fable 5.1 polish pass over
+   the built surfaces.
+
+**The chunks are serial, and their file sets are deliberately not disjoint.**
+Chunk 1 creates the shell and the shared modules; chunks 2 and 3 add components
+and register them through chunk 1's published interfaces, which means they edit
+files chunk 1 created. Composition is by those interfaces —
+`registerDestination`/`navigate` for a destination and its contextual Day entry,
+`openUtility` for a utility — named with their consumers in this change's
+`contracts.md`. No registration machinery is invented merely to preserve a
+disjoint-files claim; serial, explicitly owned composition is the honest shape,
+and it is why the order is serial rather than parallel. The seams follow existing
+ownership rather than inventing one: Plan and the shared chart renderers keep
+their behavior, and v1 is not decomposed.
+
+Day and the utilities belong to chunk 1 rather than to a journey, because both
+are desk-level: Day is one of the four destinations with its own chronology and
+navigation, the utilities are persistent chrome, and the return-focus contract
+that binds them is frontend-owned route state. Chunks 2 and 3 supply the subject
+for a contextual entry; they do not re-implement either.
+
+**What this does not decide.** No new threshold, eligibility rule, clinical
+policy, navigation name, fixture set or study. Follow-up readiness stays
+backend-owned and is read from the selected record's retained comparison, never
+from watch maturity. Mobile, root-route cutover and v1 retirement remain the
+later gates of tasks 4.1–4.3. Human acceptance of the complete first usable
+release stays a separate step after the pull request, outside every chunk.

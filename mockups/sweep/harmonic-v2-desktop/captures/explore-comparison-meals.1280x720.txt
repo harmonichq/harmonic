@@ -1,0 +1,67 @@
+MEALS · APR 30 TO MAY 30, 2024
+Late bolus
+6 of 16 meals · Worth a look
+Set aside
+Response comparison
+meals aligned to each event · Completed carb bolus
+WINDOW
+−1 h to +2 h
+Full capture
+Matched
+6 occurrences · selected cohort
+Nearly matched
+3 occurrences · limited support
+Other meal opportunities
+7 occurrences
+Selected trace
+May 25 · observed
+OCCURRENCE
+May 25, 2024 · 12:05
+Matched · 6 of 6
+↑
+↓
+Episode
+Day
+in range
+high
+low
+bolus
+carbs (bolus)
+MODEL STEPS:
+│ observed
+│ inferred
+MEALS
+6 of 16 meals
+Matched
+6
+6 occurrences
+May 6 · 12:05
+episode
+May 7 · 12:05
+episode
+May 14 · 12:05
+episode
+May 15 · 12:05
+episode
+May 24 · 12:05
+episode
+May 25 · 12:05
+episode
+Nearly matched
+3
+3 occurrences · limited support
+Other meal opportunities
+7
+7 occurrences
+MODEL STEPS
+MAY 25, 2024 · 12:05
+12:05
+INFERRED
+glucose was already rising 2.0 mg/dL/min before the bolus, with no recent low or suspend to explain it
+12:20
+OBSERVED
+BG peaked at 180 mg/dL
+22:05
+OBSERVED
+settled at 120 mg/dL
+Open Day

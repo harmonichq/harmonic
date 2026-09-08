@@ -1,0 +1,132 @@
+# harmonic-v2-desktop negative proof — viewport=1280x720 fonts=real
+# 18 app-opener-only stories are OWED, not run: S86, S87, S88, S89, S90, S91, S92, S93, S94, S95, S96, S97, S98, S99, S100, S80b, S73b, S53
+PROVED S1 — Overview is not the sole default destination: []
+PROVED S2 — the topbar moved across destination changes
+PROVED S3 — the journey source rendered no roster rows to drill into
+PROVED S4 — the advisory line drifted: "Advisory only."
+PROVED S5 — at 1280x720 the shell rows are 31/19, not 38/24
+PROVED S6 — the document scrolls at the root: {"v":1680,"h":0}
+PROVED S7 — the reading pane is 262px, not the locked 300px
+PROVED S7b — the empty Changes state did not render its empty frame
+PROVED S8 — a theme control is present; the chooser and its storage are retired
+PROVED S9 — the stage title is 31px, not the locked 1.14rem
+PROVED S10 — crossing the media query left the sheet open
+PROVED S10b — narrow-only sheet chrome is presented at 1280x720: ["gf-sheet-toggle"]
+PROVED S11 — explore moved the footer against Overview
+PROVED S12 — the canvas head grew on hover (15 → 39); it must reserve its space at rest
+PROVED S13 — the reading pane resized with the data shape: [["meals",300],["setting",300],["focus",268],["journey",300]]
+PROVED S14 — Overview duplicated Explore's findings roster
+PROVED S15 — the set-aside acknowledgment offers no visible Restore
+PROVED S16 — locator.click: Timeout 30000ms exceeded.
+PROVED S17 — no control matched [data-action="cancel-aside"] — a story must drive the affordance a reader uses
+PROVED S18 — the quiet state reads "Nothing to do"
+PROVED S19 — the failed read reads "No priority needs action"
+PROVED S20 — no control matched [data-action="retry"] — a story must drive the affordance a reader uses
+PROVED S20b — installing a read failure did not surface the Retry control in the roster
+PROVED S21 — cohort matched lost the comparison key's own mark
+PROVED S22 — pressing cohort matched did not hold it
+PROVED S23 — the stage opened without a held member
+PROVED S24 — no control matched [data-action="next-meal"] — a story must drive the affordance a reader uses
+PROVED S25 — a model step rendered without its served evidence tier: [null,null,null]
+PROVED S26 — the Episode control is disabled while the held member has episode
+PROVED S27 — no control matched [data-window="full"] — a story must drive the affordance a reader uses
+PROVED S28 — the comparison headline host is absent or duplicated
+PROVED S29 — opening a new subject did not focus the pane head (got {"tag":"BODY","id":null,"className":"","text":"Harmonic advisoryOverviewExploreChange
+PROVED S30 — the parent crumb is not the locked word "Findings"
+PROVED S31 — the basal lane exposes 47 slots, not all 48
+PROVED S32 — ArrowRight did not move the held slot (stayed 0)
+PROVED S33 — no control matched [data-basal="previous-night"] — a story must drive the affordance a reader uses
+PROVED S34 — no control matched [data-basal="next-slot"] — a story must drive the affordance a reader uses
+PROVED S35 — selecting a night did not enable the figure segment: [{"figure":"basal","disabled":false,"held":"false"},{"figure":"night","disabled":true,"
+PROVED S36 — no control matched [data-journey="trial-nights"] — a story must drive the affordance a reader uses
+PROVED S37 — the empty Changes state offers no named evidence route: "Go"
+PROVED S37b — no control matched [data-journey="lane"] — a story must drive the affordance a reader uses
+PROVED S38 — no control matched [data-set="unstage"] — a story must drive the affordance a reader uses
+PROVED S39 — the Plan capacity copy is absent or reworded: PLAN · STAGED
+PROVED S40 — a failed draft save offers no Retry
+PROVED S41 — the Decision recorded field did not start unrecorded
+PROVED S42 — no control matched [data-set="rekey"] — a story must drive the affordance a reader uses
+PROVED S43 — selecting a slot did not hold it
+PROVED S44 — the setting journey rendered fewer than two figure controls inside its own stage
+PROVED S45 — the Trial evidence figure did not mount
+PROVED S45b — no control matched [data-action="watch"] — a story must drive the affordance a reader uses
+PROVED S46 — the Trial progress bar is absent
+PROVED S47 — the Before / Trial view control is absent
+PROVED S48 — choosing another available day did not change the read
+PROVED S49 — the evidence table lost its two period columns: Time below range
+PROVED S50 — the Trial legend is neither a paired comparison nor an explicit Before-only figure: "Trial above Before and no Trial readings to compare yet
+PROVED S51 — the finish control is enabled before a conclusion was written
+PROVED S52 — no conclusion form — this story needs a Trial permitted to finish
+PROVED S54 — the saved record lost its "Earlier decision" field
+PROVED S54b — no control matched [data-action="history"] — a story must drive the affordance a reader uses
+PROVED S55 — the Trial nameplate rendered no title
+PROVED S56 — no control matched [data-focus="pin"] — a story must drive the affordance a reader uses
+PROVED S56b — installing a pin failure did not surface its Retry
+PROVED S57 — the Focus stage rendered 1 trend table(s), not the behavior/outcome pair
+PROVED S58 — no control matched [data-focus="dropped"] — a story must drive the affordance a reader uses
+PROVED S59 — narrow-only seat controls are presented at 1280x720: ["seat-progress"]
+PROVED S60 — direct Day entry invented a return target
+PROVED S61 — the contextual Open Day carries no canonical subject
+PROVED S62 — no occurrence is held to return to
+PROVED S63 — a week column has no accessible label: 2024-05-26
+PROVED S64 — the month grid claims to be open before it was opened
+PROVED S65 — both month steppers are disabled on a source that spans a month bound: [{"day":"prev-month","disabled":true},{"day":"next-month","disabled":
+PROVED S66 — every recorded-day stepper is disabled; this story needs more than one recorded day
+PROVED S67 — a log row rendered without its served state word: 2024-05-26 12:05:00
+PROVED S68 — [data-utility="guide"] matched 2 element(s) and every one is hidden; a reader could press none of them
+PROVED S69 — no control matched [data-utility-close] — a story must drive the affordance a reader uses
+PROVED S70 — an empty grams entry can be logged
+PROVED S71 — the failed utility save offers no Retry
+PROVED S72 — an open-question count copy is missing
+PROVED S72b — the amount controls offer no Cancel
+PROVED S73 — the opened article renders no heading for the handler to target
+PROVED S73c — the article's handoff names "explore", not the Day surface it links to
+PROVED S74 — the reveal control did not flip its own pressed state with the field
+PROVED S75 — the token form's submit is not the Save token control: Store
+PROVED S75b — no control matched [data-utility-form="dev"] input — a story must drive the affordance a reader uses
+PROVED S76 — the utility's Open Day carries no origin label to return to
+PROVED S77 — Pump settings is not reachable from Changes
+PROVED S78 — Escape did not close the seated utility first
+PROVED S79 — Escape inside the field dropped the draft; a field must own the key
+PROVED S80 — arriving at a paired destination did not focus its head (got {"tag":"BUTTON","id":null,"className":"","text":"Explore","data":{"destination"
+PROVED S81 — the reading pane lost its scroll while its subject was unchanged
+PROVED S82 — support state "supported" is conveyed without a text label
+PROVED S83 — charts accumulated across re-entry (3 → 9)
+PROVED S84 — no charts were mounted to dispose
+PROVED S85 — prototype control [aria-label="Prototype scenario"] appears outside .mockbar, in a product frame
+RETIRED R1 — Connor Griffin · 2026-09-01 · "light theme retired by operator decision."
+PROVED R1 — R1 replayed-fail: a theme control is present again
+RETIRED R2 — Connor Griffin · 2026-08-18 · "the dead occurrenceModal hash machinery goes with them."
+PROVED R2 — R2 replayed-fail: the occurrence modal is present again
+RETIRED R3 — Connor Griffin · 2026-08-25 · "it just keeps my selector. The selection is a slicing method that lets me then dig into findings. Those findings will show up as dots on the chart anyway that I can then trace into."
+PROVED R3 — R3 premise failed: the drilled findings are no longer reachable — re-settle, not a fail
+RETIRED R4 — Connor Griffin · 2026-08-19 · "Occurrence selection should not change the window. The window is a filter view in order to get to selectable occurrences. Having selectable occurrences then retrace the window would be tautological."
+PROVED R4 — R4 premise failed: the window is no longer independently settable — re-settle, not a fail
+RETIRED R5 — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
+PROVED R5 — R5 needs a roster of more than one night to step
+RETIRED R6 — Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
+PROVED R6 — R6 premise failed: the segmented control has no Tab stops — re-settle, not a fail
+RETIRED R7 — Connor Griffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."
+PROVED R7 — R7 premise failed: occurrences are no longer reachable from the findings panel — re-settle, not a fail
+RETIRED R8 — Connor Griffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."
+PROVED R8 — R8 premise failed: meal evidence is no longer available through the comparison — re-settle, not a fail
+RETIRED R9 — Connor Griffin · 2026-08-19 · "I don't find the content of the drill-down view particularly useful. So, I think we could just simply have the if there's a current specific detail that needs to show, I think it should just mutate the standing screen."
+PROVED R9 — R9 replayed-fail: a separate drill level or nested subgroup is back
+RETIRED R10 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PROVED R10 — R10 replayed-fail: the standalone I:C lane is back
+RETIRED R11 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PROVED R11 — R11 replayed-fail: redundant evidence-row chevrons are back
+RETIRED R12 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PROVED R12 — R12 replayed-fail: the standalone lens inspector is back
+RETIRED R13 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+PROVED R13 — R13 replayed-fail: the global Event-charts filter or By event control is back
+RETIRED R14 — ADR 215 amendment · 2026-08-26 · "A pin orders the dock; it is not membership of a position."
+PROVED R14 — R14 replayed-fail: fixed dock seat mechanics are back
+RETIRED R15 — ADR 215 amendment · 2026-08-26 · "The dock is the whole ordered set, spotlight included."
+PROVED R15 — R15 replayed-fail: the old mode/layout/duplicate-tile mechanics are back
+RETIRED R16 — Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."
+PROVED R16 — R16 replayed-fail: the duplicate provenance word chip is back
+RETIRED R17 — ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)
+PROVED R17 — R17 replayed-fail: the session-only Trial Keep action is back
+
+# proved 111 · not proved 0 · selected 111 · owed 18

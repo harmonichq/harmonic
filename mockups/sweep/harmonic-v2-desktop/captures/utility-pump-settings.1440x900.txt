@@ -1,0 +1,17 @@
+CHANGES
+Pump settings
+No change underway
+
+Basal 03:00 to 04:00 · lower · Next in line. One cautious step down is supported at this time. Delivered below the programmed rate across 12 steady nights.
+
+Inspect nights
+Stage change
+PUMP SETTINGS
+read Jun 12 · 12:00
+Close
+DETECTED ON THE PUMP
+READ JUN 12
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+
+QA synthetic profile · detected schedule, not the Plan. The proposed schedule is in Changes.

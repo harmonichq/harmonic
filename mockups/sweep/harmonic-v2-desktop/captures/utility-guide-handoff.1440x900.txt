@@ -1,0 +1,60 @@
+DAY · READ JUN 1, 2024 · 23:59 · VIEWED JUN 2, 2024 · 12:00
+Sat, Jun 1, 2024
+96% in range · 0 lows · 1 high · 26 readings · 120–240 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+32 recorded days · May 1, 2024 to Jun 1, 2024
+Week of May 26, 2024
+Month ▾
+SUN
+26
+▽1 99%
+MON
+27
+▽1 100%
+TUE
+28
+▽1 △1 91%
+WED
+29
+✓ 100%
+THU
+30
+✓ 100%
+FRI
+31
+✓ 100%
+SAT
+1
+✓ 96%
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+GUIDE
+Reading the app
+Close
+← All articles
+Reading a Day
+
+Written for the v1 tabs: Diagnose reads as Explore here, Plan as Changes.
+
+The Day tab is the forensic replay: I crashed on Tuesday — what happened? It pairs one day's glucose chart with a chronological Episode Log.
+
+THE CHART
+
+The sticky glucose curve runs the width of the day, banded by target range. Boluses, carbs, and basal changes are marked on the timeline — every color is paired with a shape or label so the marks read without relying on color alone.
+
+THE EPISODE LOG
+
+Down the right, each episode the engine assembled is a card in time order: an anchor (a meal bolus, a low, an unexplained rise), the window around it, and the one lever attributed to it — its earliest actionable driver. Behaviors that also fired are folded in as consequences of that lever, never stacked as separate blame.
+
+Click an episode to highlight its window on the chart above. That handoff — log row ↔ chart region — is how you read why a moment went the way it did.
+
+Open your Day surface → (Day here) to replay a specific date.

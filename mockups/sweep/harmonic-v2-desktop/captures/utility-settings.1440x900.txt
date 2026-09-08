@@ -1,0 +1,51 @@
+BASAL · MAY 3 TO JUN 1, 2024
+Basal 03:00 to 04:00 · lower
+28 nights of steady data · 30 d basal run · Next in line
+Set aside
+Stage change
+DELIVERED VS PROGRAMMED
+nights at or above each rate · one step per night
+0 excluded
+03:00–03:30
+03:30–04:00
+NIGHT
+May 3, 2024 · 03:00
+Ran below · 1 of 30
+↑
+↓
+Night
+Day
+in range
+high
+low
+bolus
+carbs (bolus)
+┆ 03:00–03:30
+APP SETTINGS
+this page
+Close
+
+Credentials saved in this page
+
+API ACCESS
+Bearer token
+Show
+
+No token saved.
+
+Save token
+TANDEM CREDENTIALS
+Email
+Password
+Show
+Region
+US
+EU
+
+Credentials saved in this page · EU region · Jun 2, 2024 · 12:00
+
+Save credentials
+DEVELOPER MODE
+Show the engine's raw internals
+
+Changes disclosure only, never the analysis.

@@ -1,0 +1,8 @@
+# harmonic-v2-desktop captures — fonts=real out=/private/tmp/harmonic-348-completion/389-preflight/capture-7-changed
+# NOT fidelity evidence: /v2/ does not exist, so nothing is paired against.
+CAPTURED overview-journey.1280x720
+CAPTURED overview-journey.1440x900
+CAPTURED chrome-invariance-day.1280x720
+CAPTURED chrome-invariance-day.1440x900
+
+# captured 4 · failed 0 · ids 2 × 2 viewports

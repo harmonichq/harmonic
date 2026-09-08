@@ -1,0 +1,70 @@
+Harmonic
+ADVISORY
+Overview
+Explore
+Changes
+Day
+SCOPE
+30 d
+＋
+Log carbs
+Glucose first · round 4
+Source
+Late bolus · May meals case
+Basal 03:00 · June setting case
+Over-treated low · May habit case
+Shared May 2024 history · complete workflow
+Clock
+Jun 2, 2024 · 12:00 · deciding
+Jun 3, 2024 · 00:00 · pump captured
+Jun 8 · Trial, 6 of 14 days
+Jun 18 · Trial, ready to judge
+Jul 2 · follow-up, 30 days later
+Jul 4 · correction factor changed on the pump
+Next save fails
+Next read fails
+Next utility save fails
+
+Manufactured evidence.
+
+Review notes
+BASAL · MAY 3 TO JUN 1, 2024
+Basal 03:00 to 04:00 · lower
+28 nights of steady data · 30 d basal run · Next in line
+Set aside
+Stage change
+DELIVERED VS PROGRAMMED
+nights at or above each rate · one step per night
+0 excluded
+03:00–03:30
+03:30–04:00
+NIGHT
+May 3, 2024 · 03:00
+Ran below · 1 of 30
+↑
+↓
+Night
+Day
+in range
+high
+low
+bolus
+carbs (bolus)
+┆ 03:00–03:30
+ACTION
+Next in line
+BASAL · 03:00–03:30
+1 OF 2 IN 03:00 TO 04:00
+0.6 → 0.48 U/hSupported · lower
+
+One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.
+
+Estimate 0.48 U/h, 0.48 to 0.48 · 30 nights · 30 in the asserted direction
+
+Inspect nights
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+3
+Guide
+Settings
+Glossary

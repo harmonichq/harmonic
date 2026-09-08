@@ -787,3 +787,212 @@ This extends the existing executable parity check without a committed capture.
 
 The coordinator owns only parent task checkbox bookkeeping and
 collection/review/PR delivery, not missing integration code.
+
+## #389 desktop build contracts
+
+The four production chunks of the v2 desktop, their owned source, and the exact
+interfaces they publish to each other. **Every chunk acquires this section
+directly from the pinned commit; no chunk depends on another chunk's prose.**
+
+Two kinds of statement appear below and are marked as such:
+
+* **Fact** — verified in the current tree at base
+  `5950bd378e15dfa968125d23e1924bec30b54860`.
+* **Proposed** — an interface this ticket creates. Its name and shape are fixed
+  here so consumers can be written against it, but nothing in the tree has it
+  yet.
+
+The chunks are **serial**, and their file sets are **not disjoint**. Chunk 1
+creates the shell and the shared modules; chunks 2 and 3 add components and
+register them through the interfaces below, which means they edit files chunk 1
+created. That is deliberate, declared here, and is why the order is serial rather
+than parallel. No registration machinery is invented to manufacture a
+disjoint-files claim.
+
+### Chunk 1 — the desk, its shared contracts, and delivery
+
+Owns the shell, the persistent chrome, all four destinations **including Day**,
+**all utilities**, the route and return state, the keyboard/focus/Escape
+behavior, the authenticated client, and the delivery and packaging inputs.
+
+**Fact — existing modules this chunk extends, never replaces.**
+
+| Module | Existing public interface | This chunk's use |
+|---|---|---|
+| `frontend/data.js` | `makeDeps({fetch})` factory plus bound `fetch*`/`save*` exports; Bearer token read from `localStorage['ciq_token']` | add the guidance, preference, plan, focus and trial reads and writes as further exports in the same idiom. This is the ONE authenticated client; a second client is a duplicate implementation and a blocking finding |
+| `frontend/tab-routing.js` | `TABS`, `resolveTab`, `parseRoute`, `serializeRoute`, `writeRoute`, `subscribeRoute` | the ONE routing owner. v2 route state extends these; no second router |
+| `ciq_autotune/api.py` | `SPA_PAGES`, the `/` and per-page routes, the prefix-scoped `/assets` mount, and the cache-control middleware keyed on that page list | add the `/v2/` page route and the `/v2/assets/` mount, keeping the non-API route set closed |
+| `frontend/built-shell.js` | `createBuiltShell({dist})` returning `{serve(pathname)}` over `PAGE_PATHS` and `/assets/` | extend to the v2 output so the disk-serving harness and the Python policy agree |
+
+**Proposed — interfaces chunks 2 and 3 consume.** Names are fixed here; the
+shapes are the minimum needed and no larger.
+
+* `frontend-v2/routes.js` — `registerDestination({id, title, mount})` and
+  `navigate(id, context)`. `context` carries `{date, subject, occurrence,
+  window, lever, from, focus}` for a contextual entry and is empty for a direct
+  one. Consumers: chunks 2 and 3 register their destination content and call
+  `navigate('day', context)` for every contextual Day entry.
+* `frontend-v2/day.js` — `openDay(context)` and `dayReturnTarget()`. Chunk 1
+  owns the Day desk, its chronology, week ribbon, month, statistics and Episode
+  Log, and owns restoring the caller's exact focus target on return. Chunks 2
+  and 3 supply `context` and never re-implement Day.
+* `frontend-v2/utilities.js` — `openUtility(kind, launcher)` and
+  `seatUtility(destination)`, `kind` being one of the served utilities. Chunk 1
+  owns every utility pane and the Escape/launcher-focus behavior. Chunk 2 places
+  the Pump settings entry point inside Changes and calls `openUtility('pump', …)`.
+* `frontend-v2/client.js` — a thin re-export of the `frontend/data.js` functions
+  this surface uses, so a component imports one module and the client stays
+  single-sourced. It adds no fetching of its own.
+
+**Owns these paths.** `frontend-v2/` shell, routes, day, utilities and client;
+`vite.config.mjs` and the second v2 build config; `package.json`;
+`package-lock.json`; `tsconfig.json`; `ciq_autotune/api.py`;
+`frontend/built-shell.js` and its test; `frontend/data.js` and its test;
+`frontend/tab-routing.js` and its test; `tests/test_frontend_asset_routes.py`;
+`tests/test_deploy_assets.py`; `Dockerfile`; `scripts/public_allowlist.txt`;
+`AGENTS.md`.
+
+### Chunk 2 — the selected concern, its evidence, and Plan
+
+Owns Overview's guidance and set-aside, Explore's roster, comparison cohorts,
+case file and all 48 basal slots, the three setting evidence families, and the
+complete Plan lifecycle.
+
+**Fact — existing modules this chunk reuses, never re-implements.**
+
+| Module | Existing public interface | This chunk's use |
+|---|---|---|
+| `frontend/plan.js` | `buildDeliverable`, `collapseDeliverable`, `reconcileDeliverable`, `deliverableSegmentCount`, `effectivePlanItems`, `detectOnPump`, `formatStartMin`, `segmentAt`, `PLAN_PARAMS`, `PLAN_FAMILIES`, `PARAM_PRECISION`, `PARAM_LABEL` | the Plan owner. Schedule construction, collapsing, reconciliation, rounding and the single-family rule come from here |
+| `frontend/diagnose-event-comparison.js` | `renderEventSurface(surface, caseFile, hosts)`, `eventComparisonChartOption`, `eventComparisonGlucoseValues`, `glucoseRange`, `caseFileSelectionCohort` | the event-comparison mount, its cohorts, support labels and cursor |
+| `frontend/diagnose-evidence-charts.js` | `DIAGNOSE_EVIDENCE_CHARTS` | the evidence chart registry |
+| `frontend/diagnose-findings-queue.js` | `TIER` | the ranking vocabulary, rendered verbatim |
+| `frontend/diagnose-workstation-chart.js` | `GRID` | chart geometry |
+| `frontend/day-hero-chart.js` | `buildHeroOption`, `HERO` | the day figure beside an occurrence |
+| `frontend/scenario-chart.js` | `scnBuildEpisodeOption` | the episode figure |
+
+**Fact — `deliverableSegmentCount` is the NUMERATOR only.** No capacity constant
+is exported today. HV2-21 forbids a memorized capacity, so if a denominator is
+needed it is added to `frontend/plan.js` as a shared representation used by v1
+and v2 alike — never a private v2 fork.
+
+**Proposed.** `frontend-v2/overview.js`, `frontend-v2/explore.js` and
+`frontend-v2/plan-view.js`, each exporting `mount(host, deps)` and registered
+through `registerDestination` from chunk 1. They call `navigate('day', context)`
+for a contextual Day entry and `openUtility('pump', …)` for Pump settings; they
+implement neither.
+
+**Owns these paths.** `frontend-v2/overview.js`, `frontend-v2/explore.js`,
+`frontend-v2/plan-view.js` and their tests; `frontend/plan.js` and its test.
+Adds its own client functions to `frontend/data.js` in that module's idiom.
+
+### Chunk 3 — follow-up, endings and history
+
+Owns the setting Trial and the behavioral Focus, their readiness rendering,
+endings, preemption and the history record.
+
+**Fact — the backend interfaces this chunk reads, corrected and pinned.**
+
+* Follow-up routes: `GET /api/verify/trials`,
+  `POST /api/verify/trials/{trial_id}/finish`, `GET`/`POST /api/focus`,
+  `POST /api/focus/{focus_id}/resolve`.
+* Readiness is TWO fields. `selected.readiness` is watch-maturity copy —
+  lifecycle metadata, never an evidence criterion. Type-specific evidence
+  readiness lives only under
+  `selected.reassessment.comparison.readiness.{before,after}` at
+  `assessment=retained`.
+* Pre-ready values need a SECOND request: an active Trial or Focus has no
+  ending, so `selected.original.assessment` is
+  `{state:"unavailable", reason:"not_recorded"}`, and `assessment=retained` is
+  rejected with 422 unless `selected` is supplied.
+* The arms differ. Setting arms carry `{unit, required, observed,
+  contributing_dates, criterion_met, reason, available, elapsed_days}`. The Focus
+  override OMITS `available` and `required` and carries `{unit, observed,
+  measured, unmeasured, elapsed_days, required_elapsed_days: 14, criterion_met,
+  contributing_dates, reason}`.
+* `comparison.assessment.state` is only `concerning`, `unclear` or `context`;
+  favourable exists per outcome row only.
+* `admission.state: unavailable` has exactly one reason,
+  `reconciliation_required`. An active Trial or Focus keeps `state: available`
+  and moves that fact into `reason`.
+* `pinnable` is the lever universe, not permission; permission is
+  `admission.focus_pin.available` only. `availability.reason` is an open
+  provider-owned field, rendered verbatim.
+* Trial finish requires durable fields; Focus resolve keeps a legacy bodyless
+  branch, so a v2 client sending durable fields gets idempotent retries on a
+  closed Focus. That is legacy compatibility, not an asymmetry to design around.
+* Watch 14-day maturity and 28-day expiry are retained lifecycle metadata, not a
+  comparison cutoff.
+
+**Fact — existing chart modules this chunk reuses.**
+`frontend/verify-workstation-chart.js` exports `heroOption`, which draws the
+Before → Trial comparison; the Focus progress figure uses the same module.
+
+**Proposed.** `frontend-v2/follow-up.js` and `frontend-v2/history.js`, each
+exporting `mount(host, deps)` and registered through `registerDestination`. They
+call `navigate('day', context)` for a supporting night's Day entry.
+
+**Owns these paths.** `frontend-v2/follow-up.js`, `frontend-v2/history.js` and
+their tests. Adds its own client functions to `frontend/data.js` in that
+module's idiom.
+
+### Chunk 4 — generated evidence, the shared repair, and the close
+
+Owns the synthetic generators this surface needs, the shared-renderer repair, the
+built-app proof, the packaging proof, and the atomic close of the port.
+
+**Fact — the generators that already exist and are extended, not replaced.**
+`mockups/harmonic-v2.exploration/generate.py` produces the six v2 synthetic
+inputs and already has a `--check` drift step wired in CI;
+`scripts/gen_qa_e2e_db.py` produces the offline no-fetch database and has its own
+`--check`. These are the two expected generator paths for this surface. A new
+generator is added only where an existing one genuinely cannot reach a scenario,
+and never one per scenario: the lock's twelve fixture obligations are scenario
+obligations.
+
+**Fact — the shared repair and its coupled expectations.** HV2-32's
+fractional-hour speech comes from the private `axisLabel` in
+`frontend/diagnose-event-comparison.js`, which feeds both the chart axis and the
+accessible readout. That module is shipped v1, so the repair changes v1 too:
+`frontend/diagnose-event-comparison-behavior.replay.mjs` pins the current spoken
+string, and `mockups/finding-evidence-routing.behavior.md` carries the Event S8
+entry. Both are amended in this ticket with the actual changed presentation.
+
+**The port close is atomic and is this chunk's, as a bounded exception.** Once
+the app-opener replay leg is green and fidelity is recorded, and only then, this
+chunk performs the minimal archival operation: move the locked prototype and its
+companion modules under `mockups/harmonic-v2.archive/`, keeping the ★ LOCKED
+header and every byte of the retained design and fixture evidence; delete the
+prototype-only CI leg; and flip the `mockups/INDEX.md` row from `locked` to
+`shipped` with the archive path recorded. A follow-up issue for any of the three
+is forbidden — that is exactly how a surface ends up merged but still `locked`.
+This exception covers the archival move only; it authorises no edit to the
+prototype's content, no v1 retirement and no root-route cutover.
+
+**Polish is an executable step inside this chunk's workflow, not a note.** After
+the built surface is green and before the pull request opens, a Fable 5.1 /
+medium pass runs over the BUILT surfaces with actual rendered evidence. It may
+edit only presentation: `frontend-v2/**/*.css` and the class and copy attributes
+of the v2 components. It may not change behavior, selectors used by the replay,
+served values or any module under `frontend/`. Any defect it finds that needs a
+behavioral fix is handed back to the owning Opus worker for that chunk; the
+polish pass does not fix it. Every change it does make is re-verified by
+re-running the replay at both sizes and re-recording the affected fidelity rows.
+
+**Owns these paths.** `mockups/harmonic-v2.exploration/generate.py`;
+`scripts/gen_qa_e2e_db.py`; `frontend/diagnose-event-comparison.js` and its test;
+`frontend/diagnose-event-comparison-behavior.replay.mjs`;
+`mockups/finding-evidence-routing.behavior.md`;
+`mockups/harmonic-v2-desktop.behavior.md`;
+`frontend/harmonic-v2-desktop-behavior.replay.mjs`;
+`mockups/sweep/harmonic-v2-desktop/`; the archive path above;
+`mockups/INDEX.md`; `.github/workflows/ci.yml`.
+
+### One rule, one place
+
+Where a rule already exists elsewhere in this document or in the lock, it is not
+restated above. The 34 lock terms live in
+`mockups/harmonic-v2-desktop.lock.md`; the frozen behavior stories and their 17
+sanctions live in `mockups/harmonic-v2-desktop.behavior.md`; the backend
+identity, admission, period and population rules live in the `#387
+implementation interfaces` section of this document. This section adds only the
+chunk ownership and the interfaces between them.

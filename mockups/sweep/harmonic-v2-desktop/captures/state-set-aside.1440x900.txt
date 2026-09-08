@@ -1,0 +1,124 @@
+BASAL · MAY 3 TO JUN 1, 2024
+Basal 03:00 to 04:00 · lower
+28 nights of steady data · 30 d basal run · Next in line · Set aside
+Restore
+DELIVERED VS PROGRAMMED
+nights at or above each rate · one step per night
+0 excluded
+03:00–03:30
+03:30–04:00
+NIGHT
+May 3, 2024 · 03:00
+Ran below · 1 of 30
+↑
+↓
+Night
+Day
+in range
+high
+low
+bolus
+carbs (bolus)
+┆ 03:00–03:30
+FINDINGS
+3 · read Jun 1 · 23:59
+Worth a look
+2
+Over-treated low
+2 of 6 lows
+WORTH A LOOK
+Not recurring often enough to rank yet.
+·
+Correction on active insulin
+1 of 6 lows
+NOTED
+Set aside · 1
+1
+Basal 03:00 to 04:00 · lower
+28 nights of steady data · 30 d run · not now
+SET ASIDE
+Restore
+Every slot
+·
+All basal slots
+48 slots · 2 lower · 46 no data · read Jun 1 · 23:59
+SLOTS
+BASAL · 03:00–03:30
+1 OF 2 IN 03:00 TO 04:00
+0.6 → 0.48 U/hSupported · lower
+
+One cautious step down is supported at this time. Delivered below the programmed rate across 28 steady nights.
+
+Estimate 0.48 U/h, 0.48 to 0.48 · 30 nights · 30 in the asserted direction
+
+Set aside Jun 2, 2024 · 12:00 · not now
+
+Ran below · 30 nights
+May 3 · 03:00
+0.48 U/h
+May 4 · 03:00
+0.48 U/h
+May 5 · 03:00
+0.48 U/h
+May 6 · 03:00
+0.48 U/h
+May 7 · 03:00
+0.48 U/h
+May 8 · 03:00
+0.48 U/h
+May 9 · 03:00
+0.48 U/h
+May 10 · 03:00
+0.48 U/h
+May 11 · 03:00
+0.48 U/h
+May 12 · 03:00
+0.48 U/h
+May 13 · 03:00
+0.48 U/h
+May 14 · 03:00
+0.48 U/h
+May 15 · 03:00
+0.48 U/h
+May 16 · 03:00
+0.48 U/h
+May 17 · 03:00
+0.48 U/h
+May 18 · 03:00
+0.48 U/h
+May 19 · 03:00
+0.48 U/h
+May 20 · 03:00
+0.48 U/h
+May 21 · 03:00
+0.48 U/h
+May 22 · 03:00
+0.48 U/h
+May 23 · 03:00
+0.48 U/h
+May 24 · 03:00
+0.48 U/h
+May 25 · 03:00
+0.48 U/h
+May 26 · 03:00
+0.48 U/h
+May 27 · 03:00
+0.48 U/h
+May 28 · 03:00
+0.48 U/h
+May 29 · 03:00
+0.48 U/h
+May 30 · 03:00
+0.48 U/h
+May 31 · 03:00
+0.48 U/h
+Jun 1 · 03:00
+0.48 U/h
+SELECTED NIGHT
+1 OF 30
+May 3, 2024 · 03:00–03:30
+RAN BELOW
+0.48 U/h delivered · 0.6 U/h programmed
+120 mg/dL this night · 120 mg/dL roster mean
+120 entry · 120 exit
+Open Day

@@ -1,0 +1,102 @@
+FINDINGS · BASAL · MAY 2 TO JUN 1, 2024 · READ JUN 1, 2024 · 23:59 · VIEWED JUN 2, 2024 · 12:00
+All 48 basal slots
+2 suggest a lower · 46 no nights of steady data · 30 d basal run
+BASAL SLOTS
+one cell per 30 min · ← → moves
+←
+→
+Basal slots
+lower
+2
+no data
+46
+SLOT 03:00–03:30
+suggests a lower
+May 3, 2024 · night 1 of 30
+↑
+↓
+Basal
+Night
+Day
+in range
+high
+low
+bolus
+carbs (bolus)
+┆ 03:00–03:30
+BASAL 03:00–03:30
+read Jun 1 · 23:59
+03:00–03:30
+lower
+CURRENT
+0.60
+U/hr, programmed now
+ESTIMATE
+0.48
+U/hr — the interval below brackets THIS number
+RECOMMENDED
+0.48
+U/hr, one conservative step
+CI 0.48–0.48 U/hr on the estimate
+30 nights of steady data · 30 d basal run
+one cautious step down is supported at this time
+Stage change
+staged for Plan
+NIGHTS OF STEADY DATA
+120 mg/dL mean
+Ran below · 30 nights
+May 3
+0.48
+·
+0.60
+120
+May 4
+0.48
+·
+0.60
+120
+May 5
+0.48
+·
+0.60
+120
+May 6
+0.48
+·
+0.60
+120
+May 7
+0.48
+·
+0.60
+120
+25 more
+May 3 · 03:00–03:30
+Ran below
+1 of 30↑ ↓
+0.48 U/h delivered · 0.60 U/h programmed
+120 mg/dL this night · 120 mg/dL roster mean
+120 entry · 120 exit
+The canvas shows this night's glucose trace over the envelope.
+Clear trace
+Open May 3 in Day
+Findings · 3 · read Jun 1 · 23:59
+1
+Basal 03:00 to 04:00 · lower
+28 nights of steady data · 30 d run
+NEXT IN LINE
+Worth a look
+2
+Over-treated low
+2 of 6 lows
+WORTH A LOOK
+Not recurring often enough to rank yet.
+·
+Correction on active insulin
+1 of 6 lows
+NOTED
+Every slot
+·
+All basal slots
+48 slots · 2 lower · 46 no data · read Jun 1 · 23:59
+SLOTS

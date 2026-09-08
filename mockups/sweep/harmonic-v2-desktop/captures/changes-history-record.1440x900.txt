@@ -1,0 +1,72 @@
+TRIAL · HISTORY
+Carb ratio · 5 → 4.8 g/U
+Detected Jun 7, 2026 · 08:15 · 15 days elapsed · 0 data gaps
+Back to Overview
+Pump settings
+BEFORE → TRIAL
+median glucose by clock
+Pump-local time
+Trial above Before
+Trial below Before
+median glucose by clock · days 15 → 15
+VIEW
+Available observations
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL
+Meal glucose peak
+target
+	182 mg/dL
+42 meals
+	182 mg/dL
+41 meals
+
+Meal glucose low point
+target
+	146 mg/dL
+42 meals
+	146 mg/dL
+41 meals
+
+Time in range
+guardrail
+	81.2%
+672 readings
+	81.2%
+672 readings
+
+Time below range
+guardrail
+	0.0%
+672 readings
+	0.0%
+672 readings
+
+Logged rescue carbs
+context
+	0 entries
+0 g · 0 unknown amounts
+	20 entries
+378 g · 0 unknown amounts
+THIS TRIAL
+History
+DECISION
+Earlier decision
+Not recorded
+Original explanation
+Not recorded
+Conclusion
+Not recorded
+Finished
+Not recorded
+EVIDENCE PERIODS
+Before
+May 24, 2026 · 08:15 to Jun 7, 2026 · 08:15
+Trial
+Jun 7, 2026 · 08:15 to Jun 21, 2026 · 08:15
+
+Pump-local time. Observations are limited to these periods.
+
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Carb ratio	5 g/U	4.8 g/U
+
+Observed on the pump. An earlier Plan decision is not available in this capture.

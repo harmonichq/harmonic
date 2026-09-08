@@ -1,0 +1,91 @@
+Harmonic
+ADVISORY
+Overview
+Explore
+Changes
+Day
+SCOPE
+30 d
+＋
+Log carbs
+Glucose first · round 4
+Source
+Late bolus · May meals case
+Basal 03:00 · June setting case
+Over-treated low · May habit case
+Shared May 2024 history · complete workflow
+Clock
+Jun 2, 2024 · 12:00 · deciding
+Jun 3, 2024 · 00:00 · pump captured
+Jun 8 · Trial, 6 of 14 days
+Jun 18 · Trial, ready to judge
+Jul 2 · follow-up, 30 days later
+Jul 4 · correction factor changed on the pump
+Next save fails
+Next read fails
+Next utility save fails
+
+Manufactured evidence.
+
+Review notes
+DAY · READ JUN 1, 2024 · 23:59 · VIEWED JUN 2, 2024 · 12:00
+Sat, Jun 1, 2024
+96% in range · 0 lows · 1 high · 26 readings · 120–240 mg/dL
+RECORDED DAYS
+‹
+›
+Latest
+32 recorded days · May 1, 2024 to Jun 1, 2024
+Week of May 26, 2024
+Month ▾
+SUN
+26
+▽1 99%
+MON
+27
+▽1 100%
+TUE
+28
+▽1 △1 91%
+WED
+29
+✓ 100%
+THU
+30
+✓ 100%
+FRI
+31
+✓ 100%
+SAT
+1
+✓ 96%
+in range
+high
+low
+bolus
+carbs (bolus)
+◗ carbs (logged)
+basal Δ · adding above, cutting below
+context · sleep, fasting, suspend
+EPISODE LOG
+read Jun 1, 2024 · 23:59
+THIS DAY
+Time in range
+96%
+Lows
+0
+Highs
+1
+Readings
+26
+Range
+120–240 mg/dL
+
+No episode in the Jun 1, 2024 · 23:59 read falls on this day.
+
+Advisory only — review with your clinician before changing pump settings.
+Carb questions
+3
+Guide
+Settings
+Glossary

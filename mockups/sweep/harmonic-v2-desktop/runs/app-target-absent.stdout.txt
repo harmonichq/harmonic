@@ -1,0 +1,9 @@
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720 fonts=real
+# CANDIDATE ledger: mockups/harmonic-v2-desktop.behavior.md (not frozen)
+FAIL S86 — TARGET=app cannot run: the production surface /v2/ does not exist yet.
+  expected: http://127.0.0.1:8765/v2/ served by the packaged Python runtime
+  owed by: LOCK:harmonic-v2-desktop:HV2-01 (Python serves /v2/ and /v2/assets/)
+           LOCK:harmonic-v2-desktop:HV2-02 (v1 and /v2/ coexist, one authenticated API)
+  This is a deliberate fail-closed stop, not a skip.
+
+# executed 0 · failed 1 · deferred 0 · selected 1 · chromium launches 1

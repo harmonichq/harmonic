@@ -1,0 +1,1 @@
+FATAL: zero stories executed — a run that asserts nothing is a failure, not a pass

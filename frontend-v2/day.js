@@ -35,9 +35,9 @@ import {
   clock, date, desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, sheetToggle, stamp,
 } from './frame.js';
 import {
-  currentDestination, hold, narrow, navigate, registerDestination, registerEscape, render, view,
+  currentDestination, hold, load, narrow, navigate, registerDestination, registerEscape, render, view,
 } from './routes.js';
-import { reopenUtility } from './utilities.js';
+import { UTILITY_TITLE, reopenUtility } from './utilities.js';
 
 // The shipped navigator's drawing boxes (index.html DN_RB / DN_CELL): the ribbon
 // and the month cell sparklines scale to their columns, strokes stay one pixel.
@@ -55,9 +55,10 @@ const STATE_WORD = { fired: 'finding', outranked: 'outranked', near_miss: 'also 
 const LEVER_WORD = { over_treated_low: 'over-treated low', correction_on_iob: 'correction on IOB', correction_stacking: 'stacked corrections', carb_undercount: 'carbs undercounted', late_bolus: 'late bolus', meal_over_delivery: 'meal over-delivery' };
 
 // The destination labels a return names. A utility origin names the utility
-// itself, because that is what the reader closed to get here (S76).
+// itself, because that is what the reader closed to get here (S76) — and it
+// names it out of the utility layer's own title table, so the label on the
+// Open Day control and the label on the return can never disagree.
 const DESTINATION_LABEL = { overview: 'Overview', explore: 'Explore', changes: 'Changes', day: 'Day' };
-const UTILITY_LABEL = { settings: 'App settings', pump: 'Pump settings', carbs: 'Log carbs', questions: 'Carb questions', guide: 'Guide', glossary: 'Glossary' };
 
 /* ------------------------------------------------------- the desk's memory */
 
@@ -67,34 +68,18 @@ const memory = {
   date: null, month: null, focusT: null, moved: null, entry: null,
   bounds: null, months: new Map(), day: null, error: null,
 };
-let pending = null;
 
 const monthKey = (iso) => String(iso).slice(0, 7);
 const loadedDays = () => [...memory.months.values()].flat();
-const dayRow = (iso) => loadedDays().find((row) => row.iso === iso) || null;
 const recorded = () => loadedDays().filter((row) => row.has_data).map((row) => row.iso).sort();
 const earliest = () => memory.bounds?.earliest || null;
 const latest = () => memory.bounds?.latest || null;
 
 /* ------------------------------------------------------------ served reads */
 
-// One in-flight load at a time, keyed by what it is loading: a second render
-// while a fetch is open must not start the same fetch again, and a fetch that
-// resolves after the reader moved on must not overwrite what they moved to.
-function load(key, run) {
-  if (pending === key) return;
-  pending = key;
-  memory.error = null;
-  run().then(() => {
-    if (pending === key) pending = null;
-    render();
-  }).catch((error) => {
-    if (pending !== key) return;
-    pending = null;
-    memory.error = error;
-    render();
-  });
-}
+// Every read goes through the desk's one loader, which is also what keeps an
+// arriving frame's focus target alive across the loading render.
+const read = (key, run) => load(key, run, (error) => { memory.error = error; });
 
 async function loadBounds() {
   const status = await fetchStatus();
@@ -168,7 +153,7 @@ export function dayReturnTarget(entry = memory.entry) {
   return {
     utility,
     destination: DESTINATION_LABEL[destination] ? destination : 'explore',
-    label: utility ? (UTILITY_LABEL[utility] || utility) : (DESTINATION_LABEL[destination] || 'Explore'),
+    label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Explore'),
     focus: entry.focus || null,
     subject: entry.subject || '',
   };
@@ -203,7 +188,18 @@ function ribbon(week, rows, held) {
 
 // The month, in the ribbon's place: the same columns, one row per week, a
 // sparkline in each recorded cell; the chart beneath gives up the height.
-function monthGrid({ y, m }, rows, held, bounds) {
+function monthGrid({ y, m }, rows, held, bounds, arrived = true) {
+  const first = fmtISO(y, m, 1);
+  const last = fmtISO(y, m, new Date(y, m, 0).getDate());
+  const step = `<div class="seg" role="group" aria-label="Month"><button data-day="prev-month" aria-label="Previous month" ${bounds.earliest && bounds.earliest < first ? '' : 'disabled'}>‹</button><button data-day="next-month" aria-label="Next month" ${bounds.latest && bounds.latest > last ? '' : 'disabled'}>›</button></div>`;
+  const frame = (count, cells) => `<div class="gf-nav-month" role="group" aria-label="${MONTHS[m - 1]} ${y}"><div class="gf-nav-month-head">${step}<span class="meta">${count}</span></div><div class="gf-nav-dow">${DOW.map((d) => `<span>${d}</span>`).join('')}</div><div class="gf-nav-cells">${cells}</div></div>`;
+
+  // Stepping to another month is a served read, and the desk does not go blank
+  // for it: the stage, the rail and this grid's own head stay put while the
+  // month lands. It says it is loading rather than drawing every cell as "no
+  // data" — that would be a claim about the wearer's record, not about a read.
+  if (!arrived) return frame('', '<p class="gf-meta gf-nav-loading" role="status">Loading…</p>');
+
   const cells = monthCells(y, m).map((cell) => {
     if (cell.blank) return '<span class="gf-nav-cell blank"></span>';
     const day = decorate(cell.iso, rows);
@@ -211,10 +207,8 @@ function monthGrid({ y, m }, rows, held, bounds) {
     const g = sparkGeom(curveOf(day), CELL.w, CELL.h);
     return `<button class="gf-nav-cell" data-pick="${cell.iso}" aria-pressed="${cell.iso === held}" aria-label="${e(weekdayLabel(cell.iso))} — ${e(day.summary)}" style="--sev:var(${day.sev.varName})"><span class="dom">${cell.dom}</span><span class="sev"><span class="g">${e(day.sev.glyph)}</span> ${day.tir}</span><svg viewBox="0 0 ${CELL.w} ${CELL.h}" preserveAspectRatio="none" aria-hidden="true"><rect class="band" x="${g.band.x}" y="${g.band.y}" width="${g.band.w}" height="${g.band.h}"/><path class="area" d="${g.area}"/><path class="trace" d="${g.line}"/></svg></button>`;
   }).join('');
-  const first = fmtISO(y, m, 1), last = fmtISO(y, m, new Date(y, m, 0).getDate());
-  const step = `<div class="seg" role="group" aria-label="Month"><button data-day="prev-month" aria-label="Previous month" ${bounds.earliest && bounds.earliest < first ? '' : 'disabled'}>‹</button><button data-day="next-month" aria-label="Next month" ${bounds.latest && bounds.latest > last ? '' : 'disabled'}>›</button></div>`;
   const inMonth = rows.filter((row) => row.has_data && row.iso >= first && row.iso <= last).length;
-  return `<div class="gf-nav-month" role="group" aria-label="${MONTHS[m - 1]} ${y}"><div class="gf-nav-month-head">${step}<span class="meta">${inMonth} recorded days</span></div><div class="gf-nav-dow">${DOW.map((d) => `<span>${d}</span>`).join('')}</div><div class="gf-nav-cells">${cells}</div></div>`;
+  return frame(`${inMonth} recorded days`, cells);
 }
 
 // The reading pane: the subject this entry came from, the day's own figures,
@@ -249,7 +243,8 @@ function reading({ stats, ledger, entry, moved, focusT, readAt, viewedAt }) {
  */
 export function dayFrame(state) {
   const {
-    iso, rows, bounds, month, stats, ledger, entry, moved, focusT, readAt, viewedAt, isNarrow,
+    iso, rows, bounds, month, monthArrived = true, stats, ledger, entry, moved, focusT,
+    readAt, viewedAt, isNarrow,
   } = state;
   if (!iso) {
     return emptyFrame('Day', 'No days recorded', 'This store has no recorded day yet.',
@@ -272,7 +267,7 @@ export function dayFrame(state) {
   const monthToggle = `<button class="gf-btn gf-month-toggle" data-day="month" aria-expanded="${monthOpen}" aria-controls="gf-nav">${monthOpen ? 'Week' : 'Month'} <span aria-hidden="true">${monthOpen ? '▴' : '▾'}</span></button>`;
   const bound = bounds.earliest && bounds.latest ? `${recordedCount} recorded ${recordedCount === 1 ? 'day' : 'days'} · ${e(date(bounds.earliest))} to ${e(date(bounds.latest))}` : '';
   const rail = `<div class="instruments"><div class="instrument"><span class="cap">Recorded days</span>${step}<span class="meta gf-desk-only">${bound}</span></div><div class="instrument gf-tools"><span class="meta">${monthOpen ? `${MONTHS[month.m - 1]} ${month.y}` : `Week of ${e(date(week[0]))}`}</span>${monthToggle}${isNarrow ? sheetToggle('Episode Log', view.sheetOpen) : ''}</div></div>`;
-  const nav = `<div id="gf-nav" class="gf-nav" data-open="${monthOpen ? 'month' : 'week'}">${monthOpen ? monthGrid(month, rows, iso, bounds) : ribbon(week, rows, iso)}</div>`;
+  const nav = `<div id="gf-nav" class="gf-nav" data-open="${monthOpen ? 'month' : 'week'}">${monthOpen ? monthGrid(month, rows, iso, bounds, monthArrived) : ribbon(week, rows, iso)}</div>`;
   const colors = state.colors;
   const key = `<div class="ds-chart-legend"><span><i style="background:${colors.inRange}"></i>in range</span><span><i style="background:${colors.high}"></i>high</span><span><i style="background:${colors.low}"></i>low</span><span><i style="background:${colors.accent}"></i>bolus</span><span><i style="background:${colors.secondary}"></i>carbs (bolus)</span><span style="color:${colors.manualCarb}">◗ carbs (logged)</span>${isNarrow ? '' : `<span><i style="background:${colors.basal}"></i>basal Δ · adding above, cutting below</span><span><i style="background:${colors.line}"></i>context · sleep, fasting, suspend</span>`}</div>`;
   const stage = `<section class="pane gf-stage gf-stage-day" aria-label="Day">${head}${rail}${nav}
@@ -357,7 +352,7 @@ function step(direction) {
   const edge = new Date(`${memory.date}T00:00:00`);
   edge.setMonth(edge.getMonth() + direction);
   const key = `${edge.getFullYear()}-${String(edge.getMonth() + 1).padStart(2, '0')}`;
-  if (!memory.months.has(key)) load(`month:${key}`, () => loadMonth(key));
+  if (!memory.months.has(key)) read(`month:${key}`, () => loadMonth(key));
 }
 
 function bind(host) {
@@ -404,23 +399,34 @@ function bind(host) {
 
 function mount(host, { context }) {
   adopt(context);
-  if (!memory.bounds) { load('bounds', loadBounds); host.innerHTML = loadingFrame('Day'); return; }
-  settle();
+  // A read that failed is shown, not re-issued. This check leads because every
+  // read below is started from inside a render: re-issuing one here on the
+  // render its own failure triggered is an unbounded loop, and a refused read —
+  // an unauthenticated one, for instance — is exactly when that happens. The
+  // Retry clears this and the next render starts the read again.
   if (memory.error) { host.innerHTML = errorFrame('Day', 'This day'); bind(host); return; }
+  if (!memory.bounds) { read('bounds', loadBounds); host.innerHTML = loadingFrame('Day'); return; }
+  settle();
   if (!memory.date) {
     host.innerHTML = dayFrame({ iso: null });
     bind(host);
     return;
   }
-  const wanted = memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date);
-  if (!memory.months.has(wanted)) { load(`month:${wanted}`, () => loadMonth(wanted)); host.innerHTML = loadingFrame('Day'); return; }
-  if (memory.day?.iso !== memory.date) { load(`day:${memory.date}`, () => loadDay(memory.date)); host.innerHTML = loadingFrame('Day'); return; }
+  // The month the GRID shows is read when the reader steps to it; the desk keeps
+  // standing while that lands. Only the held day's OWN month is required to draw
+  // anything at all, because the week ribbon is made of it.
+  const shown = memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date);
+  if (!memory.months.has(shown)) read(`month:${shown}`, () => loadMonth(shown));
+  const held = monthKey(memory.date);
+  if (!memory.months.has(held)) { read(`month:${held}`, () => loadMonth(held)); host.innerHTML = loadingFrame('Day'); return; }
+  if (memory.day?.iso !== memory.date) { read(`day:${memory.date}`, () => loadDay(memory.date)); host.innerHTML = loadingFrame('Day'); return; }
 
   host.innerHTML = dayFrame({
     iso: memory.date,
     rows: loadedDays(),
     bounds: memory.bounds,
     month: memory.month,
+    monthArrived: memory.months.has(shown),
     stats: dayStats(memory.day.model),
     ledger: buildEpisodeLedger(memory.day.model),
     entry: memory.entry,

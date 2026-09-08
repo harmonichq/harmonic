@@ -6,6 +6,10 @@
 // sheets it seats, then the desk itself — and frontend/theme.css LAST, because
 // the role rules are what win over a surface's own (see desk.css's header and
 // theme.css's "themed by ROLE" note).
+// Inter first, so the family every rule below names is actually available
+// rather than declared and then fallen back from (HV2-08). Vendored, because
+// the packaged runtime may reach no CDN (HV2-01).
+import './fonts/inter.css';
 import '../frontend/shell.css';
 import 'virtual:harmonic/app-material.css';
 import './shell.css';

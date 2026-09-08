@@ -131,9 +131,9 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
   // HV2-14: date, moment, canonical subject, occurrence, affected window,
   // applicable lever, source destination and precise return-focus target.
   const context = {
-    date: '2024-06-26', subject: 'Carb questions · Jun 26 13:55', occurrence: 'low-7',
+    date: '2024-06-26', subject: 'Questions · Jun 26 13:55', occurrence: 'occ-7',
     window: '0-120', lever: 'over_treated_low', from: 'explore.questions',
-    focus: "[data-question-card='low|2024-06-26 13:55:00'] [data-action='day']",
+    focus: "[data-question-card='q-7'] [data-action='day']",
   };
   const address = serializeV2Route({ destination: 'day', context });
   const parsed = parseV2Route({ search: address.slice(address.indexOf('?')) });

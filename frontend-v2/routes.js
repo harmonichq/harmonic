@@ -65,6 +65,35 @@ export function hold(cleanup) {
   cleanups.push(cleanup);
 }
 
+/* --------------------------------------------------------------- fetching */
+
+// Every served read this desk makes goes through here, so the desk knows when
+// it is still arriving. Two things depend on that and nothing else can supply
+// it: a frame renders its loading state while a read is open, and the caller's
+// focus target survives until the content it named exists (see render()).
+//
+// Keyed so a second render during an open read does not fire the same request
+// again. `onFailure` belongs to the caller because a failed read reads
+// differently in each pane — a Day that could not load, a utility that could
+// not read — and neither is a failed WRITE.
+const inFlight = new Set();
+
+export function load(key, run, onFailure) {
+  if (inFlight.has(key)) return;
+  inFlight.add(key);
+  run().then(() => {
+    inFlight.delete(key);
+    render();
+  }).catch((error) => {
+    inFlight.delete(key);
+    onFailure(error);
+    render();
+  });
+}
+
+/** Whether any served read is still open. */
+export const loading = () => inFlight.size > 0;
+
 /** Dispose everything the last render built. Also the pagehide path (S84). */
 function disposeDesk() {
   const held = cleanups;
@@ -159,12 +188,20 @@ export function render() {
 
   // One selector, or candidates in order of preference: the first present takes
   // focus. A caller-supplied precise target is a single selector and always wins.
+  //
+  // THE REQUEST OUTLIVES A RENDER THAT CANNOT SATISFY IT. A pane that has to
+  // fetch renders its loading state first, so the target the caller named does
+  // not exist yet; clearing the request there dropped focus to the document
+  // body and left it there when the real content arrived. It is held instead
+  // until either the target appears or nothing is still being read — so it can
+  // never linger and grab focus on some later, unrelated frame.
   if (view.focusAfterRender) {
+    let landed = false;
     for (const target of [].concat(view.focusAfterRender)) {
       const found = surface.querySelector(target);
-      if (found) { found.focus(); break; }
+      if (found) { found.focus(); landed = true; break; }
     }
-    view.focusAfterRender = null;
+    if (landed || !loading()) view.focusAfterRender = null;
   }
 }
 

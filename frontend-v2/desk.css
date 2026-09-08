@@ -296,6 +296,9 @@
 .gf .gf-nav-cell { position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-rows:auto 30px; align-items:center; gap:0 4px; min-height:48px; padding:2px 5px 2px;
   border:1px solid var(--wk-rule); border-radius:var(--wk-radius); background:color-mix(in srgb, var(--sev, transparent) 7%, var(--wk-surface)); color:var(--mk-text); font:inherit; text-align:start; cursor:pointer; overflow:hidden; }
 .gf .gf-nav-cell.blank { border:0; background:transparent; }
+/* the month a step is still reading: one line across the grid's own seven
+   columns, so the desk keeps its height while the month lands */
+.gf .gf-nav-loading { grid-column:1 / -1; min-height:48px; display:flex; align-items:center; justify-content:center; }
 .gf .gf-nav-cell:disabled { background:var(--wk-surface-sunken, var(--wk-surface)); opacity:.5; cursor:default; }
 .gf .gf-nav-cell:hover:not(:disabled) { border-color:var(--sev); }
 .gf .gf-nav-cell:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }

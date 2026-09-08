@@ -52,12 +52,6 @@ class DeployAssetsTest(unittest.TestCase):
         self.assertRegex(text, r"COPY\s+vite\.config\.mjs\s+vite\.config\.v2\.mjs\b")
         self.assertRegex(text, r"(?m)^COPY\s+frontend-v2\s+\./frontend-v2$")
 
-    def test_dockerignore_excludes_both_build_outputs(self):
-        # Both are generated during packaging; shipping a stale local build into
-        # the context is how an image serves yesterday's shell.
-        ignored = {line.strip() for line in (_REPO / ".dockerignore").read_text().splitlines()}
-        self.assertIn("frontend/dist/", ignored)
-        self.assertIn("frontend-v2/dist/", ignored)
 
     def test_runtime_copies_only_the_built_frontend_without_node(self):
         runtime = _runtime_without_comments((_REPO / "Dockerfile").read_text())

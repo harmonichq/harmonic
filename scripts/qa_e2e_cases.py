@@ -218,6 +218,7 @@ _IC_HISTORY_CURRENT = ExpectedIcRow(
 
 
 def _showcase_recipe(store) -> None:
+    _materialize_showcase_month_shoulder(store)
     _materialize_showcase_background(store)
     _materialize_behavioral_precedence(store)
 
@@ -1437,7 +1438,12 @@ QA_CASES = (
                 ),
             },
         ),
-        30,
+        # May 20 to June 30. The dense thirty-day window the analyzers read is
+        # still June 1-30 exactly; the five earlier CGM-only days and the empty
+        # week between them are the month bound the v2 Day desk's month stepper
+        # needs (_materialize_showcase_month_shoulder), and every expectation
+        # above is unchanged by them.
+        42,
     ),
     QaCase(
         _SETTING_RECOMMENDATION,
@@ -2466,6 +2472,35 @@ def _settings(carb_ratio: float = 10.0) -> PumpSettings:
         segments=(ProfileSegment(0, 0.6, 40, carb_ratio, 110),),
     )
     return PumpSettings(active_idp=1, profiles=(profile,))
+
+
+def _materialize_showcase_month_shoulder(store) -> None:
+    """Five recorded days in the PREVIOUS calendar month, and nothing else.
+
+    #389 needs the showcase's recorded range to cross a month bound, because the
+    v2 Day desk's month stepper is only exercisable when one side of it is live
+    and the other is at a bound (HV2-13). The showcase's own 30 days are June
+    2024 exactly, so both steppers sit at a bound and the control cannot be
+    pressed at all.
+
+    These days carry CGM ONLY — no basal, no bolus, no settings snapshot — and
+    they stop on May 24, leaving May 25-31 empty. That gap is the point: the
+    analysis window reaches back 30 days from the latest instant (June 30), so
+    it stops in the empty stretch and every existing analyzer row, support count
+    and queue string is untouched. They are recorded days for the navigator and
+    invisible to the model.
+    """
+    cgm = []
+    first = date(2024, 5, 20)
+    for offset in range(5):
+        current = first + timedelta(days=offset)
+        for minute in range(0, 24 * 60, 5):
+            cgm.append({
+                "EventDateTime": f"{current.isoformat()} {minute // 60:02d}:{minute % 60:02d}:00",
+                "Readings (CGM / BGM)": 120.0,
+                "Description": "Synthetic EGV",
+            })
+    store.upsert_cgm(cgm)
 
 
 def _materialize_showcase_background(store) -> None:

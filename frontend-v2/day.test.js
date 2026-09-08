@@ -121,6 +121,23 @@ test('the month toggle opens the grid in the ribbon\'s place and steps within th
   assert.match(july, /data-day="prev-month" aria-label="Previous month" >/);
 });
 
+test('a month still being read says so instead of drawing every day as no data', () => {
+  // Stepping the month is a served read. Drawing the unread month as a grid of
+  // disabled cells would state something about the wearer's record — that these
+  // days hold nothing — which is a different claim from "this has not arrived".
+  const loading = dayFrame(state({ month: { y: 2024, m: 5 }, monthArrived: false }));
+  assert.match(loading, /role="status">Loading…</);
+  assert.ok(!loading.includes('— no data'), 'an unread month claimed the days hold no data');
+  assert.ok(!/\d+ recorded days<\/span><\/div><div class="gf-nav-dow"/.test(loading),
+    'an unread month stated a recorded-day count it cannot know');
+  // The desk itself stays standing: the stage, its rail and the month's own
+  // stepper are all still there to press.
+  assert.match(loading, /class="pane gf-stage gf-stage-day"/);
+  assert.match(loading, /data-day="prev-month"/);
+  assert.match(loading, /data-day="next-month"/);
+  assert.match(loading, /aria-label="May 2024"/);
+});
+
 test('each Episode Log row renders its served state word and its kind', () => {
   const markup = dayFrame(state());
   const rows = [...markup.matchAll(/<button class="gf-row gf-log-row" data-day-row="([^"]+)" aria-pressed="(\w+)">/g)];
@@ -147,25 +164,25 @@ test('direct entry invents no prior subject and offers no return', () => {
 
 test('a contextual entry names its subject verbatim and returns to what it left', () => {
   const entry = {
-    date: '2024-06-26', subject: 'Over-treated low · Jun 26 13:55',
-    from: 'explore', focus: ".gf-member-row[data-occ='low-7']",
+    date: '2024-06-26', subject: 'Selected occurrence · Jun 26 13:55',
+    from: 'explore', focus: ".gf-member-row[data-occ='occ-7']",
   };
   const markup = dayFrame(state({ entry }));
-  assert.match(markup, /<h3>Opened from<\/h3><p>Over-treated low · Jun 26 13:55<\/p>/);
+  assert.match(markup, /<h3>Opened from<\/h3><p>Selected occurrence · Jun 26 13:55<\/p>/);
   assert.match(markup, /data-day="return">Return to Explore</);
 
   const back = dayReturnTarget(entry);
   assert.deepEqual(back, {
     utility: null, destination: 'explore', label: 'Explore',
-    focus: ".gf-member-row[data-occ='low-7']", subject: 'Over-treated low · Jun 26 13:55',
+    focus: ".gf-member-row[data-occ='occ-7']", subject: 'Selected occurrence · Jun 26 13:55',
   });
 });
 
 test('a utility entry is named for the utility and returns over the destination it was opened on', () => {
   // S76 and the lock's verbatim `Return to Carb questions`.
   const entry = {
-    date: '2024-06-26', subject: 'Carb questions · Jun 26 13:55',
-    from: 'explore.questions', focus: "[data-question-card='low|2024-06-26 13:55:00'] [data-action='day']",
+    date: '2024-06-26', subject: 'Questions · Jun 26 13:55',
+    from: 'explore.questions', focus: "[data-question-card='q-7'] [data-action='day']",
   };
   assert.match(dayFrame(state({ entry })), /data-day="return">Return to Carb questions</);
   const back = dayReturnTarget(entry);

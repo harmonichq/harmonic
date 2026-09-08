@@ -28,10 +28,13 @@ import {
 import { deskColors } from './colors.js';
 import { clock, desk, e, shortDate } from './frame.js';
 import {
-  currentDestination, deskSurface, hold, narrow, navigate, registerEscape, registerSeatLayer, render, view,
+  currentDestination, deskSurface, hold, load, narrow, navigate, registerEscape, registerSeatLayer, render, view,
 } from './routes.js';
 
-const TITLE = { settings: 'App settings', pump: 'Pump settings', carbs: 'Log carbs', questions: 'Carb questions', guide: 'Guide', glossary: 'Glossary' };
+// The utility pane titles, verbatim from the lock. One table: the pane's own
+// heading, the label a utility's Open Day declares, and the name its Day return
+// is called by all read it, so the three cannot drift apart (S76).
+export const UTILITY_TITLE = { settings: 'App settings', pump: 'Pump settings', carbs: 'Log carbs', questions: 'Carb questions', guide: 'Guide', glossary: 'Glossary' };
 // The v1 articles hand off to v1 tabs; on this desk those read as these destinations.
 const HANDOFF = { diagnose: ['explore', 'Explore'], day: ['day', 'Day'], plan: ['changes', 'Changes'] };
 // Presentation only (CONTEXT.md): the two v1 glossary labels shown under their
@@ -58,19 +61,21 @@ const state = {
   entries: null, prompts: null, catalog: null, articles: new Map(), profile: null, credentials: null,
 };
 const answers = new Map();
-const loading = new Set();
 
 const pending = () => sortOldestFirst(state.prompts || []);
 const openCount = () => pending().filter((prompt) => !answers.has(questionKey(prompt))).length;
 
-// One fetch per thing at a time; a second render while it is open must not fire
-// it again. A failed READ is its own state, never the failed-SAVE alert: the
-// pane must not tell the reader a write failed when nothing was written.
+// Reads go through the desk's one loader, which is also what keeps an opening
+// pane's focus target alive until the content it named exists — the Guide's
+// article arrives one fetch after the press that asked for it.
+//
+// A failed READ is its own state, never the failed-SAVE alert: the pane must not
+// tell the reader a write failed when nothing was written.
 function need(key, run) {
-  if (loading.has(key) || state.unread?.key === key) return;
-  loading.add(key);
-  run().then(() => { loading.delete(key); state.unread = null; render(); })
-    .catch(() => { loading.delete(key); state.unread = { key, run: () => { state.unread = null; need(key, run); } }; render(); });
+  if (state.unread?.key === key) return;
+  load(key, run, () => {
+    state.unread = { key, run: () => { state.unread = null; need(key, run); } };
+  });
 }
 
 /* ------------------------------------------------------------- the writes */
@@ -219,7 +224,7 @@ function carbsBody() {
         ${draft.when === 'custom' ? `<div class="gf-field"><label for="ut-custom" class="gf-visually-hidden">Custom time</label><input id="ut-custom" type="datetime-local" value="${e(draft.customAt)}"></div>` : ''}
         <p class="gf-meta">One tap logs · defaults to now.</p></section>
       <section class="gf-section"><h3>Logged <span class="meta">${entries.length}</span></h3>
-        ${entries.length ? entries.map((entry) => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(String(entry.t).slice(0, 10))}" data-subject="Log carbs · ${e(shortDate(entry.t))} ${e(clock(entry.t))}" data-utility-from="carbs" data-return-focus="[data-utility-remove='${entry.id}']">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
+        ${entries.length ? entries.map((entry) => `<div class="gf-row gf-entry-row" role="listitem"><span class="when">${e(shortDate(entry.t))} ${e(clock(entry.t))}</span><span class="n">${entry.grams == null ? 'unknown amount' : `${entry.certainty === 'estimate' ? '~' : ''}${e(entry.grams)} g`}</span><span class="text">${entry.source === 'manual' ? 'Logged by hand' : 'Answered a carb question'}${entry.note ? ` · ${e(entry.note)}` : ''}</span><span class="gf-row-tools"><button class="linkbtn" data-action="day" data-date="${e(String(entry.t).slice(0, 10))}" data-subject="Log carbs · ${e(shortDate(entry.t))} ${e(clock(entry.t))}" data-utility-from="carbs" data-utility-label="${e(UTILITY_TITLE.carbs)}" data-return-focus="[data-utility-remove='${entry.id}']">Open ${e(shortDate(entry.t))}</button><button class="linkbtn" data-utility-remove="${entry.id}">Remove</button></span></div>`).join('') : '<p class="gf-meta">Nothing logged yet. An entry shows on its Day as a manual carb mark.</p>'}
       </section>` };
 }
 
@@ -228,7 +233,7 @@ function carbsBody() {
 // step. The day opens under the questions, which stay open beside it: the entry
 // names the question it came from, and the way back is this pane on that same
 // question (S76).
-const openDayRow = (prompt) => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(String(prompt.anchor_t).slice(0, 10))}" data-subject="Carb questions · ${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))}" data-utility-from="questions" data-return-focus="[data-question-card='${e(questionKey(prompt))}'] [data-action='day']">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
+const openDayRow = (prompt) => `<div class="gf-actions gf-question-day"><button class="gf-btn" data-action="day" data-date="${e(String(prompt.anchor_t).slice(0, 10))}" data-subject="Carb questions · ${e(shortDate(prompt.anchor_t))} ${e(clock(prompt.anchor_t))}" data-utility-from="questions" data-utility-label="${e(UTILITY_TITLE.questions)}" data-return-focus="[data-question-card='${e(questionKey(prompt))}'] [data-action='day']">Open ${e(shortDate(prompt.anchor_t))}</button></div>`;
 
 function questionCard(prompt) {
   const key = questionKey(prompt);
@@ -301,7 +306,7 @@ const BODIES = { settings: settingsBody, pump: pumpBody, carbs: carbsBody, quest
 /** The seated utility's complete pane markup. */
 function utilityPane(kind = seated) {
   const body = BODIES[kind]();
-  return `<aside class="pane gf-reading gf-utility" data-utility="${kind}" aria-label="${TITLE[kind]}"><header><h2 tabindex="-1">${TITLE[kind]}</h2>${body.meta ? `<span class="meta">${body.meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-utility-close" data-utility-close>Close</button></div></header><div class="gf-pane-body">${status()}${body.html}</div></aside>`;
+  return `<aside class="pane gf-reading gf-utility" data-utility="${kind}" aria-label="${UTILITY_TITLE[kind]}"><header><h2 tabindex="-1">${UTILITY_TITLE[kind]}</h2>${body.meta ? `<span class="meta">${body.meta}</span>` : ''}<div class="gf-end"><button class="gf-btn gf-utility-close" data-utility-close>Close</button></div></header><div class="gf-pane-body">${status()}${body.html}</div></aside>`;
 }
 
 /* -------------------------------------------------------------- the seat */

@@ -53,39 +53,55 @@ const navDay = (iso, has_data, extra = {}) => ({
   curve: has_data ? [{ x: 0.25, bg: 120 }, { x: 0.5, bg: 96 }, { x: 0.75, bg: 140 }] : [],
   ...extra,
 });
-const JUNE = [
-  ...Array.from({ length: 30 }, (_, i) => {
-    const iso = `2024-06-${String(i + 1).padStart(2, '0')}`;
+// The navigator answers the month it was asked for, one recorded day apiece
+// except the one gap the ribbon needs to have something disabled.
+const daysFor = (month) => {
+  const [year, index] = month.split('-').map(Number);
+  const length = new Date(year, index, 0).getDate();
+  return Array.from({ length }, (_, i) => {
+    const iso = `${month}-${String(i + 1).padStart(2, '0')}`;
     return navDay(iso, iso !== GAP_DAY);
-  }),
-];
-const CGM = Array.from({ length: 12 }, (_, i) => ({
-  t: `${DAY} ${String(i * 2).padStart(2, '0')}:00:00`, bg: i === 7 ? 210 : 118,
-}));
-const TIMELINE = {
-  start: `${DAY} 00:00:00`, end: '2024-06-27 00:00:00',
-  cgm: CGM,
-  boluses: [{ t: `${DAY} 08:00:00`, insulin: 4.8, carbs: 48, bg: null, extended: false }],
-  basal: [{ t: `${DAY} 00:00:00`, delivery_type: 'profileDelivery', duration_mins: 5, basal_rate: 0.6, profile_basal_rate: 0.6 }],
-  pump_events: [], sleep_windows: [], rest_windows: [], carb_exclusion_spans: [], false_low_exclusion_spans: [],
+  });
 };
-const MODEL_VIEW = {
-  date: DAY, midnight: `${DAY} 00:00:00`, isf: 40,
-  chart_start: `${DAY} 00:00:00`, chart_end: '2024-06-27 00:00:00',
-  window: { start: TIMELINE.start, end: TIMELINE.end, cgm: CGM, carb_exclusion_spans: [], false_low_exclusion_spans: [] },
+// The per-day reads answer the date they were ASKED for. The desk arrives on
+// the store's own latest recorded day and the ribbon moves between them, so a
+// stub pinned to one written-down date answers the wrong question the moment
+// the reader steps a day.
+const nextDay = (iso) => {
+  const day = new Date(`${iso}T00:00:00`);
+  day.setDate(day.getDate() + 1);
+  return day.toISOString().slice(0, 10);
+};
+const cgmFor = (iso) => Array.from({ length: 12 }, (_, i) => ({
+  t: `${iso} ${String(i * 2).padStart(2, '0')}:00:00`, bg: i === 7 ? 210 : 118,
+}));
+const timelineFor = (iso) => ({
+  start: `${iso} 00:00:00`, end: `${nextDay(iso)} 00:00:00`,
+  cgm: cgmFor(iso),
+  boluses: [{ t: `${iso} 08:00:00`, insulin: 4.8, carbs: 48, bg: null, extended: false }],
+  basal: [{ t: `${iso} 00:00:00`, delivery_type: 'profileDelivery', duration_mins: 5, basal_rate: 0.6, profile_basal_rate: 0.6 }],
+  pump_events: [], sleep_windows: [], rest_windows: [], carb_exclusion_spans: [], false_low_exclusion_spans: [],
+});
+const modelViewFor = (iso) => ({
+  date: iso, midnight: `${iso} 00:00:00`, isf: 40,
+  chart_start: `${iso} 00:00:00`, chart_end: `${nextDay(iso)} 00:00:00`,
+  window: {
+    start: `${iso} 00:00:00`, end: `${nextDay(iso)} 00:00:00`,
+    cgm: cgmFor(iso), carb_exclusion_spans: [], false_low_exclusion_spans: [],
+  },
   episodes: [{
-    id: `${DAY}-ep1`, start: `${DAY} 14:00:00`, end: `${DAY} 17:00:00`,
-    lever: 'late_bolus', trigger: '', trigger_t: `${DAY} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
+    id: `${iso}-ep1`, start: `${iso} 14:00:00`, end: `${iso} 17:00:00`,
+    lever: 'late_bolus', trigger: '', trigger_t: `${iso} 14:00:00`, worst_bg: 210, spans_midnight: false, steps: [],
     anchors: [{
-      t: `${DAY} 14:00:00`, kind: 'meal', label: 'Meal bolus', bg: 210, insulin: 4.8, carbs: 48, state: 'fired',
+      t: `${iso} 14:00:00`, kind: 'meal', label: 'Meal bolus', bg: 210, insulin: 4.8, carbs: 48, state: 'fired',
       verdicts: [{ classifier: 'late_bolus', matched: true, detail: 'the dose trailed the rise', evidence_tier: 'observed', silence_reason: null }],
     }],
   }],
-};
+});
 const PROMPT = {
   detector: 'low', anchor_t: `${DAY} 13:55:00`, key_bg: 48,
   question: 'Did you treat this low?', context: 'Glucose dropped to 48 mg/dL.', age_days: 4,
-  cgm: CGM.map((point) => ({ t: point.t, bg: point.bg })),
+  cgm: cgmFor(DAY),
 };
 const CATALOG = {
   engine: { name: 'Scenario engine', tagline: 'A local, advisory read.', is: ['One cause at a time.'], wont: ['Drive your pump.'] },
@@ -107,9 +123,12 @@ const STATUS = {
 
 const JSON_STUBS = [
   [/^\/api\/status/, () => STATUS],
-  [/^\/api\/day-navigator/, () => ({ month: '2024-06', days: JUNE })],
-  [/^\/api\/timeline/, () => TIMELINE],
-  [/^\/api\/model-view/, () => MODEL_VIEW],
+  [/^\/api\/day-navigator/, (url) => {
+    const month = url.searchParams.get('month') || '2024-06';
+    return { month, days: daysFor(month) };
+  }],
+  [/^\/api\/timeline/, (url) => timelineFor(String(url.searchParams.get('start')).slice(0, 10))],
+  [/^\/api\/model-view/, (url) => modelViewFor(url.searchParams.get('date'))],
   [/^\/api\/carbs/, () => ({ carb_entries: [] })],
   [/^\/api\/prompts/, () => [PROMPT]],
   [/^\/api\/catalog/, () => CATALOG],
@@ -211,7 +230,12 @@ test('the desk opens on Overview behind its persistent chrome', async () => {
       utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
     }));
     assert.match(chrome.identity, /Harmonic advisory/);
-    assert.match(chrome.scope, /Scope · 30 d|Scope 30 d/);
+    // Scope is three elements — the label, the CSS-drawn dot, and the range —
+    // so its textContent reads "Scope30 d". The locked strings are the two
+    // words; the separator is material, not copy.
+    assert.match(chrome.scope, /^Scope/);
+    assert.match(chrome.scope, /30 d$/);
+    assert.equal(await countOf(page, '.cockpit-scope .cockpit-scope-dot'), 1);
     assert.ok(chrome.carbs.includes('＋'), 'Log carbs lost its fullwidth plus');
     assert.equal(chrome.advisory, 'Advisory only — review with your clinician before changing pump settings.');
     for (const label of ['Carb questions', 'Guide', 'Settings', 'Glossary']) {
@@ -221,6 +245,21 @@ test('the desk opens on Overview behind its persistent chrome', async () => {
     assert.equal(await countOf(page, '.mockbar, .gf-review-notes, [aria-label="Prototype scenario"]'), 0);
     // Nor did a theme control (HV2-07).
     assert.equal(await countOf(page, '[data-theme], .theme-toggle'), 0);
+    // HV2-08: Inter is the single UI family, and the built surface RENDERS with
+    // it — the font ships in the tree, because HV2-01 forbids reaching a CDN
+    // for it. Declaring the family and falling back to the platform is not this.
+    const inter = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const faces = [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Inter');
+      return {
+        declared: faces.length,
+        loaded: faces.filter((face) => face.status === 'loaded').length,
+        available: document.fonts.check('700 18px Inter'),
+      };
+    });
+    assert.ok(inter.declared > 0, 'the built surface declares no Inter face');
+    assert.ok(inter.available, 'Inter is named but not available to render with');
+    assert.ok(inter.loaded > 0, `no Inter face loaded (${inter.declared} declared)`);
   } finally { await close(); }
 });
 
@@ -280,7 +319,11 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
     await press(page, '.gf-month-toggle');
     assert.equal(await page.getAttribute('.gf-month-toggle', 'aria-expanded'), 'false');
 
-    await press(page, `.gf-nav-col[data-pick="2024-06-26"]`);
+    // Back on the week, through the same recorded column the ribbon offers.
+    // The held day is whichever the store's latest recorded day is, not a date
+    // written down here: the desk arrives on its own latest, and the week it
+    // shows is that day's.
+    await press(page, `.gf-nav-col[data-pick="${recorded.iso}"]`);
     const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-log-row[data-day-row]')]
       .map((button) => ({ t: button.dataset.dayRow, state: button.querySelector('.tier')?.dataset.state })));
     assert.ok(rows.length > 0, 'the Episode Log rendered no row');
@@ -313,7 +356,14 @@ test('Escape leaves a utility from inside its own field, and steps a Guide artic
   try {
     await press(page, '.cockpit-utilities [data-utility="guide"]');
     await press(page, '.gf-guide-row');
+    // An authored article's text is served, so the heading arrives one read
+    // after the press. The caller's precise focus target has to survive that
+    // render — the first port dropped it and left focus on the document body.
+    await page.waitForSelector('.gf-article .gf-title', { timeout: 15000 });
     assert.equal(await countOf(page, '.gf-article .gf-title'), 1);
+    const onArticle = await activeElement(page);
+    assert.equal(onArticle.tag, 'H2', `opening an article left focus on ${JSON.stringify(onArticle)}`);
+    assert.match(onArticle.className, /gf-title/);
     // One level per press: the article steps back to its index, and the Guide
     // is still seated.
     await page.keyboard.press('Escape');

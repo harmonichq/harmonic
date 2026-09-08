@@ -82,6 +82,13 @@ function playwright() {
 const TARGET = process.env.TARGET || '';
 const MOCK_BASE_URL = (process.env.MOCK_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
 const APP_BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8765').replace(/\/$/, '');
+// HV2-02 says v1 and /v2/ coexist against the same AUTHENTICATED API. The
+// declared QA server runs with an empty token, so it can show the two surfaces
+// sharing one API and one database but cannot show the boundary refusing an
+// unauthenticated read. A second server, started with a token, is what proves
+// that half; S87 names the exact command when these are unset.
+const AUTH_BASE_URL = (process.env.AUTH_BASE_URL || '').replace(/\/$/, '');
+const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 
 // The lock's own target viewports (HV2-03, HV2-04). Never a driver default.
 const VIEWPORTS = { '1280x720': { width: 1280, height: 720 }, '1440x900': { width: 1440, height: 900 } };
@@ -333,9 +340,11 @@ export async function openApp(browser, { source = null, state = 'investigate', v
       + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
   }
 
-  const base = new URL(APP_BASE_URL);
-  if (!['127.0.0.1', 'localhost'].includes(base.hostname)) {
-    fail(`BASE_URL must name localhost, got ${base.hostname}`);
+  for (const origin of [APP_BASE_URL, AUTH_BASE_URL].filter(Boolean)) {
+    const hostname = new URL(origin).hostname;
+    if (!['127.0.0.1', 'localhost'].includes(hostname)) {
+      fail(`a declared base URL must name localhost, got ${hostname}`);
+    }
   }
 
   const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
@@ -344,6 +353,11 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   const unrouted = [];
   const consoleErrors = [];
   const requests = [];
+  // One-shot write failures a story installs at the exact boundary it wants to
+  // fail. The prototype had a harness control for this; the app has a real
+  // server that does not fail on request, so the failure is injected into the
+  // one request it is about and nothing else — see S71.
+  const failures = [];
   page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
   page.on('pageerror', (error) => consoleErrors.push(String(error)));
   page.on('response', (response) => {
@@ -351,11 +365,27 @@ export async function openApp(browser, { source = null, state = 'investigate', v
     requests.push({ path: url.pathname, status: response.status(), headers: response.headers() });
   });
 
+  const declared = (url) => [APP_BASE_URL, AUTH_BASE_URL]
+    .filter(Boolean)
+    .some((origin) => url === origin || url.startsWith(`${origin}/`));
+
   await page.route('**/*', async (route) => {
     const url = route.request().url();
-    if (url === APP_BASE_URL || url.startsWith(`${APP_BASE_URL}/`)) return route.continue();
-    unrouted.push(url);
-    return route.abort();
+    if (!declared(url)) {
+      unrouted.push(url);
+      return route.abort();
+    }
+    const request = route.request();
+    const path = new URL(url).pathname;
+    const at = failures.findIndex((entry) => entry.method === request.method() && path.startsWith(entry.path));
+    if (at !== -1) {
+      failures.splice(at, 1);
+      return route.fulfill({
+        status: 503, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'no response from the store' }),
+      });
+    }
+    return route.continue();
   });
 
   const target = `${APP_BASE_URL}/v2/${destination === 'overview' ? '' : `?to=${destination}`}`;
@@ -392,7 +422,11 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   ok(rendered.destination === destination,
     `requested ${destination} but the served markup shows ${rendered.destination}`);
 
-  return { page, context, consoleErrors, unrouted, requests, target: 'app', source, state, viewport };
+  return {
+    page, context, consoleErrors, unrouted, requests, target: 'app', source, state, viewport,
+    /** Fail the NEXT request that matches, once, at that exact boundary. */
+    failNext: (method, path) => failures.push({ method, path }),
+  };
 }
 
 /* --------------------------------------------------------------- assertions */
@@ -595,9 +629,28 @@ export const S8 = async (page) => {
   ok(stored.length === 0, `theme storage is present: ${JSON.stringify(stored)}`);
 };
 
-export const S9 = async (page) => {
+export const S9 = async (page, ctx) => {
   const family = await computed(page, '.gf-title', 'font-family');
   ok(/Inter/i.test(family || ''), `the stage title family is ${family}, not Inter`);
+  // On the app, the family must be RENDERED WITH, not merely declared. The mock
+  // opener runs without the Inter binary by design (its own header says computed
+  // type values are what it asserts), so this half belongs to the built surface,
+  // which packages the font and may reach no CDN for it.
+  if (ctx.target === 'app') {
+    const inter = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const faces = [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Inter');
+      return {
+        available: document.fonts.check('700 18px Inter'),
+        loaded: faces.filter((face) => face.status === 'loaded').map((face) => face.weight),
+        declared: faces.length,
+      };
+    });
+    ok(inter.declared > 0, 'the built surface declares no Inter face at all');
+    ok(inter.available, 'Inter is named but not available to render with; the desk is on a fallback');
+    ok(inter.loaded.length > 0,
+      `no Inter face actually loaded (${inter.declared} declared); the packaged font is not being served`);
+  }
   const size = parseFloat(await computed(page, '.gf-title', 'font-size'));
   ok(Math.abs(size - 18.24) < 0.75, `the stage title is ${size}px, not the locked 1.14rem`);
   ok((await computed(page, '.gf-title', 'font-weight')) === '700', 'the stage title is not weight 700');
@@ -1646,21 +1699,35 @@ export const S70 = async (page) => {
     'the logged entry does not show the amount that was entered');
 };
 
-export const S71 = async (page) => {
+export const S71 = async (page, ctx) => {
   // Corrected: install the utility save failure on its named control, then log
   // through the reader's affordance, then assert the retry succeeds.
-  await harnessCheck(page, 'utilitySaveFails', true);
+  //
+  // The app has no such control, and a healthy server is not a reason to omit
+  // this story. The failure is installed where the write actually happens — the
+  // one POST /api/carbs the press makes — so what is exercised is an ORDINARY
+  // failed save, not a simulated pane state. The durable state is then read back
+  // and must be unchanged: "a failed save shown as saved" is the risk this
+  // story exists to bar, and an entry that was written anyway would be worse.
   await activate(page, '.cockpit-log-carbs');
+  const entries = () => countOf(page, '.gf-entry-row');
+  const before = await entries();
+  if (ctx.target === 'app') ctx.failNext('POST', '/api/carbs');
+  else await harnessCheck(page, 'utilitySaveFails', true);
+
   await page.fill('#ut-grams', '18');
   await page.waitForTimeout(180);
   await activate(page, '[data-utility-log]');
   const failed = await page.locator('.gf-utility').first().innerText();
   ok(/fail/i.test(failed), `installing a utility save failure did not fail the save: ${failed.slice(0, 160)}`);
+  ok(await entries() === before, 'the failed save recorded an entry anyway');
   const retry = page.locator('[data-utility-retry]');
   ok(await retry.count() > 0, 'the failed utility save offers no Retry');
   await activate(page, '[data-utility-retry]');
+  await page.waitForTimeout(300);
   ok(!/fail/i.test(await page.locator('.gf-utility').first().innerText()),
     'the retried utility save still reports a failure');
+  ok(await entries() === before + 1, 'the retry reported success but recorded nothing');
 };
 
 /** Both copies of the open-question count: the footer's and the strip's. */
@@ -1786,7 +1853,16 @@ export const S74 = async (page) => {
     'the reveal control did not flip its own pressed state with the field');
 };
 
-export const S75 = async (page) => {
+// PROTOTYPE MEMORY -> PRODUCTION PERSISTENCE. The prototype held these two
+// saves in page memory and said so in its own copy ("saved in this page"). The
+// built app really persists them — the token into this browser's storage, the
+// credentials into the Store — and says THAT instead. The mock assertions below
+// are kept exactly as they were and still run on TARGET=mock; the app branch
+// asserts the stronger thing: not only the confirmation the surface shows, but
+// the durable state behind it. Neither story is weakened, renamed or deleted,
+// and the ledger's described behaviour is unchanged — only the medium the
+// prototype could not have is now checked. Recorded in the diff-to-mock notes.
+export const S75 = async (page, ctx) => {
   // Corrected: the token form holds two buttons — the reveal control
   // (type="button", DOM-first) and the submit (utilities.js:101,:103). Revision
   // 2's union selector took the reveal, so root's capture shows the token
@@ -1800,11 +1876,19 @@ export const S75 = async (page) => {
   await page.fill('#ut-token', 'synthetic-token');
   await submit.click();
   await page.waitForTimeout(300);
-  ok(/token saved in this page/i.test(await page.locator('.gf-utility').first().innerText()),
-    'saving the token reported nothing');
+  const pane = await page.locator('.gf-utility').first().innerText();
+  if (ctx.target === 'app') {
+    ok(/token saved in this browser/i.test(pane), `saving the token reported nothing: ${pane.slice(0, 200)}`);
+    // The durable half the prototype had no way to have: the token is where the
+    // one authenticated client reads it from on every request.
+    ok(await page.evaluate(() => localStorage.getItem('ciq_token')) === 'synthetic-token',
+      'the saved token is not in the storage frontend/data.js reads on every request');
+    return;
+  }
+  ok(/token saved in this page/i.test(pane), 'saving the token reported nothing');
 };
 
-export const S75b = async (page) => {
+export const S75b = async (page, ctx) => {
   // The credentials form and Developer mode, each driven by its own control.
   // Every value here is obviously manufactured; these are page-memory handlers
   // in the prototype, not credential storage, and nothing leaves the page.
@@ -1827,7 +1911,14 @@ export const S75b = async (page) => {
   await page.waitForTimeout(300);
 
   const saved = await pane();
-  ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
+  if (ctx.target === 'app') {
+    // The real write lands in the Store, so the confirmation says so without
+    // the prototype's page-memory caveat.
+    ok(/credentials saved/i.test(saved), `saving the credentials reported nothing: ${saved.slice(0, 200)}`);
+    ok(!/in this page/i.test(saved), 'the built app still claims a page-memory save');
+  } else {
+    ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
+  }
   ok(/EU region/i.test(saved), 'the saved credentials did not keep the chosen region');
   // The password is cleared from the form once saved (utilities.js:276).
   ok(await page.inputValue('#ut-password') === '',
@@ -1843,6 +1934,19 @@ export const S75b = async (page) => {
   ok(await dev.isChecked(), 'Developer mode did not take the change');
   ok(/never the analysis/i.test(await pane()),
     'Developer mode does not say it changes disclosure only');
+
+  if (ctx.target !== 'app') return;
+  // The durable half. A reload throws away every scrap of page state, so what
+  // the pane says after it can only have come from the Store.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.gf .pane', { timeout: 20000 });
+  await activate(page, '[data-utility="settings"]');
+  await page.waitForTimeout(400);
+  const reloaded = await pane();
+  ok(/credentials saved/i.test(reloaded) && !/no credentials saved/i.test(reloaded),
+    `the saved credentials did not survive a reload: ${reloaded.slice(0, 200)}`);
+  ok(await page.inputValue('#ut-password') === '',
+    'the reloaded form carries a password; a saved credential is never echoed back');
 };
 
 export const S76 = async (page) => {
@@ -2110,46 +2214,86 @@ export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no
 
 export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authenticated API and database',
   async (page) => {
-    // One client, one token key: frontend/data.js reads localStorage['ciq_token']
-    // for both surfaces, so the same stored token authenticates both.
-    const token = 'behaviour-replay-token';
-    const authorizations = [];
-    page.on('request', (request) => {
-      if (!new URL(request.url()).pathname.startsWith('/api/')) return;
-      authorizations.push([new URL(request.url()).pathname, request.headers().authorization || null]);
-    });
-    await page.evaluate((value) => localStorage.setItem('ciq_token', value), token);
+    // Revised. The first version proved nothing: it stored a token, loaded the
+    // desk on a destination that reads NOTHING, and then called the browser's
+    // own fetch() — which bypasses frontend/data.js entirely, so it exercised
+    // neither the client nor its token. This drives the surfaces' OWN reads,
+    // through that client, against a server that actually enforces a token.
+    if (!AUTH_BASE_URL || !AUTH_TOKEN) {
+      fail('S87 needs a token-protected synthetic server: the declared QA server runs '
+        + "with --token '' and so cannot refuse an unauthenticated read.\n"
+        + '  start a second one against its own copy of the same synthetic database:\n'
+        + "    cp mockups/qa-e2e.synthetic/harmonic.sqlite \"$TMPDIR/harmonic-qa-auth.sqlite\"\n"
+        + "    uv run harmonic serve --no-fetch --token 'synthetic-replay-token' \\\n"
+        + "      --db \"$TMPDIR/harmonic-qa-auth.sqlite\" --port 8766\n"
+        + '  then re-run with AUTH_BASE_URL=http://127.0.0.1:8766 '
+        + "AUTH_TOKEN=synthetic-replay-token");
+    }
 
-    await page.goto(`${APP_BASE_URL}/v2/`, { waitUntil: 'domcontentloaded' });
+    // Every /api/ read either surface makes, with the header it carried and the
+    // body it received. Read off the network, so it sees the client's real
+    // requests rather than anything installed into the page.
+    const reads = [];
+    page.on('response', async (response) => {
+      const path = new URL(response.url()).pathname;
+      if (!path.startsWith('/api/')) return;
+      const entry = {
+        path, status: response.status(),
+        authorization: response.request().headers().authorization || null,
+        body: null,
+      };
+      reads.push(entry);
+      try { entry.body = await response.text(); } catch { /* a redirect or an abort has none */ }
+    });
+    const since = (mark) => reads.slice(mark);
+    const settle = async () => page.waitForTimeout(2500);
+
+    // 1. The boundary refuses an unauthenticated read, on the desk's own Day —
+    //    a destination that actually reads.
+    await page.evaluate(() => localStorage.removeItem('ciq_token'));
+    let mark = reads.length;
+    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.gf .pane', { timeout: 20000 });
-    const fromV2 = await page.evaluate(async () => {
-      const response = await fetch('/api/status');
-      return { status: response.status, body: await response.text() };
-    });
-    ok(fromV2.status === 200, `/v2/ could not read the API: ${fromV2.status}`);
-    const v2Authorizations = authorizations.filter(([, value]) => value);
-    ok(v2Authorizations.length > 0 && v2Authorizations.every(([, value]) => value === `Bearer ${token}`),
-      `the v2 desk did not send the stored bearer token: ${JSON.stringify(v2Authorizations.slice(0, 3))}`);
+    await settle();
+    const anonymous = since(mark);
+    ok(anonymous.length > 0, 'the v2 desk made no API read at all on Day; it cannot show an authenticated boundary');
+    ok(anonymous.every((read) => !read.authorization),
+      'a read carried an Authorization header before any token was stored');
+    ok(anonymous.every((read) => read.status === 401),
+      `the token-protected API admitted an unauthenticated v2 read: ${JSON.stringify(anonymous.map((r) => [r.path, r.status]))}`);
 
-    // V1 is still served, on its own routes, and is a different shell.
-    authorizations.length = 0;
-    const v1 = await page.goto(`${APP_BASE_URL}/`, { waitUntil: 'domcontentloaded' });
+    // 2. With the token stored, the desk's own client reads succeed and carry it.
+    await page.evaluate((value) => localStorage.setItem('ciq_token', value), AUTH_TOKEN);
+    mark = reads.length;
+    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
+    await settle();
+    const v2Reads = since(mark);
+    ok(v2Reads.length > 0, 'the v2 desk made no API read with a token stored');
+    ok(v2Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+      `the v2 desk did not send the stored token: ${JSON.stringify(v2Reads.map((r) => [r.path, r.authorization]))}`);
+    ok(v2Reads.every((read) => read.status === 200),
+      `an authenticated v2 read was refused: ${JSON.stringify(v2Reads.map((r) => [r.path, r.status]))}`);
+    const v2Status = v2Reads.find((read) => read.path === '/api/status');
+    ok(v2Status, 'the v2 desk did not read /api/status, so there is no shared read to compare');
+
+    // 3. V1 is still served on its own routes, is a different shell, and reads
+    //    the same API and the same database with the same stored token.
+    mark = reads.length;
+    const v1 = await page.goto(`${AUTH_BASE_URL}/`, { waitUntil: 'domcontentloaded' });
     ok(v1 && v1.ok(), `v1 is no longer served: ${v1 && v1.status()}`);
     const v1Html = await v1.text();
     ok(!v1Html.includes('/v2/assets/'), 'the root path served the v2 shell; this change admits no cutover');
     ok(v1Html.includes('/assets/'), 'the root path did not serve the v1 shell');
-    await page.waitForTimeout(1500);
-    const fromV1 = await page.evaluate(async () => {
-      const response = await fetch('/api/status');
-      return { status: response.status, body: await response.text() };
-    });
-    // The same API, and the same database behind it: one read, two surfaces.
-    ok(fromV1.status === 200, `v1 could not read the API: ${fromV1.status}`);
-    ok(fromV1.body === fromV2.body,
-      `the two surfaces read different databases:\n  /v2/: ${fromV2.body}\n  /   : ${fromV1.body}`);
-    const v1Authorizations = authorizations.filter(([, value]) => value);
-    ok(v1Authorizations.length > 0 && v1Authorizations.every(([, value]) => value === `Bearer ${token}`),
-      `v1 did not send the same stored bearer token: ${JSON.stringify(v1Authorizations.slice(0, 3))}`);
+    await settle();
+    const v1Reads = since(mark);
+    ok(v1Reads.length > 0, 'v1 made no API read');
+    ok(v1Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+      `v1 did not send the same stored token: ${JSON.stringify(v1Reads.map((r) => [r.path, r.authorization]))}`);
+    const v1Status = v1Reads.find((read) => read.path === '/api/status' && read.status === 200);
+    ok(v1Status, `v1 did not read /api/status successfully: ${JSON.stringify(v1Reads.map((r) => [r.path, r.status]))}`);
+    ok(v1Status.body === v2Status.body,
+      `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
   });
 export const S88 = deferred('S88', 'HV2-16', 'Set aside and Restore are durable Store writes surviving reload');
 export const S89 = deferred('S89', 'HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist');
@@ -2193,6 +2337,11 @@ export const S73b = appOnly('HV2-32',
     ok(await countOf(page, '.gf-utility[data-utility="guide"]') === 1, 'the Guide did not open');
     ok(await countOf(page, '.gf-guide-row') > 0, 'the Guide listed no article to open');
     await activate(page, '.gf-guide-row');
+    // An authored article's text is SERVED (/api/kb/<slug>), so the press
+    // renders a loading state first and the heading arrives one read later.
+    // The caller's focus target has to survive that, which is the whole point
+    // of this story against the app.
+    await page.waitForSelector('.gf-article .gf-title', { timeout: 15000 });
     ok(await countOf(page, '.gf-article .gf-title') === 1, 'the article did not open');
     const focused = await activeElement(page);
     ok(focused && focused.tag === 'H2' && /gf-title/.test(focused.className || ''),

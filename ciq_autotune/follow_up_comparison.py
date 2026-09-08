@@ -309,7 +309,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             before=record.get("before"), after=record.get("after"), start=lo, end=hi,
             cgm=cgm, bolus=bolus, basal=basal, carbs=eligible_carbs, snapshots=snapshots,
             pump_events=[e for e in store.pump_events() if e.t < cutoff] if hasattr(store, "pump_events") else (),
-            isf=programmed["value"], captured_members=record.get("member_start_mins"), focus=kind == "focus",
+            isf=programmed["value"], captured_members=record.get("members"), focus=kind == "focus",
         )
         populations.append(population)
         day_groups, coverage = _glycemic(population, lo, hi)

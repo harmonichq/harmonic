@@ -1529,3 +1529,70 @@ additive response assertions, and refreshes only the
 named existing derived artifacts with their existing generators. Completed Store and
 comparison tasks and all accepted comparison decisions remain intact. No production
 comparison edit, UI work, new fixture family or weaker delivery gate is admitted.
+
+
+## ADR 348 — Freeze the desktop lock and admit one integrated UI child
+
+The selected desktop direction now has a formal UI Craft contract:
+`mockups/harmonic-v2-desktop.lock.md`, with the ★ LOCKED narrative header in
+`mockups/harmonic-v2-glucose.html` and its primary companion module. The route
+is `lock` rather than `revise` because `/v2/` has no shipped embodiment; the
+predecessor inventory ran anyway, because this surface takes over jobs the
+shipped Cockpit shell and Finding → evidence routing surfaces perform today.
+Both v1 surfaces stay served and registered, and their ledgers are unedited.
+The manifest carries thirty-four terms `HV2-01`–`HV2-34`, the complete
+predecessor disposition for the cockpit, finding/evidence, Diagnose-registry and
+executable lists, and every retirement's existing operator sanction. No sanction
+originates in the manifest, and no historical ledger was rewritten: the two
+stories sharing the reused `P55` identifier are cited by ledger path plus story
+title, boundary-crossing draw kept and the global Align Tab stop retired under
+its own ruling.
+
+Precedence is explicit, because three authorities answer three different
+questions. The selected prototype and the adopted repair records govern `/v2/`
+arrangement, hierarchy, destination behavior, acknowledgment and return. The
+shipped app's token layer, role-based chrome, sibling geometry and production
+chart renderers govern component material. Backend responses govern identity,
+eligibility, readiness, admission, permissions, evidence populations, periods,
+comparison results, persistence and endings. Where the prototype fed an
+arrangement from page memory, the build keeps the arrangement and binds it to
+the serialized field: watch maturity copy stays lifecycle metadata and supplies
+no evidence readiness, which comes from the selected record's retained
+comparison. The backend bindings verified at `3686b417` are unchanged at the
+final CI candidate, and no backend capability is owed.
+
+**Why a fifth native child rather than a component or view backlog.** The
+delivery sequence caps ordinary splits at three and requires a written
+dependency or independently-shippable-capability justification beyond that. This
+child clears both. Its dependency is real and now satisfied: a complete
+Python-served desktop composition cannot be accepted before the merged guidance
+capability (#384) and the merged durable follow-up APIs (#387) exist, because
+its acceptance turns on rendering served admission, permissions, readiness,
+endings and history rather than on page memory. Its capability is
+independently shippable: `/v2/` served by the packaged Python runtime with v1
+still available, completing the priority → setting or habit change → follow-up →
+saved conclusion loop behind a preview route. Both loops stay in one child
+because they share one desk, one navigation contract, one active-change seat and
+one history surface; splitting them would produce two halves neither of which
+completes the first-release milestone, and a per-chart or per-view backlog would
+fragment exactly the composition the lock exists to hold.
+
+Sequencing is the lock's own rule and is not negotiable by the build: the `★
+FROZEN` v2 behavior ledger and its fail-closed replay are written **before** any
+production UI implementation, following `behavior-sweep`. The complete synthetic
+acceptance fixture matrix, the verbatim-first port, the paired prototype and
+built-app fidelity evidence at both target viewports, the one-row-per-term
+fidelity ledger, and human acceptance of the complete first usable release
+follow in their existing stages under tasks 3.4 and 3.5. Task 2.4 stays open
+until that ledger and replay exist; this decision formalizes the contract, not
+its verification.
+
+This admits no mobile design or acceptance, no root-route cutover and no v1
+retirement; those remain tasks 4.1–4.3. It opens no new concept, navigation or
+naming round. `/v2/` names its destination `Explore` under *ADR 348 — Adopt the
+reviewed desktop direction*, and v1's `Diagnose` is not renamed — the open
+question in `predecessor.md` was about renaming the shipped surface, which this
+work does not do. Watch fourteen-day maturity and twenty-eight-day expiry remain
+accepted lifecycle metadata and are not reopened. This is a formal design
+contract; it is not fidelity evidence, built-app acceptance or release approval,
+and it authorizes no production edit on its own.

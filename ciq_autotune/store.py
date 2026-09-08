@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Iterable, List, Optional
@@ -73,6 +74,15 @@ class FocusAlreadyActive(RuntimeError):
     At most one watched change is active at a time (ADR 0029); the ``focus``
     table's partial unique index rejects a second active pin. Surfaced as a 409 by
     the API's pin endpoint."""
+
+
+class FollowUpConflict(RuntimeError):
+    """A durable follow-up write could not use the caller's input state."""
+
+    def __init__(self, reason: str, actual_revision: int):
+        super().__init__(reason)
+        self.reason = reason
+        self.actual_revision = actual_revision
 
 
 PLAN_ITEM_FAMILIES = frozenset(("basal", "isf", "ic", "target"))
@@ -418,14 +428,10 @@ CREATE TABLE IF NOT EXISTS plan_history (
     items_json TEXT NOT NULL
 );
 
--- Focus (#244, ADR 0029) — the ONE persisted watched-change object. A Focus is a
--- behavioral lever the user pins by hand to work on; unlike a Trial (derived-live
--- from the setting-change epoch, never stored) it has no derivable source, so the
--- pin must persist. The row stores only the minimum: which lever, when it was
--- pinned, and its lifecycle status. Target metric, adherence, and outcome are all
--- DERIVED from the lever id at read time (off the per-lever clean-rate series
--- /api/outcomes/trend already computes), never frozen here. The partial unique index
--- enforces the one-active invariant: at most one 'active' Focus at a time.
+-- Legacy Focus identity/status (#244, ADR 0029). The existing trend derives
+-- metrics from its lever at read time. ADR 386's retained comparison context and
+-- ending assessment live separately in follow_up_records; legacy responses keep
+-- this row's shape. The partial unique index permits at most one active Focus.
 CREATE TABLE IF NOT EXISTS focus (
     id        INTEGER PRIMARY KEY,
     lever     TEXT NOT NULL,           -- a behavioral-flavored lever id (see watched_change.pinnable_levers)
@@ -477,6 +483,28 @@ CREATE TABLE IF NOT EXISTS input_data_revision (
     revision INTEGER NOT NULL
 );
 INSERT OR IGNORE INTO input_data_revision (id, revision) VALUES (1, 0);
+
+-- Bounded historical facts, separate from the legacy Plan/Focus response shapes.
+CREATE TABLE IF NOT EXISTS follow_up_records (
+    kind TEXT NOT NULL CHECK (kind IN ('plan', 'trial', 'focus')),
+    id TEXT NOT NULL,
+    record_json TEXT NOT NULL,
+    PRIMARY KEY (kind, id)
+);
+CREATE TABLE IF NOT EXISTS follow_up_frontier (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    trial_id TEXT,
+    detected_at TEXT,
+    reconciled_input_revision INTEGER NOT NULL,
+    CHECK ((trial_id IS NULL) = (detected_at IS NULL))
+);
+CREATE TABLE IF NOT EXISTS follow_up_requests (
+    request_id TEXT PRIMARY KEY,
+    operation TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subject_id TEXT NOT NULL,
+    result_json TEXT NOT NULL
+);
 """
 
 # Additive columns introduced after the first release, applied to pre-existing
@@ -498,6 +526,21 @@ _ADDED_COLUMNS = [
 ]
 
 
+_FOLLOW_UP_FIELDS = {
+    'plan': {'applied_at', 'items', 'decision_context', 'deliverable',
+             'reconciliation', 'withdrawal'},
+    'trial': {'parameter', 'slot', 'changed_at', 'before', 'after',
+              'block', 'members', 'first_observed_at', 'observed_context',
+              'comparison_context', 'reconciliation', 'ending'},
+    'focus': {'lever', 'pinned_at', 'status', 'decision_context',
+              'comparison_context', 'ending'},
+}
+_FOLLOW_UP_ENVELOPES = frozenset((
+    'decision_context', 'observed_context', 'comparison_context',
+    'deliverable', 'reconciliation', 'withdrawal', 'ending',
+))
+
+
 class Store:
     """A connection to the local SQLite store.
 
@@ -509,6 +552,12 @@ class Store:
 
     def __init__(self, conn: sqlite3.Connection, readonly: bool = False):
         self.conn = conn
+        self._readonly = readonly
+        self._follow_up_start_changes = None
+        self._follow_up_failed = False
+        self._follow_up_frontier_written = False
+        self._follow_up_new_frontier_at = None
+        self._follow_up_resolved_focuses = set()
         self.conn.row_factory = sqlite3.Row
         # ON DELETE CASCADE (prompt_responses -> carb_entries, #125) needs
         # foreign-key enforcement, which SQLite leaves off per-connection by
@@ -610,6 +659,66 @@ class Store:
     def __exit__(self, *exc) -> None:
         self.close()
 
+    @contextmanager
+    def _write_transaction(self):
+        """Legacy writers retain their commit boundary, or join follow-up."""
+        if self._follow_up_start_changes is None:
+            with self.conn:
+                yield
+        else:
+            try:
+                yield
+            except BaseException:
+                self._follow_up_failed = True
+                raise
+
+    @contextmanager
+    def follow_up_transaction(self, *, expected_revision=None):
+        """Reserve one writer; joined writes publish one revision or nothing.
+
+        Inside the scope input_data_revision includes its pending advance, so a
+        reconciliation receipt can name the state that will actually be committed.
+        A caught failure in a joined scope still aborts the outer transaction.
+        """
+        if self._readonly:
+            raise sqlite3.OperationalError("attempt to write a readonly database")
+        if self._follow_up_start_changes is not None:
+            with self._write_transaction():
+                revision = self.input_data_revision()
+                if expected_revision is not None and expected_revision != revision:
+                    raise FollowUpConflict("stale_input_revision", revision)
+                yield self
+            return
+        self.conn.execute("BEGIN IMMEDIATE")
+        self._follow_up_start_changes = self.conn.total_changes
+        self._follow_up_failed = False
+        self._follow_up_frontier_written = False
+        self._follow_up_new_frontier_at = None
+        self._follow_up_resolved_focuses = set()
+        try:
+            revision = self.input_data_revision()
+            if expected_revision is not None and expected_revision != revision:
+                raise FollowUpConflict("stale_input_revision", revision)
+            yield self
+            if self._follow_up_failed:
+                raise FollowUpConflict("transaction_aborted", self.input_data_revision())
+            if self.conn.total_changes != self._follow_up_start_changes:
+                if self._follow_up_frontier_written:
+                    self.conn.execute(
+                        "UPDATE follow_up_frontier SET reconciled_input_revision = ? WHERE singleton = 1",
+                        (revision + 1,))
+                self.conn.execute(
+                    "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            self.conn.commit()
+        except BaseException:
+            self.conn.rollback()
+            raise
+        finally:
+            self._follow_up_start_changes = None
+            self._follow_up_frontier_written = False
+            self._follow_up_failed = False
+            self._follow_up_resolved_focuses.clear()
+
     # --- writers (idempotent upserts) --------------------------------------
 
     def _upsert(self, table: str, cols: list, conflict: list, rows: Iterable[tuple]) -> int:
@@ -624,21 +733,24 @@ class Store:
             f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({placeholders}) "
             f"ON CONFLICT ({', '.join(conflict)}) DO UPDATE SET {updates}"
         )
-        with self.conn:
+        with self._write_transaction():
             self.conn.executemany(sql, rows)
             self._advance_revision()
         return len(rows)
 
     def _advance_revision(self) -> None:
         """Advance the durable derivation key inside the caller's transaction."""
-        self.conn.execute(
-            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+        if self._follow_up_start_changes is None:
+            self.conn.execute(
+                "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
 
     def input_data_revision(self) -> int:
-        """The committed Store generation used to key durable derivations."""
+        """Store generation, including a pending follow-up transaction advance."""
         row = self.conn.execute(
             "SELECT revision FROM input_data_revision WHERE id = 1").fetchone()
-        return int(row["revision"])
+        pending = (self._follow_up_start_changes is not None
+                   and self.conn.total_changes != self._follow_up_start_changes)
+        return int(row["revision"]) + int(pending)
 
     def upsert_basal(self, raw: Iterable[dict]) -> int:
         cols = ["seq_num", "t", "delivery_type", "duration_mins", "basal_rate",
@@ -899,7 +1011,7 @@ class Store:
         """
         t = format_t(entry.t)
         created = format_t(entry.created_at or datetime.now())
-        with self.conn:
+        with self._write_transaction():
             if id is None:
                 cur = self.conn.execute(
                     "INSERT INTO carb_entries (t, grams, certainty, source, note, created_at) "
@@ -949,7 +1061,7 @@ class Store:
     def delete_carb_entry(self, id: int) -> int:
         """Delete a carb entry by id; its ``prompt_responses`` row cascades away so
         the sourcing prompt resurrects. Returns the number of entries deleted (0/1)."""
-        with self.conn:
+        with self._write_transaction():
             cur = self.conn.execute("DELETE FROM carb_entries WHERE id = ?", (id,))
             if cur.rowcount:
                 self._advance_revision()
@@ -960,7 +1072,7 @@ class Store:
                                answered_at: Optional[datetime] = None) -> int:
         """Store a user's answer to a recomputed (detector, anchor_t) prompt; returns
         its id. ``carb_entry_id`` is set only when ``answer == 'carbs'``."""
-        with self.conn:
+        with self._write_transaction():
             cur = self.conn.execute(
                 "INSERT INTO prompt_responses "
                 "(detector, anchor_t, answer, carb_entry_id, answered_at) "
@@ -986,7 +1098,7 @@ class Store:
         ``(carb_entry_id, prompt_response_id)``; the response references the entry."""
         created = format_t(entry.created_at or datetime.now())
         answered = format_t(answered_at or datetime.now())
-        with self.conn:
+        with self._write_transaction():
             cur = self.conn.execute(
                 "INSERT INTO carb_entries (t, grams, certainty, source, note, created_at) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
@@ -1018,7 +1130,7 @@ class Store:
         """
         lo = format_t(anchor_t - timedelta(minutes=tolerance_min))
         hi = format_t(anchor_t + timedelta(minutes=tolerance_min))
-        with self.conn:
+        with self._write_transaction():
             rows = self.conn.execute(
                 "SELECT id, carb_entry_id FROM prompt_responses "
                 "WHERE detector = ? AND anchor_t BETWEEN ? AND ?",
@@ -1038,7 +1150,7 @@ class Store:
 
     def set_credentials(self, *, email: str, password_encrypted: bytes,
                         region: str, updated_at: str) -> None:
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO credentials (id, email, password_encrypted, region, updated_at) "
                 "VALUES (1, ?, ?, ?, ?) "
@@ -1059,7 +1171,7 @@ class Store:
         only advance on success — a failed attempt updates ``last_attempt_at``
         and ``last_error`` but leaves the last-known-good state in place."""
         written_json = json.dumps(written) if written is not None else None
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO fetch_status "
                 "(id, last_attempt_at, last_success_at, last_error, last_written_json) "
@@ -1095,7 +1207,7 @@ class Store:
 
     def save_plan_draft(self, items: list, updated_at: str) -> None:
         validate_plan_items(items)
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO plan_draft (id, items_json, updated_at) VALUES (1, ?, ?) "
                 "ON CONFLICT (id) DO UPDATE SET items_json=excluded.items_json, "
@@ -1111,7 +1223,7 @@ class Store:
         if not draft or not draft["items"]:
             raise ValueError("no plan draft to apply")
         validate_plan_items(draft["items"])
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO plan_history (applied_at, items_json) VALUES (?, ?)",
                 (applied_at, json.dumps(draft["items"])),
@@ -1127,7 +1239,7 @@ class Store:
         return [{"applied_at": r["applied_at"], "items": json.loads(r["items_json"])}
                 for r in rows]
 
-    # --- Focus: the one persisted watched-change object (#244, ADR 0029) -------
+    # --- Legacy Focus identity and status (#244, ADR 0029) -------------------
 
     def pin_focus(self, lever: str, pinned_at: str) -> dict:
         """Pin a behavioral lever as the active Focus and return the stored row.
@@ -1137,14 +1249,16 @@ class Store:
         broader Trial-XOR-Focus invariant (reject a pin while a *Trial* is live) is
         enforced above this by the caller, which has the event data a Trial needs.
         """
-        with self.conn:
+        with self._write_transaction():
             try:
                 cur = self.conn.execute(
                     "INSERT INTO focus (lever, pinned_at, status) VALUES (?, ?, 'active')",
                     (lever, pinned_at),
                 )
-            except sqlite3.IntegrityError:
-                raise FocusAlreadyActive("a Focus is already active")
+            except sqlite3.IntegrityError as exc:
+                if exc.sqlite_errorname != "SQLITE_CONSTRAINT_UNIQUE":
+                    raise
+                raise FocusAlreadyActive("a Focus is already active") from exc
             self._advance_revision()
             return {"id": cur.lastrowid, "lever": lever,
                     "pinned_at": pinned_at, "status": "active"}
@@ -1164,13 +1278,15 @@ class Store:
         """
         if status not in ("resolved", "dropped"):
             raise ValueError(f"invalid focus status: {status!r}")
-        with self.conn:
+        with self._write_transaction():
             cur = self.conn.execute(
                 "UPDATE focus SET status = ? WHERE id = ? AND status = 'active'",
                 (status, focus_id),
             )
             if cur.rowcount:
                 self._advance_revision()
+                if self._follow_up_start_changes is not None:
+                    self._follow_up_resolved_focuses.add(focus_id)
         return cur.rowcount > 0
 
     def list_focuses(self) -> List[dict]:
@@ -1191,7 +1307,7 @@ class Store:
                                  reason: Optional[str], comparison_version: str,
                                  state: dict, expected_revision: Optional[int] = None) -> None:
         starts_transaction = not self.conn.in_transaction
-        with self.conn:
+        with self._write_transaction():
             if starts_transaction:
                 # Reserve the one WAL writer before reading the generation.  A
                 # deferred transaction would not lock until INSERT and would
@@ -1210,7 +1326,7 @@ class Store:
             self._advance_revision()
 
     def restore_guidance_preference(self, subject: str) -> bool:
-        with self.conn:
+        with self._write_transaction():
             cur = self.conn.execute("DELETE FROM guidance_preferences WHERE subject=?", (subject,))
             if cur.rowcount:
                 self._advance_revision()
@@ -1220,6 +1336,297 @@ class Store:
     def _focus_row(row: sqlite3.Row) -> dict:
         return {"id": row["id"], "lever": row["lever"],
                 "pinned_at": row["pinned_at"], "status": row["status"]}
+
+    # --- Durable Plan / Trial / Focus history (ADR 386) -------------------
+
+    @staticmethod
+    def _follow_up_identity(kind, id):
+        if kind not in ('plan', 'trial', 'focus'):
+            raise ValueError('invalid follow-up kind')
+        if kind == 'focus':
+            if type(id) is not int or id <= 0:
+                raise ValueError('invalid Focus id')
+        elif not isinstance(id, str) or not id.strip() or len(id) > 512:
+            raise ValueError('invalid follow-up id')
+
+    @staticmethod
+    def _follow_up_time(value):
+        if not isinstance(value, str):
+            raise ValueError('follow-up time must be a pump-local timestamp')
+        try:
+            parsed = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            raise ValueError('follow-up time must be a pump-local timestamp') from None
+        if parsed.strftime('%Y-%m-%d %H:%M:%S') != value:
+            raise ValueError('follow-up time must be a pump-local timestamp')
+
+    @staticmethod
+    def _follow_up_json(value):
+        # The owner supplies summaries, never raw evidence or refresh snapshots.
+        # Bound each durable record/result without imposing clinical row policy.
+        encoded = json.dumps(value, sort_keys=True, allow_nan=False)
+        if len(encoded.encode('utf-8')) > 262144:
+            raise ValueError('follow-up record exceeds 256 KiB')
+        return encoded
+
+    @staticmethod
+    def _follow_up_unavailable(reason='not_recorded'):
+        return {'version': '386:1', 'state': 'unavailable', 'reason': reason}
+
+    def _follow_up_table_exists(self, table):
+        # Old readonly stores must not migrate merely to inspect their history.
+        return self.conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table,)).fetchone() is not None
+
+    def _require_follow_up_transaction(self):
+        if self._readonly:
+            raise sqlite3.OperationalError('attempt to write a readonly database')
+        if self._follow_up_start_changes is None:
+            raise FollowUpConflict('transaction_required', self.input_data_revision())
+
+    def follow_up_record(self, kind, id):
+        """Read retained facts, adding explicit unknowns to legacy base rows."""
+        self._follow_up_identity(kind, id)
+        base = None
+        if kind == 'plan':
+            row = self.conn.execute(
+                'SELECT * FROM plan_history WHERE applied_at = ?', (id,)).fetchone()
+            if row is not None:
+                base = {'applied_at': row['applied_at'], 'items': json.loads(row['items_json'])}
+        elif kind == 'focus':
+            row = self.conn.execute('SELECT * FROM focus WHERE id = ?', (id,)).fetchone()
+            if row is not None:
+                base = self._focus_row(row)
+        retained = None
+        if self._follow_up_table_exists('follow_up_records'):
+            row = self.conn.execute(
+                'SELECT record_json FROM follow_up_records WHERE kind = ? AND id = ?',
+                (kind, str(id))).fetchone()
+            if row is not None:
+                retained = json.loads(row['record_json'])
+        if base is None and retained is None:
+            return None
+        fields = _FOLLOW_UP_FIELDS[kind] & _FOLLOW_UP_ENVELOPES
+        reason = 'legacy_not_recorded' if retained is None else 'not_recorded'
+        record = {field: self._follow_up_unavailable(reason) for field in fields}
+        record.update({'kind': kind, 'id': id, 'version': '386:1'})
+        if retained is not None:
+            record.update(retained)
+        if base is not None:
+            record.update(base)
+        return record
+
+    def follow_up_records(self, kind):
+        """Newest first; Trial ties use ascending canonical identity."""
+        if kind not in ('plan', 'trial', 'focus'):
+            raise ValueError('invalid follow-up kind')
+        if kind == 'plan':
+            ids = [row['applied_at'] for row in self.plan_history()]
+        elif kind == 'focus':
+            ids = [row['id'] for row in self.list_focuses()]
+        elif self._follow_up_table_exists('follow_up_records'):
+            ids = [row['id'] for row in self.conn.execute(
+                "SELECT id FROM follow_up_records WHERE kind = 'trial' ORDER BY id")]
+        else:
+            ids = []
+        records = [self.follow_up_record(kind, id) for id in ids]
+        if kind == 'trial':
+            records.sort(key=lambda record: record['changed_at'], reverse=True)
+        return records
+
+    def save_follow_up_record(self, record):
+        """Capture once; only absent relationships and terminal receipts may fill.
+
+        Clinical eligibility, schedule matching and the ending verdict belong to
+        the lifecycle owner. Store verifies identities and preserves the winner.
+        """
+        self._require_follow_up_transaction()
+        with self._write_transaction():
+            if not isinstance(record, dict):
+                raise ValueError('follow-up record must be an object')
+            kind, id = record.get('kind'), record.get('id')
+            self._follow_up_identity(kind, id)
+            if record.get('version') != '386:1':
+                raise ValueError('invalid follow-up version')
+            fields = _FOLLOW_UP_FIELDS[kind]
+            if record.keys() - fields - {'kind', 'id', 'version'}:
+                raise ValueError('unknown follow-up record field')
+            self._follow_up_json(record)
+            old = self.follow_up_record(kind, id)
+            if kind != 'trial' and old is None:
+                raise FollowUpConflict('orphan_base_record', self.input_data_revision())
+            base_fields = {'plan': ('applied_at', 'items'),
+                           'focus': ('lever', 'pinned_at', 'status'), 'trial': ()}[kind]
+            for field in base_fields:
+                if field in record and record[field] != old[field]:
+                    raise FollowUpConflict('base_record_mismatch', self.input_data_revision())
+            row = self.conn.execute(
+                'SELECT record_json FROM follow_up_records WHERE kind = ? AND id = ?',
+                (kind, str(id))).fetchone()
+            if row is None:
+                if kind == 'trial':
+                    required = {'parameter', 'slot', 'changed_at', 'before', 'after',
+                                'first_observed_at', 'observed_context'}
+                    if not required <= record.keys() or not isinstance(record['parameter'], str):
+                        raise ValueError('missing Trial observation fields')
+                    self._follow_up_time(record['changed_at'])
+                    self._follow_up_time(record['first_observed_at'])
+                winner = dict(record)
+            else:
+                winner = json.loads(row['record_json'])
+                for field in ('reconciliation', 'ending', 'withdrawal'):
+                    prior = winner.get(field, {})
+                    proposed = record.get(field, {})
+                    if not isinstance(proposed, dict):
+                        raise ValueError('invalid follow-up availability envelope')
+                    # An observed ending with explicitly unknown event timing is
+                    # still a first ending. Its availability is not permission
+                    # for a later request to replace the retained facts.
+                    captured = 'kind' if field == 'ending' else 'withdrawn_at'
+                    prior_captured = field != 'reconciliation' and captured in prior
+                    proposed_captured = field != 'reconciliation' and captured in proposed
+                    if (prior.get('state') != 'available' and not prior_captured
+                            and (proposed.get('state') == 'available' or proposed_captured)):
+                        winner[field] = proposed
+            for field in fields & _FOLLOW_UP_ENVELOPES:
+                envelope = winner.setdefault(field, self._follow_up_unavailable())
+                if (not isinstance(envelope, dict) or envelope.get('version') != '386:1'
+                        or envelope.get('state') not in ('available', 'unavailable')):
+                    raise ValueError('invalid follow-up availability envelope')
+                if envelope['state'] == 'unavailable' and not envelope.get('reason'):
+                    raise ValueError('unavailable follow-up field requires a reason')
+            relationship = winner.get('reconciliation', {})
+            if relationship.get('state') == 'available':
+                plan_id, trial_id = relationship.get('applied_at'), relationship.get('trial_id')
+                self._follow_up_identity('plan', plan_id)
+                self._follow_up_identity('trial', trial_id)
+                if ((kind == 'plan' and plan_id != id) or (kind == 'trial' and trial_id != id)
+                        or self.follow_up_record('plan', plan_id) is None
+                        or (kind == 'plan' and self.follow_up_record('trial', trial_id) is None)):
+                    raise FollowUpConflict('invalid_reconciliation_identity', self.input_data_revision())
+            if (kind == 'focus' and old['status'] != 'active'
+                    and 'kind' not in old['ending']
+                    and id not in self._follow_up_resolved_focuses
+                    and 'kind' in winner['ending']):
+                raise FollowUpConflict('legacy_ending_unavailable', self.input_data_revision())
+            terminal = winner.get('ending', {})
+            if terminal.get('state') == 'available' or 'kind' in terminal:
+                self._follow_up_time(terminal.get('recorded_at'))
+                if terminal['state'] == 'available' or terminal.get('effective_at') is not None:
+                    self._follow_up_time(terminal.get('effective_at'))
+                ending_kinds = {'trial': ('user_finished', 'reverted', 'superseded', 'expired_unreviewed'),
+                                'focus': ('manual', 'trial_preempted', 'lever_unavailable')}
+                if terminal.get('kind') not in ending_kinds[kind]:
+                    raise ValueError('invalid follow-up ending kind')
+                if (terminal['kind'] not in ('user_finished', 'manual')
+                        and terminal.get('conclusion') is not None):
+                    raise ValueError('automatic ending cannot supply a user conclusion')
+                assessment = terminal.get('assessment')
+                if (not isinstance(assessment, dict) or assessment.get('version') != '386:1'
+                        or assessment.get('state') not in ('available', 'unavailable')
+                        or (assessment['state'] == 'unavailable' and not assessment.get('reason'))):
+                    raise ValueError('ending requires an explicit assessment availability')
+            withdrawal = winner.get('withdrawal', {})
+            if withdrawal.get('state') == 'available':
+                self._follow_up_time(withdrawal.get('withdrawn_at'))
+            encoded = self._follow_up_json(winner)
+            if row is None:
+                self.conn.execute(
+                    'INSERT INTO follow_up_records (kind, id, record_json) VALUES (?, ?, ?)',
+                    (kind, str(id), encoded))
+            elif encoded != row['record_json']:
+                self.conn.execute(
+                    'UPDATE follow_up_records SET record_json = ? WHERE kind = ? AND id = ?',
+                    (encoded, kind, str(id)))
+            return self.follow_up_record(kind, id)
+
+    def follow_up_frontier(self):
+        if not self._follow_up_table_exists('follow_up_frontier'):
+            return None
+        row = self.conn.execute(
+            'SELECT trial_id, detected_at, reconciled_input_revision FROM follow_up_frontier '
+            'WHERE singleton = 1').fetchone()
+        return dict(row) if row is not None else None
+
+    def advance_follow_up_frontier(self, trial_id, detected_at, *, reconciled_input_revision):
+        """Retain committed admission; only a later instant replaces its Trial.
+
+        The lifecycle owner supplies its selected candidate. During the first
+        admission at an instant, calls in this transaction settle ties by id.
+        Later refreshes cannot promote a peer of an already committed admission.
+        """
+        self._require_follow_up_transaction()
+        with self._write_transaction():
+            revision = self.input_data_revision()
+            if type(reconciled_input_revision) is not int or reconciled_input_revision != revision:
+                raise FollowUpConflict('stale_input_revision', revision)
+            if (trial_id is None) != (detected_at is None):
+                raise ValueError('frontier identity and time must both be present or absent')
+            if trial_id is not None:
+                self._follow_up_identity('trial', trial_id)
+                self._follow_up_time(detected_at)
+                trial = self.follow_up_record('trial', trial_id)
+                if trial is None or trial['changed_at'] != detected_at:
+                    raise FollowUpConflict('invalid_frontier_trial', revision)
+            previous = self.follow_up_frontier()
+            winner = dict(previous) if previous else {
+                'trial_id': None, 'detected_at': None, 'reconciled_input_revision': revision}
+            if trial_id is not None and (winner['detected_at'] is None
+                    or detected_at > winner['detected_at']
+                    or (self._follow_up_new_frontier_at == detected_at
+                        and detected_at == winner['detected_at'] and trial_id < winner['trial_id'])):
+                winner.update(trial_id=trial_id, detected_at=detected_at)
+                self._follow_up_new_frontier_at = detected_at
+            winner['reconciled_input_revision'] = revision
+            if previous != winner:
+                # This write itself advances the input state if it is the first
+                # durable change in the scope; the final commit fixes the stamp.
+                if self.conn.total_changes == self._follow_up_start_changes:
+                    winner['reconciled_input_revision'] += 1
+                self.conn.execute(
+                    'INSERT INTO follow_up_frontier VALUES (1, ?, ?, ?) '
+                    'ON CONFLICT(singleton) DO UPDATE SET trial_id=excluded.trial_id, '
+                    'detected_at=excluded.detected_at, '
+                    'reconciled_input_revision=excluded.reconciled_input_revision',
+                    (winner['trial_id'], winner['detected_at'], winner['reconciled_input_revision']))
+            self._follow_up_frontier_written = True
+            return winner
+
+    def follow_up_request(self, request_id):
+        if not isinstance(request_id, str) or not request_id.strip() or len(request_id) > 512:
+            raise ValueError('invalid follow-up request id')
+        if not self._follow_up_table_exists('follow_up_requests'):
+            return None
+        row = self.conn.execute(
+            'SELECT * FROM follow_up_requests WHERE request_id = ?', (request_id,)).fetchone()
+        if row is None:
+            return None
+        return {'request_id': request_id, 'operation': row['operation'], 'kind': row['kind'],
+                'id': int(row['subject_id']) if row['kind'] == 'focus' else row['subject_id'],
+                'result': json.loads(row['result_json'])}
+
+    def save_follow_up_request(self, request_id, *, operation, kind, id, result):
+        """Save the first successful result; an operation/subject mismatch conflicts."""
+        self._require_follow_up_transaction()
+        with self._write_transaction():
+            self._follow_up_identity(kind, id)
+            if not isinstance(operation, str) or not operation.strip() or len(operation) > 128:
+                raise ValueError('invalid follow-up operation')
+            previous = self.follow_up_request(request_id)
+            if previous is not None:
+                if (previous['operation'], previous['kind'], previous['id']) != (operation, kind, id):
+                    raise FollowUpConflict('request_identity_mismatch', self.input_data_revision())
+                return previous['result']
+            if self.follow_up_record(kind, id) is None:
+                raise FollowUpConflict('unknown_request_subject', self.input_data_revision())
+            if not isinstance(result, dict):
+                raise ValueError('follow-up result must be an object')
+            encoded = self._follow_up_json(result)
+            self.conn.execute(
+                'INSERT INTO follow_up_requests VALUES (?, ?, ?, ?, ?)',
+                (request_id, operation, kind, str(id), encoded))
+            return json.loads(encoded)
 
     # --- pattern-sweep sign-off (#378) --------------------------------------
     # Only the human approve/dismiss decision persists; the sweep's verdicts are
@@ -1232,7 +1639,7 @@ class Store:
         if decision not in ("approved", "dismissed"):
             raise ValueError(f"invalid pattern-review decision: {decision!r}")
         when = decided_at or format_t(datetime.now())
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO pattern_reviews (cell_id, era_start, decision, decided_at) "
                 "VALUES (?, ?, ?, ?) "
@@ -1265,7 +1672,7 @@ class Store:
                            dismissed_at: Optional[str] = None) -> None:
         if not item_id or not evidence_fingerprint:
             raise ValueError("item_id and evidence_fingerprint are required")
-        with self.conn:
+        with self._write_transaction():
             self.conn.execute(
                 "INSERT INTO audit_dismissals "
                 "(item_id, evidence_fingerprint, dismissed_at) VALUES (?, ?, ?) "

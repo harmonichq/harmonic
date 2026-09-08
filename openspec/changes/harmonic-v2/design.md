@@ -20,6 +20,42 @@ and the one-active-change constraint. Current capability specifications in
 OpenSpec decision records are the standing-decision source; no additional
 external decision store is configured for this ticket.
 
+## #386 investigation admission
+
+Tasks 2.2–2.3 are one flat, bounded investigation. The dominant uncertainty is
+the still-unsettled durable follow-up contract; the selected desktop direction,
+the current backend authorities, ADR 131, ADR 348, and #340's comparison policy
+are inputs, not questions to reopen. The spike records its rulings in this
+change and uses a small synthetic scratch replay to make the sequential and
+period rules observable. It creates no production code, schema migration,
+committed fixture or replay program, rendered surface, clinical policy, or
+second OpenSpec change.
+
+### Risk contract
+
+**Must prevent:** an invented legacy fact, a finished Trial reopening or
+promoting an older candidate, a historical read mutating an active Focus, and a
+comparison presented as causal or as evidence from a changed inference context.
+
+**Must recover:** an ordinary retry after a finish request returns the recorded
+ending without a duplicate write or a reopened watch.
+
+**Accepted failure:** a legacy record lacking context or an ending remains
+explicitly unavailable; the user sees no reconstructed history and may recover
+only by later, newly observed data.
+
+**Unsupported:** inferring Plan-to-Trial linkage from time or a matching setting,
+backfilling legacy ending dates, live vendor data, and production persistence
+changes in this spike.
+
+**Evidence owed:** a synthetic replay of the task checklist's identity, ending,
+reconciliation, preemption, legacy, exact-period, denominator, and
+correction-family cases; strict OpenSpec validation; and the repository's
+documentation guards.
+
+Why: these contracts carry historical meaning and must not silently manufacture
+facts or clinical conclusions. Disposition: inline in this active parent change.
+
 
 ## ADR 348 — Adopt the reviewed desktop direction
 

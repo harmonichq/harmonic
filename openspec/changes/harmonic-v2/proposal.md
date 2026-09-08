@@ -65,8 +65,10 @@ The reviewed priority-selection and set-aside policy from
 guidance and preference build in
 [#384](https://github.com/harmonichq/harmonic/issues/384). Reuse #347's merged delivery foundation
 and #340's reviewed comparison policy under #336; do not duplicate their work.
-The open durable-context, ending and comparison-integration questions remain
-named in design.md until a recorded decision or a spike owns them.
+The open durable-context, ending and comparison-integration questions are owned by
+the bounded [#386](https://github.com/harmonichq/harmonic/issues/386) spike under
+tasks 2.2–2.3. Its outcome is an implementation-ready contract in this active
+change, not a production endpoint, schema migration, fixture, or rendered surface.
 
 Keep this active change on the pushed epic planning branch. It travels with
 the implementation PR that realizes it; no planning-only PR is opened. Each

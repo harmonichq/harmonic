@@ -67,9 +67,10 @@ guidance and preference build in
 and #340's reviewed comparison policy under #336; do not duplicate their work.
 The durable-context, ending and comparison-integration contract is recorded by
 ADR 386 from the bounded [#386](https://github.com/harmonichq/harmonic/issues/386) spike under
-tasks 2.2–2.3. The current handoff contains committed findings and executed
-synthetic evidence for independent review. Its checked completion and dependent
-build admission remain with the epic coordinator. The contract adds bounded
+tasks 2.2–2.3. The coordinator verified the committed findings and synthetic
+evidence and accepted the mandatory independent review, with its qualified
+coverage recorded in evidence.md. These six investigation tasks are complete;
+next child admission remains with the epic coordinator. The contract adds bounded
 context/endings, one Trial finish/admission verdict and exact Focus comparisons;
 production persistence, UI Craft and built-app verification remain owed.
 

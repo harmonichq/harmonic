@@ -3,7 +3,7 @@
 Status: the desktop prototype and completed cold-QA repairs are the selected
 direction. The complete desktop journeys and review records from merged PR #379
 are adopted below. Product interview decisions remain settled. ADR 383 governs backend selection. ADR 386 below records the durable
-identity/endings and comparison contract for independent review; production
+identity/endings and comparison contract, now settled and independently reviewed; production
 implementation and UI Craft fidelity evidence are not yet complete.
 
 ## Grounding
@@ -377,7 +377,8 @@ routes that the graph did not enumerate.
 Potential persistence work must be priced against a concrete user action. Two
 candidates already have evidence: recording a durable review decision for a
 Trial, and recording when/why a Focus ends so its historical period can be read
-honestly. The final record shape, display, migration, and ownership are pending.
+honestly. ADR 386 settles the record contract and ownership; production display
+and migration remain owed.
 Do not invent terminal dates for old Focus rows, or treat an expired derived
 Trial as a user decision. Unknown historical facts must remain unknown.
 
@@ -704,8 +705,8 @@ identified by that issue in this document, with its replay receipts in
 
 ADR 386 — Retain decision facts and one watch verdict below records the
 versioned records, Plan reconciliation and canonical Trial admission contract.
-Its synthetic replay receipts are in evidence.md. Tasks 2.2–2.3 remain unchecked
-until the epic coordinator verifies the mandatory independent review.
+Its synthetic replay and qualified independent-review receipts are in evidence.md.
+The coordinator verified completion of tasks 2.2–2.3; production work remains owed.
 
 ### Follow-up comparisons and exact Focus periods
 
@@ -1177,11 +1178,18 @@ existing chart/statistical authorities and guidance policy remain settled.
 
 ### Decision and evidence boundary
 
-This is the proposed implementation contract produced by #386's bounded
-investigation, pending the coordinator-owned Standards/Spec review. The selected
-parent tasks remain open at this handoff. No production behavior or build
-admission follows from the scratch simulation. The exact source is
-`b9791d9b91e1897d8557c4f037538f9e82b8edd5`; evidence.md records the executed cases.
+This is the settled, reviewed implementation contract produced by #386's bounded
+investigation. The coordinator independently verified findings commit
+`11610c0ae7c8fd3e1753d79d6e340a3977be5274` and its 21/21 replay cases and
+documentation guards. Mandatory full Standards/Spec review converged with zero
+findings: 18/18 Standards rules hold and 17/17 Spec entries are met. Review used
+operator-approved Luna/medium; the Full route remains **UNVALIDATED**.
+
+The coordinator authorized completion of the six selected parent tasks. No
+production behavior or build admission follows from the scratch simulation;
+next child admission remains coordinator-owned. The original admitted source is
+`b9791d9b91e1897d8557c4f037538f9e82b8edd5`; evidence.md retains the historical
+review-ready receipt and records verified completion separately.
 
 Use record version `386:1` for the bounded context and ending envelopes specified
 in contracts.md. Retain the existing applied Plan key (`applied_at`), stored

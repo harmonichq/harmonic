@@ -651,6 +651,10 @@ stdout, stderr, arguments and exit statuses under
 in the implementation PR after the run completes.
 
 
+The following ADR 386 investigation receipt is the historical review-ready
+record, preserved verbatim. Its pending-review status is superseded by the
+verified-completion record below; the raw outputs remain unchanged.
+
 ## ADR 386 investigation receipts
 
 Captured on 2026-09-08 from source
@@ -815,3 +819,26 @@ reconciliation integration, production exact-period/context serving, #340's
 comparison assessments, both rendered journeys and shared-chart interactions,
 and packaged v1/v2 coexistence. The replay's passing assertions do not discharge
 those obligations or establish clinical/statistical validity.
+
+
+## ADR 386 verified completion
+
+The epic coordinator independently verified findings commit
+`11610c0ae7c8fd3e1753d79d6e340a3977be5274`: the exact investigation command
+passed 21/21 required replay cases, strict OpenSpec validation and all three
+documentation guards. Mandatory full Standards/Spec review converged with zero
+findings: all 18 Standards rules hold and all 17 Spec entries are met.
+
+Review used operator-approved Luna/medium. The Full Codex-only route remains
+**UNVALIDATED**; this completion does not promote its validation status. The
+actual verdict is retained at
+`/private/tmp/harmonic-348-completion/386-code-review-1/review.md`.
+The coordinator accepted that qualified coverage and explicitly resumed the same
+worker for verified completion.
+
+Only tasks 2.2, 2.2.1, 2.2.2, 2.3, 2.3.1 and 2.3.2 are marked complete. ADR 386's
+contract is settled and reviewed; the historical review-ready receipt above and
+its raw outputs remain verbatim. This administrative completion changes no
+ruling, context field, behavior or production scope. Required production/UI work
+remains unchecked, and #384 task status is unchanged. Next child admission and
+tracker close remain with the epic coordinator.

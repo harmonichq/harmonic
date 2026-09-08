@@ -26,8 +26,9 @@ preemption, and legacy case; a failed or unexercised case SHALL exit nonzero.
 - **THEN** ADR 386 and contracts.md name version `386:1`, existing record identities,
   bounded context/ending fields and the backend public read/write owners
 - **AND** production observations and proposed simulations remain separately labeled
-- **AND** independent review, production persistence and UI Craft proof remain
-  explicit downstream obligations, not implied by passing the scratch replay
+- **AND** the qualified independent-review completion is recorded separately from
+  the scratch replay; production persistence and UI Craft proof remain explicit
+  downstream obligations
 
 #### Scenario: Reconcile one applied Plan without inventing intent
 

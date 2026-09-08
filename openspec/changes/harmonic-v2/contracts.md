@@ -57,7 +57,8 @@ Two current boundaries need explicit treatment:
 
 ## Decision context and endings
 
-ADR 386 in design.md owns this implementation contract. Version `386:1` extends
+The settled, reviewed ADR 386 in design.md owns this implementation contract.
+Version `386:1` extends
 existing records; no schema or endpoint is implemented by this document.
 
 | Record | Identity and minimum retained fields | Public owner |
@@ -275,5 +276,7 @@ Then prove selected-subject replacement, loading/error/Retry, read-only history,
 chart interaction/cleanup and exact Day return against the built no-fetch Python
 app. Run its repository gates and packaged v1/v2 asset/authentication checks.
 These are unexecuted build obligations, not blockers concealed by the spike's
-passing scratch assertions. The mandatory independent review is still owed
-before this handoff can admit the dependent delivery.
+passing scratch assertions. Mandatory independent review of findings commit
+`11610c0ae7c8fd3e1753d79d6e340a3977be5274` is complete, with the qualified
+coverage recorded in evidence.md. Next child admission remains with the epic
+coordinator; production and UI verification remain owed.

@@ -25,22 +25,23 @@ PRs are read from GitHub.
   - [x] 2.1.4 Replay the settled rule over committed generator-owned QA cases, covering supported setting and habit selection, held/thin evidence, quiet, active-change precedence, overlapping findings, a deterministic tie, routine-regeneration hold, eligible return and Restore. Record the actual inputs, selected subjects and reasons; keep manufactured variants in session scratch unless a committed generator and drift check own them.
   - [x] 2.1.5 Identify the smallest public backend boundary that implements the policy through the existing eligibility and evidence authorities, and name every concrete missing capability as a blocker.
   - [x] 2.1.6 Record the settled policy as an ADR identified by #383 in [design.md](design.md), and its replay receipts in [evidence.md](evidence.md).
-- [ ] 2.2 In [#386](https://github.com/harmonichq/harmonic/issues/386), settle the minimum durable Plan/Trial/Focus context and ending records, canonical Trial identity, legacy unknowns, and one backend finish/admission verdict. Preserve first-observed context for a Trial without a Plan.
-  - [ ] 2.2.1 Record the smallest versioned context and ending records, their public read/write owner, and an explicit unavailable representation for legacy facts. A Plan may link to a Trial only through actual schedule reconciliation; temporal proximity, matching parameter, and draft intent are insufficient.
-  - [ ] 2.2.2 Reconcile the active singleton, Verify roster, and Focus pin guard through one finish/admission verdict. The synthetic replay must explicitly assert and print its inputs and actual observed/asserted outputs for sequential detected changes, an idempotent repeat finish, a finished latest Trial without old-candidate promotion, a genuinely new change, Plan match versus temporal proximity, manual Focus ending, Trial preemption, and unknown legacy fields; record them in [evidence.md](evidence.md), and exit nonzero for any failed or unexercised case.
-- [ ] 2.3 In [#386](https://github.com/harmonichq/harmonic/issues/386), reconcile the retained [#340 comparison design](https://github.com/harmonichq/harmonic/issues/340) under [#336](https://github.com/harmonichq/harmonic/issues/336) with v2 Changes and historical Focus. Retain its statistical rulings and actual chart reuse; settle exact-period Focus evidence and the documented correction-family context discrepancy.
-  - [ ] 2.3.1 Define pin-to-ending Focus periods and one source context for adherence and outcomes, preserving named denominators, zero opportunities as unknown, ADR 131's fixed follow-up rationale, and the documented correction-family discrepancy as an inference-context difference rather than an outcome claim. The same synthetic replay must explicitly assert and print inputs and actual observed/asserted outputs for exact periods, zero opportunities, and the correction-context discrepancy; record them in [evidence.md](evidence.md), and exit nonzero for any failed or unexercised case.
-  - [ ] 2.3.2 Map the retained chart interactions and comparison contract to Changes and history without redesigning the selected desktop. Name the smallest shared-chart extension and the UI Craft and production-verification obligations that remain for the implementation ticket.
+- [x] 2.2 In [#386](https://github.com/harmonichq/harmonic/issues/386), settle the minimum durable Plan/Trial/Focus context and ending records, canonical Trial identity, legacy unknowns, and one backend finish/admission verdict. Preserve first-observed context for a Trial without a Plan.
+  - [x] 2.2.1 Record the smallest versioned context and ending records, their public read/write owner, and an explicit unavailable representation for legacy facts. A Plan may link to a Trial only through actual schedule reconciliation; temporal proximity, matching parameter, and draft intent are insufficient.
+  - [x] 2.2.2 Reconcile the active singleton, Verify roster, and Focus pin guard through one finish/admission verdict. The synthetic replay must explicitly assert and print its inputs and actual observed/asserted outputs for sequential detected changes, an idempotent repeat finish, a finished latest Trial without old-candidate promotion, a genuinely new change, Plan match versus temporal proximity, manual Focus ending, Trial preemption, and unknown legacy fields; record them in [evidence.md](evidence.md), and exit nonzero for any failed or unexercised case.
+- [x] 2.3 In [#386](https://github.com/harmonichq/harmonic/issues/386), reconcile the retained [#340 comparison design](https://github.com/harmonichq/harmonic/issues/340) under [#336](https://github.com/harmonichq/harmonic/issues/336) with v2 Changes and historical Focus. Retain its statistical rulings and actual chart reuse; settle exact-period Focus evidence and the documented correction-family context discrepancy.
+  - [x] 2.3.1 Define pin-to-ending Focus periods and one source context for adherence and outcomes, preserving named denominators, zero opportunities as unknown, ADR 131's fixed follow-up rationale, and the documented correction-family discrepancy as an inference-context difference rather than an outcome claim. The same synthetic replay must explicitly assert and print inputs and actual observed/asserted outputs for exact periods, zero opportunities, and the correction-context discrepancy; record them in [evidence.md](evidence.md), and exit nonzero for any failed or unexercised case.
+  - [x] 2.3.2 Map the retained chart interactions and comparison contract to Changes and history without redesigning the selected desktop. Name the smallest shared-chart extension and the UI Craft and production-verification obligations that remain for the implementation ticket.
 - [ ] 2.4 Formalize the selected desktop's applicable UI Craft build contract and predecessor behavior mapping in the implementing ticket. Use the existing brief, prototype and repair records; do not mistake a direction selection for production fidelity evidence.
 
-### #386 review handoff
+### #386 verified completion
 
-ADR 386 and contracts.md record the selected 2.2–2.3 rulings. Evidence.md records
-the executed production observations and proposed-contract simulation. These
-six selected task boxes deliberately remain unchecked pending coordinator-owned
-Standards/Spec review and verified completion. Task 2.4 and production tasks
-3.2–3.5 remain downstream; this handoff supplies no UI Craft fidelity or production
-persistence proof and admits no build by itself.
+ADR 386 and contracts.md record the settled, reviewed 2.2–2.3 rulings. Evidence.md
+retains the executed production observations and proposed-contract simulation
+and records the qualified independent-review coverage. The coordinator verified
+findings commit `11610c0ae7c8fd3e1753d79d6e340a3977be5274` and authorized
+completion of these six investigation tasks. Task 2.4 and production tasks
+3.2–3.5 remain downstream; no UI Craft fidelity or production persistence proof
+is supplied by this completion. Next child admission remains coordinator-owned.
 
 ## 3. Deliver the first usable release behind /v2/
 

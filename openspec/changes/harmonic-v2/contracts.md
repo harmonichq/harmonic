@@ -433,6 +433,69 @@ setting comparison and an available Focus comparison, unclear/degenerate cases,
 zero opportunities, positive denominators with zero unwanted events, exact
 boundaries, context changes, and original-versus-current differences.
 
+#### Attributed occurrences for exact-period comparison
+
+ADR 387 in design.md records the provider refinement. The comparison owner also
+owns the following shared read inside the existing scenario provider; it adds no
+classifier or recurrence policy.
+
+| Public interface | Contract |
+| --- | --- |
+| `attributed_occurrences(bolus_events, cgm_readings, basal_events=(), *, isf=None, scenario_config=ScenarioConfig(), low_answers=())` | Export from `ciq_autotune.analyzers.scenario` through `__init__.py`; implement in `scenario/engine.py`. Return an immutable tuple of `AttributedOccurrence` records, one per lever-bearing attributed episode before recurrence deduplication, in existing episode order. Accept the same contextual inputs/defaults as `tally_attributions`; no Store, window metadata, narration or scoring is required. |
+| `AttributedOccurrence` | Define in `scenario/engine.py` and export through the same public package. Retain `lever`, `episode_id`, `recurrence_id`, `driver_family`, `driver_source_key`, and `anchor_t`. Episode identity follows the existing provider's episode indexing for the supplied input; it is not a new durable identity. Recurrence identity comes from `policy_for(lever).occurrence_for_episode`; the driver key uses the existing canonical opportunity/actual correction-pair identity. `anchor_t` is the policy-owned recurrence opportunity time, not a narrated step, display start or classification onset. If a driver cannot be associated with its owned population, retain the attributed row with null anchor and an explicit `unavailable_reason`; do not silently remove its attribution from the old tally or invent a comparison anchor. |
+
+Factor the existing `tally_attributions` anchor/segment/split/attribute walk into
+this shared provider read. The legacy tally consumes its rows with its current
+recurrence deduplication and returns the same `(exposure_counts, attributed_by_lever)`
+shape, defaults and counts. Preserve current low-answer handling, context padding,
+ISF/configuration inputs, earliest-driver choice and split semantics. Do not copy
+the walk into `follow_up_comparison.py` or `outcomes_trend.py`, or replace it with
+narrated `assemble` episodes. No changes to classifier implementations, threshold
+values, confidence gates or recurrence definitions are authorized.
+
+Resolve ownership using the existing `opportunities.build_opportunities`,
+`canonical_anchor_key` and `evidence_population.policy_for` population/identity
+methods over the same contextual inputs. An ordinary driver's key resolves to its
+opportunity's `anchor_t`; high ownership is its peak, low ownership its nadir,
+and a correction pair belongs to its second correction. Preserve the existing
+rebound-to-nadir association. For the custom completed-meal recurrence population,
+resolve the policy's recurrence id to that completed meal and use its event time;
+several episodes attributed to that meal remain one recurrence. Driver identity
+and recurrence identity remain separate, including when their populations differ.
+Do not replace either with the narrative's first step time. The provider owns
+this association; a comparison consumer does not re-derive it.
+
+Comparison loads classification context and performs the provider walk before
+applying the selected `[start, end)` ownership interval. Filter numerator rows
+by the returned policy-owned `anchor_t` and deduplicate by `(lever, recurrence_id)`.
+Build denominator opportunities from that same contextual input, then select the
+existing lever recurrence population and filter its opportunity `anchor_t` (or
+completed-meal event time for that policy) by the same half-open interval.
+Required preceding/following classification context stays available even when its
+own anchor is outside the selected period; it contributes no observation or
+opportunity merely by being loaded. Do not pre-clip CGM, bolus or basal inputs as a
+substitute for ownership filtering. Feed the resulting owned dates and
+populations to the unchanged #340 assessment. Unknown ownership makes that
+comparison unavailable with its reason; it never licenses a favorable result.
+Existing false-low, rescue-observation and data-cutoff contracts still apply.
+
+Add public-import regression coverage in `tests/test_scenario_engine.py` and the
+already-owned `tests/test_follow_up_comparison.py`. The minimal counterexample is
+a high whose opportunity peak lies inside the period and whose preceding meal
+lies outside: the full-context provider must retain the classification, the owned
+high denominator remains one, and no missed-meal numerator may be manufactured.
+The known failing clipped-input assertion documents why the old interface is
+insufficient; it is not a regression introduced by Store persistence. Add genuine
+attributed rows with anchors exactly at start/end, a classification onset outside
+but peak inside, context-only opportunities, completed-meal recurrence deduplication
+across episodes, and correction-pair/rebound ownership. Assert the new read's
+all-input aggregation equals unchanged tally results on synthetic cases, including
+low answers and nondefault configuration, through the public package import.
+Do not mock classification or hand-set the verdict being proved. Retain the
+original available setting and Focus comparisons, unavailable-versus-unclear
+states, retained-context and readonly tests; this is an additional provider proof,
+not a replacement for them.
+
 ### Lifecycle and integration interface (owner: lifecycle/API boundary)
 
 Keep the single semantic owner in `watched_change.py`. Add

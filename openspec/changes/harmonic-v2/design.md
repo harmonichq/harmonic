@@ -1436,3 +1436,31 @@ consumes the selected prototype and completed repair records, with no new concep
 round. This capability split does not admit that surface build yet, divide work
 by component, or weaken either complete first-release journey. Before any later
 child is filed, record its own dependency or independently shippable boundary.
+
+
+## ADR 387 — Preserve classification context before comparison ownership
+
+The comparison build found a missing provider boundary, not a Store defect. The
+existing `scenario.engine.tally_attributions` runs the anchor/segment/split/attribute
+walk but exposes only aggregate counts. A synthetic high retained the same
+in-period opportunity while clipping away its preceding meal changed its
+missed-meal attribution. `assemble` supplies narration, and the opportunity
+provider supplies denominator anchors; neither supplies the complete attributed
+recurrence/driver association needed by this comparison consumer.
+
+Expose the shared attributed-occurrence read specified in contracts.md under
+“Attributed occurrences for exact-period comparison”, then filter owned anchors
+without removing classification context. Keep the walk and association in the
+existing scenario provider, with legacy tally aggregation as its other caller.
+This concentrates existing computation rather than introducing another classifier
+walk or a shallow comparison wrapper. The implementation/export/test owners are
+`ciq_autotune/analyzers/scenario/engine.py`, its package `__init__.py`, and
+`tests/test_scenario_engine.py`, all assigned to comparison chunk2. Existing
+outcome/trial provider paths remain owned there.
+
+The completed Store chunk and its private storage contract remain unchanged.
+Retain three serial chunks, setting and Focus acceptance, and the full delivery
+gates. The refinement changes no clinical/statistical policy, recurrence meaning,
+source-context policy or public lifecycle API. Its executable proof and the new
+public-interface test obligations are recorded in the contract; implementation
+and independent review remain required before this comparison boundary is done.

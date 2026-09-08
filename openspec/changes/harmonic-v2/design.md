@@ -1467,59 +1467,51 @@ and independent review remain required before this comparison boundary is done.
 
 ## ADR 387 — Keep comparison readiness specific to the change
 
-The operator's latest clarification is FOLLOW-UP READINESS ONLY, for both Trials
-and Focus. Eight qualifying I:C meal runs stays fixed. Basal fourteen, ISF thirty
-fasting windows, multi-setting thirty elapsed days and Focus fourteen elapsed days
-are hypotheses to reassess, not approved evidence thresholds. This supersedes the
-earlier interpretation that basal fourteen was fixed or that only observation
-duration was being clarified. Recommendation eligibility, safety predicates and
-classifier policy remain unchanged. The normative validation/readiness contract
-and remaining admission questions live in contracts.md, “Type-specific comparison
-readiness”.
+The operator clarified FOLLOW-UP READINESS ONLY for Trials AND Focus. I:C remains
+fixed at eight effective qualifying closed meal runs per captured block and exact
+arm. Basal uses fourteen clean nights per affected slot; ISF thirty distinct
+qualifying fasting Rest windows in the affected hours; whole-profile changes
+thirty elapsed days with thirty coverage-qualified dates; Focus fourteen elapsed
+days with its own available measured recurrence population. These are pragmatic,
+conservative observation rules, not clinically validated thresholds. Exact units,
+source ownership and gating behavior live in contracts.md, “Type-specific
+comparison readiness”. No generic bootstrap sample count substitutes for them.
 
-Existing public producers own different populations: basal publishes per-slot
-clean-night rosters separately from directional sign support; I:C publishes
-closed-run eligibility and fractional block ownership; ISF retains fasting steps
-inside detected Rest-window night clusters. These populations must not be
-replaced by elapsed days, raw meals or micro-step counts. Local immutable-history
-grounding informs evidence availability only; it does not calibrate thresholds,
-validate a clinical rule or turn current-regime rolling analyzer outputs into
-exact historical comparison arms. Record-level data and private measurement
-receipts remain outside the repository.
+Existing producers supply actual clean samples, eligible closed-run ownership,
+fasting steps/window identities and coverage-qualified dates. A bounded replay also exposed comparison membership treating a canonical
+midnight-wrapping I:C block as an empty linear span. The existing circular block
+semantics must govern both period selection and owned meals; this correction stays
+in the comparison owner's existing paths. Local immutable
+history informs availability and highlights incomparable or unreadable periods;
+it cannot establish benefit or population-wide reliability. Recommendation and
+classifier eligibility, safety predicates and the #340 inference methods remain
+unchanged. The type-specific readiness predicate replaces the old generic fourteen-date
+support gate; the bootstrap, coverage, polarity, two-date estimability minimum and
+interval limitations remain unchanged. Values and progress remain visible. An ending can be inconclusive and is never
+triggered by a favorable result or by reaching fourteen days.
 
-The measurement inquiry also reproduced missing glucose and observed-flat glucose
-collapsing to the same completed-meal shortfall rate, and unreadable correction
-harm tails collapsing to zero. Existing record-proven behavior and exclusions
-survive missing outcome data. The remaining negative-observation criteria need
-explicit source authority or a bounded decision; a generic CGM gate or a copied
-classifier walk would change the settled policy. This is a comparison-provider
-boundary, not a Store regression. The completed Store task and three serial
-owners remain intact; this refinement is not implementation admission until the
-remaining questions in contracts.md are resolved and independently reviewed.
+## ADR 387 — Preserve unreadable negatives with proportionate verification
 
+The operator cancelled the proposed preregistered Monte Carlo study, independent
+training/evaluation split, false-positive/power assurance and CPU-hour admission
+machinery. That work is historical and superseded, not completed or failed, and
+must not block delivery. A handful of public synthetic placebo, known-signal and
+missingness checks and exact-period no-change history replays are the appropriate
+verification here. Report descriptive findings and limitations without promising
+clinical or repeated-look validity. No research framework enters the product.
 
-## ADR 387 — Validate live follow-up and distinguish unreadable negatives
+The positive shortfall classifier owns a bounded possible HIGH-onset domain for a
+completed meal; maximal HIGH runs and episode attribution have no fixed closure.
+The observation contract retains readable no-high negatives and observed-only,
+unavailable judgment for unresolved high-associated cases. Known positives stay
+known. Correction behavior and harm availability stay separate; record-proven
+exclusions imply zero corresponding harm, while missing provenance or an unreadable
+harm tail is not observed zero. Correction-on-IOB's existing inference is preserved.
 
-The follow-up readiness investigation now has a bounded validation protocol for
-independent review. It preserves live charts, values and the current directional
-labels as its baseline, with separate per-look and accumulating-path evidence.
-Support counts represent readiness, not benefit. A favorable result cannot select
-an ending. The normative validation/admission rules remain in contracts.md under
-“Type-specific comparison readiness”; private calibration grids, history aggregates
-and executable instrumentation do not enter the public source.
-
-The positive shortfall classifier owns a bounded possible rise-onset domain for a
-completed meal, but a maximal high run and its episode attribution have no fixed
-maximum duration. A chart tail therefore cannot certify a general negative.
-contracts.md “Follow-up observation eligibility” proposes readable no-high negatives
-and conservatively unavailable judgment for unresolved high-associated observations.
-It also separates known correction behavior from unreadable harm, preserving
-record-proven exclusions and the existing correction-on-IOB inference policy.
-
-The shared observation reads stay with the scenario and existing correction-counter
-owners. Exposing their decision facts prevents the comparison provider from copying
-classification or provenance logic. The additional comparison-owned counter/test
-paths are specified once in that contract. Legacy counter/tally defaults and all
-clinical/recommendation rules remain unchanged. Independent observation/protocol
-review, held-out evaluation and review of any selected readiness criteria precede
-a future implementation lock; this planning record does not admit production work.
+Shared observation reads remain with the scenario and existing correction-counter
+owners, factoring their decision facts once instead of copying classification or
+provenance logic into comparison. contracts.md specifies the interfaces and source
+partition. The completed Store task and three serial chunks remain intact. Normal
+independent plan review of this amendment and its successor lock precedes production
+admission; no further readiness study or design round is a prerequisite. Private
+history, prior study material and instrumentation stay out of tracked artifacts.

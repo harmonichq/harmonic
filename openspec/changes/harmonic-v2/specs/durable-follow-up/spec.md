@@ -135,8 +135,9 @@ watch. It SHALL use synthetic, generator-owned data only where generated artifac
 are needed; it SHALL not introduce a historical data archive or change clinical or
 statistical inference methods or recommendation/classifier policy. The operator-
 authorized follow-up readiness refinement for Trials and Focus in ADR 387 MAY be
-selected only after its preregistered validation and independent review; this
-exception SHALL NOT change recommendation support or inference methods.
+implemented under the practical policy in contracts.md after normal independent
+plan review; it SHALL NOT change recommendation support or inference methods,
+and the user-cancelled study SHALL NOT be a delivery prerequisite.
 
 #### Scenario: Restart retains one real lifecycle record and legacy unknowns
 
@@ -183,12 +184,19 @@ exception SHALL NOT change recommendation support or inference methods.
 #### Scenario: Follow-up readiness uses the selected change's evidence
 
 - **GIVEN** a setting Trial or Focus with readable values and accumulating evidence
-- **WHEN** the backend reports readiness under an independently validated ADR 387 criterion
+- **WHEN** the backend reports readiness under the practical ADR 387 policy in contracts.md
 - **THEN** the required evidence unit and exact-arm qualifying count remain distinct
   from inferential confidence, recommendation eligibility and watch lifecycle
 - **AND** I:C retains eight effective qualifying closed runs, including existing
   fractional ownership and exclusions; no raw meal count substitutes for that unit
-- **AND** count-met but non-estimable or uncertain comparisons cannot assert benefit
+- **AND** basal counts clean nights per affected slot, ISF counts qualifying Rest
+  windows rather than steps, profile readiness includes elapsed days and informative
+  dates, and Focus duration remains distinct from its measured recurrence population
+- **AND** the type-specific predicate replaces the generic fourteen-date support
+  gate, so eight effective I:C runs are not silently subject to fourteen dates
+- **AND** the unchanged inference kernel still withholds direction for unavailable,
+  unestimable, degenerate or zero-crossing evidence, including fewer than two
+  contributing dates; recommendation/classifier rules remain unchanged
 
 #### Scenario: Longer follow-up does not end on a favorable look
 
@@ -196,7 +204,7 @@ exception SHALL NOT change recommendation support or inference methods.
 - **WHEN** later evidence or a favorable directional assessment becomes available
 - **THEN** readable values and progress continue under the existing effective bounds
 - **AND** neither day fourteen nor a favorable result silently clips or ends follow-up;
-  the ADR 387 validation measures accumulating-look behavior separately from its final look
+  an ending may remain inconclusive and existing inference limitations stay explicit
 
 #### Scenario: Public history is immutable and existing clients remain compatible
 

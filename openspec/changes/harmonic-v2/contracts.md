@@ -725,22 +725,25 @@ this is not permission for a new scenario, outcome, presentation or hand-edited 
 Other generator outputs must remain byte-identical. If generator execution would
 change another path, report the exact difference before extending this closed list.
 
-The sole remaining packaging follow-up permits `.github/workflows/ci.yml` only to
-correct the existing `docker-pr` synthetic smoke database bind-mount destination
-and matching `--db` path into the image's existing app-owned `/app/tconnect-data`
-directory. The observed PR image built and excluded Node, but startup failed in
-`Store.open` at the WAL pragma with a readonly-database error. This is a smoke-test
-placement correction; no kernel cause is asserted. Preserve the nonroot runtime,
-existing synthetic fixture, no-fetch invocation, no-Node assertion, built-shell
-check, cleanup and fail-closed behavior. No new job/workflow, timeout extension,
-privilege change, Dockerfile/production/schema change, dependency/tool installation,
-fixture/test family, parser or alternate runtime is allowed. Other maintenance
-permissions above remain historical; this follow-up actively edits only that CI
-file and reopens no completed capability. Final verification is the actual final-PR
-`docker-pr` pass. Existing successful backend/frontend/browser/generator receipts
-remain evidence for unchanged work; they do not prove image startup and need not
-be rerun solely for this placement correction. Return any different provider defect
-to the coordinator rather than changing production or broadening the correction.
+The packaging smoke mount/`--db` placement correction is complete and its actual
+`docker-pr` build, no-Node assertion and startup passed. The sole remaining CI
+follow-up permits `.github/workflows/ci.yml` only to change
+`jobs.backend.timeout-minutes` from **10 to 20**. The observed backend job passed
+2358 tests (one existing real-database skip) in 475.47 seconds, then exhausted its
+existing ten-minute limit during remaining generator checks. Cancellation is not
+a demonstrated generator failure or a clinical/performance guarantee. This is the
+only timeout exception; no other budget extension is authorized.
+
+Keep all commands, assertions, job structure, runner, fixture provenance, nonroot
+runtime, no-fetch, no-Node/built-shell checks, cleanup and fail-closed behavior
+unchanged. No other job/workflow, Dockerfile, production/schema, dependency, fixture,
+test, profiling framework, algorithm, UI or policy change is allowed. All completed
+capabilities and prior maintenance remain history; active edits are the one scalar
+in that CI file. Require all actual final-head CI gates to finish successfully,
+including backend generator checks and packaging. Prior successful receipts for
+identical code remain valid evidence, but cancelled or unexecuted checks are not
+complete. Return a different provider defect to the coordinator rather than
+broadening this correction.
 
 No new fixture family, generator, workflow, browser relaxation, production interface,
 algorithm, threshold or UI layout/component is authorized. Existing generator

@@ -126,3 +126,71 @@ second statistical authority.
 - **WHEN** guidance cites it in the selected priority's explanation
 - **THEN** it appears as cited evidence with its uncertainty
 - **AND** it is not offered as an eligible action or a dose change
+
+
+### Requirement: Guidance exposes owner-produced comparison and evidence inputs
+
+The production source owners SHALL expose the action, categorical seriousness
+and structured citation inputs required by ADR 383, through the boundary in
+ADR 384. Existing clinical verdicts and source populations SHALL be preserved.
+
+#### Scenario: Source exposure does not change a clinical verdict
+
+- **GIVEN** generator-owned cases covering staged and held settings and surfaced, low-confidence and observation-only habits
+- **WHEN** their production owners produce guidance inputs
+- **THEN** the existing complete analyzer and occurrence expectations still pass
+- **AND** seriousness is captured before rounding, and evidence fields are structurally separate from advice
+
+### Requirement: Guidance and preference writes form a coherent public contract
+
+The backend SHALL expose the read and preference operations specified by ADR 384.
+The prior four requirements SHALL be implemented under ADR 383 policy, with
+bounded persistence, authenticated writes and truthful error/unavailable states.
+
+#### Scenario: Selection exercises actual analyzer output
+
+- **GIVEN** generator-owned synthetic analyzer outputs for supported settings and habits, held/thin settings, observation-only and low-confidence findings, overlapping populations and quiet data
+- **WHEN** the public guidance read is called, including after input reordering and with an authoritative active watch
+- **THEN** the selected subjects, dispositions and reasons follow ADR 383
+- **AND** membership, staging, counts and evidence references remain source-owned
+
+#### Scenario: Preferences survive recomputation and reopen
+
+- **GIVEN** a successful Set aside
+- **WHEN** the database reopens or the window, generation, fingerprint, count or raw Priority changes
+- **THEN** one stored preference remains effective and inspectable
+- **AND** another Set aside replaces its baseline, while Restore clears it
+
+#### Scenario: Return compares semantic instructions and owner seriousness
+
+- **GIVEN** a stored comparison baseline
+- **WHEN** source instructions are equivalently split, narrowed or disappear, or a newly admitted interval, deliverable value, semantic habit action or categorical seriousness changes
+- **THEN** the ADR 383 comparison produces the specified keep-aside or explained-return result
+- **AND** unknown comparison versions remain aside, repeated reads retain the reason, and return never grants support or outranks an active watch by itself
+
+#### Scenario: Failed or crossing operations do not claim success
+
+- **GIVEN** an invalid subject, stale generation, required-source read failure, crossing write or preference-write failure
+- **WHEN** the affected public operation runs
+- **THEN** it fails explicitly without a partial preference, duplicate record, mixed-generation guidance or quiet success
+- **AND** successful preference mutations invalidate cached guidance across subsequent reads and reopen
+
+#### Scenario: A prior read does not bypass action-time checks
+
+- **GIVEN** guidance has been read and a Plan draft or active-watch state subsequently changes
+- **WHEN** an existing Plan apply or Focus pin is attempted
+- **THEN** the existing write-time checks still run under ADR 384
+- **AND** this read does not grant a permanent permission or add a new clinical rule
+
+### Requirement: Backend guidance ships with integrated compatibility evidence
+
+The implementation SHALL pass the repository gates and the parity/evidence
+obligations in ADR 384 before its implementation PR is ready for human review.
+Its active parent change SHALL remain unarchived.
+
+#### Scenario: Existing delivered behavior remains compatible
+
+- **GIVEN** the complete built app and generator-owned synthetic inputs
+- **WHEN** the backend, frontend, drift, browser, publication and Plan parity checks run
+- **THEN** they pass with existing v1 behavior, identities, delivery precision and evidence populations retained
+- **AND** every changed committed fixture remains generator-owned and drift-checked

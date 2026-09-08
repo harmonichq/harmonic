@@ -684,6 +684,18 @@
         ],
         "roster_glucose_mean": 120.0
       },
+      "guidance": {
+        "action": {
+          "direction": "lower",
+          "end_min": 210,
+          "kind": "setting_instruction",
+          "parameter": "basal_rate",
+          "recommended": 0.48,
+          "start_min": 180,
+          "units": "U/h"
+        },
+        "seriousness": null
+      },
       "label": "03:00",
       "recommended": 0.48,
       "safety_status": "lower",
@@ -1696,6 +1708,18 @@
           }
         ],
         "roster_glucose_mean": 120.0
+      },
+      "guidance": {
+        "action": {
+          "direction": "lower",
+          "end_min": 240,
+          "kind": "setting_instruction",
+          "parameter": "basal_rate",
+          "recommended": 0.48,
+          "start_min": 210,
+          "units": "U/h"
+        },
+        "seriousness": null
       },
       "label": "03:30",
       "recommended": 0.48,

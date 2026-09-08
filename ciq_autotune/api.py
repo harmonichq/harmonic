@@ -73,6 +73,7 @@ from .derived_artifacts import (
     rebuild_ic_block_evidence,
 )
 from .store import Store
+from .guidance import baseline_for, is_preference_subject
 
 logger = logging.getLogger(__name__)
 
@@ -351,6 +352,43 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         generation, result = cache.stable_read(
             key, build_snapshot, validate=current_fixed_result)
         return generation, result.value
+
+    def guidance_payload():
+        """Resolve a writable watch, then compose one current guidance snapshot."""
+        from .watched_change import active_watched_change
+        for _ in range(3):
+            with Store.open(db_path) as store:
+                before = store.input_data_revision()
+                now = _latest_instant(store) or datetime.now()
+                watch = active_watched_change(
+                    store, store.basal_events(), store.bolus_events(), store.settings_snapshots(),
+                    now=now, cgm_readings=store.cgm_readings())
+                revision = store.input_data_revision()
+            if revision != before:
+                cache.bump()
+                # The resolver can intentionally preempt a Focus, and an external
+                # writer can cross the same interval.  In both cases its result was
+                # computed across two revisions; resolve again from the new one.
+                continue
+            generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+            findings = snapshot[0]
+            with Store.open_queryonly(db_path) as store:
+                preferences = store.guidance_preferences()
+                if store.input_data_revision() != revision:
+                    continue
+            payload = findings.guidance(
+                active_watch=watch.to_dict() if watch is not None else None,
+                preferences=preferences,
+                analysis_generation=f"guidance:{generation}:r{revision}")
+            return {**payload, "input_revision": revision}
+        raise ResultCache.GenerationChanged("guidance inputs changed during every snapshot")
+
+    def guidance_or_unavailable():
+        try:
+            return guidance_payload()
+        except Exception as error:
+            logger.exception("guidance source unavailable")
+            raise HTTPException(status_code=503, detail="guidance is unavailable") from error
 
     def ic_block_evidence_preparation():
         """One current I:C meal-run preparation per cache generation."""
@@ -708,11 +746,56 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "history_not_found",
                 "message": "Past-setting evidence was not found.",
             }) from error
+
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+
+    @app.get("/api/guidance")
+    def guidance_endpoint(_: None = Depends(require_token)) -> dict:
+        """The fixed-window backend-owned next-priority guidance read."""
+        return guidance_or_unavailable()
+
+    @app.put("/api/guidance/preferences/{subject:path}")
+    def set_guidance_preference_endpoint(subject: str, payload: dict = Body(...),
+                                         _: None = Depends(require_token)) -> dict:
+        generation, reason = payload.get("generation"), payload.get("reason")
+        if not isinstance(generation, str):
+            raise HTTPException(status_code=400, detail="generation is required")
+        if reason is not None and not isinstance(reason, str):
+            raise HTTPException(status_code=400, detail="reason must be a string")
+        current = guidance_or_unavailable()
+        if generation != current["analysis_generation"]:
+            raise HTTPException(status_code=409, detail="guidance changed; read it again")
+        candidate = next((row for row in current["candidates"] if row["subject"] == subject), None)
+        if candidate is None or candidate.get("absent"):
+            raise HTTPException(status_code=404, detail="unknown current guidance subject")
+        baseline = baseline_for(candidate)
+        with Store.open(db_path) as store:
+            try:
+                store.save_guidance_preference(
+                    subject, decided_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    reason=reason, expected_revision=current["input_revision"], **baseline)
+            except ValueError as error:
+                raise HTTPException(status_code=409, detail=str(error)) from error
+        cache.bump()
+        return {"subject": subject, "set_aside": True}
+
+    @app.delete("/api/guidance/preferences/{subject:path}")
+    def restore_guidance_preference_endpoint(subject: str,
+                                             _: None = Depends(require_token)) -> dict:
+        with Store.open(db_path) as store:
+            stored = any(row["subject"] == subject
+                         for row in store.guidance_preferences())
+            if not stored and not is_preference_subject(subject):
+                raise HTTPException(status_code=404,
+                                    detail="unknown guidance subject")
+            restored = store.restore_guidance_preference(subject)
+        if restored:
+            cache.bump()
+        return {"subject": subject, "set_aside": False}
 
     @app.get("/api/diagnose/carb-ratio-block-evidence")
     def diagnose_ic_block_evidence_endpoint(

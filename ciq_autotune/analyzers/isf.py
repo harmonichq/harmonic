@@ -77,7 +77,7 @@ from ..harm import (
 from ..insulin import InsulinActivity, basal_microdoses
 from ..rescue_evidence import RescueObservation
 from ..rest_window import RestWindow, RestWindowConfig, detect_rest_windows
-from ..result import SegmentEstimate
+from ..result import SegmentEstimate, plan_value
 from ..uncertainty import (
     DEFAULT_CONFIDENCE,
     Estimate,
@@ -506,6 +506,12 @@ def _day_rate_recurs(days: int, covered: int, cfg: IsfConfig) -> bool:
     return wilson(days, covered)[1] > cfg.low_day_rate_floor
 
 
+def _recurring_low(ch: IsfChannels, cfg: IsfConfig) -> bool:
+    """The ISF owner's existing correction-low/rescue recurrence judgment."""
+    return (_day_rate_recurs(ch.corr_low_days, ch.covered_days, cfg)
+            or _day_rate_recurs(ch.rescue_days, ch.covered_days, cfg))
+
+
 def _strengthen_signal(programmed: Optional[float], est: Estimate,
                        ch: IsfChannels, cfg: IsfConfig) -> bool:
     """Whether this one decision window independently supports stronger ISF.
@@ -562,8 +568,7 @@ def _recommend(programmed: Optional[float], est: Estimate, ch: IsfChannels,
     # correction-caused lows weaken even when the fasting measurement is thin — the
     # target must come from a supporting night median; a manufactured fallback would
     # turn harm evidence into an invented dose recommendation.
-    weaken = (_day_rate_recurs(ch.corr_low_days, ch.covered_days, cfg)
-              or _day_rate_recurs(ch.rescue_days, ch.covered_days, cfg))
+    weaken = _recurring_low(ch, cfg)
     if not weaken and measured is None and median is None:
         return (None, "not enough fasting data yet", None, None)
     if weaken:
@@ -831,6 +836,7 @@ def analyze_isf(
         # rescue channel actually ran over (#467).
         evidence["rescue_evidence"] = rescue_observation.to_dict()
 
+    asserts_move = isf_asserts_move(programmed, direction, rec)
     return [SegmentEstimate(
         start_min=0,
         label="Fasting",
@@ -840,5 +846,20 @@ def analyze_isf(
         recommended=rec,
         annotation=ann,
         evidence=evidence,
-        asserts_move=isf_asserts_move(programmed, direction, rec),
+        asserts_move=asserts_move,
+        guidance={
+            "action": (
+                {
+                    "kind": "setting_instruction",
+                    "parameter": "isf",
+                    "start_min": 0,
+                    "end_min": 1440,
+                    "direction": direction,
+                    "units": "mg/dL/U",
+                    "recommended": plan_value(rec, "isf"),
+                }
+                if asserts_move and rec is not None else None
+            ),
+            "seriousness": "recurring_low" if _recurring_low(channels, cfg) else None,
+        },
     )]

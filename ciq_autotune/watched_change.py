@@ -1121,6 +1121,14 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
     changed_at = datetime.strptime(view.changed_at, _DT_FMT)
     state = "maturing" if view.maturing.is_maturing else "complete"
     detail = _review_summary(trial)
+    focus = follow_up_admission(store, now=now)["focus_pin"]
+    if not focus["available"]:
+        focus = {**focus, "message": {
+            "active_trial": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
+            "active_focus": "A Focus is already active.",
+            "pending_plan": "Focus is unavailable while an applied Plan is pending.",
+            "reconciliation_required": "Focus is unavailable until follow-up admission is reconciled.",
+        }[focus["reason"]]}
     detail.update({
         "before_period": {
             "start": (changed_at - _MATURE_WINDOW).strftime(_DT_FMT),
@@ -1130,7 +1138,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
             "start": view.changed_at,
             "end": min(now, changed_at + _MATURE_WINDOW).strftime(_DT_FMT),
         },
-        "focus": follow_up_admission(store, now=now)["focus_pin"],
+        "focus": focus,
         "readiness": (
             {
                 "label": "Maturing",

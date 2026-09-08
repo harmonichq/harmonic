@@ -53,6 +53,11 @@ class DurableApiTest(unittest.TestCase):
         read = self.seed_trial()
         identity = read["admission"]["active_id"]
         self.assertTrue(read["admission"]["can_finish_trial"])
+        selected = self.client.get("/api/verify/trials", headers=self.headers,
+                                   params={"selected": identity}).json()["selected"]
+        self.assertFalse(selected["focus"]["available"])
+        self.assertEqual(selected["focus"]["message"],
+                         "Focus is unavailable while a Trial is live. It will not queue behind this change.")
         path = f"/api/verify/trials/{identity}/finish"
         body = {"request_id": "finish", "input_revision": read["input_revision"], "conclusion": "My observation"}
         response = self.client.post(path, headers=self.headers, json=body)

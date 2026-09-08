@@ -362,6 +362,7 @@ class VerifyTrialsApiTest(unittest.TestCase):
         self.assertEqual(detail["focus"], {
             "available": False,
             "reason": "reconciliation_required",
+            "message": "Focus is unavailable until follow-up admission is reconciled.",
         })
         with Store.open(self.tmp.name) as store:
             self.assertEqual(store.active_focus(), focus)

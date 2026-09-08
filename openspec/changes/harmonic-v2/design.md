@@ -1382,9 +1382,10 @@ journeys require durable, authenticated setting and habit follow-up APIs with
 one watch verdict and read-only history. This is independently verifiable and
 shippable backend behavior, while the subsequent rendered release depends on
 those records, periods and assessments. Consolidating it with the entire new
-surface would combine persistence, reconciliation, comparison and browser
-lifecycle work into a context already known to be too large: #384's largest
-implementation worker consumed 231,564 tokens against its 180,000-token target.
+surface would combine two different delivery contracts: persistence, reconciliation
+and comparison proven through backend public interfaces, and visual/interaction
+fidelity proven through the rendered application. The backend must supply the
+records and assessments before those complete surface stories can be verified.
 
 The backend child [#387](https://github.com/harmonichq/harmonic/issues/387) owns
 tasks 3.2.1 and 3.3.1 together. Ending persistence and the

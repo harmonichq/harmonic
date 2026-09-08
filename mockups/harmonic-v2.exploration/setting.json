@@ -2794,7 +2794,51 @@
   },
   "trials": {
     "active": {
+      "admission": {
+        "active_id": "basal_rate-03-00-20240613030000",
+        "active_kind": "trial",
+        "can_finish_trial": false,
+        "ending": {
+          "reason": "not_recorded",
+          "state": "unavailable",
+          "version": "386:1"
+        },
+        "focus_pin": {
+          "available": false,
+          "reason": "active_trial"
+        },
+        "maturity": {
+          "days_elapsed": 6,
+          "days_required": 14,
+          "is_maturing": true
+        },
+        "reason": "active_trial",
+        "state": "available"
+      },
+      "focuses": [],
+      "input_revision": 8,
       "selected": {
+        "admission": {
+          "active_id": "basal_rate-03-00-20240613030000",
+          "active_kind": "trial",
+          "can_finish_trial": false,
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "focus_pin": {
+            "available": false,
+            "reason": "active_trial"
+          },
+          "maturity": {
+            "days_elapsed": 6,
+            "days_required": 14,
+            "is_maturing": true
+          },
+          "reason": "active_trial",
+          "state": "available"
+        },
         "after": 0.48,
         "before": 0.6,
         "before_period": {
@@ -3505,9 +3549,11 @@
         ],
         "focus": {
           "available": false,
-          "message": "Focus is unavailable while a Trial is live. It will not queue behind this change."
+          "message": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
+          "reason": "active_trial"
         },
         "id": "basal_rate-03-00-20240613030000",
+        "kind": "trial",
         "limits": [
           "The evidence is limited to the selected Before and Trial periods.",
           "Observed movement does not establish that the setting caused it."
@@ -3516,6 +3562,49 @@
           "days_elapsed": 6,
           "days_required": 14,
           "gap_count": 0
+        },
+        "original": {
+          "assessment": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "context": {
+            "action": null,
+            "captured_at": "2024-06-18 12:00:00",
+            "explanation": "Observed programmed setting transition; original decision is not recorded.",
+            "input_revision": 7,
+            "occurrences": [],
+            "policy": "386:1",
+            "settings": [
+              {
+                "unit": "U/h",
+                "value": 0.6
+              },
+              {
+                "unit": "U/h",
+                "value": 0.48
+              }
+            ],
+            "source_window": {
+              "end": "2024-06-18 12:00:00",
+              "start": "2024-06-13 03:00:00"
+            },
+            "state": "available",
+            "subjects": [
+              "basal_rate-03-00-20240613030000"
+            ],
+            "support": {},
+            "unknowns": [
+              "Original user decision is unavailable."
+            ],
+            "version": "386:1"
+          },
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          }
         },
         "parameter": "basal_rate",
         "plan_route": {
@@ -3536,6 +3625,7 @@
           "label": "Maturing",
           "message": "No verdict is ready while evidence accrues."
         },
+        "reassessment": null,
         "rescue": {
           "before_period": {
             "grams": 0,
@@ -3565,6 +3655,11 @@
           "after": 0.48,
           "before": 0.6,
           "changed_at": "2024-06-13 03:00:00",
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
           "id": "basal_rate-03-00-20240613030000",
           "maturing": {
             "days_elapsed": 6,
@@ -3576,12 +3671,57 @@
           "state": "maturing",
           "target_metrics": [
             "tbr"
-          ]
+          ],
+          "watch_disposition": "active"
         }
       ]
     },
     "ready": {
+      "admission": {
+        "active_id": "basal_rate-03-00-20240613030000",
+        "active_kind": "trial",
+        "can_finish_trial": true,
+        "ending": {
+          "reason": "not_recorded",
+          "state": "unavailable",
+          "version": "386:1"
+        },
+        "focus_pin": {
+          "available": false,
+          "reason": "active_trial"
+        },
+        "maturity": {
+          "days_elapsed": 15,
+          "days_required": 14,
+          "is_maturing": false
+        },
+        "reason": "active_trial",
+        "state": "available"
+      },
+      "focuses": [],
+      "input_revision": 8,
       "selected": {
+        "admission": {
+          "active_id": "basal_rate-03-00-20240613030000",
+          "active_kind": "trial",
+          "can_finish_trial": true,
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "focus_pin": {
+            "available": false,
+            "reason": "active_trial"
+          },
+          "maturity": {
+            "days_elapsed": 15,
+            "days_required": 14,
+            "is_maturing": false
+          },
+          "reason": "active_trial",
+          "state": "available"
+        },
         "after": 0.48,
         "before": 0.6,
         "before_period": {
@@ -4372,9 +4512,12 @@
           }
         ],
         "focus": {
-          "available": true
+          "available": false,
+          "message": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
+          "reason": "active_trial"
         },
         "id": "basal_rate-03-00-20240613030000",
+        "kind": "trial",
         "limits": [
           "The evidence is limited to the selected Before and Trial periods.",
           "Observed movement does not establish that the setting caused it."
@@ -4383,6 +4526,49 @@
           "days_elapsed": 15,
           "days_required": 14,
           "gap_count": 0
+        },
+        "original": {
+          "assessment": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "context": {
+            "action": null,
+            "captured_at": "2024-06-18 12:00:00",
+            "explanation": "Observed programmed setting transition; original decision is not recorded.",
+            "input_revision": 7,
+            "occurrences": [],
+            "policy": "386:1",
+            "settings": [
+              {
+                "unit": "U/h",
+                "value": 0.6
+              },
+              {
+                "unit": "U/h",
+                "value": 0.48
+              }
+            ],
+            "source_window": {
+              "end": "2024-06-18 12:00:00",
+              "start": "2024-06-13 03:00:00"
+            },
+            "state": "available",
+            "subjects": [
+              "basal_rate-03-00-20240613030000"
+            ],
+            "support": {},
+            "unknowns": [
+              "Original user decision is unavailable."
+            ],
+            "version": "386:1"
+          },
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          }
         },
         "parameter": "basal_rate",
         "plan_route": {
@@ -4403,6 +4589,7 @@
           "label": "Ready to judge",
           "message": "This Trial is ready for a before-and-Trial read."
         },
+        "reassessment": null,
         "rescue": {
           "before_period": {
             "grams": 0,
@@ -4432,6 +4619,11 @@
           "after": 0.48,
           "before": 0.6,
           "changed_at": "2024-06-13 03:00:00",
+          "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
           "id": "basal_rate-03-00-20240613030000",
           "maturing": {
             "days_elapsed": 15,
@@ -4443,7 +4635,8 @@
           "state": "complete",
           "target_metrics": [
             "tbr"
-          ]
+          ],
+          "watch_disposition": "active"
         }
       ]
     }

@@ -31,7 +31,7 @@ Pure functions, no I/O.
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ..scenario_config import ScenarioConfig
@@ -64,14 +64,22 @@ def is_override_up(
     guardrail 3); extended boluses are already excluded by ``override_gap`` returning
     ``None``.
     """
-    gap = b.override_gap
-    if gap is None:
-        return False
+    return _override_decision(b, scenario_config)[0]
+
+
+def _override_decision(b, scenario_config):
     if b.user_override == 0:
-        return False
+        return False, "explicit_no_override"
+    if b.bolus_options == 1 or b.extended == 1:
+        return False, "extended_bolus_excluded"
+    if b.is_automatic_bolus is True:
+        return False, "automatic_bolus_excluded"
+    if b.override_gap is None or b.insulin is None:
+        return False, "missing_override_provenance"
     if not _is_user_correction(b, scenario_config=scenario_config):
-        return False
-    return gap > scenario_config.user_override_gap_floor_u
+        return False, "not_user_correction"
+    matched = b.override_gap > scenario_config.user_override_gap_floor_u
+    return matched, None if matched else "under_override_threshold"
 
 
 def override_enrichment(
@@ -101,14 +109,14 @@ def override_enrichment(
     )
 
 
-def count_overrides(
+def override_observations(
     window_boluses: Sequence[BolusEvent],
     context_cgm: Sequence[CgmReading],
     context_basal: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
-) -> Tuple[int, int]:
-    """Count ``(behavior, harm)`` correction override-ups in one window (#161).
+) -> tuple[dict, ...]:
+    """Observe behavior and harm decisions for correction override-ups in one window (#161).
 
     Mirrors :func:`~...correction_stacking.count_correction_stacks`'s behavior/harm split
     (#131), backing the Outcomes override-rate tile:
@@ -127,24 +135,26 @@ def count_overrides(
     """
     harm_low_mgdl = scenario_config.user_override_harm_low_mgdl
     harm_lookahead_min = scenario_config.user_override_harm_lookahead_min
-    behavior = 0
-    harm = 0
+    rows = []
     for b in window_boluses:
-        if not is_override_up(b, scenario_config=scenario_config):
+        matched, reason = _override_decision(b, scenario_config)
+        row = {"t": b.t, "source_key": (b.seq_num if b.seq_num is not None else b.t.isoformat(),), "k": int(matched), "harm": 0,
+               "reason": reason, "harm_excluded": not matched and reason != "missing_override_provenance",
+               "harm_interval": (b.t, b.t + timedelta(minutes=harm_lookahead_min))}
+        rows.append(row)
+        if not matched:
             continue
-        behavior += 1
-        # Harm mirrors the stacking harm gate: not a recovery from an upstream
-        # low/suspend, and a real (near-)low actually followed within the tail.
-        if upstream_cause(
-            b.t, context_cgm, context_basal, scenario_config=scenario_config
-        ).explained:
+        if upstream_cause(b.t, context_cgm, context_basal, scenario_config=scenario_config).explained:
+            row["harm_excluded"] = True
+            row["reason"] = "upstream_harm_exclusion"
             continue
-        nadir_bg, _ = _first_low_after(
-            context_cgm,
-            b.t,
-            b.t + timedelta(minutes=harm_lookahead_min),
-            harm_low_mgdl,
-        )
-        if nadir_bg is not None:
-            harm += 1
-    return behavior, harm
+        nadir_bg, _ = _first_low_after(context_cgm, *row["harm_interval"], harm_low_mgdl)
+        row["harm"] = int(nadir_bg is not None)
+    return tuple(rows)
+
+
+def count_overrides(window_boluses, context_cgm, context_basal=(), *, scenario_config=ScenarioConfig()):
+    """Legacy behavior/harm totals from shared decisions, without measurement gating."""
+    rows = override_observations(window_boluses, context_cgm, context_basal,
+                                 scenario_config=scenario_config)
+    return sum(row["k"] for row in rows), sum(row["harm"] for row in rows)

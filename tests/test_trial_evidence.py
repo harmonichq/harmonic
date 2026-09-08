@@ -222,3 +222,122 @@ class TrialBreakdownTest(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class ExactComparisonEvidenceTest(unittest.TestCase):
+    def test_meal_union_does_not_double_count_and_curves_clip_to_period(self):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        from ciq_autotune.events import CgmReading, BolusEvent
+        start, end = datetime(2026,6,1,12), datetime(2026,6,1,16)
+        cgm = [CgmReading(start + timedelta(minutes=i*5), bg=120) for i in range(-12, 61)]
+        meals = [BolusEvent(start, insulin=4, carbs=40, seq_num=1),
+                 BolusEvent(start+timedelta(hours=1), insulin=4, carbs=40, seq_num=2),
+                 BolusEvent(end, insulin=4, carbs=40, seq_num=3)]
+        result = comparison_evidence(parameter="carb_ratio", slot=None, block=(720,960),
+                                     changed_at=start, before=10, after=9, start=start, end=end,
+                                     cgm=cgm, bolus=meals, basal=[], carbs=[], snapshots=[])
+        self.assertEqual(len(result["readings"]),48)
+        self.assertEqual(result["intervals"],[(start,end)])
+        self.assertEqual(len(result["view"]["occurrences"]),2)
+        self.assertEqual(result["view"]["projection"]["routed_count"],2)
+        for occurrence in result["view"]["occurrences"]:
+            anchor = datetime.fromisoformat(occurrence["anchor_t"])
+            self.assertTrue(all(start <= anchor + timedelta(minutes=p["minute"]) < end
+                                for p in occurrence["trace"]["cgm"]))
+
+    def test_isf_keeps_real_fasting_steps_in_owned_rest_hours(self):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        from ciq_autotune.events import CgmReading
+        start, end = datetime(2026,6,1), datetime(2026,6,3)
+        cgm = [CgmReading(start + timedelta(minutes=5*i), bg=110+i%3) for i in range(576)]
+        result = comparison_evidence(parameter="isf", slot="01:00", block=None,
+                                     changed_at=start, before=40, after=45, start=start, end=end,
+                                     cgm=cgm, bolus=[], basal=[], carbs=[], snapshots=[])
+        self.assertGreater(len(result["view"]["rest_windows"]),0)
+        self.assertGreater(len(result["view"]["fasting_steps"]),0)
+        self.assertTrue(all(r.t.hour == 1 and r.t.minute < 30 for r in result["readings"]))
+        self.assertTrue(all(step["window_id"].startswith("rest:") for step in result["view"]["fasting_steps"]))
+        readiness = result["readiness"]
+        self.assertEqual(readiness["observed"], len({s["window_id"] for s in result["view"]["fasting_steps"]}))
+        self.assertGreater(readiness["step_count"], readiness["observed"])
+        self.assertEqual(readiness["required"], 30)
+        self.assertFalse(readiness["criterion_met"])
+
+
+class CircularComparisonTest(unittest.TestCase):
+    def test_wrapping_block_owns_meal_and_readings(self):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        from ciq_autotune.events import BolusEvent, CgmReading
+        start = datetime(2026,6,1,22)
+        dose = BolusEvent(start+timedelta(hours=1), insulin=4, carbs=40, completion="Completed", seq_num=1)
+        result = comparison_evidence(parameter="carb_ratio", slot="22:00", block=(1320,120),
+            changed_at=start, before=10, after=9, start=start, end=start+timedelta(hours=8),
+            cgm=[CgmReading(dose.t+timedelta(minutes=5),120)], bolus=[dose], basal=[], carbs=[], snapshots=[])
+        self.assertEqual(len(result["meals"]), 1)
+        self.assertEqual(len(result["readings"]), 1)
+        self.assertIn("readiness", result)
+
+
+class PracticalReadinessTest(unittest.TestCase):
+    def evidence(self, parameter, start, end, *, cgm=(), bolus=(), basal=(), block=None, snapshots=(), isf=40):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        return comparison_evidence(parameter=parameter, slot=None, block=block, changed_at=start,
+            before=10, after=9, start=start, end=end, cgm=list(cgm), bolus=list(bolus),
+            basal=list(basal), carbs=[], snapshots=list(snapshots), isf=isf)
+
+    def test_basal_uses_owned_clean_dates_for_each_slot(self):
+        from ciq_autotune.events import BasalEvent,CgmReading
+        start=datetime(2026,6,1)
+        cgm=[CgmReading(start+timedelta(minutes=5*i),120) for i in range(15*288+1)]
+        basal=[BasalEvent(start+timedelta(minutes=5*i),delivery_type="profileDelivery",basal_rate=1,profile_basal_rate=1,duration_mins=5)
+               for i in range(15*288+1)]
+        result=self.evidence('basal_rate',start,start+timedelta(days=14),cgm=cgm,basal=basal,block=(720,780))
+        readiness=result['readiness']
+        self.assertEqual(readiness['observed'],14)
+        self.assertEqual([r['observed'] for r in readiness['slots']],[14,14])
+        self.assertTrue(readiness['criterion_met'])
+        empty=self.evidence('basal_rate',start,start+timedelta(days=14),cgm=cgm,block=(720,780))
+        self.assertEqual(empty['readiness']['observed'],0)
+        self.assertFalse(empty['readiness']['criterion_met'])
+
+    def test_ic_uses_fractional_pool_and_unreadable_runs_do_not_count(self):
+        from scripts.gen_estimator_truth import chained_run_sets
+        truth=chained_run_sets()[0]
+        result=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
+            cgm=truth['cgm_readings'],bolus=truth['events'],snapshots=truth['snapshots'],
+            block=(0,720),isf=truth['isf_effective'])
+        readiness=result['readiness']
+        self.assertAlmostEqual(readiness['observed'],10)
+        self.assertTrue(readiness['criterion_met'])
+        self.assertTrue(any(0<r['ownership']<1 for r in readiness['runs']))
+        empty=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
+            bolus=truth['events'],snapshots=truth['snapshots'],block=(0,720),isf=truth['isf_effective'])
+        self.assertEqual(empty['readiness']['observed'],0)
+        self.assertFalse(empty['readiness']['criterion_met'])
+        unmatched=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
+            cgm=truth['cgm_readings'],bolus=truth['events'],snapshots=truth['snapshots'],block=(60,720))
+        self.assertFalse(unmatched['readiness']['available'])
+
+    def test_profile_requires_duration_and_coverage_on_partial_dates(self):
+        from ciq_autotune.events import CgmReading
+        start=datetime(2026,6,1,12)
+        cgm=[CgmReading(start+timedelta(minutes=5*i),120) for i in range(30*288)]
+        ready=self.evidence('profile',start,start+timedelta(days=30),cgm=cgm)['readiness']
+        self.assertEqual(ready['observed'],31)
+        self.assertTrue(ready['criterion_met'])
+        early=self.evidence('profile',start,start+timedelta(days=29,hours=23),cgm=cgm)['readiness']
+        self.assertFalse(early['criterion_met'])
+
+    def test_eight_effective_runs_can_be_ready_below_fourteen_dates(self):
+        from scripts.gen_estimator_truth import chained_run_sets
+        truth=chained_run_sets()[0]
+        # Five source-owned run shares (.25 + .35 + .45 + .70 + .25) total two.
+        excluded={datetime.fromisoformat(t).date() for t in
+                  ('2026-01-31','2026-02-03','2026-02-06','2026-02-21','2026-02-24')}
+        retained=[b for b in truth['events'] if b.t.date() not in excluded]
+        result=self.evidence('carb_ratio',truth['analysis_start'],truth['analysis_end'],
+            cgm=truth['cgm_readings'],bolus=retained,snapshots=truth['snapshots'],
+            block=(0,720),isf=truth['isf_effective'])
+        self.assertAlmostEqual(result['readiness']['observed'],8)
+        self.assertEqual(len(result['readiness']['contributing_dates']),13)
+        self.assertTrue(result['readiness']['criterion_met'])

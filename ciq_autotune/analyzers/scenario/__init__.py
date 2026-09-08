@@ -18,7 +18,10 @@ Public API:
 
 from __future__ import annotations
 
-from .engine import assemble, build_scenarios, low_prompt_answers, tally_attributions
+from .engine import (
+    AttributedOccurrence, assemble, attributed_occurrences, build_scenarios,
+    low_prompt_answers, tally_attributions, recurrence_observations,
+)
 from .attribute import LowPromptAnswer
 from .guide import build_catalog
 from .model_view import assemble_model_view, build_model_view
@@ -34,6 +37,9 @@ from .payload import (
 from .preempted import compute_preempted_lows
 
 __all__ = [
+    "AttributedOccurrence",
+    "attributed_occurrences",
+    "recurrence_observations",
     "assemble",
     "build_scenarios",
     "build_catalog",

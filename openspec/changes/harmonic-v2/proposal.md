@@ -65,8 +65,14 @@ The reviewed priority-selection and set-aside policy from
 guidance and preference build in
 [#384](https://github.com/harmonichq/harmonic/issues/384). Reuse #347's merged delivery foundation
 and #340's reviewed comparison policy under #336; do not duplicate their work.
-The open durable-context, ending and comparison-integration questions remain
-named in design.md until a recorded decision or a spike owns them.
+The durable-context, ending and comparison-integration contract is recorded by
+ADR 386 from the bounded [#386](https://github.com/harmonichq/harmonic/issues/386) spike under
+tasks 2.2–2.3. The coordinator verified the committed findings and synthetic
+evidence and accepted the mandatory independent review, with its qualified
+coverage recorded in evidence.md. These six investigation tasks are complete;
+next child admission remains with the epic coordinator. The contract adds bounded
+context/endings, one Trial finish/admission verdict and exact Focus comparisons;
+production persistence, UI Craft and built-app verification remain owed.
 
 Keep this active change on the pushed epic planning branch. It travels with
 the implementation PR that realizes it; no planning-only PR is opened. Each

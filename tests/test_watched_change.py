@@ -241,11 +241,21 @@ class OneActiveInvariantTest(unittest.TestCase):
     def setUp(self):
         self.store = Store.open(":memory:")
 
+    def reconcile(self, boluses=(), now=None):
+        self.store.upsert_bolus([{
+            "seq_num": index + 1, "request_time": str(b.t), "completion_time": str(b.t),
+            "description": "Bolus", "completion": "Completed", "insulin": b.insulin,
+            "isf": b.isf, "carb_ratio": b.carb_ratio, "carbs": b.carbs,
+        } for index, b in enumerate(boluses)])
+        with self.store.follow_up_transaction():
+            wc.reconcile_follow_up(self.store, now=now or _day(10), recorded_at=now or _day(10))
+
     def tearDown(self):
         self.store.close()
 
     def test_focus_surfaces_when_no_trial(self):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
+        self.reconcile()
         active = wc.active_watched_change(
             self.store, [], [], [], now=_day(10))
         self.assertEqual(active.kind, "focus")
@@ -255,6 +265,7 @@ class OneActiveInvariantTest(unittest.TestCase):
         self.store.pin_focus(
             "overnight_low_from_evening_dosing", "2026-05-06 08:00:00"
         )
+        self.reconcile()
         active = wc.active_watched_change(
             self.store, [], [], [], now=_day(10)
         )
@@ -265,6 +276,7 @@ class OneActiveInvariantTest(unittest.TestCase):
     def test_setting_change_preempts_and_drops_focus(self):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])  # change at day 5
+        self.reconcile(bolus, _day(8))
         active = wc.active_watched_change(
             self.store, [], bolus, [], now=_day(8))
         # Trial takes the slot; the Focus is dropped (not paused), not surfaced.
@@ -274,10 +286,11 @@ class OneActiveInvariantTest(unittest.TestCase):
 
     def test_trial_active_blocks_a_pin(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
+        self.reconcile(bolus, _day(8))
         self.assertTrue(wc.trial_is_active(
             self.store, bolus_events=bolus, now=_day(8)))
-        # No change → no trial → a pin would be allowed.
-        self.assertFalse(wc.trial_is_active(
+        # Caller-supplied slices cannot change the committed admission.
+        self.assertTrue(wc.trial_is_active(
             self.store, bolus_events=[], now=_day(8)))
 
     def test_nothing_watched_returns_none(self):

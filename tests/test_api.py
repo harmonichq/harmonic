@@ -104,6 +104,30 @@ def _seed(path):
                       "targetBg": 110}] + pad}]}, "cgmSettings": {}}))
 
 
+def _guidance_client(test, case_name):
+    """An isolated source-supported case for legacy lifecycle compatibility."""
+    from ciq_autotune.api import create_app
+    from scripts.qa_e2e_cases import QA_CASES, materialize_case
+    database = tempfile.NamedTemporaryFile(suffix=".sqlite")
+    test.addCleanup(database.close)
+    with Store.open(database.name) as store:
+        materialize_case(store, next(case for case in QA_CASES if case.name == case_name))
+    app = create_app(db_path=database.name, token="", enable_fetch_loop=False)
+    return TestClient(app)
+
+
+def _source_plan_items(client, parameter):
+    source = client.get("/api/guidance").json()
+    candidate = next(row for row in source["candidates"] if row["subject"] == "setting:" + parameter)
+    action = candidate["action"][0]
+    if parameter == "carb_ratio":
+        provenance = {"block_start_min": action["start_min"], "block_end_min": action["end_min"],
+                      "block_member_start_mins": action["member_start_mins"]}
+        return [{"type": "ic", "start_min": start, "value": action["recommended"],
+                 "ic_block_provenance": provenance} for start in action["member_start_mins"]]
+    return [{"type": "basal", "start_min": action["start_min"], "value": action["recommended"]}]
+
+
 def _seed_ready_cell(path):
     """Seed CGM that clears one cell (low__full__dow-6) into the ready queue: a strong,
     stable, confound-clean Sunday-low effect across 140 days — every Sunday low, hardly
@@ -488,7 +512,7 @@ class ApiTest(unittest.TestCase):
     def test_plan_starts_empty(self):
         r = self.client.get("/api/plan")
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), {"items": [], "updated_at": None})
+        self.assertEqual({key: r.json()[key] for key in ("items", "updated_at")}, {"items": [], "updated_at": None})
 
     def test_put_then_get_plan_round_trips(self):
         items = [{"type": "basal", "key": 0, "label": "00:00", "value": 0.7}]
@@ -535,23 +559,18 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
 
     def test_applying_twice_in_the_same_second_returns_409_not_500(self):
-        from unittest.mock import patch
-
-        # Freeze the clock so two applies collide on plan_history's
-        # applied_at primary key (e.g. two browser tabs applying at once).
-        with patch("ciq_autotune.api.datetime") as mock_dt:
-            mock_dt.now.return_value.strftime.return_value = "2026-01-01 00:00:00"
-
-            self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
-            r = self.client.post("/api/plan/apply")
-            self.assertEqual(r.status_code, 200)
-
-            self.client.put("/api/plan", json={"items": [{"type": "basal", "key": 0}]})
-            r = self.client.post("/api/plan/apply")
-            self.assertEqual(r.status_code, 409)
+        self.client = _guidance_client(self, "basal-raise")
+        items = _source_plan_items(self.client, "basal_rate")
+        with patch("ciq_autotune.api.datetime") as clock:
+            clock.now.return_value = datetime(2026, 1, 1)
+            self.client.put("/api/plan", json={"items": items})
+            self.assertEqual(self.client.post("/api/plan/apply").status_code, 200)
+            self.client.put("/api/plan", json={"items": items})
+            self.assertEqual(self.client.post("/api/plan/apply").status_code, 409)
 
     def test_apply_snapshots_into_history_and_clears_draft(self):
-        items = [{"type": "isf", "key": 540, "value": 32}]
+        self.client = _guidance_client(self, "basal-raise")
+        items = _source_plan_items(self.client, "basal_rate")
         self.client.put("/api/plan", json={"items": items})
 
         r = self.client.post("/api/plan/apply")
@@ -566,16 +585,8 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(history[0]["items"], items)
 
     def test_ic_block_provenance_round_trips_through_draft_and_apply_history(self):
-        # #581: an annotated I:C block group is preserved unchanged through the
-        # HTTP draft save, the HTTP apply, and plan history.
-        prov = {
-            "block_start_min": 720, "block_end_min": 900,
-            "block_member_start_mins": [720, 780],
-        }
-        items = [
-            {"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov},
-            {"type": "ic", "start_min": 780, "value": 9.5, "ic_block_provenance": prov},
-        ]
+        self.client = _guidance_client(self, "ic-raise")
+        items = _source_plan_items(self.client, "carb_ratio")
         r = self.client.put("/api/plan", json={"items": items})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()["items"], items)
@@ -1489,6 +1500,8 @@ class CacheInvalidationTest(unittest.TestCase):
     def test_plan_apply_invalidates_cache(self):
         # #427: applying a Plan still forces recomputation (it writes setting history).
         import ciq_autotune.api as api_mod
+        self.client = _guidance_client(self, "basal-raise")
+        items = _source_plan_items(self.client, "basal_rate")
         real_analyze = api_mod.analyze
         calls = []
 
@@ -1500,7 +1513,7 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # miss → compute
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            self.client.put("/api/plan", json={"items": [{"type": "isf", "key": 540, "value": 32}]})
+            self.client.put("/api/plan", json={"items": items})
             r = self.client.post("/api/plan/apply")
             self.assertEqual(r.status_code, 200)
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
@@ -1509,6 +1522,8 @@ class CacheInvalidationTest(unittest.TestCase):
     def test_focus_pin_invalidates_cache(self):
         # #427: the draft-save carve-out is the ONLY one — a Focus pin still clears.
         import ciq_autotune.api as api_mod
+        self.client = _guidance_client(self, "behavioral-missed-meal")
+        self.client.get("/api/guidance")  # warm the independently computed source
         real_analyze = api_mod.analyze
         calls = []
 
@@ -1520,7 +1535,7 @@ class CacheInvalidationTest(unittest.TestCase):
             self.client.get("/api/analyze", params={"window": 30})   # miss → compute
             self.client.get("/api/analyze", params={"window": 30})   # hit → no compute
             self.assertEqual(len(calls), 1)
-            r = self.client.post("/api/focus", json={"lever": "late_bolus"})
+            r = self.client.post("/api/focus", json={"lever": "missed_meal"})
             self.assertEqual(r.status_code, 200, r.text)
             self.client.get("/api/analyze", params={"window": 30})   # bumped → recompute
             self.assertEqual(len(calls), 2, "a focus pin must clear the cache")

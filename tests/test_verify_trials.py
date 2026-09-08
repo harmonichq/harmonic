@@ -317,7 +317,8 @@ class VerifyTrialsApiTest(unittest.TestCase):
         response = self.client.get("/api/verify/trials")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"trials": [], "selected": None})
+        self.assertEqual({key: response.json()[key] for key in ("trials", "selected")},
+                         {"trials": [], "selected": None})
 
     def test_selected_block_ic_trial_keeps_focus_and_binds_block_evidence(self):
         # #581 amends ADR 579 §5: uniquely corroborated by a complete annotated
@@ -360,7 +361,8 @@ class VerifyTrialsApiTest(unittest.TestCase):
         self.assertEqual(detail["meal_arcs"]["block"], [720, 900])
         self.assertEqual(detail["focus"], {
             "available": False,
-            "message": "Focus is unavailable while a Trial is live. It will not queue behind this change.",
+            "reason": "reconciliation_required",
+            "message": "Focus is unavailable until follow-up admission is reconciled.",
         })
         with Store.open(self.tmp.name) as store:
             self.assertEqual(store.active_focus(), focus)
@@ -504,21 +506,25 @@ class VerifyTrialsApiTest(unittest.TestCase):
 
         response = self.client.get("/api/verify/trials")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"trials": [], "selected": None})
+        self.assertEqual({key: response.json()[key] for key in ("trials", "selected")},
+                         {"trials": [], "selected": None})
 
     def test_exact_baseline_revert_does_not_become_a_roster_record(self):
         _seed_raw_candidates(self.tmp.name, revert=True)
 
         response = self.client.get("/api/verify/trials")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"trials": [], "selected": None})
+        self.assertEqual({key: response.json()[key] for key in ("trials", "selected")},
+                         {"trials": [], "selected": None})
 
     def test_raw_multi_parameter_change_is_one_whole_profile_trial(self):
         _seed_raw_whole_profile_candidate(self.tmp.name)
 
         response = self.client.get("/api/verify/trials")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["trials"], [{
+        self.assertEqual([{key: value for key, value in row.items()
+                           if key not in ("ending", "watch_disposition")}
+                          for row in response.json()["trials"]], [{
             "id": "profile-all-20260604120000",
             "parameter": "profile",
             "slot": None,

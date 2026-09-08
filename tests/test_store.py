@@ -1226,3 +1226,52 @@ class FocusStoreTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FollowUpMigrationStoreTest(unittest.TestCase):
+    def test_legacy_history_is_readable_before_migration_and_unchanged_after_restart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'legacy-synthetic.sqlite')
+            # Manufacture the historical schema, without any follow-up tables.
+            with sqlite3.connect(path) as conn:
+                conn.executescript('''
+                    CREATE TABLE plan_history (applied_at TEXT PRIMARY KEY, items_json TEXT NOT NULL);
+                    CREATE TABLE focus (id INTEGER PRIMARY KEY, lever TEXT NOT NULL,
+                                        pinned_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active');
+                    CREATE UNIQUE INDEX focus_one_active ON focus(status) WHERE status = 'active';
+                    CREATE TABLE input_data_revision (id INTEGER PRIMARY KEY, revision INTEGER NOT NULL);
+                    INSERT INTO input_data_revision VALUES (1, 7);
+                    INSERT INTO plan_history VALUES ('2026-08-01 09:00:00', '[{"type":"basal","key":0,"value":0.7}]');
+                    INSERT INTO focus VALUES (1, 'late_bolus', '2026-08-01 10:00:00', 'resolved');
+                    INSERT INTO focus VALUES (2, 'late_bolus', '2026-08-02 10:00:00', 'active');
+                ''')
+            with open(path, 'rb') as file:
+                original_bytes = file.read()
+            with Store.open_readonly(path) as reader:
+                statements = []
+                reader.conn.set_trace_callback(statements.append)
+                plans = reader.follow_up_records('plan')
+                focuses = reader.follow_up_records('focus')
+                self.assertEqual(reader.follow_up_records('trial'), [])
+                self.assertIsNone(reader.follow_up_frontier())
+                self.assertIsNone(reader.follow_up_request('unknown'))
+                self.assertEqual(reader.input_data_revision(), 7)
+                self.assertEqual(reader.conn.total_changes, 0)
+                self.assertTrue(all(s.lstrip().upper().startswith('SELECT') for s in statements))
+            with open(path, 'rb') as file:
+                self.assertEqual(file.read(), original_bytes)
+            self.assertEqual(os.listdir(tmp), ['legacy-synthetic.sqlite'])
+            unknown = {'version': '386:1', 'state': 'unavailable', 'reason': 'legacy_not_recorded'}
+            self.assertEqual(plans[0]['decision_context'], unknown)
+            self.assertEqual(plans[0]['deliverable'], unknown)
+            self.assertEqual(focuses[1]['ending'], unknown)
+            self.assertNotIn('effective_at', focuses[1]['ending'])
+            self.assertEqual(focuses[1]['status'], 'resolved')
+            for _ in range(2):
+                with Store.open(path) as migrated:
+                    self.assertEqual(migrated.follow_up_records('plan'), plans)
+                    self.assertEqual(migrated.follow_up_records('focus'), focuses)
+                    self.assertEqual(migrated.input_data_revision(), 7)
+                    with self.assertRaises(FocusAlreadyActive):
+                        migrated.pin_focus('late_bolus', '2026-08-03 10:00:00')
+                    self.assertEqual(migrated.active_focus()['id'], 2)

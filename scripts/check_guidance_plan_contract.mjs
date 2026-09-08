@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import {
   buildDeliverable,
   effectivePlanItems,
+  reconcileDeliverable,
   PARAM_PRECISION,
   roundToPrecision,
 } from '../frontend/plan.js';
@@ -153,4 +154,38 @@ assert.deepEqual(
   'the source-owned whole-day ISF action must fan out to every active profile boundary',
 );
 
-console.log('guidance Plan contract: PASS');
+const cases = [];
+const base = source.profiles.isf;
+for (const [name, items] of [
+  ['basal-split', [{ type: 'basal', start_min: 30, value: 0.7235 }]],
+  ['whole-profile', base.map(({ start_min }) => ({ type: 'isf', start_min, value: 29.5 }))],
+  ['captured-block', icItems(icAction)],
+]) {
+  const segments = name === 'captured-block' ? source.profiles.ic : base;
+  const rows = buildDeliverable({ activeProfile: { segments }, acceptedItems: items });
+  const actual = rows.map(row => Object.fromEntries([
+    ['start_min', row.start_min], ...Object.keys(PARAM_PRECISION).map(param =>
+      [param, roundToPrecision(row[param].value, PARAM_PRECISION[param])]),
+  ]));
+  const split = [...actual, { ...actual[0], start_min: 15 }].sort((a, b) => a.start_min - b.start_min);
+  const mismatch = split.map(row => row.start_min === 15 ? { ...row, target_bg: 150 } : row);
+  const merged = actual.filter((row, i) => i === 0 || Object.keys(PARAM_PRECISION)
+    .some(param => row[param] !== actual[i - 1][param]));
+  for (const [variant, detected] of [['exact', actual], ['split', split], ['merged', merged], ['mismatch', mismatch]]) {
+    cases.push({ name: `${name}-${variant}`, segments, items, rows, actual: detected,
+      matches: reconcileDeliverable(rows, detected).state === 'confirmed' });
+  }
+}
+const backend = JSON.parse(execFileSync('uv', ['run', 'python', '-c', `
+import json, sys
+from ciq_autotune.guidance import plan_deliverable, schedule_matches
+cases = json.load(sys.stdin)
+print(json.dumps([{'rows': plan_deliverable(c['segments'], c['items']),
+                   'matches': schedule_matches(c['rows'], c['actual'])} for c in cases]))
+`], { encoding: 'utf8', input: JSON.stringify(cases) }));
+for (let i = 0; i < cases.length; i++) {
+  assert.deepEqual(backend[i].rows, cases[i].rows, `${cases[i].name}: backend deliverable drift`);
+  assert.equal(backend[i].matches, cases[i].matches, `${cases[i].name}: schedule comparison drift`);
+}
+assert.ok(cases.some(c => !c.matches), 'negative schedule comparisons must execute');
+console.log(`guidance Plan contract: PASS (${cases.length} backend schedule cases)`);

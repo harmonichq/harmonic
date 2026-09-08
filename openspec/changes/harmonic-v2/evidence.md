@@ -649,3 +649,169 @@ Coordinator verification of the integrated branch retains complete command
 stdout, stderr, arguments and exit statuses under
 `/private/tmp/harmonic-384-merged-verification/`. Its results will be reported
 in the implementation PR after the run completes.
+
+
+## ADR 386 investigation receipts
+
+Captured on 2026-09-08 from source
+`b9791d9b91e1897d8557c4f037538f9e82b8edd5` in the selected ticket worktree.
+The installed GitHub binding located lock v2 386 1 at
+https://github.com/harmonichq/harmonic/issues/386#issuecomment-5579015306.
+The source commit resolves, is the ticket branch head before this investigation,
+contains the active strictly valid change and every selected task/anchor, and has
+no later source amendment. Session-local metadata admitted GPT-6 Astra / medium;
+repository read/write capability and the installed adapter probe were verified.
+
+The findings are review-ready, not independently reviewed or spike-completed.
+Tasks 2.2–2.3 remain unchecked for the coordinator-owned review boundary.
+
+### Executed inputs and limits
+
+`production-*` cases execute existing Plan reconciliation, Store/watch/review,
+scenario and trend producers. They materialize only committed generator-owned
+synthetic recipes in temporary stores. The setting/focus captures call
+`mockups/harmonic-v2.exploration/generate.py`; the correction recipe is
+`behavioral-correction-on-iob` from `scripts/qa_e2e_cases.py` through
+`scripts/gen_qa_e2e_db.py`. Block identity reuses the existing manufactured
+builders in `tests/test_verify_trials.py`. Additional sequential switches are
+explicitly manufactured scratch inputs, not new committed fixtures.
+`_review_id`, `_profile_settings` and `_effective_isf` are inspected internal
+helpers used only to identify the production values; this is not a new public API.
+
+`simulation-*` cases execute the proposed in-memory contract. They do not test
+an implemented Store migration, endpoint or transaction. Exact-period tests
+exercise half-open ownership/clipping on manufactured anchor times; they do not
+certify a new production exact-period classifier or #340's statistical method.
+The fixed-context case reuses the actual unchanged-record production tallies.
+No real patient records, credentials, normal server or vendor pull are involved.
+
+The current source grounds the existing facts in `Store.apply_plan`,
+`Store.plan_history`, `Store.pin_focus`, `Store.resolve_focus` and
+`Store.list_focuses`; `watched_change.detect_trial`, `review_trials`,
+`_review_candidates`, `_review_id`, `trial_is_active` and `active_watched_change`;
+`outcomes_trend.summarize_trend`; scenario `build_scenarios` and
+`tally_attributions`; and `frontend/plan.js::reconcileDeliverable`.
+Graph coverage for these cited source files reported no recorded issue and
+matching metadata, with its best-effort caveat; direct source was also inspected.
+
+The retained comparison authority was read from
+`1ee53b341192b0943c83aae94b47dc6b33c571e3:openspec/changes/verify-change-comparison/design.md`.
+The #131 fixed-profile rationale is recorded in the current trend producer's
+module contract and `_profile_settings`: one programmed ISF across windows,
+never independently varying analyzer estimates. ADR 386 preserves that rationale
+and names the retained pin-time context; it does not rewrite the statistical policy.
+
+The chart handoff is source-grounded only. `renderEventSurface` owns interactions
+but still accepts a diagnostic case-file shape and computes its own scale. The
+option supplies an anchor label/grid, not a dedicated zero marker; its older
+comment claiming a marker is not execution evidence. #340's already-approved
+data/scale/zero-marker seams remain the bounded extension. No rendered UI proof
+was attempted by this investigation.
+
+### Exact verification command and unedited output
+
+The command below ran from the ticket worktree with host cache permissions.
+The first sandboxed attempts were unable to write the uv/npm caches; the same
+operations succeeded outside the sandbox without credential or cache repair.
+The final command exited **0**. All 21 cases assert literal expected outputs and
+a closed required-case set; either mismatch or missing exercise exits nonzero.
+
+```sh
+uv run --extra api python /private/tmp/harmonic-348-completion/386-replay.py && npx --yes @fission-ai/openspec@1 validate harmonic-v2 --strict && python3 scripts/check_adr_numbers.py && python3 scripts/check_owned_identifiers.py && python3 scripts/check_public_allowlist.py
+```
+
+Stdout (unedited):
+
+```text
+{"actual": {"mismatch": [{"cells": [{"actual": 0.5, "label": "Basal (U/h)", "param": "basal_rate", "planned": 0.48}], "label": "03:00", "start_min": 180}], "states": {"confirmed": "confirmed", "draftMatch": "confirmed", "mismatch": "mismatch", "pending": "pending"}}, "asserted": {"mismatch": [{"cells": [{"actual": 0.5, "label": "Basal (U/h)", "param": "basal_rate", "planned": 0.48}], "label": "03:00", "start_min": 180}], "states": {"confirmed": "confirmed", "draftMatch": "confirmed", "mismatch": "mismatch", "pending": "pending"}}, "case": "production-plan-reconciliation", "inputs": {"accepted_items": [{"current": 0.6, "label": "03:00", "recommended": 0.48, "start_min": 180, "type": "basal", "value": 0.48}, {"current": 0.6, "label": "03:30", "recommended": 0.48, "start_min": 210, "type": "basal", "value": 0.48}], "detected": {"captured_at": "2024-06-13 00:00:00", "confirmed": {"carb_entry": true, "dia_min": 180, "idp": 1, "max_bolus": 10.0, "name": "QA synthetic profile", "segments": [{"basal_rate": 0.6, "carb_ratio": 10.0, "isf": 40, "start_min": 0, "target_bg": 110}, {"basal_rate": 0.48, "carb_ratio": 10.0, "isf": 40, "start_min": 180, "target_bg": 110}, {"basal_rate": 0.6, "carb_ratio": 10.0, "isf": 40, "start_min": 240, "target_bg": 110}]}, "mismatch": {"carb_entry": true, "dia_min": 180, "idp": 1, "max_bolus": 10.0, "name": "QA synthetic profile", "segments": [{"basal_rate": 0.6, "carb_ratio": 10.0, "isf": 40, "start_min": 0, "target_bg": 110}, {"basal_rate": 0.5, "carb_ratio": 10.0, "isf": 40, "start_min": 180, "target_bg": 110}, {"basal_rate": 0.6, "carb_ratio": 10.0, "isf": 40, "start_min": 240, "target_bg": 110}]}, "pending": null}, "fixture": "setting.json"}}
+{"actual": {"active_guard": true, "detail_focus_available": true, "history_keys": ["applied_at", "items"], "id": "basal_rate-03-00-20240613030000", "maturing": false}, "asserted": {"active_guard": true, "detail_focus_available": true, "history_keys": ["applied_at", "items"], "id": "basal_rate-03-00-20240613030000", "maturing": false}, "case": "production-trial-readiness", "inputs": {"generator": "setting_capture", "now": "2024-06-28 12:00:00"}}
+{"actual": [{"active": "isf-all-20240601120000", "roster": ["isf-all-20240601120000"]}, {"active": "isf-all-20240603120000", "roster": ["isf-all-20240601120000", "isf-all-20240603120000"]}], "asserted": [{"active": "isf-all-20240601120000", "roster": ["isf-all-20240601120000"]}, {"active": "isf-all-20240603120000", "roster": ["isf-all-20240601120000", "isf-all-20240603120000"]}], "case": "production-sequential-changes", "inputs": {"isf_changes": [["2024-06-01 12:00:00", 45], ["2024-06-03 12:00:00", 50]], "recipe": "behavioral-over-treated-low"}}
+{"actual": {"manual": {"id": 1, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "resolved"}, "preempted": {"id": 1, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "dropped"}}, "asserted": {"manual": {"id": 1, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "resolved"}, "preempted": {"id": 1, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "dropped"}}, "case": "production-focus-endings", "inputs": {"generator": "focus_capture", "pin": "2024-05-30 12:00:00"}}
+{"actual": {"resolver_write_rejected": true, "review_unchanged": true, "status": "active"}, "asserted": {"resolver_write_rejected": true, "review_unchanged": true, "status": "active"}, "case": "production-history-read", "inputs": {"read": "review_trials then forbidden active resolver on read-only store", "recipe": "sequence store with Store-level Focus pin"}}
+{"actual": {"active_guard": false, "ids": ["carb_ratio-12-00-20260602090000-900"]}, "asserted": {"active_guard": false, "ids": ["carb_ratio-12-00-20260602090000-900"]}, "case": "production-block-identity", "inputs": {"block": [720, 900], "builder": "tests.test_verify_trials._apply_ic_block", "change": "2026-06-02 09:00:00", "values": [5.0, 4.6]}}
+{"actual": {"profile_isf": 40.0, "same_records_tallies": [[2, 5], [0, 5], [0, 5]], "scenario": [2, 5], "scenario_isf": -0.0, "trend": [0, 5]}, "asserted": {"profile_isf": 40.0, "same_records_tallies": [[2, 5], [0, 5], [0, 5]], "scenario": [2, 5], "scenario_isf": 0.0, "trend": [0, 5]}, "case": "production-correction-context", "inputs": {"now": "2024-05-30 12:00:00", "raw_records_unchanged": true, "recipe": "behavioral-correction-on-iob"}}
+{"actual": {"ending": {"conclusion": "continue current setting", "effective_at": "2024-06-18 12:00:00", "kind": "user_finished", "recorded_at": "2024-06-18 12:00:00"}, "ending_count": 2, "same": true}, "asserted": {"ending": {"conclusion": "continue current setting", "effective_at": "2024-06-18 12:00:00", "kind": "user_finished", "recorded_at": "2024-06-18 12:00:00"}, "ending_count": 2, "same": true}, "case": "simulation-finish-retry", "inputs": {"first_request": "2024-06-18 12:00:00", "retry": "2024-06-19 12:00:00", "trial": {"changed_at": "2024-06-03 12:00:00", "id": "isf-all-20240603120000", "ready": true}}}
+{"actual": {"active_focus": null, "active_trial": null, "can_finish_trial": false, "can_pin_focus": true}, "asserted": {"active_focus": null, "active_trial": null, "can_finish_trial": false, "can_pin_focus": true}, "case": "simulation-no-old-promotion", "inputs": {"refresh_candidates": [{"changed_at": "2024-06-01 12:00:00", "id": "isf-all-20240601120000", "ready": true}, {"changed_at": "2024-06-03 12:00:00", "id": "isf-all-20240603120000", "ready": true}], "then_latest_absent": [{"changed_at": "2024-06-01 12:00:00", "id": "isf-all-20240601120000", "ready": true}]}}
+{"actual": {"focus_ending": {"conclusion": null, "effective_at": "2024-06-20 12:00:00", "kind": "trial_preempted", "recorded_at": "2024-06-21 12:00:00"}, "immature_finish_rejected": true, "verdict": {"active_focus": null, "active_trial": "isf-all-20240620120000", "can_finish_trial": false, "can_pin_focus": false}}, "asserted": {"focus_ending": {"conclusion": null, "effective_at": "2024-06-20 12:00:00", "kind": "trial_preempted", "recorded_at": "2024-06-21 12:00:00"}, "immature_finish_rejected": true, "verdict": {"active_focus": null, "active_trial": "isf-all-20240620120000", "can_finish_trial": false, "can_pin_focus": false}}, "case": "simulation-new-trial-preemption", "inputs": {"candidate": {"changed_at": "2024-06-20 12:00:00", "id": "isf-all-20240620120000", "ready": false}, "observed_at": "2024-06-21 12:00:00"}}
+{"actual": {"can_pin": true, "ending": {"conclusion": "stop for now", "effective_at": "2024-06-29 12:00:00", "kind": "manual", "recorded_at": "2024-06-29 12:00:00"}, "retry_same": true}, "asserted": {"can_pin": true, "ending": {"conclusion": "stop for now", "effective_at": "2024-06-29 12:00:00", "kind": "manual", "recorded_at": "2024-06-29 12:00:00"}, "retry_same": true}, "case": "simulation-manual-focus-ending", "inputs": {"pin": {"id": "focus:1", "pinned_at": "2024-05-30 12:00:00"}, "request": "stop for now"}}
+{"actual": {"automatic": [{"active": null, "conclusion": null, "kind": "reverted"}, {"active": null, "conclusion": null, "kind": "expired_unreviewed"}], "supersession": "superseded"}, "asserted": {"automatic": [{"active": null, "conclusion": null, "kind": "reverted"}, {"active": null, "conclusion": null, "kind": "expired_unreviewed"}], "supersession": "superseded"}, "case": "simulation-observed-endings", "inputs": {"observed": ["reverted", "expired_unreviewed"], "superseding_candidate": {"changed_at": "2024-06-03 12:00:00", "id": "isf-all-20240603120000", "ready": true}}}
+{"actual": {"legacy": {"context": {"reason": "not_recorded", "state": "unavailable"}, "ending": {"reason": "ending_time_not_recorded", "state": "unavailable"}, "id": 7, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "resolved"}, "owner_unchanged": true}, "asserted": {"legacy": {"context": {"reason": "not_recorded", "state": "unavailable"}, "ending": {"reason": "ending_time_not_recorded", "state": "unavailable"}, "id": 7, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "resolved"}, "owner_unchanged": true}, "case": "simulation-legacy-and-read-only", "inputs": {"legacy": {"id": 7, "lever": "over_treated_low", "pinned_at": "2024-05-30 12:00:00", "status": "resolved"}, "read": "history plus client modification"}}
+{"actual": {"changed_at": "2024-06-01 12:00:00", "decision_context": null, "first_observed_at": "2024-06-02 12:00:00"}, "asserted": {"changed_at": "2024-06-01 12:00:00", "decision_context": null, "first_observed_at": "2024-06-02 12:00:00"}, "case": "simulation-first-observation", "inputs": {"candidate": {"changed_at": "2024-06-01 12:00:00", "id": "isf-all-20240601120000", "ready": true}, "first_seen": "2024-06-02 12:00:00"}}
+{"actual": [null, null, "plan:1", null, null, null], "asserted": [null, null, "plan:1", null, null, null], "case": "simulation-plan-link", "inputs": {"columns": ["reconciliation", "applied", "observed_transition", "unique_match"], "rows": [["pending", true, true, true], ["mismatch", true, true, true], ["confirmed", true, true, true], ["confirmed", false, true, true], ["confirmed", true, false, true], ["confirmed", true, true, false]]}}
+{"actual": {"after_trace_clipped": ["2024-05-30 12:00:00", "2024-05-30 12:30:00"], "capped_before": ["2024-03-01 12:00:00", "2024-05-30 12:00:00"], "legacy": {"reason": "ending_time_not_recorded", "state": "unavailable"}, "no_before": ["2024-05-30 12:00:00", "2024-05-30 12:00:00"], "owned": {"after": ["2024-05-30 12:00:00", "2024-06-29 11:59:59"], "before": ["2024-05-30 11:59:59"]}, "periods": {"after": ["2024-05-30 12:00:00", "2024-06-29 12:00:00"], "before": ["2024-05-01 00:00:00", "2024-05-30 12:00:00"]}}, "asserted": {"after_trace_clipped": ["2024-05-30 12:00:00", "2024-05-30 12:30:00"], "capped_before": ["2024-03-01 12:00:00", "2024-05-30 12:00:00"], "legacy": {"reason": "ending_time_not_recorded", "state": "unavailable"}, "no_before": ["2024-05-30 12:00:00", "2024-05-30 12:00:00"], "owned": {"after": ["2024-05-30 12:00:00", "2024-06-29 11:59:59"], "before": ["2024-05-30 11:59:59"]}, "periods": {"after": ["2024-05-30 12:00:00", "2024-06-29 12:00:00"], "before": ["2024-05-01 00:00:00", "2024-05-30 12:00:00"]}}, "case": "simulation-exact-periods", "inputs": {"anchors": ["2024-05-30 11:59:59", "2024-05-30 12:00:00", "2024-06-29 11:59:59", "2024-06-29 12:00:00"], "available_start": "2024-05-01 00:00:00", "ending": "2024-06-29 12:00:00", "pin": "2024-05-30 12:00:00"}}
+{"actual": [{"denominator": 0, "numerator": 0, "rate": null, "state": "unavailable"}, {"denominator": 5, "numerator": 0, "rate": 0.0, "state": "available"}], "asserted": [{"denominator": 0, "numerator": 0, "rate": null, "state": "unavailable"}, {"denominator": 5, "numerator": 0, "rate": 0.0, "state": "available"}], "case": "simulation-zero-opportunities", "inputs": {"observed_zero": [0, 5], "unwanted_behavior": [0, 0]}}
+{"actual": {"after_context": {"classifier": "source-pin", "profile_isf": 40.0, "source": "programmed_profile_at_pin", "version": "386:1"}, "before_context": {"classifier": "source-pin", "profile_isf": 40.0, "source": "programmed_profile_at_pin", "version": "386:1"}, "comparison_counts": [[0, 5], [0, 5]], "original_diagnosis_count": [2, 5], "outcome_claim": null}, "asserted": {"after_context": {"classifier": "source-pin", "profile_isf": 40.0, "source": "programmed_profile_at_pin", "version": "386:1"}, "before_context": {"classifier": "source-pin", "profile_isf": 40.0, "source": "programmed_profile_at_pin", "version": "386:1"}, "comparison_counts": [[0, 5], [0, 5]], "original_diagnosis_count": [2, 5], "outcome_claim": null}, "case": "simulation-fixed-context", "inputs": {"later_programmed_isf": 50.0, "production_same_records_tallies": [[2, 5], [0, 5], [0, 5]], "retained": {"classifier": "source-pin", "profile_isf": 40.0, "source": "programmed_profile_at_pin", "version": "386:1"}}}
+{"actual": [{"can_pin_focus": false, "lead": "trial"}, {"can_pin_focus": false, "lead": "focus"}, {"can_pin_focus": false, "lead": "pending_plan"}, {"can_pin_focus": true, "lead": "draft"}, {"can_pin_focus": true, "lead": "guidance"}], "asserted": [{"can_pin_focus": false, "lead": "trial"}, {"can_pin_focus": false, "lead": "focus"}, {"can_pin_focus": false, "lead": "pending_plan"}, {"can_pin_focus": true, "lead": "draft"}, {"can_pin_focus": true, "lead": "guidance"}], "case": "simulation-precedence", "inputs": {"columns": ["watch", "pending_plan", "draft"], "rows": [["trial", true, true], ["focus", true, true], [null, true, true], [null, false, true], [null, false, false]]}}
+{"actual": {"after_finish": null, "history_count": 2, "selected": "carb_ratio-12-00-20260602090000-900"}, "asserted": {"after_finish": null, "history_count": 2, "selected": "carb_ratio-12-00-20260602090000-900"}, "case": "simulation-same-instant-and-block", "inputs": {"candidates": [{"changed_at": "2026-06-02 09:00:00", "id": "carb_ratio-12-00-20260602090000-960", "ready": true}, {"changed_at": "2026-06-02 09:00:00", "id": "carb_ratio-12-00-20260602090000-900", "ready": true}], "order": "deliberately reversed"}}
+{"actual": {"initial_can_pin": false, "kind": "intent_withdrawn", "later_active": "isf-all-20240601120000", "released_can_pin": true, "same_withdrawal": true}, "asserted": {"initial_can_pin": false, "kind": "intent_withdrawn", "later_active": "isf-all-20240601120000", "released_can_pin": true, "same_withdrawal": true}, "case": "simulation-plan-withdrawal", "inputs": {"later_observed_change": {"changed_at": "2024-06-01 12:00:00", "id": "isf-all-20240601120000", "ready": true}, "pending_plan": "plan:2024-06-01 10:00:00"}}
+PASS: 21/21 required cases asserted; production observations and proposed simulations remain distinct.
+Change 'harmonic-v2' is valid
+check-adr: 150 ADRs in 83 design.md files, all identities unique and issue-keyed.
+check-owned-identifiers: 30 owned-identifier rules passed.
+check-public-allowlist: 413 tracked file(s) cleared to ship, 1745 excluded. Every tracked path dispositioned.
+```
+
+Stderr (unedited):
+
+```text
+(node:50090) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/386/frontend/plan.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/386/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+/Users/connor/worktrees/harmonic/386/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+```
+
+The emitted Node module-type and Starlette deprecation warnings did not fail the
+command. They are baseline runtime warnings; no dependency or production change
+was made to suppress them. Full stdout/stderr, exit statuses and iteration
+failures are retained in `/private/tmp/harmonic-348-completion/386-start/`.
+The final positive receipts are `verification-complete.*`.
+
+### Deliberate negative controls
+
+Two scratch-only variants were executed against the same synthetic inputs.
+One treats the finished latest Trial as active; the other omits one required
+case from the exercise ledger. Both exited **1**, for the intended failures
+below. These are controls of the replay, not failures of production behavior.
+
+```sh
+uv run --extra api python /private/tmp/harmonic-348-completion/386-start/mutant-reopen.py
+```
+
+Final error (excerpt; full stdout/stderr retained alongside the command):
+
+```text
+AssertionError: ('simulation-no-old-promotion', {'active_trial': 'isf-all-20240603120000', 'active_focus': None, 'can_pin_focus': False, 'can_finish_trial': True}, {'active_trial': None, 'active_focus': None, 'can_pin_focus': True, 'can_finish_trial': False})
+```
+
+```sh
+uv run --extra api python /private/tmp/harmonic-348-completion/386-start/mutant-unexercised.py
+```
+
+Final error (excerpt; full stdout/stderr retained alongside the command):
+
+```text
+AssertionError: {'missing': ['simulation-first-observation'], 'unexpected': []}
+```
+
+The uncommitted replay is `/private/tmp/harmonic-348-completion/386-replay.py`.
+Its SHA-256 at this capture is `54800861747140b80e22d34aaf8dc5285c224c9b8e78023241cb1195d2e56331`. It is deliberately not shipped as a
+replay program or fixture; the recorded inputs/assertions/outputs above are the
+committed investigation evidence.
+
+### Prevented delivery and remaining proof
+
+No selected ruling was prevented by an unavailable authority or evidence source.
+The exact selected investigation command passed. Independent Standards/Spec review
+remains outstanding by the mandatory handoff; no dependent production build is
+admitted from this worker result alone. The coordinator must verify this commit
+and the raw receipts, dispatch that review and resume the same worker for any
+corrections or verified completion.
+
+The unexecuted production and UI obligations are enumerated in contracts.md:
+real migration/identity retention, write atomicity and restart/races, cache and
+reconciliation integration, production exact-period/context serving, #340's
+comparison assessments, both rendered journeys and shared-chart interactions,
+and packaged v1/v2 coexistence. The replay's passing assertions do not discharge
+those obligations or establish clinical/statistical validity.

@@ -33,6 +33,15 @@ PRs are read from GitHub.
   - [ ] 2.3.2 Map the retained chart interactions and comparison contract to Changes and history without redesigning the selected desktop. Name the smallest shared-chart extension and the UI Craft and production-verification obligations that remain for the implementation ticket.
 - [ ] 2.4 Formalize the selected desktop's applicable UI Craft build contract and predecessor behavior mapping in the implementing ticket. Use the existing brief, prototype and repair records; do not mistake a direction selection for production fidelity evidence.
 
+### #386 review handoff
+
+ADR 386 and contracts.md record the selected 2.2–2.3 rulings. Evidence.md records
+the executed production observations and proposed-contract simulation. These
+six selected task boxes deliberately remain unchecked pending coordinator-owned
+Standards/Spec review and verified completion. Task 2.4 and production tasks
+3.2–3.5 remain downstream; this handoff supplies no UI Craft fidelity or production
+persistence proof and admits no build by itself.
+
 ## 3. Deliver the first usable release behind /v2/
 
 File builds only when no remaining decision can invalidate their acceptance.

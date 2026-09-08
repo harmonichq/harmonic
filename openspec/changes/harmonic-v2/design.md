@@ -2,9 +2,9 @@
 
 Status: the desktop prototype and completed cold-QA repairs are the selected
 direction. The complete desktop journeys and review records from merged PR #379
-are adopted below. Product interview decisions remain settled. Backend selection,
-durable identity/endings and comparison integration still need bounded decisions;
-production implementation and UI Craft fidelity evidence are not yet complete.
+are adopted below. Product interview decisions remain settled. ADR 383 governs backend selection. ADR 386 below records the durable
+identity/endings and comparison contract for independent review; production
+implementation and UI Craft fidelity evidence are not yet complete.
 
 ## Grounding
 
@@ -702,31 +702,20 @@ identified by that issue in this document, with its replay receipts in
 
 ### Durable Trial/Focus context and endings
 
-Decide the minimum storage fields and public writes that implement the two
-existing context/ending ADRs. Reconcile detected Trial identity and the review
-roster with one backend finish/admission verdict, so a finished Trial cannot
-reopen or promote an older Trial into the active slot. Preserve true new-change
-preemption, user conclusion versus observed reversal/supersession/expiry,
-Focus end times, and unavailable legacy facts. Establish the actual Plan match
-with existing reconciliation, never temporal proximity. A bounded versioned
-decision and ending record is sufficient; no event archive or refresh snapshots.
+ADR 386 — Retain decision facts and one watch verdict below records the
+versioned records, Plan reconciliation and canonical Trial admission contract.
+Its synthetic replay receipts are in evidence.md. Tasks 2.2–2.3 remain unchecked
+until the epic coordinator verifies the mandatory independent review.
 
 ### Follow-up comparisons and exact Focus periods
 
-Reuse #340's reviewed comparison policy at
-`1ee53b341192b0943c83aae94b47dc6b33c571e3`; read its design rather than copying
-its statistics into another authority. Reconcile only the v2 Changes placement,
-historical Focus and explicit Trial finish extensions from ADR 348. Name the
-minimal actual shared-chart extension and its retained interactions in the build
-brief. #336/#340 remain the existing follow-up work to reuse, not a new chart
-backlog. Any changed ticket remit or parent relationship is recorded on GitHub
-before its next handoff.
-
-Decide exact pin-to-ending Focus periods and source context for both adherence
-and outcome. Resolve the correction-family inference-context discrepancy
-documented in contracts.md before blessing those habit summaries. Keep zero
-opportunities unknown, periods/populations/denominators server-owned, descriptive
-spread distinct from outcome uncertainty, and observation distinct from causation.
+ADR 386 — Keep Focus comparisons in one retained context below settles exact
+periods and the demonstrated correction-family discrepancy. The retained #340
+policy at `1ee53b341192b0943c83aae94b47dc6b33c571e3` continues to own comparison
+populations, denominators, assessment and chart reuse. ADR 386 adds historical
+Focus and durable watch endings under ADR 348; it does not rewrite statistics.
+The source-contract handoff in contracts.md names the remaining implementation,
+UI Craft and production-verification obligations.
 
 ### Production surface and delivery proof
 
@@ -1182,3 +1171,191 @@ form one follow-up contract: the recorded start and ending determine which
 periods and original context the retained assessment must use. The spike must
 settle that contract before a dependent journey build. The selected desktop,
 existing chart/statistical authorities and guidance policy remain settled.
+
+
+## ADR 386 — Retain decision facts and one watch verdict
+
+### Decision and evidence boundary
+
+This is the proposed implementation contract produced by #386's bounded
+investigation, pending the coordinator-owned Standards/Spec review. The selected
+parent tasks remain open at this handoff. No production behavior or build
+admission follows from the scratch simulation. The exact source is
+`b9791d9b91e1897d8557c4f037538f9e82b8edd5`; evidence.md records the executed cases.
+
+Use record version `386:1` for the bounded context and ending envelopes specified
+in contracts.md. Retain the existing applied Plan key (`applied_at`), stored
+Focus id and derived Verify Trial id. The current Plan API exposes `applied_at`
+and items; it does not expose SQLite's incidental rowid. Do not introduce a new
+identity based on a display label or a current evidence fingerprint.
+
+Record a Plan decision only at apply, a Focus decision only at pin, and a Trial's
+first-observed context only when it is first reconciled into the durable watch
+records. Capture the selected action, explanation, support/unknowns, source
+window and generation, units and source identities. Keep detected change time,
+first observation time, and applied Plan intent distinct. A Trial observed
+without a Plan has no original user-decision snapshot. A later eligible Plan
+match may add a relationship; it cannot rewrite that first observation.
+
+A Plan relationship requires one uniquely reconciled applied deliverable and a
+real observed transition to that deliverable. Retain the schedule comparison's
+union of boundaries and pump precision, plus captured I:C block provenance.
+A time-near apply, `deliberate`, matching parameter, or draft equality alone is
+insufficient. Preserve the matched Plan key and observed snapshot/change identity
+as the reconciliation receipt. Several indistinguishable applies leave the
+relationship unavailable with an ambiguity reason; do not pick the latest.
+This is a public backend reconciliation responsibility. Share the existing
+schedule semantics with `frontend/plan.js` through parity verification rather
+than trusting a browser-supplied `confirmed` flag.
+
+### Canonical candidates and admission
+
+The backend watch owner reuses the existing regime/switch detection,
+corroboration, reversion suppression, profile coalescing and captured-block
+matching. The existing Verify `_review_id` remains the canonical identity,
+including the captured block end. Active selection, Verify summaries/detail,
+guidance and the Focus pin guard consume one verdict from this owner. They no
+longer derive admission separately. Maturity remains the existing target-data
+14-day bounded rule; comparison support is a different fact.
+
+Select the newest detected change before considering finished records. Do not
+use Verify's maturity-first display ordering or its three-row presentation cap
+for active admission. Persist the newest admitted change's identity and detected
+time as the admission frontier, including after its ending. A terminal latest
+candidate yields no active Trial; do not fall through to an older candidate.
+A candidate disappearing from a refreshed roster does not erase that frontier
+or its retained record. Newly discovered older history remains history.
+
+A genuinely later detected change advances the frontier and can open a new Trial.
+Existing switch corroboration prevents a late dose observation of the same
+change from doing so. Existing profile grouping is applied first; if distinct
+canonical candidates remain at one instant, use canonical-id ascending as the
+stable tie-break for the one watch, and retain the others as historical members
+with an explicit not-selected-for-watch disposition. Never promote those peers
+when that watch ends. This selects a watch, not a clinical priority or a new
+pump-change classifier. Captured block-I:C candidates already admitted by Verify
+join this same active verdict, deliberately closing the singleton's #518 fallback
+only for its already-proven captured groups. Uncorroborated block edits retain
+the existing exclusion; do not reconstruct a block from today's profile.
+
+Return active kind/id, admission reason, Trial maturity, `can_finish_trial`,
+Focus pin availability and its reason, and the retained ending together. Pending
+applied Plan intent also withholds a new Focus pin until reconciliation or
+explicit withdrawal, as specified in contracts.md; a draft alone does not.
+A new live Trial supersedes the previous watch and preempts an active Focus;
+reading an older subject cannot select it as the watch. A mature but unfinished
+Trial still occupies the slot. Finishing releases it without implying benefit.
+
+### Endings, retries and historical reads
+
+Trial endings are `user_finished`, `reverted`, `superseded`, and
+`expired_unreviewed`. User finish requires the current backend maturity verdict;
+record its conclusion without operating the pump. Revert-to-Plan remains a
+manual-entry route, not an observed reversal. Reversal requires the detector's
+actual reversal evidence. Supersession records the new detected change, and
+expiry uses the existing 28-day watch horizon. An ended watch does not terminate
+#340's separate setting comparison period while that setting remains in force.
+Its saved ending assessment stays fixed; a later read is labeled reassessment.
+
+Focus endings distinguish `manual`, `trial_preempted` and
+`lever_unavailable` (the existing invalidated-taxonomy drop). A manual ending
+has no maturity gate. Automatic endings contain no user conclusion. A preempted
+Focus is dropped, not paused; another attempt receives a newly pinned id.
+
+Every ending has both effective time and recorded time. For a manual ending they
+are the request's server time; for an observed reversal/supersession/preemption,
+effective time is the detected event time and recorded time is reconciliation
+time. Expiry's effective time is the watch horizon, not the day it was noticed.
+Unavailable event timing remains unavailable. Never infer an old ending time
+from a status or stamp migration time as an earlier historical fact.
+
+The first ending wins. A repeat finish/resolve returns the stored ending, even
+if the retry supplies another conclusion or later clock. It does not append a
+second ending, update the original assessment, reopen a Trial, or revive a Focus.
+An attempted first finish of an immature/nonactive Trial is rejected; an unknown
+identity is not found. Reconcile pending detected changes and check the write
+against the same input revision inside the bounded write transaction; a race
+must yield the winning recorded ending or an explicit stale/conflict response.
+No offline queue or recovery subsystem is needed. Every durable write bumps the
+result cache after commit; a failed transaction publishes neither ending nor
+released watch.
+
+Use Store-owned persistence through authenticated public operations. Reconcile
+observed lifecycle changes after ingested data changes and before accepting a
+watch mutation. Read-only history and selected evidence never call
+`active_watched_change`, insert snapshots, update a frontier or drop a Focus.
+A read with pending reconciliation may show unavailable/stale current admission;
+it cannot present conflicting permission or infer a quiet state. Retained history
+remains readable. The implementing ticket must wire reconciliation and cache
+invalidation for both the ingestion path and ordinary action retries.
+
+Legacy Plan/Focus facts that exist remain readable. Unstored context, ending
+time, user conclusion, or original assessment are explicit unavailable fields.
+A derived legacy Trial may acquire a first-observed record now, clearly labeled
+as such, but no earlier decision or ending. On first migration/reconciliation,
+seed the frontier from the newest eligible existing detected candidate and retain
+older records as history; do not auto-finish or date them. Missing historical
+facts cannot be repaired by silently rerunning today's model.
+
+## ADR 386 — Keep Focus comparisons in one retained context
+
+### Exact periods and inference context
+
+Retain #340's half-open periods: Before starts at the later of available history
+or 90 elapsed days before pinning and ends at pin; After starts at pin and ends
+at the recorded effective ending, or the selected data tail for an active Focus.
+Return full pump-local timestamps and boundary reasons, not date-only tile
+labels. A terminal record lacking an effective ending cannot serve an exact
+historical comparison. If a late-observed preempting change predates pin, report
+After unavailable (`change_predates_pin`), not a negative or fabricated interval.
+A zero-length period has zero opportunities and remains unknown. With no
+pre-pin data, Before is empty and unavailable; do not reverse its boundaries.
+An active Focus whose data tail precedes pin has no After observations and an
+explicit data-not-yet-arrived reason.
+
+Ownership follows the existing opportunity/event anchor. Clip plotted and
+measured observations to the owned period. Context needed by existing detectors
+may be loaded with their existing padding, but it does not become an observation
+in either arm. All charts and scalar outcomes receive the same selected period
+pair and source revision. Never tile rolling percentages or relabel a current
+14-day trend as “since starting”. Preserve false-low correction, response-time
+eligibility for rescue answers, and observation-aware rescue context from the
+existing producers. Saved snapshots remain what was known then; recomputation
+with subsequent corrections is a separately labeled reassessment.
+
+At pin, retain the programmed-profile ISF selected by the existing trend owner
+(the active schedule median), its source snapshot and units, source code/policy
+revision, and the detector configuration identity. Freeze that one value across
+both comparison arms and later follow-up. Keep each meal's historical dose-stamped
+I:C, never replace it with a current profile ratio. Missing inputs remain
+unavailable under existing detector semantics. No new clinical default or
+classification threshold is introduced.
+
+This preserves the fixed-ISF rationale recorded in `outcomes_trend.py` for #131:
+window-specific analyzer estimates must not manufacture a behavioral trend.
+The initial Diagnosis snapshot remains under its original analyzer/settings
+context. The initial Focus comparison recomputes both arms under the retained
+follow-up context and names that context. On the committed correction-on-active-
+insulin recipe, unchanged records produce 2/5 under effective ISF 0 and 0/5 under
+programmed ISF 40. Show that as a different inference context, never an adherence
+improvement or an outcome result. Do not alter Diagnosis's clinical eligibility.
+A later profile change cannot silently change the retained comparison value.
+
+Adherence uses the existing lever's numerator and named opportunity denominator;
+zero opportunities returns an unavailable rate, distinct from zero unwanted
+behavior over a positive denominator. Retain the correction-stacking behavior
+and harm numerators separately. Outcomes and their denominators remain distinct
+from adherence, under #340's existing mapped outcomes and assessment rules.
+Do not call a change causal, treat descriptive spread as confidence, or grant a
+favorable assessment from maturity alone. This spike selects no statistical
+constant and implements no assessment method.
+
+### Delivery boundary
+
+The record and selected-detail fields are specified in contracts.md. The source
+replay proves current behavior and the bounded proposed rules, not persistence,
+race recovery, clinical validity, production period serving, or rendered fidelity.
+The implementing ticket must close those named verification obligations under
+full review before admission of the complete desktop release. Keep the selected
+Changes placement, both loops and exact Day return. No new chart design, mobile,
+root cutover or v1 retirement belongs to this ruling.

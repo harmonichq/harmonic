@@ -75,10 +75,11 @@ recalculation is a separate read; it cannot overwrite what was known then.
 Missing legacy context or ending times remain unavailable. An ending caused by
 expiry or superseding pump data must not acquire a successful conclusion.
 
-Current source facts: Plan storage exposes applied time and items but not its
-SQLite row id (`store.py:1084–1106`). Focus persists id, lever, pinned time and
-status, without end time (`store.py:1110–1152`). Verify's `_review_id`
-(`watched_change.py:1047–1059`) derives identity from parameter, slot, change time,
+Current source facts: `Store.apply_plan` and `Store.plan_history` expose applied
+time and items but not a SQLite row id. `Store.pin_focus`, `Store.active_focus`,
+`Store.resolve_focus`, and `Store.list_focuses` persist and expose a Focus id,
+lever, pinned time, and status, without an end time. Verify's
+`watched_change._review_id` derives identity from parameter, slot, change time,
 and the captured end boundary for a block-bound carb-ratio Trial. Preserve that
 specificity when reconciling the active singleton and review roster; an unrelated
 frontend key would create a third watch authority.

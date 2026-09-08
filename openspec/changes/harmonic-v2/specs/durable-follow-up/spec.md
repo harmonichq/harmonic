@@ -7,7 +7,10 @@ Plan, Trial, and Focus context and endings. The contract SHALL name the
 versioned records, their public read/write owner, and the representation of
 unknown legacy facts. It SHALL keep detected change time distinct from first
 observation and Plan intent, and SHALL link a Plan to a Trial only through
-actual schedule reconciliation.
+actual schedule reconciliation. Its synthetic replay SHALL explicitly assert
+and print the inputs and actual observed/asserted outputs for every selected
+identity, ending, reconciliation, preemption, and legacy case; a failed or
+unexercised case SHALL exit nonzero.
 
 #### Scenario: A Trial first observed without a Plan retains only observed facts
 
@@ -38,7 +41,10 @@ one named source context for adherence and outcomes, and preserve named
 denominators. Zero opportunities SHALL remain unknown. The contract SHALL
 preserve ADR 131's fixed-follow-up rationale and describe the existing
 correction-family disagreement as an inference-context difference, not an
-improvement or a causal claim.
+improvement or a causal claim. The same synthetic replay SHALL explicitly assert
+and print the inputs and actual observed/asserted outputs for exact periods,
+zero opportunities, and the correction-context discrepancy; a failed or
+unexercised case SHALL exit nonzero.
 
 #### Scenario: A legacy Focus has no invented ending boundary
 

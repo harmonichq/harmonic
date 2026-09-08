@@ -402,3 +402,59 @@ def baseline_for(candidate):
     if candidate is None or candidate.get("absent"):
         raise KeyError("unknown guidance subject")
     return {"comparison_version": COMPARISON_VERSION, "state": _state(candidate)}
+
+
+def plan_deliverable(segments, items):
+    """Backend Plan capture; executable parity with frontend/plan.js owns drift."""
+    from .store import validate_plan_items
+    validate_plan_items(items)
+    if not segments:
+        return []
+    params = {"basal_rate": "basal", "isf": "isf", "carb_ratio": "ic", "target_bg": "target"}
+    accepted = {(item["start_min"], item["type"]): item for item in items}
+    starts = {row["start_min"] for row in segments} | {item["start_min"] for item in items}
+    starts.update(item["start_min"] + 30 for item in items
+                  if item["type"] == "basal" and item["start_min"] + 30 < 1440)
+    rows = []
+    for start in sorted(starts):
+        segment = _schedule_at(segments, start)
+        row = {"start_min": start, "label": f"{start // 60:02d}:{start % 60:02d}",
+               "isNewBreak": start not in {s["start_min"] for s in segments}}
+        for parameter, family in params.items():
+            current = segment.get(parameter)
+            pick = accepted.get((start, family))
+            if pick is None and family != "basal":
+                candidates = [p for (minute, kind), p in accepted.items() if kind == family and minute <= start]
+                candidate = max(candidates, key=lambda p: p["start_min"], default=None)
+                if candidate and _schedule_at(segments, candidate["start_min"])["start_min"] == segment["start_min"]:
+                    pick = candidate
+            cell = {"current": current, "value": current, "provenance": "current"}
+            if pick is not None and pick.get("value") is not None:
+                cell.update(value=pick["value"], provenance="accepted")
+                if family == "ic" and pick.get("ic_block_provenance"):
+                    cell["ic_block_provenance"] = pick["ic_block_provenance"]
+            row[parameter] = cell
+        rows.append(row)
+    return rows
+
+
+def _schedule_at(rows, minute):
+    return next((row for row in reversed(rows) if row["start_min"] <= minute), rows[0])
+
+
+def schedule_matches(planned, actual):
+    """Compare every parameter at the union of boundaries with pump precision."""
+    from .result import plan_value
+    if not planned or not actual:
+        return False
+    for minute in {row["start_min"] for row in planned + actual}:
+        left, right = _schedule_at(planned, minute), _schedule_at(actual, minute)
+        for parameter in ("basal_rate", "isf", "carb_ratio", "target_bg"):
+            value = left.get(parameter)
+            if isinstance(value, dict):
+                value = value["value"]
+            # Target and ISF both use whole-number pump precision.
+            precision_parameter = "isf" if parameter == "target_bg" else parameter
+            if plan_value(value, precision_parameter) != plan_value(right.get(parameter), precision_parameter):
+                return False
+    return True

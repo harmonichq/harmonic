@@ -187,6 +187,9 @@ def pull_from_tconnect(store: Store, *, start, end, region=None,
     except PartialFetchError as e:
         e.written["profile_settings"] = settings_written
         raise
+    finally:
+        from .watched_change import reconcile_ingested_follow_up
+        reconcile_ingested_follow_up(store)
     written["profile_settings"] = settings_written
     return written
 

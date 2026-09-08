@@ -1,11 +1,8 @@
 """Trial + Focus — the single active *watched change* on the outcomes trend (#244).
 
-A **Trial** is a pump-programmable value (basal / ISF / I:C / target) the user has
-flipped and is now watching for an outcome. It is **derived-live** from the
-setting-change epoch (``epochs.py``) every run — never stored — following the
-``result.Settling`` precedent (ADR 0029). A **Focus** is a behavioral lever the user
-pins by hand; it is the one persisted object (the ``focus`` table), because it has no
-derivable source.
+Trial candidates are detected from programmed settings and retained with their
+first observation, comparison context and immutable ending. Focus is pinned by
+hand. One transactional reconciliation owns admission for every consumer (#387).
 
 **At most one watched change is active at a time — Trial XOR Focus, pump wins**
 (ADR 0029): a Focus pin is rejected while a Trial is live, and a setting change
@@ -62,10 +59,8 @@ _PROFILE_TARGET = ["tir", "arc"]
 TRIAL_WINDOW_DAYS = 14
 _MATURE_WINDOW = timedelta(days=TRIAL_WINDOW_DAYS)
 
-# A Trial stays foregrounded while its change is recent — through the maturing
-# window plus a review window after, then it ages out into "just how things are
-# now". Two windows is the watch horizon (a derive-live policy, no stored
-# keep-decision to end it).
+# A Trial stays foregrounded through its maturing and review windows.
+# Reconciliation records expiry at this horizon; comparison bounds are separate.
 _WATCH_MULT = 2
 _WATCH_HORIZON = timedelta(days=TRIAL_WINDOW_DAYS * _WATCH_MULT)
 
@@ -200,7 +195,7 @@ class Maturing:
 
 @dataclass(frozen=True)
 class TrialView:
-    """The active Trial — a derived-live view, never a stored row."""
+    """The legacy active-view shape projected from a retained Trial."""
 
     parameter: str            # basal_rate | isf | carb_ratio | target_bg | profile
     changed_at: str
@@ -628,21 +623,14 @@ def focus_view(focus_row: dict) -> FocusView:
 # --- the one-active resolution (Trial XOR Focus, pump wins) -----------------
 
 
-def review_trials(store, *, now: datetime,
-                  selected: Optional[str] = None) -> dict:
-    """The bounded, read-only Verify Trial review surface (ADR 579).
-
-    This deliberately does not resolve the active watched change: that legacy
-    singleton may drop a Focus when a live Trial preempts it.  The roster will own
-    its independent candidate derivation here, while this stable interface keeps
-    the HTTP and frontend adapters unaware of those rules.
-    """
+def _reviewable_trials(store, now, *, horizon_start=None):
+    """Derive uncapped canonical candidates before applying display ordering."""
     basal = store.basal_events()
     bolus = store.bolus_events()
     snapshots = store.settings_snapshots()
     cgm = store.cgm_readings()
     plan_history = store.plan_history()
-    horizon_start = now - _WATCH_HORIZON
+    horizon_start = horizon_start if horizon_start is not None else now - _WATCH_HORIZON
     mature_window = _MATURE_WINDOW
 
     candidates = _review_candidates(
@@ -682,23 +670,61 @@ def review_trials(store, *, now: datetime,
             members=list(cand.members) if cand.members else None,
         ))
 
-    # A maturing Trial is the current live one; completed recent Trials follow from
-    # newest to oldest.  Retention stays bounded by the two-window horizon above.
-    trials.sort(key=lambda trial: (
-        0 if trial.view.maturing.is_maturing else 1,
-        -datetime.strptime(trial.view.changed_at, _DT_FMT).timestamp(),
-    ))
-    trials = trials[:3]
-    roster = [_review_summary(trial) for trial in trials]
+    return trials
+
+
+def review_trials(store, *, now: datetime, selected=None, kind="trial", assessment="original"):
+    """Read retained history and optional reassessment without resolving a watch."""
+    from .follow_up_comparison import compare_follow_up
+    trials = _reviewable_trials(store, now)
+    by_id = {_review_id(t.view, t.block): t for t in trials}
+    for record in store.follow_up_records("trial"):
+        by_id[record["id"]] = _retained_trial(store, record, now)
+    ordered = sorted(by_id.values(), key=lambda t: (
+        0 if t.view.maturing.is_maturing else 1,
+        -datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
+    admission = follow_up_admission(store, now=now)
+    roster = []
+    for trial in ordered:
+        row = _review_summary(trial)
+        record = store.follow_up_record("trial", row["id"])
+        row.update(ending=record["ending"] if record else _unavailable("not_recorded"),
+                   watch_disposition=("active" if admission["active_kind"] == "trial"
+                                      and admission["active_id"] == row["id"] else "not_selected_for_watch"))
+        roster.append(row)
+    result = {"trials": roster, "focuses": store.follow_up_records("focus"), "selected": None,
+              "input_revision": store.input_data_revision(), "admission": admission}
     if selected is None:
-        return {"trials": roster, "selected": None}
-    match = next(
-        (trial for trial in trials if _review_id(trial.view, trial.block) == selected),
-        None,
-    )
-    if match is None:
-        raise KeyError(selected)
-    return {"trials": roster, "selected": _review_detail(store, match, now)}
+        return result
+    identity = int(selected) if kind == "focus" else selected
+    record = store.follow_up_record(kind, identity)
+    if kind == "trial":
+        trial = by_id.get(identity)
+        if trial is None:
+            raise KeyError(identity)
+        detail = _review_detail(store, trial, now)
+    else:
+        if record is None:
+            raise KeyError(identity)
+        detail = {"id": identity, "lever": record["lever"], "status": record["status"]}
+    detail.update(kind=kind, admission=admission,
+                  original={"context": (record.get("observed_context", record.get("decision_context"))
+                                        if record else _unavailable("not_recorded")),
+                            "ending": record["ending"] if record else _unavailable("not_recorded"),
+                            "assessment": record["ending"].get("assessment", _unavailable("not_recorded"))
+                                          if record else _unavailable("not_recorded")},
+                  reassessment=None)
+    if assessment != "original":
+        if record is None:
+            comparison = {"comparison_context": _unavailable("not_recorded"),
+                          "comparison": {"availability": _unavailable("not_recorded")}}
+        else:
+            comparison = compare_follow_up(store, record=record, data_cutoff=now,
+                                           input_revision=store.input_data_revision(), context_mode=assessment)
+        detail["reassessment"] = {"mode": assessment, "computed_at": datetime.now().strftime(_DT_FMT),
+                                  "input_revision": store.input_data_revision(), **comparison}
+    result["selected"] = detail
+    return result
 
 
 @dataclass(frozen=True)
@@ -1104,16 +1130,7 @@ def _review_detail(store, trial: _ReviewTrial, now: datetime) -> dict:
             "start": view.changed_at,
             "end": min(now, changed_at + _MATURE_WINDOW).strftime(_DT_FMT),
         },
-        "focus": (
-            {
-                "available": False,
-                "message": (
-                    "Focus is unavailable while a Trial is live. "
-                    "It will not queue behind this change."
-                ),
-            }
-            if state == "maturing" else {"available": True}
-        ),
+        "focus": follow_up_admission(store, now=now)["focus_pin"],
         "readiness": (
             {
                 "label": "Maturing",
@@ -1281,43 +1298,230 @@ def _prior_plan_route(view: TrialView, members: Optional[list] = None) -> dict:
     }
 
 
-def trial_is_active(store, *, now: datetime,
-                    basal_events=None, bolus_events=None, snaps=None,
-                    cgm_readings=None) -> bool:
-    """Is a Trial live right now? (the pin-time guard for the one-active invariant)."""
-    basal = store.basal_events() if basal_events is None else basal_events
-    bolus = store.bolus_events() if bolus_events is None else bolus_events
-    snapshots = store.settings_snapshots() if snaps is None else snaps
-    cgm = store.cgm_readings() if cgm_readings is None else cgm_readings
-    return detect_trial(basal, bolus, snapshots, now=now,
-                        cgm_readings=cgm,
-                        plan_history=store.plan_history()) is not None
+def _unavailable(reason):
+    return {"version": "386:1", "state": "unavailable", "reason": reason}
 
 
-def active_watched_change(store, basal_events, bolus_events, snaps, *,
-                          now: datetime, cgm_readings=()
-                          ) -> Optional[Union[TrialView, FocusView]]:
-    """The single active watched change — Trial XOR Focus, pump wins (ADR 0029 §4).
+def _retained_trial(store, record, now):
+    parameter = record["parameter"]
+    target = _PROFILE_TARGET if parameter == "profile" else _TARGET_METRIC[parameter]
+    start = datetime.fromisoformat(record["changed_at"])
+    block = record.get("block")
+    if target[0] == "arc":
+        times = [b.t for b in store.bolus_events() if _is_meal(b) and (block is None or _in_block(b.t, block))]
+    else:
+        times = [r.t for r in store.cgm_readings()]
+    end = min(now, start + _MATURE_WINDOW)
+    return _ReviewTrial(TrialView(parameter, record["changed_at"], target,
+                                  _maturing(start, end, TRIAL_WINDOW_DAYS, times),
+                                  slot=record["slot"], before=record["before"], after=record["after"],
+                                  deliberate=record.get("reconciliation", {}).get("state") == "available"),
+                        _data_gaps(start, end, times), block, record.get("members"))
 
-    A live Trial takes the slot and **drops** any active Focus (preemption is
-    persisted, not paused — the drop is a real state change the user must re-pin past).
-    With no Trial, the pinned Focus surfaces; with neither, ``None``.
-    """
-    trial = detect_trial(basal_events, bolus_events, snaps, now=now,
-                         cgm_readings=cgm_readings,
-                         plan_history=store.plan_history())
-    if trial is not None:
-        focus = store.active_focus()
-        if focus is not None:
-            store.resolve_focus(focus["id"], "dropped")
-        return trial
+
+def pending_plan(store):
+    return next((record for record in store.follow_up_records("plan")
+                 if record["reconciliation"].get("state") != "available"
+                 and record["withdrawal"].get("state") != "available"), None)
+
+
+def follow_up_admission(store, *, now):
+    """Project the committed frontier; an unreconciled input grants no permission."""
+    frontier = store.follow_up_frontier()
+    verdict = {"state": "available", "reason": "no_active_change", "active_kind": None,
+               "active_id": None, "maturity": None, "can_finish_trial": False,
+               "focus_pin": {"available": False, "reason": "reconciliation_required"},
+               "ending": _unavailable("not_recorded")}
+    if frontier is None or frontier["reconciled_input_revision"] != store.input_data_revision():
+        return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
+    record = store.follow_up_record("trial", frontier["trial_id"]) if frontier["trial_id"] else None
+    if record:
+        verdict["ending"] = record["ending"]
+        if "kind" not in record["ending"]:
+            if datetime.fromisoformat(record["changed_at"]) + _WATCH_HORIZON <= now:
+                return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
+            trial = _retained_trial(store, record, now)
+            verdict.update(active_kind="trial", active_id=record["id"], reason="active_trial",
+                           maturity=trial.view.maturing.to_dict(),
+                           can_finish_trial=not trial.view.maturing.is_maturing)
     focus = store.active_focus()
-    if focus is None:
+    if verdict["active_kind"] is None and focus:
+        if not is_pinnable(focus["lever"]):
+            return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
+        verdict.update(active_kind="focus", active_id=focus["id"], reason="active_focus")
+    reason = verdict["reason"] if verdict["active_kind"] else ("pending_plan" if pending_plan(store) else None)
+    verdict["focus_pin"] = {"available": reason is None, "reason": reason}
+    return verdict
+
+
+def capture_ending(store, record, *, kind, effective_at, recorded_at, data_cutoff, conclusion=None):
+    """Save the comparison and release this identity in the caller's transaction."""
+    from .follow_up_comparison import compare_follow_up
+    if "kind" in record["ending"]:
+        return record
+    ending = {"version": "386:1", "state": "available", "kind": kind,
+              "effective_at": effective_at.strftime(_DT_FMT),
+              "recorded_at": recorded_at.strftime(_DT_FMT), "conclusion": conclusion}
+    proposed = {**record, "ending": ending}
+    compared = compare_follow_up(store, record=proposed, data_cutoff=data_cutoff,
+                                 input_revision=store.input_data_revision())
+    comparison = compared["comparison"]
+    ending["assessment"] = {**{key: value for key, value in comparison.items() if key != "views"},
+                            "version": "386:1", **comparison["availability"],
+                            "comparison_context": compared["comparison_context"],
+                            "input_revision": store.input_data_revision(),
+                            "data_cutoff": data_cutoff.strftime(_DT_FMT)}
+    # Adherence carries metadata as well as rows; Store's bounded row validator
+    # consumes only its displayed Before/After/assessment rows.
+    if "adherence" in comparison:
+        ending["assessment"]["adherence"] = {key: comparison["adherence"][key]
+            for key in ("before", "after", "assessment")}
+    if record["kind"] == "focus":
+        store.resolve_focus(record["id"], "resolved" if kind == "manual" else "dropped")
+        proposed["status"] = "resolved" if kind == "manual" else "dropped"
+    return store.save_follow_up_record(proposed)
+
+
+def _reversal_at(store, record):
+    start = datetime.fromisoformat(record["changed_at"])
+    switches = _profile_switches(store.settings_snapshots())
+    for previous, current in zip(switches, switches[1:]):
+        if previous.at == start and _switch_reverts(previous, current, _MATURE_WINDOW):
+            return current.at
+    if record["parameter"] == "profile" or record.get("block"):
         return None
-    # A Focus persisted before a taxonomy change can point at a Lever that no longer
-    # exists. Drop it like any other invalidated watch instead of letting Verify fail
-    # while deriving the current title/outcome metadata (#327).
-    if not is_pinnable(focus["lever"]):
-        store.resolve_focus(focus["id"], "dropped")
-        return None
-    return focus_view(focus)
+    if record["parameter"] == "basal_rate":
+        hour, minute = map(int, record["slot"].split(":"))
+        regimes = basal_slot_regimes(store.basal_events()).get((hour * 60 + minute) // 30, [])
+    else:
+        regimes = dose_regimes(store.bolus_events(), record["parameter"])
+    for previous, changed, returned in zip(regimes, regimes[1:], regimes[2:]):
+        if changed.start == start and _is_revert([previous, changed, returned], _MATURE_WINDOW):
+            return returned.start
+    return None
+
+
+def reconcile_follow_up(store, *, now, recorded_at):
+    """Reconcile observed inputs atomically; the caller owns commit and cache."""
+    from .follow_up_comparison import capture_comparison_context
+    # Advance even an empty frontier through Store's transaction-only interface.
+    frontier = store.follow_up_frontier()
+    trials = _reviewable_trials(store, now, horizon_start=datetime.min)
+    trials.sort(key=lambda t: (-datetime.fromisoformat(t.view.changed_at).timestamp(), _review_id(t.view, t.block)))
+    for trial in trials:
+        view = trial.view
+        identity = _review_id(view, trial.block)
+        record = store.follow_up_record("trial", identity)
+        if record is None:
+            unit = {"basal_rate": "U/h", "carb_ratio": "g/U", "isf": "mg/dL/U", "target_bg": "mg/dL"}.get(view.parameter)
+            observed = {"version": "386:1", "state": "available", "captured_at": recorded_at.strftime(_DT_FMT),
+                        "input_revision": store.input_data_revision(), "action": None,
+                        "explanation": "Observed programmed setting transition; original decision is not recorded.",
+                        "source_window": {"start": view.changed_at, "end": now.strftime(_DT_FMT)},
+                        "policy": "386:1", "subjects": [identity], "occurrences": [],
+                        "settings": ([{"value": view.before, "unit": unit}, {"value": view.after, "unit": unit}] if unit else []),
+                        "support": {}, "unknowns": ["Original user decision is unavailable."]}
+            record = store.save_follow_up_record({"kind": "trial", "id": identity, "version": "386:1",
+                "parameter": view.parameter, "slot": view.slot, "changed_at": view.changed_at,
+                "before": view.before, "after": view.after, "block": trial.block, "members": trial.members,
+                "first_observed_at": recorded_at.strftime(_DT_FMT), "observed_context": observed,
+                "comparison_context": capture_comparison_context(store, at=now, input_revision=store.input_data_revision())})
+        _reconcile_plan(store, record, recorded_at)
+    newest = trials[0] if trials else None
+    later = newest is not None and (not frontier or frontier["detected_at"] is None or newest.view.changed_at > frontier["detected_at"])
+    old = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
+    if old and "kind" not in old["ending"]:
+        reversal = _reversal_at(store, old)
+        expiry = datetime.fromisoformat(old["changed_at"]) + _WATCH_HORIZON
+        if reversal is not None:
+            capture_ending(store, old, kind="reverted", effective_at=reversal, recorded_at=recorded_at, data_cutoff=now)
+        elif later and datetime.fromisoformat(newest.view.changed_at) < expiry:
+            capture_ending(store, old, kind="superseded", effective_at=datetime.fromisoformat(newest.view.changed_at), recorded_at=recorded_at, data_cutoff=now)
+        elif now >= expiry:
+            capture_ending(store, old, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
+    if later:
+        identity = _review_id(newest.view, newest.block)
+        frontier = store.advance_follow_up_frontier(identity, newest.view.changed_at, reconciled_input_revision=store.input_data_revision())
+        record = store.follow_up_record("trial", identity)
+        expiry = datetime.fromisoformat(record["changed_at"]) + _WATCH_HORIZON
+        if expiry <= now and "kind" not in record["ending"]:
+            capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
+    focus = store.active_focus()
+    active_trial = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
+    if focus and (not is_pinnable(focus["lever"]) or (active_trial and "kind" not in active_trial["ending"])):
+        record = store.follow_up_record("focus", focus["id"])
+        preempt = is_pinnable(focus["lever"])
+        capture_ending(store, record, kind="trial_preempted" if preempt else "lever_unavailable",
+                       effective_at=datetime.fromisoformat(active_trial["changed_at"]) if preempt else recorded_at,
+                       recorded_at=recorded_at, data_cutoff=now)
+    store.advance_follow_up_frontier(frontier["trial_id"] if frontier else None,
+        frontier["detected_at"] if frontier else None, reconciled_input_revision=store.input_data_revision())
+    return follow_up_admission(store, now=now)
+
+
+def trial_is_active(store, *, now, **unused):
+    return follow_up_admission(store, now=now)["active_kind"] == "trial"
+
+
+def active_watched_change(store, basal_events, bolus_events, snaps, *, now, cgm_readings=()):
+    """Legacy view adapter for the single read-only admission verdict."""
+    verdict = follow_up_admission(store, now=now)
+    if verdict["active_kind"] == "trial":
+        return _retained_trial(store, store.follow_up_record("trial", verdict["active_id"]), now).view
+    if verdict["active_kind"] == "focus":
+        return focus_view(store.follow_up_record("focus", verdict["active_id"]))
+    return None
+
+
+def _reconcile_plan(store, record, recorded_at):
+    """A receipt needs one applied full schedule and an observed transition."""
+    from dataclasses import asdict
+    from .guidance import schedule_matches
+    if record["reconciliation"]["state"] == "available":
+        return
+    changed = datetime.fromisoformat(record["changed_at"])
+    snapshots = sorted(store.settings_snapshots(), key=lambda s: s.captured_at)
+    previous = next((s for s in reversed(snapshots) if s.captured_at < changed), None)
+    observed = next((s for s in snapshots if s.captured_at == changed), None)
+    if previous is None or observed is None or not previous.settings.active() or not observed.settings.active():
+        return
+    old = [asdict(s) for s in previous.settings.active().segments]
+    actual = [asdict(s) for s in observed.settings.active().segments]
+    matches = []
+    for plan in store.follow_up_records("plan"):
+        deliverable = plan["deliverable"]
+        if (plan["withdrawal"]["state"] == "available" or plan["reconciliation"]["state"] == "available"
+                or deliverable.get("state") != "available"
+                or datetime.fromisoformat(plan["applied_at"]) > changed):
+            continue
+        source, rows = deliverable.get("source_profile"), deliverable.get("rows")
+        if not source or not rows or schedule_matches(rows, old):
+            continue
+        if schedule_matches(source["segments"], old) and schedule_matches(rows, actual):
+            if record.get("block"):
+                groups = _annotated_ic_groups([plan])
+                group = _match_unique_group(
+                    [(s["start_min"], s["carb_ratio"]) for s in old],
+                    [(s["start_min"], s["carb_ratio"]) for s in actual], changed, groups)
+                if group is None or list(group["block"]) != list(record["block"]):
+                    continue
+            matches.append(plan)
+    if len(matches) != 1:
+        return
+    plan = matches[0]
+    receipt = {"version": "386:1", "state": "available", "applied_at": plan["id"],
+               "trial_id": record["id"], "established_at": recorded_at.strftime(_DT_FMT),
+               "observed_snapshot": {"captured_at": observed.captured_at.strftime(_DT_FMT),
+                                     "active_idp": observed.settings.active_idp},
+               "matched_deliverable": plan["deliverable"], "block": record.get("block")}
+    store.save_follow_up_record({**record, "reconciliation": receipt})
+    store.save_follow_up_record({**plan, "reconciliation": receipt})
+
+
+def reconcile_ingested_follow_up(store):
+    """Completion adapter shared by standalone ingestion and the fetch loop."""
+    times = ([row.t for row in store.cgm_readings()] + [row.t for row in store.basal_events()]
+             + [row.t for row in store.bolus_events()] + [row.captured_at for row in store.settings_snapshots()])
+    now = max(times) if times else datetime.now()
+    with store.follow_up_transaction():
+        return reconcile_follow_up(store, now=now, recorded_at=datetime.now())

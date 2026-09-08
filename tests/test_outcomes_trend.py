@@ -1,4 +1,4 @@
-"""Outcomes-trend tests (#131) — deterministic, stdlib unittest, no DB/network.
+"""Outcomes-trend tests (#131) — deterministic, stdlib unittest, synthetic inputs.
 
 Covers what the issue is emphatic about: the rolling-window tiling (oldest→newest,
 index-aligned, newest ending at ``now``); the **fixed-ISF** rule (every window judged
@@ -8,8 +8,7 @@ the ``correction_stacking`` behavior-vs-harm split (two numerators, ``harm ⊆
 behavior``); the net-new post-meal spike; and the payload shape + both renderers.
 
 The pure functions are exercised directly on synthetic data. ``summarize_trend`` runs
-against a tiny in-memory fake store; the API path uses a real TestClient. Neither
-touches SQLite or the network.
+against a tiny in-memory fake store; the API path uses a real TestClient. Lifecycle state uses an isolated in-memory SQLite Store; no test uses the network.
 """
 
 from __future__ import annotations
@@ -66,7 +65,7 @@ def _cgm(values, *, start, step_min=5):
 
 
 class _FakeStore:
-    """A minimal store stand-in: just the four reads ``summarize_trend`` calls."""
+    """Synthetic event reads with the real Store lifecycle/read interface."""
 
     def __init__(self, *, cgm=(), bolus=(), basal=(), snaps=(), carbs=(),
                  responses=(), plan_history=(), active_focus=None):
@@ -74,8 +73,24 @@ class _FakeStore:
         self._carbs = carbs
         self._responses = responses
         self._plan_history = plan_history
-        self._active_focus = active_focus
-        self.dropped = []  # focus ids dropped by an active_watched_change preemption
+        import weakref
+        from ciq_autotune.store import Store
+        self._lifecycle = Store.open(":memory:")
+        weakref.finalize(self, self._lifecycle.conn.close)
+        self.focus = (self._lifecycle.pin_focus(active_focus["lever"], active_focus["pinned_at"])
+                      if active_focus else None)
+        self.dropped = []
+
+    def __getattr__(self, name):
+        return getattr(self._lifecycle, name)
+
+    def reconcile(self, now):
+        from ciq_autotune.watched_change import reconcile_follow_up
+        with self.follow_up_transaction():
+            reconcile_follow_up(self, now=now, recorded_at=now)
+        # Every later projection must work with writes forbidden.
+        self.conn.execute("PRAGMA query_only = ON")
+        return self
 
     def basal_events(self):
         return list(self._basal)
@@ -100,13 +115,11 @@ class _FakeStore:
         return list(self._plan_history)
 
     def active_focus(self):
-        return dict(self._active_focus) if self._active_focus else None
+        return self._lifecycle.active_focus()
 
     def resolve_focus(self, focus_id, status="resolved"):
         self.dropped.append((focus_id, status))
-        if self._active_focus and self._active_focus.get("id") == focus_id:
-            self._active_focus = None
-        return True
+        return self._lifecycle.resolve_focus(focus_id, status)
 
 
 def _snapshot_with_ic(*values):
@@ -1056,18 +1069,22 @@ class WatchedChangeInPayloadTest(unittest.TestCase):
 
     def test_setting_change_surfaces_as_a_trial(self):
         bolus = self._isf_boluses([(30, 10, 13), (45, 14, 19)])  # ISF change 06-14
-        store = _FakeStore(bolus=bolus)
+        store = _FakeStore(bolus=bolus).reconcile(self.NOW)
         trend = summarize_trend(store, window_days=14, now=self.NOW)
         wc = trend.to_dict()["watched_change"]
         self.assertEqual(wc["kind"], "trial")
         self.assertEqual(wc["parameter"], "isf")
         self.assertEqual(wc["target_metrics"], ["tir"])
         self.assertTrue(wc["maturing"]["is_maturing"])
+        import sqlite3
+        with self.assertRaisesRegex(sqlite3.OperationalError, "readonly"):
+            store.pin_focus("late_bolus", self.NOW.isoformat())
+        self.assertIsNone(store.active_focus())
 
     def test_pinned_focus_surfaces_when_no_change(self):
-        store = _FakeStore(active_focus={"id": 7, "lever": "late_bolus",
+        store = _FakeStore(active_focus={"lever": "late_bolus",
                                          "pinned_at": "2026-06-10 08:00:00",
-                                         "status": "active"})
+                                         "status": "active"}).reconcile(self.NOW)
         trend = summarize_trend(store, window_days=14, now=self.NOW)
         wc = trend.to_dict()["watched_change"]
         self.assertEqual(wc["kind"], "focus")
@@ -1076,14 +1093,16 @@ class WatchedChangeInPayloadTest(unittest.TestCase):
     def test_trial_preempts_and_drops_an_active_focus(self):
         bolus = self._isf_boluses([(30, 10, 13), (45, 14, 19)])
         store = _FakeStore(bolus=bolus,
-                           active_focus={"id": 7, "lever": "late_bolus",
+                           active_focus={"lever": "late_bolus",
                                          "pinned_at": "2026-06-10 08:00:00",
-                                         "status": "active"})
+                                         "status": "active"}).reconcile(self.NOW)
         trend = summarize_trend(store, window_days=14, now=self.NOW)
         wc = trend.to_dict()["watched_change"]
         # Never a Trial AND a Focus: the Trial wins, the Focus is dropped.
         self.assertEqual(wc["kind"], "trial")
-        self.assertIn((7, "dropped"), store.dropped)
+        self.assertIn((store.focus["id"], "dropped"), store.dropped)
+        self.assertEqual(store.follow_up_record("focus", store.focus["id"])["ending"]["kind"],
+                         "trial_preempted")
 
     def test_nothing_watched_is_null(self):
         trend = summarize_trend(_FakeStore(), window_days=14, now=self.NOW)
@@ -1135,18 +1154,34 @@ class FocusApiTest(unittest.TestCase):
 
     def setUp(self):
         import tempfile
-
-        from ciq_autotune.store import Store
-        self.tmp = tempfile.NamedTemporaryFile(suffix=".db")
-        # An empty DB → no data instant, no Trial: a pin is allowed.
-        with Store.open(self.tmp.name):
-            pass
         from ciq_autotune.api import create_app
-        self.app = create_app(db_path=self.tmp.name, token=None, enable_fetch_loop=False)
-        self.client = TestClient(self.app)
-
-    def tearDown(self):
-        self.tmp.close()
+        from ciq_autotune.store import Store
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        database = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(database.close)
+        with Store.open(database.name) as store:
+            materialize_case(store, next(c for c in QA_CASES if c.name == "behavioral-late-bolus"))
+            # Repeat the manufactured rising meal on otherwise empty days
+            # so the actual classifier supplies a supported late-bolus action.
+            meal = next(b for b in store.bolus_events() if b.t.date().isoformat() == "2024-05-24")
+            readings = store.cgm_readings("2024-05-24", "2024-05-25")
+            for days in range(5, 19):
+                shift = timedelta(days=days)
+                store.upsert_cgm([{"EventDateTime": (r.t - shift).isoformat(),
+                                  "Readings (CGM / BGM)": r.bg, "Description": "Synthetic EGV"}
+                                 for r in readings])
+                # A sustained post-meal high gives this timing pattern a real
+                # measured impact; no classifier or admission verdict is set.
+                store.upsert_cgm([{"EventDateTime": (meal.t - shift + timedelta(minutes=m)).isoformat(),
+                                  "Readings (CGM / BGM)": 240, "Description": "Synthetic EGV"}
+                                 for m in range(30, 151, 5)])
+                store.upsert_bolus([{"seq_num": 900000 + days,
+                    "request_time": (meal.t - shift).isoformat(), "completion": "Completed",
+                    "description": "Synthetic repeated rising meal",
+                    "insulin": meal.insulin, "requested_insulin": meal.insulin,
+                    "carbs": meal.carbs, "carb_ratio": meal.carb_ratio,
+                    "isf": meal.isf, "target_bg": meal.target_bg}])
+        self.client = TestClient(create_app(db_path=database.name, token="", enable_fetch_loop=False))
 
     def test_pin_list_resolve_roundtrip(self):
         r = self.client.post("/api/focus", json={"lever": "late_bolus"})
@@ -1163,6 +1198,19 @@ class FocusApiTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(self.client.get("/api/focus").json()["focuses"][0]["status"],
                          "resolved")
+
+    def test_pin_without_source_is_rejected_without_history(self):
+        import tempfile
+        from ciq_autotune.api import create_app
+        from ciq_autotune.store import Store
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name):
+                pass
+            client = TestClient(create_app(db_path=database.name, token="", enable_fetch_loop=False))
+            response = client.post("/api/focus", json={"lever": "late_bolus"})
+            self.assertEqual(response.status_code, 409, response.text)
+            self.assertEqual(response.json()["detail"], "ineligible_source")
+            self.assertEqual(client.get("/api/focus").json()["focuses"], [])
 
     def test_non_behavioral_lever_rejected(self):
         r = self.client.post("/api/focus", json={"lever": "isf"})
@@ -1243,7 +1291,7 @@ class TrialWindowInvarianceTest(unittest.TestCase):
                  for d in range(1, 25)]
         cgm = [CgmReading(t=datetime(2026, 6, d, h, 0, 0), bg=120.0)
                for d in range(1, 25) for h in (0, 6, 12, 18)]
-        return _FakeStore(bolus=bolus, cgm=cgm, **kwargs)
+        return _FakeStore(bolus=bolus, cgm=cgm, **kwargs).reconcile(self.NOW)
 
     def test_trend_window_cannot_move_days_required(self):
         for window in (30, 90):
@@ -1276,9 +1324,9 @@ class TrialWindowInvarianceTest(unittest.TestCase):
                             isf=30 if d <= 4 else 45, carb_ratio=7.0, target_bg=110)
                  for d in range(1, 15)]
         store = _FakeStore(bolus=bolus, active_focus={
-            "id": 3, "lever": "late_bolus",
+            "lever": "late_bolus",
             "pinned_at": "2026-06-01 08:00:00", "status": "active",
-        })
+        }).reconcile(datetime(2026, 6, 14))
         wc = summarize_trend(store, window_days=30, now=datetime(2026, 6, 14)
                              ).to_dict()["watched_change"]
         self.assertEqual(wc["kind"], "focus")
@@ -1287,3 +1335,106 @@ class TrialWindowInvarianceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExactPeriodObservationsTest(unittest.TestCase):
+    def test_cross_boundary_correction_pair_keeps_behavior_and_clips_harm(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 1, 12)
+        bolus = [BolusEvent(start - timedelta(minutes=30), insulin=3, seq_num=1),
+                 BolusEvent(start, insulin=3, seq_num=2)]
+        cgm = _cgm([120] * 24 + [60] * 6, start=start - timedelta(minutes=60))
+        result = behavior_observations(bolus, cgm, [], lever="correction_stacking",
+                                       start=start, end=start + timedelta(minutes=45), isf=40)
+        self.assertEqual([{k: r[k] for k in ("t", "n", "k", "harm")} for r in result["rows"]],
+                         [{"t":start, "n":1, "k":1, "harm":0}])
+        self.assertTrue(result["rows"][0]["measured"])
+        self.assertFalse(result["rows"][0]["harm_measured"])
+        self.assertIsNone(result["reason"])
+
+    def test_meal_measurements_share_legacy_arc_and_keep_separate_support(self):
+        from ciq_autotune.outcomes_trend import meal_measurements
+        start = datetime(2026, 6, 1, 12)
+        meals = [_meal(start + timedelta(days=i)) for i in range(5)]
+        cgm = [CgmReading(m.t + timedelta(minutes=offset), bg=bg)
+               for m in meals for offset, bg in ((-5,110), (60,180), (240,85))]
+        rows = meal_measurements(meals, cgm)
+        self.assertEqual([r["peak"] for r in rows], [180]*5)
+        self.assertEqual([r["nadir"] for r in rows], [85]*5)
+        self.assertEqual(post_meal_arc(meals, cgm), (180,85,5,5))
+
+    def test_glucose_rate_sufficient_counts_match_pooled_metric(self):
+        from ciq_autotune.outcomes import compute_metrics, _pct
+        from ciq_autotune.outcomes_trend import glycemic_rate_counts
+        readings = [
+            CgmReading(datetime(2026,6,1) + timedelta(minutes=5*i), bg=value)
+            for i,value in enumerate([None,55,69,70,110,180,181,250,350])]
+        for attr in ("tir", "tbr_lvl1", "tar_lvl1"):
+            k,n = glycemic_rate_counts(readings, attr)
+            self.assertEqual(_pct(k,n), getattr(compute_metrics(readings),attr))
+
+
+class ComparisonMeasurementTest(unittest.TestCase):
+    def test_meal_recurrence_requires_existing_measurement_verdict(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        from tests.test_scenario_engine import meal, cgm_flat
+        dose = meal(15, 12, 40, carbs=45, dose=10)
+        full = cgm_flat(15, 11, 40, 120, 240)
+        cases = (
+            ("late_bolus", [], False),
+            ("late_bolus", [CgmReading(dose.t, 120)], False),
+            ("late_bolus", full, True),
+            ("carb_undercount", [], False),
+            ("carb_undercount", [CgmReading(dose.t-timedelta(minutes=30), 120)], False),
+            ("carb_undercount", full, True),
+            ("meal_over_delivery", [], False),
+            ("meal_over_delivery", full, False),
+        )
+        for lever, readings, measured in cases:
+            with self.subTest(lever=lever, readings=len(readings)):
+                observed = behavior_observations(
+                    [dose], readings, [], lever=lever, start=dose.t,
+                    end=dose.t+timedelta(hours=8), isf=40,
+                )
+                self.assertEqual(observed["rows"][0]["n"], 1)
+                self.assertEqual(observed["rows"][0]["k"], 0)
+                self.assertEqual(observed["rows"][0]["measured"], measured)
+                self.assertEqual(observed["reason"], None if measured else "insufficient_measurement")
+
+    def test_unmeasured_high_is_not_an_observed_missed_meal_zero(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 15, 12)
+        observed = behavior_observations(
+            [], [CgmReading(start, 300)], [], lever="missed_meal",
+            start=start, end=start+timedelta(hours=1), isf=40,
+        )
+        self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
+        self.assertEqual(observed["reason"], "insufficient_measurement")
+
+    def test_low_without_rebound_measurement_is_not_clean(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 15, 12)
+        for tail, reason in (([], "insufficient_measurement"),
+                             ([CgmReading(start+timedelta(minutes=5), 120)], None)):
+            with self.subTest(observed_tail=bool(tail)):
+                observed = behavior_observations(
+                    [], [CgmReading(start, 60), *tail], [], lever="over_treated_low",
+                    start=start, end=start+timedelta(hours=1), isf=40,
+                )
+                self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
+                self.assertEqual(sum(row["k"] for row in observed["rows"]), 0)
+                self.assertEqual(observed["reason"], reason)
+
+    def test_partial_override_measurement_retains_original_population(self):
+        from dataclasses import replace
+        from tests.test_classifier_user_override import override_correction
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start=datetime(2026,6,1,12)
+        positive=override_correction(start,requested=5)
+        missing=replace(positive,t=start+timedelta(hours=1),food_insulin=None)
+        result=behavior_observations([positive,missing],[],[],lever='user_override',
+                                    start=start,end=start+timedelta(days=1),isf=40)
+        self.assertEqual(sum(r['n'] for r in result['rows']),2)
+        self.assertEqual(sum(r['k'] for r in result['rows']),1)
+        self.assertEqual(sum(r['measured'] for r in result['rows']),1)
+        self.assertEqual(result['reason'],'missing_override_provenance')

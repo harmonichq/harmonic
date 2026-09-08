@@ -25,8 +25,38 @@ from ciq_autotune.false_low import false_low_span_records
 from ciq_autotune.basal_night_evidence import prepare_basal_night_evidence
 from ciq_autotune.pending_prompts import build_pending_prompts
 from ciq_autotune.analyzers.scenario.guide import build_catalog
-from ciq_autotune.watched_change import active_watched_change, review_trials, trial_is_active
+from ciq_autotune.watched_change import (
+    active_watched_change, review_trials, reconcile_follow_up,
+    follow_up_admission, capture_ending,
+)
+from ciq_autotune.follow_up_comparison import capture_comparison_context
 from ciq_autotune.outcomes_trend import summarize_trend
+
+def _reconcile(store, now):
+    with store.follow_up_transaction():
+        reconcile_follow_up(store, now=now, recorded_at=now)
+
+
+def _pin_focus(store, lever, now):
+    with store.follow_up_transaction():
+        reconcile_follow_up(store, now=now, recorded_at=now)
+        if not follow_up_admission(store, now=now)["focus_pin"]["available"]:
+            raise RuntimeError("Manufactured Focus admission is occupied")
+        focus = store.pin_focus(lever, now.strftime("%Y-%m-%d %H:%M:%S"))
+        store.save_follow_up_record({**focus, "kind": "focus", "version": "386:1",
+            "comparison_context": capture_comparison_context(
+                store, at=now, input_revision=store.input_data_revision())})
+        reconcile_follow_up(store, now=now, recorded_at=now)
+    return focus
+
+
+def _resolve_focus(store, focus, now):
+    with store.follow_up_transaction():
+        reconcile_follow_up(store, now=now, recorded_at=now)
+        capture_ending(store, store.follow_up_record("focus", focus["id"]),
+            kind="manual", effective_at=now, recorded_at=now, data_cutoff=now)
+        reconcile_follow_up(store, now=now, recorded_at=now)
+
 
 def repeat_manufactured_meals(path):
     """Repeat the existing QA shapes on empty synthetic days; rerun all classifiers."""
@@ -195,6 +225,7 @@ def setting_capture(path):
                               "profile_basal_rate": rate})
         store.upsert_cgm(cgm)
         store.upsert_basal(basal)
+        _reconcile(store, datetime(2024, 6, 18, 12))
     trials = {}
     reviewed_at = {}
     with Store.open_readonly(str(path)) as store:
@@ -226,6 +257,8 @@ def focus_preemption_capture(path, *, changed_at="2024-06-30 12:00:00", now=date
             segments=tuple(replace(row, isf=row.isf + 5) for row in profile.segments))
         store.upsert_settings_snapshot(changed_at,
             replace(settings, active_idp=changed.idp, profiles=(*settings.profiles, changed)))
+        _reconcile(store, now)
+    with Store.open_readonly(str(path)) as store:
         active = active_watched_change(store, store.basal_events(), store.bolus_events(),
             store.settings_snapshots(), now=now, cgm_readings=store.cgm_readings())
         focus = store.list_focuses()[0]
@@ -255,10 +288,10 @@ def focus_capture(path):
     started_at = datetime(2024, 5, 30, 12)
     preempt_path = path.with_name(path.stem + "-preempted.sqlite")
     with Store.open(str(path)) as store:
-        if trial_is_active(store, now=started_at):
-            raise RuntimeError("Manufactured Focus cannot start while a Trial is active")
-        focus = store.pin_focus(action["lever"], started_at.strftime("%Y-%m-%d %H:%M:%S"))
+        focus = _pin_focus(store, action["lever"], started_at)
+    with Store.open_readonly(str(path)) as store:
         before = summarize_trend(store, now=started_at).to_dict()
+    with Store.open(str(path)) as store:
         cgm, bolus, basal = store.cgm_readings(), store.bolus_events(), store.basal_events()
         shift = timedelta(days=30)
         store.upsert_cgm([{"EventDateTime": (row.t + shift).strftime("%Y-%m-%d %H:%M:%S"),
@@ -282,6 +315,8 @@ def focus_capture(path):
             "basal_rate": row.basal_rate, "profile_basal_rate": row.profile_basal_rate,
         } for index, row in enumerate(basal)])
         followed_at = datetime(2024, 6, 29, 12)
+        _reconcile(store, followed_at)
+    with Store.open_readonly(str(path)) as store:
         following = summarize_trend(store, now=followed_at).to_dict()
         if following["watched_change"]["kind"] != "focus":
             raise RuntimeError("Manufactured follow-up unexpectedly preempted its Focus")
@@ -291,12 +326,12 @@ def focus_capture(path):
     following_evidence, following_dates, following_days = _following_evidence(
         path, started_at.strftime("%Y-%m-%d %H:%M:%S"))
     with Store.open(str(path)) as store:
-        if not store.resolve_focus(focus["id"]):
-            raise RuntimeError("Manufactured Focus ending was not recorded")
+        _resolve_focus(store, focus, followed_at)
+    with Store.open_readonly(str(path)) as store:
         resolved = store.list_focuses()[0]
     preempted = focus_preemption_capture(preempt_path)
     return {"_generated_by": "mockups/harmonic-v2.exploration/generate.py",
-            "_note": "SYNTHETIC. Existing behavioral-over-treated-low QA case with the same raw synthetic records repeated thirty days later. Current pattern, comparison, Focus and trend producers supply the data. Preemption is an alternative ending of the same active Focus, before manual resolution: a manufactured pump-profile switch is detected by the shipped watch owner. Focus has no maturity gate or stored end time/conclusion. The proposed v2 context and ending snapshot remain illustrative.",
+            "_note": "SYNTHETIC. Existing behavioral-over-treated-low QA case with the same raw synthetic records repeated thirty days later. Current pattern, comparison, Focus and trend producers supply the data. Preemption is an alternative ending of the same active Focus, before manual resolution: a manufactured pump-profile switch is detected by the shipped watch owner. Focus has no maturity gate. The shipped lifecycle owner captures the manual and setting-preempted endings; original decision context is unavailable for this legacy setup.",
             "case": case.name, "initial": initial, "action": action,
             "reviewed_at": {"before": started_at.strftime("%Y-%m-%d %H:%M:%S"),
                             "following": followed_at.strftime("%Y-%m-%d %H:%M:%S")},
@@ -466,6 +501,7 @@ def _combined_setting_branch(path, initial):
                               "basal_rate": rate, "profile_basal_rate": rate})
         store.upsert_cgm(cgm)
         store.upsert_basal(basal)
+        _reconcile(store, captured_at + timedelta(days=5, hours=12))
     trials, reviewed_at = {}, {}
     with Store.open_readonly(str(path)) as store:
         for name, now in (("active", captured_at + timedelta(days=5, hours=12)),
@@ -508,10 +544,10 @@ def _combined_focus_branch(path, initial):
     preempt_path = path.with_name(path.stem + "-preempted.sqlite")
     action = initial["candidates"]["over_treated_low"]["action"]
     with Store.open(str(path)) as store:
-        if trial_is_active(store, now=started_at):
-            raise RuntimeError("Combined Focus cannot start while the source has a Trial")
-        focus = store.pin_focus(action["lever"], started_at.strftime("%Y-%m-%d %H:%M:%S"))
+        focus = _pin_focus(store, action["lever"], started_at)
+    with Store.open_readonly(str(path)) as store:
         before = summarize_trend(store, now=started_at).to_dict()
+    with Store.open(str(path)) as store:
         cgm, bolus, basal = store.cgm_readings(), store.bolus_events(), store.basal_events()
         shift = timedelta(days=30)
         store.upsert_cgm([{"EventDateTime": (row.t + shift).strftime("%Y-%m-%d %H:%M:%S"),
@@ -533,6 +569,8 @@ def _combined_focus_branch(path, initial):
             "delivery_type": row.delivery_type, "duration_mins": row.duration_mins,
             "basal_rate": row.basal_rate, "profile_basal_rate": row.profile_basal_rate,
         } for index, row in enumerate(basal)])
+        _reconcile(store, followed_at)
+    with Store.open_readonly(str(path)) as store:
         following = summarize_trend(store, now=followed_at).to_dict()
         if following["watched_change"]["kind"] != "focus":
             raise RuntimeError("Combined repeated evidence unexpectedly preempted Focus")
@@ -540,8 +578,8 @@ def _combined_focus_branch(path, initial):
     following_evidence, following_dates, following_days = _following_evidence(
         path, started_at.strftime("%Y-%m-%d %H:%M:%S"))
     with Store.open(str(path)) as store:
-        if not store.resolve_focus(focus["id"]):
-            raise RuntimeError("Combined manual Focus resolution was not recorded")
+        _resolve_focus(store, focus, followed_at)
+    with Store.open_readonly(str(path)) as store:
         resolved = store.list_focuses()[0]
         if resolved["status"] != "resolved":
             raise RuntimeError("Combined Focus resolution did not persist its status")
@@ -560,7 +598,7 @@ def _combined_focus_branch(path, initial):
             "following_evidence": following_evidence,
             "following_recorded_dates": following_dates, "following_days": following_days,
             "preempted": preempted,
-            "limitations": {"ending_context": "illustrative page-memory proposal; current Focus storage has no ended_at or conclusion"}}
+            "limitations": {"ending_context": "shipped lifecycle ending capture; original decision context is unavailable for this legacy setup"}}
 
 
 def journey_capture(path):

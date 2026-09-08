@@ -49,10 +49,12 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
         # reading taken after it is always higher and every failed fetch would
         # look like a write (#146).
         baseline = store.input_data_revision()
+        reconcile_needed = False
         try:
             written = sync_mod.pull_from_tconnect(store, start=start, end=end, key_path=key_path)
         except sync_mod.PartialFetchError as e:
             committed = store.input_data_revision() > baseline
+            reconcile_needed = committed
             # Some windows landed before a later one failed — the completed
             # windows are already persisted (idempotent upserts), so this is not
             # a total failure, but not a success either: record ok=False (so the
@@ -65,6 +67,7 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
                 return e.written
         except Exception as e:  # any failure must not kill the loop
             committed = store.input_data_revision() > baseline
+            reconcile_needed = committed
             logger.warning("Hourly fetch failed: %s", e)
             store.record_fetch_result(attempted_at=attempted_at, ok=False, error=str(e))
             if committed:
@@ -72,8 +75,18 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
                 # this path carries no counts to report them by.
                 return {}
         else:
+            reconcile_needed = True
             store.record_fetch_result(attempted_at=attempted_at, ok=True, written=written)
             return written
+        finally:
+            from .watched_change import reconcile_ingested_follow_up
+            try:
+                if reconcile_needed:
+                    reconcile_ingested_follow_up(store)
+            except Exception:
+                # Ingestion commits window by window. Reconciliation rolls back
+                # independently; callers must still invalidate committed inputs.
+                logger.exception("Follow-up reconciliation failed after fetch")
     return None
 
 

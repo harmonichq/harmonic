@@ -229,7 +229,9 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        self.assertEqual(self._roster(), {"trials": [], "selected": None})
+        roster = self._roster()
+        self.assertEqual(roster["trials"], [])
+        self.assertIsNone(roster["selected"])
 
     def test_change_that_misses_a_member_is_rejected(self):
         # The observed change moves only the first half of the arc, leaving the
@@ -243,7 +245,9 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        self.assertEqual(self._roster(), {"trials": [], "selected": None})
+        roster = self._roster()
+        self.assertEqual(roster["trials"], [])
+        self.assertIsNone(roster["selected"])
 
     def test_change_matched_by_two_annotated_groups_is_rejected(self):
         # Two distinct complete annotated applied groups — same bounds, members,
@@ -260,7 +264,9 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:30:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        self.assertEqual(self._roster(), {"trials": [], "selected": None})
+        roster = self._roster()
+        self.assertEqual(roster["trials"], [])
+        self.assertIsNone(roster["selected"])
 
     def test_change_that_also_moves_ic_outside_the_arc_is_rejected(self):
         # The whole arc moves 5.0→4.4 (a match on its own) but the evening block
@@ -274,7 +280,9 @@ class BlockIcAdmissionTest(unittest.TestCase):
             _apply(store, "2026-06-04 08:00:00", _BLOCK, _MEMBERS, 5.0, 4.4)
             _cgm_span(store, SWITCH - timedelta(days=14), NOW)
 
-        self.assertEqual(self._roster(), {"trials": [], "selected": None})
+        roster = self._roster()
+        self.assertEqual(roster["trials"], [])
+        self.assertIsNone(roster["selected"])
 
 
 class BlockIcIdentityAndCohortTest(unittest.TestCase):
@@ -416,16 +424,36 @@ class RevertDraftStaysValidTest(unittest.TestCase):
     def test_prior_plan_route_revert_draft_saves_and_applies(self):
         # The unannotated single-row Revert draft _prior_plan_route emits (#581 keeps
         # it valid and unannotated) round-trips through save → apply → history.
+        from dataclasses import replace
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        with Store.open(self.tmp.name) as store:
+            materialize_case(store, next(c for c in QA_CASES if c.name == "ic-raise"))
+            snapshot = store.settings_snapshots()[-1]
+            profile = snapshot.settings.active()
+            # Preserve the Revert row at noon as a real member of this supported
+            # synthetic block, without adding block annotations to the draft.
+            profile = replace(profile, segments=(profile.segments[0],
+                              replace(profile.segments[0], start_min=720)))
+            store.upsert_settings_snapshot(snapshot.captured_at.isoformat(),
+                replace(snapshot.settings, profiles=(profile,)))
         draft = {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]}
         save = self.client.put("/api/plan", json=draft)
         self.assertEqual(save.status_code, 200)
         apply = self.client.post("/api/plan/apply")
         self.assertEqual(apply.status_code, 200)
-        with Store.open(self.tmp.name) as store:
-            history = store.plan_history()
+        history = self.client.get("/api/plan/history").json()["history"]
         self.assertEqual(len(history), 1)
         self.assertEqual(history[0]["items"], draft["items"])
         self.assertNotIn("ic_block_provenance", history[0]["items"][0])
+
+    def test_revert_draft_without_source_saves_but_cannot_apply(self):
+        draft = {"items": [{"type": "ic", "start_min": 720, "value": 5.0}]}
+        self.assertEqual(self.client.put("/api/plan", json=draft).status_code, 200)
+        response = self.client.post("/api/plan/apply")
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertEqual(response.json()["detail"], "ineligible_source")
+        self.assertEqual(self.client.get("/api/plan/history").json()["history"], [])
+        self.assertEqual(self.client.get("/api/plan").json()["items"], draft["items"])
 
 
 if __name__ == "__main__":  # pragma: no cover

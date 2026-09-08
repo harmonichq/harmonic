@@ -198,6 +198,7 @@ class GuidanceApiTest(unittest.TestCase):
                 crossed = True
                 with Store.open(tmp.name) as store:
                     store.pin_focus("late_bolus", "2026-01-01 00:00:00")
+                    watched_change.reconcile_ingested_follow_up(store)
             return resolved
 
         with patch.object(watched_change, "active_watched_change",
@@ -232,6 +233,7 @@ class GuidanceApiTest(unittest.TestCase):
                     })
             store.upsert_basal(basal)
             store.upsert_cgm(cgm)
+            watched_change.reconcile_ingested_follow_up(store)
         real_resolve = watched_change.active_watched_change
         calls = 0
 
@@ -250,7 +252,7 @@ class GuidanceApiTest(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["active_watch"]["kind"], "trial")
-        self.assertGreaterEqual(calls, 2)
+        self.assertEqual(calls, 1)
         with Store.open(tmp.name) as store:
             self.assertIsNone(store.active_focus())
 
@@ -278,8 +280,8 @@ class GuidanceApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         after = client.get("/api/guidance", headers=headers).json()
-        self.assertEqual(after["disposition"], "active_change")
-        self.assertEqual(after["active_watch"]["lever"], "missed_meal")
+        self.assertEqual(after["disposition"], "unavailable")
+        self.assertEqual(after["admission"]["reason"], "reconciliation_required")
 
     def test_restore_rejects_invalid_subject_but_keeps_canonical_idempotence(self):
         from ciq_autotune.api import create_app
@@ -310,12 +312,13 @@ class GuidanceApiTest(unittest.TestCase):
         from ciq_autotune.api import create_app
         tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
         self.addCleanup(tmp.close)
-        _seed(tmp.name)
+        with Store.open(tmp.name) as store:
+            materialize_case(store, next(case for case in QA_CASES if case.name == "behavioral-missed-meal"))
         client = TestClient(create_app(db_path=tmp.name, token="secret", enable_fetch_loop=False))
         headers = {"Authorization": "Bearer secret"}
         self.assertEqual(client.get("/api/guidance", headers=headers).status_code, 200)
         self.assertEqual(client.post("/api/plan/apply", headers=headers).status_code, 400)
-        first = client.post("/api/focus", headers=headers, json={"lever": "late_bolus"})
+        first = client.post("/api/focus", headers=headers, json={"lever": "missed_meal"})
         self.assertEqual(first.status_code, 200)
         second = client.post("/api/focus", headers=headers, json={"lever": "missed_meal"})
         self.assertEqual(second.status_code, 409)

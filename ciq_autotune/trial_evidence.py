@@ -1,6 +1,6 @@
 """The per-period breakdown the Verify workstation renders (#660).
 
-One front door — :func:`trial_breakdown` — answering "what does one Trial's
+The legacy front door — :func:`trial_breakdown` — answering "what does one Trial's
 Before period look like beside its Trial period?" in the four shapes the ★ LOCKED
 Verify surface's data-bindings contract binds it to:
 
@@ -228,7 +228,8 @@ def _bin_row(t, values: List[float]) -> dict:
 def _in_block(when: datetime, block: Tuple[int, int]) -> bool:
     """Whether a wall-clock instant falls inside an I:C block that may wrap midnight."""
     start, end = block
-    return (when.hour * 60 + when.minute - start) % 1440 < end - start
+    from .analyzers.ic import _in_block as ic_in_block
+    return ic_in_block(when.hour * 60 + when.minute, start, end)
 
 
 def _block_bounds(snapshots, changed_at: datetime,
@@ -312,3 +313,188 @@ def _day_rows(cgm, bolus, span: Tuple[datetime, datetime]) -> List[dict]:
 def _span(period: dict) -> Tuple[datetime, datetime]:
     return (datetime.strptime(period["start"], _DT_FMT),
             datetime.strptime(period["end"], _DT_FMT))
+
+
+def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
+                        start, end, cgm, bolus, basal, carbs, snapshots,
+                        pump_events=(), isf=None, captured_members=None, focus=False):
+    """Exact owned populations shared by comparison charts and scalar outcomes.
+
+    Inputs retain detection context; every returned reading and plotted point is
+    clipped to the half-open period. Meal windows form a union, never a weighted
+    concatenation. Rest evidence keeps its detected-window/fasting-step identity.
+    """
+    from .analyzers.isf import IsfConfig, fasting_steps
+    from .event_comparison import project_cohort
+    from .rest_window import detect_rest_windows
+
+    owned_cgm = [r for r in cgm if start <= r.t < end and r.bg is not None]
+    meals = [b for b in bolus if start <= b.t < end and _is_meal(b)
+             and (block is None or _in_block(b.t, block))]
+    intervals = []
+    occurrences = []
+    steps = []
+    windows = []
+    if parameter == "carb_ratio":
+        for meal in meals:
+            intervals.append((meal.t, min(end, meal.t + timedelta(hours=5))))
+            occurrences.append({
+                "id": f"meal-{meal.seq_num}" if meal.seq_num is not None else f"meal-{meal.t.isoformat()}",
+                "anchor_t": meal.t.isoformat(sep=" "),
+                "trace": {"cgm": [
+                    {"minute": (r.t - meal.t).total_seconds() / 60, "bg": r.bg}
+                    for r in owned_cgm
+                    if -60 <= (r.t - meal.t).total_seconds() / 60 <= 300
+                ]},
+            })
+    elif parameter in ("basal_rate", "isf"):
+        rest = [w for w in detect_rest_windows(cgm, bolus) if start <= w.start < end]
+        span = block
+        if span is None and slot:
+            minute = int(slot[:2]) * 60 + int(slot[3:5])
+            span = (minute, minute + 30)
+        for window in rest:
+            lo, hi = max(start, window.start), min(end, window.end)
+            windows.append({"id": f"rest:{window.date}", "start": str(lo), "end": str(hi)})
+            if span is None:
+                intervals.append((lo, hi))
+            else:
+                day = lo.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+                while day < hi:
+                    left = max(lo, day + timedelta(minutes=span[0]))
+                    right = min(hi, day + timedelta(minutes=span[1]))
+                    if left < right:
+                        intervals.append((left, right))
+                    day += timedelta(days=1)
+        if parameter == "isf":
+            next_times = {a.t: b.t for a, b in zip(cgm, cgm[1:])}
+            for step in fasting_steps(bolus, basal, cgm, IsfConfig(), rest, carb_entries=carbs):
+                finish = next_times.get(step.t)
+                if finish is not None and finish < end and any(
+                    lo <= step.t and finish < hi for lo, hi in intervals
+                ):
+                    steps.append({"t": str(step.t), "window_id": f"rest:{step.cluster}",
+                                  "insulin_acted": step.insulin_acted, "dbg": step.dbg})
+    else:
+        if start < end:
+            intervals.append((start, end))
+    merged = []
+    for lo, hi in sorted(intervals):
+        if lo >= hi:
+            continue
+        if merged and lo <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(hi, merged[-1][1]))
+        else:
+            merged.append((lo, hi))
+    readings = [r for r in owned_cgm if any(lo <= r.t < hi for lo, hi in merged)]
+    coverage = comparison_coverage(readings, merged, start, end)
+    readiness = _comparison_readiness(
+        "focus" if focus else parameter, slot, block, start, end, cgm, bolus, basal, carbs, snapshots,
+        pump_events, isf, captured_members, steps, coverage,
+    )
+    return {
+        "readiness": readiness, "coverage": coverage,
+        "readings": readings, "intervals": merged, "meals": meals,
+        "view": {"kind": parameter, "occurrences": occurrences,
+                 "projection": project_cohort("period", occurrences, (-60, 300))
+                 if parameter == "carb_ratio" else None,
+                 "clock": _clock_envelope(readings, (start, end)),
+                 "rest_windows": windows, "fasting_steps": steps,
+                 "changes": _constituent_changes(
+                     snapshots, parameter=parameter, slot=slot, changed_at=changed_at,
+                     before=before, after=after,
+                 )},
+    }
+
+
+def comparison_coverage(readings, intervals, start, end):
+    """Coverage on each date's actual eligible duration, shared by readiness and rows."""
+    from .outcomes import CGM_CADENCE_MIN
+    rows = []
+    lo = start
+    while lo < end:
+        hi = min(end, lo.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1))
+        minutes = sum(max(0, (min(hi, b) - max(lo, a)).total_seconds()) / 60 for a, b in intervals)
+        if minutes:
+            n = sum(lo <= r.t < hi for r in readings)
+            rows.append({"date": lo.date().isoformat(), "eligible_minutes": minutes,
+                         "n_readings": n, "coverage": min(1., n / (minutes / CGM_CADENCE_MIN))})
+        lo = hi
+    return rows
+
+
+def _comparison_readiness(parameter, slot, block, start, end, cgm, bolus, basal, carbs,
+                          snapshots, pump_events, isf, captured_members, steps, coverage):
+    from .model import ModelConfig, clean_samples
+    from .analyzers.ic import _in_block as in_block
+    from .analyzers.ic_regression import analyze_ic_blocks_fuzzy
+    from .outcomes import CONSENSUS_MIN_COVERAGE
+    from .settings import active_schedule
+
+    elapsed = max(0., (end-start).total_seconds()/86400)
+    result = {"elapsed_days": elapsed, "contributing_dates": [], "criterion_met": False,
+              "reason": "collecting", "available": True}
+    if parameter == "focus":
+        result.update(unit="elapsed days", observed=elapsed, required=14,
+                      criterion_met=False, reason="behavior_population_required")
+    elif parameter == "basal_rate":
+        cfg = ModelConfig()
+        span = block
+        if span is None and slot:
+            minute = int(slot[:2])*60+int(slot[3:5])
+            span = (minute, minute+cfg.slot_minutes)
+        slots = {i: set() for i in range(1440//cfg.slot_minutes)
+                 if span is None or in_block(i*cfg.slot_minutes, *span)}
+        from .analyzers.basal import schedule_by_slot
+        relevant_snaps = [s for s in snapshots if s.captured_at <= start]
+        schedule = active_schedule(relevant_snaps, "basal_rate") if relevant_snaps else []
+        programmed = schedule_by_slot(schedule, cfg.slot_minutes) if schedule else {}
+        for sample in clean_samples(basal, cgm, bolus, list(pump_events), cfg, carb_entries=carbs):
+            if (start <= sample.t < end and sample.slot in slots and sample.programmed_rate is not None
+                    and (span is None or _in_block(sample.t, span))
+                    and (not programmed or sample.programmed_rate == programmed.get(sample.slot))):
+                slots[sample.slot].add(sample.t.date().isoformat())
+        result.update(unit="qualifying clean nights per affected slot", required=14,
+                      observed=min(map(len, slots.values()), default=0),
+                      slots=[{"slot": i, "observed": len(dates), "required": 14,
+                              "contributing_dates": sorted(dates), "criterion_met": len(dates)>=14}
+                             for i, dates in slots.items()],
+                      contributing_dates=sorted(set().union(*slots.values()) if slots else set()))
+        result["criterion_met"] = bool(slots) and all(len(dates)>=14 for dates in slots.values())
+    elif parameter == "carb_ratio":
+        snaps = [s for s in snapshots if s.captured_at <= start]
+        schedule = active_schedule(snaps, "carb_ratio") if snaps else []
+        blocks, _ = analyze_ic_blocks_fuzzy(
+            list(bolus), schedule, cgm_readings=list(cgm), basal_events=list(basal),
+            carb_entries=list(carbs), isf_effective=isf, snapshots=snapshots or None,
+            analysis_start=start, analysis_end=end-timedelta(microseconds=1),
+        ) if schedule else ([], 0)
+        matches = [b for b in blocks if block is not None and b.start_min == block[0]
+                   and b.end_min % 1440 == block[1] % 1440
+                   and (captured_members is None or list(b.member_start_mins) == list(captured_members))]
+        result.update(unit="effective qualifying closed meal runs", required=8, observed=0., runs=[])
+        if len(matches) != 1:
+            result.update(available=False, reason="unmatchable_captured_membership")
+        else:
+            selected = matches[0]
+            runs = [r for r in selected.evidence["runs"] if r["in_pool"] and r["outcome_bg"] is not None
+                    and start <= datetime.fromisoformat(r["t"]) < end]
+            result.update(observed=sum(r["ownership"] for r in runs), runs=runs,
+                          contributing_dates=sorted({datetime.fromisoformat(r["t"]).date().isoformat() for r in runs}),
+                          regime=selected.regime, captured_block=list(block),
+                          captured_members=list(selected.member_start_mins))
+            result["criterion_met"] = result["observed"] >= 8
+    elif parameter == "isf":
+        ids = {step["window_id"] for step in steps}
+        result.update(unit="qualifying fasting Rest windows", required=30, observed=len(ids),
+                      step_count=len(steps), window_ids=sorted(ids),
+                      contributing_dates=sorted({datetime.fromisoformat(s["t"]).date().isoformat() for s in steps}),
+                      criterion_met=len(ids)>=30)
+    else:
+        dates = [r["date"] for r in coverage if r["coverage"] >= CONSENSUS_MIN_COVERAGE]
+        result.update(unit="coverage-qualified informative dates", required=30, required_elapsed_days=30,
+                      observed=len(dates), contributing_dates=dates,
+                      criterion_met=elapsed>=30 and len(dates)>=30)
+    if result["criterion_met"]:
+        result["reason"] = None
+    return result

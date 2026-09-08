@@ -40,8 +40,12 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY vite.config.mjs tsconfig.json ./
+COPY vite.config.mjs vite.config.v2.mjs tsconfig.json ./
+# Both source roots. frontend-v2's build reads the app's own material out of
+# frontend/index.html at build time (frontend-v2/app-source.mjs), so the v1 tree
+# must be present for the v2 build as well as its own.
 COPY frontend ./frontend
+COPY frontend-v2 ./frontend-v2
 RUN npm run build
 
 # ---- runtime: venv + source, non-root -------------------------------------
@@ -66,6 +70,9 @@ COPY --from=builder /app/.venv /app/.venv
 # COPY, /api/kb/<slug> 404s and every authored article reads "unknown article".
 COPY ciq_autotune ./ciq_autotune
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+# #389: the v2 desk's own build, which api.py resolves as
+# ../frontend-v2/dist/index.html and serves at /v2/ beside v1.
+COPY --from=frontend-builder /app/frontend-v2/dist ./frontend-v2/dist
 COPY docs/kb ./docs/kb
 COPY pyproject.toml README.md ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

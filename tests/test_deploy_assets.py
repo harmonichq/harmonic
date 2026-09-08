@@ -38,6 +38,27 @@ class DeployAssetsTest(unittest.TestCase):
         self.assertRegex(text, r"COPY\s+--from=frontend-builder\s+/app/frontend/dist\s+./frontend/dist")
         self.assertIn("FROM node:22", text)
 
+    def test_dockerfile_ships_both_built_surfaces_and_their_build_inputs(self):
+        # #389 (HV2-01/HV2-02): v1 and /v2/ are served together by the packaged
+        # runtime. api.py resolves the v2 shell as ../frontend-v2/dist, so that
+        # build must be COPY'd in exactly as v1's is — and the builder needs the
+        # second source root and its config to produce it at all.
+        text = (_REPO / "Dockerfile").read_text()
+        self.assertRegex(
+            text, r"COPY\s+--from=frontend-builder\s+/app/frontend-v2/dist\s+./frontend-v2/dist",
+            "Dockerfile must COPY the built v2 desk into the image; without it /v2/ "
+            "answers 503 in the deployed app while v1 keeps working.",
+        )
+        self.assertRegex(text, r"COPY\s+vite\.config\.mjs\s+vite\.config\.v2\.mjs\b")
+        self.assertRegex(text, r"(?m)^COPY\s+frontend-v2\s+\./frontend-v2$")
+
+    def test_dockerignore_excludes_both_build_outputs(self):
+        # Both are generated during packaging; shipping a stale local build into
+        # the context is how an image serves yesterday's shell.
+        ignored = {line.strip() for line in (_REPO / ".dockerignore").read_text().splitlines()}
+        self.assertIn("frontend/dist/", ignored)
+        self.assertIn("frontend-v2/dist/", ignored)
+
     def test_runtime_copies_only_the_built_frontend_without_node(self):
         runtime = _runtime_without_comments((_REPO / "Dockerfile").read_text())
         with self.assertRaises(AssertionError):

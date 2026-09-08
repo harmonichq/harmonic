@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseRoute, resolveTab, serializeRoute, subscribeRoute, writeRoute } from './tab-routing.js';
+import {
+  parseRoute, parseV2Route, resolveDestination, resolveTab, serializeRoute, serializeV2Route,
+  subscribeRoute, writeRoute,
+} from './tab-routing.js';
 
 test('resolveTab keeps a live page and sends every other id to the default page', () => {
   for (const tab of ['day', 'diagnose', 'verify', 'plan', 'settings', 'guide']) {
@@ -105,4 +108,57 @@ test('the stable glucose route keeps only its compatibility view state', () => {
   listeners.get('popstate')();
   unsubscribe();
   assert.deepEqual(seen, [{ page: 'diagnose', pageNamed: true, view: 'glucose', mode: 'drawn' }]);
+});
+
+// --- the v2 desk's address (#389) -------------------------------------------
+
+test('the v2 desk resolves a destination and defaults to Overview', () => {
+  for (const destination of ['overview', 'explore', 'changes', 'day']) {
+    assert.equal(resolveDestination(destination), destination);
+  }
+  // Overview is the default destination (HV2-09), so a missing or unknown `to`
+  // opens there rather than on nothing.
+  for (const unknown of ['', null, undefined, 'diagnose', 'plan', 'verify']) {
+    assert.equal(resolveDestination(unknown), 'overview');
+  }
+});
+
+test('a direct v2 entry carries no context and a contextual one round-trips all of it', () => {
+  const direct = parseV2Route({ search: '?to=day' });
+  assert.deepEqual(direct, { destination: 'day', context: {} });
+  assert.equal(serializeV2Route(direct), '/v2/?to=day');
+
+  // HV2-14: date, moment, canonical subject, occurrence, affected window,
+  // applicable lever, source destination and precise return-focus target.
+  const context = {
+    date: '2024-06-26', subject: 'Carb questions · Jun 26 13:55', occurrence: 'low-7',
+    window: '0-120', lever: 'over_treated_low', from: 'explore.questions',
+    focus: "[data-question-card='low|2024-06-26 13:55:00'] [data-action='day']",
+  };
+  const address = serializeV2Route({ destination: 'day', context });
+  const parsed = parseV2Route({ search: address.slice(address.indexOf('?')) });
+  assert.equal(parsed.destination, 'day');
+  assert.deepEqual(parsed.context, context);
+});
+
+test('the v2 address is written and subscribed through the one routing owner', () => {
+  const pushes = [];
+  writeRoute({ destination: 'explore', context: { occurrence: 'low-7' } }, {
+    location: { pathname: '/v2/', search: '?to=overview', hash: '' },
+    history: { pushState: (_state, _title, address) => pushes.push(address) },
+    serialize: serializeV2Route,
+  });
+  assert.deepEqual(pushes, ['/v2/?to=explore&occurrence=low-7']);
+
+  const listeners = new Map();
+  const browser = {
+    location: { pathname: '/v2/', search: '?to=day&date=2024-06-26&from=explore', hash: '' },
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    removeEventListener() {},
+  };
+  const seen = [];
+  const unsubscribe = subscribeRoute((next) => seen.push(next), browser, parseV2Route);
+  listeners.get('popstate')();
+  unsubscribe();
+  assert.deepEqual(seen, [{ destination: 'day', context: { date: '2024-06-26', from: 'explore' } }]);
 });

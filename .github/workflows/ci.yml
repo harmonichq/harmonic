@@ -135,9 +135,11 @@ jobs:
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm dependency; the dev-only harness/ is not exercised here.
+      # no npm dependency; the dev-only harness/ is not exercised here. Both
+      # source roots are named: frontend-v2/ is the v2 desk (#389), and a glob
+      # that does not name it is a runner no new test is ever seen by.
       - name: Run tests
-        run: node --test 'frontend/**/*.test.js'
+        run: node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'
       # The browser capture is generated too; a passing test must not run
       # against bytes that have drifted from its support-stamp producer.
       - name: Check the event-comparison synthetic capture is current
@@ -221,6 +223,14 @@ jobs:
       # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
+      # #389: the v2 desk's own browser gate. Browser suites are never
+      # discovered by a glob in this repository — they are hand-listed matrix
+      # entries — so the new source root gets its own step here, and chunks 2, 3
+      # and 4 add theirs beside it. It serves the BUILT desk from disk and
+      # answers the API from manufactured payloads in the driver, so it needs no
+      # Python and no server.
+          - gate: V2 desk
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
           - gate: First-plan reconcile
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`

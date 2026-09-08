@@ -353,6 +353,16 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     });
   }
 
+  /**
+   * DELETE /api/carbs/<id> — remove one carb entry by id. A prompt-sourced
+   * entry takes its prompt_responses row with it (the #125 store rule), so the
+   * question that logged it resurrects in the queue.
+   * @param {number} entryId
+   */
+  function deleteCarb(entryId) {
+    return api('/api/carbs/' + encodeURIComponent(entryId), { method: 'DELETE' });
+  }
+
   // --- carb-log prompt queue (#128) --------------------------------------
 
   /** GET /api/prompts — the live review queue (List[Prompt], oldest-first). */
@@ -480,6 +490,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchTimeline,
     fetchCarbs,
     createCarb,
+    deleteCarb,
     fetchPrompts,
     answerPrompt,
     clearPrompt,
@@ -531,6 +542,7 @@ export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;
 export const fetchCarbs        = _defaults.fetchCarbs;
 export const createCarb        = _defaults.createCarb;
+export const deleteCarb        = _defaults.deleteCarb;
 export const fetchPrompts      = _defaults.fetchPrompts;
 export const answerPrompt      = _defaults.answerPrompt;
 export const clearPrompt       = _defaults.clearPrompt;

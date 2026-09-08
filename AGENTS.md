@@ -48,7 +48,7 @@ scripts below are the **fast gate**. Its backend delivery leg needs a built shel
 ```sh
 npm ci && npm run build                    # required before backend delivery tests
 uv run python -m pytest                    # backend, stdlib unittest over the built shell
-node --test 'frontend/**/*.test.js'        # fast gate: dependency-free frontend Node tests
+node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'  # fast gate: both source roots
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
 python3 scripts/check_owned_identifiers.py # product-name guard
@@ -116,10 +116,12 @@ fixture without a generator is how real data gets committed.
 
 **This is not the whole merge bar.** A separate `browser gates` CI job runs the
 browser-dependent work the fast gate cannot: the `*.browser.test.mjs` suites
-(cockpit shell, Diagnose workstation, the shared browser-runner lifecycle
-regression), the Day lifecycle and first-plan-reconcile drivers, three
+(cockpit shell, Diagnose workstation, the v2 desk, the shared browser-runner
+lifecycle regression), the Day lifecycle and first-plan-reconcile drivers, three
 behaviour-ledger replays against the built app, and the event-comparison
-support audit. Reproduce it locally:
+support audit. Browser suites are **never discovered by a glob** here — each is
+a hand-listed matrix entry, so a new one that is not added to `ci.yml` is a
+suite no runner ever looks at. Reproduce it locally:
 
 ```sh
 # One-time setup — an isolated Playwright + Chromium. On a machine that
@@ -132,15 +134,17 @@ PW=$(mktemp -d)
 npm install --prefix "$PW" playwright@1.61.1
 npx --prefix "$PW" playwright install --with-deps chromium
 
-# Rebuild the shell after any frontend/ change, before the ten CI legs.
+# Rebuild BOTH shells after any frontend/ or frontend-v2/ change, before the
+# eleven CI legs. `npm run build` runs the two Vite builds in sequence.
 npm ci && npm run build
 
-# The ten gate legs, as CI runs them.
+# The eleven gate legs, as CI runs them.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/day-surface.browser.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
+PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" node frontend/plan-first-match.browser.mjs
 # In another terminal, start the QA copy-then-serve command documented below.
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
@@ -149,7 +153,7 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node mockups/diagnose
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
-All ten **fail closed**: a missing driver, built shell or fixture exits
+All eleven **fail closed**: a missing driver, built shell or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a
@@ -265,10 +269,21 @@ manufactured stories, then use the full no-fetch app as the integration proof.
 - `ciq_autotune/fetch_loop.py` — the hourly background fetch loop `serve` runs.
 - `ciq_autotune/result_cache.py` — the in-process cache the heavy read
   endpoints answer from.
-- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves the
-  built `frontend/dist/index.html` at `/`, on the same port.
+- `ciq_autotune/api.py` — the HTTP API (`api` extra), which also serves both
+  built shells on the same port: `frontend/dist/index.html` at `/` and its
+  page paths, and `frontend-v2/dist/index.html` at `/v2/`. The non-API route
+  set is closed — every served page path is named, and any other path is a 404.
 - `frontend/` — a single-page Vue 3 app built with Vite. ECharts renders the
   Day chart.
+- `frontend-v2/` — the second Vite root: the v2 desk, built with `base: '/v2/'`
+  so its fingerprinted assets land under `/v2/assets/`, and served beside v1 by
+  the same Python process. It is plain DOM rather than Vue, ported from the
+  locked desktop prototype. It shares v1's one authenticated client
+  (`frontend/data.js`, re-exported by `frontend-v2/client.js`) and v1's one
+  router (`frontend/tab-routing.js`); a second client or router here is a
+  duplicate implementation, not a convenience. Its material, Day legend and
+  glossary are lifted out of `frontend/index.html` at build time
+  (`frontend-v2/app-source.mjs`), so no copy of them exists to go stale.
 - `harness/` — a dev-only Vite page that opens one shipped chart at a time on
   manufactured data or a running `harmonic serve`. Node 22 is required but not
   enforced; the harness never enters the production app and never gates.

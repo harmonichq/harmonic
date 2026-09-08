@@ -194,6 +194,17 @@ test('per-day reads forward an abort signal', async () => {
   for (const call of calls) assert.equal(call.opts.signal, signal);
 });
 
+test('deleteCarb removes one entry by id', async () => {
+  const { fetch, calls } = makeFakeFetch({ deleted: 1 });
+  const { deleteCarb } = makeDeps({ fetch });
+  await deleteCarb(41);
+  assert.equal(calls[0].url, '/api/carbs/41');
+  assert.equal(calls[0].opts.method, 'DELETE');
+  // The id is encoded rather than interpolated raw: it reaches the path.
+  await deleteCarb('4 1');
+  assert.equal(calls[1].url, '/api/carbs/4%201');
+});
+
 test('loadPlan builds GET /api/plan', async () => {
   const { fetch, calls } = makeFakeFetch({ items: [] });
   const { loadPlan } = makeDeps({ fetch });

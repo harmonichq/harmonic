@@ -147,12 +147,14 @@ initial Diagnosis count as the Before rate of a comparison computed otherwise.
 The synthetic correction-on-active-insulin discrepancy is 2/5 versus 0/5 on the
 same records, under ISF 0 versus 40. It is not an outcome or adherence improvement.
 The fixed-context rationale is the current trend producer's #131 rule; the
-statistical/population authority remains #340 at
-`1ee53b341192b0943c83aae94b47dc6b33c571e3`.
+inference-method/population authority remains #340 at
+`1ee53b341192b0943c83aae94b47dc6b33c571e3`, with the follow-up readiness and
+observation refinements specified below.
 
 Adherence carries lever, numerator, named opportunity denominator, rate and
 availability; `n=0` yields a null rate with an unavailable reason. `k=0,n>0` is an
-observed zero unwanted-behavior rate. Outcomes use their own named denominators
+observed zero unwanted-behavior rate only under the measurement eligibility in
+“Follow-up observation eligibility” below. Outcomes use their own named denominators
 and assessments. Correction-stacking behavior and harm remain distinct. Existing
 false-low preprocessing, response-time observation eligibility, eligible anchors,
 context padding, period clipping and rescue observation apply in both arms.
@@ -450,8 +452,11 @@ recurrence deduplication and returns the same `(exposure_counts, attributed_by_l
 shape, defaults and counts. Preserve current low-answer handling, context padding,
 ISF/configuration inputs, earliest-driver choice and split semantics. Do not copy
 the walk into `follow_up_comparison.py` or `outcomes_trend.py`, or replace it with
-narrated `assemble` episodes. No changes to classifier implementations, threshold
-values, confidence gates or recurrence definitions are authorized.
+narrated `assemble` episodes. Only the shared correction-counter observation
+factoring specified in
+“Follow-up observation eligibility” below may change classifier implementation
+structure; threshold values, classifier decisions, confidence gates and recurrence
+definitions remain unchanged.
 
 Resolve ownership using the existing `opportunities.build_opportunities`,
 `canonical_anchor_key` and `evidence_population.policy_for` population/identity
@@ -512,7 +517,7 @@ clinical thresholds and their existing support floors do not change.
 | --- | --- |
 | Basal | Use qualifying clean nights for the affected slot, from the existing basal analyzer's clean-night roster. Fourteen was an arbitrary starting hypothesis and is not locked; select a count only after the validation below. Do not substitute detected Rest-window count or directional-support count, and do not sum different slots on the same night into independent nights. Preserve the relevant programmed-regime and clean/readable evidence rules for each arm. |
 | Carb ratio | Eight effective qualifying closed meal runs for the captured block, using the existing I:C run eligibility and ownership weights. Raw bolus/meal counts, excluded runs and partial cross-block ownership do not become whole independent runs. Retain run membership, regime provenance and contributing dates. |
-| Correction factor | Name qualifying fasting Rest windows and qualifying steps separately, with their contributing night/date clusters. The existing ISF producer owns step eligibility and window membership. Thirty windows was an illustrative operator example, not an approved threshold; the required comparison count remains an explicit unresolved decision. |
+| Correction factor | Name qualifying fasting Rest windows and qualifying steps separately, with their contributing night/date clusters. The existing ISF producer owns step eligibility and window membership. Thirty windows was an illustrative operator example, not an approved threshold; the comparison count is selected only through the preregistered validation and independent review below. |
 | Whole profile | Retain whole-period glucose context and constituent setting evidence separately. Thirty elapsed days is an observation-duration hypothesis, not an approved readiness criterion or attribution rule. Validate the outcome-specific evidence/readiness policy below. Do not add component counts together, require one invented profile-wide evidence count, or infer an overall causal score. |
 | Focus | Retain each lever's own recurrence opportunities, measured behavior and separately measured mapped outcomes. Fourteen elapsed days is a possible observation/closure policy, not approved proof of a successful habit; validate readiness and accumulating looks below. An opportunity lacking the measurement needed to judge it is not an informative observed zero. No universal glucose gate may erase a behavior proven from bolus records. |
 
@@ -567,25 +572,114 @@ its fixed-endpoint result; do not pick an ending or tune a count after seeing a
 favorable result. Keep candidate exploration separate from reserved evaluation
 regimes/recipes. Report failed/unavailable comparisons in the denominator of the
 validation account, distinguish false improvement from false worsening, and report
-signal detection separately from null behavior. State what error-control objective
-and observation/closure rule remains undecided rather than inventing a pass limit
-or silently changing the bootstrap. One person's history grounds collection and
+signal detection separately from null behavior. Preregister the per-look nominal
+any-direction error objective from the existing
+95% intervals, Monte Carlo precision, pass/inconclusive/fail rules, usefulness
+checks and a fixed final look before evaluation. Preserve live values and existing
+directional labels as the evaluated baseline. A favorable result never stops or
+ends follow-up. Measure the complete accumulating-look path separately; per-look
+intervals do not guarantee across-look control. If no plausible readiness count
+supports reliable live labels, return the measured failure and bounded inference
+or presentation choices for independent review without changing the bootstrap.
+One person's history grounds collection and
 availability; it cannot establish clinical/general-population validity. I:C's eight
 runs is fixed while its readiness/inference behavior is tested by the same method.
 Private real-data aggregates and validation instrumentation never enter tracked
 artifacts or public logs; synthetic regressions remain independently manufactured.
 
-**Remaining admission boundary:** the completed-meal shortfall provider has no
-settled per-meal negative-observation eligibility contract when no high is
-attributed. Stacking/override aggregate harm counts do not distinguish an unreadable
-tail from an observed zero; preserve their existing positive behavior and explicit
-record-proven exclusions. Neither chart readability nor a glucose-rate coverage
-threshold settles those missing negative-observation predicates. Before resuming
-the comparison implementation, independently settle those two measurement
-criteria and the remaining non-I:C follow-up readiness/closure criteria through the parent
-review handoff after the validation below. Do not
-invent a window, threshold, classifier verdict, denominator or feed-completeness
-policy to close them. No new correction-on-IOB slope requirement is authorized.
+**Remaining admission boundary:** independently review the follow-up observation
+proposal below and the preregistered validation protocol before evaluation. Then
+review the held-out readiness/inference findings before selecting non-I:C criteria
+or admitting a superseding implementation lock. The observation proposal is an
+engineering/inference design decision for review, not an operator preference about
+function arguments. No new correction-on-IOB slope requirement is authorized.
+
+#### Follow-up observation eligibility (ADR 387 proposal for independent review)
+
+This follow-up-only read distinguishes observed behavior, its measured harm and
+unknown measurement while preserving the existing recurrence denominator. An
+observed positive remains known. An explicit record-proven behavior exclusion
+implies zero corresponding harm; missing override provenance is not intentional
+exclusion. Keep existing absent-flag fallback when its required dose components
+are present. Do not infer bolus-feed completeness or introduce a generic glucose
+coverage percentage. Existing classifier verdicts, recurrence membership, low
+lines, lookbacks, low horizons and recommendation safety predicates do not change.
+
+For a completed meal with no shortfall attribution, derive possible HIGH onsets
+from the positive classifier's digestion lookback and strict preceding completed-
+meal identity, not its chart window. A readable no-high domain can establish an
+observed negative. Readability covers that entire domain by the union of the
+existing `CgmSeries.nearest` valid-time intervals of finite, false-low-filtered
+samples, using the retained configuration's maximum staleness. This span predicate
+is a new observation contract, not an existing `CgmSeries` guarantee of continuous
+physiology. It introduces no interpolation or new sampling constant. Keep each
+positive rule's existing slope-readability requirements wherever it needs a slope.
+
+A candidate HIGH can continue indefinitely under the existing maximal-run anchor
+rule; digestion and correction lookbacks do not bound final episode attribution.
+Do not invent a fixed meal closure horizon. The minimal proposal leaves an
+unattributed meal with a candidate HIGH explicitly observed-only/unavailable.
+Known attributed positives and readable no-high negatives remain available;
+this does not disable the entire lever. Measure the conservative proposal's lost
+availability and signal detection before choosing any stronger closure contract.
+
+For a known stack or override behavior, an observed attributed low remains known.
+A proven upstream exclusion establishes attributed harm zero. Otherwise absence
+of a low becomes measured zero only when the positive counter's own low-lookahead
+interval is readable by the same span rule. A missing or partial tail remains
+unavailable harm while its behavior stays visible. Preserve correction-on-IOB's
+existing inference with an absent optional slope and its record-proven exclusions;
+its population remains observed low opportunities.
+
+Expose meal recurrence observation eligibility in the existing scenario provider
+alongside its attributed-occurrence read, sharing the anchor/segment/split/attribute
+walk. The public `recurrence_observations` read accepts the same contextual inputs
+plus the selected lever and returns policy-owned recurrence identity/anchor,
+observed count, measurement availability and reason. Preserve the existing
+`attributed_occurrences` and `tally_attributions` results/defaults. Comparison
+consumers filter owned anchors after classification; no consumer duplicates the
+walk or substitutes a clipped chart population.
+
+The existing correction counter owners expose read-only
+`correction_stack_observations` and `override_observations` with their current
+counter inputs. Their rows retain the opportunity anchor, behavior/harm counts,
+known exclusion or missing-provenance reason and policy-owned harm interval. Factor
+the existing decisions once; legacy counters aggregate the same decisions with
+unchanged defaults. The follow-up provider attaches the proposed span eligibility;
+legacy aggregate consumers do not acquire a new measurement gate. These source
+owners avoid copying provenance, runaway, IOB or upstream-cause decisions into the
+comparison consumer.
+
+`outcomes_trend.behavior_observations` carries `measured` for behavior plus
+`harm_measured` and separate measurement reasons, retaining its original `n`, known
+`k` and known harm counts. The comparison reports measured/unmeasured opportunities
+alongside original denominators. If any required behavior measurement is unknown,
+the full-population rate/judgment is unavailable; do not renormalize to the readable
+subset. Harm availability is independent, and missing harm cannot become observed
+zero. Preserve readable values, mapped outcome availability and unclear inference
+separately. The Store/API contracts need no new owner or source edits for this
+proposal.
+
+Public tests must distinguish missing, flat, internal-gap and partial-tail inputs;
+known positive and record-excluded behavior; absent override components versus
+intentional exclusion and the settled absent-flag fallback; readable no-high meals
+versus candidate high runs with no fixed closure; and original-denominator
+retention when only some measurements are readable. Exercise exact period ownership
+with preserved context and nondefault existing configuration. Test legacy counter
+and tally parity through their public interfaces, without mocking classifier
+verdicts. Preserve all original available setting AND Focus acceptance, complete
+repository/browser/package gates, and the completed Store task.
+
+Comparison chunk2 additionally owns the existing
+`ciq_autotune/analyzers/classifiers/correction_stacking.py`,
+`ciq_autotune/analyzers/classifiers/user_override.py`,
+`tests/test_classifier_correction_stacking.py`, and
+`tests/test_classifier_user_override.py` solely for this shared observation read
+and parity proof. Its existing scenario package/engine/test, comparison,
+outcomes-trend and trial-evidence paths remain owned there. No recommendation or
+classifier policy amendment is authorized. Keep one ticket and three serial chunks:
+completed chunk1 Store; remaining chunk2 comparison; chunk3 lifecycle/API only.
+This proposal and its source partition require independent review before implementation.
 
 ### Lifecycle and integration interface (owner: lifecycle/API boundary)
 

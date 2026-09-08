@@ -82,7 +82,9 @@ manual Focus resolution SHALL remain distinct from Trial preemption.
 
 The contract SHALL define exact Focus periods from pin to recorded ending, use
 one named source context for adherence and outcomes, and preserve named
-denominators. Zero opportunities SHALL remain unknown. The contract SHALL
+denominators. Zero opportunities SHALL remain unknown; positive opportunities with
+unreadable required measurement SHALL retain their denominator and unavailable
+judgment. The contract SHALL
 preserve ADR 131's fixed-follow-up rationale and describe the existing
 correction-family disagreement as an inference-context difference, not an
 improvement or a causal claim. The same synthetic replay SHALL explicitly assert,
@@ -131,7 +133,10 @@ the process-local result cache only after a committed durable write, and reconci
 ingested settings before a mutation without permitting a history read to mutate a
 watch. It SHALL use synthetic, generator-owned data only where generated artifacts
 are needed; it SHALL not introduce a historical data archive or change clinical or
-statistical policy.
+statistical inference methods or recommendation/classifier policy. The operator-
+authorized follow-up readiness refinement for Trials and Focus in ADR 387 MAY be
+selected only after its preregistered validation and independent review; this
+exception SHALL NOT change recommendation support or inference methods.
 
 #### Scenario: Restart retains one real lifecycle record and legacy unknowns
 
@@ -164,13 +169,34 @@ statistical policy.
 - **WHEN** the read-only comparison interface computes their selected periods
   under retained context or an explicitly requested current-policy context
 - **THEN** both an available setting assessment and an available Focus assessment
-  are produced where evidence exists, using the #340 policy and ADR 386 refinements
+  are produced where evidence exists, using the #340 policy and ADR 386/387 refinements
 - **AND** full half-open periods, captured setting membership, owned anchors,
   named denominators and common inference context agree across evidence and
   scalar rows; unclear inference and unavailable data remain distinct
-- **AND** zero unwanted events with positive opportunities is an observed zero;
-  zero opportunities, legacy missing endings and unsupported retained execution
-  remain explicitly unavailable without inventing an assessment
+- **AND** zero unwanted events with positive opportunities is an observed zero
+  only when the required measurement is readable under the ADR 387 observation
+  contract; unreadable behavior or harm retains the original opportunity denominator
+  and explicit unavailability without erasing known positive behavior
+- **AND** zero opportunities, legacy missing endings and unsupported retained
+  execution remain explicitly unavailable without inventing an assessment
+
+#### Scenario: Follow-up readiness uses the selected change's evidence
+
+- **GIVEN** a setting Trial or Focus with readable values and accumulating evidence
+- **WHEN** the backend reports readiness under an independently validated ADR 387 criterion
+- **THEN** the required evidence unit and exact-arm qualifying count remain distinct
+  from inferential confidence, recommendation eligibility and watch lifecycle
+- **AND** I:C retains eight effective qualifying closed runs, including existing
+  fractional ownership and exclusions; no raw meal count substitutes for that unit
+- **AND** count-met but non-estimable or uncertain comparisons cannot assert benefit
+
+#### Scenario: Longer follow-up does not end on a favorable look
+
+- **GIVEN** a Trial or Focus whose settled comparison bounds continue beyond fourteen days
+- **WHEN** later evidence or a favorable directional assessment becomes available
+- **THEN** readable values and progress continue under the existing effective bounds
+- **AND** neither day fourteen nor a favorable result silently clips or ends follow-up;
+  the ADR 387 validation measures accumulating-look behavior separately from its final look
 
 #### Scenario: Public history is immutable and existing clients remain compatible
 

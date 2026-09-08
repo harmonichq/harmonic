@@ -1496,3 +1496,30 @@ classifier walk would change the settled policy. This is a comparison-provider
 boundary, not a Store regression. The completed Store task and three serial
 owners remain intact; this refinement is not implementation admission until the
 remaining questions in contracts.md are resolved and independently reviewed.
+
+
+## ADR 387 — Validate live follow-up and distinguish unreadable negatives
+
+The follow-up readiness investigation now has a bounded validation protocol for
+independent review. It preserves live charts, values and the current directional
+labels as its baseline, with separate per-look and accumulating-path evidence.
+Support counts represent readiness, not benefit. A favorable result cannot select
+an ending. The normative validation/admission rules remain in contracts.md under
+“Type-specific comparison readiness”; private calibration grids, history aggregates
+and executable instrumentation do not enter the public source.
+
+The positive shortfall classifier owns a bounded possible rise-onset domain for a
+completed meal, but a maximal high run and its episode attribution have no fixed
+maximum duration. A chart tail therefore cannot certify a general negative.
+contracts.md “Follow-up observation eligibility” proposes readable no-high negatives
+and conservatively unavailable judgment for unresolved high-associated observations.
+It also separates known correction behavior from unreadable harm, preserving
+record-proven exclusions and the existing correction-on-IOB inference policy.
+
+The shared observation reads stay with the scenario and existing correction-counter
+owners. Exposing their decision facts prevents the comparison provider from copying
+classification or provenance logic. The additional comparison-owned counter/test
+paths are specified once in that contract. Legacy counter/tally defaults and all
+clinical/recommendation rules remain unchanged. Independent observation/protocol
+review, held-out evaluation and review of any selected readiness criteria precede
+a future implementation lock; this planning record does not admit production work.

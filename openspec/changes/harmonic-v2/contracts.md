@@ -940,14 +940,19 @@ module's idiom.
 Owns the synthetic generators this surface needs, the shared-renderer repair, the
 built-app proof, the packaging proof, and the atomic close of the port.
 
-**Fact — the generators that already exist and are extended, not replaced.**
-`mockups/harmonic-v2.exploration/generate.py` produces the six v2 synthetic
-inputs and already has a `--check` drift step wired in CI;
-`scripts/gen_qa_e2e_db.py` produces the offline no-fetch database and has its own
-`--check`. These are the two expected generator paths for this surface. A new
-generator is added only where an existing one genuinely cannot reach a scenario,
-and never one per scenario: the lock's twelve fixture obligations are scenario
-obligations.
+**Fact — one generator is extended, the other is frozen evidence.**
+`mockups/harmonic-v2.exploration/generate.py` produces the six retained v2
+synthetic inputs and has a `--check` drift step at `ci.yml:47`. Those bytes are
+the frozen evidence the behavior contract was proved against: **no chunk edits
+them or their generator**, and that `--check` must keep passing untouched.
+Scenario support for the built surface is added instead through
+`scripts/qa_e2e_cases.py` and `scripts/gen_qa_e2e_db.py` — this repository's
+existing manufactured-case path, with its own `--check` at `ci.yml:67` and its
+recorded budgets. A new generator is added only where that path genuinely cannot
+reach a scenario, and never one per scenario: the lock's twelve fixture
+obligations are scenario obligations. Chunk 4 owns the final coverage pass and
+the drift gates; the per-chunk extension rule is in the verification-ownership
+section below.
 
 **Fact — the shared repair and its coupled expectations.** HV2-32's
 fractional-hour speech comes from the private `axisLabel` in
@@ -986,6 +991,85 @@ re-running the replay at both sizes and re-recording the affected fidelity rows.
 `frontend/harmonic-v2-desktop-behavior.replay.mjs`;
 `mockups/sweep/harmonic-v2-desktop/`; the archive path above;
 `mockups/INDEX.md`; `.github/workflows/ci.yml`.
+
+### #389 verification ownership: the app opener, the app stories, and test discovery
+
+The frozen replay is one shared artifact that four serial chunks each extend.
+Without the rules below a chunk is asked to prove behavior it does not own, and
+new tests are written where no runner looks. Both were reproduced; this section
+is the fix, and every chunk acquires it from the pinned commit rather than from
+a sibling fence.
+
+**The app opener is chunk 1's, and it is real.** `openApp()` in
+`frontend/harmonic-v2-desktop-behavior.replay.mjs` currently takes no arguments
+and throws unconditionally, so **every** `TARGET=app` invocation fails today
+regardless of what is built. Chunk 1 replaces that stub with a working opener
+against the packaged `/v2/`, matching the existing mock opener's contract: exact
+external-request routing with no catch-all, loud failure on an unstubbed
+request, an assertion that the rendered state equals the requested one, and
+fail-closed behavior when the surface, an asset or a fixture is missing. Until
+chunk 1 lands, no chunk can run an app-target story; after it lands, every chunk
+can run its own.
+
+**Each chunk converts its own app-opener-only stories, and only those.** The
+eighteen stories that never passed on the prototype are owned as follows. A
+chunk converts its own `deferred(...)` entries into shared story functions and
+runs them with an explicit `ONLY=` selection; it never runs a later chunk's
+journey stories to prove its own capability.
+
+| Chunk | App-opener-only stories it converts and proves | Terms |
+|---|---|---|
+| 1 | `S86`, `S87`, `S73b`, `S80b` | HV2-01, HV2-02, HV2-32 (the two caller-supplied focus targets) |
+| 2 | `S88`, `S89`, `S90`, `S97`, `S98`, `S99` | HV2-16, HV2-20, HV2-21, HV2-29, HV2-30, HV2-31 |
+| 3 | `S53`, `S91`, `S92`, `S93`, `S94`, `S95`, `S96` | HV2-22 through HV2-28 |
+| 4 | `S100` | HV2-32 (the shared fractional-hour repair) |
+
+Four plus six plus seven plus one is eighteen: the set is covered exactly, with
+no story owned twice and none left to the coordinator.
+
+**Serial edits to the replay are expected and declared.** Chunks 1, 2, 3 and 4
+each edit `frontend/harmonic-v2-desktop-behavior.replay.mjs`, in that order.
+Each adds only its own story bodies and the registry entries for them, in the
+module's existing idiom, and changes no other chunk's story, selector, opener or
+assertion. **No frozen story is weakened, renamed or deleted**: converting a
+deferred entry into a real one fulfils it, and any other change to a story goes
+through the ledger's sanctioned amendment path.
+
+**The ledger's statuses are written once, by chunk 4.** Chunks 1 to 3 return
+their run output as evidence; chunk 4 records the final `status:` lines from the
+final complete run, so the contract is not edited four times from four partial
+views. Artifact ownership does not permit self-grading: the independent verifier
+records pass/fail and named eye judgments under UI Craft build; the builder marks
+only `ported`. Human release acceptance remains task 3.5. Chunk 4 also carries the HV2-32 presentation amendment and its coupled v1
+Event S8 expectation.
+
+**Scenario support is extended before it must be proved, in the QA generator.**
+The retained prototype fixtures under `mockups/harmonic-v2.exploration/` are
+frozen evidence: their bytes are **not** modified by any chunk, and their
+`--check` drift step must keep passing untouched. Where a chunk needs a scenario
+the existing offline database does not serve, it extends
+`scripts/qa_e2e_cases.py` and `scripts/gen_qa_e2e_db.py` — the repository's
+existing manufactured-case path, with its recorded budgets — **in the same chunk
+that must prove that behavior, before it proves it**. That generator is a shared
+contract extended serially: a chunk adds only the cases its own stories need,
+never a case per assertion and never a second generator. Chunk 4 owns the final
+scenario coverage pass and the drift gates. Where an existing case already
+serves a scenario, it is used as-is. The generator-owned output
+`mockups/qa-e2e.synthetic/harmonic.sqlite` is in each such chunk's allowed diff
+and changes only by running its generator, never by hand.
+
+**Test discovery covers both source roots.** The fast gate is
+`node --test 'frontend/**/*.test.js'` in `AGENTS.md` and at `ci.yml:140`, and it
+does not see `frontend-v2/`. Chunk 1 extends that command, in `AGENTS.md`, in
+CI and in the whole-ticket verification, to
+`node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'`. Browser suites
+are never discovered by a glob in this repository — they are hand-listed matrix
+entries — so v2 browser tests are named `frontend-v2/**/*.browser.test.mjs` and
+get their own explicit CI matrix step. Chunk 1 establishes that wiring with the
+new source root; chunks 2, 3 and 4 extend it with their own suites. **A passing
+pre-existing `frontend/` suite is not coverage for new v2 interfaces**, so each
+chunk's own `Done when` names its own new tests, and the runners and
+fail-closed pattern are the ones this repository already uses.
 
 ### One rule, one place
 

@@ -13,10 +13,12 @@ The server's non-API route set SHALL remain closed: every served page path is
 named explicitly, and any other path SHALL answer 404. The browser-side
 disk-serving harness and the Python route policy SHALL agree, because a harness
 that serves a path the server does not is structurally blind to a missing route.
-The publishable-tree inputs SHALL account for the new frontend source root, its
-build configuration and its built output; a shipping path that is silently
-default-excluded is a delivery defect even though the allowlist checker reports
-every path dispositioned.
+The publishable-tree inputs SHALL account for the new frontend source root and
+its build configuration; a shipping path that is silently default-excluded is a
+delivery defect even though the allowlist checker reports every path
+dispositioned. Built output is generated during packaging and is not a tracked
+input, so its delivery SHALL be proved in the packaged image rather than by
+committing it.
 
 #### Scenario: The packaged runtime serves both surfaces
 
@@ -37,9 +39,12 @@ every path dispositioned.
 
 #### Scenario: The published tree carries the new shipping paths
 
-- **WHEN** the publishable tree is materialised
-- **THEN** it contains the v2 frontend source, its build configuration and its built output
+- **WHEN** the publishable tree is materialised into a scratch directory
+- **THEN** it contains the v2 frontend source and its build configuration, so both surfaces can be built and packaged from that tree alone
+- **AND** it does not contain built output, which is untracked and therefore never a candidate input
 - **AND** it does not newly contain the design mockups or their retained sweep evidence
+- **WHEN** the image is packaged and run
+- **THEN** it contains both built surfaces and serves them
 
 ### Requirement: The desk carries persistent chrome, four destinations, Day and the utilities
 
@@ -237,3 +242,19 @@ stamp and a drift check in the same change.
 
 - **WHEN** a committed synthetic fixture is regenerated from its committed generator
 - **THEN** the bytes match, and the drift check fails when they do not
+- **AND** the retained prototype fixtures the behavior contract was frozen against are unchanged
+
+#### Scenario: Each increment proves its own capability, and the whole contract is proved once
+
+- **GIVEN** the surface is delivered in serial increments against one shared replay
+- **WHEN** an increment is complete
+- **THEN** it proves the stories for the capability it delivered, selected explicitly, against the built app
+- **AND** it is not required to prove a story for a capability a later increment delivers
+- **WHEN** the final increment is complete
+- **THEN** the complete frozen ledger replays with no story deferred, none weakened and none deleted
+
+#### Scenario: New interface coverage is discovered by the test commands
+
+- **WHEN** tests are added under a source root the existing commands do not glob
+- **THEN** the fast-gate command and the browser-suite wiring are extended to discover them in the same increment that adds them
+- **AND** a passing pre-existing suite is not accepted as coverage for the new interfaces

@@ -1675,6 +1675,37 @@ navigation, the utilities are persistent chrome, and the return-focus contract
 that binds them is frontend-owned route state. Chunks 2 and 3 supply the subject
 for a contextual entry; they do not re-implement either.
 
+**Each chunk proves only what it delivered; the whole contract is proved once, at
+the end.** An earlier draft asked every chunk to run the complete frozen replay
+against the built app. That was unsatisfiable and was reproduced as such: the
+replay's `openApp()` throws unconditionally today, so no chunk can run any
+app-target story until that opener is written, and the full replay includes later
+chunks' journey stories that an earlier chunk has not built. Chunk 1 therefore
+owns the real app opener as a shared contract, each chunk converts and proves the
+app-opener-only stories for its own capability under an explicit `ONLY=`
+selection, and the complete replay with nothing deferred is chunk 4's final
+gate. The eighteen previously unprovable stories are partitioned four / six /
+seven / one across the chunks, so none is owned twice and none is left to the
+coordinator. The replay file is edited serially by all four chunks, which is
+declared rather than disguised; the ledger's statuses are written once, by chunk
+4, from the final run.
+
+Scenario support follows the same rule. The retained
+`mockups/harmonic-v2.exploration/` fixtures are frozen evidence and no chunk
+touches their bytes; a chunk needing a scenario the offline database does not
+serve extends the existing manufactured-case path in `scripts/qa_e2e_cases.py`
+and `scripts/gen_qa_e2e_db.py` **in the same chunk, before it must prove that
+behavior**. Saying "chunk 4 runs last" was not a sequencing rule and did not fix
+this.
+
+New tests live under a source root nothing looked at: the fast gate globs
+`frontend/**/*.test.js` only. Chunk 1 extends that command and the CI wiring to
+cover `frontend-v2/` as well, and adds the first explicit
+`frontend-v2/**/*.browser.test.mjs` matrix step, since browser suites in this
+repository are hand-listed rather than discovered. Later chunks extend that
+wiring. A green pre-existing `frontend/` suite is not coverage for a new v2
+interface.
+
 **What this does not decide.** No new threshold, eligibility rule, clinical
 policy, navigation name, fixture set or study. Follow-up readiness stays
 backend-owned and is read from the selected record's retained comparison, never

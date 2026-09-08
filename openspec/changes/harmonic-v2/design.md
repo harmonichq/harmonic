@@ -1124,3 +1124,22 @@ with their existing provenance and drift commands. New manufactured cases belong
 in `scripts/qa_e2e_cases.py` with literal complete expectations and the existing
 QA budget checks. Avoid a new committed fixture when an existing recipe can
 exercise the public interface in a temporary Store.
+
+
+## Continuation through the complete desktop release
+
+Connor delegated the remaining epic lifecycle on September 8: triage, start,
+review, merge and finalize through completion. The epic coordinator owns those
+transitions and merges after the required independent reviews and verification.
+Fresh workers retain separate lifecycle sessions and return at mandatory-review
+boundaries. This delegation replaces the operator-invoked handoff and manual-merge
+stops for this epic; it does not waive evidence or admit implementation against an
+unreviewed draft. Mobile, root cutover and v1 retirement remain separate from the
+complete desktop preview destination.
+
+[#386](https://github.com/harmonichq/harmonic/issues/386) owns the named durable
+context/ending and exact Focus comparison questions in tasks 2.2 and 2.3. They
+form one follow-up contract: the recorded start and ending determine which
+periods and original context the retained assessment must use. The spike must
+settle that contract before a dependent journey build. The selected desktop,
+existing chart/statistical authorities and guidance policy remain settled.

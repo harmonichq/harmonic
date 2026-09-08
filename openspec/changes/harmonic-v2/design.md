@@ -1687,8 +1687,8 @@ selection, and the complete replay with nothing deferred is chunk 4's final
 gate. The eighteen previously unprovable stories are partitioned four / six /
 seven / one across the chunks, so none is owned twice and none is left to the
 coordinator. The replay file is edited serially by all four chunks, which is
-declared rather than disguised; the ledger's statuses are written once, by chunk
-4, from the final run.
+declared rather than disguised; the independent verifier records final ledger verdicts from
+the complete raw evidence returned by chunk 4.
 
 Scenario support follows the same rule. The retained
 `mockups/harmonic-v2.exploration/` fixtures are frozen evidence and no chunk

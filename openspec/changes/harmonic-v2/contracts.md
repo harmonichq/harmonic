@@ -1035,13 +1035,13 @@ assertion. **No frozen story is weakened, renamed or deleted**: converting a
 deferred entry into a real one fulfils it, and any other change to a story goes
 through the ledger's sanctioned amendment path.
 
-**The ledger's statuses are written once, by chunk 4.** Chunks 1 to 3 return
-their run output as evidence; chunk 4 records the final `status:` lines from the
-final complete run, so the contract is not edited four times from four partial
-views. Artifact ownership does not permit self-grading: the independent verifier
-records pass/fail and named eye judgments under UI Craft build; the builder marks
-only `ported`. Human release acceptance remains task 3.5. Chunk 4 also carries the HV2-32 presentation amendment and its coupled v1
-Event S8 expectation.
+**The independent verifier records the final verdicts.** Every chunk returns
+its complete raw run output and fidelity artifacts; chunk 4 assembles the final
+whole-contract evidence for that review. Builders mark only `ported`. The
+independent verifier records the final ledger pass/fail statuses and named eye
+judgments under UI Craft build, and the coordinator includes that reviewed
+evidence in the PR. Chunk 4 carries the HV2-32 presentation amendment and its
+coupled v1 Event S8 expectation. Human release acceptance remains task 3.5.
 
 **Scenario support is extended before it must be proved, in the QA generator.**
 The retained prototype fixtures under `mockups/harmonic-v2.exploration/` are

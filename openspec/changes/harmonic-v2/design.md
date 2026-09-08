@@ -1524,7 +1524,8 @@ synthetic Focus setup that relied on read-time reconciliation, and generated cap
 that predate additive lifecycle fields/schema. These are execution-inventory defects,
 not new product requirements. The closed path list and semantic restrictions live in
 contracts.md “Existing verification maintenance”. The final integration owner takes
-one existing outcomes-trend test file for compatibility setup and refreshes only the
+the existing outcomes-trend and block-I:C test files for compatibility setup and
+additive response assertions, and refreshes only the
 named existing derived artifacts with their existing generators. Completed Store and
 comparison tasks and all accepted comparison decisions remain intact. No production
 comparison edit, UI work, new fixture family or weaker delivery gate is admitted.

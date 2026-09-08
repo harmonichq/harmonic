@@ -688,8 +688,18 @@ cases; retain rejection cases. Do not hand-set comparison/classifier verdicts or
 change production to accommodate a fake Store. No completed production comparison
 path transfers or reopens.
 
+The integration owner also owns `tests/test_verify_block_ic.py` solely for existing
+test/response compatibility: preserve the four rejected block cases' empty roster
+while accepting the admitted additive metadata. Give the unannotated Revert-draft
+success roundtrip eligible synthetic source/lifecycle setup; retain an explicit
+empty/no-source rejection. Its old empty-store setup is not an active Trial and
+creates no Revert or maturity policy exception. Preserve block membership, admission,
+cohort, unannotated draft/history and all valid legacy behavior assertions. Do not
+disable the source/admission guard or alter production policy.
+
 The only additional artifact/setup paths owned by this integration maintenance are:
 
+- `tests/test_verify_block_ic.py`
 - `mockups/verify-660-story.synthetic/payload.json`
 - `mockups/verify-660-story.synthetic/verify-trials.capture.json`
 - `mockups/qa-e2e.synthetic/harmonic.sqlite`

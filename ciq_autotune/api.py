@@ -21,6 +21,7 @@ extra on a core-only install.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import sqlite3
@@ -678,14 +679,35 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=422, detail="reassessment requires a selection")
         if kind == "focus" and selected is not None and not selected.isdecimal():
             raise HTTPException(status_code=404, detail="unknown follow-up identity")
-        try:
+        from .follow_up_comparison import capture_comparison_context
+        identity = int(selected) if kind == "focus" and selected is not None else selected
+        for _ in range(3):
             with Store.open_queryonly(db_path) as store:
-                # One SQLite read snapshot binds roster, context and revision.
+                # Key and compute share one SQLite snapshot. A crossed write must
+                # retry with a new connection, not recompute inside the old snapshot.
                 store.conn.execute("BEGIN")
+                revision = store.input_data_revision()
                 now = _latest_instant(store) or datetime.now()
-                return review_trials(store, now=now, selected=selected, kind=kind, assessment=assessment)
-        except KeyError:
-            raise HTTPException(status_code=404, detail="unknown follow-up identity")
+                record = store.follow_up_record(kind, identity) if identity is not None else None
+                retained = record.get("comparison_context") if record else None
+                current = (capture_comparison_context(store, at=now, input_revision=revision)
+                           if assessment != "original" else None)
+                context = json.dumps((retained, current), sort_keys=True)
+                key = ("verify-trials", kind, identity, assessment, revision, context)
+
+                def unchanged(result):
+                    with Store.open_queryonly(db_path) as latest:
+                        return result["input_revision"] == revision == latest.input_data_revision()
+
+                try:
+                    return cache.get_or_compute(key, lambda: review_trials(
+                        store, now=now, selected=identity, kind=kind, assessment=assessment),
+                        validate=unchanged, attempts=1)
+                except ResultCache.GenerationChanged:
+                    continue
+                except KeyError:
+                    raise HTTPException(status_code=404, detail="unknown follow-up identity")
+        raise HTTPException(status_code=503, detail="history inputs changed during every snapshot")
 
     @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
@@ -1436,6 +1458,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     or (identity is not None and receipt["id"] != identity)):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "pin" and receipt["result"]["record"]["lever"] != payload.get("lever"):
+                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
 

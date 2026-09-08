@@ -159,6 +159,10 @@ class DurableApiTest(unittest.TestCase):
         self.assertTrue(applied["record"]["deliverable"]["rows"])
         self.assertFalse(applied["admission"]["focus_pin"]["available"])
         self.assertEqual(self.client.post("/api/plan/apply", headers=self.headers, json=body).json(), applied)
+        changed = self.client.post("/api/plan/apply", headers=self.headers,
+                                   json={**body, "subject": "setting:isf"})
+        self.assertEqual(changed.status_code, 409, changed.text)
+        self.assertEqual(changed.json()["detail"]["code"], "request_identity_mismatch")
         guidance = self.client.get("/api/guidance", headers=self.headers).json()
         self.assertEqual(guidance["disposition"], "pending_plan")
         withdrawal = {"request_id": "withdraw", "input_revision": applied["input_revision"],
@@ -172,6 +176,12 @@ class DurableApiTest(unittest.TestCase):
                                  json={**withdrawal, "request_id": "withdraw-again", "reason": "Other"})
         self.assertEqual(retry.status_code, 200, retry.text)
         self.assertEqual(retry.json()["record"]["withdrawal"], original["record"]["withdrawal"])
+        fresh = self.client.get("/api/guidance", headers=self.headers).json()
+        retry = self.client.post("/api/plan/apply", headers=self.headers, json={
+            **body, "input_revision": fresh["input_revision"],
+            "analysis_generation": fresh["analysis_generation"]})
+        self.assertEqual(retry.status_code, 200, retry.text)
+        self.assertEqual(retry.json(), applied)  # tokens, withdrawal and cleared draft are not identity
 
     def test_focus_pin_retry_and_unavailable_atomic_manual_assessment(self):
         from datetime import datetime
@@ -254,3 +264,120 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(store.follow_up_record("plan", plan["applied_at"])["reconciliation"], record["reconciliation"])
         read = self.client.get("/api/plan/history", headers=self.headers).json()
         self.assertEqual(read["history"][0]["reconciliation"], record["reconciliation"])
+
+    def test_history_cache_reuses_only_matching_selection_mode_and_context(self):
+        from unittest.mock import patch
+        from ciq_autotune import watched_change
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        with Store.open(self.path) as store:
+            focus = store.pin_focus("late_bolus", "2026-06-01 00:00:00")
+        identity = self.seed_trial()["admission"]["active_id"]
+        with Store.open_queryonly(self.path) as store:
+            revision = store.input_data_revision()
+            frontier = store.follow_up_frontier()
+        real_review = watched_change.review_trials
+        calls = []
+
+        def count_review(store, **kwargs):
+            self.assertEqual(store.conn.execute("PRAGMA query_only").fetchone()[0], 1)
+            calls.append(kwargs)
+            return real_review(store, **kwargs)
+
+        def read(params, status=200):
+            response = self.client.get("/api/verify/trials", headers=self.headers, params=params)
+            self.assertEqual(response.status_code, status, response.text)
+            return response.json()
+
+        with patch.object(watched_change, "review_trials", side_effect=count_review):
+            results = {}
+            for mode in ("original", "retained", "current"):
+                params = {"selected": identity, "assessment": mode}
+                count = len(calls)
+                results[mode] = read(params)
+                self.assertEqual(read(params), results[mode])
+                self.assertEqual(len(calls), count + 1, "identical history reads must reuse compute")
+            focus_params = {"kind": "focus", "selected": focus["id"]}
+            count = len(calls)
+            selected_focus = read(focus_params)
+            self.assertEqual(selected_focus["selected"]["kind"], "focus")
+            self.assertEqual(read(focus_params), selected_focus)
+            self.assertEqual(len(calls), count + 1)
+            count = len(calls)
+            focus_roster = read({"kind": "focus"})
+            self.assertEqual(read({"kind": "focus"}), focus_roster)
+            self.assertEqual(len(calls), count + 1, "roster kind belongs to the cache identity")
+            read({"kind": "trial"})  # the seed's trial roster is already cached
+            self.assertEqual(len(calls), count + 1)
+            for _ in range(2):
+                count = len(calls)
+                read({"selected": "unknown"}, 404)
+                self.assertEqual(len(calls), count + 1, "unknown ids must not cache a result")
+            self.assertEqual(read({"selected": identity}), results["original"])
+
+            # Change executable configuration, not clinical verdicts or stored data.
+            # Current context changes; retained execution becomes explicitly unavailable.
+            def configured(**kwargs):
+                return ScenarioConfig(**{"anchor_meal_min_carbs": 11.0, **kwargs})
+            with patch("ciq_autotune.follow_up_comparison.ScenarioConfig", new=configured):
+                for mode in ("retained", "current"):
+                    params = {"selected": identity, "assessment": mode}
+                    count = len(calls)
+                    changed = read(params)
+                    self.assertEqual(read(params), changed)
+                    self.assertEqual(len(calls), count + 1)
+                    reassessment = changed["selected"]["reassessment"]
+                    if mode == "current":
+                        self.assertNotEqual(reassessment["comparison_context"]["id"],
+                            results[mode]["selected"]["reassessment"]["comparison_context"]["id"])
+                    else:
+                        self.assertEqual(reassessment["comparison"]["availability"]["reason"],
+                                         "unsupported_retained_execution")
+            with Store.open_queryonly(self.path) as store:
+                self.assertEqual(store.input_data_revision(), revision)
+                self.assertEqual(store.follow_up_frontier(), frontier)
+            with Store.open(self.path) as writer:
+                writer.upsert_cgm([{"EventDateTime": "2026-06-20 12:00:00",
+                                   "Readings (CGM / BGM)": 120, "Description": "Synthetic EGV"}])
+            count = len(calls)
+            refreshed = read({"selected": identity})
+            self.assertGreater(refreshed["input_revision"], revision)
+            self.assertEqual(read({"selected": identity}), refreshed)
+            self.assertEqual(len(calls), count + 1, "a warm result cannot survive a Store revision change")
+
+    def test_history_cache_rejects_crossed_revision_and_cache_invalidation(self):
+        from unittest.mock import patch
+        from ciq_autotune import watched_change
+        identity = self.seed_trial()["admission"]["active_id"]
+        real_review = watched_change.review_trials
+        cache = self.client.app.state.result_cache
+        for invalidate in ("store_revision", "cache_generation"):
+            with self.subTest(invalidate=invalidate):
+                cache.bump()
+                calls = []
+
+                def crossed_review(store, **kwargs):
+                    revision = store.input_data_revision()
+                    result = real_review(store, **kwargs)
+                    calls.append(revision)
+                    if len(calls) == 1:
+                        if invalidate == "store_revision":
+                            with Store.open(self.path) as writer:
+                                writer.upsert_cgm([{"EventDateTime": "2026-06-20 12:00:00",
+                                    "Readings (CGM / BGM)": 120, "Description": "Synthetic EGV"}])
+                        else:
+                            cache.bump()
+                        self.assertEqual(store.input_data_revision(), revision,
+                                         "the compute must retain one SQLite snapshot")
+                    return result
+
+                with patch.object(watched_change, "review_trials", side_effect=crossed_review):
+                    response = self.client.get("/api/verify/trials", headers=self.headers,
+                                               params={"selected": identity})
+                    self.assertEqual(response.status_code, 200, response.text)
+                    with Store.open_queryonly(self.path) as store:
+                        self.assertEqual(response.json()["input_revision"], store.input_data_revision())
+                    self.assertEqual(len(calls), 2)
+                    repeated = self.client.get("/api/verify/trials", headers=self.headers,
+                                               params={"selected": identity})
+                    self.assertEqual(repeated.json(), response.json())
+                    self.assertEqual(len(calls), 2)

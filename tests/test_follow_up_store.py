@@ -45,23 +45,37 @@ def context(label='observed'):
                      settings=[{'value': 0.7, 'unit': 'U/h'}], support=[], unknowns=[])
 
 
+def comparison_context():
+    return available(captured_at=T1, input_revision=0,
+                     programmed_isf={'value': 40, 'unit': 'mg/dL/U'},
+                     source_snapshot={'captured_at': T0, 'idp': 1},
+                     code_version='synthetic:1', configuration={'classifier': 'synthetic:1'})
+
+
 def trial(id='basal:0:20260902090000', changed_at=T1):
     return {'kind': 'trial', 'id': id, 'version': '386:1',
             'parameter': 'basal_rate', 'slot': '00:00', 'changed_at': changed_at,
             'before': 0.6, 'after': 0.7, 'block': None, 'members': None,
             'first_observed_at': T2, 'observed_context': context(),
-            'comparison_context': context('comparison')}
+            'comparison_context': comparison_context()}
 
 
 def ending(kind='user_finished', conclusion='Done watching'):
     return available(kind=kind, effective_at=T2, recorded_at=T2, conclusion=conclusion,
-                     assessment=available(periods={'before': {'start': T0, 'end': T1},
-                                                   'after': {'start': T1, 'end': T2}},
-                                          comparison_context=context('comparison'),
-                                          outcomes=[{'value': 0, 'unit': '%',
-                                                     'denominator': 'observed CGM readings',
-                                                     'n': 24}],
-                                          assessment='unclear', limitations=['synthetic']))
+                     assessment=available(periods={'before': {'start': T0, 'end': T1,
+                                                             'boundary_reasons': ['available_history', 'detected_change']},
+                                                   'after': {'start': T1, 'end': T2,
+                                                             'boundary_reasons': ['detected_change', 'data_tail']}},
+                                          comparison_context=comparison_context(),
+                                          outcomes={'tir': {'label': 'Time in Range', 'unit': '%',
+                                                            'before': 0, 'after': 0,
+                                                            'denominators': {
+                                                                'before': {'name': 'observed CGM readings', 'n': 24},
+                                                                'after': {'name': 'observed CGM readings', 'n': 24}},
+                                                            'assessment': {'state': 'unclear', 'reasons': ['synthetic']},
+                                                            'availability': {'state': 'available'}}},
+                                          assessment='unclear', limitations=['synthetic'],
+                                          data_cutoff=T2, input_revision=0))
 
 
 class DurableFollowUpTest(unittest.TestCase):
@@ -95,7 +109,7 @@ class DurableFollowUpTest(unittest.TestCase):
             focus = self.store.pin_focus('late_bolus', T0)
             f = self.store.save_follow_up_record({
                 'kind': 'focus', 'id': focus['id'], 'version': '386:1',
-                'decision_context': context('pin'), 'comparison_context': context('fixed')})
+                'decision_context': context('pin'), 'comparison_context': comparison_context()})
             t = self.store.save_follow_up_record(trial())
             frontier = self.store.advance_follow_up_frontier(
                 t['id'], T1, reconciled_input_revision=self.store.input_data_revision())
@@ -561,3 +575,118 @@ class DurableFollowUpTest(unittest.TestCase):
         retry = self.save_trial({**trial(), 'ending': ending()})
         self.assertEqual(retry, saved)
         self.assertEqual(self.store.input_data_revision(), revision)
+
+    def test_available_contexts_require_their_retained_facts(self):
+        from copy import deepcopy
+        for field in ('observed_context', 'comparison_context'):
+            complete = trial()
+            for missing in (None, *complete[field]):
+                if missing in ('version', 'state'):
+                    continue
+                record = deepcopy(complete)
+                record['id'] = f'{field}-{missing}'
+                record[field] = available() if missing is None else record[field]
+                if missing is not None:
+                    del record[field][missing]
+                with self.subTest(field=field, missing=missing):
+                    with self.assertRaises(ValueError):
+                        self.save_trial(record)
+                    self.assertIsNone(self.store.follow_up_record('trial', record['id']))
+                    self.assertEqual(self.store.input_data_revision(), 0)
+        for kind in ('plan', 'focus'):
+            with self.subTest(kind=kind):
+                with self.assertRaises(ValueError):
+                    with self.store.follow_up_transaction():
+                        id = self.apply()['applied_at'] if kind == 'plan' else self.store.pin_focus('late_bolus', T0)['id']
+                        self.store.save_follow_up_record({'kind': kind, 'id': id, 'version': '386:1',
+                                                         'decision_context': available()})
+                self.assertEqual(self.store.follow_up_records(kind), [])
+                self.assertEqual(self.store.input_data_revision(), 0)
+
+    def test_available_assessment_requires_periods_context_rows_and_limits(self):
+        from copy import deepcopy
+        complete = ending()
+        for missing in (None, *complete['assessment']):
+            if missing in ('version', 'state'):
+                continue
+            final = deepcopy(complete)
+            final['assessment'] = available() if missing is None else final['assessment']
+            if missing is not None:
+                del final['assessment'][missing]
+            with self.subTest(missing=missing):
+                original = self.save_trial(trial(f'assessment-{missing}'))
+                revision = self.store.input_data_revision()
+                with self.assertRaises(ValueError):
+                    with self.store.follow_up_transaction():
+                        self.store.save_follow_up_record({**original, 'ending': final})
+                        self.store.save_follow_up_request('invalid-finish', operation='finish', kind='trial',
+                                                          id=original['id'], result={'ending': final})
+                self.assertEqual(self.store.follow_up_record('trial', original['id']), original)
+                self.assertIsNone(self.store.follow_up_request('invalid-finish'))
+                self.assertEqual(self.store.input_data_revision(), revision)
+
+    def test_available_nested_facts_cannot_be_missing_or_malformed(self):
+        from copy import deepcopy
+        changes = [
+            ('observed_context', 'source_window', 'start'),
+            ('observed_context', 'settings', 0, 'unit'),
+            ('comparison_context', 'programmed_isf', 'value'),
+            ('comparison_context', 'programmed_isf', 'unit'),
+            ('ending', 'assessment', 'periods', 'after'),
+            ('ending', 'assessment', 'periods', 'before', 'end'),
+            ('ending', 'assessment', 'periods', 'before', 'boundary_reasons'),
+            ('ending', 'assessment', 'comparison_context', 'source_snapshot'),
+            ('ending', 'assessment', 'outcomes', 'tir', 'unit'),
+            ('ending', 'assessment', 'outcomes', 'tir', 'denominators'),
+            ('ending', 'assessment', 'outcomes', 'tir', 'availability', 'state'),
+        ]
+        for path in changes:
+            record = deepcopy({**trial(), 'ending': ending()})
+            parent = record
+            for key in path[:-1]:
+                parent = parent[key]
+            del parent[path[-1]]
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    self.save_trial(record)
+                self.assertIsNone(self.store.follow_up_record('trial', record['id']))
+                self.assertEqual(self.store.input_data_revision(), 0)
+        for path, value in [
+            (('comparison_context', 'programmed_isf', 'value'), None),
+            (('ending', 'assessment', 'outcomes', 'tir', 'denominators'), 24),
+            (('ending', 'assessment', 'outcomes', 'tir', 'availability'), {'state': 'unavailable'}),
+        ]:
+            record = deepcopy({**trial(), 'ending': ending()})
+            parent = record
+            for key in path[:-1]:
+                parent = parent[key]
+            parent[path[-1]] = value
+            record['id'] = str(path)
+            with self.subTest(path=path, value=value):
+                with self.assertRaises(ValueError):
+                    self.save_trial(record)
+
+    def test_complete_producer_rows_and_nested_unknowns_survive_restart(self):
+        record = trial()
+        final = ending()
+        final['assessment']['outcomes']['arc_peak'] = {
+            'label': 'Arc peak', 'unit': 'mg/dL',
+            'availability': {'state': 'unavailable', 'reason': 'no_readable_meals'}}
+        final['assessment']['adherence'] = {'late_bolus': {
+            'unit': '%', 'before': {'k': 0, 'n': 5, 'rate': 0},
+            'after': {'k': 0, 'n': 5, 'rate': 0},
+            'denominator': 'eligible meal boluses', 'availability': {'state': 'available'}}}
+        saved = self.save_trial({**record, 'ending': final})
+        self.reopen()
+        self.assertEqual(self.store.follow_up_record('trial', record['id']), saved)
+        self.assertEqual(saved['ending'], final)
+
+    def test_explicit_unavailable_contexts_and_assessment_remain_valid(self):
+        unknown = {'version': '386:1', 'state': 'unavailable', 'reason': 'source_not_retained'}
+        record = {**trial(), 'observed_context': unknown, 'comparison_context': unknown,
+                  'ending': {**ending(), 'assessment': unknown}}
+        saved = self.save_trial(record)
+        self.reopen()
+        for field in ('observed_context', 'comparison_context'):
+            self.assertEqual(saved[field], unknown)
+        self.assertEqual(self.store.follow_up_record('trial', record['id']), saved)

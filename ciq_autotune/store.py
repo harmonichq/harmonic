@@ -1256,7 +1256,9 @@ class Store:
                     (lever, pinned_at),
                 )
             except sqlite3.IntegrityError as exc:
-                if exc.sqlite_errorname != "SQLITE_CONSTRAINT_UNIQUE":
+                # sqlite_errorname is unavailable on supported Python 3.9/3.10.
+                # Match this index's failure, leaving other SQL errors intact.
+                if str(exc) != "UNIQUE constraint failed: focus.status":
                     raise
                 raise FocusAlreadyActive("a Focus is already active") from exc
             self._advance_revision()
@@ -1372,6 +1374,93 @@ class Store:
     @staticmethod
     def _follow_up_unavailable(reason='not_recorded'):
         return {'version': '386:1', 'state': 'unavailable', 'reason': reason}
+
+    @staticmethod
+    def _follow_up_availability(envelope):
+        if (not isinstance(envelope, dict) or envelope.get('version') != '386:1'
+                or envelope.get('state') not in ('available', 'unavailable')):
+            raise ValueError('invalid follow-up availability envelope')
+        if envelope['state'] == 'unavailable' and not envelope.get('reason'):
+            raise ValueError('unavailable follow-up field requires a reason')
+
+    @classmethod
+    def _validate_follow_up_context(cls, field, context):
+        """Check retained structure only; source owners supply and judge the facts."""
+        cls._follow_up_availability(context)
+        if context['state'] == 'unavailable':
+            return
+        cls._follow_up_time(context.get('captured_at'))
+        if type(context.get('input_revision')) is not int:
+            raise ValueError('available context requires its input revision')
+        if field == 'comparison_context':
+            # The comparison producer retains executable inputs, not guidance.
+            isf = context.get('programmed_isf')
+            if (not isinstance(isf, dict) or type(isf.get('value')) not in (int, float)
+                    or not isinstance(isf.get('unit'), str) or not isf['unit']
+                    or not context.get('source_snapshot') or not context.get('code_version')
+                    or not context.get('configuration')):
+                raise ValueError('available comparison context requires ISF, units, snapshot and code/config identity')
+            return
+        required = {'action', 'explanation', 'source_window', 'policy', 'subjects',
+                    'occurrences', 'settings', 'support', 'unknowns'}
+        if (not required <= context.keys() or not context['explanation'] or not context['policy']
+                or not isinstance(context['source_window'], dict)
+                or not all(isinstance(context[key], list)
+                           for key in ('subjects', 'occurrences', 'settings', 'unknowns'))
+                or not isinstance(context['support'], (dict, list))):
+            raise ValueError('available context is missing retained decision or observation facts')
+        for boundary in ('start', 'end'):
+            cls._follow_up_time(context['source_window'].get(boundary))
+        for setting in context['settings']:
+            if (not isinstance(setting, dict) or 'value' not in setting
+                    or not isinstance(setting.get('unit'), str) or not setting['unit']):
+                raise ValueError('retained setting requires a value and units')
+
+    @classmethod
+    def _validate_follow_up_assessment(cls, assessment):
+        cls._follow_up_availability(assessment)
+        if assessment['state'] == 'unavailable':
+            return
+        required = {'periods', 'comparison_context', 'outcomes', 'assessment', 'limitations',
+                    'data_cutoff', 'input_revision'}
+        if (not required <= assessment.keys() or not isinstance(assessment['periods'], dict)
+                or not isinstance(assessment['limitations'], list)
+                or not isinstance(assessment['assessment'], (str, dict))
+                or not assessment['assessment'] or type(assessment['input_revision']) is not int):
+            raise ValueError('available ending assessment requires periods, context, rows and limits')
+        cls._follow_up_time(assessment['data_cutoff'])
+        cls._validate_follow_up_context('comparison_context', assessment['comparison_context'])
+        for arm in ('before', 'after'):
+            period = assessment['periods'].get(arm)
+            if not isinstance(period, dict):
+                raise ValueError('ending assessment requires both selected periods')
+            if period.get('state') == 'unavailable':
+                cls._follow_up_availability(period)
+                continue
+            for boundary in ('start', 'end'):
+                cls._follow_up_time(period.get(boundary))
+            if not period.get('boundary_reasons'):
+                raise ValueError('selected period requires its boundary reasons')
+        for name in ('outcomes', 'adherence'):
+            rows = assessment.get(name, [])
+            if not isinstance(rows, (dict, list)):
+                raise ValueError('ending assessment rows must be keyed objects or a list')
+            for row in rows.values() if isinstance(rows, dict) else rows:
+                if not isinstance(row, dict):
+                    raise ValueError('invalid ending assessment row')
+                availability = row.get('availability')
+                if availability is not None:
+                    # #340 producer row availability is not a versioned context.
+                    if (not isinstance(availability, dict)
+                            or availability.get('state') not in ('available', 'unavailable')
+                            or (availability['state'] == 'unavailable' and not availability.get('reason'))):
+                        raise ValueError('invalid ending assessment row availability')
+                    if availability['state'] == 'unavailable':
+                        continue
+                denominator = row.get('denominator', row.get('denominators'))
+                if (not isinstance(row.get('unit'), str) or not row['unit']
+                        or not isinstance(denominator, (str, dict)) or not denominator):
+                    raise ValueError('displayed assessment row requires units and a named denominator')
 
     def _follow_up_table_exists(self, table):
         # Old readonly stores must not migrate merely to inspect their history.
@@ -1491,11 +1580,10 @@ class Store:
                         winner[field] = proposed
             for field in fields & _FOLLOW_UP_ENVELOPES:
                 envelope = winner.setdefault(field, self._follow_up_unavailable())
-                if (not isinstance(envelope, dict) or envelope.get('version') != '386:1'
-                        or envelope.get('state') not in ('available', 'unavailable')):
-                    raise ValueError('invalid follow-up availability envelope')
-                if envelope['state'] == 'unavailable' and not envelope.get('reason'):
-                    raise ValueError('unavailable follow-up field requires a reason')
+                if field in ('decision_context', 'observed_context', 'comparison_context'):
+                    self._validate_follow_up_context(field, envelope)
+                else:
+                    self._follow_up_availability(envelope)
             relationship = winner.get('reconciliation', {})
             if relationship.get('state') == 'available':
                 plan_id, trial_id = relationship.get('applied_at'), relationship.get('trial_id')
@@ -1522,11 +1610,7 @@ class Store:
                 if (terminal['kind'] not in ('user_finished', 'manual')
                         and terminal.get('conclusion') is not None):
                     raise ValueError('automatic ending cannot supply a user conclusion')
-                assessment = terminal.get('assessment')
-                if (not isinstance(assessment, dict) or assessment.get('version') != '386:1'
-                        or assessment.get('state') not in ('available', 'unavailable')
-                        or (assessment['state'] == 'unavailable' and not assessment.get('reason'))):
-                    raise ValueError('ending requires an explicit assessment availability')
+                self._validate_follow_up_assessment(terminal.get('assessment'))
             withdrawal = winner.get('withdrawal', {})
             if withdrawal.get('state') == 'available':
                 self._follow_up_time(withdrawal.get('withdrawn_at'))

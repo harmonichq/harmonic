@@ -341,6 +341,53 @@ class MeasurementComparisonTest(unittest.TestCase):
                 self.assertIn("assessment", result["adherence"])
                 self.assertTrue(any(r["role"] == "context" for r in result["outcomes"]))
 
+    def test_focus_mapped_glucose_assessment_is_independent_of_habit_provenance(self):
+        from ciq_autotune.events import BolusEvent
+        outcomes = []
+        for flag in (None, 0):
+            with self.subTest(user_override=flag):
+                store, _, end = SupportedComparisonTest().dense_profile()
+                start = datetime(2026, 1, 1)
+                pin = start + timedelta(days=16)
+                store._bolus = [BolusEvent(t=start+timedelta(days=day, hours=12),
+                                          insulin=1, carbs=0, user_override=flag, seq_num=day+1)
+                                for day in (0, 16)]
+                result = self.compare(store, self.focus(store, pin, lever="user_override"), end)
+                row = next(r for r in result["outcomes"] if r["key"] == "tbr")
+                outcomes.append(row)
+                self.assertEqual([result["readiness"][arm]["criterion_met"]
+                                  for arm in ("before", "after")], [flag is not None]*2)
+                self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
+                for arm in ("before", "after"):
+                    self.assertEqual(result["adherence"][arm]["opportunities"], 1)
+                    self.assertEqual(result["adherence"][arm]["rate"], None if flag is None else 0)
+                self.assertEqual(row["role"], "mapped_outcome")
+                self.assertEqual(row["availability"]["state"], "available")
+                self.assertGreater(row["assessment"]["interval"]["low"], 0)
+                self.assertEqual(row["assessment"]["state"], "concerning")
+        self.assertEqual(outcomes[0]["assessment"]["interval"], outcomes[1]["assessment"]["interval"])
+        self.assertEqual(outcomes[0]["before"], outcomes[1]["before"])
+        self.assertEqual(outcomes[0]["after"], outcomes[1]["after"])
+
+    def test_focus_mapped_glucose_still_requires_duration_coverage_and_uncertainty(self):
+        for limitation in ("duration", "coverage", "degenerate"):
+            with self.subTest(limitation=limitation):
+                days = 13 if limitation == "duration" else 16
+                store, _, end = SupportedComparisonTest().dense_profile(days=days, constant=limitation == "degenerate")
+                if limitation == "coverage":
+                    store._cgm = [r for r in store._cgm if r.t.minute == 0]
+                pin = datetime(2026, 1, 1) + timedelta(days=days)
+                result = self.compare(store, self.focus(store, pin, lever="user_override"), end)
+                row = next(r for r in result["outcomes"] if r["key"] == "tbr")
+                self.assertEqual(row["availability"]["state"], "available")
+                self.assertEqual(row["assessment"]["state"], "unclear")
+                if limitation == "coverage":
+                    self.assertEqual(row["informative_dates"], {"before": 0, "after": 0})
+                elif limitation == "degenerate":
+                    self.assertTrue(any("degenerate" in reason for reason in row["assessment"]["reasons"]))
+                else:
+                    self.assertGreater(row["assessment"]["interval"]["low"], 0)
+
 
 class PracticalComparisonTest(unittest.TestCase):
     store = FollowUpComparisonTest.store

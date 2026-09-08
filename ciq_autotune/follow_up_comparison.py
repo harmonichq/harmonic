@@ -372,10 +372,16 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         else:
             rate_groups = groups
             statistic = lambda readings, attr=attr: getattr(compute_metrics(readings), attr)
+        outcome_ready = ready
+        if kind == "focus" and key == target:
+            # Mapped glucose retains its own measurement/coverage checks below;
+            # missing habit measurements do not withhold its direction.
+            outcome_ready = all(r["elapsed_days"] >= r["required_elapsed_days"]
+                                for r in comparison["readiness"].values())
         comparison["outcomes"].append(_row(
             key, label, "mg/dL" if key == "mean" else "%", [getattr(m, attr) for m in metrics],
             [m.n_readings for m in metrics], rate_groups, statistic, polarity, "observed CGM readings in eligible windows",
-            [sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage) for coverage in coverages], ready=ready,
+            [sum(row["coverage"] >= CONSENSUS_MIN_COVERAGE for row in coverage) for coverage in coverages], ready=outcome_ready,
         ))
     if parameter in ("basal_rate", "isf"):
         arms = []

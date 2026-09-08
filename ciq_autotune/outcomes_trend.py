@@ -1400,6 +1400,44 @@ def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,
              if start <= (item.t if policy.recurrence_family is None else item.anchor_t) < end]
     rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
              "n": 1, "k": 0, "harm": 0} for item in owned]
+    # A recurrence record does not by itself establish that the classifier
+    # could measure it. Preserve the population, but do not turn its silence
+    # into a clean rate when the existing verdict says it could not judge.
+    from .analyzers.classifiers import (
+        classify_carb_undercount, classify_late_bolus, classify_missed_meal,
+    )
+    from .analyzers.classifiers.evidence import SilenceReason
+    from .analyzers.scenario.meal_suspend import classify_meal_owned_suspend
+    from .analyzers.scenario.attribute import match_low_answer, over_treated_rebound_judgment
+
+    for item, row in zip(owned, rows):
+        verdict = None
+        if lv is Lever.LATE_BOLUS:
+            verdict = classify_late_bolus(
+                item.members[0], cgm, basal, bolus, scenario_config=scenario_config,
+            )
+        elif lv is Lever.CARB_UNDERCOUNT:
+            verdict = classify_carb_undercount(
+                item.members[0], cgm, basal, bolus, isf=isf,
+                scenario_config=scenario_config,
+            )
+        elif lv is Lever.MEAL_OVER_DELIVERY:
+            verdict = classify_meal_owned_suspend(
+                item.members[0], bolus, cgm, basal, scenario_config=scenario_config,
+            )
+        elif lv is Lever.MISSED_MEAL:
+            verdict = classify_missed_meal(
+                item.reach_start, cgm, bolus, basal, scenario_config=scenario_config,
+            )
+        elif lv is Lever.OVER_TREATED_LOW:
+            answer = match_low_answer(low_answers, item.anchor_t)
+            if answer is None or answer.answer != "no":
+                verdict = over_treated_rebound_judgment(
+                    cgm, item.anchor_t, item.anchor_bg, bolus,
+                    scenario_config=scenario_config,
+                ).verdict
+        if verdict is not None:
+            row["measured"] = verdict.silence_reason is not SilenceReason.INSUFFICIENT_DATA
     if lv is Lever.CORRECTION_STACKING:
         for item, row in zip(owned, rows):
             row["k"], _ = count_correction_stacks(
@@ -1431,7 +1469,8 @@ def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,
                 return {"rows": rows, "denominator": policy.recurrence_noun,
                         "reason": "attribution_exceeds_owned_population"}
             match["k"] = 1
-    return {"rows": rows, "denominator": policy.recurrence_noun, "reason": None}
+    return {"rows": rows, "denominator": policy.recurrence_noun,
+            "reason": "insufficient_measurement" if any(not row.get("measured", True) for row in rows) else None}
 
 
 def glycemic_rate_counts(readings, attribute):

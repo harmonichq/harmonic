@@ -293,3 +293,49 @@ class SupportedComparisonTest(unittest.TestCase):
                 self.assertIsNotNone(night["assessment"]["interval"])
                 if parameter == "isf":
                     self.assertGreater(result["denominators"]["after"]["qualifying_fasting_steps"],0)
+
+
+class MeasurementComparisonTest(unittest.TestCase):
+    store = FollowUpComparisonTest.store
+    focus = FollowUpComparisonTest.focus
+    compare = FollowUpComparisonTest.compare
+
+    def test_missing_after_measurements_cannot_improve_adherence(self):
+        from dataclasses import replace
+        from tests.test_scenario_engine import cgm_flat
+        start = datetime(2026, 1, 1)
+        source = [CgmReading(datetime(2026, 6, 15, 12, 15) + timedelta(minutes=5*i), value)
+                  for i, value in enumerate((100,110,120,130,140,150,160,170,180,175,165,150,135))]
+        cgm, bolus = [], []
+        for day in range(32):
+            offset = start + timedelta(days=day) - datetime(2026, 6, 15)
+            bolus.append(replace(meal(15,12,40,carbs=45,dose=10),
+                                 t=datetime(2026,6,15,12,40)+offset, seq_num=day+1))
+            if day < 16:
+                trace = source if day < 12 else cgm_flat(15,11,40,120,240)
+                cgm.extend(replace(r, t=r.t+offset) for r in trace)
+        store = self.store(cgm, bolus)
+        result = self.compare(store, self.focus(store, start+timedelta(days=16), lever="late_bolus"),
+                              start+timedelta(days=32))
+        self.assertEqual(result["adherence"]["before"]["rate"], .75)
+        self.assertIsNone(result["adherence"]["after"]["rate"])
+        self.assertEqual(result["adherence"]["after"]["opportunities"], 16)
+        self.assertEqual(result["adherence"]["after"]["informative_dates"], 0)
+        self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
+        self.assertIsNone(result["adherence"]["assessment"]["interval"])
+
+    def test_focus_identifies_mapped_outcomes_separately(self):
+        from ciq_autotune.watched_change import focus_view
+        for lever, target, keys in (("missed_meal", "tir", {"tir"}),
+                                    ("over_treated_low", "tbr", {"tbr"}),
+                                    ("late_bolus", "arc", {"peak", "nadir"})):
+            with self.subTest(lever=lever):
+                store = self.store(cgm_ramp(11,15,40,180,1.4,140))
+                record = self.focus(store, datetime(2026,6,11,16), lever=lever)
+                result = self.compare(store, record, datetime(2026,6,12))
+                self.assertEqual(result["target_metric"], focus_view(record).target_metric)
+                self.assertEqual(result["target_metric"], target)
+                self.assertEqual({r["key"] for r in result["outcomes"] if r["role"] == "mapped_outcome"}, keys)
+                self.assertTrue(all("assessment" in r for r in result["outcomes"]))
+                self.assertIn("assessment", result["adherence"])
+                self.assertTrue(any(r["role"] == "context" for r in result["outcomes"]))

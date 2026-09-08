@@ -299,6 +299,7 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             target = focus_view({"status": "active", **record}).target_metric
         except ValueError:
             return unavailable("lever_unavailable")
+        comparison["target_metric"] = target
         parameter = "carb_ratio" if target == "arc" else "profile"
         block, slot = None, None
     else:
@@ -437,11 +438,14 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             n, k = sum(r["n"] for r in rows), sum(r["k"] for r in rows)
             by_day = {}
             for row in rows:
+                if not row.get("measured", True):
+                    continue
                 by_day.setdefault(row["t"].date().isoformat(), []).append(row)
             day_groups.append(by_day)
             adherence[name] = {"lever": record["lever"], "numerator": k, "denominator": observed["denominator"],
                                "opportunities": n, "unit": "proportion", "rate": k / n if n and not reason else None,
                                "harm": sum(r["harm"] for r in rows),
+                               "informative_dates": len(by_day),
                                "availability": _availability(reason or ("zero_opportunities" if not n else None))}
             if reason:
                 comparison["availability"] = _availability(reason)
@@ -455,6 +459,10 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             comparison["availability"] = _availability("unavailable_adherence")
     elif any(not p["readings"] for p in populations):
         comparison["availability"] = _availability("no_readable_period_evidence")
+    if kind == "focus":
+        mapped_keys = {"peak", "nadir"} if target == "arc" else {target}
+        for row in comparison["outcomes"]:
+            row["role"] = "mapped_outcome" if row["key"] in mapped_keys else "context"
     states = {row["assessment"]["state"] for row in comparison["outcomes"]}
     low_worsening = any(row["key"] in ("tbr", "nights_with_low")
                         and row["difference"] is not None and row["difference"] > 0

@@ -1321,3 +1321,55 @@ class ExactPeriodObservationsTest(unittest.TestCase):
         for attr in ("tir", "tbr_lvl1", "tar_lvl1"):
             k,n = glycemic_rate_counts(readings, attr)
             self.assertEqual(_pct(k,n), getattr(compute_metrics(readings),attr))
+
+
+class ComparisonMeasurementTest(unittest.TestCase):
+    def test_meal_recurrence_requires_existing_measurement_verdict(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        from tests.test_scenario_engine import meal, cgm_flat
+        dose = meal(15, 12, 40, carbs=45, dose=10)
+        full = cgm_flat(15, 11, 40, 120, 240)
+        cases = (
+            ("late_bolus", [], False),
+            ("late_bolus", [CgmReading(dose.t, 120)], False),
+            ("late_bolus", full, True),
+            ("carb_undercount", [], False),
+            ("carb_undercount", [CgmReading(dose.t-timedelta(minutes=30), 120)], False),
+            ("carb_undercount", full, True),
+            ("meal_over_delivery", [], False),
+            ("meal_over_delivery", full, False),
+        )
+        for lever, readings, measured in cases:
+            with self.subTest(lever=lever, readings=len(readings)):
+                observed = behavior_observations(
+                    [dose], readings, [], lever=lever, start=dose.t,
+                    end=dose.t+timedelta(hours=8), isf=40,
+                )
+                self.assertEqual(observed["rows"][0]["n"], 1)
+                self.assertEqual(observed["rows"][0]["k"], 0)
+                self.assertEqual(observed["rows"][0]["measured"], measured)
+                self.assertEqual(observed["reason"], None if measured else "insufficient_measurement")
+
+    def test_unmeasured_high_is_not_an_observed_missed_meal_zero(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 15, 12)
+        observed = behavior_observations(
+            [], [CgmReading(start, 300)], [], lever="missed_meal",
+            start=start, end=start+timedelta(hours=1), isf=40,
+        )
+        self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
+        self.assertEqual(observed["reason"], "insufficient_measurement")
+
+    def test_low_without_rebound_measurement_is_not_clean(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 15, 12)
+        for tail, reason in (([], "insufficient_measurement"),
+                             ([CgmReading(start+timedelta(minutes=5), 120)], None)):
+            with self.subTest(observed_tail=bool(tail)):
+                observed = behavior_observations(
+                    [], [CgmReading(start, 60), *tail], [], lever="over_treated_low",
+                    start=start, end=start+timedelta(hours=1), isf=40,
+                )
+                self.assertEqual(sum(row["n"] for row in observed["rows"]), 1)
+                self.assertEqual(sum(row["k"] for row in observed["rows"]), 0)
+                self.assertEqual(observed["reason"], reason)

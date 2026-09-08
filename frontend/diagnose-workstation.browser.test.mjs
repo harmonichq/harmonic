@@ -72,7 +72,6 @@ import {
   derivedPumpSettings, openApp, openerProblems, panThenAim, state, touchDrag, touchScroll,
   withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
-  densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
   issue86HeaderFilter, issue86FilteredRoot, issue86DirectEntryRestoration,
   issue86PendingRoot, issue86MalformedRecovery,
@@ -204,48 +203,54 @@ async function numrowProblems(page) {
   });
 }
 
-test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
+/* RETIRED:Connor Griffin:2026-09-08 — "no." / "We dont' need historical reads
+   in the app." This test's whole subject was the past-setting read: seven of
+   them ordered, reachable through Watching, laid out in the narrow inspector
+   and non-stageable. The rows are no longer presented, so it has no subject.
+   Their absence is asserted in frontend/diagnose-findings-queue.test.js
+   against the same generated fixture, which still serves them. */
+
+test('a past-setting read the server publishes is absent from the rendered app', async () => {
+  /* The retirement, proved where it is SEEN rather than only in the row
+     builder. The fixture below really does publish a `history` row — asserted
+     first, so a fixture that stopped serving one could not make this pass
+     vacuously — and the rendered queue, its Watching disclosure and All charts
+     must all be free of it. */
   const browser = await runner.browser();
-  const inputs = await densityHistoryInputs();
-  const expected = projectFindings(inputs).rows
-    .filter((row) => row.register === 'history').map((row) => row.id);
-  assert.equal(expected.length, 7, 'the generator publishes seven simultaneous history rows');
+  const published = projectFindings(FINDINGS_PROJECTION.inputs).rows
+    .filter((row) => row.register === 'history');
+  assert.ok(published.length > 0,
+    'the generated fixture must still publish a past-setting row, or this proves nothing');
 
-  const page = await openApp(browser, {
-    state: 'dense', viewport: { width: 390, height: 844 },
-    history: true, findingsInputs: inputs, appSource: 'fixture', stageProbe: true,
-  });
+  const page = await openApp(browser, { state: 'typical', history: true, appSource: 'fixture' });
   try {
-    const initialCollapse = page.locator('#level .qcollapse');
-    await initialCollapse.click();
-    const historyRows = page.locator('#level .qrow[data-state="history"]');
-    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
-      'the Watching history rows keep the server projection order');
-    assert.equal(await historyRows.locator('.stagebtn').count(), 0,
-      'no dense history row exposes staging');
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
 
-    await page.getByRole('button', { name: /Filter/ }).click();
-    await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
-    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#level .qrow[data-state="history"]').count(), 0,
+      'a past-setting row is rendered in the queue');
+    for (const row of published) {
+      assert.equal(await page.locator(`#level .qrow[data-id="${row.id}"]`).count(), 0,
+        `the published past-setting row ${row.id} is still rendered`);
+    }
+
+    // Not hidden behind the disclosure either: expanding Watching reveals none.
     const collapse = page.locator('#level .qcollapse');
-    assert.match(await collapse.innerText(), /^Watching · \d+ reads$/,
-      'the sift owns one reachable Watching disclosure');
-    assert.equal(await historyRows.count(), 0, 'history rows collapse during the sift');
-    await collapse.click();
-    assert.deepEqual(await historyRows.evaluateAll((rows) => rows.map((row) => row.dataset.id)), expected,
-      'expanding Watching restores all seven rows in order');
+    if (await collapse.count()) {
+      await collapse.click();
+      assert.equal(await page.locator('#level .qrow[data-state="history"]').count(), 0,
+        'expanding Watching reveals a past-setting row');
+    }
 
-    await historyRows.nth(3).click();
-    const rendered = await state(page);
-    assert.equal(rendered.history.conclusion, 'Past setting. No change suggested.',
-      'the dense row opens the normal history inspector hierarchy');
-    assert.equal(rendered.history.currentCopies, 1,
-      'the dense inspector keeps one quieter current-program line');
-    assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
-    assert.deepEqual(await numrowProblems(page), [],
-      'the narrow past-setting read keeps each label on one line inside its own column');
-    assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
-      `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
+    /* All charts offers no other way back to one either. Asserted here over
+       whatever tiles the field currently holds; the descriptor generator's own
+       exclusion is covered deterministically in diagnose-canvas-layout.test.js. */
+    for (const row of published) {
+      assert.equal(await page.locator(`.evidence-tile[data-chart-id="${row.id}"]`).count(), 0,
+        `All charts still offers the past-setting read ${row.id}`);
+    }
+    assert.equal(await page.locator('.history-case, .history-canvas-notice, .history-retirement').count(), 0,
+      'a past-setting inspector or notice is still reachable');
   } finally {
     await page.close();
   }

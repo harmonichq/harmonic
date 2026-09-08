@@ -230,44 +230,6 @@ export const state = (page) => page.evaluate(() => {
       const s = getComputedStyle(n);
       return ['Top', 'Bottom'].some((side) => parseFloat(s[`border${side}Width`]) > 0);
     }).length,
-    history: (() => {
-      const level = q('#level');
-      const chart = q('#align-canvas:not([hidden]), #chart:not([hidden])');
-      const instance = chart ? window.echarts?.getInstanceByDom(chart) : null;
-      const option = instance?.getOption?.() || {};
-      const axis = Array.isArray(option.xAxis) ? option.xAxis[0] : option.xAxis;
-      const context = (option.series || []).find((series) => series.name === '__context');
-      const highlight = context?.markArea?.data?.[1] || null;
-      return {
-        id: level?.dataset.historyId || null,
-        generation: level?.dataset.analysisGeneration || null,
-        canvasId: chart?.dataset.historyId || null,
-        canvasGeneration: chart?.dataset.analysisGeneration || null,
-        conclusion: txt('.history-conclusion'),
-        currentCopies: document.querySelectorAll('#level .history-current').length,
-        caseText: q('.history-case')?.innerText.replace(/\s+/g, ' ').trim() ?? null,
-        notice: txt('.history-notice'),
-        retirement: txt('.history-retirement'),
-        pending: Boolean(q('.history-pending')),
-        stale: Boolean(q('.history-stale')),
-        retry: txt('.history-retry'),
-        stageCount: document.querySelectorAll('.history-case .stagebtn').length,
-        canvasRender: chart ? {
-          kind: chart.id === 'align-canvas' ? 'event' : 'clock',
-          scope: txt('#canvas-scope'),
-          label: txt('#canvas-head .meta.persist'),
-          window: [axis?.min ?? null, axis?.max ?? null],
-          highlight: highlight ? [highlight[0]?.xAxis ?? null, highlight[1]?.xAxis ?? null] : null,
-          series: (option.series || []).map((series) => ({
-            name: series.name ?? null,
-            type: series.type ?? null,
-            points: Array.isArray(series.data) ? series.data.length : null,
-            opacity: series.lineStyle?.opacity ?? null,
-            width: series.lineStyle?.width ?? null,
-          })),
-        } : null,
-      };
-    })(),
     laneSelected: [...document.querySelectorAll('#lane button')].findIndex((b) => b.getAttribute('aria-pressed') === 'true'),
     laneCells: document.querySelectorAll('#lane button').length,
     basalPaint: [...document.querySelectorAll('#lane button:not([data-clock-copy])')].map((button) => {
@@ -852,15 +814,6 @@ const expandWatching = async (page) => {
   }
 };
 
-const openHistoryCase = async (page) => {
-  await expandWatching(page);
-  const row = page.locator('#level .qrow[data-state="history"]').first();
-  await row.waitFor({ state: 'visible' });
-  await row.click();
-  await settle(page, 350);
-  ok(await page.locator('.history-case').isVisible(), 'history row opens its case file');
-};
-
 const RETIRED_CANVAS_SANCTION = 'Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired \'Event charts\' root filter and the global \'By event\' control."';
 const assertRetiredGlobalCanvas = async (page, story) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -873,6 +826,17 @@ const assertRetiredGlobalCanvas = async (page, story) => {
     `${story} the retired global Align host and event canvas are absent`);
   console.log(`RETIRED ${story} — ${RETIRED_CANVAS_SANCTION}`);
 };
+
+/* RETIRED:Connor Griffin:2026-09-08 — "no." / "We dont' need historical reads
+   in the app." Fourteen stories whose SUBJECT was the past-setting (register
+   `history`) read are retired with the UI they drove: S41, S43, S44, S45, S46,
+   S47, S48, S53, S54, S55, S56, S63, S64, S68. Two mixed stories are RETAINED
+   with their historical clause dropped and everything else intact — S42 (the
+   Watching disclosure, its sift and its mobile target) and S74 (the
+   disclosure's default-collapsed behaviour). Every story asserting the EARLIER
+   2026-08-25 Event-charts retirement is untouched; those never drove this UI.
+   The backend still publishes the register, and no analyzer, store or history
+   API changed. */
 
 /* -------------------------------------------------------------- the stories */
 
@@ -2021,20 +1985,6 @@ const withEligibilityLoss = ({ analysis, exposures, scenarios }) => {
 export const twoFamilyInputs = async () => JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8')).inputs;
 
-/** Seven simultaneous analyzer-built history rows, committed by the findings
- * fixture generator for density and reachability coverage. */
-export const densityHistoryInputs = async () => {
-  const fixture = JSON.parse(await readFile(
-    join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
-  if (fixture.density_history?.length !== 7) {
-    fail('generated findings fixture has no seven-row density_history shape');
-  }
-  return {
-    ...fixture.inputs,
-    analysis: { ...fixture.inputs.analysis, ic_history: fixture.density_history },
-  };
-};
-
 /** Open one finding's case file from the queue, by the title a reader sees.
     Waits for the window's own rows to be in hand first: the queue is a server
     round trip, and clicking a row from the previous window's answer would be
@@ -2134,18 +2084,6 @@ export const S40 = async (page) => {
   ).getAttribute('data-drilled'), '', 'S40 the low comparison remains visibly drilled on the stage');
 };
 
-// STORY:finding-evidence-routing:S41
-export const S41 = async (page) => {
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 450);
-  await expandWatching(page);
-  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => node.dataset.state));
-  is(rows.at(-1), 'history', 'S41 history follows every held/blind row');
-  ok(rows.slice(0, -1).some((register) => register === 'held' || register === 'blind'),
-    'S41 scoped queue includes a predecessor Watching register before history');
-  is((await state(page)).queue.at(-1).tag.replace(/\s+/g, ''), '◌Watching', 'S41 history is Watching');
-};
-
 // STORY:finding-evidence-routing:S42
 export const S42 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
@@ -2168,72 +2106,8 @@ export const S42 = async (page) => {
   is(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), checked,
     'S42 expansion preserves the sift');
   await page.keyboard.press('Escape');
-  ok(await page.locator('#level .qrow[data-state="history"]').isVisible(), 'S42 history is reachable after expansion');
-};
-
-// STORY:finding-evidence-routing:S43
-export const S43 = async (page) => {
-  await expandWatching(page);
-  const row = page.locator('#level .qrow[data-state="history"]').first();
-  const text = await row.innerText();
-  ok(/past 6\.0 g\/U/.test(text) && /3 meal runs/.test(text), 'S43 past setting and support render');
-  ok(!/Current|programmed now|5\.0 g\/U/.test(text), 'S43 queue omits current program');
-  is(await row.locator('.stagebtn').count(), 0, 'S43 queue history cannot stage');
-  await captureEvidence(page, 'ADR22-before-history-queue');
-};
-
-// STORY:finding-evidence-routing:S44
-export const S44 = async (page) => {
-  await expandWatching(page);
-  const id = await page.locator('.qrow[data-state="history"]').first().getAttribute('data-id');
-  await openHistoryCase(page);
-  is((await state(page)).history.id, id, 'S44 opaque row id opens the case');
-  is((await state(page)).history.stageCount, 0, 'S44 case exposes no stage path');
-};
-
-// STORY:finding-evidence-routing:S45
-export const S45 = async (page) => {
-  await openHistoryCase(page);
-  const s = await state(page);
-  is(s.history.conclusion, 'Past setting. No change suggested.', 'S45 conclusion is exact and first');
-  is(s.history.currentCopies, 1, 'S45 current program appears exactly once');
-  ok(s.history.caseText.indexOf(s.history.conclusion) < s.history.caseText.indexOf('Current program'),
-    'S45 current program follows the conclusion and evidence');
-  await captureEvidence(page, 'ADR22-after-history-case');
-};
-
-// STORY:finding-evidence-routing:S46
-export const S46 = async (page) => {
-  await openHistoryCase(page);
-  const id = (await state(page)).history.id;
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 600);
-  const after = await state(page);
-  is(after.history.id, id, 'S46 overlapping scope preserves selected id');
-  is(after.history.notice, null, 'S46 overlapping scope remains present');
-};
-
-// STORY:finding-evidence-routing:S47
-export const S47 = async (page) => {
-  await openHistoryCase(page);
-  const before = await state(page);
-  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-  await settle(page, 650);
-  const after = await state(page);
-  is(after.history.id, before.history.id, 'S47 out-of-scope keeps the case');
-  is(after.history.generation, before.history.generation, 'S47 out-of-scope keeps prior generation');
-  is(after.history.canvasRender, before.history.canvasRender,
-    'S47 out-of-scope keeps the prior rendered clock window and content');
-  is(after.history.notice, 'Past-setting evidence is outside the selected window.', 'S47 exact server message');
-  is(await page.locator('.history-canvas-notice').innerText(), after.history.notice, 'S47 both panes show the message');
-};
-
-// STORY:finding-evidence-routing:S48
-export const S48 = async (page) => {
-  await openHistoryCase(page);
-  const s = await state(page);
-  is(s.history.canvasId, s.history.id, 'S48 clock canvas and inspector share id');
-  is(s.history.canvasGeneration, s.history.generation, 'S48 clock canvas and inspector share generation');
+  ok(await page.locator('#level .qrow[data-state="held"]').first().isVisible(),
+    'S42 a held read is reachable after expansion');
 };
 
 // STORY:finding-evidence-routing:S49
@@ -2274,60 +2148,6 @@ export const S91 = async (page) => {
     'S91 drilling a finding keeps the drawn window clear affordance');
 };
 
-// STORY:finding-evidence-routing:S53
-export const S53 = async (page) => {
-  await openHistoryCase(page);
-  const s = await state(page);
-  ok(/CI 4\.00–8\.00 g\/U \(wide\)/.test(s.history.caseText), 'S53 wide interval remains visible');
-  ok(/1 meal run/.test(s.history.caseText), 'S53 thin support remains visible');
-  is(s.history.stageCount, 0, 'S53 thin history remains non-actionable');
-};
-
-// STORY:finding-evidence-routing:S54
-export const S54 = async (page) => {
-  await expandWatching(page);
-  const row = page.locator('.qrow[data-state="history"]').first();
-  ok(await row.isVisible(), 'S54 non-null history is present because the server published it');
-  const source = await readFile(join(ROOT, 'frontend/diagnose-workstation.js'), 'utf8');
-  ok(!/estimate\?\.value\s*==\s*null|support\s*[<>]=?\s*\d+|Date\.now\(\).*regime/.test(source),
-    'S54 frontend carries no history retirement/support/age predicate');
-  await row.click();
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 750);
-  const after = await state(page);
-  ok(after.history.id, 'S54 a disposition cannot retire a row the server still publishes');
-  is(after.history.stale, true, 'S54 contradictory disposition/row responses stop visibly stale');
-};
-
-const assertRetired = async (page, message, story) => {
-  await settle(page, 650);
-  const s = await state(page);
-  is(s.history.id, null, `${story} case returned atomically to queue`);
-  is(s.history.retirement, message, `${story} exact retirement notice`);
-  is(s.queue.some((row) => row.register === 'history'), false,
-    `${story} refreshed queue does not retain the retired history row`);
-  if (page.viewportSize().width <= 760) {
-    const fontSize = await page.locator('.history-retirement').evaluate((node) =>
-      parseFloat(getComputedStyle(node).fontSize));
-    ok(fontSize >= 14, `${story} mobile retirement copy is at least 14px (${fontSize})`);
-  }
-  ok(await page.locator('#chart').isVisible(), `${story} clock canvas restored`);
-};
-
-// STORY:finding-evidence-routing:S55
-export const S55 = async (page) => {
-  await openHistoryCase(page);
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await assertRetired(page, 'Past-setting evidence aged out of the 90-day window.', 'S55');
-};
-
-// STORY:finding-evidence-routing:S56
-export const S56 = async (page) => {
-  await openHistoryCase(page);
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await assertRetired(page, 'Past-setting evidence no longer maps to one current program block.', 'S56');
-};
-
 // STORY:finding-evidence-routing:S57
 export const S57 = async (page) => {
   await assertRetiredGlobalCanvas(page, 'S57');
@@ -2358,26 +2178,6 @@ export const S62 = async (page) => {
   await assertRetiredGlobalCanvas(page, 'S62');
 };
 
-const assertTypedFindingsFailure = async (page, status, code, story) => {
-  await openHistoryCase(page);
-  const before = await state(page);
-  expectResponse(page, /\/api\/diagnose\/findings/, status);
-  expectResponse(page, /\/api\/diagnose\/findings/, status);
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 750);
-  const after = await state(page);
-  is(after.history.id, before.history.id, `${story} opaque id is not repaired`);
-  is(after.history.canvasRender, before.history.canvasRender,
-    `${story} terminal failure keeps the prior rendered clock window and content`);
-  is(after.history.stale, true, `${story} ${code} stops visibly stale`);
-};
-
-// STORY:finding-evidence-routing:S63
-export const S63 = async (page) => assertTypedFindingsFailure(page, 400, 'invalid_history_id', 'S63');
-
-// STORY:finding-evidence-routing:S64
-export const S64 = async (page) => assertTypedFindingsFailure(page, 404, 'history_not_found', 'S64');
-
 // STORY:finding-evidence-routing:S65
 export const S65 = async (page) => assertRetiredGlobalCanvas(page, 'S65');
 
@@ -2395,18 +2195,6 @@ const withoutProcessGeneration = (payload) => {
 // STORY:finding-evidence-routing:S67
 export const S67 = async (page) => {
   await assertRetiredGlobalCanvas(page, 'S67');
-};
-
-// STORY:finding-evidence-routing:S68
-export const S68 = async (page) => {
-  await openHistoryCase(page);
-  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-  await settle(page, 60);
-  await page.getByRole('button', { name: 'Morning', exact: true }).click();
-  await settle(page, 1000);
-  const s = await state(page);
-  is(s.history.notice, null, 'S68 superseded out-of-scope response cannot land');
-  is(s.history.canvasGeneration, s.history.generation, 'S68 newest coherent pair owns both panes');
 };
 
 // STORY:finding-evidence-routing:S69
@@ -2505,17 +2293,22 @@ export const S73 = async (page) => {
 /** S74 · Watching evidence stays behind its disclosure until the reader asks for it. */
 // STORY:finding-evidence-routing:S74
 export const S74 = async (page) => {
+  /* Scoped to Morning: the whole-day window's only Watching member was the
+     retired past-setting read, and this story is about the DISCLOSURE, which
+     still holds the current-setting held reads it always did. */
+  await page.getByRole('button', { name: 'Morning', exact: true }).click();
+  await settle(page, 450);
   const toggle = page.locator('#level .qcollapse');
   ok(await toggle.isVisible(), 'S74 Watching control is present without a sift');
   ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S74 Watching control names its reads');
-  is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count(),
+  is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count(),
     0, 'S74 Watching rows stay collapsed by default');
   is(await page.locator('.uncaused-note').count(), 0, 'S74 RETIRED — uncaused-highs footer is absent');
   is(await page.locator('#level .quiet-line').count(), 0,
     'S74 action-ready rows keep the default queue out of the all-Watching empty state');
   await captureEvidence(page, 'S74-watching-collapsed-default');
   await toggle.click();
-  ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"], #level .qrow[data-state="history"]').count() > 0,
+  ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count() > 0,
     'S74 Watching rows appear after expansion');
 };
 
@@ -2875,14 +2668,6 @@ const missingRowsDisposition = (disposition, message) => (body) => {
   const next = { ...body, selection: { id: body.selection.id, disposition, message } };
   delete next.rows;
   return next;
-};
-
-const thinHistoryInputs = (inputs) => {
-  const copy = structuredClone(inputs);
-  const history = copy.analysis.ic_history.find((row) => row.lifecycle === 'active');
-  history.support = 1;
-  history.estimate = { ...history.estimate, value: 6, lo: 4, hi: 8, n: 1, wide: true };
-  return copy;
 };
 
 /* The issue #81 story ids collided with ticket 10's already-frozen S41-S71
@@ -3610,7 +3395,10 @@ export const C58 = async (page) => {
 
 /* ------------------------------------------------------------------- runner */
 
-/* Discovery tags for every exported replay function above. */
+/* Discovery tags for every exported replay function above. The fourteen
+   past-setting stories retired on 2026-09-08 are absent from this inventory
+   because their functions are gone; the retirement note above the stories
+   names every one. */
 // STORY:finding-evidence-routing:S01
 // STORY:finding-evidence-routing:S02
 // STORY:finding-evidence-routing:S03
@@ -3651,14 +3439,7 @@ export const C58 = async (page) => {
 // STORY:finding-evidence-routing:S38
 // STORY:finding-evidence-routing:S39
 // STORY:finding-evidence-routing:S40
-// STORY:finding-evidence-routing:S41
 // STORY:finding-evidence-routing:S42
-// STORY:finding-evidence-routing:S43
-// STORY:finding-evidence-routing:S44
-// STORY:finding-evidence-routing:S45
-// STORY:finding-evidence-routing:S46
-// STORY:finding-evidence-routing:S47
-// STORY:finding-evidence-routing:S48
 // STORY:finding-evidence-routing:S49
 // STORY:finding-evidence-routing:S50
 // STORY:finding-evidence-routing:S51
@@ -5117,30 +4898,11 @@ export const STORIES = [
   }],
   ['S39', S39, 'dense', { findingsDelayMs: 900 }],
   ['S40', S40, 'typical'],
-  ['S41', S41, 'typical', { history: true }],
   ['S42', S42, 'typical', { history: true }],
-  ['S43', S43, 'typical', { history: true }],
-  ['S44', S44, 'typical', { history: true }],
-  ['S45', S45, 'typical', { history: true }],
-  ['S46', S46, 'typical', { history: true }],
-  ['S47', S47, 'typical', { history: true }],
-  ['S48', S48, 'typical', { history: true }],
   ['S49', S49, 'typical', { history: true }],
   ['S50', S50, 'typical', { history: true }],
   ['S51', S51, 'typical', { history: true }],
   ['S52', S52, 'typical', { history: true }],
-  ['S53', S53, 'typical', { history: true, findingsInputs: thinHistoryInputs }],
-  ['S54', S54, 'typical', { history: true, findingsInputs: thinHistoryInputs,
-    selectedFindingsResponses: [
-      { body: contradictoryHistoryDisposition('aged_out', 'contradictory retirement') },
-      { body: missingRowsDisposition('aged_out', 'missing-row-list retirement') },
-    ] }],
-  ['S55', S55, 'typical', { history: true, selectedFindingsResponses: [{
-    body: historyDisposition('aged_out', 'Past-setting evidence aged out of the 90-day window.'),
-  }] }],
-  ['S56', S56, 'typical', { history: true, selectedFindingsResponses: [{
-    body: historyDisposition('unavailable', 'Past-setting evidence no longer maps to one current program block.'),
-  }] }],
   ['S57', S57, 'typical', { history: true, historyResponses: [{ status: 410,
     detail: { code: 'history_aged_out', message: 'Past-setting evidence aged out of the 90-day window.' } }],
     selectedFindingsResponses: [{
@@ -5162,14 +4924,6 @@ export const STORIES = [
   ['S62', S62, 'typical', { history: true,
     historyResponses: [{ status: 500, detail: 'temporary failure' }],
     selectedFindingsResponses: [{ status: 500, detail: 'retry failed' }] }],
-  ['S63', S63, 'typical', { history: true, selectedFindingsResponses: [
-    { status: 400, detail: { code: 'invalid_history_id', message: 'Invalid history identity.' } },
-    { status: 400, detail: { code: 'invalid_history_id', message: 'Invalid history identity.' } },
-  ] }],
-  ['S64', S64, 'typical', { history: true, selectedFindingsResponses: [
-    { status: 404, detail: { code: 'history_not_found', message: 'Past-setting evidence was not found.' } },
-    { status: 404, detail: { code: 'history_not_found', message: 'Past-setting evidence was not found.' } },
-  ] }],
   ['S65', S65, 'typical', { history: true, historyResponses: [
     {},
     { status: 400, detail: { code: 'invalid_history_run_id', message: 'Invalid history run identity.' } },
@@ -5185,9 +4939,6 @@ export const STORIES = [
     { status: 409, detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
     { body: withRestartGeneration },
   ], selectedFindingsResponses: [{ body: withRestartGeneration }] }],
-  ['S68', S68, 'typical', { history: true, selectedFindingsResponses: [
-    { delayMs: 700 }, {},
-  ] }],
   ['S69', S69, 'typical', { history: true, historyResponses: [
     { delayMs: 700 }, {}, { delayMs: 700 }, {},
   ] }],

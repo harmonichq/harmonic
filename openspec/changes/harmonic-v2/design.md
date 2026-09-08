@@ -1394,6 +1394,41 @@ valid state; making every assessment unavailable is not completion. Triage must
 size bounded executable chunks with explicit ownership and an integration owner.
 It must preserve ADR 386 and the retained #340 statistical authority.
 
+### #387 production risk contract
+
+**Must prevent:** an invented legacy or original-context fact; a duplicate,
+reopened or cross-subject ending; an ambiguous Plan link treated as actual; a
+history read changing an active watch; a stale cache or pre-ingestion verdict
+authorizing a write; and an assessment presented outside its retained period,
+denominator or inference context.
+
+**Must recover:** retry of a completed lifecycle write returns its one recorded
+result; a stale or racing request returns the winning result or an explicit
+conflict; and a failed transaction commits no ending, frontier advance or partial
+assessment.
+
+**Accepted failure:** missing retained evidence, legacy facts, an unavailable old
+policy version, or a period with no opportunities produces an explicit unavailable
+assessment that preserves the record. A separately labeled later reassessment may
+be unavailable too; it never replaces the original snapshot.
+
+**Unsupported:** live vendor pulls, patient data, credentials, new clinical or
+statistical policy, a historical executable archive, UI rendering, and recovery
+beyond the bounded retry/conflict response.
+
+**Evidence owed:** synthetic public-interface proof of additive migration/restart,
+authentication, v1 compatibility, unique schedule reconciliation and withdrawal,
+stale/duplicate/racing lifecycle writes, cache and ingestion reconciliation,
+read-only history, exact half-open periods and anchor membership, named
+denominators, retained original-versus-reassessment context, and at least one
+available exact-period assessment. New committed synthetic artifacts require an
+owned generator and drift check; use none where existing generated fixtures already
+exercise the public boundary.
+
+Why: durable records and assessments influence advisory insulin-dosing guidance,
+so the backend must preserve meaning across retry, restart and later data without
+inventing a clinical conclusion. Disposition: inline in this active parent change.
+
 The rendered setting/habit release remains tasks 2.4, 3.2.2, 3.3.2, 3.4 and 3.5.
 Its applicable UI Craft contract must be settled before its build admission; it
 consumes the selected prototype and completed repair records, with no new concept

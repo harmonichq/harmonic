@@ -1367,3 +1367,35 @@ The implementing ticket must close those named verification obligations under
 full review before admission of the complete desktop release. Keep the selected
 Changes placement, both loops and exact Day return. No new chart design, mobile,
 root cutover or v1 retirement belongs to this ruling.
+
+
+### Fourth-child capability boundary after #386
+
+The [verified #386 result](https://github.com/harmonichq/harmonic/issues/386#issuecomment-5579342873)
+settles the durable context, ending and exact Focus comparison questions. Its
+qualified independent review and replay are recorded above. #384's completed
+implementation/finalization evidence is recorded in evidence.md; its backend
+guidance and preference capability is already merged.
+
+A fourth child is justified by a concrete dependency: the complete desktop
+journeys require durable, authenticated setting and habit follow-up APIs with
+one watch verdict and read-only history. This is independently verifiable and
+shippable backend behavior, while the subsequent rendered release depends on
+those records, periods and assessments. Consolidating it with the entire new
+surface would combine persistence, reconciliation, comparison and browser
+lifecycle work into a context already known to be too large: #384's largest
+implementation worker consumed 231,564 tokens against its 180,000-token target.
+
+The backend child owns tasks 3.2.1 and 3.3.1 together. Ending persistence and the
+available exact-period assessment belong to one capability so a finish can save
+what was actually known at its boundary. Explicitly unavailable data remains a
+valid state; making every assessment unavailable is not completion. Triage must
+size bounded executable chunks with explicit ownership and an integration owner.
+It must preserve ADR 386 and the retained #340 statistical authority.
+
+The rendered setting/habit release remains tasks 2.4, 3.2.2, 3.3.2, 3.4 and 3.5.
+Its applicable UI Craft contract must be settled before its build admission; it
+consumes the selected prototype and completed repair records, with no new concept
+round. This capability split does not admit that surface build yet, divide work
+by component, or weaken either complete first-release journey. Before any later
+child is filed, record its own dependency or independently shippable boundary.

@@ -842,3 +842,21 @@ its raw outputs remain verbatim. This administrative completion changes no
 ruling, context field, behavior or production scope. Required production/UI work
 remains unchecked, and #384 task status is unchanged. Next child admission and
 tracker close remain with the epic coordinator.
+
+
+## ADR 384 post-merge finalization receipt
+
+The previous #384 implementation receipt's pending runtime/finalization statements
+are historical. PR [#385](https://github.com/harmonichq/harmonic/pull/385) merged
+at `2026-09-08T03:22:40Z`, commit
+`3ae1e25aa71207bdabddc2a195788898f80e4198`. Its required PR checks passed,
+including the packaged Docker build and smoke checks. Post-merge run
+[34183296538](https://github.com/harmonichq/harmonic/actions/runs/34183296538)
+completed successfully at that same head, including image publication. The epic
+coordinator reread the live merge and completed/success run before checking
+parent tasks 3.1 and 3.1.3.
+
+The [finalization result](https://github.com/harmonichq/harmonic/issues/384#issuecomment-5578705239)
+records the closed ticket and clean worktree/index teardown. This discharges
+#384's verification/finalization obligation, not the remaining v2 surface,
+durable follow-up, or complete release acceptance.

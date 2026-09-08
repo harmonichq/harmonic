@@ -802,12 +802,20 @@ Two kinds of statement appear below and are marked as such:
   here so consumers can be written against it, but nothing in the tree has it
   yet.
 
-The chunks are **serial**, and their file sets are **not disjoint**. Chunk 1
-creates the shell and the shared modules; chunks 2 and 3 add components and
-register them through the interfaces below, which means they edit files chunk 1
-created. That is deliberate, declared here, and is why the order is serial rather
-than parallel. No registration machinery is invented to manufacture a
-disjoint-files claim.
+**Implementation may run concurrently; integration remains ordered.** On
+2026-09-08 Connor requested parallel builds after chunk 1 published its desk
+interfaces. Chunks 2 and 3 build their owned features in isolated worktrees from
+that committed desk while chunk 1 completes its corrections. Each owns its
+feature files and adds only its own client exports, QA recipes, tests and replay
+stories to shared files. Integration takes corrected chunk 1, then chunk 2, then
+chunk 3; combined QA output is regenerated from the combined recipes.
+
+Chunk 3 owns the final Changes composition, calling chunk 2's exported
+`mount(host, deps)` Plan entry and its own follow-up/history entries according to
+backend state. Temporary Changes registrations in the isolated builds become one
+registration before acceptance. The interfaces below remain the composition
+contract; no extra registration machinery is required. Acceptance, review and the
+human merge boundary are unchanged.
 
 ### Chunk 1 — the desk, its shared contracts, and delivery
 
@@ -994,7 +1002,7 @@ re-running the replay at both sizes and re-recording the affected fidelity rows.
 
 ### #389 verification ownership: the app opener, the app stories, and test discovery
 
-The frozen replay is one shared artifact that four serial chunks each extend.
+The frozen replay is one shared artifact that four chunks each extend and integrate in order.
 Without the rules below a chunk is asked to prove behavior it does not own, and
 new tests are written where no runner looks. Both were reproduced; this section
 is the fix, and every chunk acquires it from the pinned commit rather than from
@@ -1027,9 +1035,10 @@ journey stories to prove its own capability.
 Four plus six plus seven plus one is eighteen: the set is covered exactly, with
 no story owned twice and none left to the coordinator.
 
-**Serial edits to the replay are expected and declared.** Chunks 1, 2, 3 and 4
-each edit `frontend/harmonic-v2-desktop-behavior.replay.mjs`, in that order.
-Each adds only its own story bodies and the registry entries for them, in the
+**Shared replay edits are integrated in order.** Chunks 1, 2, 3 and 4 each edit
+`frontend/harmonic-v2-desktop-behavior.replay.mjs`; concurrent builders add only
+their own bodies and registrations in isolated worktrees, and the coordinator
+integrates those additions in chunk order. Each uses the
 module's existing idiom, and changes no other chunk's story, selector, opener or
 assertion. **No frozen story is weakened, renamed or deleted**: converting a
 deferred entry into a real one fulfils it, and any other change to a story goes
@@ -1051,7 +1060,7 @@ the existing offline database does not serve, it extends
 `scripts/qa_e2e_cases.py` and `scripts/gen_qa_e2e_db.py` — the repository's
 existing manufactured-case path, with its recorded budgets — **in the same chunk
 that must prove that behavior, before it proves it**. That generator is a shared
-contract extended serially: a chunk adds only the cases its own stories need,
+contract integrated in chunk order: a chunk adds only the cases its own stories need,
 never a case per assertion and never a second generator. Chunk 4 owns the final
 scenario coverage pass and the drift gates. Where an existing case already
 serves a scenario, it is used as-is. The generator-owned output

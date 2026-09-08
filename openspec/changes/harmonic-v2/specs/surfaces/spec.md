@@ -246,7 +246,7 @@ stamp and a drift check in the same change.
 
 #### Scenario: Each increment proves its own capability, and the whole contract is proved once
 
-- **GIVEN** the surface is delivered in serial increments against one shared replay
+- **GIVEN** the surface is delivered in increments integrated in order against one shared replay, with owned feature builds permitted to run concurrently
 - **WHEN** an increment is complete
 - **THEN** it proves the stories for the capability it delivered, selected explicitly, against the built app
 - **AND** it is not required to prove a story for a capability a later increment delivers

@@ -1657,17 +1657,20 @@ four ways, each owning one coherent capability:
    route proofs, the bounded archival close, and the Fable 5.1 polish pass over
    the built surfaces.
 
-**The chunks are serial, and their file sets are deliberately not disjoint.**
-Chunk 1 creates the shell and the shared modules; chunks 2 and 3 add components
-and register them through chunk 1's published interfaces, which means they edit
-files chunk 1 created. Composition is by those interfaces —
+**Implementation may run concurrently after the desk interfaces are committed.**
+The original schedule serialized the chunks. On 2026-09-08 Connor directed:
+“any chance we could parallelize the build process here? things are astronomically slow”.
+Chunks 2 and 3 therefore build their owned features in isolated worktrees while
+chunk 1 finishes its corrections. The detailed ownership and ordered integration
+contract is in `contracts.md` under “#389 desktop build contracts”.
+
+Composition remains through chunk 1's published interfaces —
 `registerDestination`/`navigate` for a destination and its contextual Day entry,
-`openUtility` for a utility — named with their consumers in this change's
-`contracts.md`. No registration machinery is invented merely to preserve a
-disjoint-files claim; serial, explicitly owned composition is the honest shape,
-and it is why the order is serial rather than parallel. The seams follow existing
-ownership rather than inventing one: Plan and the shared chart renderers keep
-their behavior, and v1 is not decomposed.
+`openUtility` for a utility. Shared additions integrate in chunk order, and
+chunk 3 combines Plan and follow-up/history in one Changes registration. Plan and
+the shared chart renderers keep their behavior, and v1 is not decomposed. This
+scheduling change alters no acceptance criterion, data or clinical boundary,
+review requirement or human merge requirement.
 
 Day and the utilities belong to chunk 1 rather than to a journey, because both
 are desk-level: Day is one of the four destinations with its own chronology and
@@ -1686,9 +1689,9 @@ app-opener-only stories for its own capability under an explicit `ONLY=`
 selection, and the complete replay with nothing deferred is chunk 4's final
 gate. The eighteen previously unprovable stories are partitioned four / six /
 seven / one across the chunks, so none is owned twice and none is left to the
-coordinator. The replay file is edited serially by all four chunks, which is
-declared rather than disguised; the independent verifier records final ledger verdicts from
-the complete raw evidence returned by chunk 4.
+coordinator. Each chunk edits only its own replay stories; the coordinator
+integrates shared additions in chunk order. The independent verifier records
+final ledger verdicts from the complete raw evidence returned by chunk 4.
 
 Scenario support follows the same rule. The retained
 `mockups/harmonic-v2.exploration/` fixtures are frozen evidence and no chunk

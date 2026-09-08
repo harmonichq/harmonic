@@ -51,9 +51,10 @@ changes in this spike.
 
 **Evidence owed:** a synthetic replay that explicitly asserts every task
 checklist identity, ending, reconciliation, preemption, legacy, exact-period,
-denominator, and correction-family outcome, prints its inputs and actual
-observed/asserted outputs, and exits nonzero for a failed or unexercised case;
-strict OpenSpec validation; and the repository's documentation guards.
+denominator, and correction-family outcome, prints and records in `evidence.md`
+its inputs and actual observed/asserted outputs, and exits nonzero for a failed
+or unexercised case; strict OpenSpec validation; and the repository's
+documentation guards.
 
 Why: these contracts carry historical meaning and must not silently manufacture
 facts or clinical conclusions. Disposition: inline in this active parent change.

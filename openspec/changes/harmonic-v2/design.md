@@ -1386,7 +1386,8 @@ surface would combine persistence, reconciliation, comparison and browser
 lifecycle work into a context already known to be too large: #384's largest
 implementation worker consumed 231,564 tokens against its 180,000-token target.
 
-The backend child owns tasks 3.2.1 and 3.3.1 together. Ending persistence and the
+The backend child [#387](https://github.com/harmonichq/harmonic/issues/387) owns
+tasks 3.2.1 and 3.3.1 together. Ending persistence and the
 available exact-period assessment belong to one capability so a finish can save
 what was actually known at its boundary. Explicitly unavailable data remains a
 valid state; making every assessment unavailable is not completion. Triage must

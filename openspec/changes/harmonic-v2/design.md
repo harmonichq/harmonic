@@ -40,9 +40,10 @@ comparison presented as causal or as evidence from a changed inference context.
 **Must recover:** an ordinary retry after a finish request returns the recorded
 ending without a duplicate write or a reopened watch.
 
-**Accepted failure:** a legacy record lacking context or an ending remains
-explicitly unavailable; the user sees no reconstructed history and may recover
-only by later, newly observed data.
+**Accepted failure:** a legacy record lacking original context or an ending keeps
+those unstored facts explicitly unavailable. A separate read-only reassessment
+may use existing raw data, but it neither rewrites the original record nor
+invents the missing facts.
 
 **Unsupported:** inferring Plan-to-Trial linkage from time or a matching setting,
 backfilling legacy ending dates, live vendor data, and production persistence

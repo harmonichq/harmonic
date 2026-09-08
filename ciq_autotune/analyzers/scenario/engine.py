@@ -17,8 +17,10 @@ The public face of epic #70's layer 3. It:
    substantial, severe recurring shape) and one-offs are suppressed. ``wide`` rides
    the payload as a tentative-render hint, not a hide.
 
-Two entry points:
+Public entry points:
 
+* :func:`attributed_occurrences` — contextual attribution with owned recurrence
+  anchors; :func:`tally_attributions` keeps its legacy all-input aggregation.
 * :func:`assemble` — the pure core: event lists in, ``ScenarioReport`` out. All the
   judgment lives here; it takes no store, so it is fully unit-testable.
 * :func:`build_scenarios` — the store-facing wrapper the API calls: reads the
@@ -30,7 +32,7 @@ Two entry points:
 from __future__ import annotations
 
 import statistics
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -125,7 +127,24 @@ def _recurrence_counts(bolus, cgm, basal, *, scenario_config=ScenarioConfig()):
     }
 
 
-def tally_attributions(
+@dataclass(frozen=True)
+class AttributedOccurrence:
+    """An attributed episode and its policy-owned recurrence anchor (#387).
+
+    Episode ids belong to this input walk, not to durable history. Unassociated
+    drivers remain in the legacy tally but cannot establish comparison ownership.
+    """
+
+    lever: Lever
+    episode_id: str
+    recurrence_id: str
+    driver_family: Optional[Exposure]
+    driver_source_key: Optional[tuple]
+    anchor_t: Optional[datetime]
+    unavailable_reason: Optional[str] = None
+
+
+def attributed_occurrences(
     bolus_events: Sequence[BolusEvent],
     cgm_readings: Sequence[CgmReading],
     basal_events: Sequence[BasalEvent] = (),
@@ -133,21 +152,12 @@ def tally_attributions(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
-) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
-    """Exposure counts (``n``) and unique occurrence counts (``k``), no narration.
+) -> Tuple[AttributedOccurrence, ...]:
+    """Attribute contextual inputs before a consumer filters owned anchors.
 
-    The **tally-only** path behind the outcome-summary clean rates (ADR 0007,
-    #113). It runs the same anchor → segment → split → attribute pipeline
-    :func:`assemble` does — so an episode is attributed *exactly one* lever, the
-    non-overlap invariant holds, and the counts match what the scenario engine
-    would produce — but it **skips** the expensive per-episode work: no
-    :func:`~.narrate.narrate`, no severity scoring, no ``window`` / timeline
-    payload, no ``Episode`` objects. It returns just the two tallies the clean
-    rates need: ``(exposure_counts, attributed_by_lever)``.
-
-    The flat clean-rate consumer assigns each ``k`` to the account named by the
-    lever's recurrence policy. Meal bolus fell short is unique-meal counted here;
-    ordinary levers retain episode identity.
+    This is the tally's unchanged classifier walk, without narration or scoring.
+    Context-only opportunities remain available to classification. Consumers apply
+    their half-open periods to ``anchor_t``, then deduplicate recurrence ids.
     """
     anchors = collect_anchors(
         bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
@@ -165,13 +175,11 @@ def tally_attributions(
         scenario_config=scenario_config,
         low_answers=low_answers,
     )
-    exposure_counts = _exposure_counts(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
+    families = opportunities.build_opportunities(
+        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
     )
-
-    attributed: Dict[Lever, int] = {}
-    seen_occurrences: Dict[Lever, set] = {}
-    for ep_anchors in ep_anchor_groups:
+    rows = []
+    for index, ep_anchors in enumerate(ep_anchor_groups):
         start = ep_anchors.start
         end = ep_anchors.end
         ctx_start = start - timedelta(minutes=scenario_config.engine_context_pad_min)
@@ -187,16 +195,69 @@ def tally_attributions(
         )
         if attr.lever is None:
             continue
-        if attr.lever is Lever.MEAL_BOLUS_SHORT:
-            policy = policy_for(attr.lever)
-            occurrence_id = policy.occurrence_for_episode(
-                "", bolus_events, attr.steps[0].t,
-                scenario_config=scenario_config,
-            )
-            if occurrence_id in seen_occurrences.setdefault(attr.lever, set()):
-                continue
-            seen_occurrences[attr.lever].add(occurrence_id)
-        attributed[attr.lever] = attributed.get(attr.lever, 0) + 1
+        episode_id = f"ep-{index:03d}"
+        policy = policy_for(attr.lever)
+        recurrence_id = policy.occurrence_for_episode(
+            episode_id, bolus_events, attr.trigger_t,
+            scenario_config=scenario_config,
+        )
+        driver = attr.driver_anchor
+        family, key = (opportunities.canonical_anchor_key(driver)
+                       if driver is not None else (None, None))
+        if attr.correction_pair is not None:
+            family, key = Exposure.CORRECTION_CLUSTERS, attr.correction_pair
+        elif (attr.lever is Lever.OVER_TREATED_LOW and driver is not None
+              and driver.rebound_nadir_t is not None):
+            matches = [item for item in families[Exposure.LOWS]
+                       if item.anchor_t == driver.rebound_nadir_t]
+            family = Exposure.LOWS
+            key = matches[0].source_key if len(matches) == 1 else None
+        driver_matches = [item for item in families.get(family, ())
+                          if item.source_key == key]
+        owned = None
+        if policy.recurrence_family is None:
+            matches = [item for item in policy.recurrence_population(
+                families, bolus_events, scenario_config=scenario_config,
+            ) if policy.occurrence_id(item) == recurrence_id]
+            if len(matches) == 1:
+                owned = matches[0].t
+        elif family is policy.recurrence_family and len(driver_matches) == 1:
+            owned = driver_matches[0].anchor_t
+        rows.append(AttributedOccurrence(
+            attr.lever, episode_id, recurrence_id, family, key, owned,
+            None if owned is not None else "unassociated_recurrence_anchor",
+        ))
+    return tuple(rows)
+
+
+def tally_attributions(
+    bolus_events: Sequence[BolusEvent],
+    cgm_readings: Sequence[CgmReading],
+    basal_events: Sequence[BasalEvent] = (),
+    *,
+    isf: Optional[float] = None,
+    scenario_config: ScenarioConfig = ScenarioConfig(),
+    low_answers: Sequence[LowPromptAnswer] = (),
+) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
+    """Exposure counts and unique attributed recurrence counts, without narration.
+
+    The legacy all-input aggregation keeps unavailable ownership rows: an absent
+    comparison anchor does not erase an existing attribution.
+    """
+    exposure_counts = _exposure_counts(
+        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
+    )
+    attributed: Dict[Lever, int] = {}
+    seen = set()
+    for row in attributed_occurrences(
+        bolus_events, cgm_readings, basal_events, isf=isf,
+        scenario_config=scenario_config, low_answers=low_answers,
+    ):
+        key = (row.lever, row.recurrence_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        attributed[row.lever] = attributed.get(row.lever, 0) + 1
     return exposure_counts, attributed
 
 

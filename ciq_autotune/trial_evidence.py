@@ -1,6 +1,6 @@
 """The per-period breakdown the Verify workstation renders (#660).
 
-One front door — :func:`trial_breakdown` — answering "what does one Trial's
+The legacy front door — :func:`trial_breakdown` — answering "what does one Trial's
 Before period look like beside its Trial period?" in the four shapes the ★ LOCKED
 Verify surface's data-bindings contract binds it to:
 
@@ -312,3 +312,88 @@ def _day_rows(cgm, bolus, span: Tuple[datetime, datetime]) -> List[dict]:
 def _span(period: dict) -> Tuple[datetime, datetime]:
     return (datetime.strptime(period["start"], _DT_FMT),
             datetime.strptime(period["end"], _DT_FMT))
+
+
+def comparison_evidence(*, parameter, slot, block, changed_at, before, after,
+                        start, end, cgm, bolus, basal, carbs, snapshots):
+    """Exact owned populations shared by comparison charts and scalar outcomes.
+
+    Inputs retain detection context; every returned reading and plotted point is
+    clipped to the half-open period. Meal windows form a union, never a weighted
+    concatenation. Rest evidence keeps its detected-window/fasting-step identity.
+    """
+    from .analyzers.isf import IsfConfig, fasting_steps
+    from .event_comparison import project_cohort
+    from .rest_window import detect_rest_windows
+
+    owned_cgm = [r for r in cgm if start <= r.t < end and r.bg is not None]
+    meals = [b for b in bolus if start <= b.t < end and _is_meal(b)
+             and (block is None or _in_block(b.t, block))]
+    intervals = []
+    occurrences = []
+    steps = []
+    windows = []
+    if parameter == "carb_ratio":
+        for meal in meals:
+            intervals.append((meal.t, min(end, meal.t + timedelta(hours=5))))
+            occurrences.append({
+                "id": f"meal-{meal.seq_num}" if meal.seq_num is not None else f"meal-{meal.t.isoformat()}",
+                "anchor_t": meal.t.isoformat(sep=" "),
+                "trace": {"cgm": [
+                    {"minute": (r.t - meal.t).total_seconds() / 60, "bg": r.bg}
+                    for r in owned_cgm
+                    if -60 <= (r.t - meal.t).total_seconds() / 60 <= 300
+                ]},
+            })
+    elif parameter in ("basal_rate", "isf"):
+        rest = [w for w in detect_rest_windows(cgm, bolus) if start <= w.start < end]
+        span = block
+        if span is None and slot:
+            minute = int(slot[:2]) * 60 + int(slot[3:5])
+            span = (minute, minute + 30)
+        for window in rest:
+            lo, hi = max(start, window.start), min(end, window.end)
+            windows.append({"id": f"rest:{window.date}", "start": str(lo), "end": str(hi)})
+            if span is None:
+                intervals.append((lo, hi))
+            else:
+                day = lo.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+                while day < hi:
+                    left = max(lo, day + timedelta(minutes=span[0]))
+                    right = min(hi, day + timedelta(minutes=span[1]))
+                    if left < right:
+                        intervals.append((left, right))
+                    day += timedelta(days=1)
+        if parameter == "isf":
+            next_times = {a.t: b.t for a, b in zip(cgm, cgm[1:])}
+            for step in fasting_steps(bolus, basal, cgm, IsfConfig(), rest, carb_entries=carbs):
+                finish = next_times.get(step.t)
+                if finish is not None and finish < end and any(
+                    lo <= step.t and finish <= hi for lo, hi in intervals
+                ):
+                    steps.append({"t": str(step.t), "window_id": f"rest:{step.cluster}",
+                                  "insulin_acted": step.insulin_acted, "dbg": step.dbg})
+    else:
+        if start < end:
+            intervals.append((start, end))
+    merged = []
+    for lo, hi in sorted(intervals):
+        if lo >= hi:
+            continue
+        if merged and lo <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(hi, merged[-1][1]))
+        else:
+            merged.append((lo, hi))
+    readings = [r for r in owned_cgm if any(lo <= r.t < hi for lo, hi in merged)]
+    return {
+        "readings": readings, "intervals": merged, "meals": meals,
+        "view": {"kind": parameter, "occurrences": occurrences,
+                 "projection": project_cohort("period", occurrences, (-60, 300))
+                 if parameter == "carb_ratio" else None,
+                 "clock": _clock_envelope(readings, (start, end)),
+                 "rest_windows": windows, "fasting_steps": steps,
+                 "changes": _constituent_changes(
+                     snapshots, parameter=parameter, slot=slot, changed_at=changed_at,
+                     before=before, after=after,
+                 )},
+    }

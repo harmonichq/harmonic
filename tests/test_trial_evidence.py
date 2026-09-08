@@ -222,3 +222,38 @@ class TrialBreakdownTest(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class ExactComparisonEvidenceTest(unittest.TestCase):
+    def test_meal_union_does_not_double_count_and_curves_clip_to_period(self):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        from ciq_autotune.events import CgmReading, BolusEvent
+        start, end = datetime(2026,6,1,12), datetime(2026,6,1,16)
+        cgm = [CgmReading(start + timedelta(minutes=i*5), bg=120) for i in range(-12, 61)]
+        meals = [BolusEvent(start, insulin=4, carbs=40, seq_num=1),
+                 BolusEvent(start+timedelta(hours=1), insulin=4, carbs=40, seq_num=2),
+                 BolusEvent(end, insulin=4, carbs=40, seq_num=3)]
+        result = comparison_evidence(parameter="carb_ratio", slot=None, block=(720,960),
+                                     changed_at=start, before=10, after=9, start=start, end=end,
+                                     cgm=cgm, bolus=meals, basal=[], carbs=[], snapshots=[])
+        self.assertEqual(len(result["readings"]),48)
+        self.assertEqual(result["intervals"],[(start,end)])
+        self.assertEqual(len(result["view"]["occurrences"]),2)
+        self.assertEqual(result["view"]["projection"]["routed_count"],2)
+        for occurrence in result["view"]["occurrences"]:
+            anchor = datetime.fromisoformat(occurrence["anchor_t"])
+            self.assertTrue(all(start <= anchor + timedelta(minutes=p["minute"]) < end
+                                for p in occurrence["trace"]["cgm"]))
+
+    def test_isf_keeps_real_fasting_steps_in_owned_rest_hours(self):
+        from ciq_autotune.trial_evidence import comparison_evidence
+        from ciq_autotune.events import CgmReading
+        start, end = datetime(2026,6,1), datetime(2026,6,3)
+        cgm = [CgmReading(start + timedelta(minutes=5*i), bg=110+i%3) for i in range(576)]
+        result = comparison_evidence(parameter="isf", slot="01:00", block=None,
+                                     changed_at=start, before=40, after=45, start=start, end=end,
+                                     cgm=cgm, bolus=[], basal=[], carbs=[], snapshots=[])
+        self.assertGreater(len(result["view"]["rest_windows"]),0)
+        self.assertGreater(len(result["view"]["fasting_steps"]),0)
+        self.assertTrue(all(r.t.hour == 1 and r.t.minute < 30 for r in result["readings"]))
+        self.assertTrue(all(step["window_id"].startswith("rest:") for step in result["view"]["fasting_steps"]))

@@ -661,16 +661,9 @@ def post_meal_arc(meals: Sequence, cgm: Sequence, *, ctx_meals: Optional[Sequenc
     next bolus — which may sit just past the window edge; it defaults to ``meals``. Pure
     function of its inputs, so it is unit-testable on a synthetic series.
     """
-    times = sorted(m.t for m in (ctx_meals if ctx_meals is not None else meals))
-    peaks: List[float] = []
-    nadirs: List[float] = []
-    for m in meals:
-        nxt = next((t for t in times if t > m.t), None)
-        arc = _meal_arc(m.t, nxt, cgm)
-        if arc.peak is not None:
-            peaks.append(arc.peak)
-        if arc.nadir_qualifies and arc.nadir is not None:
-            nadirs.append(arc.nadir)
+    measurements = meal_measurements(meals, cgm, ctx_meals=ctx_meals)
+    peaks = [row["peak"] for row in measurements if row["peak"] is not None]
+    nadirs = [row["nadir"] for row in measurements if row["nadir"] is not None]
     peak_med = round(statistics.median(peaks), 1) if len(peaks) >= ARC_MIN_MEALS else None
     nadir_med = round(statistics.median(nadirs), 1) if len(nadirs) >= ARC_MIN_MEALS else None
     return peak_med, nadir_med, len(peaks), len(nadirs)
@@ -1356,3 +1349,105 @@ def markdown_trend(trend: OutcomesTrend) -> str:
         out.append(f"| `{cells}` | {current} | {_delta(ol.series, lambda v: v)}pt |")
         out.append("")
     return "\n".join(out)
+
+
+def meal_measurements(meals, cgm, *, ctx_meals=None):
+    """Readable per-meal measurements before any display or comparison support gate.
+
+    Context meals truncate peak/nadir using the existing arc policy. The caller
+    owns the CGM period, so context never supplies an out-of-period measurement.
+    """
+    times = sorted(m.t for m in (ctx_meals if ctx_meals is not None else meals))
+    series = CgmSeries(cgm, timedelta(minutes=IcConfig().bg0_max_gap_min))
+    rows = []
+    for meal in meals:
+        nxt = next((t for t in times if t > meal.t), None)
+        arc = _meal_arc(meal.t, nxt, cgm)
+        rows.append({"t": meal.t, "peak": arc.peak,
+                     "nadir": arc.nadir if arc.nadir_qualifies else None,
+                     "bg0": meal_start_bg(meal, series)})
+    return rows
+
+
+def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,
+                          scenario_config=ScenarioConfig(), low_answers=()):
+    """Own exact-period recurrence observations after full-context attribution.
+
+    Each row retains its pump date for comparison resampling. Stacking's behavior
+    and harm remain separate under their existing producer, including pairs whose
+    first correction precedes the period. No active-watch or Store write occurs.
+    """
+    from .analyzers.scenario import attributed_occurrences
+    from .analyzers.scenario.opportunities import build_opportunities
+
+    if lever == OVERRIDE_LEVER:
+        rows = []
+        for dose in bolus:
+            if start <= dose.t < end:
+                k, harm = count_overrides(
+                    [dose], [r for r in cgm if r.t < end], basal,
+                    scenario_config=scenario_config,
+                )
+                rows.append({"t": dose.t, "n": 1, "k": k, "harm": harm})
+        return {"rows": rows, "denominator": OVERRIDE_EXPOSURE, "reason": None}
+    lv = Lever(lever)
+    policy = policy_for(lv)
+    families = build_opportunities(bolus, cgm, basal, scenario_config=scenario_config)
+    population = policy.recurrence_population(
+        families, bolus, scenario_config=scenario_config,
+    )
+    owned = [item for item in population
+             if start <= (item.t if policy.recurrence_family is None else item.anchor_t) < end]
+    rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
+             "n": 1, "k": 0, "harm": 0} for item in owned]
+    if lv is Lever.CORRECTION_STACKING:
+        for item, row in zip(owned, rows):
+            row["k"], _ = count_correction_stacks(
+                item.members, bolus, cgm, basal, scenario_config=scenario_config,
+            )
+            _, row["harm"] = count_correction_stacks(
+                item.members, bolus, [r for r in cgm if r.t < end], basal,
+                scenario_config=scenario_config,
+            )
+    else:
+        occurrences = [row for row in attributed_occurrences(
+            bolus, cgm, basal, isf=isf, scenario_config=scenario_config,
+            low_answers=low_answers,
+        ) if row.lever is lv]
+        if any(row.unavailable_reason for row in occurrences):
+            return {"rows": rows, "denominator": policy.recurrence_noun,
+                    "reason": "unassociated_recurrence_anchor"}
+        seen = set()
+        for occurrence in occurrences:
+            if not start <= occurrence.anchor_t < end:
+                continue
+            if occurrence.recurrence_id in seen:
+                continue
+            seen.add(occurrence.recurrence_id)
+            # Attribution and denominator use the provider's same owned time.
+            match = next((row for row in rows if row["t"] == occurrence.anchor_t
+                          and row["k"] == 0), None)
+            if match is None:
+                return {"rows": rows, "denominator": policy.recurrence_noun,
+                        "reason": "attribution_exceeds_owned_population"}
+            match["k"] = 1
+    return {"rows": rows, "denominator": policy.recurrence_noun, "reason": None}
+
+
+def glycemic_rate_counts(readings, attribute):
+    """Sufficient counts for a day-resampled rate, using compute_metrics policy.
+
+    Singleton classifications are exactly zero or 100; aggregating their counts
+    preserves the pooled statistic without reimplementing glucose thresholds or
+    running the full mean/dispersion calculation on every bootstrap resample.
+    """
+    classifications = {}
+    numerator = denominator = 0
+    for reading in readings:
+        if reading.bg is None:
+            continue
+        if reading.bg not in classifications:
+            classifications[reading.bg] = getattr(compute_metrics([reading]), attribute) / 100
+        numerator += classifications[reading.bg]
+        denominator += 1
+    return numerator, denominator

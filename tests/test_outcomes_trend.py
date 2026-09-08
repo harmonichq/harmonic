@@ -1287,3 +1287,37 @@ class TrialWindowInvarianceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExactPeriodObservationsTest(unittest.TestCase):
+    def test_cross_boundary_correction_pair_keeps_behavior_and_clips_harm(self):
+        from ciq_autotune.outcomes_trend import behavior_observations
+        start = datetime(2026, 6, 1, 12)
+        bolus = [BolusEvent(start - timedelta(minutes=30), insulin=3, seq_num=1),
+                 BolusEvent(start, insulin=3, seq_num=2)]
+        cgm = _cgm([120] * 24 + [60] * 6, start=start - timedelta(minutes=60))
+        result = behavior_observations(bolus, cgm, [], lever="correction_stacking",
+                                       start=start, end=start + timedelta(minutes=45), isf=40)
+        self.assertEqual(result["rows"], [{"t":start, "n":1, "k":1, "harm":0}])
+        self.assertIsNone(result["reason"])
+
+    def test_meal_measurements_share_legacy_arc_and_keep_separate_support(self):
+        from ciq_autotune.outcomes_trend import meal_measurements
+        start = datetime(2026, 6, 1, 12)
+        meals = [_meal(start + timedelta(days=i)) for i in range(5)]
+        cgm = [CgmReading(m.t + timedelta(minutes=offset), bg=bg)
+               for m in meals for offset, bg in ((-5,110), (60,180), (240,85))]
+        rows = meal_measurements(meals, cgm)
+        self.assertEqual([r["peak"] for r in rows], [180]*5)
+        self.assertEqual([r["nadir"] for r in rows], [85]*5)
+        self.assertEqual(post_meal_arc(meals, cgm), (180,85,5,5))
+
+    def test_glucose_rate_sufficient_counts_match_pooled_metric(self):
+        from ciq_autotune.outcomes import compute_metrics, _pct
+        from ciq_autotune.outcomes_trend import glycemic_rate_counts
+        readings = [
+            CgmReading(datetime(2026,6,1) + timedelta(minutes=5*i), bg=value)
+            for i,value in enumerate([None,55,69,70,110,180,181,250,350])]
+        for attr in ("tir", "tbr_lvl1", "tar_lvl1"):
+            k,n = glycemic_rate_counts(readings, attr)
+            self.assertEqual(_pct(k,n), getattr(compute_metrics(readings),attr))

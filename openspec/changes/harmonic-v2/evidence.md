@@ -19,6 +19,18 @@ with its 12-opportunity minimum, yields gates **12, 12, 12, and 27** in that
 order. Overnight has no aggregate rate: its denominator is the new
 `harm_band_source_nights` producer and uses the same 12-opportunity floor.
 
+The contention rule is exact: contention exists only when the admitted habit's
+Confidence interval `[lo, hi]` intersects the staged setting owner's
+recurrence-channel `[lo, hi]`. Inside that band the staged setting leads;
+outside it the greatest existing Priority leads; an exact Priority tie retains
+canonical-subject order; and withheld bounds mean no contention. The synthetic
+`pattern-near-tie` receipt exercises the non-contention branch (the staged
+overnight setting has withheld bounds), selecting
+`pattern:highs_after_meals`; the non-overlapping variant in
+`tests/test_pattern_policy.py` selects the greater-Priority habit. The overlap
+variant there selects the staged setting. These cases retain the owner-produced
+intervals and never derive an interval from a pattern rate.
+
 The 12-night overnight floor is therefore an evidence-readiness floor, not a
 basal classifier, staging, or support-floor change. The replay's synthetic thin
 outcomes are literal QA expectations: the 6-meal carb-undercount case is
@@ -37,7 +49,7 @@ readiness, Focus admission shape, or Trial-XOR-Focus admission state.
 
 ### #393 terminology inventory
 
-At the c4 base, `git grep -i -n -P '\\bpatterns?\\b' -- ':!node_modules/**'
+At the c4 base, `git grep -i -n -P '\bpatterns?\b' -- ':!node_modules/**'
 ':!dist/**'` returned **915** tracked-file hits. Their disposition is closed:
 
 | Hit class | Disposition |

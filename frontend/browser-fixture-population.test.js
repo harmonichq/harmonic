@@ -12,7 +12,10 @@ import {
   populateFindingCasePreparation,
   populateFindingsProjectionInput,
 } from './browser-fixture-population.js';
-import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
+import {
+  assertMatchingFindingCasePreparation,
+  validFindingCaseFile,
+} from './finding-case-file-validation.js';
 import { queueMeta, queueRows } from './diagnose-findings-queue.js';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
@@ -110,12 +113,28 @@ test('browser Pattern rows and case files share the public producer denominator'
   const caseFile = projectPatternCaseFile(capture, {
     patternChart: row.pattern_chart, projectionId: preparation.projection_id,
   });
+  const clockCase = projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, projectionId: preparation.projection_id,
+    alignment: 'clock',
+  });
 
   assert.deepEqual(
     [caseFile.summary.denominator, caseFile.summary.claimed],
     [row.pattern.n, row.pattern.k],
   );
   assert.equal(caseFile.verdict_counts.fired, row.pattern.k);
+  assert.equal(clockCase.projection.alignment, 'clock');
+  assert.equal(clockCase.projection.clock.total, row.pattern.k);
+  for (const field of ['finding', 'family', 'summary', 'verdict_counts', 'occurrences']) {
+    assert.deepEqual(clockCase[field], caseFile[field]);
+  }
+  const selectedClock = projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, alignment: 'clock',
+    occurrenceId: clockCase.occurrences[0].id,
+  });
+  assert.equal(selectedClock.selection.state, 'selected');
+  assert.equal(selectedClock.selection.detail.id, clockCase.occurrences[0].id);
+  assert.equal(validFindingCaseFile(selectedClock), true);
   assert.deepEqual(row.pattern_chart, row.case_header.pattern_chart);
   assert.equal(row.event_chart, null);
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
@@ -157,6 +176,9 @@ test('memberless Patterns remain served without an invented chart', () => {
   assert.equal(row.pattern.n, 20);
   assert.equal(row.pattern_chart, null);
   assert.equal(projectPatternCaseFile(capture, { patternChart: row.pattern_chart }), null);
+  assert.equal(projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, alignment: 'clock',
+  }), null);
 });
 
 test('every chartable fixture Pattern resolves through preparation validation', () => {

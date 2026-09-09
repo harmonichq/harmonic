@@ -325,7 +325,7 @@ function patternCohort(key, name, rows, window) {
 
 /** Fixture-only server answer for the canonical Pattern case-file coordinate. */
 export function projectPatternCaseFile(capture, {
-  patternChart, projectionId = `fp_${'2'.repeat(32)}`, alignment = 'event',
+  patternChart, projectionId = `fp_${'2'.repeat(32)}`, alignment = 'event', occurrenceId,
 } = {}) {
   if (!patternChart) return null;
   const { key } = patternChart;
@@ -390,6 +390,27 @@ export function projectPatternCaseFile(capture, {
     };
   }
   const cleanOccurrences = occurrences.map(({ trace, ...row }) => row);
+  const activeIds = new Set(alignment === 'event'
+    ? projection.cohorts.flatMap((cohort) => cohort.occurrence_ids)
+    : occurrences.map((row) => row.id));
+  const selected = occurrences.find((row) => row.id === occurrenceId && activeIds.has(row.id));
+  let selection = { state: 'none', requested_id: null, detail: null };
+  if (occurrenceId && !selected) {
+    selection = { state: 'unavailable', requested_id: occurrenceId, detail: null };
+  } else if (selected) {
+    const detail = {
+      ...cleanOccurrences.find((row) => row.id === selected.id),
+      glucose: selected.trace.cgm.map((point) => ({
+        t: localTimestamp(selected.anchor.t, point.minute), ...point,
+      })),
+      markers: [], source_corrections: [], day_target: { date: selected.date },
+    };
+    if (alignment === 'event') {
+      detail.comparison_cohort = projection.cohorts.find((cohort) =>
+        cohort.occurrence_ids.includes(selected.id)).key;
+    }
+    selection = { state: 'selected', requested_id: occurrenceId, detail };
+  }
   return {
     schema: 'diagnose-finding-case-file-v1', projection_id: projectionId,
     finding: { id: pattern.subject, lever: pattern.key, subject: pattern.subject,
@@ -399,6 +420,6 @@ export function projectPatternCaseFile(capture, {
     summary: { claimed: claimed.length, denominator: occurrences.length,
       noun: family.replace('_', ' ') },
     verdict_counts: counts, occurrences: cleanOccurrences, projection,
-    selection: { state: 'none', requested_id: null, detail: null },
+    selection,
   };
 }

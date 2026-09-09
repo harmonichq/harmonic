@@ -248,6 +248,24 @@ class PreparedCases:
         projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
                       else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
                                   self.bolus, self.source_window_days, self.basal))
+        cohort_of = {
+            occurrence_id: cohort["key"]
+            for cohort in projection["cohorts"]
+            for occurrence_id in cohort["occurrence_ids"]
+        }
+        active_ids = cohort_of.keys() if alignment == "event" else {
+            member.id for member in pattern_roster
+        }
+        selection = {"state": "none", "requested_id": None, "detail": None}
+        if occ is not None:
+            selected = next((member for member in pattern_roster if member.id == occ), None)
+            selection = {"state": "unavailable", "requested_id": occ, "detail": None}
+            if selected is not None and selected.id in active_ids:
+                detail = _detail(selected, population_lever, self.cgm, self.basal,
+                                 self.bolus, self.carbs)
+                if alignment == "event":
+                    detail["comparison_cohort"] = cohort_of[occ]
+                selection = {"state": "selected", "requested_id": occ, "detail": detail}
         occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
                        for member in pattern_roster]
         return {
@@ -261,7 +279,7 @@ class PreparedCases:
                         "noun": _population_noun(policy_for(population_lever))},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection,
-            "selection": {"state": "none", "requested_id": None, "detail": None},
+            "selection": selection,
         }
 
 

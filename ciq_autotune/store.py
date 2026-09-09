@@ -584,7 +584,13 @@ class Store:
             statements.extend(f"DROP TABLE {table}" for table in stale)
             if stale:
                 statements.append(_SCHEMA)
-            statements.extend(("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1", "COMMIT"))
+            # The Pattern Focus compatibility key and its identity migration run
+            # before a serving cache exists; unlike analyzer-input migrations it
+            # must not create a synthetic analysis generation.
+            if stale or any((table, column) != ("focus", "pattern_key")
+                            for table, column, _type in additions):
+                statements.append("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            statements.append("COMMIT")
             self.conn.executescript(";\n".join(statements) + ";")
         from .analyzers.scenario.outcome_patterns import _ROSTER
         from hashlib import sha256
@@ -616,7 +622,12 @@ class Store:
                 key = owner.get(row["lever"])
                 if key:
                     self.conn.execute("UPDATE focus SET pattern_key=? WHERE id=?", (key, row["id"]))
-            self._advance_revision()
+                    record = self.follow_up_record("focus", row["id"])
+                    if record is not None and record.get("pattern_key") != key:
+                        self.conn.execute(
+                            "UPDATE follow_up_records SET record_json=? WHERE kind='focus' AND id=?",
+                            (json.dumps({**record, "pattern_key": key}, sort_keys=True), str(row["id"])),
+                        )
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event

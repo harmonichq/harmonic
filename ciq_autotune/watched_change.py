@@ -1488,7 +1488,9 @@ def active_watched_change(store, basal_events, bolus_events, snaps, *, now, cgm_
     if verdict["active_kind"] == "trial":
         return _retained_trial(store, store.follow_up_record("trial", verdict["active_id"]), now).view
     if verdict["active_kind"] == "focus":
-        return focus_view(store.follow_up_record("focus", verdict["active_id"]))
+        record = store.follow_up_record("focus", verdict["active_id"])
+        focus = store.active_focus()
+        return focus_view({**record, "pattern_key": focus.get("pattern_key")})
     return None
 
 

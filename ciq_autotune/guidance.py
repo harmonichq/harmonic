@@ -241,6 +241,14 @@ def _pattern_candidate(pattern, sources):
     readiness = pattern["readiness"]
     habit_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
                      if member["kind"] == "habit"]
+    setting_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
+                       if member["kind"] == "setting"]
+    concerns = [*habit_sources, *setting_sources]
+    selected_source = next((row for row in concerns if row.get("action") and
+                            (row.get("parameter") == pattern.get("action") or
+                             row.get("action", {}).get("action_id") == pattern.get("action"))), None)
+    if selected_source is not None:
+        action = deepcopy(selected_source["action"])
     unavailable = any(row.get("unavailable") for row in habit_sources)
     return {
         "subject": pattern["subject"], "kind": "pattern", "pattern_key": pattern["key"],
@@ -259,6 +267,7 @@ def _pattern_candidate(pattern, sources):
         )},
         "admission_route": pattern["admission_route"], "collapse": pattern["collapse"],
         "chosen_member": chosen,
+        "has_concern": any(concerns),
     }
 
 
@@ -361,9 +370,10 @@ def preference_status(candidate, preference):
     if current["kind"] == "setting":
         reason = _setting_change(saved.get("action") or [], current["action"]) or _new_harm(saved.get("seriousness") or [], current["seriousness"])
     else:
+        seriousness, saved_seriousness = current.get("seriousness"), saved.get("seriousness")
         reason = ("A recommended action is now available." if not saved.get("action") and current["action"]
                   else "The recommended action changed." if saved.get("action") and current["action"] and saved["action"] != current["action"]
-                  else "The owner-reported seriousness increased." if _SEVERITY.get(current.get("seriousness"), -1) > _SEVERITY.get(saved.get("seriousness"), -1) else None)
+                  else "The owner-reported seriousness increased." if isinstance(seriousness, str) and isinstance(saved_seriousness, str) and _SEVERITY.get(seriousness, -1) > _SEVERITY.get(saved_seriousness, -1) else None)
         if current["kind"] == "pattern" and saved.get("member_set_fingerprint") != current.get("member_set_fingerprint"):
             reason = "The Pattern member set changed."
     return {"set_aside": reason is None, "return_reason": reason}
@@ -417,8 +427,8 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
     selection_rows = [row for row in all_candidates if row["kind"] != "setting"
-                      and (row.get("action") is not None or row.get("unavailable")
-                           or any(member.get("k", 0) for member in row.get("members", ()) ))]
+                      and (row["kind"] != "pattern" or row.get("action") is not None
+                           or row.get("unavailable") or row.get("has_concern"))]
     available = sorted((row for row in selection_rows
                         if row["admitted"] and isinstance(row.get("priority"), int)
                         and not row["preference"]["set_aside"]),
@@ -450,7 +460,7 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
     else:
         selected, disposition = None, "quiet"
         admission_reason = ("All current concerns are set aside."
-                            if all_candidates else "No current concern.")
+                            if selection_rows else "No current concern.")
         ordering_reason = None
     return {"schema": SCHEMA, "analysis_generation": generation, "window": window, "active_watch": active_watch,
             "selected": selected, "disposition": disposition,

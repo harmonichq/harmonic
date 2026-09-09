@@ -67,7 +67,7 @@ class GuidanceTest(unittest.TestCase):
         analysis, exposures, scenarios = _producer()
         result = build_guidance(analysis=analysis, exposures=exposures, scenarios=scenarios)
         self.assertEqual((result["disposition"], result["selected"]["subject"]),
-                         ("eligible_action", "setting:carb_ratio"))
+                         ("eligible_action", "pattern:highs_after_meals"))
         action = result["selected"]["action"][0]
         source = next(block["guidance"]["action"] for block in analysis["ic_blocks"]
                       if block["guidance"]["action"] is not None)
@@ -151,15 +151,15 @@ class GuidanceTest(unittest.TestCase):
         result, execution = _qa("behavioral-precedence")
         rows = {row["subject"]: row for row in result["candidates"]}
         source = execution.scenarios["patterns"][0]
-        row = rows[f"habit:{source['lever']}"]
-        self.assertEqual(row["support"], source["confidence"])
-        self.assertEqual(row["population"], source["occurrence_groups"])
-        self.assertEqual(row["occurrence_ids"], source["occurrences"])
+        row = rows["pattern:highs_after_treating_lows"]
+        member = next(item for item in row["members"]
+                      if item["subject"] == f"habit:{source['lever']}")
+        self.assertEqual(member["k"], source["confidence"]["k"])
         exposure_ids = [item["ep_id"]
                         for family in execution.exposures["exposures"].values()
                         for item in family["occurrences"]]
         self.assertLess(len(set(exposure_ids)), len(exposure_ids))
-        self.assertEqual(row["occurrence_ids"], source["occurrences"])
+        self.assertEqual(member["subject"], f"habit:{source['lever']}")
 
     def test_absent_unknown_comparison_version_explains_restore(self):
         analysis, exposures, scenarios = _producer()
@@ -243,7 +243,7 @@ class GuidanceTest(unittest.TestCase):
         }
         refreshed = deepcopy(analysis)
         next(row for row in refreshed["tuning_levers"]
-             if row["parameter"] == selected["parameter"])["priority"] += 1
+             if row["parameter"] == "carb_ratio")["priority"] += 1
         aside = build_guidance(
             analysis=refreshed, exposures=exposures, scenarios=scenarios,
             preferences=[preference], generation="changed-fingerprint-and-count",

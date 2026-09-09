@@ -34,7 +34,7 @@ UI exploration.
 **Basal profile**:
 A wall-clock schedule of hourly-ish background insulin rates the pump follows when
 CIQ isn't intervening. The thing this project exists to tune.
-_Avoid_: basal program, basal pattern.
+_Avoid_: basal program, recurring basal motif.
 
 **Programmed basal**:
 The rate the user's basal profile calls for at a given time — what the pump *would*
@@ -272,7 +272,7 @@ _Avoid_: validation, replay.
 ## Behavioral layer
 
 **Detector**:
-An analyzer that inspects the timeline for one class of actionable pattern (e.g.
+An analyzer that inspects the timeline for one class of actionable behavior (e.g.
 late bolus, correction stacking) and emits Findings.
 _Avoid_: rule, check, analyzer (analyzer is the broader module family).
 
@@ -353,7 +353,7 @@ _Avoid_: match, dedup, suppression (that's the effect, not the relationship).
 
 **Scenario**:
 An episode-level, ranked account of the recurring situations a user faces (the #64
-Patterns view). Built by clustering the timeline into episodes and attributing a
+retired Scenario view). Built by clustering the timeline into episodes and attributing a
 cause to each.
 _Avoid_: story, narrative, situation.
 
@@ -384,8 +384,17 @@ _Avoid_: knob, category (say flavor); do not equate flavor with lever type — o
 lever type can resolve to either flavor.
 
 **Pattern**:
-A group of episodes sharing a lever, scored and ranked — the recurring behavior a
-user should act on.
+The outcome-shaped advisory-selection unit: highs after meals, lows after meals,
+highs after treating lows, lows after correcting highs, or overnight lows with no
+insulin on board. A Pattern owns members, one rate on one denominator and one
+chart; it is the subject the app prices, leads with, sets aside and follows as a
+Focus.
+_Avoid_: shape, trend, theme, cluster, problem.
+
+**Lever pattern**:
+A group of episodes sharing one Lever, scored and ranked — the recurring behavior a
+user should act on. The outcome-shaped advisory-selection unit is a **Pattern**;
+ADR 391 dated 2026-09-08 superseded this former bare use.
 _Avoid_: trend, theme, cluster.
 
 **Exposure population**:
@@ -519,7 +528,7 @@ _Avoid_: post-meal crash (too narrow — a nadir can be 90 without a crash), flo
 
 **Outcome summary**:
 The aggregate glycemic-quality snapshot over a window — how the user *is doing*,
-the positive-framed counterpart to the deficit-framed Findings/Patterns. Two
+the positive-framed counterpart to deficit-framed Findings and patterns. Two
 layers: objective Metrics and derived Clean rates. Not a new analyzer; Metrics is
 new computation over the CGM series, Clean rates are read off the existing
 scenario exposure machinery.
@@ -533,9 +542,10 @@ _Avoid_: stat, KPI, score.
 **Clean rate**:
 The fraction of opportunities of a given Exposure (meals, lows, correction
 clusters, highs) that drew **no** negative Lever — the derived "win". The
-complement of a Pattern's rate against the same denominator. Not a detected
+complement of a negative Lever attribution against its own Exposure denominator.
+It is not a Pattern rate and is not a detected
 object; there are no positive detectors.
-_Avoid_: win, success rate, positive finding, good pattern.
+_Avoid_: win, success rate, positive finding, good outcome.
 
 **Localized outcome**:
 A Verify outcome card that carries a *where* — a time-of-day, day-of-week, or
@@ -545,7 +555,7 @@ outcome, and an outcome may carry a where. Ships only after passing **Confound
 triage** plus day-level statistics and a stability check; hides entirely when not
 currently relevant. Never pinnable as a Focus; promotion to a **Lever** is a human
 act (issue + ADR), never a runtime one (adr-362).
-_Avoid_: pattern card, insight, localized finding (Finding is the behavioral-layer
+_Avoid_: outcome card, insight, localized finding (Finding is the behavioral-layer
 object).
 
 **Confound triage**:
@@ -568,7 +578,7 @@ One strict tier — no "trending" mentions (adr-365).
 _Avoid_: summary, feed, highlights, what's-new (fine as UI copy only).
 
 **Tracked candidate**:
-One cell of the **Pattern sweep** that shows signal but has not cleared the bar —
+One cell of the **candidate sweep** that shows signal but has not cleared the bar —
 re-priced automatically as data accrues, era-bounded (its evidence restarts at the
 most recent settings regime change or data gap, so old eras never rescue or dilute
 it). Never named in the UI while unproven: the Verify footnote reports the sweep's
@@ -580,7 +590,7 @@ _Avoid_: pending card, watch-list item (the watch-list is Trial/Focus territory)
 hypothesis (too lab-coat for UI copy), founding member (the hand-picked list is
 retired).
 
-**Pattern sweep**:
+**Candidate sweep**:
 The systematic enumeration of a **closed candidate grammar** — outcome × where
 (hour-of-day blocks, day-of-week, weekend/weekday, site-age buckets, late-meal
 exposure, suspend proximity, post-low context; pump-derived dimensions only, per
@@ -590,7 +600,7 @@ significance bar tightened for the number of cells swept (multiplicity control).
 The grammar is versioned; growing it is a reviewed change, but membership is
 never authored by hand. The six adr-364 hand candidates are its acceptance
 fixtures: a correct sweep re-derives and re-kills all six.
-_Avoid_: pattern engine (adr-362 rejected the layer), mining pass (uncorrected),
+_Avoid_: candidate engine (adr-362 rejected the layer), mining pass (uncorrected),
 scan (say sweep).
 
 **Rest window**:

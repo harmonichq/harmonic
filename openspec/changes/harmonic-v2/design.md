@@ -1529,3 +1529,326 @@ additive response assertions, and refreshes only the
 named existing derived artifacts with their existing generators. Completed Store and
 comparison tasks and all accepted comparison decisions remain intact. No production
 comparison edit, UI work, new fixture family or weaker delivery gate is admitted.
+
+
+## ADR 348 — Freeze the desktop lock and admit one integrated UI child
+
+The selected desktop direction now has a formal UI Craft contract:
+`mockups/harmonic-v2-desktop.lock.md`, with the ★ LOCKED narrative header in
+`mockups/harmonic-v2-glucose.html` and its primary companion module. The route
+is `lock` rather than `revise` because `/v2/` has no shipped embodiment; the
+predecessor inventory ran anyway, because this surface takes over jobs the
+shipped Cockpit shell and Finding → evidence routing surfaces perform today.
+Both v1 surfaces stay served and registered, and their ledgers are unedited.
+The manifest carries thirty-four terms `HV2-01`–`HV2-34`, the complete
+predecessor disposition for the cockpit, finding/evidence, Diagnose-registry and
+executable lists, and every retirement's existing operator sanction. No sanction
+originates in the manifest, and no historical ledger was rewritten: the two
+stories sharing the reused `P55` identifier are cited by ledger path plus story
+title, boundary-crossing draw kept and the global Align Tab stop retired under
+its own ruling.
+
+Precedence is explicit, because three authorities answer three different
+questions. The selected prototype and the adopted repair records govern `/v2/`
+arrangement, hierarchy, destination behavior, acknowledgment and return. The
+shipped app's token layer, role-based chrome, sibling geometry and production
+chart renderers govern component material. Backend responses govern identity,
+eligibility, readiness, admission, permissions, evidence populations, periods,
+comparison results, persistence and endings. Where the prototype fed an
+arrangement from page memory, the build keeps the arrangement and binds it to
+the serialized field: watch maturity copy stays lifecycle metadata and supplies
+no evidence readiness, which comes from the selected record's retained
+comparison. The backend bindings verified at `3686b417` are unchanged at the
+final CI candidate, and no backend capability is owed.
+
+**Why a fifth native child rather than a component or view backlog.** The
+delivery sequence caps ordinary splits at three and requires a written
+dependency or independently-shippable-capability justification beyond that. This
+child clears both. Its dependency is real and now satisfied: a complete
+Python-served desktop composition cannot be accepted before the merged guidance
+capability (#384) and the merged durable follow-up APIs (#387) exist, because
+its acceptance turns on rendering served admission, permissions, readiness,
+endings and history rather than on page memory. Its capability is
+independently shippable: `/v2/` served by the packaged Python runtime with v1
+still available, completing the priority → setting or habit change → follow-up →
+saved conclusion loop behind a preview route. Both loops stay in one child
+because they share one desk, one navigation contract, one active-change seat and
+one history surface; splitting them would produce two halves neither of which
+completes the first-release milestone, and a per-chart or per-view backlog would
+fragment exactly the composition the lock exists to hold.
+
+Sequencing is the lock's own rule and is not negotiable by the build: the `★
+FROZEN` v2 behavior ledger and its fail-closed replay are written **before** any
+production UI implementation, following `behavior-sweep`. The complete synthetic
+acceptance fixture matrix, the verbatim-first port, the paired prototype and
+built-app fidelity evidence at both target viewports, the one-row-per-term
+fidelity ledger, and human acceptance of the complete first usable release
+follow in their existing stages under tasks 3.4 and 3.5. Task 2.4 stays open
+until that ledger and replay exist; this decision formalizes the contract, not
+its verification.
+
+This admits no mobile design or acceptance, no root-route cutover and no v1
+retirement; those remain tasks 4.1–4.3. It opens no new concept, navigation or
+naming round. `/v2/` names its destination `Explore` under *ADR 348 — Adopt the
+reviewed desktop direction*, and v1's `Diagnose` is not renamed — the open
+question in `predecessor.md` was about renaming the shipped surface, which this
+work does not do. Watch fourteen-day maturity and twenty-eight-day expiry remain
+accepted lifecycle metadata and are not reopened. This is a formal design
+contract; it is not fidelity evidence, built-app acceptance or release approval,
+and it authorizes no production edit on its own.
+
+## September 8 direction change — outcome shapes and three destinations
+
+The grounded September 8 interview, recorded in
+`docs/scope/what-harmonic-is-for.md`, showed that the existing individual-lever
+headline obscures the recurring outcomes the wearer needs to act on. Its settled
+ledger path opened child epic #390 to reshape the first release around outcome
+shapes and three destinations. This planning change does not reopen v2's loop,
+backend authorities or data boundary.
+
+### Decisions already made
+
+- Diagnose leads with outcome shapes: highs after meals, lows after meals, highs
+  after treating lows, lows after correcting highs, and overnight lows with no
+  insulin on board. A shape owns its habit levers and setting findings as
+  evidence, carries one rate on one denominator and one chart, and is the unit
+  the app prices, leads with, sets aside and follows as a Focus; levers become
+  the drill beneath it. This develops the four connected problem shapes framed
+  in ADR 348 — Guidance leads, findings explain.
+- Habits lead; a strongly supported setting change takes priority when it
+  asserts, preserving ADR 383's existing admission inputs pending #390's shape
+  selection policy.
+- Focus confirmation gates on observed opportunities rather than fourteen
+  elapsed days, amending `HV2-24` and ADR 387 — Keep comparison readiness
+  specific to the change; the count is backend policy.
+- A near-tie between a staged setting and a supported habit goes to the setting,
+  amending ADR 383 step 4: #390 task 2.5.2 records its Wilson-recurrence-
+  interval-overlap band from the snapshot pass; outside that band greatest
+  Priority leads and an exact tie retains canonical-subject order.
+- One active watch stays for the first release, retaining ADR 348 — Reviewing
+  can finish a Trial and its active-change constraint.
+- v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore
+  collapse into Diagnose carrying the shipped v1 rail as-is, amending `HV2-09`,
+  `HV2-10`, `HV2-11` and ADR 348's navigation.
+- Notifications and the endo 90-day snapshot come after the first release; no
+  food diary, site-age finding or same-meal trials enters v2, retaining the
+  settled product scope.
+- v1 retires after Connor accepts v2, retaining task 4.3's acceptance boundary.
+- #389 stays stopped: chunk c1 (desk, Day and utilities) integrates once #391
+  is admitted; c2 (Overview/Explore/Plan) and c3's Focus-subject part wait for
+  #390 steps 2 and 4.
+- #342's eating-sequence levers are a child of #390, members of highs after
+  meals, and sequence after #391.
+- #390 sequences #391's shape-unit spike, backend build, design child, Diagnose
+  collapse, then #389's resumption.
+
+### Named open questions
+
+All seven questions cleared on 2026-09-08 by the numbered ADR 391 records below.
+
+- ~~Shape membership: which existing findings belong to each shape~~ — ADR 391 — Membership roster and evidence boundaries
+- ~~One rate and denominator per shape~~ — ADR 391 — Rate and denominator ownership
+- ~~The shape impact-summary rule~~ — ADR 391 — Impact, admission and the staged-setting near-tie
+- ~~The collapse rule for a one-member shape~~ — ADR 391 — Collapse and rail behavior
+- ~~Shape as selection, set-aside and Focus subject~~ — ADR 391 — Pattern subject and persistence migration
+- ~~Focus readiness on observed opportunities~~ — ADR 391 — Focus readiness is opportunity-gated
+- ~~The near-tie ruling~~ — ADR 391 — Impact, admission and the staged-setting near-tie
+
+## ADR 391 — Name the unit and preserve the existing payload family
+
+**Decision.** The new outcome-shaped advisory-selection unit is a **pattern**:
+one named outcome, its backend-owned members, one rate on one denominator, one
+admission verdict, and one selection/Focus subject. This supersedes the
+September 8 direction's use of *shape* on 2026-09-08. Old terminology maps as
+follows: a former behavioral **Pattern** (episodes grouped by one Lever) is a
+**lever pattern**, while the new bare **pattern** is the cross-member outcome
+unit.
+
+`pattern` remains bare only for this new unit. The timeline analyzer becomes an
+*actionable-behavior analyzer* (not an analyzer of a pattern); Scenario's retired
+Patterns view becomes the *retired Scenario view*; lever grouping is always
+*lever pattern*; the outcome summary is the positive counterpart to deficit
+Findings and patterns; and a Clean rate is not described as a pattern's
+complement. A Localized outcome card is not a pattern card. The former **Pattern
+sweep** becomes the **candidate sweep**; its cell keeps the glossary's unchanged
+**Tracked candidate** name, and its avoided term is *candidate engine*, not the new
+unit's name. In the basal glossary entry, *recurring basal motif* replaces the
+former avoided *basal pattern* synonym for a basal schedule. These dispositions cover each pre-existing
+case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
+522, 536, 538, 548, 571, 583, and 593; no `_Avoid_` line forbids bare
+`pattern`.
+
+**Compatibility inventory.** The whole-tree inventory (`rg -n --ignore-case
+'\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 523
+matches over tracked files at the pinned commit a9562db8 (`git grep -i -P` over the
+same pattern and exclusions; this change's own prose and receipt add to the
+count at its head, and #390 task 2.5.2 re-runs the inventory at its own base) and finds the
+`patterns` key family in scenario production and API consumers, guidance,
+findings projection and case files; its fixture-only JS mirror
+`mockups/findings-projection.mirror.mjs`; generators and synthetic payloads;
+browser gates; fixtures; and their Python and frontend tests. Those are the
+existing serialized **lever-pattern** family, including `patterns` and
+`low_confidence`, not the new unit. #390 task 2.5.2 owns every code, fixture,
+mirror, generator, browser-gate and test rename/migration, and must retain the
+mirror parity contract under ADR 735. `ciq_autotune/pattern_sweep.py` keeps its
+internal module name while its public term becomes candidate sweep, so it is not
+unowned by this disposition. This ADR changes no payload.
+
+## ADR 391 — Membership roster and evidence boundaries
+
+**Decision.** The first release has five patterns. Each member remains owned by
+its current producer; membership composes source verdicts and never pools their
+support populations.
+
+| Pattern | Present members and owner | Exposure / recurrence noun / identity | Counting and source window |
+| --- | --- | --- | --- |
+| Highs after meals | `carb_undercount`, `late_bolus` lever findings from `analyzers.scenario`; I:C setting finding from `analyzers.ic`; `uncaused_highs` is investigation evidence only | meals / meals / episode identity for the levers; I:C block identity; uncaused highs is a count of high opportunities with no attribution, not a member recurrence | one attributed episode per lever occurrence; I:C's published block recurrence; uncaused-highs numerator is unexplained high opportunities and its denominator is all high opportunities in the findings window |
+| Lows after meals | `meal_over_delivery` lever finding from `analyzers.scenario`; I:C setting harm from `harm.py`/`analyzers.ic` | meals / meals / meal-over-delivery episode identity; I:C harm low identity | one meal-attributed low episode; each member keeps its source window |
+| Highs after treating lows | `over_treated_low` lever finding from `analyzers.scenario` | lows / lows / low-episode identity | one low-driven rebound episode in the scenario window |
+| Lows after correcting highs | `correction_stacking`, `correction_on_iob` lever findings from `analyzers.scenario`; ISF setting harm from `harm.py`/`analyzers.isf` | correction clusters / correction clusters / correction-pair identity; lows / lows / low identity for correction-on-IOB and ISF harm | correction stacking counts one adjacent correction pair; correction-on-IOB and ISF may share a low, and that overlap is intentional across separate members |
+| Overnight lows with no insulin on board | basal setting harm from `harm.py`/`analyzers.basal` | basal harm-band source nights / named night key | one printed fasting basal low per source night in the basal source window; it has zero habit members |
+
+The two meal patterns are disjoint by outcome membership, even though their
+separate members may begin at the same meal. Lows after meals owns
+`meal_over_delivery`, whose outcome kind is low; highs after treating lows owns
+`over_treated_low`, whose outcome kind is high. Each may also cite I:C harm
+without turning shared low evidence into duplicate support.
+Correction-factor setting harm may share lows with `correction_on_iob`; the
+backend reports that overlap rather than de-duplicating it into false support.
+`PreemptedLows` remains a count-only context signal and never becomes a member.
+#342 eating-sequence findings are deferred and will join highs after meals only
+through their own child decision.
+
+## ADR 391 — Rate and denominator ownership
+
+**Decision.** Every pattern publishes exactly one backend-produced rate and
+denominator. It chooses one authority per pattern: `exposure_counts` from
+`tally_attributions`/`build_opportunities` for an outcome family, or a named
+member recurrence population where the pattern's outcome cannot be represented
+by that family. A member's confidence still reads its own evidence population;
+members never pool into pattern support.
+
+Highs after meals uses the ordinary `MEALS` recurrence population for both
+numerator and denominator: carb-tagged meal opportunities, identified by the
+meal episode identity. Its numerator is only attributed `carb_undercount` and
+`late_bolus` meal episodes in that same population, counted as distinct meal
+identities (attribution gives an episode exactly one lever, `attribute.py`, and the
+receipt unions member identities rather than summing member counts), so numerator is
+a subset of denominator and the rate cannot exceed 1.0. `meal_bolus_short` keeps its separate
+completed-carb-bolus population (Completed, insulin above zero, carbs at least
+the anchor minimum); it is not a member of this first-release pattern and does
+not change its denominator. Lows after meals uses the distinct carb-tagged-meal
+population with a completed low-outcome window and `meal_over_delivery` identity;
+it does not borrow `compute_clean_rates`' single `MEALS` rate.
+Highs after treating lows uses `LOWS` opportunity exposure counts. Lows after
+correcting highs uses `CORRECTION_CLUSTERS` counts for correction stacking; its
+other members retain their own low recurrence populations, so the published
+pattern rate must select and name the correction-outcome denominator rather than
+sum those populations. The meal-bolus-short lever remains outside these first
+five patterns and retains its completed-carb-bolus population.
+
+Overnight lows with no insulin on board uses **harm-band source nights**: nights
+with at least one CGM reading in the 00:00–06:00 basal band (a printed low is
+itself such a reading, so every numerator night qualifies) whose reconstructed
+bolus IOB at the band minimum is at or below the harm floor (0.1 U). #390 task
+2.5.2 produces and publishes that count as `harm_band_source_nights` beside the
+harm result. Its numerator is `BasalHarm.nights` — “distinct nights with a basal
+low anywhere in the band” — restricted to printed fasting lows. A numerator
+night is necessarily a source night: the fixed predicate uses the band minimum,
+which is no greater than the IOB at the low's nadir, and that nadir is at or below
+the same 0.1-U floor. The denominator is this source-night population, never
+`BasalHarm.nights` itself. This supplies the named producer required by the
+existing one-rate rule; no amendment to it is needed. Recurrence nouns and
+windows therefore remain explicit: meals (scenario window), completed carb-bolus
+meals (meal-bolus-short only), lows (scenario window), correction clusters
+(scenario window), and harm-band source nights (basal source window).
+
+## ADR 391 — Impact, admission and the staged-setting near-tie
+
+**Decision.** A behavioral member's `Confidence.effect` and a setting member's
+insulin-per-day `_impact_factor` are different currencies. They SHALL NOT be
+added, averaged, or otherwise weighted together without a future explicit
+conversion. Pattern pricing uses the existing owner-produced Priority only after
+the chosen member has passed its own admission: a pinnable habit passes its
+threshold admission; a setting passes its analyzer staging verdict. The pattern
+returns that price, admission and source reasons rather than inventing a new
+clinical score.
+
+The alternatives were a fixed numeric band or habits leading whenever their
+Priority is higher. A fixed band would be a new ungrounded threshold; habits-first
+would discard the safety preference for an available staged setting. Therefore
+#390 task 2.5.2 chooses the contention band from the snapshot pass's recorded
+candidate values, using overlap of the two candidates' own existing Wilson
+recurrence intervals — a habit's `Confidence` bounds and a setting's owner recurrence
+channel bounds in `tuning_priority`, never a pattern-level rate interval — rather
+than a bare number, and records its exact rule with the replay. This **amends ADR
+383 step 4**: inside that derived band an admitted staged setting leads a
+higher-priced supported habit; outside it the greatest existing Priority leads;
+an exact Priority tie retains ADR 383's canonical-subject order. It preserves
+threshold admission only for pinnable habits and staging admission only for
+settings; an unstaged setting cannot suppress a supported habit.
+
+## ADR 391 — Collapse and rail behavior
+
+**Decision.** Collapse is decided from the backend member roster: a pattern with
+one admitted member and no setting member collapses to that member; a pattern
+with a setting member remains a pattern even if only one member currently
+asserts; the overnight pattern remains a pattern despite its zero habit members.
+The backend returns the collapse verdict. A collapsed single-member pattern uses
+the member's existing rail row and Focus behavior; a non-collapsed pattern uses
+one pattern rail row and one pattern Focus. The surface never infers collapse
+from a client-side count.
+
+## ADR 391 — Pattern subject and persistence migration
+
+**Decision.** The canonical new subject is `pattern:<pattern-key>`, where
+`<pattern-key>` is the closed outcome key. Future `guidance_preferences`, active
+Focus records currently keyed to a Lever, and `is_pinnable` resolve against this
+subject; #390 task 2.5.2 owns their migration. A return comparison for a
+multi-member pattern compares the canonical recommended pattern action and its
+backend categorical seriousness, including member-set changes, rather than an
+arbitrary member priority or a raw count.
+
+## ADR 391 — Focus readiness is opportunity-gated
+
+**Decision.** Focus readiness is backend-owned and measured in opportunities,
+not elapsed days and not `behavior_observations`. For each outcome exposure, its
+unit is `exposure_counts` and the corresponding `BehaviorPoint.exposure_n`:
+meals, lows, correction clusters, highs, or the new harm-band-source-night population.
+No number is settled here. #390 task 2.5.2 chooses the numeric gate against this
+ticket's snapshot of each pattern's `n` at 30 and 90 days for the four
+exposure-denominated patterns, and for overnight lows with no insulin on board
+against the `harm_band_source_nights` count it produces itself (this ticket's
+overnight `n` is the basal recurrence-window stand-in), then enforces it in
+the backend. This amends ADR 387's Focus arm from elapsed-time readiness to
+opportunity readiness; it changes neither member floors nor classifiers.
+
+## ADR 391 — Handoff to the build and shipped rail
+
+**Decision.** #390 step 2 implements and tests the roster in the scenario report,
+findings projection, and `guidance.candidates`; pattern Focus pinning and
+readiness; QA replay; impact/collapse cases; and the whole-tree inventory plus
+ADR-735 fixture-only mirror contract. It also makes the `HV2-24` lock-file
+amendment. #390 step 3 supplies one per-pattern chart and one shipped-rail row
+through the public findings projection and guidance interfaces.
+
+Must prevent: membership, rate, and admission verdict arrive from the backend;
+the surface renders them and derives none. In particular, the shipped
+`frontend/index.html:4715` client-side re-ranking of `patterns` against a local
+count is the defect class this unit forbids.
+
+### Why a sixth native child under #348
+
+The delivery sequence requires a written dependency or independently shippable
+capability justification beyond three children. #390 is a planning container for
+a scope change that #389, the admitted integrated UI child, is stopped on; it
+cannot consolidate into #389 without unfreezing a build on unsettled policy. It
+is independently shippable as backend policy plus a Diagnose revision before
+#389 resumes. #390's own children — #391, #342, and the backend, design and
+collapse children to come — are filed under #390, not #348.
+
+### Effect on the desktop lock
+
+`HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus
+readiness, are amended-pending. Their amendments land with #390 step 4 and step
+2 respectively, not in this planning record.

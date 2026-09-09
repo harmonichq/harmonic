@@ -1,4 +1,44 @@
-// Glucose first, round 4 (#348). Unlocked design exploration.
+// ★ LOCKED — harmonic-v2-desktop · 2026-09-08
+//
+// Direction selected by Connor Griffin on 2026-09-07 and recorded in "ADR 348 —
+// Adopt the reviewed desktop direction" (openspec/changes/harmonic-v2/design.md).
+// This header was written by Claude Opus 5 (high) as the #348 planning author.
+// The contract is mockups/harmonic-v2-desktop.lock.md, which governs; this
+// header narrates. The locked surface is harmonic-v2-glucose.html?source=journey,
+// of which this module is the primary companion. Its 34 terms are HV2-01 through
+// HV2-34, and a replay function cites one as LOCK:harmonic-v2-desktop:HV2-nn.
+//
+// WHAT THIS MODULE OWNS UNDER THE LOCK. The desk itself: the four destinations
+// and their default (Overview), the stage-plus-reading-pane frame, the empty and
+// set-aside states, the shared Trial figure, the contextual Day entry and its
+// exact return, and the dispatch into the setting, habit, shared-history, Day and
+// utility journeys. The stage is deliberately the same object on Overview and
+// Explore; what differs is the pane beside it — the decision on Overview, the
+// roster and detail on Explore.
+//
+// THE HIERARCHY THE REPAIR PASS SETTLED, AND THIS FILE ENFORCES. An outcome is
+// acknowledged on its own subject, and the subject does not change under the
+// wearer. Pressing the current destination is the way back up; a contextual
+// return never comes through the topbar, so it keeps its subject. Arriving at a
+// destination focuses the reading pane's head unless the caller named a precise
+// target. The reading pane keeps its scroll only while it stays on the same
+// subject. A Trial's Inspect nights opens the evidence that Trial was decided
+// from, never the current read's first-ranked concern.
+//
+// WHAT MAY NOT BE RE-DERIVED HERE. Identity, eligibility, readiness, admission,
+// permissions, evidence populations, periods, comparison results, persistence and
+// endings are served. Watch maturity copy is lifecycle metadata and supplies no
+// evidence readiness; type-specific readiness comes from the selected record's
+// retained comparison. The progress bar is clamped to its maximum and never
+// overfilled. There is no overall favorable verdict — favorable exists per
+// outcome row only.
+//
+// PROTOTYPE-ONLY, AND IT NEVER SHIPS. The mock bar, the source/scenario/input and
+// failure selects, the Review notes disclosure and every page-memory decision are
+// instrumentation, not product chrome. A build ports the product frames and drops
+// all of it (HV2-34).
+//
+// Glucose first, round 4 (#348). Selected design direction, locked as above.
 // Current Python producers supply every trace, count and support word; the shipped
 // chart builders draw them. Four synthetic sources share one desk: the May meals
 // investigation (this module), the June setting journey

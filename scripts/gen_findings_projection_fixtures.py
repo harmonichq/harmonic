@@ -713,6 +713,7 @@ def empty_projection() -> FindingsProjection:
 
 def payload() -> dict:
     prepared = projection()
+    no_data = empty_projection()
     direction_only = prepare_findings_projection(
         analysis=analysis(isf=direction_only_isf_rows()),
         exposures=exposures(), scenarios=scenarios(),
@@ -746,12 +747,14 @@ def payload() -> dict:
             "analysis": prepared._analysis,
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
+            "outcome_patterns": prepared._outcome_patterns,
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "direction_only_inputs": {
             "analysis": direction_only._analysis,
             "exposures": direction_only._exposures,
             "scenarios": direction_only._scenarios,
+            "outcome_patterns": direction_only._outcome_patterns,
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "direction_only_windows": {
@@ -799,8 +802,15 @@ def payload() -> dict:
             "aged_out": with_catalog(aged_history)._analysis,
             "unavailable": with_catalog(unavailable_history)._analysis,
         },
+        "no_data_inputs": {
+            "analysis": no_data._analysis,
+            "exposures": no_data._exposures,
+            "scenarios": no_data._scenarios,
+            "outcome_patterns": no_data._outcome_patterns,
+            "analysis_generation": ANALYSIS_GENERATION,
+        },
         "no_data": {
-            name: empty_projection().project(
+            name: no_data.project(
                 WindowQuery.whole_day() if bounds is None
                 else WindowQuery.clock(*bounds),
                 analysis_generation=ANALYSIS_GENERATION)

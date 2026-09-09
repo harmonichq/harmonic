@@ -15,6 +15,8 @@ const capture = JSON.parse(readFileSync(
   here('../mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
 const caseFiles = JSON.parse(readFileSync(
   here('../mockups/diagnose-workstation.synthetic/finding-case-files.json'), 'utf8'));
+const findingsFixture = JSON.parse(readFileSync(
+  here('./__fixtures__/findings-projection.json'), 'utf8'));
 
 const join = (row) => `${row.ep_id}|${row.t || row.anchor_t}`;
 const families = ['meals', 'lows'];
@@ -69,6 +71,7 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
+    outcome_patterns: findingsFixture.inputs.outcome_patterns,
   }, requested);
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
@@ -79,6 +82,21 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
   assert.deepEqual(row.event_chart.window, projection.window);
   assert.deepEqual(row.case_header.event_chart, row.event_chart,
     'the row and case header carry the same server-published scoped coordinate');
+});
+
+test('browser fixture preparation retains the backend-prepared Pattern roster verbatim', () => {
+  const projection = projectFindings({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+    outcome_patterns: findingsFixture.inputs.outcome_patterns,
+  });
+  const preparation = structuredClone(caseFiles.preparation);
+  populateFindingCasePreparation(preparation, projection);
+
+  assert.deepEqual(preparation.findings.outcome_patterns,
+    findingsFixture.windows.global.outcome_patterns,
+    'the browser preparation carries the mirror transcription of the prepared roster');
 });
 
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {

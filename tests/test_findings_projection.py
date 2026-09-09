@@ -14,6 +14,7 @@ import random
 import tempfile
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
@@ -712,12 +713,30 @@ class WindowQueryTest(unittest.TestCase):
 
 
 class PreparedFromStoreTest(unittest.TestCase):
+    def test_preparation_builds_the_pattern_roster_once_and_publishes_it_verbatim(self):
+        roster = [{"key": "published-by-pattern-producer"}]
+        with patch("ciq_autotune.findings_projection.build_outcome_patterns",
+                   return_value=roster) as build:
+            projection = prepare_findings_projection(
+                analysis={"window_days": 30}, exposures={}, scenarios={},
+            )
+
+        build.assert_called_once_with({"window_days": 30}, {}, {})
+        result = projection.project(WindowQuery.whole_day())
+        self.assertIs(result["outcome_patterns"], roster)
+        self.assertEqual(result["rows"], [])
+
     def test_an_empty_store_projects_an_empty_queue(self):
         projection = prepare_findings_projection(
             analysis={"window_days": 30}, exposures={}, scenarios={},
         )
         result = projection.project(WindowQuery.whole_day())
         self.assertEqual(result["rows"], [])
+        self.assertEqual(
+            [pattern["key"] for pattern in result["outcome_patterns"]],
+            ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+             "lows_after_correcting_highs", "overnight_lows_without_iob"],
+        )
         self.assertEqual(result["window"]["scoped"], False)
         self.assertEqual(result["findings_window"]["days"], 30)
 

@@ -766,6 +766,9 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     window: query.dict,
     findings_window: { days: analysis.window_days ?? null, ...(exposures.window || {}) },
     rows,
+    // Prepared by Python's build_outcome_patterns once.  The fixture mirror
+    // transcribes this backend roster; it does not classify or rank Patterns.
+    outcome_patterns: inputs.outcome_patterns || [],
     selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,

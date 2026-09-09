@@ -52,7 +52,7 @@ same public interface the API serves.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -63,6 +63,7 @@ from .ic_history import decode_history_id
 # one definition read twice, never a second copy of the mapping.
 from .analyzers.scenario.levers import outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
+from .analyzers.scenario.outcome_patterns import build_outcome_patterns
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -164,6 +165,7 @@ class FindingsProjection:
     _analysis: dict
     _exposures: dict
     _scenarios: dict
+    _outcome_patterns: list[dict] = field(default_factory=list)
 
     @property
     def history_catalog(self) -> Tuple[dict, ...]:
@@ -196,6 +198,10 @@ class FindingsProjection:
                 **(self._exposures.get("window") or {}),
             },
             "rows": rows,
+            # The prepared roster is the Pattern producer's output, not a second
+            # Findings-policy pass.  Keep it additive while the shipped queue
+            # continues to render its existing setting and Lever rows.
+            "outcome_patterns": self._outcome_patterns,
             "selection": self._selection(query, selected_id),
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
@@ -964,5 +970,7 @@ def prepare_findings_projection(*, analysis: dict, exposures: dict,
     This seam keeps queue policy here while letting each guarded consumer share one
     canonical analysis, exposure feed, and scenario report per cache generation.
     """
+    outcome_patterns = build_outcome_patterns(analysis, exposures, scenarios)
     return FindingsProjection(_analysis=analysis, _exposures=exposures,
-                              _scenarios=scenarios)
+                              _scenarios=scenarios,
+                              _outcome_patterns=outcome_patterns)

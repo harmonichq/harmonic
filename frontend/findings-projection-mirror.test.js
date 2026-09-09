@@ -48,12 +48,7 @@ test('the mirror reproduces every frozen window byte for byte', () => {
 });
 
 test('the mirror reproduces the empty analysis, where term 41 lives', () => {
-  const empty = {
-    analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
-    exposures: { window: { start: null, end: null }, exposures: {} },
-    scenarios: { patterns: [], low_confidence: [] },
-    analysis_generation: fixture.inputs.analysis_generation,
-  };
+  const empty = fixture.no_data_inputs;
   for (const [name, bounds] of [['global', null], ['morning', WINDOWS.morning]]) {
     const got = projectFindings(empty, bounds);
     assert.deepEqual(got.rows, [], `${name} has no rows`);

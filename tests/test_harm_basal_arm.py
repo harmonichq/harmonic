@@ -9,6 +9,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from ciq_autotune.analyzers.basal import analyze_basal
+from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 from ciq_autotune.events import BasalEvent, CgmReading
 from ciq_autotune.harm import HarmConfig
 from ciq_autotune.safety import Status
@@ -83,6 +84,23 @@ class BasalArmIntegrationTest(unittest.TestCase):
         # row-level keys are arm_days / row_days.
         self.assertEqual(s.evidence["harm"]["band_nights"], 2)
         self.assertEqual(s.evidence["harm"]["slot_nights"], 2)
+        self.assertEqual(s.evidence["harm"]["harm_band_source_nights"], 14)
+        analysis = {
+            "basal": [s.to_dict()],
+            "tuning_levers": [{
+                "parameter": "basal_rate", "priority": 10,
+                "recurrence_channel": {"kind": "basal_lower", "k": 12, "n": 12},
+            }],
+        }
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        self.assertEqual((overnight["k"], overnight["n"]), (2, 14))
+        seriousness = [{
+            "start_min": 180, "end_min": 210,
+            "seriousness": "recurring_low",
+        }]
+        self.assertEqual(overnight["members"][0]["seriousness"], seriousness)
 
     def test_recurring_lows_clamp_to_a_median_below_current(self):
         # When the slot's own clean median sits below current, the downward magnitude

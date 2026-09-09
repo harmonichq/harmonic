@@ -12,10 +12,16 @@ import {
   populateFindingCasePreparation,
   populateFindingsProjectionInput,
 } from './browser-fixture-population.js';
-import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
+import {
+  assertMatchingFindingCasePreparation,
+  validFindingCaseFile,
+} from './finding-case-file-validation.js';
 import { queueMeta, queueRows } from './diagnose-findings-queue.js';
 
 const here = (path) => fileURLToPath(new URL(path, import.meta.url));
+const normalizeOpaqueIds = (value) => JSON.parse(
+  JSON.stringify(value).replace(/o_[0-9a-f]{32}/g, 'o_<opaque>'),
+);
 const payload = JSON.parse(readFileSync(
   here('../mockups/diagnose-workstation.synthetic/payload.json'), 'utf8'));
 const capture = JSON.parse(readFileSync(
@@ -110,12 +116,32 @@ test('browser Pattern rows and case files share the public producer denominator'
   const caseFile = projectPatternCaseFile(capture, {
     patternChart: row.pattern_chart, projectionId: preparation.projection_id,
   });
+  const clockCase = projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, projectionId: preparation.projection_id,
+    alignment: 'clock',
+  });
 
   assert.deepEqual(
     [caseFile.summary.denominator, caseFile.summary.claimed],
     [row.pattern.n, row.pattern.k],
   );
   assert.equal(caseFile.verdict_counts.fired, row.pattern.k);
+  assert.equal(clockCase.projection.alignment, 'clock');
+  assert.equal(clockCase.projection.clock.total, row.pattern.k);
+  for (const field of ['finding', 'family', 'summary', 'verdict_counts', 'occurrences']) {
+    assert.deepEqual(clockCase[field], caseFile[field]);
+  }
+  const selectedClock = projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, alignment: 'clock',
+    occurrenceId: clockCase.occurrences[0].id,
+  });
+  assert.equal(selectedClock.selection.state, 'selected');
+  assert.equal(selectedClock.selection.detail.id, clockCase.occurrences[0].id);
+  assert.equal(validFindingCaseFile(selectedClock), true);
+  assert.deepEqual(
+    normalizeOpaqueIds(selectedClock), normalizeOpaqueIds(findingsFixture.pattern_clock_case),
+    'the fixture-only projector stays byte-shaped like the frozen Python answer',
+  );
   assert.deepEqual(row.pattern_chart, row.case_header.pattern_chart);
   assert.equal(row.event_chart, null);
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
@@ -135,6 +161,33 @@ test('a claimed member outside its Pattern population tags no occurrence', () =>
   assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
   assert.equal(caseFile.summary.claimed, 0);
   assert.ok(caseFile.occurrences.every((row) => row.member === 'clean'));
+});
+
+test('Pattern selected detail transcribes correction-cluster source doses', () => {
+  const inputs = populateFindingsProjectionInput({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  });
+  const projection = projectFindings(inputs);
+  const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
+  const enriched = structuredClone(capture);
+  const source = enriched.pattern_populations.correction_clusters[0];
+  source.trace.boluses = [
+    { minute: -15, seq_num: 991, insulin: 1.25, carbs: null },
+    { minute: 5, seq_num: 992, insulin: 0.75, carbs: null },
+  ];
+
+  const caseFile = projectPatternCaseFile(enriched, {
+    patternChart: pattern.pattern_chart,
+    alignment: 'clock',
+    occurrenceId: source.id,
+  });
+
+  assert.equal(caseFile.selection.state, 'selected');
+  assert.equal('member' in caseFile.selection.detail, false);
+  assert.deepEqual(caseFile.selection.detail.source_corrections,
+    caseFile.selection.detail.markers.map(({ seq_num, t, insulin }) => ({ seq_num, t, insulin })));
 });
 
 test('Pattern misses prefer near misses over outranked member states', () => {
@@ -157,6 +210,9 @@ test('memberless Patterns remain served without an invented chart', () => {
   assert.equal(row.pattern.n, 20);
   assert.equal(row.pattern_chart, null);
   assert.equal(projectPatternCaseFile(capture, { patternChart: row.pattern_chart }), null);
+  assert.equal(projectPatternCaseFile(capture, {
+    patternChart: row.pattern_chart, alignment: 'clock',
+  }), null);
 });
 
 test('every chartable fixture Pattern resolves through preparation validation', () => {

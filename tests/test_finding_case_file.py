@@ -573,6 +573,7 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
     prepared.associations[Lever.LATE_BOLUS] = frozenset({late[1].id})
 
     case = prepared.case("pattern:highs_after_meals", "event", None)
+    clock = prepared.case("pattern:highs_after_meals", "clock", None)
 
     assert case["finding"] == {
         "id": "pattern:highs_after_meals", "lever": "highs_after_meals",
@@ -586,6 +587,14 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
         ("clean", "near_miss"),
     ]
     assert sum(case["verdict_counts"].values()) == 3
+    assert clock["projection"]["alignment"] == "clock"
+    assert clock["projection"]["clock"]["total"] == 2
+    for key in ("finding", "family", "summary", "verdict_counts", "occurrences"):
+        assert clock[key] == case[key]
+    selected = prepared.case("pattern:highs_after_meals", "clock", clock["occurrences"][0]["id"])
+    assert selected["selection"]["state"] == "selected"
+    assert selected["selection"]["detail"]["id"] == clock["occurrences"][0]["id"]
+    assert "comparison_cohort" not in selected["selection"]["detail"]
     assert prepared.case("finding:carb_undercount", "event", None) is not None
     assert prepared.case("finding:late_bolus", "event", None) is not None
 
@@ -597,6 +606,7 @@ def test_pattern_case_is_chartless_without_a_served_habit_or_population():
     )
     prepared = _prepared(Lever.CARB_UNDERCOUNT, findings=setting_only)
     assert prepared.case("pattern:overnight_lows_no_iob", "event", None) is None
+    assert prepared.case("pattern:overnight_lows_no_iob", "clock", None) is None
 
     memberless = _pattern_findings(
         "highs_after_meals", (), k=1, n=1,

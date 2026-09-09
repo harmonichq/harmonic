@@ -113,14 +113,21 @@ class QaE2ECasesTest(unittest.TestCase):
                     row = rows_by_id.get(pattern["subject"])
                     if row is None or not row["pattern_chart"]:
                         self.assertIsNone(prepared.case(pattern["subject"], "event", None))
+                        self.assertIsNone(prepared.case(pattern["subject"], "clock", None))
                         continue
                     case_file = prepared.case(pattern["subject"], "event", None)
+                    clock_case = prepared.case(pattern["subject"], "clock", None)
                     self.assertEqual(
                         (case_file["summary"]["denominator"],
                          case_file["summary"]["claimed"],
                          case_file["verdict_counts"]["fired"]),
                         (pattern["n"], pattern["k"], pattern["k"]),
                     )
+                    self.assertEqual(clock_case["projection"]["alignment"], "clock")
+                    self.assertEqual(clock_case["projection"]["clock"]["total"], pattern["k"])
+                    for field in ("finding", "family", "summary", "verdict_counts",
+                                  "occurrences"):
+                        self.assertEqual(clock_case[field], case_file[field])
                     rendered = rendered_by_id[pattern["subject"]]
                     self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
                     self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])

@@ -343,7 +343,7 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
         return {
           id: `o_${((familyIndex + 1) * 1000 + index + 1).toString(16).padStart(32, '0')}`,
           ep_id: row.ep_id, date: row.date, anchor_t: row.t,
-          anchor_bg: row.bg ?? null, kind, label,
+          anchor_bg: row.bg ?? null, kind: row.kind || kind, label,
           attributed: Boolean(row.attributed),
           cause_lever: row.cause_lever ?? null,
           verdicts: structuredClone(row.verdicts || []),

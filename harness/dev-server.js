@@ -186,6 +186,7 @@ export function harnessDataPlugin({ repositoryRoot }) {
               patternChart: retained?.patternCharts[findingId],
               projectionId: url.searchParams.get('projection_id'),
               alignment: url.searchParams.get('alignment'),
+              occurrenceId: url.searchParams.get('occ'),
             }) : null;
           const finding = caseFiles.cases[findingId];
           const alignment = url.searchParams.get('alignment');

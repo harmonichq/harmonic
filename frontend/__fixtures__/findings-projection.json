@@ -25931,6 +25931,764 @@
    "patterns": []
   }
  },
+ "pattern_clock_case": {
+  "cross_population": false,
+  "family": "meals",
+  "finding": {
+   "id": "pattern:highs_after_meals",
+   "lever": "highs_after_meals",
+   "subject": "pattern:highs_after_meals",
+   "title": "Highs after meals"
+  },
+  "occurrences": [
+   {
+    "anchor": {
+     "bg": 62.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 07:35:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_8880c2dcb8064a99f2d4049855b1dc8a",
+    "member": "habit:late_bolus",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 65.3,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 13:00:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_df793fbd0353172bfe4a45556a6ced89",
+    "member": "habit:late_bolus",
+    "verdict": "fired"
+   },
+   {
+    "anchor": {
+     "bg": 63.0,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 19:10:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_9c5fbb0285f03a8bcc6a34bf1e3e2f1a",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 68.0,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 07:45:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_89fd86abfff24e336e94b1fb024e4091",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 63.2,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 13:10:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_191aacac162237e7415692f9ecbc28b3",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 76.9,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 16:50:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_25c34f09b2e9fce63a8e620381f32fad",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 65.5,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 01:20:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_2e604e5ed7f6d7960a3de5f1dfdbdfda",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 67.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 06:05:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_a8bb11e98ab4008ae06bbdac7dc74d9d",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 77.3,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 12:10:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_4183bf51e5f2b5bf9538b6d3a6cfd2b1",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 66.9,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 18:05:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_b49d3bbf93de3ab999c688fb277ab546",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 72.4,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 04:50:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_e90bc5c00da59cc08d15028348057393",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 59.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 19:10:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_28c1ecf8ffb785a0a7596c4d0f3095d9",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 74.5,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 15:20:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_a3c4c18e42a1eb0d87ac03e4d80c77d7",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 77.9,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 20:35:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_a06fc0044f43715da8ca3e51c00817db",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 74.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 03:25:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_b0b44a990cdebd366a444f3cb730ab11",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 71.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 10:50:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_394fc54de1f950cf5573ce85d572fd87",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 75.7,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 16:30:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_0f1a3d022c8d8449cd9d1fe25834b970",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 66.8,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-01 05:50:00"
+    },
+    "date": "2020-03-01",
+    "id": "o_d7a0dd7b55de388c026eaebea663b97f",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 75.0,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 14:05:00"
+    },
+    "date": "2020-03-02",
+    "id": "o_6e7f4e53d9ff798da09a70534e80ad04",
+    "member": "clean",
+    "verdict": "no_data"
+   },
+   {
+    "anchor": {
+     "bg": 61.3,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-03 19:40:00"
+    },
+    "date": "2020-03-03",
+    "id": "o_7ed538fc11bdfc0afbbae71a012132f7",
+    "member": "clean",
+    "verdict": "no_data"
+   }
+  ],
+  "population": "meals",
+  "projection": {
+   "alignment": "clock",
+   "anchor": null,
+   "clock": {
+    "bucket_hours": 2,
+    "buckets": [
+     {
+      "end_min": 120,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 0
+     },
+     {
+      "end_min": 240,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 120
+     },
+     {
+      "end_min": 360,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 240
+     },
+     {
+      "end_min": 480,
+      "n": 1,
+      "occurrence_ids": [
+       "o_8880c2dcb8064a99f2d4049855b1dc8a"
+      ],
+      "start_min": 360
+     },
+     {
+      "end_min": 600,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 480
+     },
+     {
+      "end_min": 720,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 600
+     },
+     {
+      "end_min": 840,
+      "n": 1,
+      "occurrence_ids": [
+       "o_df793fbd0353172bfe4a45556a6ced89"
+      ],
+      "start_min": 720
+     },
+     {
+      "end_min": 960,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 840
+     },
+     {
+      "end_min": 1080,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 960
+     },
+     {
+      "end_min": 1200,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1080
+     },
+     {
+      "end_min": 1320,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1200
+     },
+     {
+      "end_min": 1440,
+      "n": 0,
+      "occurrence_ids": [],
+      "start_min": 1320
+     }
+    ],
+    "peak_bucket_index": 3,
+    "total": 2
+   },
+   "cohorts": [],
+   "window_min": null
+  },
+  "projection_id": "fp_22222222222222222222222222222222",
+  "schema": "diagnose-finding-case-file-v1",
+  "selection": {
+   "detail": {
+    "anchor": {
+     "bg": 62.1,
+     "kind": "low",
+     "label": "Completed carb bolus",
+     "t": "2020-03-02 07:35:00"
+    },
+    "date": "2020-03-02",
+    "day_target": {
+     "date": "2020-03-02"
+    },
+    "glucose": [
+     {
+      "bg": 104,
+      "minute": -60.0,
+      "t": "2020-03-02 06:35:00"
+     },
+     {
+      "bg": 103,
+      "minute": -55.0,
+      "t": "2020-03-02 06:40:00"
+     },
+     {
+      "bg": 102,
+      "minute": -50.0,
+      "t": "2020-03-02 06:45:00"
+     },
+     {
+      "bg": 101,
+      "minute": -45.0,
+      "t": "2020-03-02 06:50:00"
+     },
+     {
+      "bg": 101,
+      "minute": -40.0,
+      "t": "2020-03-02 06:55:00"
+     },
+     {
+      "bg": 101,
+      "minute": -35.0,
+      "t": "2020-03-02 07:00:00"
+     },
+     {
+      "bg": 101,
+      "minute": -30.0,
+      "t": "2020-03-02 07:05:00"
+     },
+     {
+      "bg": 104,
+      "minute": -25.0,
+      "t": "2020-03-02 07:10:00"
+     },
+     {
+      "bg": 108,
+      "minute": -20.0,
+      "t": "2020-03-02 07:15:00"
+     },
+     {
+      "bg": 111,
+      "minute": -15.0,
+      "t": "2020-03-02 07:20:00"
+     },
+     {
+      "bg": 115,
+      "minute": -10.0,
+      "t": "2020-03-02 07:25:00"
+     },
+     {
+      "bg": 119,
+      "minute": -5.0,
+      "t": "2020-03-02 07:30:00"
+     },
+     {
+      "bg": 122,
+      "minute": 0.0,
+      "t": "2020-03-02 07:35:00"
+     },
+     {
+      "bg": 126,
+      "minute": 5.0,
+      "t": "2020-03-02 07:40:00"
+     },
+     {
+      "bg": 130,
+      "minute": 10.0,
+      "t": "2020-03-02 07:45:00"
+     },
+     {
+      "bg": 134,
+      "minute": 15.0,
+      "t": "2020-03-02 07:50:00"
+     },
+     {
+      "bg": 137,
+      "minute": 20.0,
+      "t": "2020-03-02 07:55:00"
+     },
+     {
+      "bg": 140,
+      "minute": 25.0,
+      "t": "2020-03-02 08:00:00"
+     },
+     {
+      "bg": 143,
+      "minute": 30.0,
+      "t": "2020-03-02 08:05:00"
+     },
+     {
+      "bg": 146,
+      "minute": 35.0,
+      "t": "2020-03-02 08:10:00"
+     },
+     {
+      "bg": 149,
+      "minute": 40.0,
+      "t": "2020-03-02 08:15:00"
+     },
+     {
+      "bg": 151,
+      "minute": 45.0,
+      "t": "2020-03-02 08:20:00"
+     },
+     {
+      "bg": 153,
+      "minute": 50.0,
+      "t": "2020-03-02 08:25:00"
+     },
+     {
+      "bg": 154,
+      "minute": 55.0,
+      "t": "2020-03-02 08:30:00"
+     },
+     {
+      "bg": 155,
+      "minute": 60.0,
+      "t": "2020-03-02 08:35:00"
+     },
+     {
+      "bg": 157,
+      "minute": 65.0,
+      "t": "2020-03-02 08:40:00"
+     },
+     {
+      "bg": 158,
+      "minute": 70.0,
+      "t": "2020-03-02 08:45:00"
+     },
+     {
+      "bg": 159,
+      "minute": 75.0,
+      "t": "2020-03-02 08:50:00"
+     },
+     {
+      "bg": 159,
+      "minute": 80.0,
+      "t": "2020-03-02 08:55:00"
+     },
+     {
+      "bg": 160,
+      "minute": 85.0,
+      "t": "2020-03-02 09:00:00"
+     },
+     {
+      "bg": 162,
+      "minute": 90.0,
+      "t": "2020-03-02 09:05:00"
+     },
+     {
+      "bg": 163,
+      "minute": 95.0,
+      "t": "2020-03-02 09:10:00"
+     },
+     {
+      "bg": 164,
+      "minute": 100.0,
+      "t": "2020-03-02 09:15:00"
+     },
+     {
+      "bg": 166,
+      "minute": 105.0,
+      "t": "2020-03-02 09:20:00"
+     },
+     {
+      "bg": 168,
+      "minute": 110.0,
+      "t": "2020-03-02 09:25:00"
+     },
+     {
+      "bg": 171,
+      "minute": 115.0,
+      "t": "2020-03-02 09:30:00"
+     },
+     {
+      "bg": 173,
+      "minute": 120.0,
+      "t": "2020-03-02 09:35:00"
+     },
+     {
+      "bg": 173,
+      "minute": 125.0,
+      "t": "2020-03-02 09:40:00"
+     },
+     {
+      "bg": 172,
+      "minute": 130.0,
+      "t": "2020-03-02 09:45:00"
+     },
+     {
+      "bg": 172,
+      "minute": 135.0,
+      "t": "2020-03-02 09:50:00"
+     },
+     {
+      "bg": 172,
+      "minute": 140.0,
+      "t": "2020-03-02 09:55:00"
+     },
+     {
+      "bg": 172,
+      "minute": 145.0,
+      "t": "2020-03-02 10:00:00"
+     },
+     {
+      "bg": 172,
+      "minute": 150.0,
+      "t": "2020-03-02 10:05:00"
+     },
+     {
+      "bg": 172,
+      "minute": 155.0,
+      "t": "2020-03-02 10:10:00"
+     },
+     {
+      "bg": 173,
+      "minute": 160.0,
+      "t": "2020-03-02 10:15:00"
+     },
+     {
+      "bg": 173,
+      "minute": 165.0,
+      "t": "2020-03-02 10:20:00"
+     },
+     {
+      "bg": 173,
+      "minute": 170.0,
+      "t": "2020-03-02 10:25:00"
+     },
+     {
+      "bg": 172,
+      "minute": 175.0,
+      "t": "2020-03-02 10:30:00"
+     },
+     {
+      "bg": 172,
+      "minute": 180.0,
+      "t": "2020-03-02 10:35:00"
+     },
+     {
+      "bg": 171,
+      "minute": 185.0,
+      "t": "2020-03-02 10:40:00"
+     },
+     {
+      "bg": 169,
+      "minute": 190.0,
+      "t": "2020-03-02 10:45:00"
+     },
+     {
+      "bg": 168,
+      "minute": 195.0,
+      "t": "2020-03-02 10:50:00"
+     },
+     {
+      "bg": 166,
+      "minute": 200.0,
+      "t": "2020-03-02 10:55:00"
+     },
+     {
+      "bg": 164,
+      "minute": 205.0,
+      "t": "2020-03-02 11:00:00"
+     },
+     {
+      "bg": 162,
+      "minute": 210.0,
+      "t": "2020-03-02 11:05:00"
+     },
+     {
+      "bg": 159,
+      "minute": 215.0,
+      "t": "2020-03-02 11:10:00"
+     },
+     {
+      "bg": 157,
+      "minute": 220.0,
+      "t": "2020-03-02 11:15:00"
+     },
+     {
+      "bg": 154,
+      "minute": 225.0,
+      "t": "2020-03-02 11:20:00"
+     },
+     {
+      "bg": 151,
+      "minute": 230.0,
+      "t": "2020-03-02 11:25:00"
+     },
+     {
+      "bg": 149,
+      "minute": 235.0,
+      "t": "2020-03-02 11:30:00"
+     },
+     {
+      "bg": 146,
+      "minute": 240.0,
+      "t": "2020-03-02 11:35:00"
+     },
+     {
+      "bg": 144,
+      "minute": 245.0,
+      "t": "2020-03-02 11:40:00"
+     },
+     {
+      "bg": 142,
+      "minute": 250.0,
+      "t": "2020-03-02 11:45:00"
+     },
+     {
+      "bg": 140,
+      "minute": 255.0,
+      "t": "2020-03-02 11:50:00"
+     },
+     {
+      "bg": 138,
+      "minute": 260.0,
+      "t": "2020-03-02 11:55:00"
+     },
+     {
+      "bg": 137,
+      "minute": 265.0,
+      "t": "2020-03-02 12:00:00"
+     },
+     {
+      "bg": 136,
+      "minute": 270.0,
+      "t": "2020-03-02 12:05:00"
+     },
+     {
+      "bg": 135,
+      "minute": 275.0,
+      "t": "2020-03-02 12:10:00"
+     },
+     {
+      "bg": 135,
+      "minute": 280.0,
+      "t": "2020-03-02 12:15:00"
+     },
+     {
+      "bg": 134,
+      "minute": 285.0,
+      "t": "2020-03-02 12:20:00"
+     },
+     {
+      "bg": 134,
+      "minute": 290.0,
+      "t": "2020-03-02 12:25:00"
+     },
+     {
+      "bg": 134,
+      "minute": 295.0,
+      "t": "2020-03-02 12:30:00"
+     },
+     {
+      "bg": 135,
+      "minute": 300.0,
+      "t": "2020-03-02 12:35:00"
+     }
+    ],
+    "id": "o_8880c2dcb8064a99f2d4049855b1dc8a",
+    "markers": [
+     {
+      "carbs": 30,
+      "insulin": 3,
+      "kind": "bolus",
+      "minute": 0.0,
+      "seq_num": 1,
+      "t": "2020-03-02 07:35:00"
+     }
+    ],
+    "source_corrections": [],
+    "verdict": "fired"
+   },
+   "requested_id": "o_8880c2dcb8064a99f2d4049855b1dc8a",
+   "state": "selected"
+  },
+  "summary": {
+   "claimed": 2,
+   "denominator": 20,
+   "noun": "meals"
+  },
+  "verdict_counts": {
+   "clean": 0,
+   "fired": 2,
+   "near_miss": 0,
+   "no_data": 18,
+   "outranked": 0
+  },
+  "window": {
+   "end_min": null,
+   "label": null,
+   "scoped": false,
+   "start_min": null
+  }
+ },
  "selection_cases": {
   "aged_out": {
    "analysis_generation": "findings-fixture-process:0",

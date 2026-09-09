@@ -20,17 +20,19 @@ event. `analyze` supplies setting rows and the setting prices built from
 `_impact_factor`; `build_exposures` and `build_scenarios` supply the exposure and
 scenario inputs; `tally_attributions` supplies Exposure counts;
 `build_opportunities` supplies the identity-bearing populations;
-`compute_clean_rates` independently checks every Exposure `n` against the
-attribution tally; and `guidance.candidates` with `build_guidance` supplies
-Priority and admission. Clean rate is a cross-check, not the pattern rate.
+`compute_clean_rates` is a consistency check of a pure function over the tally
+and cannot fire independently; the `recurrence_count` comparison is the
+independent check that the ordinary `meal_over_delivery` recurrence population
+equals the `MEALS` attribution tally. `guidance.candidates` with
+`build_guidance` supplies Priority and admission.
 
 A pattern numerator counts distinct `(driver family, recurrence identity)`
-members. It does not pool member populations, clamp a numerator, or mix
-currencies; `k > n` exits nonzero. `weighted` and `worst_member` use habit
-members only. Every setting keeps its own owner-produced price and staging
-admission. Lows after meals uses the ordinary `MEALS` recurrence population for
-`meal_over_delivery`, so its `n` equals the meals tally by construction in both
-windows.
+members drawn only from the pattern's `rate_levers` subset. It does not pool
+member populations, clamp a numerator, or mix currencies; `k > n` exits
+nonzero. `weighted` and `worst_member` use habit members only. Every setting
+keeps its own owner-produced price and staging admission. Lows after meals uses
+the ordinary `MEALS` recurrence population for `meal_over_delivery`, so its `n`
+equals the meals tally by construction in both windows.
 
 The closed schema has `additionalProperties: false` at every object level. Both
 coordinator-returned objects passed the schema and relational checks. The
@@ -38,6 +40,7 @@ checker output was:
 
 ```text
 valid sample: accepted
+missing rate_levers: rejected
 top-level ISO timestamp: rejected
 per-day array: rejected
 free-text note: rejected
@@ -47,62 +50,65 @@ extra overlap field: rejected
 free-text overlap reason: rejected
 forced k > n: rejected
 report CLI schema validation: accepted
+Wilson lower bound zero clamp: -0.0 absent
+rate_levers roster: accepted
 QA parity behavioral-correction-on-iob: literal expectation k=2; owner-produced price=38 (QaExpectation has no Priority field)
 90-day synthetic store window tally: 30d meals n=3; 90d meals n=4
 habit-only alternatives: setting price 99 excluded; weighted=10; worst_member=10
 ```
 
-The last three lines are the synthetic boundary proofs. The 30-versus-90 tally
-comes from one manufactured Store. `behavioral-correction-on-iob` contributes
-literal `k = 2` from `QaExpectation`; its price 38 comes from the owner producer
-because `QaExpectation` carries no Priority field. The final proof injects a
-setting price of 99 and confirms that neither habit alternative consumes it.
+These sixteen lines are literal output from the current checker. The
+30-versus-90 tally comes from one manufactured Store.
+`behavioral-correction-on-iob` contributes literal `k = 2` from
+`QaExpectation`; its price 38 comes from the owner producer because
+`QaExpectation` carries no Priority field. The setting-exclusion proof injects
+a price of 99 and confirms that neither habit alternative consumes it.
 
 ### 30-day receipt
 
-| Pattern | n / denominator producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
-| --- | --- | --- | --- | --- | --- |
-| Highs after meals | 181 / `tally_attributions` | 0.099448 [0.074443, 0.131657] | 0 / 10 / 16 | `none` | `remain_pattern_by_rule` |
-| Lows after meals | 181 / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.055249 [0.037217, 0.081280] | 0 / 8 / 8 | `none` | `remain_pattern_by_rule` |
-| Highs after treating lows | 27 / `tally_attributions` | 0.185185 [0.108482, 0.297995] | 0 / 19 / 19 | `none` | `remain_pattern_observed` |
-| Lows after correcting highs | 66 / `tally_attributions` | 0.000000 [0.000000, 0.024282] | 0 / 6 / 12 | `none` | `remain_pattern_by_rule` |
-| Overnight lows with no insulin on board | 0 / `basal_recurrence_channel` stand-in | unavailable | 0 / 0 / 0 | `none` | `remain_pattern_by_rule` |
+| Pattern | `rate_levers` | n / denominator / producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
+| --- | --- | --- | --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount`, `habit:late_bolus` | 181 / `meals` / `tally_attributions` | 0.099448 [0.074443, 0.131657] | 0 / 10 / 16 | `none` | `remain_pattern_by_rule` |
+| Lows after meals | `habit:meal_over_delivery` | 181 / `meals` / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.055249 [0.037217, 0.08128] | 0 / 8 / 8 | `none` | `remain_pattern_by_rule` |
+| Highs after treating lows | `habit:over_treated_low` | 27 / `lows` / `tally_attributions` | 0.185185 [0.108482, 0.297995] | 0 / 19 / 19 | `none` | `remain_pattern_observed` |
+| Lows after correcting highs | `habit:correction_stacking` | 66 / `correction_clusters` / `tally_attributions` | 0.0 [0.0, 0.024282] | 0 / 6 / 12 | `none` | `remain_pattern_by_rule` |
+| Overnight lows with no insulin on board | `setting:basal_rate` | 0 / `nights` / `basal_recurrence_channel` stand-in | null [null, null] | 0 / 0 / 0 | `none` | `remain_pattern_by_rule` |
 
-| Pattern | Member subject / kind | k / denominator / source window / producer | Price / admission |
+| Pattern | Member subject / kind | k / denominator / source window / k producer | Price / price producer / admission / admission producer |
 | --- | --- | --- | --- |
-| Highs after meals | `habit:carb_undercount` / habit | 12 / meals / scenario request / `tally_attributions.attributed_occurrences` | 16 / not admitted |
-| Highs after meals | `habit:late_bolus` / habit | 6 / meals / scenario request / `tally_attributions.attributed_occurrences` | 5 / not admitted |
-| Highs after meals | `setting:carb_ratio` / setting | 0 / unavailable / fixed 90-day block / `analyze.tuning_levers.recurrence_channel` | 0 / not admitted |
-| Lows after meals | `habit:meal_over_delivery` / habit | 10 / meals / scenario request / `tally_attributions.attributed_occurrences` | 8 / not admitted |
-| Lows after meals | `setting:carb_ratio` / setting | 0 / unavailable / fixed 90-day block / `analyze.tuning_levers.recurrence_channel` | 0 / not admitted |
-| Highs after treating lows | `habit:over_treated_low` / habit | 5 / lows / scenario request / `tally_attributions.attributed_occurrences` | 19 / not admitted |
-| Lows after correcting highs | `habit:correction_stacking` / habit | 0 / correction clusters / scenario request / `tally_attributions.attributed_occurrences` | 0 / not admitted |
-| Lows after correcting highs | `habit:correction_on_iob` / habit | 2 / lows / scenario request / `tally_attributions.attributed_occurrences` | 12 / not admitted |
-| Lows after correcting highs | `setting:isf` / setting | 5 / days / analysis request / `analyze.tuning_levers.recurrence_channel` | 29 / not admitted |
-| Overnight lows with no insulin on board | `setting:basal_rate` / setting | 0 / nights / analysis request / `BasalHarm.nights` | 0 / not admitted |
+| Highs after meals | `habit:carb_undercount` / `habit` | 12 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 16 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `habit:late_bolus` / `habit` | 6 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 5 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Lows after meals | `habit:meal_over_delivery` / `habit` | 10 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 8 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Highs after treating lows | `habit:over_treated_low` / `habit` | 5 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 19 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_stacking` / `habit` | 0 / `correction_clusters` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 0 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_on_iob` / `habit` | 2 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 12 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `setting:isf` / `setting` | 5 / `days` / `analysis_request_window` / `analyze.tuning_levers.recurrence_channel` | 29 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Overnight lows with no insulin on board | `setting:basal_rate` / `setting` | 0 / `nights` / `analysis_request_window` / `BasalHarm.nights` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
 
 ### 90-day receipt
 
-| Pattern | n / denominator producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
-| --- | --- | --- | --- | --- | --- |
-| Highs after meals | 512 / `tally_attributions` | 0.095703 [0.080310, 0.113682] | 0 / 12 / 18 | `none` | `remain_pattern_by_rule` |
-| Lows after meals | 512 / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.082031 [0.067793, 0.098943] | 0 / 13 / 13 | `none` | `remain_pattern_by_rule` |
-| Highs after treating lows | 101 / `tally_attributions` | 0.198020 [0.152210, 0.253494] | 0 / 27 / 27 | `none` | `remain_pattern_observed` |
-| Lows after correcting highs | 215 / `tally_attributions` | 0.018605 [0.009936, 0.034573] | 0 / 10 / 11 | `none` | `remain_pattern_by_rule` |
-| Overnight lows with no insulin on board | 50 / `basal_recurrence_channel` stand-in | unavailable | 37 / 0 / 0 | `setting_staging` | `remain_pattern_by_rule` |
+| Pattern | `rate_levers` | n / denominator / producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
+| --- | --- | --- | --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount`, `habit:late_bolus` | 512 / `meals` / `tally_attributions` | 0.095703 [0.08031, 0.113682] | 0 / 12 / 18 | `none` | `remain_pattern_by_rule` |
+| Lows after meals | `habit:meal_over_delivery` | 512 / `meals` / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.082031 [0.067793, 0.098943] | 0 / 13 / 13 | `none` | `remain_pattern_by_rule` |
+| Highs after treating lows | `habit:over_treated_low` | 101 / `lows` / `tally_attributions` | 0.19802 [0.15221, 0.253494] | 0 / 27 / 27 | `none` | `remain_pattern_observed` |
+| Lows after correcting highs | `habit:correction_stacking` | 215 / `correction_clusters` / `tally_attributions` | 0.018605 [0.009936, 0.034573] | 0 / 10 / 11 | `none` | `remain_pattern_by_rule` |
+| Overnight lows with no insulin on board | `setting:basal_rate` | 50 / `nights` / `basal_recurrence_channel` stand-in | null [null, null] | 37 / 0 / 0 | `setting_staging` | `remain_pattern_by_rule` |
 
-| Pattern | Member subject / kind | k / denominator / source window / producer | Price / admission |
+| Pattern | Member subject / kind | k / denominator / source window / k producer | Price / price producer / admission / admission producer |
 | --- | --- | --- | --- |
-| Highs after meals | `habit:carb_undercount` / habit | 38 / meals / scenario request / `tally_attributions.attributed_occurrences` | 18 / not admitted |
-| Highs after meals | `habit:late_bolus` / habit | 11 / meals / scenario request / `tally_attributions.attributed_occurrences` | 5 / not admitted |
-| Highs after meals | `setting:carb_ratio` / setting | 0 / unavailable / fixed 90-day block / `analyze.tuning_levers.recurrence_channel` | 0 / not admitted |
-| Lows after meals | `habit:meal_over_delivery` / habit | 42 / meals / scenario request / `tally_attributions.attributed_occurrences` | 13 / not admitted |
-| Lows after meals | `setting:carb_ratio` / setting | 0 / unavailable / fixed 90-day block / `analyze.tuning_levers.recurrence_channel` | 0 / not admitted |
-| Highs after treating lows | `habit:over_treated_low` / habit | 20 / lows / scenario request / `tally_attributions.attributed_occurrences` | 27 / not admitted |
-| Lows after correcting highs | `habit:correction_stacking` / habit | 4 / correction clusters / scenario request / `tally_attributions.attributed_occurrences` | 9 / not admitted |
-| Lows after correcting highs | `habit:correction_on_iob` / habit | 4 / lows / scenario request / `tally_attributions.attributed_occurrences` | 11 / not admitted |
-| Lows after correcting highs | `setting:isf` / setting | 16 / days / analysis request / `analyze.tuning_levers.recurrence_channel` | 35 / not admitted |
-| Overnight lows with no insulin on board | `setting:basal_rate` / setting | 7 / nights / analysis request / `BasalHarm.nights` | 37 / admitted |
+| Highs after meals | `habit:carb_undercount` / `habit` | 38 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 18 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `habit:late_bolus` / `habit` | 11 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 5 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Lows after meals | `habit:meal_over_delivery` / `habit` | 42 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 13 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Highs after treating lows | `habit:over_treated_low` / `habit` | 20 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 27 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_stacking` / `habit` | 4 / `correction_clusters` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 9 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_on_iob` / `habit` | 4 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 11 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `setting:isf` / `setting` | 16 / `days` / `analysis_request_window` / `analyze.tuning_levers.recurrence_channel` | 35 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Overnight lows with no insulin on board | `setting:basal_rate` / `setting` | 7 / `nights` / `analysis_request_window` / `BasalHarm.nights` | 37 / `analyze.tuning_levers._impact_factor` / `admitted` / `build_guidance` |
 
 ### Identity overlap
 
@@ -119,25 +125,24 @@ reports `no_habit_exposure_identity`.
 
 | Window | Habit / setting harm-low pair | Count | Status / reason |
 | --- | --- | ---: | --- |
-| 30 | `habit:carb_undercount` / `setting:carb_ratio` | unavailable | `not_comparable` / `different_identity_spaces` |
-| 30 | `habit:late_bolus` / `setting:carb_ratio` | unavailable | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:carb_undercount` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:late_bolus` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
 | 30 | `habit:meal_over_delivery` / `setting:carb_ratio` | 0 | `comparable` / `shared_low_episode_nadir` |
-| 30 | `habit:correction_stacking` / `setting:isf` | unavailable | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:correction_stacking` / `setting:isf` | null | `not_comparable` / `different_identity_spaces` |
 | 30 | `habit:correction_on_iob` / `setting:isf` | 0 | `comparable` / `shared_low_episode_nadir` |
-| 90 | `habit:carb_undercount` / `setting:carb_ratio` | unavailable | `not_comparable` / `different_identity_spaces` |
-| 90 | `habit:late_bolus` / `setting:carb_ratio` | unavailable | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:carb_undercount` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:late_bolus` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
 | 90 | `habit:meal_over_delivery` / `setting:carb_ratio` | 0 | `comparable` / `shared_low_episode_nadir` |
-| 90 | `habit:correction_stacking` / `setting:isf` | unavailable | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:correction_stacking` / `setting:isf` | null | `not_comparable` / `different_identity_spaces` |
 | 90 | `habit:correction_on_iob` / `setting:isf` | 0 | `comparable` / `shared_low_episode_nadir` |
 
 Highs after treating lows has no setting member, and overnight has no habit
 member, so neither emits a harm-low pair.
 
-The coordinator-returned overnight numeric rate and Wilson fields are void.
-Their `n` is the basal recurrence-window stand-in, not the ruled
-`harm_band_source_nights` population that 2.5.2 owes. The receipt therefore
-records only stand-in `n` and `BasalHarm.nights` `k`; the corrected scratch
-program emits overnight `rate`, `lo`, and `hi` as null.
+The overnight JSON records `rate`, `lo`, and `hi` as null. Its `n` is the basal
+recurrence-window stand-in, not the ruled `harm_band_source_nights` population
+that 2.5.2 owes; the receipt records that stand-in `n` and the
+`BasalHarm.nights` `k` as counts only.
 
 ### Assessment against ADR 391
 
@@ -150,14 +155,26 @@ than pooled into support. Comparable habit/setting harm-low pairs report zero;
 the remaining pairs report `different_identity_spaces`.
 
 **ADR 391 — Rate and denominator ownership.** Highs after meals measures
-0.099448 at 30 days and 0.095703 at 90 days, against the September 8 ledger's
-rough 1-in-8 grouping. Lows after meals measures 0.055249 and 0.082031 against
-the ledger's rough 1 in 8. Highs after treating lows measures 0.185185 and
-0.198020 against the ledger's rough 1 in 5. Lows after correcting highs
-measures 0.000000 and 0.018605 against the ledger's rough 1 in 30. The receipts
-apply the ruled member and denominator ownership; the ledger records the
-pre-ruling grouping. Each published `n` names its producer, and overnight makes
-no rate claim against its stand-in.
+0.099448 over 181 at 30 days and 0.095703 over 512 at 90 days, against the
+September 8 ledger's rough 1-in-8 grouping. Its `rate_levers` subset is
+`habit:carb_undercount` and `habit:late_bolus`, and `tally_attributions` owns
+both denominators. Lows after meals measures 0.055249 over 181 and 0.082031
+over 512 against the ledger's rough 1 in 8. Its subset is
+`habit:meal_over_delivery`; its named producer records that the ordinary
+recurrence population coincides with the `MEALS` tally by construction, with
+`recurrence_count` providing the independent check. Highs after treating lows
+measures 0.185185 over 27 and 0.19802 over 101 against the ledger's rough 1 in
+5. Its subset is `habit:over_treated_low`, and `tally_attributions` owns its
+`lows` denominators. Lows after correcting highs measures 0.0 over 66 and
+0.018605 over 215 against the ledger's rough 1 in 30. Its subset is only
+`habit:correction_stacking`, and `tally_attributions` owns its
+`correction_clusters` denominators. That is why the 30-day rate 0.0 sits beside
+a `habit:correction_on_iob` member with `k = 2`: correction-on-IOB retains its
+own `lows` population and is not in the pattern-rate numerator. Overnight's
+subset is `setting:basal_rate`, but its rate and bounds are null because
+`basal_recurrence_channel` supplies only the stand-in `n` until 2.5.2 adds the
+ruled denominator. The receipts apply the ruled member and denominator
+ownership; the ledger records the pre-ruling grouping.
 
 **ADR 391 — Impact, admission and the staged-setting near-tie.** The threshold
 is 30. The greatest habit member is highs after treating lows: 19 at 30 days

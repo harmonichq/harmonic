@@ -104412,7 +104412,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "cb19d567caf774cc4245af3e5f555d0adae87411ab76d7bb4b6b3c254be5ece4",
+              "code_version": "9f5b201da20e8d1d7be8f50d043ed3b9fb059a49edabf1bd68fea30bb5e36a31",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -104504,7 +104504,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "6e18d249da8cb538642333bcddf46328334e3ad7ef0f73479e40123183faa2ea",
+              "id": "998293c0affaef7b1bdda2d5e9f502a9b2c96afb634e883f6447be7bd48dd373",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -104592,7 +104592,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "cb19d567caf774cc4245af3e5f555d0adae87411ab76d7bb4b6b3c254be5ece4",
+                  "code_version": "9f5b201da20e8d1d7be8f50d043ed3b9fb059a49edabf1bd68fea30bb5e36a31",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -104684,7 +104684,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "6e18d249da8cb538642333bcddf46328334e3ad7ef0f73479e40123183faa2ea",
+                  "id": "998293c0affaef7b1bdda2d5e9f502a9b2c96afb634e883f6447be7bd48dd373",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -115893,7 +115893,7 @@
                 "k": 0,
                 "kind": "setting",
                 "lo": null,
-                "price": 0,
+                "price": 97,
                 "producer": "tuning_levers",
                 "seriousness": null,
                 "seriousness_segments": [],
@@ -115932,7 +115932,7 @@
               "verdict": "ready"
             },
             "seriousness": null,
-            "settled_price": 0,
+            "settled_price": 97,
             "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
             "wilson": {

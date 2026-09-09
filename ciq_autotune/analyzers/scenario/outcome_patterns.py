@@ -62,19 +62,23 @@ def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
 
 
 def _setting_seriousness(
-    candidate_rows: Iterable[dict], parameter: str,
+    candidate: dict | None, admitted_row: dict | None,
 ) -> tuple[str | None, list[dict]]:
-    from ...guidance import _SEVERITY, _state as guidance_state
+    """Return the selected owner's category and guidance's structured comparison state.
 
-    candidate = next((item for item in candidate_rows
-                      if item.get("subject") == f"setting:{parameter}"), None)
+    Setting seriousness has no cross-category severity order: guidance compares
+    its owner-published categories over their spans.  The categorical Pattern
+    value therefore comes from one owner member itself, while the complete span
+    list remains available separately for guidance's own comparison.
+    """
+    from ...guidance import _state as guidance_state
+
     if candidate is None:
         candidate = {"kind": "setting", "action": None, "seriousness": None}
     segments = guidance_state(candidate)["seriousness"]
-    seriousness = max(
-        (row.get("seriousness") for row in segments if isinstance(row, dict)),
-        key=lambda value: _SEVERITY.get(value, -1), default=None,
-    )
+    seriousness = (admitted_row or {}).get("harm")
+    if admitted_row is not None and "span" not in admitted_row:
+        seriousness = (admitted_row.get("guidance") or {}).get("seriousness")
     return seriousness, segments
 
 
@@ -82,6 +86,15 @@ def _setting_member(
     analysis: dict, candidate_rows: Iterable[dict], parameter: str | None,
     *, overnight: bool,
 ) -> list[dict]:
+    """Compose one setting member without reclassifying its owner's verdicts.
+
+    Overnight admission uses the first asserting guidance member whose published
+    span starts inside the harm band, and its action is slot-owned.  Categorical
+    seriousness uses that member's harm when present, otherwise the first relevant
+    member harm (including an owner-published hold). Price remains the basal tuning
+    Lever's parameter-level Priority, so first-versus-greatest in-band slot is
+    irrelevant to pricing.
+    """
     if parameter is None:
         return []
     row = next((item for item in analysis.get("tuning_levers") or ()
@@ -93,13 +106,18 @@ def _setting_member(
     n = channel.get("n", 0)
     source_rows = analysis.get(_SETTING_ROWS[parameter]) or ()
     admitted_row = next((item for item in source_rows if item.get("asserts_move")), None)
+    candidate = next((item for item in candidate_rows
+                      if item.get("subject") == f"setting:{parameter}"), None)
+    published_rows = (candidate or {}).get("members") or ()
     if overnight:
-        admitted_row = next((
-            item for item in source_rows
+        published_rows = [
+            item for item in published_rows
             if _HARM_CONFIG.overnight_start_min
-            <= item.get("slot", -1) * 30
+            <= (item.get("span") or {}).get("start_min", -1)
             < _HARM_CONFIG.overnight_end_min
-            and item.get("asserts_move")
+        ]
+        admitted_row = next((
+            item for item in published_rows if item.get("asserts_move")
         ), None)
     admitted = admitted_row is not None
     lo, hi = channel.get("lo"), channel.get("hi")
@@ -109,14 +127,21 @@ def _setting_member(
         k = max((item.get("band_nights", 0) for item in harms), default=0)
         n = max((item.get("evidence", {}).get("harm_band_source_nights", 0)
                  for item in analysis.get("basal") or ()), default=0)
-    seriousness, seriousness_segments = _setting_seriousness(candidate_rows, parameter)
+    seriousness_row = admitted_row
+    if (seriousness_row or {}).get("harm") is None:
+        seriousness_row = next((item for item in published_rows
+                                if item.get("harm") is not None), seriousness_row)
+    seriousness, seriousness_segments = _setting_seriousness(candidate, seriousness_row)
     action = parameter if admitted else None
     price = row.get("priority", 0)
     if overnight:
-        price = (admitted_row or {}).get("priority", 0)
-        action = (((admitted_row or {}).get("guidance") or {}).get("action") or {}).get(
-            "parameter"
-        )
+        span = (admitted_row or {}).get("span") or {}
+        admitted_action = next((
+            item for item in (candidate or {}).get("action") or ()
+            if item.get("start_min") == span.get("start_min")
+            and item.get("end_min") == span.get("end_min")
+        ), None)
+        action = (admitted_action or {}).get("parameter")
     return [{
         "subject": f"setting:{parameter}", "kind": "setting", "k": k,
         "price": price, "admitted": admitted,

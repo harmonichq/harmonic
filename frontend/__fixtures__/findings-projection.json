@@ -9838,7 +9838,7 @@
       "k": 0,
       "kind": "setting",
       "lo": null,
-      "price": 0,
+      "price": 39,
       "producer": "tuning_levers",
       "seriousness": null,
       "seriousness_segments": [],
@@ -9877,7 +9877,7 @@
      "verdict": "withheld"
     },
     "seriousness": null,
-    "settled_price": 0,
+    "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
     "wilson": null
@@ -10322,7 +10322,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -10361,7 +10361,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -11087,7 +11087,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -11126,7 +11126,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -12228,7 +12228,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -12267,7 +12267,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -12834,7 +12834,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -12873,7 +12873,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -13485,7 +13485,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -13524,7 +13524,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -14205,7 +14205,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -14244,7 +14244,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -14720,7 +14720,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -14759,7 +14759,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -23407,7 +23407,7 @@
       "k": 0,
       "kind": "setting",
       "lo": null,
-      "price": 0,
+      "price": 39,
       "producer": "tuning_levers",
       "seriousness": null,
       "seriousness_segments": [],
@@ -23446,7 +23446,7 @@
      "verdict": "withheld"
     },
     "seriousness": null,
-    "settled_price": 0,
+    "settled_price": 39,
     "subject": "pattern:overnight_lows_no_iob",
     "title": "Overnight lows with no insulin on board",
     "wilson": null
@@ -24832,7 +24832,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -24871,7 +24871,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -25869,7 +25869,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -25908,7 +25908,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -26561,7 +26561,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -26600,7 +26600,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -27650,7 +27650,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -27689,7 +27689,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -59217,7 +59217,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -59256,7 +59256,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -60358,7 +60358,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -60397,7 +60397,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -61114,7 +61114,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -61153,7 +61153,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -62199,7 +62199,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -62238,7 +62238,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -62796,7 +62796,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -62835,7 +62835,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -63438,7 +63438,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -63477,7 +63477,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -64149,7 +64149,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -64188,7 +64188,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
@@ -64655,7 +64655,7 @@
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 0,
+       "price": 39,
        "producer": "tuning_levers",
        "seriousness": null,
        "seriousness_segments": [],
@@ -64694,7 +64694,7 @@
       "verdict": "withheld"
      },
      "seriousness": null,
-     "settled_price": 0,
+     "settled_price": 39,
      "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null

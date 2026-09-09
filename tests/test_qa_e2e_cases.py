@@ -295,8 +295,8 @@ def _case_test(case):
             self.assertEqual(
                 patterns["highs_after_meals"]["admission_route"], "habit_threshold",
             )
-            self.assertEqual(setting["price"], 0)
-            self.assertGreater(ordinary_habit["price"], setting["price"])
+            self.assertEqual(setting["price"], 52)
+            self.assertLess(ordinary_habit["price"], setting["price"])
             self.assertEqual(
                 patterns["overnight_lows_no_iob"]["admission_route"],
                 "setting_staging",

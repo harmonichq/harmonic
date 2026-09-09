@@ -3,12 +3,33 @@
 import unittest
 
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+from ciq_autotune.result import SlotEstimate
+from ciq_autotune.safety import Status
+from ciq_autotune.uncertainty import Estimate
 
 
 def _scenario(lever, *, price=20, k=2, lo=.1, hi=.3):
     return {"lever": lever, "priority": price,
             "confidence": {"k": k, "lo": lo, "hi": hi},
             "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
+
+
+def _basal_slot(slot, start_min, status, *, duration_min=30, seriousness=None):
+    actionable = status.actionable
+    return SlotEstimate(
+        slot=slot, label=f"{start_min // 60:02d}:{start_min % 60:02d}",
+        current=.6, estimate=Estimate(.5, .5, .5, 12),
+        recommended=.5, annotation="owner verdict", days=12,
+        evidence={"harm_band_source_nights": 12}, status=status,
+        guidance={
+            "action": ({
+                "kind": "setting_instruction", "parameter": "basal_rate",
+                "start_min": start_min, "end_min": start_min + duration_min,
+                "direction": "lower", "units": "U/h", "recommended": .5,
+            } if actionable else None),
+            "seriousness": seriousness,
+        },
+    ).to_dict()
 
 
 class OutcomePatternPolicyTest(unittest.TestCase):
@@ -186,59 +207,33 @@ class OutcomePatternPolicyTest(unittest.TestCase):
              "count": 1, "reason": "shared_low_episode_nadir"},
         ])
 
-    def test_guidance_candidate_seriousness_precedes_safety_category(self):
+    def test_setting_seriousness_uses_the_admitted_slots_owner_category(self):
         analysis = {
             "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
                                "recurrence_channel": {"kind": "basal_lower"}}],
-            "basal": [
-                {"slot": 0, "asserts_move": True, "safety_status": "lower",
-                 "priority": 4,
-                 "evidence": {"harm_band_source_nights": 12},
-                 "guidance": {"action": {
-                     "parameter": "basal_rate", "start_min": 0, "end_min": 30,
-                     "direction": "lower", "units": "U/h", "recommended": 0.5,
-                 },
-                              "seriousness": "low"}},
-                {"slot": 1, "asserts_move": True, "safety_status": "lower",
-                 "priority": 8,
-                 "evidence": {"harm_band_source_nights": 12},
-                 "guidance": {"action": {
-                     "parameter": "basal_rate", "start_min": 30, "end_min": 60,
-                     "direction": "lower", "units": "U/h", "recommended": 0.5,
-                 },
-                              "seriousness": "high"}},
-            ],
+            "basal": [_basal_slot(6, 180, Status.HARM_LOWER,
+                                   seriousness="recurring_low")],
         }
         overnight = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]
-        seriousness_segments = [
-            {"start_min": 0, "end_min": 30, "seriousness": "low"},
-            {"start_min": 30, "end_min": 60, "seriousness": "high"},
-        ]
-        self.assertEqual(overnight["members"][0]["seriousness"], "high")
+        seriousness_segments = [{
+            "start_min": 180, "end_min": 210,
+            "seriousness": "recurring_low",
+        }]
+        self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
         self.assertEqual(overnight["members"][0]["seriousness_segments"],
                          seriousness_segments)
-        self.assertEqual(overnight["seriousness"], "high")
-        self.assertEqual(overnight["settled_price"], 4)
+        self.assertEqual(overnight["seriousness"], "recurring_low")
+        self.assertEqual(overnight["settled_price"], 10)
 
     def test_overnight_setting_admission_is_scoped_to_the_harm_band(self):
         analysis = {
             "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
                                "recurrence_channel": {"kind": "basal_lower"}}],
             "basal": [
-                {"slot": 28, "asserts_move": True, "priority": 90,
-                 "guidance": {"action": {
-                     "parameter": "basal_rate", "start_min": 840, "end_min": 870,
-                     "direction": "lower", "units": "U/h", "recommended": 0.5,
-                 }},
-                 "evidence": {"harm_band_source_nights": 12}},
-                {"slot": 2, "asserts_move": False, "priority": 7,
-                 "guidance": {"action": {
-                     "parameter": "basal_rate", "start_min": 60, "end_min": 90,
-                     "direction": "lower", "units": "U/h", "recommended": 0.5,
-                 }},
-                 "evidence": {"harm_band_source_nights": 12}},
+                _basal_slot(28, 840, Status.LOWER),
+                _basal_slot(12, 180, Status.NO_CHANGE, duration_min=15),
             ],
         }
         overnight = build_outcome_patterns(
@@ -248,13 +243,15 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         self.assertIsNone(overnight["action"])
         self.assertEqual(overnight["settled_price"], 0)
 
-        analysis["basal"][1]["asserts_move"] = True
+        analysis["basal"][1] = _basal_slot(
+            12, 180, Status.LOWER, duration_min=15,
+        )
         overnight = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]
         self.assertTrue(overnight["members"][0]["admitted"])
         self.assertEqual(overnight["action"], "basal_rate")
-        self.assertEqual(overnight["settled_price"], 7)
+        self.assertEqual(overnight["settled_price"], 10)
 
     def test_setting_seriousness_fallback_uses_guidance_empty_state(self):
         analysis = {

@@ -46,7 +46,7 @@ itself prevent a supported habit pattern from leading.
 
 #### Scenario: No supported action yields a guided investigation
 
-- **GIVEN** a window whose recurring problem is visible but whose pattern members are held, thin or unstaged
+- **GIVEN** a window whose recurring pattern is visible but whose pattern members are held, thin or unstaged
 - **WHEN** guidance selects the leading priority
 - **THEN** the disposition is a guided investigation with explicit unknowns
 - **AND** no held or thin member is offered as an eligible action
@@ -202,13 +202,17 @@ The backend SHALL decide whether a pattern is ready for Focus from the
 ADR-391-selected opportunity count, not elapsed days or `behavior_observations`.
 For outcome-family patterns the count SHALL be the matching `exposure_counts`
 authority and serialized `BehaviorPoint.exposure_n`; overnight lows with no
-insulin on board SHALL use the published harm-band-night count. #390 task 2.5.2
-SHALL select and record the numeric gate from the #391 30- and 90-day snapshot.
-The browser SHALL render this backend readiness verdict and SHALL NOT recreate it.
+insulin on board SHALL use the published `harm_band_source_nights` observed-night
+population, never `BasalHarm.nights`. That population SHALL include only covered
+00:00–06:00 nights whose reconstructed bolus IOB band minimum is at or below the
+0.1-U harm floor, so every printed fasting-low numerator night is a member. #390
+task 2.5.2 SHALL select and record the numeric gate from the #391 30- and 90-day
+snapshot. The browser SHALL render this backend readiness verdict and SHALL NOT
+recreate it.
 
 #### Scenario: Thin opportunities do not become Focus-ready by waiting
 
-- **GIVEN** a pattern whose elapsed time is long but whose backend opportunity count is below the selected gate
+- **GIVEN** an overnight pattern whose backend `harm_band_source_nights` count is below the selected gate while `BasalHarm.nights` is nonzero
 - **WHEN** guidance returns the pattern
 - **THEN** its Focus readiness is withheld with the backend-produced opportunity reason
-- **AND** the browser does not make it ready from elapsed time or local observations
+- **AND** the browser does not make it ready from elapsed time, local observations, or the low-night numerator

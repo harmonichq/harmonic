@@ -1622,8 +1622,9 @@ backend authorities or data boundary.
   elapsed days, amending `HV2-24` and ADR 387 — Keep comparison readiness
   specific to the change; the count is backend policy.
 - A near-tie between a staged setting and a supported habit goes to the setting,
-  amending ADR 383 step 4; its band must be argued because ADR 383 refused a
-  bare numerical threshold.
+  amending ADR 383 step 4: #390 task 2.5.2 records its Wilson-recurrence-
+  interval-overlap band from the snapshot pass; outside that band greatest
+  Priority leads and an exact tie retains canonical-subject order.
 - One active watch stays for the first release, retaining ADR 348 — Reviewing
   can finish a Trial and its active-change constraint.
 - v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore
@@ -1742,17 +1743,20 @@ pattern rate must select and name the correction-outcome denominator rather than
 sum those populations. The meal-bolus-short lever remains outside these first
 five patterns and retains its completed-carb-bolus population.
 
-Overnight lows with no insulin on board uses **harm-band source nights**: distinct
-nights observed in the basal band with adequate CGM coverage and no bolus IOB,
-counted by a new #390 task-2.5.2 `harm_band_source_nights` interface published
-beside the harm result. Its numerator is `HarmResult.nights`, the distinct nights
-with at least one printed fasting basal low; its denominator is the new source-
-night population, never `HarmResult.nights` itself. This supplies the named
-producer required by the existing one-rate rule; no amendment to it is needed.
-Recurrence nouns and windows therefore remain explicit: meals (scenario window),
-completed carb-bolus meals (meal-bolus-short only), lows (scenario window),
-correction clusters (scenario window), and harm-band source nights (basal source
-window).
+Overnight lows with no insulin on board uses **harm-band source nights**: nights
+with adequate CGM coverage in the 00:00–06:00 basal band whose reconstructed
+bolus IOB at the band minimum is at or below the harm floor (0.1 U). #390 task
+2.5.2 produces and publishes that count as `harm_band_source_nights` beside the
+harm result. Its numerator is `BasalHarm.nights` — “distinct nights with a basal
+low anywhere in the band” — restricted to printed fasting lows. A numerator
+night is necessarily a source night: the fixed predicate uses the band minimum,
+which is no greater than the IOB at the low's nadir, and that nadir is at or below
+the same 0.1-U floor. The denominator is this source-night population, never
+`BasalHarm.nights` itself. This supplies the named producer required by the
+existing one-rate rule; no amendment to it is needed. Recurrence nouns and
+windows therefore remain explicit: meals (scenario window), completed carb-bolus
+meals (meal-bolus-short only), lows (scenario window), correction clusters
+(scenario window), and harm-band source nights (basal source window).
 
 ## ADR 391 — Impact, admission and the staged-setting near-tie
 
@@ -1770,11 +1774,12 @@ Priority is higher. A fixed band would be a new ungrounded threshold; habits-fir
 would discard the safety preference for an available staged setting. Therefore
 #390 task 2.5.2 chooses the contention band from the snapshot pass's recorded
 candidate values, using overlap of the existing Wilson recurrence intervals rather
-than a bare number, and records it with the replay. Inside that derived band an
-admitted staged setting leads an admitted supported habit; outside it, the existing
-owner price leads. This preserves ADR 383's exact-Priority tie-break while adding
-the argued #390 policy, threshold admission only for pinnable habits, and staging
-admission only for settings; an unstaged setting cannot suppress a supported habit.
+than a bare number, and records its exact rule with the replay. This **amends ADR
+383 step 4**: inside that derived band an admitted staged setting leads a
+higher-priced supported habit; outside it the greatest existing Priority leads;
+an exact Priority tie retains ADR 383's canonical-subject order. It preserves
+threshold admission only for pinnable habits and staging admission only for
+settings; an unstaged setting cannot suppress a supported habit.
 
 ## ADR 391 — Collapse and rail behavior
 

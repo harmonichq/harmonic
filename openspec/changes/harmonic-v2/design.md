@@ -1670,8 +1670,8 @@ Patterns view becomes the *retired Scenario view*; lever grouping is always
 *lever pattern*; the outcome summary is the positive counterpart to deficit
 Findings and patterns; and a Clean rate is not described as a pattern's
 complement. A Localized outcome card is not a pattern card. The former **Pattern
-sweep** and its tracked candidate become the **candidate sweep** and a
-**candidate-sweep cell**; its avoided term is *candidate engine*, not the new
+sweep** becomes the **candidate sweep**; its cell keeps the glossary's unchanged
+**Tracked candidate** name, and its avoided term is *candidate engine*, not the new
 unit's name. In the basal glossary entry, *recurring basal motif* replaces the
 former avoided *basal pattern* synonym for a basal schedule. These dispositions cover each pre-existing
 case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
@@ -1680,7 +1680,9 @@ case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
 
 **Compatibility inventory.** The whole-tree inventory (`rg -n --ignore-case
 '\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 598
-matches and finds the
+matches at the pinned commit a9562db8 (609 at this change's head: the eleven
+added lines are this change's own evidence receipt, and #390 task 2.5.2 re-runs
+the inventory at its own base) and finds the
 `patterns` key family in scenario production and API consumers, guidance,
 findings projection and case files; its fixture-only JS mirror
 `mockups/findings-projection.mirror.mjs`; generators and synthetic payloads;
@@ -1744,7 +1746,8 @@ sum those populations. The meal-bolus-short lever remains outside these first
 five patterns and retains its completed-carb-bolus population.
 
 Overnight lows with no insulin on board uses **harm-band source nights**: nights
-with adequate CGM coverage in the 00:00–06:00 basal band whose reconstructed
+with at least one CGM reading in the 00:00–06:00 basal band (a printed low is
+itself such a reading, so every numerator night qualifies) whose reconstructed
 bolus IOB at the band minimum is at or below the harm floor (0.1 U). #390 task
 2.5.2 produces and publishes that count as `harm_band_source_nights` beside the
 harm result. Its numerator is `BasalHarm.nights` — “distinct nights with a basal

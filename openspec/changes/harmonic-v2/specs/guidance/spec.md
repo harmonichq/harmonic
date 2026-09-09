@@ -62,7 +62,7 @@ itself prevent a supported habit pattern from leading.
 
 - **GIVEN** a supported habit member and a staged setting member whose owner prices contend
 - **WHEN** guidance selects the leading priority twice over the same window
-- **THEN** both runs select the same pattern subject under the recorded staged-setting tie-break
+- **THEN** both runs select the same pattern subject under the staged-setting near-tie rule, whose band #390 task 2.5.2 records
 
 ### Requirement: A set-aside preference has a stable pattern subject
 
@@ -203,8 +203,8 @@ ADR-391-selected opportunity count, not elapsed days or `behavior_observations`.
 For outcome-family patterns the count SHALL be the matching `exposure_counts`
 authority and serialized `BehaviorPoint.exposure_n`; overnight lows with no
 insulin on board SHALL use the published `harm_band_source_nights` observed-night
-population, never `BasalHarm.nights`. That population SHALL include only covered
-00:00–06:00 nights whose reconstructed bolus IOB band minimum is at or below the
+population, never `BasalHarm.nights`. That population SHALL include only
+00:00–06:00 nights with at least one CGM reading in the band whose reconstructed bolus IOB band minimum is at or below the
 0.1-U harm floor, so every printed fasting-low numerator night is a member. #390
 task 2.5.2 SHALL select and record the numeric gate from the #391 30- and 90-day
 snapshot. The browser SHALL render this backend readiness verdict and SHALL NOT

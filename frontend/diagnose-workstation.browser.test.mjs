@@ -78,6 +78,7 @@ import {
   issue86PendingRoot, issue86MalformedRecovery,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -2687,12 +2688,12 @@ test('setError tears down a live render and replaces the mount with a plain fail
        gates' route stubs use, so this test still exercises a LIVE render — which is
        the whole point of it: `setError`'s teardown branch is vacuous otherwise. */
     const payload = { ...raw, findings: projectFindings(
-      {
+      populateFindingsProjectionInput({
         analysis: raw.analyze,
         exposures: raw.exposures,
         scenarios: raw.scenarios,
         event_charts: FINDINGS_PROJECTION.inputs.event_charts,
-      }, null) };
+      }), null) };
     const browser = await runner.browser();
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     try {

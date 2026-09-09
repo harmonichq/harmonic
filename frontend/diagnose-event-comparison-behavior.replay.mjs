@@ -11,6 +11,7 @@ import { access, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -78,7 +79,9 @@ export async function openApp(browser, options = {}) {
        takes the whole loader into `setError` and this surface never mounts — so it
        is answered from the same fixture-only mirror the workstation gates use. */
     [apiPattern('/diagnose/findings'), (url) => projectFindings(
-      { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
+      populateFindingsProjectionInput({
+        analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+      }),
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),

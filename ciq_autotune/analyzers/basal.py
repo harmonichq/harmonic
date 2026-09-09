@@ -533,6 +533,11 @@ def analyze_basal(
             # midnight) so the unified drill-down (#20) can jump straight to the
             # moment in the Daily report, same as basal/ISF/I:C now all support.
             for (d, _), r in zip(days_sorted, per_day)]}
+        if harm_config is not None:
+            # The overnight Pattern denominator is an observed population, so it
+            # remains published even where this slot printed no low and therefore
+            # has no row-level harm verdict.
+            evidence["harm_band_source_nights"] = harm.harm_band_source_nights
         roster = []
         for (d, _), rate in zip(days_sorted, per_day):
             roster.append({

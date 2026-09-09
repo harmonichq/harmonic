@@ -5,7 +5,20 @@
  * the requested window. Keep that join in one place: both browser harnesses must
  * serve the same row/header coordinate pair the real preparation endpoint does.
  */
+import { readFileSync } from 'node:fs';
+
 import { findingHeadline } from '../mockups/findings-projection.mirror.mjs';
+
+const findingsFixture = JSON.parse(readFileSync(new URL(
+  './__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+
+/** Add the server-prepared Pattern roster to every browser-gate mirror input. */
+export function populateFindingsProjectionInput(input) {
+  return {
+    ...input,
+    outcome_patterns: structuredClone(findingsFixture.inputs.outcome_patterns),
+  };
+}
 
 export function populateFindingCasePreparation(preparation, projection) {
   const readyRows = new Map(preparation.rendered_rows

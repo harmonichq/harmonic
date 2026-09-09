@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 import {
   generatedFindingPose,
   generatedFindingProjection,
@@ -105,12 +106,12 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
-  const served = projectFindings({
+  const served = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
     event_charts: projectionFixture.inputs.event_charts,
-  });
+  }));
   const projection = generatedFindingProjection(id)(served, caseFiles);
   assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');

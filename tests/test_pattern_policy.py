@@ -22,9 +22,13 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         self.assertNotIn("missed_meal", str(roster))
 
     def test_staged_setting_wins_an_interval_near_tie(self):
-        analysis = {"tuning_levers": [{"parameter": "carb_ratio", "priority": 10,
-                                        "asserts_move": True,
-                                        "recurrence_channel": {"k": 1, "n": 12, "lo": .15, "hi": .35}}]}
+        analysis = {
+            "tuning_levers": [{
+                "parameter": "carb_ratio", "priority": 10,
+                "recurrence_channel": {"kind": "ic_runs", "k": 1, "n": 12},
+            }],
+            "ic_blocks": [{"asserts_move": True}],
+        }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
             {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"}]} }}
         roster = build_outcome_patterns(analysis, exposures, {"patterns": [_scenario("carb_undercount", price=20)], "low_confidence": []})
@@ -39,4 +43,3 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         pattern = next(item for item in roster if item["key"] == "highs_after_treating_lows")
         self.assertEqual(pattern["collapse"], "collapse_to_member")
         self.assertEqual(pattern["readiness"], {"count": 12, "gate": 12, "verdict": "ready"})
-

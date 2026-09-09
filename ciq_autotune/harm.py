@@ -499,22 +499,29 @@ def basal_harm(
     # night.  The curve has the same construction and HarmConfig as
     # find_printed_lows(), so the fasting predicate is one curve/floor contract.
     iob = BolusIob(list(bolus), config.peak_min, config.dia_min)
-    source_min_iob: Dict[date, float] = {}
-    for reading in cgm:
-        if reading.bg is None:
-            continue
-        night = _night_key(
-            reading.t, config.overnight_start_min, config.overnight_end_min,
-        )
-        if night is None:
-            continue
-        value = iob.at(reading.t)
-        prior = source_min_iob.get(night)
-        if prior is None or value < prior:
-            source_min_iob[night] = value
-    harm_band_source_nights = sum(
-        value <= config.fasting_iob_floor_u for value in source_min_iob.values()
-    )
+    if not iob.times:
+        source_nights = {
+            reading.t.date()
+            for reading in cgm
+            if reading.bg is not None
+            and config.overnight_start_min
+            <= reading.t.hour * 60 + reading.t.minute
+            < config.overnight_end_min
+        }
+    else:
+        source_nights: set[date] = set()
+        for reading in cgm:
+            if reading.bg is None:
+                continue
+            night = _night_key(
+                reading.t, config.overnight_start_min, config.overnight_end_min,
+            )
+            if night is None or night in source_nights:
+                continue
+            # One sub-floor reading proves that this night belongs to the source
+            # population; its remaining five-minute readings cannot undo that.
+            if iob.at(reading.t) <= config.fasting_iob_floor_u:
+                source_nights.add(night)
 
     band_lows: List[PrintedLow] = []
     # slot -> set of distinct nights that slot printed a basal low
@@ -546,6 +553,6 @@ def basal_harm(
         nudged_slots=nudged,
         nights=len(band_nights),
         slot_nights={s: len(ns) for s, ns in slot_night_set.items()},
-        harm_band_source_nights=harm_band_source_nights,
+        harm_band_source_nights=len(source_nights),
         lows=tuple(sorted(band_lows, key=lambda l: l.t)),
     )

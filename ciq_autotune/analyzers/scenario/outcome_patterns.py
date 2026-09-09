@@ -60,16 +60,25 @@ def _setting_member(analysis: dict, parameter: str | None, *, overnight: bool) -
     channel = row.get("recurrence_channel") or {}
     k = channel.get("k", 0)
     n = channel.get("n", 0)
+    source_rows = {
+        "basal_rate": analysis.get("basal") or (),
+        "isf": analysis.get("isf") or (),
+        "carb_ratio": analysis.get("ic_blocks") or (),
+    }[parameter]
+    admitted = any(item.get("asserts_move") for item in source_rows)
+    lo, hi = channel.get("lo"), channel.get("hi")
+    if admitted and lo is None and hi is None and n:
+        _, lo, hi = wilson(k, n)
     if overnight:
-        harms = [item.get("evidence", {}).get("harm", {}) for item in analysis.get("basal") or ()]
-        harms = [item for item in harms if item]
+        harms = [item.get("evidence") or {} for item in analysis.get("basal") or ()]
         k = max((item.get("band_nights", 0) for item in harms), default=0)
         n = max((item.get("harm_band_source_nights", 0) for item in harms), default=0)
     return [{
         "subject": f"setting:{parameter}", "kind": "setting", "k": k,
-        "price": row.get("priority", 0), "admitted": bool(row.get("asserts_move")),
-        "producer": "tuning_levers", "lo": channel.get("lo"), "hi": channel.get("hi"),
-        "seriousness": None, "action": parameter if row.get("asserts_move") else None,
+        "price": row.get("priority", 0), "admitted": admitted,
+        "producer": "tuning_levers", "lo": round(lo, 4) if lo is not None else None,
+        "hi": round(hi, 4) if hi is not None else None,
+        "seriousness": None, "action": parameter if admitted else None,
     }]
 
 

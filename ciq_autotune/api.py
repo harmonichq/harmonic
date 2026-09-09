@@ -473,9 +473,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
+            valid_patterns = {
+                "pattern:highs_after_meals", "pattern:lows_after_meals",
+                "pattern:highs_after_treating_lows", "pattern:lows_after_correcting_highs",
+                "pattern:overnight_lows_no_iob",
+            }
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or ((finding is None) == (lever is None))
-                    or (finding is not None and finding not in valid_findings)
+                    or (finding is not None and finding not in valid_findings | valid_patterns)
                     or (lever is not None and lever not in {item.value for item in Lever})
                     or alignment not in {"clock", "event"}
                     or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):

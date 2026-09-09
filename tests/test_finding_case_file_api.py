@@ -118,7 +118,10 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(payload["schema"], "diagnose-finding-case-file-preparation-v1")
         self.assertRegex(payload["projection_id"], r"^fp_[0-9a-f]{32}$")
         self.assertEqual(payload["coordinates"]["source_window_days"], 30)
-        self.assertEqual(payload["rendered_rows"], [])
+        self.assertEqual([row["kind"] for row in payload["rendered_rows"]],
+                         ["pattern"] * 5)
+        self.assertTrue(all(row["pattern_chart"] is None
+                            for row in payload["rendered_rows"]))
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
                                        "findings", "rendered_rows",
                                        "behavioral_case_headers", "withheld_findings"})

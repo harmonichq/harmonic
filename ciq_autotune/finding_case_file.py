@@ -201,8 +201,6 @@ class PreparedCases:
             return None
         pattern = row["pattern"]
         family = findings_projection.pattern_rate_family(pattern)
-        if family is None or self.exposures is None:
-            raise InconsistentProjection("missing Pattern exposure population")
         source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
         source_rows = tuple(source.get("occurrences") or ())
         rate_levers = {

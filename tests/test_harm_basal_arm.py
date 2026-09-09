@@ -100,7 +100,8 @@ class BasalArmIntegrationTest(unittest.TestCase):
             "start_min": 180, "end_min": 210,
             "seriousness": "recurring_low",
         }]
-        self.assertEqual(overnight["members"][0]["seriousness"], seriousness)
+        self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
+        self.assertEqual(overnight["members"][0]["seriousness_segments"], seriousness)
 
     def test_recurring_lows_clamp_to_a_median_below_current(self):
         # When the slot's own clean median sits below current, the downward magnitude

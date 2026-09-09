@@ -13,7 +13,9 @@ from datetime import datetime
 from hashlib import sha256
 from typing import Iterable
 
+from ...harm import HarmConfig
 from ...uncertainty import wilson
+from .levers import Lever, exposure
 
 
 _GATES = {
@@ -21,7 +23,7 @@ _GATES = {
     "lows_after_meals": 12,
     "highs_after_treating_lows": 12,
     "lows_after_correcting_highs": 27,
-    "overnight_lows_without_iob": 12,
+    "overnight_lows_no_iob": 12,
 }
 """Derived from the #391 receipt's 90-day rates by the Wilson positive-lower-bound rule, floored at 12, with 27 for lows after correcting highs."""
 
@@ -30,19 +32,12 @@ _ROSTER = (
     ("lows_after_meals", "Lows after meals", ("meal_over_delivery",), ("meal_over_delivery",), "carb_ratio", "meals"),
     ("highs_after_treating_lows", "Highs after treating lows", ("over_treated_low",), ("over_treated_low",), None, "lows"),
     ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking",), "isf", "correction_clusters"),
-    ("overnight_lows_without_iob", "Overnight lows with no insulin on board", (), (), "basal_rate", "nights"),
+    ("overnight_lows_no_iob", "Overnight lows with no insulin on board", (), (), "basal_rate", "nights"),
 )
 
-_HABIT_EXPOSURES = {
-    "carb_undercount": "meals",
-    "late_bolus": "meals",
-    "meal_over_delivery": "meals",
-    "over_treated_low": "lows",
-    "correction_stacking": "correction_clusters",
-    "correction_on_iob": "lows",
-}
 _LOW_IDENTITY_LEVERS = frozenset({"meal_over_delivery", "correction_on_iob"})
 _SETTING_ROWS = {"basal_rate": "basal", "carb_ratio": "ic_blocks", "isf": "isf"}
+_HARM_CONFIG = HarmConfig()
 
 
 def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
@@ -68,14 +63,19 @@ def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
 
 def _setting_seriousness(
     candidate_rows: Iterable[dict], parameter: str,
-) -> list[dict]:
-    from ...guidance import _state as guidance_state
+) -> tuple[str | None, list[dict]]:
+    from ...guidance import _SEVERITY, _state as guidance_state
 
     candidate = next((item for item in candidate_rows
                       if item.get("subject") == f"setting:{parameter}"), None)
     if candidate is None:
         candidate = {"kind": "setting", "action": None, "seriousness": None}
-    return guidance_state(candidate)["seriousness"]
+    segments = guidance_state(candidate)["seriousness"]
+    seriousness = max(
+        (row.get("seriousness") for row in segments if isinstance(row, dict)),
+        key=lambda value: _SEVERITY.get(value, -1), default=None,
+    )
+    return seriousness, segments
 
 
 def _setting_member(
@@ -91,12 +91,17 @@ def _setting_member(
     channel = row.get("recurrence_channel") or {}
     k = channel.get("k", 0)
     n = channel.get("n", 0)
-    source_rows = {
-        "basal_rate": analysis.get("basal") or (),
-        "isf": analysis.get("isf") or (),
-        "carb_ratio": analysis.get("ic_blocks") or (),
-    }[parameter]
-    admitted = any(item.get("asserts_move") for item in source_rows)
+    source_rows = analysis.get(_SETTING_ROWS[parameter]) or ()
+    admitted_row = next((item for item in source_rows if item.get("asserts_move")), None)
+    if overnight:
+        admitted_row = next((
+            item for item in source_rows
+            if _HARM_CONFIG.overnight_start_min
+            <= item.get("slot", -1) * 30
+            < _HARM_CONFIG.overnight_end_min
+            and item.get("asserts_move")
+        ), None)
+    admitted = admitted_row is not None
     lo, hi = channel.get("lo"), channel.get("hi")
     if overnight:
         harms = [((item.get("evidence") or {}).get("harm") or {})
@@ -104,13 +109,22 @@ def _setting_member(
         k = max((item.get("band_nights", 0) for item in harms), default=0)
         n = max((item.get("evidence", {}).get("harm_band_source_nights", 0)
                  for item in analysis.get("basal") or ()), default=0)
+    seriousness, seriousness_segments = _setting_seriousness(candidate_rows, parameter)
+    action = parameter if admitted else None
+    price = row.get("priority", 0)
+    if overnight:
+        price = (admitted_row or {}).get("priority", 0)
+        action = (((admitted_row or {}).get("guidance") or {}).get("action") or {}).get(
+            "parameter"
+        )
     return [{
         "subject": f"setting:{parameter}", "kind": "setting", "k": k,
-        "price": row.get("priority", 0), "admitted": admitted,
+        "price": price, "admitted": admitted,
         "producer": "tuning_levers", "lo": round(lo, 4) if lo is not None else None,
         "hi": round(hi, 4) if hi is not None else None,
-        "seriousness": _setting_seriousness(candidate_rows, parameter),
-        "action": parameter if admitted else None,
+        "seriousness": seriousness,
+        "seriousness_segments": seriousness_segments,
+        "action": action,
     }]
 
 
@@ -119,7 +133,7 @@ def _identity(item: dict) -> str | None:
 
 
 def _lever_identities(exposures: dict, lever: str) -> set[str]:
-    source = (exposures.get("exposures") or {}).get(_HABIT_EXPOSURES[lever]) or {}
+    source = (exposures.get("exposures") or {}).get(exposure(Lever(lever)).value) or {}
     return {
         identity for item in source.get("occurrences") or ()
         if item.get("attributed") and item.get("cause_lever") == lever
@@ -149,11 +163,11 @@ def _cross_pattern_overlaps(exposures: dict) -> dict[str, dict]:
     identities = {}
     families = {}
     for key, _title, habit_levers, _rate_levers, _setting, _family in _ROSTER:
-        families[key] = {_HABIT_EXPOSURES[lever] for lever in habit_levers}
+        families[key] = {exposure(Lever(lever)).value for lever in habit_levers}
         identities[key] = {
             family: set().union(*(
                 _lever_identities(exposures, lever) for lever in habit_levers
-                if _HABIT_EXPOSURES[lever] == family
+                if exposure(Lever(lever)).value == family
             ))
             for family in families[key]
         }

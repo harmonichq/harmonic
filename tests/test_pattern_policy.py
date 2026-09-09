@@ -16,12 +16,12 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         roster = build_outcome_patterns({}, {"exposures": {}}, {"patterns": [], "low_confidence": []})
         self.assertEqual([item["key"] for item in roster], [
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-            "lows_after_correcting_highs", "overnight_lows_without_iob",
+            "lows_after_correcting_highs", "overnight_lows_no_iob",
         ])
         self.assertNotIn("meal_bolus_short", str(roster))
         self.assertNotIn("missed_meal", str(roster))
         self.assertEqual(
-            roster[0]["overlap_counts"]["overnight_lows_without_iob"],
+            roster[0]["overlap_counts"]["overnight_lows_no_iob"],
             {"status": "not_comparable", "count": None,
              "reason": "no_habit_exposure_identity"},
         )
@@ -190,19 +190,71 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         analysis = {
             "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
                                "recurrence_channel": {"kind": "basal_lower"}}],
-            "basal": [{"slot": 0, "asserts_move": True, "safety_status": "lower",
-                       "evidence": {"harm_band_source_nights": 12},
-                       "guidance": {"action": None,
-                                    "seriousness": "recurring_low"}}],
+            "basal": [
+                {"slot": 0, "asserts_move": True, "safety_status": "lower",
+                 "priority": 4,
+                 "evidence": {"harm_band_source_nights": 12},
+                 "guidance": {"action": {
+                     "parameter": "basal_rate", "start_min": 0, "end_min": 30,
+                     "direction": "lower", "units": "U/h", "recommended": 0.5,
+                 },
+                              "seriousness": "low"}},
+                {"slot": 1, "asserts_move": True, "safety_status": "lower",
+                 "priority": 8,
+                 "evidence": {"harm_band_source_nights": 12},
+                 "guidance": {"action": {
+                     "parameter": "basal_rate", "start_min": 30, "end_min": 60,
+                     "direction": "lower", "units": "U/h", "recommended": 0.5,
+                 },
+                              "seriousness": "high"}},
+            ],
         }
         overnight = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]
-        seriousness = [{
-            "start_min": 0, "end_min": 30, "seriousness": "recurring_low",
-        }]
-        self.assertEqual(overnight["members"][0]["seriousness"], seriousness)
-        self.assertEqual(overnight["seriousness"], seriousness)
+        seriousness_segments = [
+            {"start_min": 0, "end_min": 30, "seriousness": "low"},
+            {"start_min": 30, "end_min": 60, "seriousness": "high"},
+        ]
+        self.assertEqual(overnight["members"][0]["seriousness"], "high")
+        self.assertEqual(overnight["members"][0]["seriousness_segments"],
+                         seriousness_segments)
+        self.assertEqual(overnight["seriousness"], "high")
+        self.assertEqual(overnight["settled_price"], 4)
+
+    def test_overnight_setting_admission_is_scoped_to_the_harm_band(self):
+        analysis = {
+            "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
+                               "recurrence_channel": {"kind": "basal_lower"}}],
+            "basal": [
+                {"slot": 28, "asserts_move": True, "priority": 90,
+                 "guidance": {"action": {
+                     "parameter": "basal_rate", "start_min": 840, "end_min": 870,
+                     "direction": "lower", "units": "U/h", "recommended": 0.5,
+                 }},
+                 "evidence": {"harm_band_source_nights": 12}},
+                {"slot": 2, "asserts_move": False, "priority": 7,
+                 "guidance": {"action": {
+                     "parameter": "basal_rate", "start_min": 60, "end_min": 90,
+                     "direction": "lower", "units": "U/h", "recommended": 0.5,
+                 }},
+                 "evidence": {"harm_band_source_nights": 12}},
+            ],
+        }
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        self.assertFalse(overnight["members"][0]["admitted"])
+        self.assertIsNone(overnight["action"])
+        self.assertEqual(overnight["settled_price"], 0)
+
+        analysis["basal"][1]["asserts_move"] = True
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        self.assertTrue(overnight["members"][0]["admitted"])
+        self.assertEqual(overnight["action"], "basal_rate")
+        self.assertEqual(overnight["settled_price"], 7)
 
     def test_setting_seriousness_fallback_uses_guidance_empty_state(self):
         analysis = {
@@ -215,7 +267,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         member = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]["members"][0]
-        self.assertEqual(member["seriousness"], [])
+        self.assertIsNone(member["seriousness"])
+        self.assertEqual(member["seriousness_segments"], [])
 
     def test_single_admitted_habit_collapses_to_its_member(self):
         exposures = {"exposures": {"lows": {"n": 12, "occurrences": [

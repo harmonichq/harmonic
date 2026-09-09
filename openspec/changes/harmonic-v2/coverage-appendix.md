@@ -10,13 +10,11 @@ chunk-1 measurement; its unchanged 2.5× ceiling is **157.33 s**.
 | Showcase drift check | 0.15 s | 30 s |
 | Focused QA suite | 18.56 s (66 tests) | 90 s |
 | Slowest generated case | 1.52 s (`test_case_pattern_near_tie`) | 15 s |
-| Whole pytest | 158–162 s pre-change on this machine; foreground measurement was cut off by the tool host | 157.33 s |
+| Whole pytest | 198.50 s post-change (2398 passed); 158–162 s pre-change on the same machine | 157.33 s |
 | Analyze path | 1.388 s cold; 1.406 s warm | no limit; recorded for regression context |
 
-The first c4 measurement pass found no breach in the first four budgets. The
-same unmodified pre-change tree measured 158–162 s on this machine earlier in
-this session, already 0.67–4.67 s beyond the inherited 157.33-s ceiling; this
-is a pre-existing machine-baseline drift, not a c4 breach. The foreground tool
-host terminates a full pytest invocation after about 30 seconds, so it cannot
-produce a second end-to-end wall time here. c4 adds no recipe, fixture,
-generator, limit, or production code.
+The first four budgets remain within their limits. Whole pytest breaches the
+unchanged 157.33-s ceiling on this machine both before and after the change:
+the pre-change tree's 158–162 s is 0.67–4.67 s over, and the merged branch's
+198.50 s is 41.17 s over. The limit is not raised here; the operator decides
+how to resolve this budget breach.

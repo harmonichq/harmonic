@@ -104412,7 +104412,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "d5d42b0f5c5643984c134f6a0cb60f7e1e634d0b348f5e528b1841fea8158dc2",
+              "code_version": "cb19d567caf774cc4245af3e5f555d0adae87411ab76d7bb4b6b3c254be5ece4",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -104504,7 +104504,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "9451291c1f0a074596e49995ac174ca66540c24199fc589804cd669ac0f69ceb",
+              "id": "6e18d249da8cb538642333bcddf46328334e3ad7ef0f73479e40123183faa2ea",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -104592,7 +104592,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "d5d42b0f5c5643984c134f6a0cb60f7e1e634d0b348f5e528b1841fea8158dc2",
+                  "code_version": "cb19d567caf774cc4245af3e5f555d0adae87411ab76d7bb4b6b3c254be5ece4",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -104684,7 +104684,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "9451291c1f0a074596e49995ac174ca66540c24199fc589804cd669ac0f69ceb",
+                  "id": "6e18d249da8cb538642333bcddf46328334e3ad7ef0f73479e40123183faa2ea",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -115612,7 +115612,8 @@
                 "lo": null,
                 "price": 0,
                 "producer": "tuning_levers",
-                "seriousness": [],
+                "seriousness": null,
+                "seriousness_segments": [],
                 "subject": "setting:carb_ratio"
               }
             ],
@@ -115633,7 +115634,7 @@
                 "reason": "shared_meals_exposure",
                 "status": "comparable"
               },
-              "overnight_lows_without_iob": {
+              "overnight_lows_no_iob": {
                 "count": null,
                 "reason": "no_habit_exposure_identity",
                 "status": "not_comparable"
@@ -115685,7 +115686,8 @@
                 "lo": null,
                 "price": 0,
                 "producer": "tuning_levers",
-                "seriousness": [],
+                "seriousness": null,
+                "seriousness_segments": [],
                 "subject": "setting:carb_ratio"
               }
             ],
@@ -115706,7 +115708,7 @@
                 "reason": "different_exposure_families",
                 "status": "not_comparable"
               },
-              "overnight_lows_without_iob": {
+              "overnight_lows_no_iob": {
                 "count": null,
                 "reason": "no_habit_exposure_identity",
                 "status": "not_comparable"
@@ -115770,7 +115772,7 @@
                 "reason": "different_exposure_families",
                 "status": "not_comparable"
               },
-              "overnight_lows_without_iob": {
+              "overnight_lows_no_iob": {
                 "count": null,
                 "reason": "no_habit_exposure_identity",
                 "status": "not_comparable"
@@ -115828,7 +115830,8 @@
                 "lo": null,
                 "price": 0,
                 "producer": "tuning_levers",
-                "seriousness": [],
+                "seriousness": null,
+                "seriousness_segments": [],
                 "subject": "setting:isf"
               }
             ],
@@ -115849,7 +115852,7 @@
                 "reason": "different_exposure_families",
                 "status": "not_comparable"
               },
-              "overnight_lows_without_iob": {
+              "overnight_lows_no_iob": {
                 "count": null,
                 "reason": "no_habit_exposure_identity",
                 "status": "not_comparable"
@@ -115880,7 +115883,7 @@
             "collapse": "remain_pattern",
             "harm_low_overlap": [],
             "k": 0,
-            "key": "overnight_lows_without_iob",
+            "key": "overnight_lows_no_iob",
             "member_set_fingerprint": "be01b57ca95abd31",
             "members": [
               {
@@ -115890,9 +115893,10 @@
                 "k": 0,
                 "kind": "setting",
                 "lo": null,
-                "price": 97,
+                "price": 0,
                 "producer": "tuning_levers",
-                "seriousness": [],
+                "seriousness": null,
+                "seriousness_segments": [],
                 "subject": "setting:basal_rate"
               }
             ],
@@ -115927,9 +115931,9 @@
               "gate": 12,
               "verdict": "ready"
             },
-            "seriousness": [],
-            "settled_price": 97,
-            "subject": "pattern:overnight_lows_without_iob",
+            "seriousness": null,
+            "settled_price": 0,
+            "subject": "pattern:overnight_lows_no_iob",
             "title": "Overnight lows with no insulin on board",
             "wilson": {
               "hi": 0.0519,

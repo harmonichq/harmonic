@@ -1663,16 +1663,24 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "reason": payload.get("reason")}})
         return lifecycle("withdraw", "plan", identity, payload, durable=True, mutate=withdraw)
 
+    def _pinnable_pattern_member(row):
+        from .watched_change import is_pinnable
+        if (row.get("kind") != "pattern"
+                or row["readiness"]["verdict"] != "ready"
+                or row.get("action") is None):
+            return None
+        return next((
+            member for member in row["members"]
+            if member["kind"] == "habit"
+            and is_pinnable(member["subject"].split(":", 1)[1], row["pattern_key"])
+        ), None)
+
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
-        from .watched_change import is_pinnable, pinnable_levers
+        from .watched_change import pinnable_levers
         guidance = guidance_or_unavailable()
         patterns = [row for row in guidance["candidates"]
-                    if row.get("kind") == "pattern" and row["readiness"]["verdict"] == "ready"
-                    and row.get("action") is not None
-                    and any(member["kind"] == "habit" and is_pinnable(
-                        member["subject"].split(":", 1)[1], row["pattern_key"])
-                            for member in row["members"])]
+                    if _pinnable_pattern_member(row) is not None]
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
             return {"focuses": store.follow_up_records("focus"), "pinnable": sorted(pinnable_levers()),
@@ -1693,11 +1701,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             current = guidance_or_unavailable()
             pattern = next((row for row in current["candidates"]
                             if row.get("subject") == f"pattern:{pattern_key}"), None)
-            if pattern is None or pattern["readiness"]["verdict"] != "ready":
+            if pattern is None:
                 raise HTTPException(status_code=400, detail="Pattern Focus is not ready")
-            member = next((row for row in pattern["members"] if row["kind"] == "habit"), None)
-            if member is None or not is_pinnable(member["subject"].split(":", 1)[1], pattern_key):
-                raise HTTPException(status_code=400, detail="all-setting Patterns are not pinnable")
+            member = _pinnable_pattern_member(pattern)
+            if member is None:
+                raise HTTPException(status_code=400, detail="Pattern Focus is not pinnable")
             lever = member["subject"].split(":", 1)[1]
         if not isinstance(lever, str):
             raise HTTPException(status_code=422, detail="lever required")

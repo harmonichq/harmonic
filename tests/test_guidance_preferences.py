@@ -76,6 +76,38 @@ class GuidancePreferencesTest(unittest.TestCase):
         self.assertEqual(rows[0]["decided_at"], "2026-01-02 00:00:00")
         self.assertEqual(rows[0]["reason"], "keep first")
 
+    def test_migration_rewrites_legacy_pattern_key_and_advances_revision(self):
+        from ciq_autotune.api import create_app
+        tmp, _case = self._legacy_preferences("behavioral-carb-undercount", [
+            ("habit:carb_undercount", "2026-01-02 00:00:00", "later"),
+        ])
+        with Store.open(tmp.name) as store:
+            with store.conn:
+                store.conn.execute(
+                    "INSERT INTO guidance_preferences "
+                    "(subject, decided_at, reason, comparison_version, state_json) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    ("pattern:overnight_lows_without_iob", "2026-01-01 00:00:00",
+                     None, "383:1", '{}'),
+                )
+            stale_revision = store.input_data_revision()
+        create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        with Store.open(tmp.name) as store:
+            self.assertGreater(store.input_data_revision(), stale_revision)
+            subjects = {row["subject"] for row in store.guidance_preferences()}
+            self.assertIn("pattern:overnight_lows_no_iob", subjects)
+            self.assertNotIn("pattern:overnight_lows_without_iob", subjects)
+            with self.assertRaisesRegex(ValueError, "guidance changed"):
+                store.save_guidance_preference(
+                    "habit:carb_undercount", decided_at="2026-01-03 00:00:00",
+                    reason=None, comparison_version="383:1", state={"kind": "habit"},
+                    expected_revision=stale_revision,
+                )
+            self.assertNotIn(
+                "habit:carb_undercount",
+                {row["subject"] for row in store.guidance_preferences()},
+            )
+
     def test_focus_migration_is_one_time_across_a_later_legacy_write(self):
         from ciq_autotune.api import create_app
         tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")

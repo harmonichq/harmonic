@@ -217,7 +217,7 @@ class FocusViewTest(unittest.TestCase):
         self.assertEqual(view["target_metric"], "arc")
 
     def test_all_setting_pattern_is_not_pinnable(self):
-        self.assertFalse(wc.is_pinnable("basal_rate", "overnight_lows_without_iob"))
+        self.assertFalse(wc.is_pinnable("basal_rate", "overnight_lows_no_iob"))
 
     def test_meal_lever_outcome_is_arc(self):
         v = wc.focus_view({"id": 1, "lever": "late_bolus",

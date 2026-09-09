@@ -85,7 +85,8 @@
        "lo": null,
        "price": 66,
        "producer": "tuning_levers",
-       "seriousness": [],
+       "seriousness": null,
+       "seriousness_segments": [],
        "subject": "setting:carb_ratio"
       }
      ],
@@ -106,7 +107,7 @@
        "reason": "shared_meals_exposure",
        "status": "comparable"
       },
-      "overnight_lows_without_iob": {
+      "overnight_lows_no_iob": {
        "count": null,
        "reason": "no_habit_exposure_identity",
        "status": "not_comparable"
@@ -123,7 +124,7 @@
       "gate": 12,
       "verdict": "withheld"
      },
-     "seriousness": [],
+     "seriousness": null,
      "settled_price": 66,
      "subject": "pattern:highs_after_meals",
      "title": "Highs after meals",
@@ -158,7 +159,8 @@
        "lo": null,
        "price": 66,
        "producer": "tuning_levers",
-       "seriousness": [],
+       "seriousness": null,
+       "seriousness_segments": [],
        "subject": "setting:carb_ratio"
       }
      ],
@@ -179,7 +181,7 @@
        "reason": "different_exposure_families",
        "status": "not_comparable"
       },
-      "overnight_lows_without_iob": {
+      "overnight_lows_no_iob": {
        "count": null,
        "reason": "no_habit_exposure_identity",
        "status": "not_comparable"
@@ -195,7 +197,7 @@
       "gate": 12,
       "verdict": "withheld"
      },
-     "seriousness": [],
+     "seriousness": null,
      "settled_price": 66,
      "subject": "pattern:lows_after_meals",
      "title": "Lows after meals",
@@ -243,7 +245,7 @@
        "reason": "different_exposure_families",
        "status": "not_comparable"
       },
-      "overnight_lows_without_iob": {
+      "overnight_lows_no_iob": {
        "count": null,
        "reason": "no_habit_exposure_identity",
        "status": "not_comparable"
@@ -301,7 +303,8 @@
        "lo": null,
        "price": 0,
        "producer": "tuning_levers",
-       "seriousness": [],
+       "seriousness": null,
+       "seriousness_segments": [],
        "subject": "setting:isf"
       }
      ],
@@ -322,7 +325,7 @@
        "reason": "different_exposure_families",
        "status": "not_comparable"
       },
-      "overnight_lows_without_iob": {
+      "overnight_lows_no_iob": {
        "count": null,
        "reason": "no_habit_exposure_identity",
        "status": "not_comparable"
@@ -348,24 +351,25 @@
      }
     },
     {
-     "action": "basal_rate",
+     "action": null,
      "admission_route": "setting_staging",
      "collapse": "remain_pattern",
      "harm_low_overlap": [],
      "k": 0,
-     "key": "overnight_lows_without_iob",
+     "key": "overnight_lows_no_iob",
      "member_set_fingerprint": "be01b57ca95abd31",
      "members": [
       {
-       "action": "basal_rate",
+       "action": null,
        "admitted": true,
        "hi": null,
        "k": 0,
        "kind": "setting",
        "lo": null,
-       "price": 39,
+       "price": 0,
        "producer": "tuning_levers",
-       "seriousness": [],
+       "seriousness": null,
+       "seriousness_segments": [],
        "subject": "setting:basal_rate"
       }
      ],
@@ -400,9 +404,9 @@
       "gate": 12,
       "verdict": "withheld"
      },
-     "seriousness": [],
-     "settled_price": 39,
-     "subject": "pattern:overnight_lows_without_iob",
+     "seriousness": null,
+     "settled_price": 0,
+     "subject": "pattern:overnight_lows_no_iob",
      "title": "Overnight lows with no insulin on board",
      "wilson": null
     }

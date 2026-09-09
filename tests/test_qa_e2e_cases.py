@@ -286,7 +286,7 @@ def _case_test(case):
         assert_expectation(case, execution)
         patterns = {row["key"]: row for row in execution.outcome_patterns}
         if case.name == "pattern-near-tie":
-            setting = patterns["overnight_lows_without_iob"]["members"][0]
+            setting = patterns["overnight_lows_no_iob"]["members"][0]
             overlapping_habit = patterns["highs_after_meals"]["members"][0]
             ordinary_habit = patterns["highs_after_treating_lows"]["members"][0]
             self.assertGreater(overlapping_habit["price"], setting["price"])
@@ -295,9 +295,10 @@ def _case_test(case):
             self.assertEqual(
                 patterns["highs_after_meals"]["admission_route"], "habit_threshold",
             )
-            self.assertLess(ordinary_habit["price"], setting["price"])
+            self.assertEqual(setting["price"], 0)
+            self.assertGreater(ordinary_habit["price"], setting["price"])
             self.assertEqual(
-                patterns["overnight_lows_without_iob"]["admission_route"],
+                patterns["overnight_lows_no_iob"]["admission_route"],
                 "setting_staging",
             )
         elif case.name == "pattern-collapse":
@@ -321,8 +322,11 @@ def _case_test(case):
                 },
             )
         elif case.name == "showcase":
-            overnight = patterns["overnight_lows_without_iob"]
-            self.assertEqual(overnight["members"][0]["seriousness"], [])
+            overnight = patterns["overnight_lows_no_iob"]
+            self.assertIsNone(overnight["members"][0]["seriousness"])
+            self.assertEqual(
+                overnight["members"][0]["seriousness_segments"], [],
+            )
         if case.name == "behavioral-correction-stacking":
             target_key = ("correction_stacking", "correction_clusters")
             target_tally = case.expectation.verdict_tallies[target_key]

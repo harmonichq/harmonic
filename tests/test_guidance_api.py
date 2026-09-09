@@ -62,10 +62,25 @@ class GuidanceApiTest(unittest.TestCase):
     def test_all_setting_pattern_pin_is_rejected_separately(self):
         _tmp, _app, client = self._case_client("showcase")
         response = client.post(
-            "/api/focus", json={"pattern_key": "overnight_lows_without_iob"},
+            "/api/focus", json={"pattern_key": "overnight_lows_no_iob"},
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("all-setting", response.json()["detail"])
+        self.assertIn("not pinnable", response.json()["detail"])
+
+    def test_post_refuses_every_pattern_absent_from_get_pinnable_patterns(self):
+        _tmp, _app, client = self._case_client("showcase")
+        listed = {row["key"] for row in client.get(
+            "/api/focus",
+        ).json()["pinnable_patterns"]}
+        guidance = client.get("/api/guidance").json()
+        patterns = [row for row in guidance["candidates"] if row["kind"] == "pattern"]
+        for pattern in patterns:
+            response = client.post("/api/focus", json={"pattern_key": pattern["pattern_key"]})
+            self.assertEqual(response.status_code == 200,
+                             pattern["pattern_key"] in listed,
+                             (pattern["pattern_key"], response.text))
+            if response.status_code == 200:
+                client.post(f"/api/focus/{response.json()['id']}/resolve")
 
     def test_pattern_pin_rechecks_readiness_on_the_write_source(self):
         import ciq_autotune.guidance as guidance_module

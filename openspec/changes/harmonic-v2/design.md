@@ -1847,6 +1847,35 @@ is independently shippable as backend policy plus a Diagnose revision before
 #389 resumes. #390's own children — #391, #342, and the backend, design and
 collapse children to come — are filed under #390, not #348.
 
+## ADR 395 — Two Patterns count what the reader sees
+
+**Decision.** Two roster rulings from the #395 design round on the operator's
+own data, which showed the same behaviour split across a Pattern and a member
+it could not count. (1) Highs after meals counts meal bolus fell short as a
+rate lever beside carb undercount and late bolus: it is the same under-dosed
+meal judged from the high it produced rather than from the meal, identified by
+the meal it cites (`meal_at`), so a meal caught by both detectors counts once;
+it stays observation-only for actions and admission. (2) Lows after correcting
+highs counts over lows, not correction clusters: `k` lows preceded by a
+correction on active insulin, stacked or not, of `n` lows, with both correction
+stacking and correction on active insulin as rate levers identified by the low
+they reach (the existing low-nadir identity), anchored on the low in its case
+file. Correction clusters (adjacent pairs of user corrections) remain the
+stacking detector's own evidence population and stop being a Pattern
+denominator. The readiness gate for that Pattern is re-derived from the #391
+receipt's lows count by the same Wilson positive-lower-bound rule (floored at
+12) that set the other lows-denominated gates, and HV2-24's criterion line
+drops "27 correction clusters".
+
+Sanction: Connor Griffin · 2026-09-09 · "Personally I feel like those are
+actually just the same finding in different clothes" (corrections), "It's the
+same shit as undercount just with slightly different criteria" (meal bolus fell
+short), "A" to both.
+
+**Must prevent.** Pooling: each lever's identities are unioned within one
+population, never summed across populations; missed meal stays outside every
+Pattern because an un-bolused rise is not a meal opportunity.
+
 ## ADR 395 — The rail projects the roster
 
 **Decision.** The design child #395 serves the Pattern roster through the

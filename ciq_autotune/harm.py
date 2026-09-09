@@ -499,29 +499,19 @@ def basal_harm(
     # night.  The curve has the same construction and HarmConfig as
     # find_printed_lows(), so the fasting predicate is one curve/floor contract.
     iob = BolusIob(list(bolus), config.peak_min, config.dia_min)
-    if not iob.times:
-        source_nights = {
-            reading.t.date()
-            for reading in cgm
-            if reading.bg is not None
-            and config.overnight_start_min
-            <= reading.t.hour * 60 + reading.t.minute
-            < config.overnight_end_min
-        }
-    else:
-        source_nights: set[date] = set()
-        for reading in cgm:
-            if reading.bg is None:
-                continue
-            night = _night_key(
-                reading.t, config.overnight_start_min, config.overnight_end_min,
-            )
-            if night is None or night in source_nights:
-                continue
-            # One sub-floor reading proves that this night belongs to the source
-            # population; its remaining five-minute readings cannot undo that.
-            if iob.at(reading.t) <= config.fasting_iob_floor_u:
-                source_nights.add(night)
+    source_nights: set[date] = set()
+    for reading in cgm:
+        if reading.bg is None:
+            continue
+        night = _night_key(
+            reading.t, config.overnight_start_min, config.overnight_end_min,
+        )
+        if night is None or night in source_nights:
+            continue
+        # One sub-floor reading proves that this night belongs to the source
+        # population; its remaining five-minute readings cannot undo that.
+        if iob.at(reading.t) <= config.fasting_iob_floor_u:
+            source_nights.add(night)
 
     band_lows: List[PrintedLow] = []
     # slot -> set of distinct nights that slot printed a basal low

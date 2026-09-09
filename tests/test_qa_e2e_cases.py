@@ -290,14 +290,15 @@ def _case_test(case):
             overlapping_habit = patterns["highs_after_meals"]["members"][0]
             ordinary_habit = patterns["highs_after_treating_lows"]["members"][0]
             self.assertGreater(overlapping_habit["price"], setting["price"])
-            self.assertFalse(
-                overlapping_habit["hi"] < setting["lo"]
-                or setting["hi"] < overlapping_habit["lo"]
+            self.assertIsNone(setting["lo"])
+            self.assertIsNone(setting["hi"])
+            self.assertEqual(
+                patterns["highs_after_meals"]["admission_route"], "habit_threshold",
             )
             self.assertLess(ordinary_habit["price"], setting["price"])
-            self.assertTrue(
-                ordinary_habit["hi"] < setting["lo"]
-                or setting["hi"] < ordinary_habit["lo"]
+            self.assertEqual(
+                patterns["overnight_lows_without_iob"]["admission_route"],
+                "setting_staging",
             )
         elif case.name == "pattern-collapse":
             pattern = patterns["highs_after_treating_lows"]
@@ -306,6 +307,9 @@ def _case_test(case):
             )
             self.assertEqual(pattern["collapse"], "collapse_to_member")
             self.assertEqual(pattern["action"], "habit:over_treated_low")
+        elif case.name == "showcase":
+            overnight = patterns["overnight_lows_without_iob"]
+            self.assertEqual(overnight["members"][0]["seriousness"], "lower")
         if case.name == "behavioral-correction-stacking":
             target_key = ("correction_stacking", "correction_clusters")
             target_tally = case.expectation.verdict_tallies[target_key]

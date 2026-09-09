@@ -523,6 +523,7 @@ _ADDED_COLUMNS = [
     ("bolus_events", "isf", "REAL"),          # #159 dose-stamped ISF
     ("bolus_events", "target_bg", "REAL"),    # #159 dose-stamped target BG
     ("bolus_events", "carb_ratio", "REAL"),   # #159 dose-stamped carb ratio
+    ("focus", "pattern_key", "TEXT"),
 ]
 
 
@@ -532,7 +533,7 @@ _FOLLOW_UP_FIELDS = {
     'trial': {'parameter', 'slot', 'changed_at', 'before', 'after',
               'block', 'members', 'first_observed_at', 'observed_context',
               'comparison_context', 'reconciliation', 'ending'},
-    'focus': {'lever', 'pinned_at', 'status', 'decision_context',
+    'focus': {'lever', 'pattern_key', 'pinned_at', 'status', 'decision_context',
               'comparison_context', 'ending'},
 }
 _FOLLOW_UP_ENVELOPES = frozenset((
@@ -576,20 +577,46 @@ class Store:
                      if column not in {r["name"] for r in
                                        self.conn.execute(f"PRAGMA table_info({table})")}]
         stale = self._stale_seq_num_tables()
-        if not additions and not stale:
+        if additions or stale:
+            statements = ["BEGIN"]
+            statements.extend(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
+                              for table, column, coltype in additions)
+            statements.extend(f"DROP TABLE {table}" for table in stale)
+            if stale:
+                statements.append(_SCHEMA)
+            statements.extend(("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1", "COMMIT"))
+            self.conn.executescript(";\n".join(statements) + ";")
+        from .analyzers.scenario.outcome_patterns import _ROSTER
+        from hashlib import sha256
+        owner = {lever: key for key, _title, levers, _rates, _setting, _family in _ROSTER
+                 for lever in levers}
+        pattern_rows = [row for row in self.conn.execute("SELECT subject, decided_at, reason, comparison_version, state_json FROM guidance_preferences WHERE subject LIKE 'habit:%'").fetchall()
+                        if row["subject"].split(":", 1)[1] in owner]
+        focus_rows = [row for row in self.conn.execute("SELECT id, lever FROM focus WHERE status = 'active' AND pattern_key IS NULL").fetchall()
+                      if row["lever"] in owner]
+        if not pattern_rows and not focus_rows:
             return
-        statements = ["BEGIN"]
-        statements.extend(
-            f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
-            for table, column, coltype in additions)
-        statements.extend(f"DROP TABLE {table}" for table in stale)
-        if stale:
-            statements.append(_SCHEMA)
-        statements.extend((
-            "UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1",
-            "COMMIT",
-        ))
-        self.conn.executescript(";\n".join(statements) + ";")
+        grouped = {}
+        for row in pattern_rows:
+            key = owner.get(row["subject"].split(":", 1)[1])
+            if key:
+                grouped.setdefault(key, []).append(row)
+        with self.conn:
+            for key, rows in grouped.items():
+                winner = min(rows, key=lambda row: row["decided_at"])
+                _key, _title, levers, _rates, setting, _family = next(item for item in _ROSTER if item[0] == key)
+                members = [f"habit:{lever}" for lever in levers] + ([f"setting:{setting}"] if setting else [])
+                old = json.loads(winner["state_json"])
+                state = {"kind": "pattern", "action": old.get("action"), "seriousness": old.get("seriousness"),
+                         "member_set_fingerprint": sha256(",".join(sorted(members)).encode()).hexdigest()[:16]}
+                self.conn.execute("INSERT INTO guidance_preferences (subject, decided_at, reason, comparison_version, state_json) VALUES (?, ?, ?, ?, ?) ON CONFLICT(subject) DO UPDATE SET decided_at=excluded.decided_at, reason=excluded.reason, comparison_version=excluded.comparison_version, state_json=excluded.state_json",
+                                  (f"pattern:{key}", winner["decided_at"], winner["reason"], winner["comparison_version"], json.dumps(state, sort_keys=True)))
+                self.conn.executemany("DELETE FROM guidance_preferences WHERE subject=?", [(row["subject"],) for row in rows])
+            for row in focus_rows:
+                key = owner.get(row["lever"])
+                if key:
+                    self.conn.execute("UPDATE focus SET pattern_key=? WHERE id=?", (key, row["id"]))
+            self._advance_revision()
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event
@@ -1241,7 +1268,7 @@ class Store:
 
     # --- Legacy Focus identity and status (#244, ADR 0029) -------------------
 
-    def pin_focus(self, lever: str, pinned_at: str) -> dict:
+    def pin_focus(self, lever: str, pinned_at: str, pattern_key: Optional[str] = None) -> dict:
         """Pin a behavioral lever as the active Focus and return the stored row.
 
         Enforces one active Focus at a time via the ``focus_one_active`` partial
@@ -1252,8 +1279,8 @@ class Store:
         with self._write_transaction():
             try:
                 cur = self.conn.execute(
-                    "INSERT INTO focus (lever, pinned_at, status) VALUES (?, ?, 'active')",
-                    (lever, pinned_at),
+                    "INSERT INTO focus (lever, pattern_key, pinned_at, status) VALUES (?, ?, ?, 'active')",
+                    (lever, pattern_key, pinned_at),
                 )
             except sqlite3.IntegrityError as exc:
                 # sqlite_errorname is unavailable on supported Python 3.9/3.10.
@@ -1262,7 +1289,7 @@ class Store:
                     raise
                 raise FocusAlreadyActive("a Focus is already active") from exc
             self._advance_revision()
-            return {"id": cur.lastrowid, "lever": lever,
+            return {"id": cur.lastrowid, "lever": lever, "pattern_key": pattern_key,
                     "pinned_at": pinned_at, "status": "active"}
 
     def active_focus(self) -> Optional[dict]:
@@ -1337,7 +1364,7 @@ class Store:
     @staticmethod
     def _focus_row(row: sqlite3.Row) -> dict:
         return {"id": row["id"], "lever": row["lever"],
-                "pinned_at": row["pinned_at"], "status": row["status"]}
+                "pattern_key": row["pattern_key"], "pinned_at": row["pinned_at"], "status": row["status"]}
 
     # --- Durable Plan / Trial / Focus history (ADR 386) -------------------
 

@@ -572,8 +572,13 @@ def pinnable_levers() -> set:
     return {lv.value for lv in _behavioral_levers()} | {OVERRIDE_LEVER}
 
 
-def is_pinnable(lever: str) -> bool:
-    return lever in pinnable_levers()
+def is_pinnable(lever: str, pattern_key: str | None = None) -> bool:
+    """A Pattern with only a setting member is never a Focus subject."""
+    if pattern_key is None:
+        return lever in pinnable_levers()
+    from .analyzers.scenario.outcome_patterns import _ROSTER
+    return any(key == pattern_key and bool(levers)
+               for key, _title, levers, _rates, _setting, _family in _ROSTER)
 
 
 @dataclass(frozen=True)
@@ -591,6 +596,8 @@ class FocusView:
     pinned_at: str
     status: str
     target_metric: str
+    subject: str | None = None
+    pattern_key: str | None = None
     kind: str = field(default="focus", init=False)
 
     def to_dict(self) -> dict:
@@ -601,6 +608,8 @@ class FocusView:
             "pinned_at": self.pinned_at,
             "status": self.status,
             "target_metric": self.target_metric,
+            **({"subject": self.subject, "pattern_key": self.pattern_key}
+               if self.pattern_key else {}),
         }
 
 
@@ -615,9 +624,11 @@ def _focus_meta(lever: str) -> tuple:
 
 def focus_view(focus_row: dict) -> FocusView:
     title, target = _focus_meta(focus_row["lever"])
+    key = focus_row.get("pattern_key")
     return FocusView(lever=focus_row["lever"], title=title,
                      pinned_at=focus_row["pinned_at"], status=focus_row["status"],
-                     target_metric=target)
+                     target_metric=target, subject=f"pattern:{key}" if key else None,
+                     pattern_key=key)
 
 
 # --- the one-active resolution (Trial XOR Focus, pump wins) -----------------
@@ -1354,7 +1365,7 @@ def follow_up_admission(store, *, now):
                            can_finish_trial=not trial.view.maturing.is_maturing)
     focus = store.active_focus()
     if verdict["active_kind"] is None and focus:
-        if not is_pinnable(focus["lever"]):
+        if not is_pinnable(focus["lever"], focus.get("pattern_key")):
             return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
         verdict.update(active_kind="focus", active_id=focus["id"], reason="active_focus")
     reason = verdict["reason"] if verdict["active_kind"] else ("pending_plan" if pending_plan(store) else None)
@@ -1456,9 +1467,9 @@ def reconcile_follow_up(store, *, now, recorded_at):
             capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     focus = store.active_focus()
     active_trial = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
-    if focus and (not is_pinnable(focus["lever"]) or (active_trial and "kind" not in active_trial["ending"])):
+    if focus and (not is_pinnable(focus["lever"], focus.get("pattern_key")) or (active_trial and "kind" not in active_trial["ending"])):
         record = store.follow_up_record("focus", focus["id"])
-        preempt = is_pinnable(focus["lever"])
+        preempt = is_pinnable(focus["lever"], focus.get("pattern_key"))
         capture_ending(store, record, kind="trial_preempted" if preempt else "lever_unavailable",
                        effective_at=datetime.fromisoformat(active_trial["changed_at"]) if preempt else recorded_at,
                        recorded_at=recorded_at, data_cutoff=now)

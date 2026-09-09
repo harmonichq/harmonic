@@ -1,73 +1,74 @@
 ## ADDED Requirements
 
-### Requirement: One backend-owned rule selects the leading priority
+### Requirement: One backend-owned rule selects the leading pattern
 
-The backend SHALL decide the one leading priority under a single rule that is
-recorded in this change and reproducible from the existing judgments, and SHALL
-return that selection with its disposition and its reasons. The disposition SHALL
-distinguish an eligible action, a guided investigation, a quiet result, and an
-active change that leads. The rule SHALL be deterministic, including an explicit
-tie-break, so two runs over the same window select the same subject.
+The backend SHALL decide the one leading pattern under the ADR 391 membership,
+rate, impact, admission and collapse rules, and SHALL return that selection with
+its members, rate, denominator, admission verdict, disposition and reasons. The
+disposition SHALL distinguish an eligible action, a guided investigation, a quiet
+result, and an active change that leads. The rule SHALL be deterministic,
+including its staged-setting near-tie ruling, so two runs over the same window
+select the same subject.
 
-The existing Lever verdicts, the existing Priority and the queue's existing order
-are inputs to that rule. None of them is by itself the cross-parameter policy:
-the highest existing Priority SHALL NOT be assumed to be the correct leading
-subject, and the shared `next_in_line` tier SHALL NOT be read as naming a winner.
-The rule that resolves across parameters is the one this spike settles and
-records, not one already established by a score.
+Existing Lever verdicts, source Priority and queue order are inputs to the
+pattern rule. None is by itself the cross-parameter policy: the highest existing
+Priority SHALL NOT be assumed to be the correct leading pattern, and the shared
+`next_in_line` tier SHALL NOT be read as naming a winner. Behavioral
+`Confidence.effect` and setting insulin-per-day `_impact_factor` SHALL NOT be
+combined without an explicit conversion.
 
-The browser SHALL NOT derive the selection from queue order, from the shared
-`next_in_line` tier, or from a Priority it re-ranks itself. The rule SHALL NOT
-treat Focus pin eligibility as a support verdict, SHALL NOT pool unrelated
-occurrence counts into apparent support, and SHALL NOT claim preventable harm or
-causation. Setting and habit populations SHALL retain their separate identities
-and their overlapping evidence ownership. Clinical support floors, classifiers
-and scores are unchanged inputs to this rule.
+The browser SHALL NOT derive selection, membership, rate, denominator, admission
+or collapse from queue order, `next_in_line`, local counts, or a Priority it
+re-ranks itself. The rule SHALL NOT treat Focus readiness as a support verdict,
+SHALL NOT pool unrelated occurrence counts into apparent support, and SHALL NOT
+claim preventable harm or causation. Setting and habit populations SHALL retain
+their separate identities and overlapping evidence ownership. Clinical support
+floors, classifiers and scores are unchanged inputs to this rule.
 
-Admission stays parameter-specific. A setting Lever SHALL be offered as an
+Admission stays parameter-specific. A setting member SHALL be offered as an
 eligible setting change only where its analyzer stages it. A supported habit is
-admitted for action under its own supported-action and Focus rules, so a setting
-that does not stage SHALL NOT by itself prevent a supported habit from leading.
+admitted under its existing threshold rule, so an unstaged setting SHALL NOT by
+itself prevent a supported habit pattern from leading.
 
-#### Scenario: A staged setting can lead under the recorded rule
+#### Scenario: A staged setting leads a pattern under the recorded rule
 
-- **GIVEN** a window in which the recorded rule selects a staged setting Lever
+- **GIVEN** a window in which the recorded rule selects a pattern with a staged setting member
 - **WHEN** guidance returns the leading priority
-- **THEN** that Lever is the selected subject under an eligible-action disposition
-- **AND** the stated reason cites that Lever's own evidence and the recorded rule rather than a pooled count or bare row order
+- **THEN** that pattern is the selected subject under an eligible-action disposition
+- **AND** the stated reason cites the setting member's own evidence and the recorded rule rather than a pooled count or bare row order
 
-#### Scenario: A supported habit can lead where no setting stages
+#### Scenario: A supported habit pattern can lead where no setting stages
 
-- **GIVEN** a window carrying a supported habit Lever admitted for action and a setting Lever its analyzer does not stage
+- **GIVEN** a window carrying a supported habit member admitted for action and a setting member its analyzer does not stage
 - **WHEN** guidance returns the leading priority
-- **THEN** the habit is eligible to lead under the recorded rule
-- **AND** the unstaged setting is not offered as an eligible setting change, and its staging verdict does not by itself withhold the habit
+- **THEN** that habit pattern is eligible to lead under the recorded rule
+- **AND** the unstaged setting is not offered as an eligible setting change, and its staging verdict does not by itself withhold the pattern
 
 #### Scenario: No supported action yields a guided investigation
 
-- **GIVEN** a window whose recurring problem is visible but whose Levers are held, thin or unstaged
+- **GIVEN** a window whose recurring pattern is visible but whose pattern members are held, thin or unstaged
 - **WHEN** guidance selects the leading priority
 - **THEN** the disposition is a guided investigation with explicit unknowns
-- **AND** no held or thin Lever is offered as an eligible action
+- **AND** no held or thin member is offered as an eligible action
 
 #### Scenario: An active change leads over a new finding
 
-- **GIVEN** an active watched change in progress and a newly priced Lever
+- **GIVEN** an active watched change in progress and a newly priced pattern
 - **WHEN** guidance selects the leading priority
 - **THEN** the active change leads with its current progress
-- **AND** the new finding stays visible without starting a second change
+- **AND** the new pattern stays visible without starting a second change
 
-#### Scenario: A tie resolves the same way twice
+#### Scenario: A staged-setting near-tie resolves the same way twice
 
-- **GIVEN** two Levers whose Priority values tie
+- **GIVEN** a supported habit member and a staged setting member whose owner prices contend
 - **WHEN** guidance selects the leading priority twice over the same window
-- **THEN** both runs select the same subject under the recorded tie-break
+- **THEN** both runs select the same pattern subject under the recorded staged-setting tie-break
 
-### Requirement: A set-aside preference has a stable subject
+### Requirement: A set-aside preference has a stable pattern subject
 
-A set-aside preference SHALL be recorded against a stable subject identity for a
-supported setting, a supported habit or a guided investigation, together with the
-time of the choice and an optional reason. That identity SHALL survive an
+A set-aside preference SHALL be recorded against `pattern:<pattern-key>` for a
+pattern, together with the time of the choice and an optional reason. That
+identity SHALL survive an
 evidence-window move, an analysis generation change and an evidence fingerprint
 change, so routine recomputation alone never erases the choice. An explicit
 Restore SHALL clear the preference and return the subject to selection.
@@ -75,41 +76,41 @@ Restore SHALL clear the preference and return the subject to selection.
 The preference SHALL remain a bounded stored choice. It SHALL NOT require an
 event archive, a refresh snapshot history, or a second copy of the analysis.
 
-#### Scenario: Routine recomputation keeps a subject aside
+#### Scenario: Routine recomputation keeps a pattern aside
 
-- **GIVEN** a subject the user set aside
+- **GIVEN** a pattern the user set aside
 - **WHEN** a later analysis run changes only its evidence window, generation or fingerprint
 - **THEN** the subject remains aside
 - **AND** its evidence stays inspectable
 
-#### Scenario: Restore returns the subject to selection
+#### Scenario: Restore returns a pattern to selection
 
-- **GIVEN** a subject the user set aside
+- **GIVEN** a pattern the user set aside
 - **WHEN** the user restores it
 - **THEN** the preference is cleared
 - **AND** the subject is eligible to lead again under the selection rule
 
-### Requirement: A set-aside subject returns only on a meaningful change
+### Requirement: A set-aside pattern returns only on a meaningful change
 
-A set-aside subject SHALL return only when its recommended action or its
-seriousness meaningfully changes, and that return SHALL carry an understandable
-reason naming what changed. The comparison SHALL be defined over the recommended
-action and the seriousness the engine already produces. It SHALL NOT introduce an
-arbitrary numerical materiality threshold, and it SHALL NOT alter a support
-floor, a classifier or a score to make the comparison convenient.
+A set-aside pattern SHALL return only when its canonical recommended action,
+categorical seriousness, or member set meaningfully changes, and that return
+SHALL carry an understandable reason naming what changed. The comparison SHALL
+be defined over the backend-produced pattern action and seriousness. It SHALL NOT
+introduce an arbitrary numerical materiality threshold, and it SHALL NOT alter a
+support floor, classifier or score to make the comparison convenient.
 
-#### Scenario: A changed action returns the subject
+#### Scenario: A changed action returns the pattern
 
-- **GIVEN** a subject set aside under one recommended action
-- **WHEN** a later run recommends a different action for that subject
-- **THEN** the subject returns to selection
+- **GIVEN** a pattern set aside under one recommended action
+- **WHEN** a later run recommends a different action for that pattern
+- **THEN** the pattern returns to selection
 - **AND** the explanation names the change in the recommended action
 
-#### Scenario: A fingerprint change alone does not return the subject
+#### Scenario: A fingerprint change alone does not return the pattern
 
-- **GIVEN** a subject the user set aside
+- **GIVEN** a pattern the user set aside
 - **WHEN** a later run leaves its action and seriousness unchanged but changes its evidence fingerprint
-- **THEN** the subject stays aside
+- **THEN** the pattern stays aside
 
 ### Requirement: Guidance keeps cited evidence distinct from advice
 
@@ -194,3 +195,24 @@ Its active parent change SHALL remain unarchived.
 - **WHEN** the backend, frontend, drift, browser, publication and Plan parity checks run
 - **THEN** they pass with existing v1 behavior, identities, delivery precision and evidence populations retained
 - **AND** every changed committed fixture remains generator-owned and drift-checked
+
+### Requirement: Pattern Focus readiness is opportunity-gated
+
+The backend SHALL decide whether a pattern is ready for Focus from the
+ADR-391-selected opportunity count, not elapsed days or `behavior_observations`.
+For outcome-family patterns the count SHALL be the matching `exposure_counts`
+authority and serialized `BehaviorPoint.exposure_n`; overnight lows with no
+insulin on board SHALL use the published `harm_band_source_nights` observed-night
+population, never `BasalHarm.nights`. That population SHALL include only covered
+00:00–06:00 nights whose reconstructed bolus IOB band minimum is at or below the
+0.1-U harm floor, so every printed fasting-low numerator night is a member. #390
+task 2.5.2 SHALL select and record the numeric gate from the #391 30- and 90-day
+snapshot. The browser SHALL render this backend readiness verdict and SHALL NOT
+recreate it.
+
+#### Scenario: Thin opportunities do not become Focus-ready by waiting
+
+- **GIVEN** an overnight pattern whose backend `harm_band_source_nights` count is below the selected gate while `BasalHarm.nights` is nonzero
+- **WHEN** guidance returns the pattern
+- **THEN** its Focus readiness is withheld with the backend-produced opportunity reason
+- **AND** the browser does not make it ready from elapsed time, local observations, or the low-night numerator

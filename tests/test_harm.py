@@ -180,6 +180,18 @@ class BasalHarmTest(unittest.TestCase):
         h = basal_harm([], [], SLOT_MIN)
         self.assertEqual(h, BasalHarm())
 
+    def test_source_night_counts_a_quiet_sub_floor_night(self):
+        # No printed low is needed: this is the denominator's observed-band
+        # predicate, not the numerator's fasting-low predicate.
+        h = basal_harm(_cgm(1, 3, 0, 120.0, n=3), [], SLOT_MIN)
+        self.assertEqual(h.nights, 0)
+        self.assertEqual(h.harm_band_source_nights, 1)
+
+    def test_source_night_excludes_a_band_staying_above_iob_floor(self):
+        bolus = [BolusEvent(t=datetime(2022, 6, 1, 2, 30), insulin=6.0)]
+        h = basal_harm(_cgm(1, 3, 0, 120.0, n=3), bolus, SLOT_MIN)
+        self.assertEqual(h.harm_band_source_nights, 0)
+
 
 class ApplyHarmTest(unittest.TestCase):
     cfg = SafetyConfig()

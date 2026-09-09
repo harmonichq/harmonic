@@ -83,6 +83,7 @@ class BasalArmIntegrationTest(unittest.TestCase):
         # row-level keys are arm_days / row_days.
         self.assertEqual(s.evidence["harm"]["band_nights"], 2)
         self.assertEqual(s.evidence["harm"]["slot_nights"], 2)
+        self.assertEqual(s.evidence["harm"]["harm_band_source_nights"], 14)
 
     def test_recurring_lows_clamp_to_a_median_below_current(self):
         # When the slot's own clean median sits below current, the downward magnitude

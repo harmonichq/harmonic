@@ -60,7 +60,7 @@ def payload():
     catalog, _aged, _unavailable = gen.history_catalogs()
     analysis = {"window_days": 30, "ic_history": [row.to_dict() for row in catalog]}
     findings = FindingsProjection(
-        analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []})
+        analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []}, [])
     readings = _readings(catalog)
     prepared = prepare_ic_history_events(_SyntheticStore(readings), findings)
     history_id = catalog[0].history_id

@@ -26,7 +26,10 @@ import { readFile, access, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from './browser-fixture-population.js';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from './browser-fixture-population.js';
 import { MIN_ROW_MINI_WIDTH, TIER } from './diagnose-findings-queue.js';
 import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
@@ -536,10 +539,10 @@ export async function openApp(browser, {
   } : defaults;
   const findingsCandidate = typeof findingsInputs === 'function'
     ? await findingsInputs(historyDefaults) : (findingsInputs || historyDefaults);
-  const findingsFrom = {
+  const findingsFrom = populateFindingsProjectionInput({
     ...findingsCandidate,
     event_charts: findingsCandidate.event_charts || defaults.event_charts,
-  };
+  });
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const apiPattern = (path) => new RegExp(`^/api${path}`);

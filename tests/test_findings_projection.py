@@ -782,6 +782,34 @@ class PatternProjectionTest(unittest.TestCase):
                    if row["kind"] == "pattern")
         self.assertEqual(row["headline"], "Highs after meals: counts under review")
 
+    def test_pattern_headlines_name_their_roster_owned_recurrence_population(self):
+        roster = json.loads(json.dumps(self.projection._outcome_patterns))
+        for pattern in roster:
+            pattern["collapse"] = "remain_pattern"
+            if pattern["admission_route"] == "none":
+                pattern["admission_route"] = "habit_threshold"
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=self.projection._exposures,
+            _scenarios=self.projection._scenarios, _outcome_patterns=roster,
+        )
+        rows = {row["pattern"]["key"]: row
+                for row in projection.project(WindowQuery.whole_day())["rows"]
+                if row["kind"] == "pattern"}
+
+        nouns = {
+            "highs_after_meals": "meals",
+            "lows_after_meals": "meals",
+            "highs_after_treating_lows": "lows",
+            "lows_after_correcting_highs": "correction clusters",
+            "overnight_lows_no_iob": "nights",
+        }
+        for key, noun in nouns.items():
+            pattern = rows[key]["pattern"]
+            self.assertEqual(
+                rows[key]["headline"],
+                f"{pattern['title']} in {pattern['k']} of {pattern['n']} {noun}",
+            )
+
     def test_closed_pattern_chips_equal_the_union_of_their_member_chips(self):
         member_rows = {
             "carb_undercount": ["meals"], "late_bolus": ["meals"],

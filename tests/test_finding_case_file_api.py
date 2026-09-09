@@ -12,6 +12,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
+
 try:
     from fastapi.testclient import TestClient
     from ciq_autotune.api import create_app
@@ -212,6 +214,20 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["detail"]["code"], "stale_projection")
+
+    def test_every_roster_pattern_subject_passes_the_public_coordinate_boundary(self):
+        for key, *_ in _ROSTER:
+            with self.subTest(key=key):
+                response = self.client.get(
+                    "/api/diagnose/finding-case-file",
+                    params={
+                        "projection_id": "fp_" + "0" * 32,
+                        "finding_id": f"pattern:{key}",
+                        "alignment": "clock",
+                    },
+                )
+                self.assertEqual(response.status_code, 409, response.text)
+                self.assertEqual(response.json()["detail"]["code"], "stale_projection")
 
     def test_announced_meal_identity_passes_the_public_coordinate_boundary(self):
         response = self.client.get(

@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from ciq_autotune.store import Store
 from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
+from ciq_autotune.findings_projection import prepare_findings_projection
 from ciq_autotune.window_membership import WindowQuery
 
 from scripts.qa_e2e_cases import (
@@ -90,13 +91,17 @@ class QaE2ECasesTest(unittest.TestCase):
                 materialize_case(store, case)
             with Store.open_readonly(database.name) as store:
                 execution = execute_case(store, case)
+                projection = prepare_findings_projection(
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios,
+                ).project(WindowQuery.whole_day(), analysis_generation="qa:0")
                 prepared = prepare_case_files(
                     store, query=WindowQuery.whole_day(), version=0,
                     analysis=execution.analysis, exposures=execution.exposures,
                     scenarios=execution.scenarios, analysis_generation="qa:0",
                 )
 
-            pattern = next(row for row in execution.findings["whole_day"]["rows"]
+            pattern = next(row for row in projection["rows"]
                            if row["id"] == "pattern:highs_after_meals")
             case_file = prepared.case(pattern["id"], "event", None)
             self.assertEqual(

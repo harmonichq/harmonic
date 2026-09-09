@@ -59,6 +59,18 @@ test('accepts a preparation carrying the current v2 findings projection', () => 
   );
 });
 
+test('accepts a wrapped chartless Pattern without a case header', () => {
+  const preparation = independent(missedMealFixture.preparation);
+  const pattern = {
+    id: 'pattern:lows_after_correcting_highs', register: 'finding', kind: 'pattern',
+    pattern_chart: null, case_header: undefined,
+  };
+  preparation.rendered_rows.push(pattern);
+  preparation.findings.rows.push(independent(pattern));
+
+  assert.equal(assertMatchingFindingCasePreparation(preparation, null), preparation);
+});
+
 test('accepts the generator-owned missed-meal preparation coordinate', () => {
   const preparation = independent(missedMealFixture.preparation);
   const header = preparation.behavioral_case_headers['finding:missed_meal'];

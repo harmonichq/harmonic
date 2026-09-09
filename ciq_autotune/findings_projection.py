@@ -62,7 +62,7 @@ from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
-from .analyzers.scenario.levers import outcome_kind
+from .analyzers.scenario.levers import Lever, outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import build_outcome_patterns
 from .safety import Status
@@ -886,8 +886,15 @@ def _headline_for(row: dict) -> str:
             return f"{row['title']}: counts under review"
         if pattern["admission_route"] == "none":
             return row["title"]
-        noun = ("nights" if pattern["rate_producer"] == "harm_band_source_nights"
-                else "exposures")
+        if pattern["rate_producer"] == "harm_band_source_nights":
+            noun = "nights"
+        else:
+            rate_policy = policy_for(Lever(
+                pattern["rate_levers"][0].removeprefix("habit:")
+            ))
+            noun = (rate_policy.recurrence_noun
+                    if rate_policy.recurrence_family is None
+                    else _FAMILY_NOUN[rate_policy.recurrence_family.value])
         return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)

@@ -48,6 +48,11 @@ const OUTCOME_KIND = {
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
   missed_meal: 'high', meal_bolus_short: 'high',
 };
+const EXPOSURE_FAMILY = {
+  carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
+  over_treated_low: 'lows', correction_stacking: 'correction_clusters',
+  correction_on_iob: 'lows', missed_meal: 'highs', meal_bolus_short: 'highs',
+};
 // evidence_population.policy_for — Meal bolus fell short recurs over eligible
 // meal groups even though each member episode lands in the Highs family.
 const RECURRENCE_GROUP_POLICY = {
@@ -677,7 +682,10 @@ function headlineFor(r) {
   if (r.kind === 'pattern') {
     if (r.pattern.count_status) return `${r.title}: counts under review`;
     if (r.pattern.admission_route === 'none') return r.title;
-    const noun = r.pattern.rate_producer === 'harm_band_source_nights' ? 'nights' : 'exposures';
+    const rateLever = r.pattern.rate_levers[0]?.replace('habit:', '');
+    const noun = r.pattern.rate_producer === 'harm_band_source_nights'
+      ? 'nights' : (RECURRENCE_GROUP_POLICY[rateLever]?.noun
+        || FAMILY_NOUN[EXPOSURE_FAMILY[rateLever]]);
     return `${r.title} in ${r.pattern.k} of ${r.pattern.n} ${noun}`;
   }
   if (r.kind === 'habit') return findingHeadline(r);

@@ -273,7 +273,15 @@ export function projectSyntheticCapture(capture, {
 }
 
 const patternVerdicts = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
-const patternPrecedence = new Map(patternVerdicts.map((key, index) => [key, 5 - index]));
+const patternPrecedence = new Map([
+  ['fired', 4], ['near_miss', 3], ['outranked', 2], ['no_data', 1], ['clean', 0],
+]);
+
+export function patternVerdict(states, claimed = false) {
+  return claimed ? 'fired'
+    : states.reduce((best, state) => patternPrecedence.get(state) > patternPrecedence.get(best)
+      ? state : best, 'clean');
+}
 
 function patternState(occurrence, lever) {
   const fact = occurrence.verdicts.find((item) => item.classifier === lever);
@@ -290,9 +298,7 @@ function patternOccurrence(row, habits, attributedMember) {
   const claimant = attributedMember?.startsWith('habit:')
     ? attributedMember.replace('habit:', '') : null;
   const states = habits.map((lever) => patternState(row, lever));
-  const verdict = claimant ? 'fired'
-    : states.reduce((best, state) => patternPrecedence.get(state) > patternPrecedence.get(best)
-      ? state : best, 'clean');
+  const verdict = patternVerdict(states, Boolean(claimant));
   return {
     id: row.id, date: row.date, verdict,
     member: claimant ? `habit:${claimant}` : 'clean',

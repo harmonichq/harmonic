@@ -605,7 +605,7 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
     findings = _pattern_findings(
         "highs_after_meals", (lever,), k=1, n=1, rate_levers=(lever,),
     )
-    findings["rows"][0]["headline"] = "Highs After Meals in 1 of 1 exposures"
+    findings["rows"][0]["headline"] = "Highs After Meals in 1 of 1 meals"
     prepared = _prepared(lever, findings=findings, withheld=frozenset({lever}))
 
     payload = wrap(prepared)
@@ -614,11 +614,36 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
     assert [row["id"] for row in payload["rendered_rows"]] == [
         "pattern:highs_after_meals",
     ]
-    assert pattern["headline"] == "Highs After Meals in 1 of 1 exposures"
+    assert pattern["headline"] == "Highs After Meals in 1 of 1 meals"
     assert pattern["appearances"] is None and pattern["episodes"] is None
     assert pattern["pattern_chart"]["key"] == "highs_after_meals"
     assert "event_chart" not in pattern["case_header"]
     assert payload["withheld_findings"][0]["finding_id"] == "finding:carb_undercount"
+
+
+def test_wrap_strips_pattern_chart_when_its_rate_population_is_unavailable():
+    member_lever = Lever.CORRECTION_ON_IOB
+    rate_lever = Lever.CORRECTION_STACKING
+    findings = _pattern_findings(
+        "lows_after_correcting_highs", (member_lever,), k=1, n=1,
+        rate_levers=(rate_lever,),
+    )
+    findings["rows"][0]["pattern_chart"] = {
+        "key": "lows_after_correcting_highs",
+        "window": WindowQuery.whole_day().to_dict(),
+    }
+    prepared = _prepared(member_lever, findings=findings)
+
+    payload = wrap(prepared)
+
+    pattern = payload["rendered_rows"][0]
+    assert pattern["pattern_chart"] is None
+    assert "case_header" not in pattern
+    assert pattern["id"] not in payload["behavioral_case_headers"]
+    assert payload["rendered_rows"][1]["id"] == "finding:correction_on_iob"
+    assert payload["rendered_rows"][1]["case_header"]["finding_id"] == (
+        "finding:correction_on_iob"
+    )
 
 
 def test_selected_high_retains_upstream_suspend_evidence():

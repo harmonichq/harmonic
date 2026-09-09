@@ -490,9 +490,13 @@ def wrap(prepared):
         finding_id = row["id"]
         case = prepared.case(finding_id, "clock", None)
         if row.get("kind") == "pattern" and case is None:
-            # A memberless Pattern still has its roster-owned count, but no
-            # inspectable member association and therefore no chart coordinate.
-            rendered.append(deepcopy(row)); continue
+            # A Pattern can keep its roster-owned count while its rate population
+            # or inspectable member association is unavailable.  Preparation is
+            # the authority for whether its coordinate resolves to a case.
+            changed = deepcopy(row)
+            changed["pattern_chart"] = None
+            changed.pop("case_header", None)
+            rendered.append(changed); continue
         if case is None:
             withheld.append({"finding_id": finding_id,
                              "code": "uninspectable_attribution",

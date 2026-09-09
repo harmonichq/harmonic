@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildCapture } from '../mockups/diagnose-event-comparison.synthetic/generate.mjs';
-import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import {
+  patternVerdict,
+  projectPatternCaseFile,
+} from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
   populateFindingCasePreparation,
@@ -129,6 +132,11 @@ test('a claimed member outside its Pattern population tags no occurrence', () =>
   assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
   assert.equal(caseFile.summary.claimed, 0);
   assert.ok(caseFile.occurrences.every((row) => row.member === 'clean'));
+});
+
+test('Pattern misses prefer near misses over outranked member states', () => {
+  assert.equal(patternVerdict(['outranked', 'near_miss']), 'near_miss');
+  assert.equal(patternVerdict(['near_miss', 'outranked'], true), 'fired');
 });
 
 test('memberless Patterns remain served without an invented chart', () => {

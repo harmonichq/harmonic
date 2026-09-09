@@ -1596,3 +1596,75 @@ work does not do. Watch fourteen-day maturity and twenty-eight-day expiry remain
 accepted lifecycle metadata and are not reopened. This is a formal design
 contract; it is not fidelity evidence, built-app acceptance or release approval,
 and it authorizes no production edit on its own.
+
+## September 8 direction change — outcome shapes and three destinations
+
+The grounded September 8 interview, recorded in
+`docs/scope/what-harmonic-is-for.md`, showed that the existing individual-lever
+headline obscures the recurring outcomes the wearer needs to act on. Its settled
+ledger path opened child epic #390 to reshape the first release around outcome
+shapes and three destinations. This planning change does not reopen v2's loop,
+backend authorities or data boundary.
+
+### Decisions already made
+
+- Diagnose leads with outcome shapes: highs after meals, lows after meals, highs
+  after treating lows, lows after correcting highs, and overnight lows with no
+  insulin on board. A shape owns its habit levers and setting findings as
+  evidence, carries one rate on one denominator and one chart, and is the unit
+  the app prices, leads with, sets aside and follows as a Focus; levers become
+  the drill beneath it. This develops the four connected problem shapes framed
+  in ADR 348 — Guidance leads, findings explain.
+- Habits lead; a strongly supported setting change takes priority when it
+  asserts, preserving ADR 383's existing admission inputs pending #390's shape
+  selection policy.
+- Focus confirmation gates on observed opportunities rather than fourteen
+  elapsed days, amending `HV2-24` and ADR 387 — Keep comparison readiness
+  specific to the change; the count is backend policy.
+- A near-tie between a staged setting and a supported habit goes to the setting,
+  amending ADR 383 step 4; its band must be argued because ADR 383 refused a
+  bare numerical threshold.
+- One active watch stays for the first release, retaining ADR 348 — Reviewing
+  can finish a Trial and its active-change constraint.
+- v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore
+  collapse into Diagnose carrying the shipped v1 rail as-is, amending `HV2-09`,
+  `HV2-10`, `HV2-11` and ADR 348's navigation.
+- Notifications and the endo 90-day snapshot come after the first release; no
+  food diary, site-age finding or same-meal trials enters v2, retaining the
+  settled product scope.
+- v1 retires after Connor accepts v2, retaining task 4.3's acceptance boundary.
+- #389 stays stopped: chunk c1 (desk, Day and utilities) integrates once #391
+  is admitted; c2 (Overview/Explore/Plan) and c3's Focus-subject part wait for
+  #390 steps 2 and 4.
+- #342's eating-sequence levers are a child of #390, members of highs after
+  meals, and sequence after #391.
+- #390 sequences #391's shape-unit spike, backend build, design child, Diagnose
+  collapse, then #389's resumption.
+
+### Named open questions
+
+These questions clear only by an `## ADR 391 — …` record in this file.
+
+- Shape membership: which existing findings belong to each shape, promoted to spike #391
+- One rate and denominator per shape, promoted to spike #391
+- The shape impact-summary rule, promoted to spike #391
+- The collapse rule for a one-member shape, promoted to spike #391
+- Shape as selection, set-aside and Focus subject, promoted to spike #391
+- Focus readiness on observed opportunities, promoted to spike #391
+- The near-tie ruling, promoted to spike #391
+
+### Why a sixth native child under #348
+
+The delivery sequence requires a written dependency or independently shippable
+capability justification beyond three children. #390 is a planning container for
+a scope change that #389, the admitted integrated UI child, is stopped on; it
+cannot consolidate into #389 without unfreezing a build on unsettled policy. It
+is independently shippable as backend policy plus a Diagnose revision before
+#389 resumes. #390's own children — #391, #342, and the backend, design and
+collapse children to come — are filed under #390, not #348.
+
+### Effect on the desktop lock
+
+`HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus
+readiness, are amended-pending. Their amendments land with #390 step 4 and step
+2 respectively, not in this planning record.

@@ -1678,7 +1678,8 @@ case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
 `pattern`.
 
 **Compatibility inventory.** The whole-tree inventory (`rg -n --ignore-case
-'\\bpatterns?\\b' --glob '!node_modules/**' --glob '!dist/**' .`) finds the
+'\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 598
+matches and finds the
 `patterns` key family in scenario production and API consumers, guidance,
 findings projection and case files; its fixture-only JS mirror
 `mockups/findings-projection.mirror.mjs`; generators and synthetic payloads;
@@ -1686,7 +1687,9 @@ browser gates; fixtures; and their Python and frontend tests. Those are the
 existing serialized **lever-pattern** family, including `patterns` and
 `low_confidence`, not the new unit. #390 task 2.5.2 owns every code, fixture,
 mirror, generator, browser-gate and test rename/migration, and must retain the
-mirror parity contract under ADR 735. This ADR changes no payload.
+mirror parity contract under ADR 735. `ciq_autotune/pattern_sweep.py` keeps its
+internal module name while its public term becomes candidate sweep, so it is not
+unowned by this disposition. This ADR changes no payload.
 
 ## ADR 391 — Membership roster and evidence boundaries
 
@@ -1697,15 +1700,16 @@ support populations.
 | Pattern | Present members and owner | Exposure / recurrence noun / identity | Counting and source window |
 | --- | --- | --- | --- |
 | Highs after meals | `carb_undercount`, `late_bolus` lever findings from `analyzers.scenario`; I:C setting finding from `analyzers.ic`; `uncaused_highs` is investigation evidence only | meals / meals / episode identity for the levers; I:C block identity; uncaused highs is a count of high opportunities with no attribution, not a member recurrence | one attributed episode per lever occurrence; I:C's published block recurrence; uncaused-highs numerator is unexplained high opportunities and its denominator is all high opportunities in the findings window |
-| Lows after meals | `over_treated_low` lever finding from `analyzers.scenario`; I:C setting harm from `harm.py`/`analyzers.ic` | lows / lows / low-episode identity; I:C harm low identity | each low may appear in both the behavioral and I:C harm evidence: shared low evidence is intentional, not duplicate support; each member keeps its source window |
+| Lows after meals | `meal_over_delivery` lever finding from `analyzers.scenario`; I:C setting harm from `harm.py`/`analyzers.ic` | meals / meals / meal-over-delivery episode identity; I:C harm low identity | one meal-attributed low episode; each member keeps its source window |
 | Highs after treating lows | `over_treated_low` lever finding from `analyzers.scenario` | lows / lows / low-episode identity | one low-driven rebound episode in the scenario window |
 | Lows after correcting highs | `correction_stacking`, `correction_on_iob` lever findings from `analyzers.scenario`; ISF setting harm from `harm.py`/`analyzers.isf` | correction clusters / correction clusters / correction-pair identity; lows / lows / low identity for correction-on-IOB and ISF harm | correction stacking counts one adjacent correction pair; correction-on-IOB and ISF may share a low, and that overlap is intentional across separate members |
-| Overnight lows with no insulin on board | basal setting harm from `harm.py`/`analyzers.basal` | basal harm-band nights / named night key | one printed fasting basal low per harm-band night in the basal source window; it has zero habit members |
+| Overnight lows with no insulin on board | basal setting harm from `harm.py`/`analyzers.basal` | basal harm-band source nights / named night key | one printed fasting basal low per source night in the basal source window; it has zero habit members |
 
 The two meal patterns are disjoint by outcome membership, even though their
-separate members may begin at the same meal. Lows after meals and highs after
-treating lows share the over-treated-low lever but are distinct patterns because
-the former also carries I:C setting harm and the latter is the rebound outcome.
+separate members may begin at the same meal. Lows after meals owns
+`meal_over_delivery`, whose outcome kind is low; highs after treating lows owns
+`over_treated_low`, whose outcome kind is high. Each may also cite I:C harm
+without turning shared low evidence into duplicate support.
 Correction-factor setting harm may share lows with `correction_on_iob`; the
 backend reports that overlap rather than de-duplicating it into false support.
 `PreemptedLows` remains a count-only context signal and never becomes a member.
@@ -1721,12 +1725,16 @@ member recurrence population where the pattern's outcome cannot be represented
 by that family. A member's confidence still reads its own evidence population;
 members never pool into pattern support.
 
-Highs after meals uses completed-carb-bolus meals: its numerator is meal-high
-outcomes attributed to its behavioral members, and its denominator excludes meal
-boluses that are not Completed, have no insulin, or have carbs below the anchor
-minimum. Lows after meals uses carb-tagged meal opportunities with a completed
-low-outcome window: it is distinct from the high pattern's completed-carb-bolus
-denominator and does not borrow `compute_clean_rates`' single `MEALS` rate.
+Highs after meals uses the ordinary `MEALS` recurrence population for both
+numerator and denominator: carb-tagged meal opportunities, identified by the
+meal episode identity. Its numerator is only attributed `carb_undercount` and
+`late_bolus` meal episodes in that same population, so numerator is a subset of
+denominator and the rate cannot exceed 1.0. `meal_bolus_short` keeps its separate
+completed-carb-bolus population (Completed, insulin above zero, carbs at least
+the anchor minimum); it is not a member of this first-release pattern and does
+not change its denominator. Lows after meals uses the distinct carb-tagged-meal
+population with a completed low-outcome window and `meal_over_delivery` identity;
+it does not borrow `compute_clean_rates`' single `MEALS` rate.
 Highs after treating lows uses `LOWS` opportunity exposure counts. Lows after
 correcting highs uses `CORRECTION_CLUSTERS` counts for correction stacking; its
 other members retain their own low recurrence populations, so the published
@@ -1734,15 +1742,17 @@ pattern rate must select and name the correction-outcome denominator rather than
 sum those populations. The meal-bolus-short lever remains outside these first
 five patterns and retains its completed-carb-bolus population.
 
-Overnight lows with no insulin on board uses **harm-band nights**: distinct
-nights in the basal harm band with usable basal-source-night evidence, produced
-by a new #390 task-2.5.2 counted population from the harm result. Its numerator
-is nights with at least one printed fasting basal low and its denominator is all
-such usable nights in the basal source window. This supplies the named producer
-required by the existing one-rate rule; no amendment to it is needed. Recurrence
-nouns and windows therefore remain explicit: meals (scenario window), completed
-carb-bolus meals (scenario window), lows (scenario window), correction clusters
-(scenario window), and harm-band nights (basal source window).
+Overnight lows with no insulin on board uses **harm-band source nights**: distinct
+nights observed in the basal band with adequate CGM coverage and no bolus IOB,
+counted by a new #390 task-2.5.2 `harm_band_source_nights` interface published
+beside the harm result. Its numerator is `HarmResult.nights`, the distinct nights
+with at least one printed fasting basal low; its denominator is the new source-
+night population, never `HarmResult.nights` itself. This supplies the named
+producer required by the existing one-rate rule; no amendment to it is needed.
+Recurrence nouns and windows therefore remain explicit: meals (scenario window),
+completed carb-bolus meals (meal-bolus-short only), lows (scenario window),
+correction clusters (scenario window), and harm-band source nights (basal source
+window).
 
 ## ADR 391 — Impact, admission and the staged-setting near-tie
 
@@ -1755,12 +1765,16 @@ threshold admission; a setting passes its analyzer staging verdict. The pattern
 returns that price, admission and source reasons rather than inventing a new
 clinical score.
 
-When an admitted supported habit and an admitted staged setting are close enough
-to contend for the same leading outcome, the staged setting leads. This is not a
-new bare numerical band: it is a categorical safety tie-break after the existing
-source prices have established contention. It preserves ADR 383's priority inputs,
-threshold admission only for pinnable habits, and staging admission only for
-settings; an unstaged setting cannot suppress a supported habit.
+The alternatives were a fixed numeric band or habits leading whenever their
+Priority is higher. A fixed band would be a new ungrounded threshold; habits-first
+would discard the safety preference for an available staged setting. Therefore
+#390 task 2.5.2 chooses the contention band from the snapshot pass's recorded
+candidate values, using overlap of the existing Wilson recurrence intervals rather
+than a bare number, and records it with the replay. Inside that derived band an
+admitted staged setting leads an admitted supported habit; outside it, the existing
+owner price leads. This preserves ADR 383's exact-Priority tie-break while adding
+the argued #390 policy, threshold admission only for pinnable habits, and staging
+admission only for settings; an unstaged setting cannot suppress a supported habit.
 
 ## ADR 391 — Collapse and rail behavior
 
@@ -1788,7 +1802,7 @@ arbitrary member priority or a raw count.
 **Decision.** Focus readiness is backend-owned and measured in opportunities,
 not elapsed days and not `behavior_observations`. For each outcome exposure, its
 unit is `exposure_counts` and the corresponding `BehaviorPoint.exposure_n`:
-meals, lows, correction clusters, highs, or the new harm-band-night population.
+meals, lows, correction clusters, highs, or the new harm-band-source-night population.
 No number is settled here. #390 task 2.5.2 chooses the numeric gate against this
 ticket's snapshot of each pattern's `n` at 30 and 90 days, then enforces it in
 the backend. This amends ADR 387's Focus arm from elapsed-time readiness to

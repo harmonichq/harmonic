@@ -383,6 +383,14 @@ has no pump artifact and is tracked over time by Clean rate.
 _Avoid_: knob, category (say flavor); do not equate flavor with lever type — one
 lever type can resolve to either flavor.
 
+**Pattern**:
+The outcome-shaped advisory-selection unit: highs after meals, lows after meals,
+highs after treating lows, lows after correcting highs, or overnight lows with no
+insulin on board. A Pattern owns members, one rate on one denominator and one
+chart; it is the subject the app prices, leads with, sets aside and follows as a
+Focus.
+_Avoid_: shape, trend, theme, cluster, problem.
+
 **Lever pattern**:
 A group of episodes sharing one Lever, scored and ranked — the recurring behavior a
 user should act on. The outcome-shaped advisory-selection unit is a **Pattern**;

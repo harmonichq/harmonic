@@ -147,9 +147,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     key_path = key_path or configuration.secret_key_path
     if enable_fetch_loop is None:
         enable_fetch_loop = not configuration.no_fetch
-    # Writable application startup owns migration; history connections never do.
-    with Store.open(db_path):
-        pass
+    # One in-process result cache for this app's lifetime (#267).  Construct it
+    # before the guarded data migration so a completed rewrite invalidates every
+    # subsequently served shape.
+    cache = ResultCache(incarnation=analysis_incarnation)
+    migrated_patterns = False
+    # Writable application startup owns analysis-backed migration; history and
+    # ordinary CLI connections only apply the schema stamp in Store.__init__.
+    with Store.open(db_path) as store:
+        if store.pattern_migration_pending():
+            try:
+                from .analyzers.scenario import build_scenarios
+                window_days = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
+                analysis = analyze(
+                    store, window_days=window_days, ignore_setting_changes=False,
+                    pool_agreeing_basal_regimes=True,
+                    carb_entries=store.carb_entries(),
+                    prompt_responses=store.prompt_responses(),
+                ).to_dict()
+                exposures = build_exposures(store, window_days=window_days)
+                scenarios = build_scenarios(store, window_days=window_days).to_dict()
+                migrated_patterns = store.migrate_pattern_subjects(
+                    analysis, exposures, scenarios,
+                )
+            except Exception:
+                logger.exception("Pattern subject migration remains pending")
+    if migrated_patterns:
+        cache.bump()
     frontend_built = _FRONTEND_INDEX.is_file()
     if not frontend_built:
         logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
@@ -201,7 +225,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # endpoints answer from it until a write bumps it; every mutating endpoint and
     # the hourly fetch loop clear it. A per-app instance (not a module singleton)
     # keeps two-DB tests isolated. See ADR 0035.
-    cache = ResultCache(incarnation=analysis_incarnation)
     app.state.result_cache = cache
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}

@@ -109,6 +109,72 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(app.state.result_cache.version - before, 1)
 
+    def test_failed_pattern_migration_leaves_readable_rows_and_serves(self):
+        import ciq_autotune.api as api_module
+        from ciq_autotune.api import create_app
+        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(tmp.close)
+        with Store.open(tmp.name) as store:
+            materialize_case(store, next(
+                case for case in QA_CASES if case.name == "behavioral-carb-undercount"
+            ))
+            store.save_guidance_preference(
+                "habit:carb_undercount", decided_at="2026-01-02 00:00:00",
+                reason="later", comparison_version="383:1",
+                state={"kind": "habit", "action": {
+                    "action_id": "habit:carb_undercount"}, "seriousness": "low"},
+            )
+            store.conn.execute("PRAGMA user_version = 0")
+        with self.assertLogs("ciq_autotune.api", level="ERROR") as logs, \
+             patch.object(api_module, "analyze", side_effect=RuntimeError("boom")):
+            app = create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        self.assertEqual(sum("migration remains pending" in row for row in logs.output), 1)
+        with Store.open(tmp.name) as store:
+            self.assertTrue(store.pattern_migration_pending())
+            self.assertEqual(store.conn.execute(
+                "PRAGMA user_version"
+            ).fetchone()[0], 393)
+            self.assertEqual(
+                [row["subject"] for row in store.guidance_preferences()],
+                ["habit:carb_undercount"],
+            )
+        response = TestClient(app).get("/api/guidance")
+        self.assertEqual(response.status_code, 200, response.text)
+        retry = create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        with Store.open(tmp.name) as store:
+            self.assertFalse(store.pattern_migration_pending())
+            self.assertEqual(
+                [row["subject"] for row in store.guidance_preferences()],
+                ["pattern:highs_after_meals"],
+            )
+        self.assertEqual(retry.state.result_cache.version, 1)
+
+    def test_healthy_pattern_migration_is_noop_on_second_startup(self):
+        from ciq_autotune.api import create_app
+        tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
+        self.addCleanup(tmp.close)
+        with Store.open(tmp.name) as store:
+            materialize_case(store, next(
+                case for case in QA_CASES if case.name == "behavioral-carb-undercount"
+            ))
+            store.save_guidance_preference(
+                "habit:carb_undercount", decided_at="2026-01-02 00:00:00",
+                reason="later", comparison_version="383:1",
+                state={"kind": "habit"},
+            )
+            store.conn.execute("PRAGMA user_version = 0")
+        first = create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        with Store.open(tmp.name) as store:
+            revision = store.input_data_revision()
+            rows = store.guidance_preferences()
+        second = create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        with Store.open(tmp.name) as store:
+            self.assertEqual(store.input_data_revision(), revision)
+            self.assertEqual(store.guidance_preferences(), rows)
+            self.assertFalse(store.pattern_migration_pending())
+        self.assertEqual(first.state.result_cache.version, 1)
+        self.assertEqual(second.state.result_cache.version, 0)
+
     def test_empty_store_is_explicitly_unavailable_not_an_investigation(self):
         from ciq_autotune.api import create_app
         tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")

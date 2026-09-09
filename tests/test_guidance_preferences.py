@@ -28,12 +28,17 @@ class GuidancePreferencesTest(unittest.TestCase):
         return tmp, case
 
     def test_owned_habit_migrates_to_pattern_without_meaningless_return(self):
+        from ciq_autotune.api import create_app
         tmp, case = self._legacy_preferences("behavioral-carb-undercount", [
             ("habit:carb_undercount", "2026-01-02 00:00:00", "later"),
         ])
+        app = create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
+        self.assertEqual(app.state.result_cache.version, 1)
         with Store.open(tmp.name) as store:
             preferences = store.guidance_preferences()
             execution = execute_case(store, case)
+            self.assertFalse(store.pattern_migration_pending())
+            self.assertFalse(store.migrate_pattern_subjects(None, None, None))
         self.assertEqual([row["subject"] for row in preferences],
                          ["pattern:highs_after_meals"])
         guidance = prepare_findings_projection(
@@ -46,19 +51,23 @@ class GuidancePreferencesTest(unittest.TestCase):
         self.assertIsNone(pattern["preference"]["return_reason"])
 
     def test_collapsed_pattern_and_member_share_one_preference(self):
+        from ciq_autotune.api import create_app
         tmp, _case = self._legacy_preferences("behavioral-over-treated-low", [
             ("habit:over_treated_low", "2026-01-02 00:00:00", None),
         ])
+        create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
         with Store.open(tmp.name) as store:
             rows = store.guidance_preferences()
         self.assertEqual([row["subject"] for row in rows],
                          ["pattern:highs_after_treating_lows"])
 
     def test_migration_merges_member_preferences_by_earliest_decision(self):
+        from ciq_autotune.api import create_app
         tmp, _case = self._legacy_preferences("behavioral-carb-undercount", [
             ("habit:carb_undercount", "2026-01-02 00:00:00", "keep first"),
             ("habit:late_bolus", "2026-01-03 00:00:00", "discard second"),
         ])
+        create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
         with Store.open(tmp.name) as store:
             rows = store.guidance_preferences()
             subjects = [row[0] for row in store.conn.execute(
@@ -68,11 +77,13 @@ class GuidancePreferencesTest(unittest.TestCase):
         self.assertEqual(rows[0]["reason"], "keep first")
 
     def test_focus_migration_is_one_time_across_a_later_legacy_write(self):
+        from ciq_autotune.api import create_app
         tmp = tempfile.NamedTemporaryFile(suffix=".sqlite")
         self.addCleanup(tmp.close)
         with Store.open(tmp.name) as store:
             focus = store.pin_focus("late_bolus", "2026-01-01 00:00:00")
             store.conn.execute("PRAGMA user_version = 0")
+        create_app(db_path=tmp.name, token="", enable_fetch_loop=False)
         with Store.open(tmp.name) as store:
             migrated = store.follow_up_record("focus", focus["id"])
             self.assertEqual(migrated["pattern_key"], "highs_after_meals")

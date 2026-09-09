@@ -540,6 +540,9 @@ _FOLLOW_UP_ENVELOPES = frozenset((
     'deliverable', 'reconciliation', 'withdrawal', 'ending',
 ))
 
+_PATTERN_SCHEMA_VERSION = 393
+_PATTERN_MIGRATION_PENDING = 393
+
 
 class Store:
     """A connection to the local SQLite store.
@@ -568,7 +571,8 @@ class Store:
             # caller takes the file's schema as-is (see :meth:`open_readonly`).
             return
         pattern_migration = (
-            self.conn.execute("PRAGMA user_version").fetchone()[0] < 393
+            self.conn.execute("PRAGMA user_version").fetchone()[0]
+            < _PATTERN_SCHEMA_VERSION
             and self.conn.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='guidance_preferences'"
             ).fetchone() is not None
@@ -592,48 +596,50 @@ class Store:
             statements.append("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
             statements.append("COMMIT")
             self.conn.executescript(";\n".join(statements) + ";")
-        if not pattern_migration:
-            self.conn.execute("PRAGMA user_version = 393")
-            return
+        if pattern_migration:
+            self.conn.execute(f"PRAGMA application_id = {_PATTERN_MIGRATION_PENDING}")
+        self.conn.execute(f"PRAGMA user_version = {_PATTERN_SCHEMA_VERSION}")
+
+    def pattern_migration_pending(self) -> bool:
+        """Whether API startup still owes the analysis-backed Pattern rewrite."""
+        return (not self._readonly and self.conn.execute(
+            "PRAGMA application_id"
+        ).fetchone()[0] == _PATTERN_MIGRATION_PENDING)
+
+    def migrate_pattern_subjects(self, analysis, exposures, scenarios) -> bool:
+        """Rewrite legacy owned subjects from one coherent producer snapshot.
+
+        Schema migration records the pending bit before this method is reached.
+        All potentially failing producer work belongs to API startup and happens
+        before this transaction, so an exception leaves every legacy row intact.
+        """
+        if not self.pattern_migration_pending():
+            return False
         from .analyzers.scenario.outcome_patterns import _ROSTER
+        from .guidance import _state, candidates
+        baselines = {
+            row["pattern_key"]: _state(row)
+            for row in candidates(analysis, exposures, scenarios)
+            if row.get("kind") == "pattern"
+        }
         owner = {lever: key for key, _title, levers, _rates, _setting, _family in _ROSTER
                  for lever in levers}
-        pattern_rows = [row for row in self.conn.execute("SELECT subject, decided_at, reason, comparison_version, state_json FROM guidance_preferences WHERE subject LIKE 'habit:%'").fetchall()
-                        if row["subject"].split(":", 1)[1] in owner]
-        focus_rows = [row for row in self.conn.execute(
-            "SELECT id, lever, pinned_at, status FROM focus WHERE status = 'active'"
-        ).fetchall() if row["lever"] in owner and not (
-            self.conn.execute(
+        with self.conn:
+            self.conn.execute("BEGIN IMMEDIATE")
+            pattern_rows = [row for row in self.conn.execute(
+                "SELECT subject, decided_at, reason, comparison_version, state_json "
+                "FROM guidance_preferences WHERE subject LIKE 'habit:%'"
+            ).fetchall() if row["subject"].split(":", 1)[1] in owner]
+            focus_rows = [row for row in self.conn.execute(
+                "SELECT id, lever, pinned_at, status FROM focus WHERE status = 'active'"
+            ).fetchall() if row["lever"] in owner and not self.conn.execute(
                 "SELECT 1 FROM follow_up_records WHERE kind='focus' AND id=? "
                 "AND json_extract(record_json, '$.pattern_key') IS NOT NULL",
                 (str(row["id"]),),
-            ).fetchone()
-        )]
-        grouped = {}
-        for row in pattern_rows:
-            key = owner.get(row["subject"].split(":", 1)[1])
-            if key:
-                grouped.setdefault(key, []).append(row)
-        baselines = {}
-        if grouped:
-            from .analyze import analyze
-            from .analyzers.scenario import build_scenarios
-            from .explore_exposures import build_exposures
-            from .guidance import _state, candidates
-            window_days = 30
-            analysis = analyze(
-                self, window_days=window_days, ignore_setting_changes=False,
-                pool_agreeing_basal_regimes=True, carb_entries=self.carb_entries(),
-                prompt_responses=self.prompt_responses(),
-            ).to_dict()
-            exposures = build_exposures(self, window_days=window_days)
-            scenarios = build_scenarios(self, window_days=window_days).to_dict()
-            baselines = {
-                row["pattern_key"]: _state(row)
-                for row in candidates(analysis, exposures, scenarios)
-                if row.get("kind") == "pattern"
-            }
-        with self.conn:
+            ).fetchone()]
+            grouped = {}
+            for row in pattern_rows:
+                grouped.setdefault(owner[row["subject"].split(":", 1)[1]], []).append(row)
             for key, rows in grouped.items():
                 winner = min(rows, key=lambda row: (row["decided_at"], row["subject"]))
                 state = baselines[key]
@@ -650,7 +656,8 @@ class Store:
                         "ON CONFLICT(kind, id) DO UPDATE SET record_json=excluded.record_json",
                         (str(row["id"]), json.dumps(migrated, sort_keys=True)),
                     )
-            self.conn.execute("PRAGMA user_version = 393")
+            self.conn.execute("PRAGMA application_id = 0")
+        return True
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event

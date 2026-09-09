@@ -229,7 +229,7 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
     Correction-on-IOB remains a member of lows after correcting highs, but only
     correction stacking contributes to that Pattern's correction-cluster rate.
     """
-    from ...guidance import candidates as guidance_candidates
+    from ...guidance import _source_candidates as guidance_candidates
 
     roster = []
     candidate_rows = guidance_candidates(analysis, exposures, scenarios)

@@ -1847,6 +1847,32 @@ is independently shippable as backend policy plus a Diagnose revision before
 #389 resumes. #390's own children — #391, #342, and the backend, design and
 collapse children to come — are filed under #390, not #348.
 
+## ADR 395 — The rail projects the roster
+
+**Decision.** The design child #395 serves the Pattern roster through the
+existing findings projection rather than beside it. On the unscoped whole-day
+query only, each `remain_pattern` roster entry becomes one served ranked row
+(`id` `pattern:<key>`, register `finding`, kind `pattern`, priority
+`settled_price` or null when unadmitted), its admitted habit member rows stay
+served and gain one additive `claimed_by` stamp, and the finding case file
+accepts the Pattern subject, returning the Pattern's own Exposure population
+with each occurrence's existing per-member verdict and claiming member. A
+scoped window serves no Pattern row, because the roster's counts are
+whole-feed and every other row is window-local. No membership, rate,
+admission, collapse or readiness rule moves: the projection re-shapes what
+#393 already publishes.
+
+This corrects the paraphrase in "Why a fourth native child under #390" above:
+the lifecycle rule forbids one order mixing `build` with `revise`, and permits
+a `none` sub-order under a `revise` header. #395's server half is therefore a
+`none` chunk of the revision, not a second backend build, and the shipped rail
+is untouched until that revision lands. The issue intake's expectation that the
+projection shape would not be touched is superseded by the re-inventory
+finding that the roster carries no chart series and no position.
+
+**Must prevent.** A Pattern row printing counts from a different window than
+its neighbours; the browser deriving placement, chips, or a verdict.
+
 ### Why a fourth native child under #390
 
 #390 carries four children: the spike #391 (rulings), the backend build #393

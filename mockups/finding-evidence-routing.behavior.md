@@ -12,15 +12,28 @@ The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
 **169 issued executable IDs:** S01–S144, C41–C62, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C62, and D1–D3
-**Retired executable IDs:** S117
+**Active executable IDs:** S01–S40, S42, S49–S52, S57–S62, S65–S67, S69–S116, S118–S144, C41–C62, and D1–D3
+**Retired executable IDs:** S41, S43–S48, S53–S56, S63–S64, S68, and S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
 an attributed absence check and prints its sanction. `Retired executable IDs`
 counts only IDs removed from execution, which this ledger admits solely on an
-operator sanction that removes the behaviour's surface outright. S117 is the
+operator sanction that removes the behaviour's surface outright. S117 was the
 first: ADR 304 retired the light theme, so there is no second palette to repaint
 from and no absence for a replay to check.
+
+The second sanction is Connor Griffin, 2026-09-08, shown the historical
+carb-ratio row in Explore: "no." and "We dont' need historical reads in the
+app." That removes the past-setting (`register: history`) surface outright — the
+queue row, its Watching placement, its case file and its selection path — so the
+fourteen IDs whose subject WAS that surface leave execution: S41, S43, S44–S48,
+S53–S56, S63, S64 and S68. Two mixed stories stay active with their historical
+clause dropped and everything else intact: S42 keeps the Watching disclosure,
+its sift and its mobile target; S74 keeps the disclosure's default-collapsed
+behaviour, scoped to a window that still carries held reads. Stories that merely
+opened on a fixture containing a past-setting row, and every story asserting the
+2026-08-25 Event-charts retirement, are untouched. The backend still publishes
+the register; no analyzer, store or history API changed.
 
 All are opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from

@@ -89,6 +89,17 @@ _FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
 _FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
 SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
+# #389 (HV2-01/HV2-02): the v2 desktop is a SECOND ahead-of-time build served by
+# this same process, at its own page path and its own fingerprinted asset prefix.
+# One page path, because the desk's four destinations are query state, not paths
+# (frontend/tab-routing.js) — which is what keeps the non-API route set closed.
+# V1 keeps every route it had; this change admits no cutover and no retirement.
+_FRONTEND_V2_DIST = Path(__file__).resolve().parent.parent / "frontend-v2" / "dist"
+_FRONTEND_V2_INDEX = _FRONTEND_V2_DIST / "index.html"
+_FRONTEND_V2_ASSETS = _FRONTEND_V2_DIST / "assets"
+V2_PAGE = "/v2/"
+V2_ASSETS = "/v2/assets"
+
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
 # never escape the directory (no dots, no slashes) into the wider filesystem.
@@ -153,6 +164,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     frontend_built = _FRONTEND_INDEX.is_file()
     if not frontend_built:
         logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
+    if not _FRONTEND_V2_INDEX.is_file():
+        logger.error("Frontend v2 build is missing; run %s", _FRONTEND_BUILD_COMMAND)
 
     class _FrontendAssets(StaticFiles):
         """Serve assets that appear after an in-place frontend build."""
@@ -506,13 +519,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ADR 94 publishes it at ``/api/openapi.json``, and
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
-    def built_shell():
-        if not _FRONTEND_INDEX.is_file():
+    def built_shell(index=None):
+        # Each surface fails closed on its OWN build: a missing v2 build must not
+        # make v1 unreachable, and neither may hide the API.
+        index = _FRONTEND_INDEX if index is None else index
+        if not index.is_file():
             return PlainTextResponse(
                 f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
                 status_code=503,
             )
-        return FileResponse(_FRONTEND_INDEX)
+        return FileResponse(index)
 
     @app.get("/")
     def index():
@@ -521,22 +537,30 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     for _page in SPA_PAGES:
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
+    @app.get(V2_PAGE)
+    def index_v2():
+        return built_shell(_FRONTEND_V2_INDEX)
+
     # The shell has one stable URL, so it revalidates on every load. Vite
     # fingerprints assets, so they can stay immutable until their names change.
     @app.middleware("http")
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path.lstrip("/") in SPA_PAGES:
+        if path == "/" or path == V2_PAGE or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
-        elif path.startswith("/assets/") and response.status_code == 200:
+        elif (path.startswith("/assets/") or path.startswith(f"{V2_ASSETS}/")) \
+                and response.status_code == 200:
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
-    # One prefix-scoped build directory route serves only fingerprinted assets;
-    # it cannot claim page or API paths outside ``/assets``.
+    # One prefix-scoped build directory route per surface serves only that
+    # surface's fingerprinted assets; neither can claim page or API paths outside
+    # its own prefix.
     app.mount("/assets", _FrontendAssets(directory=_FRONTEND_ASSETS, check_dir=False),
               name="frontend-assets")
+    app.mount(V2_ASSETS, _FrontendAssets(directory=_FRONTEND_V2_ASSETS, check_dir=False),
+              name="frontend-v2-assets")
 
     @app.get("/api/health")
     def health() -> dict:

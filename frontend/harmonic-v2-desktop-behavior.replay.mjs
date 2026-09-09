@@ -27,9 +27,14 @@
 //   TARGET=mock  the ★ LOCKED prototype, served over HTTP from the REPOSITORY
 //                ROOT. Not from mockups/: the mock links ../frontend/*.css by
 //                relative path, which a server rooted at mockups/ cannot resolve.
-//   TARGET=app   the built, Python-served /v2/. IT DOES NOT EXIST YET, so this
-//                opener fails loudly, naming the surface and the lock terms that
-//                owe it. It never skips and it never passes.
+//   TARGET=app   the built, Python-served /v2/, at BASE_URL. The desk chunk of
+//                #389 replaced the stub opener with the real one: the page, its
+//                assets and every API read come from that server, and any
+//                request that does not go to it fails the run with its URL
+//                printed. A /v2/ that does not answer 200 fails loudly, naming
+//                the missing surface and the build command. It never skips.
+//                An entry marked app-opener-only still reports DEFERRED under
+//                TARGET=mock, whether or not its body has been converted.
 //
 // FAILS CLOSED. A missing driver, ECharts bundle, mock file or fixture exits
 // nonzero. An unroutable external request exits nonzero with its URL printed. A
@@ -77,6 +82,13 @@ function playwright() {
 const TARGET = process.env.TARGET || '';
 const MOCK_BASE_URL = (process.env.MOCK_BASE_URL || 'http://127.0.0.1:8080').replace(/\/$/, '');
 const APP_BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8765').replace(/\/$/, '');
+// HV2-02 says v1 and /v2/ coexist against the same AUTHENTICATED API. The
+// declared QA server runs with an empty token, so it can show the two surfaces
+// sharing one API and one database but cannot show the boundary refusing an
+// unauthenticated read. A second server, started with a token, is what proves
+// that half; S87 names the exact command when these are unset.
+const AUTH_BASE_URL = (process.env.AUTH_BASE_URL || '').replace(/\/$/, '');
+const AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 
 // The lock's own target viewports (HV2-03, HV2-04). Never a driver default.
 const VIEWPORTS = { '1280x720': { width: 1280, height: 720 }, '1440x900': { width: 1440, height: 900 } };
@@ -298,17 +310,128 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
 }
 
 /**
- * The built, Python-served /v2/. It does not exist yet, and this fails loudly
- * rather than skipping. No unimplemented app leg passes.
+ * The built, Python-served `/v2/`.
+ *
+ * Unlike the mock opener this serves NOTHING itself: the page, its assets and
+ * every API read come from the declared no-fetch server at BASE_URL. That is the
+ * point — HV2-01 and HV2-02 are claims about what the packaged runtime serves,
+ * and a driver that answered them from disk would prove nothing about delivery.
+ *
+ * The exact-external-request policy is therefore stricter here than on the mock:
+ * the mock is allowed its cached ECharts and Inter, and the built app must ask
+ * for NEITHER. Any request that does not go to BASE_URL fails the run with its
+ * URL printed, which is how "no CDN in production" is observed rather than
+ * asserted about the source.
+ *
+ * Fail-closed: a `/v2/` that does not answer 200 names the missing surface and
+ * the build command; a desk still on its loading frame, with no pane, or on a
+ * destination other than the requested one fails before any story runs.
  */
-export async function openApp() {
-  fail(
-    'TARGET=app cannot run: the production surface /v2/ does not exist yet.\n'
-    + `  expected: ${APP_BASE_URL}/v2/ served by the packaged Python runtime\n`
+export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'overview' } = {}) {
+  if (!VIEWPORTS[viewport]) fail(`unsupported viewport ${JSON.stringify(viewport)}`);
+  // `source` and `state` are the MOCK's coordinates: four captured patients and
+  // a scenario select. The app has one served database instead, so a story that
+  // asks the app for a non-default scenario is asking for a state the database
+  // must actually carry — the QA generator's job, not something to satisfy by
+  // quietly rendering the default. Refused rather than ignored, for exactly the
+  // reason openMock refuses `?state=` on a non-meals source.
+  if (state !== 'investigate') {
+    fail(`TARGET=app cannot honour state=${state}: the app has no scenario select. `
+      + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
+  }
+
+  for (const origin of [APP_BASE_URL, AUTH_BASE_URL].filter(Boolean)) {
+    const hostname = new URL(origin).hostname;
+    if (!['127.0.0.1', 'localhost'].includes(hostname)) {
+      fail(`a declared base URL must name localhost, got ${hostname}`);
+    }
+  }
+
+  const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
+  const page = await context.newPage();
+
+  const unrouted = [];
+  const consoleErrors = [];
+  const requests = [];
+  // One-shot write failures a story installs at the exact boundary it wants to
+  // fail. The prototype had a harness control for this; the app has a real
+  // server that does not fail on request, so the failure is injected into the
+  // one request it is about and nothing else — see S71.
+  const failures = [];
+  page.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+  page.on('pageerror', (error) => consoleErrors.push(String(error)));
+  page.on('response', (response) => {
+    const url = new URL(response.url());
+    requests.push({ path: url.pathname, status: response.status(), headers: response.headers() });
+  });
+
+  const declared = (url) => [APP_BASE_URL, AUTH_BASE_URL]
+    .filter(Boolean)
+    .some((origin) => url === origin || url.startsWith(`${origin}/`));
+
+  await page.route('**/*', async (route) => {
+    const url = route.request().url();
+    if (!declared(url)) {
+      unrouted.push(url);
+      return route.abort();
+    }
+    const request = route.request();
+    const path = new URL(url).pathname;
+    const at = failures.findIndex((entry) => entry.method === request.method() && path.startsWith(entry.path));
+    if (at !== -1) {
+      failures.splice(at, 1);
+      return route.fulfill({
+        status: 503, contentType: 'application/json',
+        body: JSON.stringify({ detail: 'no response from the store' }),
+      });
+    }
+    return route.continue();
+  });
+
+  const target = `${APP_BASE_URL}/v2/${destination === 'overview' ? '' : `?to=${destination}`}`;
+  const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
+  ok(response, `no response from ${target}`);
+  ok(response.status() !== 404 && response.status() !== 503,
+    `${target} answered ${response.status()} — the v2 build is missing or unserved.\n`
     + '  owed by: LOCK:harmonic-v2-desktop:HV2-01 (Python serves /v2/ and /v2/assets/)\n'
-    + '           LOCK:harmonic-v2-desktop:HV2-02 (v1 and /v2/ coexist, one authenticated API)\n'
-    + '  This is a deliberate fail-closed stop, not a skip.',
-  );
+    + '  run `npm ci && npm run build`, then start the declared no-fetch server.');
+  ok(response.ok(), `${target} answered ${response.status()}`);
+
+  await page.waitForSelector('.gf .pane', { timeout: 20000 });
+  // Arrival is not finished while the desk is still reading. The mock had every
+  // capture in hand before it drew; the app draws a loading frame first, so the
+  // opener waits for the desk's own loading state to clear before it asserts
+  // what arrived. It waits on the desk's markup, never on a fixed delay.
+  await page.waitForFunction(() => !document.querySelector('.gf .gf-loading'), null, { timeout: 20000 });
+
+  if (unrouted.length) {
+    fail(`the built app requested ${[...new Set(unrouted)].join(', ')} — production needs no CDN (HV2-01)`);
+  }
+  ok(!consoleErrors.length, `the app logged console errors: ${consoleErrors.join(' | ')}`);
+
+  // §4: the opener asserts the RENDERED state equals the REQUESTED one, read
+  // from the served markup rather than from the address.
+  const rendered = await page.evaluate(() => {
+    const surface = document.querySelector('.gf');
+    return {
+      destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
+      currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
+      panes: surface ? surface.querySelectorAll('.pane').length : 0,
+      loading: Boolean(surface && surface.querySelector('.gf-loading')),
+    };
+  });
+  ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
+  ok(rendered.panes > 0, 'the desk rendered no pane');
+  ok(rendered.currentCount === 1,
+    `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
+  ok(rendered.destination === destination,
+    `requested ${destination} but the served markup shows ${rendered.destination}`);
+
+  return {
+    page, context, consoleErrors, unrouted, requests, target: 'app', source, state, viewport,
+    /** Fail the NEXT request that matches, once, at that exact boundary. */
+    failNext: (method, path) => failures.push({ method, path }),
+  };
 }
 
 /* --------------------------------------------------------------- assertions */
@@ -511,9 +634,28 @@ export const S8 = async (page) => {
   ok(stored.length === 0, `theme storage is present: ${JSON.stringify(stored)}`);
 };
 
-export const S9 = async (page) => {
+export const S9 = async (page, ctx) => {
   const family = await computed(page, '.gf-title', 'font-family');
   ok(/Inter/i.test(family || ''), `the stage title family is ${family}, not Inter`);
+  // On the app, the family must be RENDERED WITH, not merely declared. The mock
+  // opener runs without the Inter binary by design (its own header says computed
+  // type values are what it asserts), so this half belongs to the built surface,
+  // which packages the font and may reach no CDN for it.
+  if (ctx.target === 'app') {
+    const inter = await page.evaluate(async () => {
+      await document.fonts.ready;
+      const faces = [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Inter');
+      return {
+        available: document.fonts.check('700 18px Inter'),
+        loaded: faces.filter((face) => face.status === 'loaded').map((face) => face.weight),
+        declared: faces.length,
+      };
+    });
+    ok(inter.declared > 0, 'the built surface declares no Inter face at all');
+    ok(inter.available, 'Inter is named but not available to render with; the desk is on a fallback');
+    ok(inter.loaded.length > 0,
+      `no Inter face actually loaded (${inter.declared} declared); the packaged font is not being served`);
+  }
   const size = parseFloat(await computed(page, '.gf-title', 'font-size'));
   ok(Math.abs(size - 18.24) < 0.75, `the stage title is ${size}px, not the locked 1.14rem`);
   ok((await computed(page, '.gf-title', 'font-weight')) === '700', 'the stage title is not weight 700');
@@ -1562,21 +1704,35 @@ export const S70 = async (page) => {
     'the logged entry does not show the amount that was entered');
 };
 
-export const S71 = async (page) => {
+export const S71 = async (page, ctx) => {
   // Corrected: install the utility save failure on its named control, then log
   // through the reader's affordance, then assert the retry succeeds.
-  await harnessCheck(page, 'utilitySaveFails', true);
+  //
+  // The app has no such control, and a healthy server is not a reason to omit
+  // this story. The failure is installed where the write actually happens — the
+  // one POST /api/carbs the press makes — so what is exercised is an ORDINARY
+  // failed save, not a simulated pane state. The durable state is then read back
+  // and must be unchanged: "a failed save shown as saved" is the risk this
+  // story exists to bar, and an entry that was written anyway would be worse.
   await activate(page, '.cockpit-log-carbs');
+  const entries = () => countOf(page, '.gf-entry-row');
+  const before = await entries();
+  if (ctx.target === 'app') ctx.failNext('POST', '/api/carbs');
+  else await harnessCheck(page, 'utilitySaveFails', true);
+
   await page.fill('#ut-grams', '18');
   await page.waitForTimeout(180);
   await activate(page, '[data-utility-log]');
   const failed = await page.locator('.gf-utility').first().innerText();
   ok(/fail/i.test(failed), `installing a utility save failure did not fail the save: ${failed.slice(0, 160)}`);
+  ok(await entries() === before, 'the failed save recorded an entry anyway');
   const retry = page.locator('[data-utility-retry]');
   ok(await retry.count() > 0, 'the failed utility save offers no Retry');
   await activate(page, '[data-utility-retry]');
+  await page.waitForTimeout(300);
   ok(!/fail/i.test(await page.locator('.gf-utility').first().innerText()),
     'the retried utility save still reports a failure');
+  ok(await entries() === before + 1, 'the retry reported success but recorded nothing');
 };
 
 /** Both copies of the open-question count: the footer's and the strip's. */
@@ -1702,7 +1858,16 @@ export const S74 = async (page) => {
     'the reveal control did not flip its own pressed state with the field');
 };
 
-export const S75 = async (page) => {
+// PROTOTYPE MEMORY -> PRODUCTION PERSISTENCE. The prototype held these two
+// saves in page memory and said so in its own copy ("saved in this page"). The
+// built app really persists them — the token into this browser's storage, the
+// credentials into the Store — and says THAT instead. The mock assertions below
+// are kept exactly as they were and still run on TARGET=mock; the app branch
+// asserts the stronger thing: not only the confirmation the surface shows, but
+// the durable state behind it. Neither story is weakened, renamed or deleted,
+// and the ledger's described behaviour is unchanged — only the medium the
+// prototype could not have is now checked. Recorded in the diff-to-mock notes.
+export const S75 = async (page, ctx) => {
   // Corrected: the token form holds two buttons — the reveal control
   // (type="button", DOM-first) and the submit (utilities.js:101,:103). Revision
   // 2's union selector took the reveal, so root's capture shows the token
@@ -1716,11 +1881,19 @@ export const S75 = async (page) => {
   await page.fill('#ut-token', 'synthetic-token');
   await submit.click();
   await page.waitForTimeout(300);
-  ok(/token saved in this page/i.test(await page.locator('.gf-utility').first().innerText()),
-    'saving the token reported nothing');
+  const pane = await page.locator('.gf-utility').first().innerText();
+  if (ctx.target === 'app') {
+    ok(/token saved in this browser/i.test(pane), `saving the token reported nothing: ${pane.slice(0, 200)}`);
+    // The durable half the prototype had no way to have: the token is where the
+    // one authenticated client reads it from on every request.
+    ok(await page.evaluate(() => localStorage.getItem('ciq_token')) === 'synthetic-token',
+      'the saved token is not in the storage frontend/data.js reads on every request');
+    return;
+  }
+  ok(/token saved in this page/i.test(pane), 'saving the token reported nothing');
 };
 
-export const S75b = async (page) => {
+export const S75b = async (page, ctx) => {
   // The credentials form and Developer mode, each driven by its own control.
   // Every value here is obviously manufactured; these are page-memory handlers
   // in the prototype, not credential storage, and nothing leaves the page.
@@ -1743,7 +1916,14 @@ export const S75b = async (page) => {
   await page.waitForTimeout(300);
 
   const saved = await pane();
-  ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
+  if (ctx.target === 'app') {
+    // The real write lands in the Store, so the confirmation says so without
+    // the prototype's page-memory caveat.
+    ok(/credentials saved/i.test(saved), `saving the credentials reported nothing: ${saved.slice(0, 200)}`);
+    ok(!/in this page/i.test(saved), 'the built app still claims a page-memory save');
+  } else {
+    ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
+  }
   ok(/EU region/i.test(saved), 'the saved credentials did not keep the chosen region');
   // The password is cleared from the form once saved (utilities.js:276).
   ok(await page.inputValue('#ut-password') === '',
@@ -1759,9 +1939,22 @@ export const S75b = async (page) => {
   ok(await dev.isChecked(), 'Developer mode did not take the change');
   ok(/never the analysis/i.test(await pane()),
     'Developer mode does not say it changes disclosure only');
+
+  if (ctx.target !== 'app') return;
+  // The durable half. A reload throws away every scrap of page state, so what
+  // the pane says after it can only have come from the Store.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.gf .pane', { timeout: 20000 });
+  await activate(page, '[data-utility="settings"]');
+  await page.waitForTimeout(400);
+  const reloaded = await pane();
+  ok(/credentials saved/i.test(reloaded) && !/no credentials saved/i.test(reloaded),
+    `the saved credentials did not survive a reload: ${reloaded.slice(0, 200)}`);
+  ok(await page.inputValue('#ut-password') === '',
+    'the reloaded form carries a password; a saved credential is never echoed back');
 };
 
-export const S76 = async (page) => {
+export const S76 = async (page, ctx) => {
   // Corrected. Root's capture shows Day opened with Carb questions STILL OPEN in
   // the reading pane and no visible return — because the seated utility takes
   // that pane (glucose.js:301) and the Day desk's "Opened from" section, which
@@ -1777,6 +1970,12 @@ export const S76 = async (page) => {
   ok(label, 'the utility\'s Open Day carries no origin label to return to');
   await open.click();
   await page.waitForTimeout(350);
+  // The prototype had its day in hand already; the app reads it. Waiting on the
+  // Day desk's own public selector is waiting for the state this story is about
+  // to assert — not a longer sleep, and not a weaker assertion. Until it
+  // arrives the desk shows a truthful loading frame with the utility still
+  // seated over it, which is the continuity this story goes on to require.
+  if (ctx.target === 'app') await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
 
   ok(await destinationOf(page) === 'day', 'the utility\'s Open Day did not reach the Day desk');
   ok(await countOf(page, `.gf-utility[data-utility="${origin}"]`) === 1,
@@ -1974,8 +2173,139 @@ const deferred = (id, term, what) => {
   return fn;
 };
 
-export const S86 = deferred('S86', 'HV2-01', 'Python serves /v2/ and /v2/assets/ with no Node runtime or CDN');
-export const S87 = deferred('S87', 'HV2-02', 'v1 and /v2/ coexist against one authenticated API and database');
+// A converted entry: the body is real and runs on the APP opener, and the entry
+// keeps its app-opener-only marker so a TARGET=mock run still reports it as
+// deferred rather than failing it against a prototype that never could pass it.
+// Converting a deferred entry this way fulfils it; the story is not weakened,
+// renamed or deleted.
+const appOnly = (term, what, fn) => {
+  fn.deferred = { term, what };
+  return fn;
+};
+
+// Converted by the desk chunk (#389 chunk 1). Both run on the app opener only.
+export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no Node runtime or CDN',
+  async (page, ctx) => {
+    // Everything the surface loaded came from the packaged runtime, at the two
+    // paths it declares. The opener already aborts any off-origin request; this
+    // reads back that nothing tried.
+    ok(ctx.unrouted.length === 0, `the built app reached off-origin: ${ctx.unrouted.join(', ')}`);
+    const shell = ctx.requests.filter((request) => request.path === '/v2/');
+    ok(shell.length > 0 && shell[0].status === 200, 'the desk was not served from /v2/');
+    ok(shell[0].headers['cache-control'] === 'no-cache',
+      `the shell must revalidate, not cache: ${shell[0].headers['cache-control']}`);
+    const assets = ctx.requests.filter((request) => request.path !== '/v2/' && !request.path.startsWith('/api/'));
+    ok(assets.length > 0, 'the desk loaded no packaged asset at all');
+    for (const asset of assets) {
+      ok(asset.path.startsWith('/v2/assets/'), `${asset.path} is served outside /v2/assets/`);
+      ok(asset.status === 200, `${asset.path} answered ${asset.status}`);
+      ok(asset.headers['cache-control'] === 'public, max-age=31536000, immutable',
+        `${asset.path} is fingerprinted but not immutable: ${asset.headers['cache-control']}`);
+    }
+    // Nothing in the served document names a CDN, which is the other half of
+    // "no CDN in production" — the packaged image itself is task 3.5's proof.
+    const sources = await page.evaluate(() => [...document.querySelectorAll('script[src], link[href]')]
+      .map((element) => element.getAttribute('src') || element.getAttribute('href')));
+    for (const source of sources) {
+      ok(!/^https?:/i.test(source), `the served shell names an external source: ${source}`);
+    }
+    // The non-API route set is closed: a path the server never declared is a
+    // 404, not the shell.
+    const closed = await page.evaluate(async () => {
+      const out = {};
+      for (const path of ['/v2/day', '/v2/overview', '/v2/index.html', '/v2/assets/no-such.js']) {
+        out[path] = (await fetch(path)).status;
+      }
+      return out;
+    });
+    for (const [path, status] of Object.entries(closed)) {
+      ok(status === 404, `${path} answered ${status}; the non-API route set is not closed`);
+    }
+  });
+
+export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authenticated API and database',
+  async (page) => {
+    // Revised. The first version proved nothing: it stored a token, loaded the
+    // desk on a destination that reads NOTHING, and then called the browser's
+    // own fetch() — which bypasses frontend/data.js entirely, so it exercised
+    // neither the client nor its token. This drives the surfaces' OWN reads,
+    // through that client, against a server that actually enforces a token.
+    if (!AUTH_BASE_URL || !AUTH_TOKEN) {
+      fail('S87 needs a token-protected synthetic server: the declared QA server runs '
+        + "with --token '' and so cannot refuse an unauthenticated read.\n"
+        + '  start a second one against its own copy of the same synthetic database:\n'
+        + "    cp mockups/qa-e2e.synthetic/harmonic.sqlite \"$TMPDIR/harmonic-qa-auth.sqlite\"\n"
+        + "    uv run harmonic serve --no-fetch --token 'synthetic-replay-token' \\\n"
+        + "      --db \"$TMPDIR/harmonic-qa-auth.sqlite\" --port 8766\n"
+        + '  then re-run with AUTH_BASE_URL=http://127.0.0.1:8766 '
+        + "AUTH_TOKEN=synthetic-replay-token");
+    }
+
+    // Every /api/ read either surface makes, with the header it carried and the
+    // body it received. Read off the network, so it sees the client's real
+    // requests rather than anything installed into the page.
+    const reads = [];
+    page.on('response', async (response) => {
+      const path = new URL(response.url()).pathname;
+      if (!path.startsWith('/api/')) return;
+      const entry = {
+        path, status: response.status(),
+        authorization: response.request().headers().authorization || null,
+        body: null,
+      };
+      reads.push(entry);
+      try { entry.body = await response.text(); } catch { /* a redirect or an abort has none */ }
+    });
+    const since = (mark) => reads.slice(mark);
+    const settle = async () => page.waitForTimeout(2500);
+
+    // 1. The boundary refuses an unauthenticated read, on the desk's own Day —
+    //    a destination that actually reads.
+    await page.evaluate(() => localStorage.removeItem('ciq_token'));
+    let mark = reads.length;
+    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.gf .pane', { timeout: 20000 });
+    await settle();
+    const anonymous = since(mark);
+    ok(anonymous.length > 0, 'the v2 desk made no API read at all on Day; it cannot show an authenticated boundary');
+    ok(anonymous.every((read) => !read.authorization),
+      'a read carried an Authorization header before any token was stored');
+    ok(anonymous.every((read) => read.status === 401),
+      `the token-protected API admitted an unauthenticated v2 read: ${JSON.stringify(anonymous.map((r) => [r.path, r.status]))}`);
+
+    // 2. With the token stored, the desk's own client reads succeed and carry it.
+    await page.evaluate((value) => localStorage.setItem('ciq_token', value), AUTH_TOKEN);
+    mark = reads.length;
+    await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
+    await settle();
+    const v2Reads = since(mark);
+    ok(v2Reads.length > 0, 'the v2 desk made no API read with a token stored');
+    ok(v2Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+      `the v2 desk did not send the stored token: ${JSON.stringify(v2Reads.map((r) => [r.path, r.authorization]))}`);
+    ok(v2Reads.every((read) => read.status === 200),
+      `an authenticated v2 read was refused: ${JSON.stringify(v2Reads.map((r) => [r.path, r.status]))}`);
+    const v2Status = v2Reads.find((read) => read.path === '/api/status');
+    ok(v2Status, 'the v2 desk did not read /api/status, so there is no shared read to compare');
+
+    // 3. V1 is still served on its own routes, is a different shell, and reads
+    //    the same API and the same database with the same stored token.
+    mark = reads.length;
+    const v1 = await page.goto(`${AUTH_BASE_URL}/`, { waitUntil: 'domcontentloaded' });
+    ok(v1 && v1.ok(), `v1 is no longer served: ${v1 && v1.status()}`);
+    const v1Html = await v1.text();
+    ok(!v1Html.includes('/v2/assets/'), 'the root path served the v2 shell; this change admits no cutover');
+    ok(v1Html.includes('/assets/'), 'the root path did not serve the v1 shell');
+    await settle();
+    const v1Reads = since(mark);
+    ok(v1Reads.length > 0, 'v1 made no API read');
+    ok(v1Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+      `v1 did not send the same stored token: ${JSON.stringify(v1Reads.map((r) => [r.path, r.authorization]))}`);
+    const v1Status = v1Reads.find((read) => read.path === '/api/status' && read.status === 200);
+    ok(v1Status, `v1 did not read /api/status successfully: ${JSON.stringify(v1Reads.map((r) => [r.path, r.status]))}`);
+    ok(v1Status.body === v2Status.body,
+      `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
+  });
 export const S88 = deferred('S88', 'HV2-16', 'Set aside and Restore are durable Store writes surviving reload');
 export const S89 = deferred('S89', 'HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist');
 export const S90 = deferred('S90', 'HV2-21', 'capacity copy is served by the Plan deliverable contract, not memorized');
@@ -1994,14 +2324,43 @@ export const S100 = deferred('S100', 'HV2-32', 'fractional-hour speech repaired 
 // pressed navigation button because the empty frame's .gf-title is a DIV with
 // no tabindex. Recorded as an obligation on the build, not as a lowered term
 // and not as a sanction.
-export const S80b = deferred('S80b', 'HV2-32',
-  'a full-width empty destination (Changes with no change underway) focuses its own heading rather than leaving focus on the pressed navigation button');
+export const S80b = appOnly('HV2-32',
+  'a full-width empty destination (Changes with no change underway) focuses its own heading rather than leaving focus on the pressed navigation button',
+  async (page) => {
+    await goto(page, 'changes');
+    ok(await countOf(page, '.gf-desk > .gf-reading') === 0,
+      'this story needs the full-width empty state; a reading pane rendered instead');
+    ok(await countOf(page, '.gf-stage-table .gf-empty') === 1, 'the empty frame did not render');
+    const focused = await activeElement(page);
+    ok(focused && /gf-title/.test(focused.className || ''),
+      `arrival left focus on ${JSON.stringify(focused)} instead of the frame's own heading`);
+    ok(!(focused.data && focused.data.destination),
+      'focus stayed on the pressed navigation button, which is the gap S80b records');
+  });
 // Same class, found in run 2: the Guide's article handler names the precise
 // target `.gf-article .gf-title` (utilities.js:258) and the markup renders it,
 // but as an h2 with no tabindex (:172), so focus falls to BODY. HV2-32 says a
 // caller-supplied precise target is honoured; the build owes that.
-export const S73b = deferred('S73b', 'HV2-32',
-  'opening a Guide article moves focus to the article heading the handler already targets, rather than dropping focus to the document body');
+export const S73b = appOnly('HV2-32',
+  'opening a Guide article moves focus to the article heading the handler already targets, rather than dropping focus to the document body',
+  async (page) => {
+    await activate(page, '[data-utility="guide"]');
+    ok(await countOf(page, '.gf-utility[data-utility="guide"]') === 1, 'the Guide did not open');
+    ok(await countOf(page, '.gf-guide-row') > 0, 'the Guide listed no article to open');
+    await activate(page, '.gf-guide-row');
+    // An authored article's text is SERVED (/api/kb/<slug>), so the press
+    // renders a loading state first and the heading arrives one read later.
+    // The caller's focus target has to survive that, which is the whole point
+    // of this story against the app.
+    await page.waitForSelector('.gf-article .gf-title', { timeout: 15000 });
+    ok(await countOf(page, '.gf-article .gf-title') === 1, 'the article did not open');
+    const focused = await activeElement(page);
+    ok(focused && focused.tag === 'H2' && /gf-title/.test(focused.className || ''),
+      `opening an article left focus on ${JSON.stringify(focused)}, not the article heading`);
+    const heading = await page.locator('.gf-article .gf-title').innerText();
+    ok(focused.text && heading.toLowerCase().startsWith(focused.text.toLowerCase().slice(0, 20)),
+      `the focused heading ${JSON.stringify(focused.text)} is not the opened article ${JSON.stringify(heading)}`);
+  });
 // A durable Trial finish that fails keeps the form, its written conclusion and
 // a Retry, and the retry records the ending. The prototype cannot show it:
 // setting.finish() (harmonic-v2-glucose-setting.js:445) writes memory.record

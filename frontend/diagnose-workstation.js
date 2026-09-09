@@ -28,7 +28,7 @@ import {
   BIN_MINUTES,
   snapMinute, snapWindow, commitWindow, commitSlide, minuteAtX, xAtMinute, plotBox, windowSpans,
   buildDayTrace,
-  validateHistoryEvents, queuePreviewOption,
+  queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { toCaptures, isfVerdict } from './diagnose-workstation-data.js';
 import { diagnoseLoadFailure } from './diagnose-load-failure.js';
@@ -1012,87 +1012,6 @@ export function renderIsfLevel(host, isf, isfStaged, onStage) {
   });
 }
 
-const HISTORY_CONCLUSION = 'Past setting. No change suggested.';
-
-/** ADR 22: a retired I:C measurement is an evidence read, never a change panel. */
-function renderHistoryLevel(host, frame, onSelectRun, onRetry) {
-  const row = frame.row;
-  const estimate = row.estimate;
-  host.dataset.historyId = frame.id;
-  host.dataset.analysisGeneration = frame.generation;
-  host.dataset.selectedRunId = frame.selectedRunId || '';
-  const box = document.createElement('div');
-  box.className = 'inner history-case';
-  box.innerHTML = `
-    <p class="history-conclusion">${HISTORY_CONCLUSION}</p>
-    <div class="slot-head">
-      <span class="time">${row.title}</span>
-      <span class="verdict">${row.span.label}</span>
-    </div>
-    <div class="history-evidence" aria-label="Past-setting evidence">
-      <div class="numrows">
-        <div class="numrow"><span class="k">Past setting</span><b>${u(row.past_setting)}</b>
-          <span class="qual">g/U</span></div>
-        <div class="numrow"><span class="k">Measured</span><b>${u(estimate.value)}</b>
-          <span class="qual">g/U</span></div>
-      </div>
-      <div class="slot-stats">CI ${u(estimate.lo)}–${u(estimate.hi)} g/U${estimate.wide ? ' <span>(wide)</span>' : ''}</div>
-      <div class="slot-stats">${row.support} meal run${row.support === 1 ? '' : 's'}</div>
-    </div>
-    <div class="history-current">Current program · <b>${u(row.programmed_now)} g/U</b></div>`;
-  if (frame.notice) {
-    const notice = document.createElement('p');
-    notice.className = 'history-notice';
-    notice.textContent = frame.notice;
-    box.append(notice);
-  }
-  if (frame.pending) {
-    const pending = document.createElement('p');
-    pending.className = 'history-pending';
-    pending.textContent = 'Checking for coherent evidence…';
-    box.append(pending);
-  }
-  if (frame.stale) {
-    const stale = document.createElement('div');
-    stale.className = 'history-stale';
-    stale.setAttribute('role', 'status');
-    stale.innerHTML = '<span>Evidence may be stale. The last coherent view is still shown.</span>';
-    const retry = document.createElement('button');
-    retry.type = 'button';
-    retry.className = 'linkbtn history-retry';
-    retry.textContent = 'Retry';
-    retry.addEventListener('click', onRetry);
-    stale.append(retry);
-    box.append(stale);
-  }
-  if (frame.align === 'event' && frame.events) {
-    const cap = document.createElement('div');
-    cap.className = 'lvl-cap history-runs-cap';
-    cap.textContent = `${frame.events.run_ids.length} meal runs`;
-    box.append(cap);
-    const roster = document.createElement('div');
-    roster.className = 'history-runs';
-    roster.setAttribute('role', 'group');
-    roster.setAttribute('aria-label', 'Meal runs');
-    for (const run of frame.events.series) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'history-run';
-      button.dataset.runId = run.run_id;
-      button.setAttribute('aria-pressed', String(frame.events.selected_run_id === run.run_id));
-      const day = new Date(run.first_member_at).toLocaleDateString('en-US', {
-        month: 'short', day: 'numeric', year: 'numeric',
-      });
-      const offsets = run.member_offsets_min.map((minute) => `${minute >= 0 ? '+' : ''}${Math.round(minute)}`);
-      button.innerHTML = `<span>${day}</span><small>${offsets.length} meal${offsets.length === 1 ? '' : 's'} · ${offsets.join(', ')} min</small>`;
-      button.addEventListener('click', () => onSelectRun(run.run_id));
-      roster.append(button);
-    }
-    box.append(roster);
-  }
-  host.append(box);
-}
-
 /* Level 1 is the findings queue (terms 34–45), rendered by
    `diagnose-findings-queue.js` straight off the server's projection. The factor
    grid, the settings/patterns tiers and the three per-parameter staging entry rows
@@ -1176,8 +1095,6 @@ function boot(root, data, callbacks, signal) {
      order or a denominator is worked out here. */
   let findings = data.findings;
   let preparation = data.casePreparation;
-  let retirementNotice = null;
-  let historyRequestGeneration = 0;
   // Null is the all-active resting state; a Set exists only while a chip is off.
   let selectedChips = null;
   let fullscreen = null;
@@ -1386,16 +1303,10 @@ function boot(root, data, callbacks, signal) {
   let dragPreparationWantedKey = null;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
-  const historyFrame = () => top()?.k === 'history' ? top() : null;
   const requestWindow = () => {
     const w = findingsWindow();
     return w ? { start_min: w[0], end_min: w[1] } : null;
   };
-  const historyCanvasScope = () => ({
-    presetKey,
-    drawn: drawn ? drawn.slice() : null,
-  });
-
   const validFindingsGeneration = (next) => {
     if (next?.schema !== 'diagnose-findings-v2'
       || typeof next.analysis_generation !== 'string' || !next.analysis_generation
@@ -1405,14 +1316,11 @@ function boot(root, data, callbacks, signal) {
     return next;
   };
 
-  /* ONE GENERATION AUTHORITY. Adopting a fresh findings generation is the same
-     act for a history pair and for a tile whose evidence request came back
-     `analysis_generation_mismatch`: ask the server, drop the answer if the
-     reader has moved on, and otherwise make it the surface's findings. Both
-     callers go through this pair; a second generation check would be one fact
-     with two implementations. What each caller re-derives afterwards — a
-     history frame, or the tile field via `reconcileTileDescriptors` — is its
-     own, and nothing here restores a layout captured before the refresh. */
+  /* ONE GENERATION AUTHORITY. Adopting a fresh findings generation is one act:
+     ask the server, drop the answer if the reader has moved on, and otherwise
+     make it the surface's findings. What the caller re-derives afterwards — the
+     tile field, via `reconcileTileDescriptors` — is its own, and nothing here
+     restores a layout captured before the refresh. */
   const adoptFindings = (next, key) => {
     if (key !== currentFindingsKey()) return null;
     findings = next;
@@ -1422,21 +1330,18 @@ function boot(root, data, callbacks, signal) {
     return next;
   };
 
-  async function requestFindingsGeneration({ selectedHistoryId = null, still }) {
+  async function requestFindingsGeneration({ still }) {
     const key = currentFindingsKey();
-    const next = await refreshFindingsGeneration(selectedHistoryId);
-    // `still` is the CALLER's currency: a history frame is current while it is
-    // still on top of its own request, a tile recovery while the reader has not
-    // moved the window out from under it.
+    const next = await refreshFindingsGeneration();
+    // `still` is the CALLER's currency: a tile recovery is current while the
+    // reader has not moved the window out from under it.
     if (key !== currentFindingsKey() || !still(key)) return null;
     return { next, key };
   }
 
-  async function refreshFindingsGeneration(selectedHistoryId = null) {
+  async function refreshFindingsGeneration() {
     const window = requestWindow();
-    const refresh = findingsRefreshTail.then(() => callbacks.loadFindings?.(
-      window, selectedHistoryId,
-    ));
+    const refresh = findingsRefreshTail.then(() => callbacks.loadFindings?.(window));
     findingsRefreshTail = refresh.catch(() => null);
     return validFindingsGeneration(await refresh);
   }
@@ -1516,9 +1421,9 @@ function boot(root, data, callbacks, signal) {
       }
       const descriptor = chartDescriptor(row.id);
       if (!descriptor) {
-        /* Some ranked history rows have no chart contract. Do not leave an
-           empty chart well that implies missing evidence; every queue chart
-           that does have a descriptor remains mounted. */
+        /* Not every queue row has a chart contract. Do not leave an empty
+           chart well that implies missing evidence; every queue chart that does
+           have a descriptor remains mounted. */
         host.remove();
         queueRow.dataset.mini = 'unavailable';
         continue;
@@ -1746,192 +1651,6 @@ function boot(root, data, callbacks, signal) {
     }
   }
 
-  function historyRetired(frame, message, nextFindings, key) {
-    if (!adoptFindings(nextFindings, key)) return false;
-    ++historyRequestGeneration;
-    retirementNotice = message;
-    stack.length = 1;
-    dir = 'pop';
-    paint();
-    return true;
-  }
-
-  const typedRetirement = (error) => error?.status === 410
-    && (error.code === 'history_aged_out' || error.code === 'history_unavailable');
-
-  function validateHistorySelection(next, frame) {
-    if (next?.schema !== 'diagnose-findings-v2'
-      || typeof next.analysis_generation !== 'string' || next.analysis_generation.length === 0
-      || !Array.isArray(next.rows)
-      || next.selection?.id !== frame.id) {
-      throw new Error('Server did not return one coherent history selection.');
-    }
-    const selection = next.selection;
-    const dispositions = ['present', 'out_of_scope', 'aged_out', 'unavailable'];
-    const messageInvalid = selection.disposition === 'present'
-      ? selection.message !== null
-      : typeof selection.message !== 'string' || selection.message.length === 0;
-    const rowContradictsDisposition = selection.disposition !== 'present'
-      && next.rows.some((row) => row.id === frame.id);
-    if (!dispositions.includes(selection.disposition) || messageInvalid || rowContradictsDisposition) {
-      throw new Error('Server returned a contradictory history selection.');
-    }
-    return selection;
-  }
-
-  async function refreshHistoryRetirement(frame, request) {
-    try {
-      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
-        still: () => request === historyRequestGeneration && top() === frame });
-      if (!adopted) {
-        if (request === historyRequestGeneration && top() === frame) {
-          pendingKey = null;
-          frame.pending = false;
-          paint();
-        }
-        return;
-      }
-      const next = adopted.next;
-      const selection = validateHistorySelection(next, frame);
-      if (!['aged_out', 'unavailable'].includes(selection.disposition)) {
-        throw new Error('Retired history did not have a matching findings disposition.');
-      }
-      if (!historyRetired(frame, selection.message, next, adopted.key)) {
-        pendingKey = null;
-        frame.pending = false;
-        paint();
-      }
-    } catch {
-      if (request !== historyRequestGeneration || top() !== frame) return;
-      pendingKey = null;
-      frame.pending = false;
-      frame.stale = true;
-      paint();
-    }
-  }
-
-  async function refreshHistoryPair(frame, {
-    wantEvent = frame.align === 'event', selectedRunId = frame.selectedRunId,
-    attempt = 0, request = ++historyRequestGeneration,
-  } = {}) {
-    if (top() !== frame) return;
-    pendingKey = currentFindingsKey();
-    frame.pending = true;
-    frame.stale = false;
-    paint();
-    try {
-      const adopted = await requestFindingsGeneration({ selectedHistoryId: frame.id,
-        still: () => request === historyRequestGeneration && top() === frame });
-      if (!adopted) {
-        if (request === historyRequestGeneration && top() === frame) {
-          pendingKey = null;
-          frame.pending = false;
-          paint();
-        }
-        return;
-      }
-      const next = adopted.next;
-      const selection = validateHistorySelection(next, frame);
-      if (['aged_out', 'unavailable'].includes(selection.disposition)) {
-        if (!historyRetired(frame, selection.message, next, adopted.key)) {
-          pendingKey = null;
-          frame.pending = false;
-          paint();
-        }
-        return;
-      }
-      if (selection.disposition === 'out_of_scope') {
-        if (!adoptFindings(next, adopted.key)) return;
-        Object.assign(frame, { pending: false, stale: false, notice: selection.message });
-        paint();
-        return;
-      }
-      if (selection.disposition !== 'present') {
-        throw new Error('Server returned an unknown history selection disposition.');
-      }
-      const row = next.rows.find((candidate) => candidate.id === frame.id);
-      if (!row || row.register !== 'history') {
-        throw new Error('Server did not return the selected history row.');
-      }
-      let events = null;
-      if (wantEvent) {
-        events = await callbacks.loadHistoryEvents?.({
-          historyId: frame.id,
-          analysisGeneration: next.analysis_generation,
-          selectedRunId,
-        });
-        if (request !== historyRequestGeneration || top() !== frame) return;
-        validateHistoryEvents(events, {
-          historyId: frame.id,
-          analysisGeneration: next.analysis_generation,
-          selectedRunId,
-        });
-      }
-      if (request !== historyRequestGeneration || top() !== frame) return;
-      if (!adoptFindings(next, adopted.key)) {
-        pendingKey = null;
-        frame.pending = false;
-        paint();
-        return;
-      }
-      Object.assign(frame, {
-        row, generation: next.analysis_generation, events,
-        selectedRunId: selectedRunId || null,
-        align: wantEvent ? 'event' : 'clock',
-        canvasScope: historyCanvasScope(), pending: false, stale: false, notice: null,
-      });
-      retirementNotice = null;
-      paint();
-    } catch (error) {
-      if (request !== historyRequestGeneration || top() !== frame) return;
-      if (typedRetirement(error)) {
-        refreshHistoryRetirement(frame, request);
-        return;
-      }
-      if (attempt === 0) {
-        refreshHistoryPair(frame, { wantEvent, selectedRunId, attempt: 1, request });
-        return;
-      }
-      pendingKey = null;
-      frame.pending = false;
-      frame.stale = true;
-      paint();
-    }
-  }
-
-  async function requestHistoryEvents(frame, selectedRunId = null) {
-    const request = ++historyRequestGeneration;
-    pendingKey = currentFindingsKey();
-    frame.pending = true;
-    frame.stale = false;
-    paint();
-    try {
-      const events = await callbacks.loadHistoryEvents?.({
-        historyId: frame.id,
-        analysisGeneration: frame.generation,
-        selectedRunId,
-      });
-      if (request !== historyRequestGeneration || top() !== frame) return;
-      validateHistoryEvents(events, {
-        historyId: frame.id,
-        analysisGeneration: frame.generation,
-        selectedRunId,
-      });
-      pendingKey = null;
-      Object.assign(frame, {
-        events, selectedRunId, align: 'event', pending: false, notice: null,
-      });
-      paint();
-    } catch (error) {
-      if (request !== historyRequestGeneration || top() !== frame) return;
-      if (typedRetirement(error)) {
-        refreshHistoryRetirement(frame, request);
-        return;
-      }
-      refreshHistoryPair(frame, { wantEvent: true, selectedRunId, attempt: 1, request });
-    }
-  }
-
   let caseGeneration = 0;
   let activeCaseError = null;
   const caseErrorFrom = (error) => error?.detail && typeof error.detail === 'object'
@@ -2130,12 +1849,6 @@ function boot(root, data, callbacks, signal) {
 
   function ensurePreparation() {
     const key = currentPreparationKey();
-    const history = historyFrame();
-    if (history) {
-      if (history.pending || history.stale || key === loadedKey) return;
-      refreshHistoryPair(history);
-      return;
-    }
     if (failedKey !== null && failedKey !== key) failedKey = null;
     if (key === loadedKey) {
       pendingKey = null;
@@ -2227,16 +1940,6 @@ function boot(root, data, callbacks, signal) {
       guessed from a title. A row whose parameter this payload cannot show keeps its
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row, { queueOrigin = false } = {}) {
-    if (row.register === 'history') {
-      retirementNotice = null;
-      push({
-        k: 'history', id: row.id, row, generation: findings.analysis_generation,
-        align: 'clock', events: null, selectedRunId: null,
-        canvasScope: historyCanvasScope(),
-        pending: false, stale: false, notice: null, queueOrigin,
-      });
-      return;
-    }
     if (row.register === 'finding') {
       const entryAlignment = eventChartCoordinate(row) ? 'event' : 'clock';
       const frame = { k: 'factor', rowId: row.id, title: row.title,
@@ -2286,7 +1989,6 @@ function boot(root, data, callbacks, signal) {
   };
   const popTo = (i) => {
     ++caseGeneration;
-    ++historyRequestGeneration;
     pendingKey = null;
     filterOpen = false;
     const resetQueueRoot = i === 0 && stack.slice(1).some((frame) => frame.queueOrigin);
@@ -2483,10 +2185,8 @@ function boot(root, data, callbacks, signal) {
 
   function paintChart() {
     const f = top();
-    const retainedHistoryScope = f.k === 'history' && f.canvasScope
-      && (f.pending || f.stale || f.notice);
-    const canvasPresetKey = retainedHistoryScope ? f.canvasScope.presetKey : presetKey;
-    const canvasDrawn = retainedHistoryScope ? f.canvasScope.drawn : drawn;
+    const canvasPresetKey = presetKey;
+    const canvasDrawn = drawn;
     const preset = WINDOWS[canvasPresetKey];
     let win = preset;
     let label = `${preset.label.toUpperCase()} ${winText(preset)}`;
@@ -2501,9 +2201,8 @@ function boot(root, data, callbacks, signal) {
          and never moves the brace. Reported in the control row's follow chip. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`,
-        retainedHistoryScope ? null : clearDrawn);
-    } else if (explicitPreset || retainedHistoryScope) {
+      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`, clearDrawn);
+    } else if (explicitPreset) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
          same reason — pressing one at any level is a scope CHANGE by the user,
          never a release back to derived scope. */
@@ -2562,26 +2261,6 @@ function boot(root, data, callbacks, signal) {
       displayWindow: dragDisplayWindow, displayOffset: clockPanOffset,
     });
     const chartNode = el('chart');
-    const priorNotice = chartNode.parentElement.querySelector('.history-canvas-notice');
-    priorNotice?.remove();
-    if (f.k === 'history') {
-      chartNode.dataset.historyId = f.id;
-      chartNode.dataset.analysisGeneration = f.generation;
-      chartNode.dataset.selectedRunId = f.selectedRunId || '';
-      const noticeText = f.stale
-        ? 'Evidence may be stale. The last coherent view is still shown.'
-        : f.notice || (f.pending ? 'Checking for coherent evidence…' : null);
-      if (noticeText) {
-        const notice = document.createElement('p');
-        notice.className = 'history-canvas-notice';
-        notice.textContent = noticeText;
-        chartNode.parentElement.append(notice);
-      }
-    } else {
-      delete chartNode.dataset.historyId;
-      delete chartNode.dataset.analysisGeneration;
-      delete chartNode.dataset.selectedRunId;
-    }
     /* THE READING COUNT IS GONE (#135 fix round, operator ruling). "window 216
        of 864 readings" priced the overview in a unit no decision on this surface is
        made in, at data weight, right beside the title — and the pooled-days
@@ -3415,7 +3094,6 @@ function boot(root, data, callbacks, signal) {
     if (frame.k === 'factor') return frame.caseFile?.finding?.title || frame.title;
     if (frame.k === 'slot') return `${frame.cell.label} slot`;
     if (frame.k === 'block') return `${frame.cell.label} block`;
-    if (frame.k === 'history') return frame.row.label;
     if (frame.k === 'chart') return chartDescriptor(frame.chartId)?.title || 'Chart';
     // 'isf' is the last frame kind: select-in-place (P35 retired) never adds a
     // crumb level, so no frame ever reaches an `occ` branch here.
@@ -3479,7 +3157,6 @@ function boot(root, data, callbacks, signal) {
       ? scopeLabel()
       : f.k === 'factors'
       ? queueMeta(findings, selectedChips)
-      : f.k === 'history' ? `${f.row.support} meal run${f.row.support === 1 ? '' : 's'}`
       : f.k === 'chart' ? ({
         'event-comparison': 'Response comparison',
       }[chartDescriptor(f.chartId)?.kind] || 'Measured evidence')
@@ -3527,9 +3204,6 @@ function boot(root, data, callbacks, signal) {
     const host = el('level');
     disposeRowMinis();
     host.innerHTML = '';
-    delete host.dataset.historyId;
-    delete host.dataset.analysisGeneration;
-    delete host.dataset.selectedRunId;
     host.dataset.dir = dir;
     // restart the swap animation on every transition
     host.style.animation = 'none';
@@ -3557,12 +3231,6 @@ function boot(root, data, callbacks, signal) {
       host.insertAdjacentHTML('beforeend', `<div class="inner chart-evidence-detail">
           <div class="slot-head"><span class="time">${entry?.name || 'Behavioral chart'}</span>
           <span class="verdict">Case file withheld</span></div><p>${f.placeholder}</p></div>`);
-      return;
-    }
-    if (f.k === 'history') {
-      renderHistoryLevel(host, f,
-        (runId) => requestHistoryEvents(f, runId),
-        () => refreshHistoryPair(f, { attempt: 1 }));
       return;
     }
     if (failedKey === currentFindingsKey()) {
@@ -3596,13 +3264,6 @@ function boot(root, data, callbacks, signal) {
         onToggleCollapsed: () => { collapsedFindingsExpanded = !collapsedFindingsExpanded; paint(); },
       });
       mountRowMinis(queue.miniSlots);
-      if (retirementNotice) {
-        const notice = document.createElement('p');
-        notice.className = 'history-retirement';
-        notice.setAttribute('role', 'status');
-        notice.textContent = retirementNotice;
-        host.prepend(notice);
-      }
       appendCaseError(host);
       if (phoneReadingScroller()) host.scrollTop = 0;
       else host.scrollTop = queueScrollTop;
@@ -4086,18 +3747,6 @@ function boot(root, data, callbacks, signal) {
     paintTiles();
     paintChart();
     paintBrace();
-    const canvasBody = el('chart').parentElement;
-    canvasBody.querySelector('.history-canvas-notice')?.remove();
-    const history = top().k === 'history' ? top() : null;
-    const canvasNotice = history?.stale
-      ? 'Evidence may be stale. The last coherent view is still shown.'
-      : history?.notice || (history?.pending ? 'Checking for coherent evidence…' : null);
-    if (canvasNotice) {
-      const note = document.createElement('p');
-      note.className = 'history-canvas-notice';
-      note.textContent = canvasNotice;
-      canvasBody.append(note);
-    }
     applyPendingFocus();
   }
 

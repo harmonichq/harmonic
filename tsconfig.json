@@ -8,5 +8,8 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["frontend/**/*.js", "frontend/**/*.ts", "frontend/**/*.vue"]
+  "include": [
+    "frontend/**/*.js", "frontend/**/*.ts", "frontend/**/*.vue",
+    "frontend-v2/**/*.js", "frontend-v2/**/*.mjs"
+  ]
 }

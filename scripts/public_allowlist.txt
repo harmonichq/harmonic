@@ -25,6 +25,7 @@ Dockerfile
 package.json
 package-lock.json
 vite.config.mjs
+vite.config.v2.mjs
 tsconfig.json
 docker-compose.yml
 docker-entrypoint.sh
@@ -55,6 +56,23 @@ tests/** {.py}
 # Phase 0.5.1 regenerates. The global binary deny and the Phase 3.1
 # structural scan are what keep a future real-data JSON out of this rule.
 frontend/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
+
+# --- The v2 desktop's source root (#389). It is a SHIPPING tree: the packaged
+# image builds both surfaces from this tree alone, so the second Vite root and
+# its build configuration above must both ship or /v2/ cannot be built at all.
+# Its built output is generated during packaging and is untracked, so it is
+# never a candidate input here.
+#
+# No binary class is added here. HV2-08 keeps Inter as the single UI family and
+# HV2-01 forbids a CDN, so the font travels in the tree — as a CSS resource
+# carrying its bytes as data URLs (frontend-v2/fonts/inter.css), cleared by the
+# .css extension below. That keeps every shipping file text, which is what the
+# contamination scan reads; a WOFF2 beside it would fail that scan closed, and
+# the scan is right to do so.
+frontend-v2/** {.html,.js,.mjs,.ts,.vue,.css,.svg,.json}
+# The font licence must travel with the font. Exact-path, because .txt is not in
+# the extension set above and should not be widened for one file.
+frontend-v2/fonts/OFL.txt
 
 # --- The dev-only component harness ------------------------------------
 # It ships as source so the README and contributor instructions resolve.
@@ -124,3 +142,16 @@ scripts/public_scan_config.txt
 ! frontend/plan-nothing-staged.shot.mjs
 ! frontend/queue-dock-735.shot.mjs
 ! frontend/verify-660-story-fidelity.shot.mjs
+
+# --- The v2 desktop's behaviour replay, denied WHILE it still drives the
+# private prototype (#389). frontend/** would otherwise clear it, and it names
+# four paths this tree excludes: the lock manifest, the frozen ledger, the
+# locked prototype it opens for TARGET=mock, and the retained sweep runs. That
+# made the materialised tree carry a file with four dead references
+# (tests/test_check_public_links.py), which is what this rule fixes.
+#
+# THIS RULE IS TRANSITIONAL, and the condition for removing it is exact: when
+# #389's closing chunk archives the prototype and retires the mock opener, this
+# file stops naming anything under mockups/ and should ship, so the published
+# repository can run the v2 behaviour gate against its own built app.
+! frontend/harmonic-v2-desktop-behavior.replay.mjs

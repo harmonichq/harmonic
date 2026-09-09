@@ -3,10 +3,13 @@
 This module composes published source verdicts.  It deliberately does not run a
 classifier, re-price a Lever, manufacture a shared support population, or infer
 an uncertainty interval that a setting owner withheld.
+Overnight source nights come from the top-level ``harm_band_source_nights``
+evidence copy, while printed-low nights come from ``evidence["harm"]["band_nights"]``.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from hashlib import sha256
 from typing import Iterable
 
@@ -64,20 +67,15 @@ def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
 
 
 def _setting_seriousness(
-    candidate_rows: Iterable[dict], parameter: str, source_rows: Iterable[dict],
-) -> str | None:
+    candidate_rows: Iterable[dict], parameter: str,
+) -> list[dict]:
+    from ...guidance import _state as guidance_state
+
     candidate = next((item for item in candidate_rows
                       if item.get("subject") == f"setting:{parameter}"), None)
-    if candidate is not None:
-        seriousness = candidate.get("seriousness")
-        if isinstance(seriousness, str):
-            return seriousness
-        for item in seriousness or ():
-            if item.get("seriousness") is not None:
-                return item["seriousness"]
-    ordered = sorted(source_rows, key=lambda item: not bool(item.get("asserts_move")))
-    return next((item.get("safety_status") for item in ordered
-                 if item.get("safety_status") is not None), None)
+    if candidate is None:
+        candidate = {"kind": "setting", "action": None, "seriousness": None}
+    return guidance_state(candidate)["seriousness"]
 
 
 def _setting_member(
@@ -111,7 +109,7 @@ def _setting_member(
         "price": row.get("priority", 0), "admitted": admitted,
         "producer": "tuning_levers", "lo": round(lo, 4) if lo is not None else None,
         "hi": round(hi, 4) if hi is not None else None,
-        "seriousness": _setting_seriousness(candidate_rows, parameter, source_rows),
+        "seriousness": _setting_seriousness(candidate_rows, parameter),
         "action": parameter if admitted else None,
     }]
 
@@ -178,16 +176,20 @@ def _cross_pattern_overlaps(exposures: dict) -> dict[str, dict]:
     return out
 
 
-def _harm_low_ids(analysis: dict, parameter: str) -> set[str]:
+def _low_instant(value: str) -> datetime:
+    return datetime.fromisoformat(value)
+
+
+def _harm_low_ids(analysis: dict, parameter: str) -> set[datetime]:
     return {
-        low["t"]
+        _low_instant(low["t"])
         for row in analysis.get(_SETTING_ROWS[parameter]) or ()
         for low in ((row.get("evidence") or {}).get("harm") or {}).get("lows") or ()
         if low.get("t") is not None
     }
 
 
-def _scenario_low_ids(scenarios: dict) -> dict[str, set[str]]:
+def _scenario_low_ids(scenarios: dict) -> dict[str, set[datetime]]:
     out = {lever: set() for lever in _LOW_IDENTITY_LEVERS}
     for episode in (scenarios.get("episodes") or {}).values():
         lever = episode.get("lever")
@@ -196,7 +198,7 @@ def _scenario_low_ids(scenarios: dict) -> dict[str, set[str]]:
         for step in episode.get("steps") or ():
             nadir = ((step.get("citation") or {}).get("facts") or {}).get("nadir_at")
             if nadir is not None:
-                out[lever].add(nadir)
+                out[lever].add(_low_instant(nadir))
     return out
 
 

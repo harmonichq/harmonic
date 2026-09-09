@@ -307,9 +307,22 @@ def _case_test(case):
             )
             self.assertEqual(pattern["collapse"], "collapse_to_member")
             self.assertEqual(pattern["action"], "habit:over_treated_low")
+            correction_overlap = patterns["lows_after_correcting_highs"][
+                "harm_low_overlap"
+            ][1]
+            self.assertEqual(
+                correction_overlap,
+                {
+                    "habit_subject": "habit:correction_on_iob",
+                    "setting_subject": "setting:isf",
+                    "status": "comparable",
+                    "count": 1,
+                    "reason": "shared_low_episode_nadir",
+                },
+            )
         elif case.name == "showcase":
             overnight = patterns["overnight_lows_without_iob"]
-            self.assertEqual(overnight["members"][0]["seriousness"], "lower")
+            self.assertEqual(overnight["members"][0]["seriousness"], [])
         if case.name == "behavioral-correction-stacking":
             target_key = ("correction_stacking", "correction_clusters")
             target_tally = case.expectation.verdict_tallies[target_key]

@@ -101,10 +101,14 @@ class OutcomePatternPolicyTest(unittest.TestCase):
             ],
             "ic_blocks": [{"asserts_move": False, "safety_status": "held",
                            "start_min": 0, "end_min": 1440, "guidance": None,
-                           "evidence": {"harm": {"lows": [{"t": "meal-low"}]}}}],
+                           "evidence": {"harm": {"lows": [
+                               {"t": "2025-06-01T12:30:00"},
+                           ]}}}],
             "isf": [{"asserts_move": False, "safety_status": "held",
                      "guidance": None,
-                     "evidence": {"harm": {"lows": [{"t": "isf-low"}]}}}],
+                     "evidence": {"harm": {"lows": [
+                         {"t": "2025-06-01T02:30:00"},
+                     ]}}}],
         }
         exposures = {"exposures": {
             "meals": {"n": 12, "occurrences": [
@@ -133,10 +137,14 @@ class OutcomePatternPolicyTest(unittest.TestCase):
             "low_confidence": [],
             "episodes": {
                 "meal": {"lever": "meal_over_delivery", "steps": [
-                    {"citation": {"facts": {"nadir_at": "meal-low"}}},
+                    {"citation": {"facts": {
+                        "nadir_at": "2025-06-01 12:30:00",
+                    }}},
                 ]},
                 "correction": {"lever": "correction_on_iob", "steps": [
-                    {"citation": {"facts": {"nadir_at": "isf-low"}}},
+                    {"citation": {"facts": {
+                        "nadir_at": "2025-06-01 02:30:00",
+                    }}},
                 ]},
             },
         }
@@ -187,10 +195,27 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                        "guidance": {"action": None,
                                     "seriousness": "recurring_low"}}],
         }
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        seriousness = [{
+            "start_min": 0, "end_min": 30, "seriousness": "recurring_low",
+        }]
+        self.assertEqual(overnight["members"][0]["seriousness"], seriousness)
+        self.assertEqual(overnight["seriousness"], seriousness)
+
+    def test_setting_seriousness_fallback_uses_guidance_empty_state(self):
+        analysis = {
+            "tuning_levers": [{"parameter": "basal_rate", "priority": 0,
+                               "recurrence_channel": {"kind": "basal_thin"}}],
+            "basal": [{"slot": 0, "asserts_move": False,
+                       "safety_status": "no change", "evidence": {},
+                       "guidance": None}],
+        }
         member = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]["members"][0]
-        self.assertEqual(member["seriousness"], "recurring_low")
+        self.assertEqual(member["seriousness"], [])
 
     def test_single_admitted_habit_collapses_to_its_member(self):
         exposures = {"exposures": {"lows": {"n": 12, "occurrences": [

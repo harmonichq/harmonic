@@ -180,13 +180,26 @@ class FindingsProjection:
         rows = self._parameter_rows(query, scoped=query.scoped)
         rows += self._finding_rows(query)
         rows += self._history_rows(query)
-        rows.sort(key=_sort_key)
+        pattern_by_subject = {}
+        if not query.scoped:
+            pattern_rows, pattern_by_subject = self._pattern_rows(rows, query)
+            rows += pattern_rows
+        rows.sort(key=lambda row: _sort_key(row, pattern_by_subject))
+        if pattern_by_subject:
+            claimed = {row["claimed_by"]: [] for row in rows if row.get("claimed_by")}
+            for row in rows:
+                if row.get("claimed_by"):
+                    claimed[row["claimed_by"]].append(row)
+            rows = [item for row in rows if not row.get("claimed_by")
+                    for item in (row, *claimed.get(row["id"], ()))]
         _assign_tiers(rows)
         for row in rows:
             row["headline"] = _headline_for(row)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
+            if row.get("claimed_by"):
+                continue
             counts[row["register"]] += 1
             for chip in row["chips"]:
                 chip_counts[chip] += 1
@@ -210,6 +223,32 @@ class FindingsProjection:
             "chip_counts": chip_counts,
             "uncaused_highs": self._uncaused_highs(),
         }
+
+    def _pattern_rows(self, rows: List[dict], query: WindowQuery):
+        """Place the prepared roster in the queue without re-deciding its policy."""
+        by_id = {row["id"]: row for row in rows}
+        pattern_rows, pattern_by_subject = [], {}
+        for pattern in self._outcome_patterns:
+            # Partial rosters occur in the producer-isolation tests; they remain
+            # additive evidence, but are not renderable Pattern contracts.
+            if pattern.get("collapse") != "remain_pattern":
+                continue
+            subject = pattern["subject"]
+            claimed = [member["subject"] for member in pattern["members"]
+                       if member["kind"] == "habit" and member["admitted"]]
+            for member in claimed:
+                row = by_id.get(f"finding:{member.removeprefix('habit:')}")
+                if row is not None:
+                    row["claimed_by"] = subject
+            pattern_row = _row(
+                id=subject, register="finding", kind="pattern", title=pattern["title"],
+                priority=(pattern["settled_price"]
+                          if pattern["admission_route"] != "none" else None),
+                episodes=None, pattern=deepcopy(pattern), window_scope="whole_day",
+            )
+            pattern_rows.append(pattern_row)
+            pattern_by_subject[subject] = pattern_row
+        return pattern_rows, pattern_by_subject
 
     def _selection(self, query: WindowQuery, selected_id: Optional[str]) -> Optional[dict]:
         if selected_id is None:
@@ -844,6 +883,15 @@ def _history_headline(row: dict) -> str:
 
 def _headline_for(row: dict) -> str:
     """The one served sentence for this row's own family and register."""
+    if row["kind"] == "pattern":
+        pattern = row["pattern"]
+        if pattern.get("count_status"):
+            return f"{row['title']}: counts under review"
+        if pattern["admission_route"] == "none":
+            return row["title"]
+        noun = ("nights" if pattern["rate_producer"] == "harm_band_source_nights"
+                else "exposures")
+        return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)
     if row["register"] == "history":
@@ -868,6 +916,14 @@ _SETTINGS_CHIPS = {
     ("isf", "weaken"): ("lows",),
 }
 
+_PATTERN_CHIPS = {
+    "highs_after_meals": ("highs", "meals"),
+    "lows_after_meals": ("lows", "meals"),
+    "highs_after_treating_lows": ("highs",),
+    "lows_after_correcting_highs": ("lows", "corrections"),
+    "overnight_lows_no_iob": ("lows",),
+}
+
 
 def _chips_for(row: dict) -> List[str]:
     """The filter chips a serialized queue row belongs under."""
@@ -875,6 +931,8 @@ def _chips_for(row: dict) -> List[str]:
         return []
     if row["register"] == "assert":
         return list(_SETTINGS_CHIPS[(row["parameter"], row["direction"])])
+    if row["kind"] == "pattern":
+        return list(_PATTERN_CHIPS[row["pattern"]["key"]])
 
     chips = []
     kind = outcome_kind(row["lever"])
@@ -904,10 +962,12 @@ def _row(**fields) -> dict:
         "chips": None, "window_scope": None,
         "past_setting": None, "programmed_now": None, "regime_end": None,
         "run_ids": None, "event_chart": None,
+        "pattern": None, "pattern_chart": None, "claimed_by": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)
-    row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
+    if row["window_scope"] is None:
+        row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
     return row
 
 
@@ -927,7 +987,7 @@ def _assign_tiers(rows: Sequence[dict]) -> None:
             row["tier"] = "worth_a_look"
 
 
-def _sort_key(row: dict):
+def _sort_key(row: dict, patterns: Optional[Dict[str, dict]] = None):
     """The queue's one order: priced rows by priority desc, then unpriced rows by
     count desc, then the demoted held and blind registers in clock order (terms
     22 / 38). Every tie falls through to a stable, data-derived key so two runs of
@@ -939,7 +999,7 @@ def _sort_key(row: dict):
             history_recency = datetime.fromisoformat(row["regime_end"]).timestamp()
         except ValueError:
             pass
-    return (
+    key = (
         _REGISTER_RANK[row["register"]],
         0 if row["priority"] is not None else 1,
         -(row["priority"] or 0),
@@ -948,6 +1008,12 @@ def _sort_key(row: dict):
         -history_recency,
         row["title"] or "",
     )
+    if row.get("claimed_by") and patterns and row["claimed_by"] in patterns:
+        parent = patterns[row["claimed_by"]]
+        return _sort_key(parent) + (1, *key)
+    if row["kind"] == "pattern":
+        return key + (0,)
+    return key + (0,)
 
 
 def _pattern_priorities(scenarios: dict) -> Dict[str, int]:

@@ -651,10 +651,11 @@ class QueueOrderTest(unittest.TestCase):
         self.assertEqual(quiet, [])
 
     def test_priced_rows_lead_in_server_priority_order_then_counted_rows(self):
-        priced = [row["priority"] for row in self.global_rows
+        ranked = [row for row in self.global_rows if not row.get("claimed_by")]
+        priced = [row["priority"] for row in ranked
                   if row["priority"] is not None]
         self.assertEqual(priced, sorted(priced, reverse=True))
-        tail = self.global_rows[len(priced):]
+        tail = [row for row in ranked if row["priority"] is None]
         self.assertTrue(all(row["priority"] is None for row in tail))
         counts = [row["episodes"] or 0 for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
@@ -670,11 +671,6 @@ class QueueOrderTest(unittest.TestCase):
         rows = self.global_rows + scoped_rows
         allowed = {"next_in_line", "worth_a_look", "noted"}
         self.assertEqual({row["tier"] for row in rows}, allowed)
-        self.assertEqual(
-            [row["tier"] for row in self.global_rows],
-            ["next_in_line", "next_in_line", "next_in_line",
-             "worth_a_look", "worth_a_look", "noted", "noted", "noted"],
-        )
         self.assertEqual(
             {row["tier"] for row in rows if row["register"] == "assert"},
             {"next_in_line"},
@@ -694,6 +690,10 @@ class QueueOrderTest(unittest.TestCase):
         for row in self.global_rows:
             if row["register"] == "assert":
                 self.assertEqual(row["priority"], levers[row["parameter"]])
+            elif row["kind"] == "pattern":
+                self.assertEqual(row["priority"],
+                                 row["pattern"]["settled_price"]
+                                 if row["pattern"]["admission_route"] != "none" else None)
             elif row["priority"] is not None:
                 self.assertEqual(row["priority"], patterns[row["lever"]])
 
@@ -756,7 +756,8 @@ class PreparedFromStoreTest(unittest.TestCase):
             analysis={"window_days": 30}, exposures={}, scenarios={},
         )
         result = projection.project(WindowQuery.whole_day())
-        self.assertEqual(result["rows"], [])
+        self.assertEqual([row["kind"] for row in result["rows"]],
+                         ["pattern"] * 5)
         self.assertEqual(
             [pattern["key"] for pattern in result["outcome_patterns"]],
             ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",

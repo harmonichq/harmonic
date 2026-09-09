@@ -59,6 +59,11 @@ const SETTINGS_CHIPS = {
   carb_ratio: { raise: ['lows'], lower: ['highs'] },
   isf: { strengthen: ['highs'], weaken: ['lows'] },
 };
+const PATTERN_CHIPS = {
+  highs_after_meals: ['highs', 'meals'], lows_after_meals: ['lows', 'meals'],
+  highs_after_treating_lows: ['highs'],
+  lows_after_correcting_highs: ['lows', 'corrections'], overnight_lows_no_iob: ['lows'],
+};
 // findings_projection.UNCAUSED_HIGHS_COPY — the operator-confirmed sentence, with
 // the noun's number as its only variation (a surface printing '1 highs' is a defect).
 const uncausedHighsCopy = (n) => `${n} ${n === 1 ? 'high' : 'highs'} had no cause `
@@ -115,7 +120,7 @@ function row(fields) {
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
     chips: null, window_scope: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
-    event_chart: null,
+    event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
     ...fields,
   };
 }
@@ -123,6 +128,7 @@ function row(fields) {
 function chipsFor(row) {
   if (row.register === 'held' || row.register === 'blind' || row.register === 'history') return [];
   if (row.register === 'assert') return [...SETTINGS_CHIPS[row.parameter][row.direction]];
+  if (row.kind === 'pattern') return [...PATTERN_CHIPS[row.pattern.key]];
 
   const chips = [];
   const kind = OUTCOME_KIND[row.lever] ?? null;
@@ -137,7 +143,7 @@ function chipsFor(row) {
 function stampedRow(fields) {
   const result = row(fields);
   result.chips = chipsFor(result);
-  result.window_scope = result.parameter === 'isf' ? 'whole_day' : 'window';
+  result.window_scope = result.parameter === 'isf' ? 'whole_day' : result.window_scope || 'window';
   return result;
 }
 
@@ -668,6 +674,12 @@ function historyHeadline(r) {
 }
 
 function headlineFor(r) {
+  if (r.kind === 'pattern') {
+    if (r.pattern.count_status) return `${r.title}: counts under review`;
+    if (r.pattern.admission_route === 'none') return r.title;
+    const noun = r.pattern.rate_producer === 'harm_band_source_nights' ? 'nights' : 'exposures';
+    return `${r.title} in ${r.pattern.k} of ${r.pattern.n} ${noun}`;
+  }
   if (r.kind === 'habit') return findingHeadline(r);
   if (r.register === 'history') return historyHeadline(r);
   if (r.parameter === 'basal_rate') return basalHeadline(r);
@@ -699,9 +711,9 @@ function selection(analysis, query, selectedId) {
 
 /** The queue's one order: priced rows by priority desc, then unpriced rows by count
     desc, then the demoted held and blind registers in clock order. */
-function sortKey(r) {
+function sortKey(r, patterns = new Map()) {
   const span = r.span || {};
-  return [
+  const key = [
     REGISTER_RANK[r.register],
     r.priority != null ? 0 : 1,
     -(r.priority || 0),
@@ -710,10 +722,12 @@ function sortKey(r) {
     r.register === 'history' && r.regime_end ? -Date.parse(r.regime_end) : 0,
     r.title || '',
   ];
+  if (r.claimed_by && patterns.has(r.claimed_by)) return [...sortKey(patterns.get(r.claimed_by)), 1, ...key];
+  return [...key, 0];
 }
-const compare = (a, b) => {
-  const left = sortKey(a);
-  const right = sortKey(b);
+const compare = (a, b, patterns) => {
+  const left = sortKey(a, patterns);
+  const right = sortKey(b, patterns);
   for (let i = 0; i < left.length; i += 1) {
     if (left[i] < right[i]) return -1;
     if (left[i] > right[i]) return 1;
@@ -742,7 +756,36 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
   rows = [...rows, ...findingRows(exposures, scenarios, query),
     ...historyRows(analysis, query)];
-  rows.sort(compare);
+  const patterns = new Map();
+  if (!query.scoped) {
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    for (const pattern of inputs.outcome_patterns) {
+      if (pattern.collapse !== 'remain_pattern') continue;
+      for (const member of pattern.members || []) {
+        if (member.kind === 'habit' && member.admitted) {
+          const claimed = byId.get(`finding:${member.subject.replace('habit:', '')}`);
+          if (claimed) claimed.claimed_by = pattern.subject;
+        }
+      }
+      const projected = stampedRow({
+        id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
+        priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
+        pattern: structuredClone(pattern), window_scope: 'whole_day',
+      });
+      rows.push(projected); patterns.set(pattern.subject, projected);
+    }
+  }
+  rows.sort((a, b) => compare(a, b, patterns));
+  if (patterns.size) {
+    const claimed = new Map();
+    for (const row of rows) {
+      if (row.claimed_by) {
+        const members = claimed.get(row.claimed_by) || [];
+        members.push(row); claimed.set(row.claimed_by, members);
+      }
+    }
+    rows = rows.flatMap((row) => row.claimed_by ? [] : [row, ...(claimed.get(row.id) || [])]);
+  }
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
     else if (row.register === 'assert') row.tier = 'next_in_line';
@@ -754,6 +797,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };
   for (const r of rows) {
+    if (r.claimed_by) continue;
     counts[r.register] += 1;
     for (const chip of r.chips) chip_counts[chip] += 1;
   }

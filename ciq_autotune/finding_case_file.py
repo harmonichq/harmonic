@@ -101,6 +101,8 @@ class PreparedCases:
         Lever requests retain the same roster and event inputs, but do not borrow
         a Finding's attribution equation merely to make a case-shaped response.
         """
+        if finding_id and finding_id.startswith("pattern:"):
+            return self._pattern_case(finding_id, alignment, occ)
         finding_keyed = finding_id is not None
         if finding_keyed:
             lever = Lever(finding_id.removeprefix("finding:"))
@@ -179,6 +181,73 @@ class PreparedCases:
                         "noun": _population_noun(policy)},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection, "selection": selection,
+        }
+
+    def _pattern_case(self, finding_id, alignment, occ):
+        """Expose one Pattern's already-built Exposure population.
+
+        Pattern policy remains in ``outcome_patterns``.  This only aligns the
+        existing opportunity roster and member associations for the case-file
+        transport consumed by the evidence chart.
+        """
+        if self.query.scoped:
+            return None
+        row = self._authoritative_row(finding_id)
+        if row is None or row.get("kind") != "pattern":
+            return None
+        pattern = row["pattern"]
+        habits = [Lever(member["subject"].removeprefix("habit:"))
+                  for member in pattern["members"] if member["kind"] == "habit"]
+        rate_levers = [Lever(subject.removeprefix("habit:"))
+                       for subject in pattern["rate_levers"]]
+        if not habits or not rate_levers:
+            return None
+        # The rate Lever names the Pattern's one Exposure population.  Other
+        # members may claim a different family; they remain members but cannot
+        # manufacture occurrences in this population.
+        population_lever = rate_levers[0]
+        roster = self._roster(population_lever)
+        if not roster:
+            return None
+        subject_by_lever = {lever: f"habit:{lever.value}" for lever in habits}
+        claimed_by_id = {}
+        verdicts = {}
+        precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
+        for member in roster:
+            choices = [lever for lever in habits
+                       if member.id in self.associations[lever]]
+            if choices:
+                chosen = choices[0]
+                claimed_by_id[member.id] = subject_by_lever[chosen]
+                states = [next((candidate.verdict for candidate in self._roster(lever)
+                                if candidate.id == member.id), "clean")
+                          for lever in choices]
+                verdicts[member.id] = max(states, key=lambda state: precedence[state])
+            else:
+                verdicts[member.id] = "clean"
+        pattern_roster = tuple(Member(member.opportunity, member.outcome_t,
+                                      verdicts[member.id], member.occurrence_id)
+                               for member in roster)
+        claimed_ids = frozenset(claimed_by_id)
+        counts = {key: sum(member.verdict == key for member in pattern_roster)
+                  for key in findings_projection.FINDING_VERDICTS}
+        projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
+                      else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
+                                  self.bolus, self.source_window_days, self.basal))
+        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
+                       for member in pattern_roster]
+        return {
+            "schema": CASE_SCHEMA, "projection_id": self.projection_id,
+            "finding": {"id": finding_id, "lever": pattern["key"],
+                        "subject": finding_id, "title": pattern["title"]},
+            "window": self.query.to_dict(), "family": policy_for(population_lever).recurrence_noun,
+            "population": policy_for(population_lever).recurrence_noun,
+            "cross_population": False,
+            "summary": {"claimed": len(claimed_ids), "denominator": len(pattern_roster),
+                        "noun": _population_noun(policy_for(population_lever))},
+            "verdict_counts": counts, "occurrences": occurrences,
+            "projection": projection,
+            "selection": {"state": "none", "requested_id": None, "detail": None},
         }
 
 
@@ -404,11 +473,16 @@ def wrap(prepared):
             rendered.append(deepcopy(row)); continue
         finding_id = row["id"]
         case = prepared.case(finding_id, "clock", None)
+        if row.get("kind") == "pattern" and case is None:
+            # A memberless Pattern still has its roster-owned count, but no
+            # inspectable member association and therefore no chart coordinate.
+            rendered.append(deepcopy(row)); continue
         if case is None:
             withheld.append({"finding_id": finding_id,
                              "code": "uninspectable_attribution",
                              "message": "Canonical association is unavailable."})
             continue
+        chart_key = "pattern_chart" if row.get("kind") == "pattern" else "event_chart"
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
                   # A prepared case IS its own event-chart coordinate: the case
@@ -417,11 +491,19 @@ def wrap(prepared):
                   # `null` for a case the server serves — correction stacking is
                   # counted in correction clusters, not the lows that map names —
                   # leaving the reader no By-event path into it.
-                  "event_chart": {"lever": case["finding"]["lever"],
-                                  "window": prepared.query.to_dict()},
+                  chart_key: ({"key": case["finding"]["lever"],
+                               "window": prepared.query.to_dict()}
+                              if chart_key == "pattern_chart" else
+                              {"lever": case["finding"]["lever"],
+                               "window": prepared.query.to_dict()}),
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
+        if row.get("kind") == "pattern":
+            changed.update({"pattern_chart": header["pattern_chart"],
+                            "case_header": header})
+            rendered.append(changed); headers[finding_id] = header
+            continue
         anchored = {"family": case["family"], "noun": case["summary"]["noun"],
                     "n": case["summary"]["claimed"],
                     "m": case["summary"]["denominator"]}

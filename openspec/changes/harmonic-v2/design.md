@@ -1680,8 +1680,8 @@ case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
 
 **Compatibility inventory.** The whole-tree inventory (`rg -n --ignore-case
 '\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 598
-matches at the pinned commit a9562db8 (609 at this change's head: the eleven
-added lines are this change's own evidence receipt, and #390 task 2.5.2 re-runs
+matches at the pinned commit a9562db8 (609 at this change's head; the net
+difference is this change's own prose and receipt, and #390 task 2.5.2 re-runs
 the inventory at its own base) and finds the
 `patterns` key family in scenario production and API consumers, guidance,
 findings projection and case files; its fixture-only JS mirror
@@ -1731,8 +1731,10 @@ members never pool into pattern support.
 Highs after meals uses the ordinary `MEALS` recurrence population for both
 numerator and denominator: carb-tagged meal opportunities, identified by the
 meal episode identity. Its numerator is only attributed `carb_undercount` and
-`late_bolus` meal episodes in that same population, so numerator is a subset of
-denominator and the rate cannot exceed 1.0. `meal_bolus_short` keeps its separate
+`late_bolus` meal episodes in that same population, counted as distinct meal
+identities (attribution gives an episode exactly one lever, `attribute.py`, and the
+receipt unions member identities rather than summing member counts), so numerator is
+a subset of denominator and the rate cannot exceed 1.0. `meal_bolus_short` keeps its separate
 completed-carb-bolus population (Completed, insulin above zero, carbs at least
 the anchor minimum); it is not a member of this first-release pattern and does
 not change its denominator. Lows after meals uses the distinct carb-tagged-meal
@@ -1776,7 +1778,9 @@ The alternatives were a fixed numeric band or habits leading whenever their
 Priority is higher. A fixed band would be a new ungrounded threshold; habits-first
 would discard the safety preference for an available staged setting. Therefore
 #390 task 2.5.2 chooses the contention band from the snapshot pass's recorded
-candidate values, using overlap of the existing Wilson recurrence intervals rather
+candidate values, using overlap of the two candidates' own existing Wilson
+recurrence intervals — a habit's `Confidence` bounds and a setting's owner recurrence
+channel bounds in `tuning_priority`, never a pattern-level rate interval — rather
 than a bare number, and records its exact rule with the replay. This **amends ADR
 383 step 4**: inside that derived band an admitted staged setting leads a
 higher-priced supported habit; outside it the greatest existing Priority leads;
@@ -1812,7 +1816,10 @@ not elapsed days and not `behavior_observations`. For each outcome exposure, its
 unit is `exposure_counts` and the corresponding `BehaviorPoint.exposure_n`:
 meals, lows, correction clusters, highs, or the new harm-band-source-night population.
 No number is settled here. #390 task 2.5.2 chooses the numeric gate against this
-ticket's snapshot of each pattern's `n` at 30 and 90 days, then enforces it in
+ticket's snapshot of each pattern's `n` at 30 and 90 days for the four
+exposure-denominated patterns, and for overnight lows with no insulin on board
+against the `harm_band_source_nights` count it produces itself (this ticket's
+overnight `n` is the basal recurrence-window stand-in), then enforces it in
 the backend. This amends ADR 387's Focus arm from elapsed-time readiness to
 opportunity readiness; it changes neither member floors nor classifiers.
 

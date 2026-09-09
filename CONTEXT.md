@@ -555,7 +555,7 @@ outcome, and an outcome may carry a where. Ships only after passing **Confound
 triage** plus day-level statistics and a stability check; hides entirely when not
 currently relevant. Never pinnable as a Focus; promotion to a **Lever** is a human
 act (issue + ADR), never a runtime one (adr-362).
-_Avoid_: localized-outcome card, insight, localized finding (Finding is the behavioral-layer
+_Avoid_: outcome card, insight, localized finding (Finding is the behavioral-layer
 object).
 
 **Confound triage**:

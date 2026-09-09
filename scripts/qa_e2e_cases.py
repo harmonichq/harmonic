@@ -16,6 +16,7 @@ from typing import Callable, Literal, TypeAlias
 from ciq_autotune.analyze import _BOLUS_LEADIN, _ISF_DECISION_INTERVAL, analyze
 from ciq_autotune.analyzers.ic import BLOCK_WINDOW_DAYS
 from ciq_autotune.analyzers.scenario import build_scenarios
+from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
 from ciq_autotune.events import CarbEntry
 from ciq_autotune.explore_exposures import build_exposures
 from ciq_autotune.findings_projection import (
@@ -152,6 +153,7 @@ class QaExecution:
     scenarios: dict
     findings: Mapping[WindowKey, dict]
     ic_history: Mapping[str, dict]
+    outcome_patterns: tuple[dict, ...]
 
 
 _SHOWCASE = "showcase"
@@ -2249,6 +2251,7 @@ def execute_case(store, case: QaCase | None = None) -> QaExecution:
     ).to_dict()
     exposures = build_exposures(store, window_days=WINDOW_DAYS)
     scenarios = build_scenarios(store, window_days=WINDOW_DAYS).to_dict()
+    outcome_patterns = tuple(build_outcome_patterns(analysis, exposures, scenarios))
     prepared = prepare_findings_projection(
         analysis=analysis, exposures=exposures, scenarios=scenarios,
     )
@@ -2268,7 +2271,7 @@ def execute_case(store, case: QaCase | None = None) -> QaExecution:
         row["id"]: history_events.project(row["id"], analysis_generation="qa:0")
         for row in prepared.history_catalog if row.get("lifecycle") == "active"
     }
-    return QaExecution(analysis, exposures, scenarios, findings, ic_history)
+    return QaExecution(analysis, exposures, scenarios, findings, ic_history, outcome_patterns)
 
 
 def _analyzer_key(family: AnalyzerFamily, row: dict) -> AnalyzerRowKey:

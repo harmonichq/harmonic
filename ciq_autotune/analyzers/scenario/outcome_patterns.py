@@ -93,9 +93,9 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
         habits = _habit_members(scenarios, habit_levers)
         overnight = family == "nights"
         members = habits + _setting_member(analysis, setting, overnight=overnight)
-        overnight_n = members[-1]["k"] if False else max((
-            item.get("harm_band_source_nights", 0)
-            for item in (row.get("evidence", {}).get("harm", {}) for row in analysis.get("basal") or ())
+        overnight_n = max((
+            row.get("evidence", {}).get("harm_band_source_nights", 0)
+            for row in analysis.get("basal") or ()
         ), default=0)
         k, n, producer = _rate(exposures, family, habits if not overnight else members,
                                overnight_n=overnight_n)

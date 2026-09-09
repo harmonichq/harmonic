@@ -1847,6 +1847,21 @@ is independently shippable as backend policy plus a Diagnose revision before
 #389 resumes. #390's own children — #391, #342, and the backend, design and
 collapse children to come — are filed under #390, not #348.
 
+### Why a fourth native child under #390
+
+#390 carries four children: the spike #391 (rulings), the backend build #393
+(policy in producers, projection, guidance and persistence; surface lifecycle
+none), the eating-sequence members #342, and the design child (the per-pattern
+chart and the pattern row on the shipped rail; surface lifecycle revise under
+`/ui-craft`, with Connor holding the lock). The backend build and the design
+child cannot share a ticket: the lock rules forbid one order mixing `none` and
+`revise`, the design child needs a visual lock the backend build does not, and
+each is independently shippable — the backend policy already serves the roster
+through public interfaces with the shipped rail untouched, and the rail revision
+changes no policy. The Diagnose collapse (2.5.5) is a further lifecycle-gated
+revision amending the desktop lock's navigation terms and is filed when the
+design child is admitted.
+
 ### Effect on the desktop lock
 
 `HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus

@@ -89,7 +89,7 @@ class PatternReplayTest(unittest.TestCase):
         # cannot pass merely because the remaining literal expectations matched.
         self.assertEqual(observed, {
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-            "lows_after_correcting_highs", "overnight_lows_without_iob",
+            "lows_after_correcting_highs", "overnight_lows_no_iob",
         })
 
     def test_pattern_focus_and_trial_are_mutually_exclusive(self):

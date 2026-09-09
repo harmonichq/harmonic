@@ -760,7 +760,7 @@ class PreparedFromStoreTest(unittest.TestCase):
         self.assertEqual(
             [pattern["key"] for pattern in result["outcome_patterns"]],
             ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-             "lows_after_correcting_highs", "overnight_lows_without_iob"],
+             "lows_after_correcting_highs", "overnight_lows_no_iob"],
         )
         self.assertEqual(result["window"]["scoped"], False)
         self.assertEqual(result["findings_window"]["days"], 30)

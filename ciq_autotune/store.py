@@ -571,11 +571,17 @@ class Store:
             # caller takes the file's schema as-is (see :meth:`open_readonly`).
             return
         pattern_migration = (
-            self.conn.execute("PRAGMA user_version").fetchone()[0]
-            < _PATTERN_SCHEMA_VERSION
-            and self.conn.execute(
+            self.conn.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='guidance_preferences'"
             ).fetchone() is not None
+            and (
+                self.conn.execute("PRAGMA user_version").fetchone()[0]
+                < _PATTERN_SCHEMA_VERSION
+                or self.conn.execute(
+                    "SELECT 1 FROM guidance_preferences WHERE subject = ?",
+                    ("pattern:overnight_lows_without_iob",),
+                ).fetchone() is not None
+            )
         )
         self.conn.executescript(_SCHEMA)
         self._migrate(pattern_migration=pattern_migration)
@@ -626,6 +632,18 @@ class Store:
                  for lever in levers}
         with self.conn:
             self.conn.execute("BEGIN IMMEDIATE")
+            self.conn.execute(
+                "INSERT INTO guidance_preferences "
+                "(subject, decided_at, reason, comparison_version, state_json) "
+                "SELECT ?, decided_at, reason, comparison_version, state_json "
+                "FROM guidance_preferences WHERE subject = ? "
+                "ON CONFLICT(subject) DO NOTHING",
+                ("pattern:overnight_lows_no_iob", "pattern:overnight_lows_without_iob"),
+            )
+            self.conn.execute(
+                "DELETE FROM guidance_preferences WHERE subject = ?",
+                ("pattern:overnight_lows_without_iob",),
+            )
             pattern_rows = [row for row in self.conn.execute(
                 "SELECT subject, decided_at, reason, comparison_version, state_json "
                 "FROM guidance_preferences WHERE subject LIKE 'habit:%'"
@@ -656,6 +674,7 @@ class Store:
                         "ON CONFLICT(kind, id) DO UPDATE SET record_json=excluded.record_json",
                         (str(row["id"]), json.dumps(migrated, sort_keys=True)),
                     )
+            self._advance_revision()
             self.conn.execute("PRAGMA application_id = 0")
         return True
 

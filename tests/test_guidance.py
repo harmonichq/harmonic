@@ -323,7 +323,7 @@ class GuidanceTest(unittest.TestCase):
     def test_setting_source_before_habit_source_is_safe(self):
         result, _execution = _qa("basal-raise")
         pattern = next(row for row in result["candidates"]
-                       if row["subject"] == "pattern:overnight_lows_without_iob")
+                       if row["subject"] == "pattern:overnight_lows_no_iob")
         self.assertEqual(pattern["chosen_member"]["kind"], "setting")
         self.assertIsInstance(pattern["action"], list)
 

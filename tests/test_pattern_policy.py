@@ -3,6 +3,9 @@
 import unittest
 
 from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+from ciq_autotune.result import SlotEstimate
+from ciq_autotune.safety import Status
+from ciq_autotune.uncertainty import Estimate
 
 
 def _scenario(lever, *, price=20, k=2, lo=.1, hi=.3):
@@ -11,17 +14,35 @@ def _scenario(lever, *, price=20, k=2, lo=.1, hi=.3):
             "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
 
 
+def _basal_slot(slot, start_min, status, *, duration_min=30, seriousness=None):
+    actionable = status.actionable
+    return SlotEstimate(
+        slot=slot, label=f"{start_min // 60:02d}:{start_min % 60:02d}",
+        current=.6, estimate=Estimate(.5, .5, .5, 12),
+        recommended=.5, annotation="owner verdict", days=12,
+        evidence={"harm_band_source_nights": 12}, status=status,
+        guidance={
+            "action": ({
+                "kind": "setting_instruction", "parameter": "basal_rate",
+                "start_min": start_min, "end_min": start_min + duration_min,
+                "direction": "lower", "units": "U/h", "recommended": .5,
+            } if actionable else None),
+            "seriousness": seriousness,
+        },
+    ).to_dict()
+
+
 class OutcomePatternPolicyTest(unittest.TestCase):
     def test_returns_the_closed_roster_and_owns_no_deferred_lever(self):
         roster = build_outcome_patterns({}, {"exposures": {}}, {"patterns": [], "low_confidence": []})
         self.assertEqual([item["key"] for item in roster], [
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
-            "lows_after_correcting_highs", "overnight_lows_without_iob",
+            "lows_after_correcting_highs", "overnight_lows_no_iob",
         ])
         self.assertNotIn("meal_bolus_short", str(roster))
         self.assertNotIn("missed_meal", str(roster))
         self.assertEqual(
-            roster[0]["overlap_counts"]["overnight_lows_without_iob"],
+            roster[0]["overlap_counts"]["overnight_lows_no_iob"],
             {"status": "not_comparable", "count": None,
              "reason": "no_habit_exposure_identity"},
         )
@@ -186,23 +207,51 @@ class OutcomePatternPolicyTest(unittest.TestCase):
              "count": 1, "reason": "shared_low_episode_nadir"},
         ])
 
-    def test_guidance_candidate_seriousness_precedes_safety_category(self):
+    def test_setting_seriousness_uses_the_admitted_slots_owner_category(self):
         analysis = {
             "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
                                "recurrence_channel": {"kind": "basal_lower"}}],
-            "basal": [{"slot": 0, "asserts_move": True, "safety_status": "lower",
-                       "evidence": {"harm_band_source_nights": 12},
-                       "guidance": {"action": None,
-                                    "seriousness": "recurring_low"}}],
+            "basal": [_basal_slot(6, 180, Status.HARM_LOWER,
+                                   seriousness="recurring_low")],
         }
         overnight = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]
-        seriousness = [{
-            "start_min": 0, "end_min": 30, "seriousness": "recurring_low",
+        seriousness_segments = [{
+            "start_min": 180, "end_min": 210,
+            "seriousness": "recurring_low",
         }]
-        self.assertEqual(overnight["members"][0]["seriousness"], seriousness)
-        self.assertEqual(overnight["seriousness"], seriousness)
+        self.assertEqual(overnight["members"][0]["seriousness"], "recurring_low")
+        self.assertEqual(overnight["members"][0]["seriousness_segments"],
+                         seriousness_segments)
+        self.assertEqual(overnight["seriousness"], "recurring_low")
+        self.assertEqual(overnight["settled_price"], 10)
+
+    def test_overnight_setting_admission_is_scoped_to_the_harm_band(self):
+        analysis = {
+            "tuning_levers": [{"parameter": "basal_rate", "priority": 10,
+                               "recurrence_channel": {"kind": "basal_lower"}}],
+            "basal": [
+                _basal_slot(28, 840, Status.LOWER),
+                _basal_slot(12, 180, Status.NO_CHANGE, duration_min=15),
+            ],
+        }
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        self.assertFalse(overnight["members"][0]["admitted"])
+        self.assertIsNone(overnight["action"])
+        self.assertEqual(overnight["settled_price"], 0)
+
+        analysis["basal"][1] = _basal_slot(
+            12, 180, Status.LOWER, duration_min=15,
+        )
+        overnight = build_outcome_patterns(
+            analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
+        )[-1]
+        self.assertTrue(overnight["members"][0]["admitted"])
+        self.assertEqual(overnight["action"], "basal_rate")
+        self.assertEqual(overnight["settled_price"], 10)
 
     def test_setting_seriousness_fallback_uses_guidance_empty_state(self):
         analysis = {
@@ -215,7 +264,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         member = build_outcome_patterns(
             analysis, {"exposures": {}}, {"patterns": [], "low_confidence": []},
         )[-1]["members"][0]
-        self.assertEqual(member["seriousness"], [])
+        self.assertIsNone(member["seriousness"])
+        self.assertEqual(member["seriousness_segments"], [])
 
     def test_single_admitted_habit_collapses_to_its_member(self):
         exposures = {"exposures": {"lows": {"n": 12, "occurrences": [

@@ -7,6 +7,75 @@ diff is recorded as an empty output block.
 The synthetic records exercise current producers and proposed prototype inputs;
 they do not establish a shipped v2 backend or an approved selection policy.
 
+## #391 snapshot pass (aggregates only)
+
+The coordinator alone took each WAL-safe snapshot, opened it through
+`Store.open_readonly`, ran the scratch receipt at 30 and 90 days, and deleted
+the snapshot on both hosts. No worker opened, copied, or retained the snapshot.
+The receipt consumed `analyze`, `build_exposures`, `build_scenarios`,
+`tally_attributions`, `compute_clean_rates`, `guidance.candidates`, and
+`build_guidance`; it grouped their published aggregates only.
+
+The closed receipt schema rejects fields outside its aggregate shape at every
+level. Its stdlib checker recorded six outcomes: one valid sample accepted;
+top-level ISO timestamp, per-day array, free-text note, nested member field,
+and a null rate on a non-overnight pattern each rejected. Synthetic proofs also
+showed the bounded window tally (meals 17→32 between 30 and 90 days) and
+candidate Priority parity (`correction_on_iob`: 38). Both snapshot JSON objects
+validated against that schema before this receipt was written.
+
+Each `k` below is a member count followed by its denominator label and source
+window. `weighted` and `worst` are the rejected member-price alternatives;
+`price` is the settled-rule price. `overlap` is the reported cross-pattern
+overlap count.
+
+| Window | Pattern | n | Member k (denominator / source window) | Rate [Wilson lo, hi] | Price | Weighted / worst | Admission | Collapse | Overlap |
+| --- | --- | ---: | --- | --- | ---: | --- | --- | --- | ---: |
+| 30 | Highs after meals | 182 | 0 meals/scenario; 9 meals/scenario; 0 meals/scenario | 0.049451 [0.032584, 0.074377] | 0 | 8 / 19 | none | remain pattern | 0 |
+| 30 | Lows after meals | 182 | 12 meals/scenario; 0 meals/scenario | 0.065934 [0.046028, 0.093605] | 0 | 5 / 10 | none | remain pattern | 0 |
+| 30 | Highs after treating lows | 34 | 6 lows/scenario | 0.176471 [0.108197, 0.274563] | 0 | 21 / 21 | none | remain pattern | 0 |
+| 30 | Lows after correcting highs | 77 | 1 correction_clusters/scenario; 1 correction_clusters/scenario; 6 correction_clusters/scenario | 0.103896 [0.067303, 0.157035] | 0 | 11 / 33 | none | remain pattern | 0 |
+| 30 | Overnight lows with no insulin on board | 21 | 0 basal_recurrence_window_nights/basal | unavailable | 13 | 13 / 13 | setting staging | remain pattern | 0 |
+| 90 | Highs after meals | 514 | 0 meals/scenario; 16 meals/scenario; 0 meals/scenario | 0.031128 [0.022707, 0.042536] | 0 | 7 / 17 | none | remain pattern | 0 |
+| 90 | Lows after meals | 514 | 43 meals/scenario; 0 meals/scenario | 0.083658 [0.069301, 0.100666] | 0 | 6 / 13 | none | remain pattern | 0 |
+| 90 | Highs after treating lows | 101 | 20 lows/scenario | 0.198020 [0.152210, 0.253494] | 0 | 27 / 27 | none | remain pattern | 0 |
+| 90 | Lows after correcting highs | 224 | 4 correction_clusters/scenario; 3 correction_clusters/scenario; 15 correction_clusters/scenario | 0.098214 [0.075580, 0.126698] | 0 | 18 / 34 | none | remain pattern | 0 |
+| 90 | Overnight lows with no insulin on board | 48 | 7 basal_recurrence_window_nights/basal | unavailable | 38 | 38 / 38 | setting staging | remain pattern | 0 |
+
+The overnight rate and Wilson interval are not computable until 2.5.2 produces
+`harm_band_source_nights`. Its displayed `n` is only the basal
+recurrence-window stand-in, and its `k` is the published basal-harm night count;
+this receipt does not claim a rate against that stand-in.
+
+### Assessment against ADR 391
+
+**ADR 391 — Membership roster and evidence boundaries.** Both windows report
+zero cross-pattern overlap. The receipt preserves separate member counts and
+does not pool their support populations. This confirms the declared overlap
+boundary.
+
+**ADR 391 — Rate and denominator ownership.** The receipts publish one named
+denominator per outcome pattern: meals, lows, correction clusters, and the
+explicit overnight stand-in. The meal rates differ from the September 8 ledger's
+rough “about 1 in 8” figures: this receipt applies the settled membership and
+denominator rule, whereas that ledger grouped a pre-ruling membership. The
+receipt is the ruling's calibration record, not a revision of the old grouping.
+
+**ADR 391 — Impact, admission and the staged-setting near-tie.** The payload
+threshold is 30. No habit is admitted in either window: the greatest observed
+habit alternative is 27 at 90 days, below threshold. The overnight staged
+setting is therefore the only admitted pattern and leads under the settled rule:
+price 13 at 30 days and 38 at 90 days. It also leads under weighted-member and
+worst-member alternatives; the 90-day alternatives are 38, while no admitted
+habit reaches the threshold. The earlier 27-versus-40 calibration remains the
+decision boundary; these receipts provide the actual candidate prices without
+mixing behavioral and setting currencies.
+
+**ADR 391 — Collapse and rail behavior.** The overnight pattern has zero habit
+members at 30 days and remains a pattern through its setting member; it has
+seven basal-harm nights at 90 days and also remains a pattern. This confirms the
+zero-habit-member overnight collapse ruling.
+
 ## Source revision
 
 ```sh

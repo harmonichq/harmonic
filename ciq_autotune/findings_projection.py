@@ -52,7 +52,8 @@ same public interface the API serves.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -165,7 +166,7 @@ class FindingsProjection:
     _analysis: dict
     _exposures: dict
     _scenarios: dict
-    _outcome_patterns: list[dict] = field(default_factory=list)
+    _outcome_patterns: list[dict]
 
     @property
     def history_catalog(self) -> Tuple[dict, ...]:
@@ -201,7 +202,7 @@ class FindingsProjection:
             # The prepared roster is the Pattern producer's output, not a second
             # Findings-policy pass.  Keep it additive while the shipped queue
             # continues to render its existing setting and Lever rows.
-            "outcome_patterns": self._outcome_patterns,
+            "outcome_patterns": deepcopy(self._outcome_patterns),
             "selection": self._selection(query, selected_id),
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.

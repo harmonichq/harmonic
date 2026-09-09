@@ -249,9 +249,10 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
             exposures, family, rate_levers,
             overnight_k=overnight_k, overnight_n=overnight_n,
         )
-        if k > n:
-            raise ValueError(f"{key} numerator exceeds its source population")
-        bounds = wilson(k, n) if n else None
+        count_status = (None if k <= n else {
+            "status": "inconsistent_counts", "k": k, "n": n,
+        })
+        bounds = wilson(k, n) if n and k <= n else None
         admitted = [item for item in members if item["admitted"]]
         settings = [item for item in members if item["kind"] == "setting"]
         # A staged setting wins an interval contention; outside it, existing price
@@ -274,8 +275,9 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
         roster.append({
             "key": key, "title": title, "subject": f"pattern:{key}", "members": members,
             "rate_levers": [f"habit:{lever}" for lever in rate_levers], "n": n, "k": k,
-            "rate": round(k / n, 4) if n else None,
+            "rate": round(k / n, 4) if n and k <= n else None,
             "wilson": ({"lo": round(bounds[1], 4), "hi": round(bounds[2], 4)} if bounds else None),
+            **({"count_status": count_status} if count_status else {}),
             "rate_producer": producer, "readiness": {"count": n, "gate": _GATES[key], "verdict": "ready" if n >= _GATES[key] else "withheld"},
             "settled_price": chosen["price"] if chosen else 0,
             "admission_route": ("setting_staging" if chosen and chosen["kind"] == "setting" else "habit_threshold" if chosen else "none"),

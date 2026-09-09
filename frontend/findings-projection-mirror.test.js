@@ -56,6 +56,12 @@ test('the mirror reproduces the empty analysis, where term 41 lives', () => {
   }
 });
 
+test('the mirror fails closed when a browser gate omits the prepared Pattern roster', () => {
+  const inputs = structuredClone(fixture.inputs);
+  delete inputs.outcome_patterns;
+  assert.throws(() => projectFindings(inputs), /missing outcome_patterns/);
+});
+
 test('the mirror reproduces every server-owned history selection disposition', () => {
   const selectedId = fixture.selection_cases.present.selection.id;
   const cases = {
@@ -149,6 +155,7 @@ test('an empty scoped queue still carries the whole-window count', () => {
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { window: { start: null, end: null }, exposures: { highs: { uncaused: 4 } } },
     scenarios: { patterns: [], low_confidence: [] },
+    outcome_patterns: [],
     analysis_generation: fixture.inputs.analysis_generation,
   };
   const got = projectFindings(inputs, WINDOWS.quiet);
@@ -162,6 +169,7 @@ test('the mirror publishes no sentence when nothing went unexplained', () => {
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { window: { start: null, end: null }, exposures: {} },
     scenarios: { patterns: [], low_confidence: [] },
+    outcome_patterns: [],
     analysis_generation: fixture.inputs.analysis_generation,
   };
   assert.deepEqual(projectFindings(empty, null).uncaused_highs, { count: 0, text: null });

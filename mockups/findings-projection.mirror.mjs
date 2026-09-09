@@ -728,6 +728,9 @@ const compare = (a, b) => {
  * @param {{start_min: number, end_min: number}|null} bounds
  */
 export function projectFindings(inputs, bounds = null, selectedId = null) {
+  if (!Object.hasOwn(inputs, 'outcome_patterns')) {
+    throw new Error('findings mirror input is missing outcome_patterns');
+  }
   const analysis = inputs.analysis || {};
   const exposures = inputs.exposures || {};
   const scenarios = inputs.scenarios || {};
@@ -768,7 +771,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     rows,
     // Prepared by Python's build_outcome_patterns once.  The fixture mirror
     // transcribes this backend roster; it does not classify or rank Patterns.
-    outcome_patterns: inputs.outcome_patterns || [],
+    outcome_patterns: structuredClone(inputs.outcome_patterns),
     selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,

@@ -449,7 +449,7 @@ class UncausedHighsTest(unittest.TestCase):
         empty = FindingsProjection(
             _analysis={"window_days": 30, "basal": [], "isf": [], "ic_blocks": []},
             _exposures={"window": {}, "exposures": {}},
-            _scenarios={"patterns": [], "low_confidence": []})
+            _scenarios={"patterns": [], "low_confidence": []}, _outcome_patterns=[])
         self.assertEqual(empty.project(WindowQuery.whole_day())["uncaused_highs"],
                          {"count": 0, "text": None})
 

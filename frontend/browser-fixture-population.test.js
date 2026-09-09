@@ -4,7 +4,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildCapture } from '../mockups/diagnose-event-comparison.synthetic/generate.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from './browser-fixture-population.js';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from './browser-fixture-population.js';
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { queueMeta, queueRows } from './diagnose-findings-queue.js';
 
@@ -67,12 +70,11 @@ test('the expanded meal population preserves the workstation queue sift shape', 
 
 test('browser preparation joins keep each scoped event-chart coordinate intact', () => {
   const requested = { start_min: 135, end_min: 285 };
-  const projection = projectFindings({
+  const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
-    outcome_patterns: findingsFixture.inputs.outcome_patterns,
-  }, requested);
+  }), requested);
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection);
@@ -84,27 +86,18 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
     'the row and case header carry the same server-published scoped coordinate');
 });
 
-test('browser fixture preparation retains the backend-prepared Pattern roster verbatim', () => {
-  const projection = projectFindings({
-    analysis: payload.analyze,
-    exposures: payload.exposures,
-    scenarios: payload.scenarios,
-    outcome_patterns: findingsFixture.inputs.outcome_patterns,
-  });
-  const preparation = structuredClone(caseFiles.preparation);
-  populateFindingCasePreparation(preparation, projection);
-
-  assert.deepEqual(preparation.findings.outcome_patterns,
-    findingsFixture.windows.global.outcome_patterns,
-    'the browser preparation carries the mirror transcription of the prepared roster');
+test('browser fixture population supplies the backend-prepared Pattern roster', () => {
+  assert.deepEqual(populateFindingsProjectionInput({}).outcome_patterns,
+    findingsFixture.inputs.outcome_patterns,
+    'every browser gate receives the frozen prepared roster from one adapter');
 });
 
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
-  const projection = projectFindings({
+  const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
-  });
+  }));
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
   populateFindingCasePreparation(preparation, projection);
@@ -125,20 +118,20 @@ test('browser preparation mirrors the wrapped row: both families, case file firs
 });
 
 test('the cockpit exposure population produces its event-comparison Finding row', () => {
-  const projection = projectFindings({
+  const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
-  });
+  }));
   assert.ok(projection.rows.some(({ id }) => id === 'finding:late_bolus'));
 });
 
 test('the Afternoon fixture retains all four published behavioral Findings', () => {
-  const projection = projectFindings({
+  const projection = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
-  }, { start_min: 720, end_min: 1080 });
+  }), { start_min: 720, end_min: 1080 });
   const selected = new Set(['highs', 'meals', 'corrections']);
   const shown = queueRows(projection, selected)
     .filter((row) => !row.hidden && !row.collapsed);

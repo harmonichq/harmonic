@@ -224,3 +224,17 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         pattern = next(item for item in roster if item["key"] == "highs_after_treating_lows")
         self.assertEqual(pattern["collapse"], "collapse_to_member")
         self.assertEqual(pattern["readiness"], {"count": 12, "gate": 12, "verdict": "ready"})
+
+    def test_inconsistent_source_counts_remain_a_published_pattern(self):
+        exposures = {"exposures": {"lows": {"n": 1, "occurrences": [
+            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "a"},
+            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "b"},
+        ]}}}
+        pattern = next(item for item in build_outcome_patterns(
+            {}, exposures, {"patterns": [_scenario("over_treated_low")], "low_confidence": []},
+        ) if item["key"] == "highs_after_treating_lows")
+
+        self.assertEqual(pattern["count_status"],
+                         {"status": "inconsistent_counts", "k": 2, "n": 1})
+        self.assertIsNone(pattern["rate"])
+        self.assertIsNone(pattern["wilson"])

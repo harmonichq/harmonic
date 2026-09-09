@@ -16,7 +16,10 @@ import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // forbids, and would drift the moment a page gained state.
 import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from './browser-fixture-population.js';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 const { createBuiltShell } = require('./built-shell.js');
@@ -287,11 +290,11 @@ async function routeApp(page, options = {}) {
     promptCount = 0, planDraftItems = [], planSaveRefusal = null, planSaveDelayMs = 0,
     verifyTrials = [maturing, complete],
   } = options;
-  const findingsInput = options.findingsInput || {
+  const findingsInput = populateFindingsProjectionInput(options.findingsInput || {
     analysis: analyze,
     exposures: DIAGNOSE_PAYLOAD.exposures,
     scenarios,
-  };
+  });
   const preparedWindows = new Map();
   let staleCarbRatioEvidence = true;
   await page.route('**/*', async (route) => {

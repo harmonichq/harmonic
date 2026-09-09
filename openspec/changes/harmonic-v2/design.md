@@ -1679,10 +1679,10 @@ case-insensitive `pattern` sense in `CONTEXT.md` at lines 37, 275, 356, 386,
 `pattern`.
 
 **Compatibility inventory.** The whole-tree inventory (`rg -n --ignore-case
-'\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 598
-matches at the pinned commit a9562db8 (609 at this change's head; the net
-difference is this change's own prose and receipt, and #390 task 2.5.2 re-runs
-the inventory at its own base) and finds the
+'\bpatterns?\b' --glob '!node_modules/**' --glob '!dist/**' .`) returns 523
+matches over tracked files at the pinned commit a9562db8 (`git grep -i -P` over the
+same pattern and exclusions; this change's own prose and receipt add to the
+count at its head, and #390 task 2.5.2 re-runs the inventory at its own base) and finds the
 `patterns` key family in scenario production and API consumers, guidance,
 findings projection and case files; its fixture-only JS mirror
 `mockups/findings-projection.mirror.mjs`; generators and synthetic payloads;

@@ -44,8 +44,10 @@ readiness neither erases readable evidence nor manufactures an action.
 then reuses that store through `execute_case`, the prepared Findings projection,
 `build_guidance`, and `follow_up_admission`. Its literal roster comparison fails
 closed for a missing or changed member, rate/denominator, admission, action,
-seriousness, fingerprint, near-tie, collapse, migration-owned subject, pattern
-readiness, Focus admission shape, or Trial-XOR-Focus admission state.
+seriousness, fingerprint, near-tie, collapse, pattern readiness, Focus admission
+shape, or Trial-XOR-Focus admission state. Migration is separately pinned through
+the API-startup path in `tests/test_guidance_preferences.py` and
+`tests/test_guidance_api.py`.
 
 ### #393 terminology inventory
 

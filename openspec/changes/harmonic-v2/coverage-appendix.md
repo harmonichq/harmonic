@@ -14,9 +14,14 @@ chunk-1 measurement; its unchanged 2.5× ceiling is **157.33 s**.
 | Analyze path | 1.388 s cold; 1.406 s warm | no limit; recorded for regression context |
 
 The first four budgets remain within their limits. Whole pytest breaches the
-unchanged 157.33-s ceiling on this machine both before and after the change:
+archived 157.33-s ceiling on this machine both before and after the change:
 the pre-change tree's 158–162 s is 0.67–4.67 s over, and the c5 run's 202.62 s
-is 45.29 s over. The limit is not raised here; the operator decides how to
-resolve this budget breach. Task 2.5.2 stays unticked until the operator decides
-the whole-suite budget (raise the archived ceiling or re-baseline on the current
-machine); no limit is changed here.
+is 45.29 s over (the coordinator's re-measurements on the merged head were
+197.07 s and 198.25 s).
+
+**Operator ruling (Connor, 2026-09-09): re-baseline on the current machine.** The
+62.93-s baseline was never measured on this machine and CI, not this Mac, is the
+check of record. The chunk-1 baseline for this and later chunks is the
+pre-change tree's 160 s on the current machine, giving a 2.5× ceiling of
+**400 s**; the c5 head at 202.62 s is within it. No other limit changed. Task
+2.5.2 is ticked under this ruling.

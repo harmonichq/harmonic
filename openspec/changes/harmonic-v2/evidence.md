@@ -7,7 +7,7 @@ diff is recorded as an empty output block.
 The synthetic records exercise current producers and proposed prototype inputs;
 they do not establish a shipped v2 backend or an approved selection policy.
 
-## #391 snapshot pass (aggregates only)
+## #391 withdrawn snapshot pass (aggregates only)
 
 The coordinator alone took each WAL-safe snapshot, opened it through
 `Store.open_readonly`, ran the scratch receipt at 30 and 90 days, and deleted
@@ -75,6 +75,29 @@ mixing behavioral and setting currencies.
 members at 30 days and remains a pattern through its setting member; it has
 seven basal-harm nights at 90 days and also remains a pattern. This confirms the
 zero-habit-member overnight collapse ruling.
+
+## #391 snapshot pass (aggregates only)
+
+The coordinator alone obtained each WAL-safe snapshot, opened it with `Store.open_readonly`, ran the uncommitted scratch program at 30 and 90 days, and deleted it on both hosts. The program remains in coordinator session scratch and was returned verbatim. It uses analyze, build_exposures, build_scenarios, tally_attributions, attributed_occurrences, guidance.candidates and build_guidance under `latest_event_inclusive`.
+
+Pattern k is the distinct union of (driver family, recurrence identity), never a pooled sum or clamp; forced proof: `k > n: rejected: highs_after_treating_lows: distinct k 1 exceeds n 0`. Both receipts validated. Checker outcomes: valid sample accepted; timestamp, per-day array, note, nested member, unknown window bound, and extra overlap rejected. Synthetic window proof: meals 17→32. QA `behavioral-correction-on-iob`: literal k 2 from its expectation; price 38 from its owner producer because QaExpectation has no Priority field.
+
+| W | Pattern | n / producer | k | rate [lo,hi] | settled / weighted / worst | route; collapse |
+| --- | --- | --- | ---: | --- | --- | --- |
+| 30 | High meals | 182 / tally | 9 | .049451 [.032584,.074377] | 0 / 8 / 19 | none; by rule |
+| 30 | Low meals | 182 / recurrence | 12 | .065934 [.046028,.093605] | 0 / 5 / 10 | none; by rule |
+| 30 | High treating low | 34 / tally | 6 | .176471 [.108197,.274563] | 0 / 21 / 21 | none; observed |
+| 30 | Low correcting high | 77 / tally | 2 | .025974 [.010846,.060903] | 0 / 11 / 33 | none; by rule |
+| 30 | Overnight | 21 / basal recurrence | 0 | unavailable | 13 / 0 / 0 | staging; by rule |
+| 90 | High meals | 514 / tally | 16 | .031128 [.022707,.042536] | 0 / 7 / 17 | none; by rule |
+| 90 | Low meals | 514 / recurrence | 43 | .083658 [.069301,.100666] | 0 / 6 / 13 | none; by rule |
+| 90 | High treating low | 101 / tally | 20 | .198020 [.152210,.253494] | 0 / 27 / 27 | none; observed |
+| 90 | Low correcting high | 224 / tally | 7 | .031250 [.019430,.049894] | 0 / 18 / 34 | none; by rule |
+| 90 | Overnight | 48 / basal recurrence | 0 | unavailable | 38 / 0 / 0 | staging; by rule |
+
+Comparable pattern pairs have zero shared identities; pairs with overnight and all harm-low fields are `not_comparable`, meaning no common recurrence identity. ISF harm lows are excluded from correction k. Overnight rate remains unavailable until 2.5.2 publishes harm-band source nights.
+
+**ADR 391 — Membership roster and evidence boundaries.** Confirmed: zero comparable overlap. **ADR 391 — Rate and denominator ownership.** Confirmed: each n names its producer; September 8 grouped pre-ruling membership. **ADR 391 — Impact, admission and the staged-setting near-tie.** Threshold 30 admits no habit; greatest 90-day habit is 27; staged basal 38 leads under settled and alternatives. The 27-versus-40 calibration is rule-decided, not data-decided. **ADR 391 — Collapse and rail behavior.** Setting patterns remain by rule; highs-after-treating-lows remains observed, so collapse is vacuous and 2.5.2 must test it. No titled ruling is contradicted.
 
 ## Source revision
 

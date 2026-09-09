@@ -20,6 +20,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -3241,6 +3242,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -6492,6 +6494,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -9773,6 +9776,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -13166,6 +13170,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -16559,6 +16564,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -19952,6 +19958,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -23345,6 +23352,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -26738,6 +26746,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -30131,6 +30140,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -33524,6 +33534,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -36917,6 +36928,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -40310,6 +40322,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -43703,6 +43716,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -47096,6 +47110,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -50489,6 +50504,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -53882,6 +53898,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -53913,6 +53930,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -53944,6 +53962,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -53975,6 +53994,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54006,6 +54026,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -54037,6 +54058,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -57430,6 +57452,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -60823,6 +60846,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -64216,6 +64240,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -67609,6 +67634,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67640,6 +67666,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67671,6 +67698,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67702,6 +67730,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67733,6 +67762,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -67764,6 +67794,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -71157,6 +71188,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -74550,6 +74582,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -77943,6 +77976,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -81336,6 +81370,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -84729,6 +84764,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -88122,6 +88158,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -91515,6 +91552,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91546,6 +91584,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91577,6 +91616,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91608,6 +91648,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91639,6 +91680,7 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
@@ -91670,6 +91712,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -95063,6 +95106,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -98456,6 +98500,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -101849,6 +101894,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -105130,6 +105176,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -108411,6 +108458,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",

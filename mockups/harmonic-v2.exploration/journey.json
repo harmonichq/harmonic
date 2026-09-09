@@ -104412,7 +104412,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "eb902e49ff97ec7e463d92bd5a67f384e762b580cedc7ba2156f2642eac3fe4f",
+              "code_version": "9f5b201da20e8d1d7be8f50d043ed3b9fb059a49edabf1bd68fea30bb5e36a31",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -104504,7 +104504,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "099b267241f33ab68c9e136c9b0384647f2cb12f4eca49a35f537d7eff8e0a41",
+              "id": "998293c0affaef7b1bdda2d5e9f502a9b2c96afb634e883f6447be7bd48dd373",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -104592,7 +104592,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "eb902e49ff97ec7e463d92bd5a67f384e762b580cedc7ba2156f2642eac3fe4f",
+                  "code_version": "9f5b201da20e8d1d7be8f50d043ed3b9fb059a49edabf1bd68fea30bb5e36a31",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -104684,7 +104684,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "099b267241f33ab68c9e136c9b0384647f2cb12f4eca49a35f537d7eff8e0a41",
+                  "id": "998293c0affaef7b1bdda2d5e9f502a9b2c96afb634e883f6447be7bd48dd373",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -107523,6 +107523,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107554,6 +107555,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107585,6 +107587,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107616,6 +107619,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107647,6 +107651,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107678,6 +107683,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -107709,6 +107715,7 @@
           "evidence": {
             "directional_support_count": 30,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [
               {
                 "date": "2024-05-03",
@@ -111110,6 +111117,7 @@
           "evidence": {
             "directional_support_count": 28,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [
               {
                 "date": "2024-05-03",
@@ -114287,6 +114295,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114318,6 +114327,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114349,6 +114359,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114380,6 +114391,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114411,6 +114423,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114442,6 +114455,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114473,6 +114487,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114504,6 +114519,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114535,6 +114551,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114566,6 +114583,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114597,6 +114615,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114628,6 +114647,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114659,6 +114679,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114690,6 +114711,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114721,6 +114743,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114752,6 +114775,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114783,6 +114807,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114814,6 +114839,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114845,6 +114871,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114876,6 +114903,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114907,6 +114935,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114938,6 +114967,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -114969,6 +114999,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115000,6 +115031,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115031,6 +115063,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115062,6 +115095,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115093,6 +115127,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115124,6 +115159,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115155,6 +115191,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115186,6 +115223,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115217,6 +115255,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115248,6 +115287,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115279,6 +115319,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115310,6 +115351,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115341,6 +115383,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115372,6 +115415,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115403,6 +115447,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115434,6 +115479,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115465,6 +115511,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115496,6 +115543,7 @@
           "evidence": {
             "directional_support_count": 0,
             "excluded_night_count": 0,
+            "harm_band_source_nights": 30,
             "night_roster": [],
             "points": [],
             "roster_glucose_mean": null
@@ -115530,6 +115578,369 @@
           "end": "2024-06-01",
           "start": "2024-05-02"
         },
+        "outcome_patterns": [
+          {
+            "action": null,
+            "admission_route": "none",
+            "collapse": "remain_pattern",
+            "harm_low_overlap": [
+              {
+                "count": null,
+                "habit_subject": "habit:carb_undercount",
+                "reason": "different_identity_spaces",
+                "setting_subject": "setting:carb_ratio",
+                "status": "not_comparable"
+              },
+              {
+                "count": null,
+                "habit_subject": "habit:late_bolus",
+                "reason": "different_identity_spaces",
+                "setting_subject": "setting:carb_ratio",
+                "status": "not_comparable"
+              }
+            ],
+            "k": 0,
+            "key": "highs_after_meals",
+            "member_set_fingerprint": "13141e472c40a768",
+            "members": [
+              {
+                "action": null,
+                "admitted": false,
+                "hi": null,
+                "k": 0,
+                "kind": "setting",
+                "lo": null,
+                "price": 0,
+                "producer": "tuning_levers",
+                "seriousness": null,
+                "seriousness_segments": [],
+                "subject": "setting:carb_ratio"
+              }
+            ],
+            "n": 1,
+            "overlap_counts": {
+              "highs_after_treating_lows": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "lows_after_correcting_highs": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "lows_after_meals": {
+                "count": 0,
+                "reason": "shared_meals_exposure",
+                "status": "comparable"
+              },
+              "overnight_lows_no_iob": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              }
+            },
+            "rate": 0.0,
+            "rate_levers": [
+              "habit:carb_undercount",
+              "habit:late_bolus"
+            ],
+            "rate_producer": "exposures",
+            "readiness": {
+              "count": 1,
+              "gate": 12,
+              "verdict": "withheld"
+            },
+            "seriousness": null,
+            "settled_price": 0,
+            "subject": "pattern:highs_after_meals",
+            "title": "Highs after meals",
+            "wilson": {
+              "hi": 0.6216,
+              "lo": 0.0
+            }
+          },
+          {
+            "action": null,
+            "admission_route": "none",
+            "collapse": "remain_pattern",
+            "harm_low_overlap": [
+              {
+                "count": 0,
+                "habit_subject": "habit:meal_over_delivery",
+                "reason": "shared_low_episode_nadir",
+                "setting_subject": "setting:carb_ratio",
+                "status": "comparable"
+              }
+            ],
+            "k": 0,
+            "key": "lows_after_meals",
+            "member_set_fingerprint": "13141e472c40a768",
+            "members": [
+              {
+                "action": null,
+                "admitted": false,
+                "hi": null,
+                "k": 0,
+                "kind": "setting",
+                "lo": null,
+                "price": 0,
+                "producer": "tuning_levers",
+                "seriousness": null,
+                "seriousness_segments": [],
+                "subject": "setting:carb_ratio"
+              }
+            ],
+            "n": 1,
+            "overlap_counts": {
+              "highs_after_meals": {
+                "count": 0,
+                "reason": "shared_meals_exposure",
+                "status": "comparable"
+              },
+              "highs_after_treating_lows": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "lows_after_correcting_highs": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "overnight_lows_no_iob": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              }
+            },
+            "rate": 0.0,
+            "rate_levers": [
+              "habit:meal_over_delivery"
+            ],
+            "rate_producer": "exposures",
+            "readiness": {
+              "count": 1,
+              "gate": 12,
+              "verdict": "withheld"
+            },
+            "seriousness": null,
+            "settled_price": 0,
+            "subject": "pattern:lows_after_meals",
+            "title": "Lows after meals",
+            "wilson": {
+              "hi": 0.6216,
+              "lo": 0.0
+            }
+          },
+          {
+            "action": "habit:over_treated_low",
+            "admission_route": "habit_threshold",
+            "collapse": "collapse_to_member",
+            "harm_low_overlap": [],
+            "k": 2,
+            "key": "highs_after_treating_lows",
+            "member_set_fingerprint": "a0de7500243ef646",
+            "members": [
+              {
+                "action": "habit:over_treated_low",
+                "admitted": true,
+                "hi": 0.5906,
+                "k": 2,
+                "kind": "habit",
+                "lo": 0.1477,
+                "price": 28,
+                "producer": "scenario",
+                "seriousness": "low",
+                "subject": "habit:over_treated_low"
+              }
+            ],
+            "n": 6,
+            "overlap_counts": {
+              "highs_after_meals": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "lows_after_correcting_highs": {
+                "count": 0,
+                "reason": "shared_lows_exposure",
+                "status": "comparable"
+              },
+              "lows_after_meals": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "overnight_lows_no_iob": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              }
+            },
+            "rate": 0.3333,
+            "rate_levers": [
+              "habit:over_treated_low"
+            ],
+            "rate_producer": "exposures",
+            "readiness": {
+              "count": 6,
+              "gate": 12,
+              "verdict": "withheld"
+            },
+            "seriousness": "low",
+            "settled_price": 28,
+            "subject": "pattern:highs_after_treating_lows",
+            "title": "Highs after treating lows",
+            "wilson": {
+              "hi": 0.5906,
+              "lo": 0.1477
+            }
+          },
+          {
+            "action": null,
+            "admission_route": "none",
+            "collapse": "remain_pattern",
+            "harm_low_overlap": [
+              {
+                "count": null,
+                "habit_subject": "habit:correction_stacking",
+                "reason": "different_identity_spaces",
+                "setting_subject": "setting:isf",
+                "status": "not_comparable"
+              },
+              {
+                "count": 1,
+                "habit_subject": "habit:correction_on_iob",
+                "reason": "shared_low_episode_nadir",
+                "setting_subject": "setting:isf",
+                "status": "comparable"
+              }
+            ],
+            "k": 0,
+            "key": "lows_after_correcting_highs",
+            "member_set_fingerprint": "72e37bdefcacb6d7",
+            "members": [
+              {
+                "action": null,
+                "admitted": false,
+                "hi": null,
+                "k": 1,
+                "kind": "setting",
+                "lo": null,
+                "price": 0,
+                "producer": "tuning_levers",
+                "seriousness": null,
+                "seriousness_segments": [],
+                "subject": "setting:isf"
+              }
+            ],
+            "n": 1,
+            "overlap_counts": {
+              "highs_after_meals": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "highs_after_treating_lows": {
+                "count": 0,
+                "reason": "shared_lows_exposure",
+                "status": "comparable"
+              },
+              "lows_after_meals": {
+                "count": null,
+                "reason": "different_exposure_families",
+                "status": "not_comparable"
+              },
+              "overnight_lows_no_iob": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              }
+            },
+            "rate": 0.0,
+            "rate_levers": [
+              "habit:correction_stacking"
+            ],
+            "rate_producer": "exposures",
+            "readiness": {
+              "count": 1,
+              "gate": 27,
+              "verdict": "withheld"
+            },
+            "seriousness": null,
+            "settled_price": 0,
+            "subject": "pattern:lows_after_correcting_highs",
+            "title": "Lows after correcting highs",
+            "wilson": {
+              "hi": 0.6216,
+              "lo": 0.0
+            }
+          },
+          {
+            "action": "basal_rate",
+            "admission_route": "setting_staging",
+            "collapse": "remain_pattern",
+            "harm_low_overlap": [],
+            "k": 0,
+            "key": "overnight_lows_no_iob",
+            "member_set_fingerprint": "be01b57ca95abd31",
+            "members": [
+              {
+                "action": "basal_rate",
+                "admitted": true,
+                "hi": null,
+                "k": 0,
+                "kind": "setting",
+                "lo": null,
+                "price": 97,
+                "producer": "tuning_levers",
+                "seriousness": null,
+                "seriousness_segments": [],
+                "subject": "setting:basal_rate"
+              }
+            ],
+            "n": 30,
+            "overlap_counts": {
+              "highs_after_meals": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              },
+              "highs_after_treating_lows": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              },
+              "lows_after_correcting_highs": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              },
+              "lows_after_meals": {
+                "count": null,
+                "reason": "no_habit_exposure_identity",
+                "status": "not_comparable"
+              }
+            },
+            "rate": 0.0,
+            "rate_levers": [],
+            "rate_producer": "harm_band_source_nights",
+            "readiness": {
+              "count": 30,
+              "gate": 12,
+              "verdict": "ready"
+            },
+            "seriousness": null,
+            "settled_price": 97,
+            "subject": "pattern:overnight_lows_no_iob",
+            "title": "Overnight lows with no insulin on board",
+            "wilson": {
+              "hi": 0.0519,
+              "lo": 0.0
+            }
+          }
+        ],
         "rows": [
           {
             "annotation": "one cautious step down is supported at this time",
@@ -133462,6 +133873,7 @@
             "evidence": {
               "directional_support_count": 30,
               "excluded_night_count": 0,
+              "harm_band_source_nights": 30,
               "night_roster": [
                 {
                   "date": "2024-05-03",
@@ -136863,6 +137275,7 @@
             "evidence": {
               "directional_support_count": 28,
               "excluded_night_count": 0,
+              "harm_band_source_nights": 30,
               "night_roster": [
                 {
                   "date": "2024-05-03",
@@ -177196,6 +177609,7 @@
         "evidence": {
           "directional_support_count": 30,
           "excluded_night_count": 0,
+          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2024-05-03",
@@ -180597,6 +181011,7 @@
         "evidence": {
           "directional_support_count": 28,
           "excluded_night_count": 0,
+          "harm_band_source_nights": 30,
           "night_roster": [
             {
               "date": "2024-05-03",

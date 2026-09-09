@@ -125,6 +125,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(set(payload["findings"]), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
             "selection", "counts", "chip_counts", "uncaused_highs",
+            "outcome_patterns",
         })
         self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
         self.assertIsNone(payload["findings"]["selection"])
@@ -591,6 +592,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(set(findings), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
             "selection", "counts", "chip_counts", "uncaused_highs",
+            "outcome_patterns",
         })
         self.assert_window_tree(findings["window"])
         self.assertEqual(set(findings["findings_window"]), {"days", "start", "end"})

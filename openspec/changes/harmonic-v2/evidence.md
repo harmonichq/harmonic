@@ -7,6 +7,64 @@ diff is recorded as an empty output block.
 The synthetic records exercise current producers and proposed prototype inputs;
 they do not establish a shipped v2 backend or an approved selection policy.
 
+## #393 calibration
+
+This implementation replay used only generator-owned synthetic `QaCase` stores.
+No patient records, snapshot rows, or per-day receipts enter the test or this
+evidence. The #391 aggregate-only 90-day receipt supplied these inputs: highs
+after meals 49/512 (0.095703), lows after meals 42/512 (0.082031), highs after
+treating lows 20/101 (0.198020), and lows after correcting highs 4/215
+(0.018605). Applying the receipt's Wilson positive-lower-bound calibration,
+with its 12-opportunity minimum, yields gates **12, 12, 12, and 27** in that
+order. Overnight has no aggregate rate: its denominator is the new
+`harm_band_source_nights` producer and uses the same 12-opportunity floor.
+
+The contention rule is exact: contention exists only when the admitted habit's
+Confidence interval `[lo, hi]` intersects the staged setting owner's
+recurrence-channel `[lo, hi]`. Inside that band the staged setting leads;
+outside it the greatest existing Priority leads; an exact Priority tie retains
+canonical-subject order; and withheld bounds mean no contention. The synthetic
+`pattern-near-tie` receipt exercises the non-contention branch (the staged
+overnight setting has withheld bounds), selecting
+`pattern:highs_after_meals`; the non-overlapping variant in
+`tests/test_pattern_policy.py` selects the greater-Priority habit. The overlap
+variant there selects the staged setting. These cases retain the owner-produced
+intervals and never derive an interval from a pattern rate.
+
+The 12-night overnight floor is therefore an evidence-readiness floor, not a
+basal classifier, staging, or support-floor change. The replay's synthetic thin
+outcomes are literal QA expectations: the 6-meal carb-undercount case is
+withheld; `pattern-near-tie` is withheld at 3 meals while preserving its
+admitted action; `pattern-collapse` is withheld at 6 lows while preserving the
+single admitted habit and backend collapse verdict; the 7-night basal case does
+not stage; and the 30-source-night overnight cases are ready. These prove that
+readiness neither erases readable evidence nor manufactures an action.
+
+`tests/test_pattern_replay.py` materializes each of the 45 catalog cases once,
+then reuses that store through `execute_case`, the prepared Findings projection,
+`build_guidance`, and `follow_up_admission`. Its literal roster comparison fails
+closed for a missing or changed member, rate/denominator, admission, action,
+seriousness, fingerprint, near-tie, collapse, pattern readiness, Focus admission
+shape, or Trial-XOR-Focus admission state. Migration is separately pinned through
+the API-startup path in `tests/test_guidance_preferences.py` and
+`tests/test_guidance_api.py`.
+
+### #393 terminology inventory
+
+At the c4 base, `git grep -i -n -P '\bpatterns?\b' -- ':!node_modules/**'
+':!dist/**'` returned **915** tracked-file hits. Their disposition is closed:
+
+| Hit class | Disposition |
+| --- | --- |
+| ADRs, OpenSpec, scope history, comments, labels, and glossary prose | terminology-only; retain historical or qualified lever-pattern sense |
+| Scenario producer/API `patterns` and `low_confidence`, findings projection, case files, guidance, Store migration, and watched-change identities | payload compatibility; the existing serialized lever-pattern family remains intact beside `outcome_patterns` |
+| Synthetic generators, fixtures, fixture-only mirror, frontend consumers, browser replays, and their tests | payload compatibility; ADR 735 mirror parity remains binding |
+| `pattern_sweep.py` and candidate-sweep references | terminology-only public wording; the internal module name remains compatible |
+
+No payload key was renamed by this inventory. The new cross-member unit is
+published only as `outcome_patterns`; existing `patterns` and `low_confidence`
+remain the serialized lever-pattern family.
+
 ## #391 snapshot pass (aggregates only)
 
 The coordinator alone obtained each WAL-safe snapshot, opened it with

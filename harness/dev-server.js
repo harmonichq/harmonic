@@ -1,7 +1,10 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import { projectFindings, projectIcHistoryEvents, windowQuery } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from '../frontend/browser-fixture-population.js';
 
 const MIME = {
   '.css': 'text/css',
@@ -140,12 +143,12 @@ export function harnessDataPlugin({ repositoryRoot }) {
         }
 
         const [payload, findingsFixture, basal, isf, carbRatio, caseFiles, history] = await load;
-        const findingsInputs = {
+        const findingsInputs = populateFindingsProjectionInput({
           analysis: payload.analyze,
           exposures: payload.exposures,
           scenarios: payload.scenarios,
           event_charts: findingsFixture.inputs.event_charts,
-        };
+        });
         const bounds = url.searchParams.has('start_min') ? {
           start_min: Number(url.searchParams.get('start_min')),
           end_min: Number(url.searchParams.get('end_min')),

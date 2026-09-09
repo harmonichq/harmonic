@@ -14,6 +14,7 @@ import random
 import tempfile
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
@@ -117,7 +118,8 @@ def _with_history(projection, *, lifecycle="active", start_min=420,
     )
     analysis = dict(projection._analysis)
     analysis["ic_history"] = [*(analysis.get("ic_history") or []), history.to_dict()]
-    return FindingsProjection(analysis, projection._exposures, projection._scenarios), history
+    return FindingsProjection(analysis, projection._exposures, projection._scenarios,
+                              projection._outcome_patterns), history
 
 
 class HistoryRowsTest(unittest.TestCase):
@@ -305,6 +307,7 @@ class GroundedWindowTest(unittest.TestCase):
             _analysis=analysis,
             _exposures={"exposures": {}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         row = projection.project(WindowQuery.whole_day())["rows"][0]
 
@@ -317,7 +320,8 @@ class GroundedWindowTest(unittest.TestCase):
     def test_direction_only_isf_follows_every_actionable_or_priced_row(self):
         base = gen.projection()
         analysis, _segment, _lever = _direction_only_isf_analysis(base._analysis)
-        projection = FindingsProjection(analysis, base._exposures, base._scenarios)
+        projection = FindingsProjection(analysis, base._exposures, base._scenarios,
+                                        base._outcome_patterns)
 
         rows = projection.project(WindowQuery.whole_day())["rows"]
         isf_index = next(index for index, row in enumerate(rows)
@@ -371,6 +375,7 @@ class SpanMergingTest(unittest.TestCase):
         analysis["basal"] = [slots[index] for index in sorted(slots)]
         rows = FindingsProjection(
             _analysis=analysis, _exposures=gen.exposures(), _scenarios=gen.scenarios(),
+            _outcome_patterns=[],
         ).project(WindowQuery.clock(10 * 60, 11 * 60))["rows"]
         self.assertEqual(
             [row["lean"] for row in rows if row["title"].startswith("Basal")],
@@ -423,6 +428,7 @@ class ChipProjectionTest(unittest.TestCase):
             _analysis={"window_days": 30},
             _exposures={"exposures": {"highs": {"occurrences": occurrences}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         # The window is derived from the lever count, never a literal: each occurrence
         # sits at hour `index`, so a hard-coded span silently drops the newest lever
@@ -535,6 +541,7 @@ class MealBolusShortPopulationProjectionTest(unittest.TestCase):
                 projection = FindingsProjection(
                     _analysis=analysis, _exposures={"exposures": {}},
                     _scenarios={"patterns": [], "low_confidence": []},
+                    _outcome_patterns=[],
                 )
                 row = projection.project(WindowQuery.whole_day())["rows"][0]
                 self.assertEqual(row["chips"], [chip])
@@ -576,6 +583,7 @@ class EventChartProjectionTest(unittest.TestCase):
             _analysis={"window_days": 30},
             _exposures={"exposures": exposures},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         ).project(WindowQuery.whole_day())["rows"]
 
         self.assertEqual(
@@ -600,6 +608,7 @@ class EventChartProjectionTest(unittest.TestCase):
                 "verdicts": [],
             }]}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         ).project(WindowQuery.whole_day())["rows"][0]
 
         self.assertTrue(all("event_chart" in row for row in settings))
@@ -622,6 +631,7 @@ class EventChartProjectionTest(unittest.TestCase):
                 "verdicts": [],
             }]}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
 
         row = projection.project(WindowQuery.whole_day())["rows"][0]
@@ -712,12 +722,46 @@ class WindowQueryTest(unittest.TestCase):
 
 
 class PreparedFromStoreTest(unittest.TestCase):
+    def test_preparation_builds_the_pattern_roster_once_and_publishes_it_verbatim(self):
+        roster = [{"key": "published-by-pattern-producer"}]
+        with patch("ciq_autotune.findings_projection.build_outcome_patterns",
+                   return_value=roster) as build:
+            projection = prepare_findings_projection(
+                analysis={"window_days": 30}, exposures={}, scenarios={},
+            )
+
+        build.assert_called_once_with({"window_days": 30}, {}, {})
+        result = projection.project(WindowQuery.whole_day())
+        self.assertEqual(result["outcome_patterns"], roster)
+        self.assertIsNot(result["outcome_patterns"], roster)
+        self.assertIsNot(result["outcome_patterns"],
+                         projection.project(WindowQuery.clock(0, 60))["outcome_patterns"])
+        self.assertEqual(result["rows"], [])
+
+    def test_prepared_projection_preserves_an_inconsistent_pattern_roster(self):
+        roster = [{"key": "highs_after_meals", "k": 4, "n": 3,
+                   "rate": None, "wilson": None,
+                   "count_status": {"status": "inconsistent_counts", "k": 4, "n": 3}}]
+        with patch("ciq_autotune.findings_projection.build_outcome_patterns",
+                   return_value=roster):
+            projection = prepare_findings_projection(
+                analysis={"window_days": 30}, exposures={}, scenarios={},
+            )
+
+        self.assertEqual(projection.project(WindowQuery.whole_day())["outcome_patterns"],
+                         roster)
+
     def test_an_empty_store_projects_an_empty_queue(self):
         projection = prepare_findings_projection(
             analysis={"window_days": 30}, exposures={}, scenarios={},
         )
         result = projection.project(WindowQuery.whole_day())
         self.assertEqual(result["rows"], [])
+        self.assertEqual(
+            [pattern["key"] for pattern in result["outcome_patterns"]],
+            ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+             "lows_after_correcting_highs", "overnight_lows_no_iob"],
+        )
         self.assertEqual(result["window"]["scoped"], False)
         self.assertEqual(result["findings_window"]["days"], 30)
 
@@ -1194,6 +1238,7 @@ class HeadlineTest(unittest.TestCase):
             _analysis=analysis,
             _exposures=exposures or {"exposures": {}},
             _scenarios=scenarios or {"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         return projection.project(window or WindowQuery.clock(1, DAY_MINUTES))["rows"]
 
@@ -1465,7 +1510,7 @@ class HeadlineTest(unittest.TestCase):
         }
         projection, _history = _with_history(
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios()))
+                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
         rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
         pairs = set()
         for row in rows:
@@ -1523,7 +1568,7 @@ class HeadlineTest(unittest.TestCase):
         }
         projection, _history = _with_history(
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios()))
+                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
         rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
         isf_held_row = self._project(self._isf_analysis(register="held"))[0]
         finding_rows = gen.projection().project(WindowQuery.whole_day())["rows"]

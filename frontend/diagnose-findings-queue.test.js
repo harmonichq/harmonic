@@ -57,9 +57,9 @@ test('the root filter has no retired Event charts view or state', () => {
 
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
-  assert.equal(queueMeta(W.global), '7 findings · 30 days');
+  assert.equal(queueMeta(W.global), '11 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '3 in this window');
-  assert.equal(queueMeta(fixture.no_data.global), '30 days');
+  assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
   for (const projection of [W.global, W.afternoon, W.overnight, fixture.no_data.morning]) {
     const meta = queueMeta(projection);
@@ -122,7 +122,8 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
 test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'setting', 'setting', 'habit', 'habit', 'habit', 'habit', 'watching']);
+    ['setting', 'habit', 'habit', 'habit', 'setting', 'setting', 'habit', 'habit',
+      'habit', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -135,18 +136,24 @@ test('#302 · weights and captions walk the served rows without assigning a prio
   assert.deepEqual(rows.filter((row) => !row.hidden && !row.collapsed)
     .map(({ id, weight, caption }) => ({ id, weight, caption })), [
       { id: 'ic:720', weight: 'priced', caption: null },
-      { id: 'basal:30-90', weight: 'priced', caption: null },
-      { id: 'basal:330-360', weight: 'priced', caption: null },
-      { id: 'finding:over_treated_low', weight: 'priced', caption: 'Worth a look' },
+      { id: 'pattern:highs_after_meals', weight: 'priced', caption: 'Worth a look' },
       { id: 'finding:carb_undercount', weight: 'priced', caption: null },
+      { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
+      { id: 'basal:30-90', weight: 'priced', caption: 'Next in line' },
+      { id: 'basal:330-360', weight: 'priced', caption: null },
+      { id: 'pattern:overnight_lows_no_iob', weight: 'priced', caption: 'Worth a look' },
+      { id: 'finding:over_treated_low', weight: 'priced', caption: null },
     { id: 'finding:correction_on_iob', weight: 'tail', caption: null },
     { id: 'finding:correction_stacking', weight: 'tail', caption: null },
+    { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
+    { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },
     { id: 'finding:carb_undercount', weight: 'priced', caption: null },
+    { id: 'pattern:lows_after_meals', weight: 'priced', caption: null },
   ]);
   const morning = queueRows(W.morning).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(morning.map((row) => row.weight), ['priced']);
@@ -156,7 +163,9 @@ test('#341 · every priced row, including rank one, receives the common mini mou
   const result = paint(W.global);
   assert.equal(result.rows.length, W.global.rows.length);
   assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
-    'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low', 'finding:carb_undercount',
+    'ic:720', 'pattern:highs_after_meals', 'finding:carb_undercount',
+    'pattern:lows_after_meals', 'basal:30-90', 'basal:330-360',
+    'pattern:overnight_lows_no_iob', 'finding:over_treated_low',
   ]);
   assert.ok(result.miniSlots.every(({ host }) => host.className === 'mini'));
 });
@@ -190,7 +199,8 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     'no row sits in the list itself, carrying a role of its own');
   const items = list.children.filter((child) => child.className.startsWith('qitem'));
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem tail', 'qitem tail'],
+    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
+      'qitem tail', 'qitem tail', 'qitem tail'],
     'each shown row is enclosed, and a tail item is marked for the tail spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
@@ -395,7 +405,8 @@ test('a sift computes its priced seam over only visible rows', () => {
   assert.equal(hiddenTail.hidden, false);
   // It is the only visible ranked row and is unpriced, so there is no priced
   // row before it. The unselected high rows cannot open a visible seam.
-  assert.deepEqual(rows.filter((row) => row.seam), []);
+  assert.deepEqual(rows.filter((row) => row.seam).map((row) => row.id),
+    ['finding:correction_on_iob']);
   assert.ok(rows.filter((row) => row.hidden).every((row) => row.raw.priority != null));
 });
 
@@ -468,7 +479,7 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
 });
 
 test('metadata and empty copy describe Sift, the only root filter', () => {
-  assert.equal(queueMeta(W.global, new Set(['meals'])), '1 finding · 30 days');
+  assert.equal(queueMeta(W.global, new Set(['meals'])), '3 findings · 30 days');
   assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '30 days');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });

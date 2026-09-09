@@ -13,6 +13,7 @@ from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
+from .analyzers.scenario.outcome_patterns import _identity as _pattern_identity
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
@@ -85,6 +86,7 @@ class PreparedCases:
     lease_until: float
     source_window_days: int = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     pins: int = 0
+    exposures: dict | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -101,6 +103,8 @@ class PreparedCases:
         Lever requests retain the same roster and event inputs, but do not borrow
         a Finding's attribution equation merely to make a case-shaped response.
         """
+        if finding_id and finding_id.startswith("pattern:"):
+            return self._pattern_case(finding_id, alignment, occ)
         finding_keyed = finding_id is not None
         if finding_keyed:
             lever = Lever(finding_id.removeprefix("finding:"))
@@ -181,6 +185,85 @@ class PreparedCases:
             "projection": projection, "selection": selection,
         }
 
+    def _pattern_case(self, finding_id, alignment, occ):
+        """Expose one Pattern's already-built Exposure population.
+
+        Pattern policy remains in ``outcome_patterns``.  This only aligns the
+        existing opportunity roster and member associations for the case-file
+        transport consumed by the evidence chart.
+        """
+        if self.query.scoped:
+            return None
+        row = self._authoritative_row(finding_id)
+        if row is None or row.get("kind") != "pattern":
+            return None
+        if not row.get("pattern_chart"):
+            return None
+        pattern = row["pattern"]
+        family = findings_projection.pattern_rate_family(pattern)
+        source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
+        source_rows = tuple(source.get("occurrences") or ())
+        rate_levers = {
+            subject.removeprefix("habit:") for subject in pattern["rate_levers"]
+        }
+        habits = [
+            Lever(member["subject"].removeprefix("habit:"))
+            for member in pattern["members"] if member["kind"] == "habit"
+        ]
+        population_lever = Lever(pattern["rate_levers"][0].removeprefix("habit:"))
+        claimed_identities = {
+            identity for candidate in source_rows
+            if candidate.get("attributed") and candidate.get("cause_lever") in rate_levers
+            if (identity := _pattern_identity(candidate)) is not None
+        }
+        claimed_by_id = {}
+        precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
+        pattern_roster = []
+        remaining_claims = set(claimed_identities)
+        for index, candidate in enumerate(source_rows):
+            identity = _pattern_identity(candidate)
+            t = datetime.strptime(candidate["t"], FMT)
+            occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
+            claimant = candidate.get("cause_lever")
+            if (candidate.get("attributed") and claimant in rate_levers
+                    and identity in remaining_claims):
+                claimed_by_id[occurrence_id] = f"habit:{claimant}"
+                verdict = "fired"
+                remaining_claims.remove(identity)
+            else:
+                states = [findings_projection._occurrence_verdict(candidate, lever.value)
+                          for lever in habits]
+                states = ["outranked" if state == "fired" else state for state in states]
+                verdict = max(states or ["clean"], key=lambda state: precedence[state])
+            opportunity = opportunities.Opportunity(
+                family=family, source_key=(identity, index), anchor_t=t,
+                anchor_kind=candidate.get("kind") or _event_anchor(family)[0],
+                anchor_bg=candidate.get("bg"),
+            )
+            pattern_roster.append(Member(opportunity, t, verdict, occurrence_id))
+        pattern_roster = tuple(pattern_roster)
+        claimed_ids = frozenset(claimed_by_id)
+        counts = {key: sum(member.verdict == key for member in pattern_roster)
+                  for key in findings_projection.FINDING_VERDICTS}
+        projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
+                      else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
+                                  self.bolus, self.source_window_days, self.basal))
+        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
+                       for member in pattern_roster]
+        return {
+            "schema": CASE_SCHEMA, "projection_id": self.projection_id,
+            "finding": {"id": finding_id, "lever": pattern["key"],
+                        "subject": finding_id, "title": pattern["title"]},
+            "window": self.query.to_dict(), "family": policy_for(population_lever).recurrence_noun,
+            "population": policy_for(population_lever).recurrence_noun,
+            "cross_population": False,
+            "summary": {"claimed": len(claimed_ids), "denominator": len(pattern_roster),
+                        "noun": _population_noun(policy_for(population_lever))},
+            "verdict_counts": counts, "occurrences": occurrences,
+            "projection": projection,
+            "selection": {"state": "none", "requested_id": None, "detail": None},
+        }
+
 
 def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
             analysis_generation="standalone:0"):
@@ -211,7 +294,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
     return PreparedCases("fp_" + uuid.uuid4().hex, version, query, findings, recurrence,
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
-                         source_window_days=window_days)
+                         source_window_days=window_days, exposures=deepcopy(exposures))
 
 
 def _population(
@@ -405,10 +488,13 @@ def wrap(prepared):
         finding_id = row["id"]
         case = prepared.case(finding_id, "clock", None)
         if case is None:
+            if row.get("kind") == "pattern":
+                rendered.append(deepcopy(row)); continue
             withheld.append({"finding_id": finding_id,
                              "code": "uninspectable_attribution",
                              "message": "Canonical association is unavailable."})
             continue
+        chart_key = "pattern_chart" if row.get("kind") == "pattern" else "event_chart"
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
                   # A prepared case IS its own event-chart coordinate: the case
@@ -417,11 +503,18 @@ def wrap(prepared):
                   # `null` for a case the server serves — correction stacking is
                   # counted in correction clusters, not the lows that map names —
                   # leaving the reader no By-event path into it.
-                  "event_chart": {"lever": case["finding"]["lever"],
-                                  "window": prepared.query.to_dict()},
+                  chart_key: (deepcopy(row["pattern_chart"])
+                              if chart_key == "pattern_chart" else
+                              {"lever": case["finding"]["lever"],
+                               "window": prepared.query.to_dict()}),
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
+        if row.get("kind") == "pattern":
+            changed.update({"pattern_chart": header["pattern_chart"],
+                            "case_header": header})
+            rendered.append(changed); headers[finding_id] = header
+            continue
         anchored = {"family": case["family"], "noun": case["summary"]["noun"],
                     "n": case["summary"]["claimed"],
                     "m": case["summary"]["denominator"]}

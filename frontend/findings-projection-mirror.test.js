@@ -51,7 +51,11 @@ test('the mirror reproduces the empty analysis, where term 41 lives', () => {
   const empty = fixture.no_data_inputs;
   for (const [name, bounds] of [['global', null], ['morning', WINDOWS.morning]]) {
     const got = projectFindings(empty, bounds);
-    assert.deepEqual(got.rows, [], `${name} has no rows`);
+    if (name === 'global') {
+      assert.equal(got.rows.length, 5, 'global carries the five Pattern states');
+      assert.ok(got.rows.every((row) => row.kind === 'pattern'
+        && row.priority === null && row.pattern_chart === null));
+    } else assert.deepEqual(got.rows, [], `${name} has no rows`);
     assert.deepEqual(got, fixture.no_data[name], `${name} matches the frozen empty answer`);
   }
 });

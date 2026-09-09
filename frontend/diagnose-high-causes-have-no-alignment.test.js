@@ -39,7 +39,7 @@ test('#83 · settings publish null and a High-family Missed meal publishes its c
       ep_id: 'missed-meal', verdicts: [],
     }] } } },
     scenarios: { patterns: [], low_confidence: [] },
-  }), null).rows[0];
+  }), null).rows.find((row) => row.id === 'finding:missed_meal');
   assert.deepEqual(missedMeal.event_chart, {
     lever: 'missed_meal',
     window: { scoped: false, start_min: null, end_min: null, label: null },

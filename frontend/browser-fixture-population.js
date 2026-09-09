@@ -8,19 +8,24 @@
 import { readFileSync } from 'node:fs';
 
 import { findingHeadline } from '../mockups/findings-projection.mirror.mjs';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const findingsFixture = JSON.parse(readFileSync(new URL(
   './__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+const defaultPatternCapture = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
 
 /** Add the server-prepared Pattern roster to every browser-gate mirror input. */
 export function populateFindingsProjectionInput(input) {
   return {
     ...input,
-    outcome_patterns: structuredClone(findingsFixture.inputs.outcome_patterns),
+    outcome_patterns: structuredClone(findingsFixture.browser_outcome_patterns),
   };
 }
 
-export function populateFindingCasePreparation(preparation, projection) {
+export function populateFindingCasePreparation(
+  preparation, projection, patternCapture = defaultPatternCapture,
+) {
   const readyRows = new Map(preparation.rendered_rows
     .filter((row) => row.case_header?.inspectability === 'ready')
     .map((row) => [row.id, row]));
@@ -28,6 +33,20 @@ export function populateFindingCasePreparation(preparation, projection) {
   preparation.findings = structuredClone(projection);
   preparation.rendered_rows = structuredClone(projection.rows).flatMap((row) => {
     if (row.register !== 'finding') return [row];
+    if (row.kind === 'pattern') {
+      if (!row.pattern_chart) return [row];
+      const caseFile = projectPatternCaseFile(patternCapture, {
+        patternChart: row.pattern_chart, projectionId: preparation.projection_id,
+      });
+      if (!caseFile) throw new Error(`chartable Pattern fixture has no case: ${row.id}`);
+      const header = {
+        finding_id: row.id, lever: row.pattern.key, title: row.title,
+        family: caseFile.family, summary: caseFile.summary,
+        verdict_counts: caseFile.verdict_counts, inspectability: 'ready',
+        pattern_chart: structuredClone(row.pattern_chart),
+      };
+      return [{ ...row, case_header: header }];
+    }
     const ready = readyRows.get(row.id);
     if (!ready) return [];
     /* The preparation owns its own event coordinate: `finding_case_file.wrap`

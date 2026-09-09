@@ -140,33 +140,18 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
-        cohort_of = {
-            occurrence_id: cohort["key"]
-            for cohort in projection["cohorts"]
-            for occurrence_id in cohort["occurrence_ids"]
-        }
-        active_ids = cohort_of.keys() if alignment == "event" else {
-            member.id for member in roster
-        }
-        selection = {"state": "none", "requested_id": None, "detail": None}
-        if occ is not None:
-            selected = next((member for member in roster if member.id == occ), None)
-            selection = {"state": "unavailable", "requested_id": occ, "detail": None}
-            if selected is not None and selected.id in active_ids:
+        selection, cohort_of = _select_roster_occurrence(
+            occ, alignment, projection, roster, lever,
+            self.cgm, self.basal, self.bolus, self.carbs,
+        )
+        if (selection["state"] == "unavailable" and alignment == "event"
+                and occ in cohort_of):
+            announced = next((row for row in _completed_carb_boluses(
+                self.bolus, self.cgm, self.basal, self.source_window_days,
+            ) if _opaque("m_", row.seq_num) == occ), None)
+            if announced is not None:
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": (_missed_detail(selected, self.cgm, self.basal,
-                                                       self.bolus, self.carbs)
-                                        if lever is Lever.MISSED_MEAL and alignment == "event"
-                                        else _detail(selected, lever, self.cgm, self.basal,
-                                                     self.bolus, self.carbs))}
-            elif alignment == "event" and occ in active_ids:
-                announced = next((row for row in _completed_carb_boluses(
-                    self.bolus, self.cgm, self.basal, self.source_window_days,
-                ) if _opaque("m_", row.seq_num) == occ), None)
-                if announced is not None:
-                    selection = {"state": "selected", "requested_id": occ,
-                                 "detail": _announced_detail(announced, self.cgm, self.bolus)}
-            if alignment == "event" and selection["state"] == "selected":
+                             "detail": _announced_detail(announced, self.cgm, self.bolus)}
                 selection["detail"]["comparison_cohort"] = cohort_of[occ]
         occurrences = (
             [_missed_occurrence(member, member.id in claimed_ids, self.cgm)
@@ -248,24 +233,10 @@ class PreparedCases:
         projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
                       else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
                                   self.bolus, self.source_window_days, self.basal))
-        cohort_of = {
-            occurrence_id: cohort["key"]
-            for cohort in projection["cohorts"]
-            for occurrence_id in cohort["occurrence_ids"]
-        }
-        active_ids = cohort_of.keys() if alignment == "event" else {
-            member.id for member in pattern_roster
-        }
-        selection = {"state": "none", "requested_id": None, "detail": None}
-        if occ is not None:
-            selected = next((member for member in pattern_roster if member.id == occ), None)
-            selection = {"state": "unavailable", "requested_id": occ, "detail": None}
-            if selected is not None and selected.id in active_ids:
-                detail = _detail(selected, population_lever, self.cgm, self.basal,
-                                 self.bolus, self.carbs)
-                if alignment == "event":
-                    detail["comparison_cohort"] = cohort_of[occ]
-                selection = {"state": "selected", "requested_id": occ, "detail": detail}
+        selection, _ = _select_roster_occurrence(
+            occ, alignment, projection, pattern_roster, population_lever,
+            self.cgm, self.basal, self.bolus, self.carbs,
+        )
         occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
                        for member in pattern_roster]
         return {
@@ -815,3 +786,28 @@ def _detail(member, lever, cgm, basal, bolus, carbs):
     return _occurrence(member) | {"glucose": _trace(member, lever, cgm)["trace"]["cgm"],
                                   "markers": markers, "source_corrections": source,
                                   "day_target": {"date": anchor.date().isoformat()}}
+
+
+def _select_roster_occurrence(occ, alignment, projection, roster, lever,
+                              cgm, basal, bolus, carbs):
+    cohort_of = {
+        occurrence_id: cohort["key"]
+        for cohort in projection["cohorts"]
+        for occurrence_id in cohort["occurrence_ids"]
+    }
+    active_ids = cohort_of.keys() if alignment == "event" else {
+        member.id for member in roster
+    }
+    selection = {"state": "none", "requested_id": None, "detail": None}
+    if occ is None:
+        return selection, cohort_of
+    selected = next((member for member in roster if member.id == occ), None)
+    selection = {"state": "unavailable", "requested_id": occ, "detail": None}
+    if selected is None or selected.id not in active_ids:
+        return selection, cohort_of
+    detail = (_missed_detail(selected, cgm, basal, bolus, carbs)
+              if lever is Lever.MISSED_MEAL and alignment == "event"
+              else _detail(selected, lever, cgm, basal, bolus, carbs))
+    if alignment == "event":
+        detail["comparison_cohort"] = cohort_of[occ]
+    return {"state": "selected", "requested_id": occ, "detail": detail}, cohort_of

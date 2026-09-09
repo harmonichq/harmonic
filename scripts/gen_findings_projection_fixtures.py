@@ -67,6 +67,7 @@ from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
     price_ic_blocks,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading  # noqa: E402
+from ciq_autotune.finding_case_file import PreparedCases  # noqa: E402
 from ciq_autotune.findings_projection import (  # noqa: E402
     FindingsProjection,
     WindowQuery,
@@ -712,6 +713,39 @@ def empty_projection() -> FindingsProjection:
     )
 
 
+def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
+    """Freeze one selected Pattern clock answer through the Python case producer."""
+    query = WindowQuery.whole_day()
+    findings = prepare_findings_projection(
+        analysis=browser_analysis, exposures=browser_exposures,
+        scenarios=browser_scenarios,
+    ).project(query, analysis_generation=ANALYSIS_GENERATION)
+    capture = json.loads((
+        pathlib.Path(__file__).resolve().parents[1]
+        / "mockups" / "diagnose-event-comparison.synthetic" / "capture.json"
+    ).read_text())
+    source = capture["pattern_populations"]["meals"][0]
+    anchor = datetime.strptime(source["anchor_t"], "%Y-%m-%d %H:%M:%S")
+    cgm = tuple(CgmReading(
+        anchor + timedelta(minutes=point["minute"]), point["bg"], "EGV",
+    ) for point in source["trace"]["cgm"])
+    bolus = tuple(BolusEvent(
+        anchor + timedelta(minutes=dose["minute"]), completion=dose.get("completion"),
+        insulin=dose.get("insulin"), carbs=dose.get("carbs"), seq_num=dose.get("seq_num"),
+    ) for dose in source["trace"]["boluses"])
+    prepared = PreparedCases(
+        projection_id="fp_" + "2" * 32, version=0, query=query, findings=findings,
+        recurrence={}, members={lever: () for lever in Lever},
+        associations={lever: frozenset() for lever in Lever},
+        attribution_provenance={lever: () for lever in Lever}, withheld=frozenset(),
+        cgm=cgm, basal=(), bolus=bolus, carbs=(), lease_until=0,
+        exposures=browser_exposures,
+    )
+    finding_id = "pattern:highs_after_meals"
+    case = prepared.case(finding_id, "clock", None)
+    return prepared.case(finding_id, "clock", case["occurrences"][0]["id"])
+
+
 def payload() -> dict:
     prepared = projection()
     no_data = empty_projection()
@@ -731,6 +765,7 @@ def payload() -> dict:
         "tuning_levers": prepared._analysis["tuning_levers"],
     }
     browser_exposures = json.loads(json.dumps(browser_payload["exposures"]))
+    browser_case_exposures = json.loads(json.dumps(browser_exposures))
     memberless_low = next(
         row for row in browser_exposures["exposures"]["meals"]["occurrences"]
         if not row.get("attributed")
@@ -781,6 +816,9 @@ def payload() -> dict:
         # same public Pattern producer so its rows and case files share k and n.
         "browser_outcome_patterns": build_outcome_patterns(
             browser_analysis, browser_exposures, browser_scenarios,
+        ),
+        "pattern_clock_case": pattern_clock_case(
+            browser_analysis, browser_case_exposures, browser_scenarios,
         ),
         "direction_only_inputs": {
             "analysis": direction_only._analysis,

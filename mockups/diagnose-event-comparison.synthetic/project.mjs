@@ -285,13 +285,13 @@ export function patternVerdict(states, claimed = false) {
 
 function patternState(occurrence, lever) {
   const fact = occurrence.verdicts.find((item) => item.classifier === lever);
-  if (occurrence.cause_lever === lever) return 'fired';
-  if (occurrence.cause_lever) return 'outranked';
-  if (!fact) return 'no_data';
+  if (!fact) return occurrence.cause_lever ? 'outranked' : 'no_data';
   if (fact.matched) return 'fired';
-  if (fact.silence_reason === 'under_threshold') return 'near_miss';
   if (fact.silence_reason === 'insufficient_data') return 'no_data';
-  return 'clean';
+  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal'].includes(fact.silence_reason)) {
+    return 'near_miss';
+  }
+  return occurrence.cause_lever ? 'outranked' : 'clean';
 }
 
 function patternOccurrence(row, habits, attributedMember) {
@@ -321,6 +321,35 @@ function patternCohort(key, name, rows, window) {
     glucose: row.trace.cgm.filter((point) => finiteNumber(point.bg) && finiteNumber(point.minute)),
   }));
   return cohort;
+}
+
+function patternDetail(row, family) {
+  const { member: _member, trace, ...occurrence } = row;
+  const boluses = trace.boluses || [];
+  return {
+    ...occurrence,
+    glucose: trace.cgm.map((point) => ({
+      t: localTimestamp(row.anchor.t, point.minute), ...point,
+    })),
+    markers: [
+      ...boluses.map((dose) => ({
+        kind: 'bolus', t: localTimestamp(row.anchor.t, dose.minute),
+        minute: dose.minute, seq_num: dose.seq_num, insulin: dose.insulin,
+        carbs: dose.carbs ?? null,
+      })),
+      ...(trace.rescue_carbs || []).map((carb) => ({
+        kind: 'rescue_carb', t: localTimestamp(row.anchor.t, carb.minute), ...carb,
+      })),
+      ...(trace.suspends || []).map((suspend) => ({
+        kind: 'suspend', t: localTimestamp(row.anchor.t, suspend.minute), ...suspend,
+      })),
+    ],
+    source_corrections: family === 'correction_clusters' ? boluses.map((dose) => ({
+      seq_num: dose.seq_num, t: localTimestamp(row.anchor.t, dose.minute),
+      insulin: dose.insulin,
+    })) : [],
+    day_target: { date: row.date },
+  };
 }
 
 /** Fixture-only server answer for the canonical Pattern case-file coordinate. */
@@ -398,13 +427,7 @@ export function projectPatternCaseFile(capture, {
   if (occurrenceId && !selected) {
     selection = { state: 'unavailable', requested_id: occurrenceId, detail: null };
   } else if (selected) {
-    const detail = {
-      ...cleanOccurrences.find((row) => row.id === selected.id),
-      glucose: selected.trace.cgm.map((point) => ({
-        t: localTimestamp(selected.anchor.t, point.minute), ...point,
-      })),
-      markers: [], source_corrections: [], day_target: { date: selected.date },
-    };
+    const detail = patternDetail(selected, family);
     if (alignment === 'event') {
       detail.comparison_cohort = projection.cohorts.find((cohort) =>
         cohort.occurrence_ids.includes(selected.id)).key;

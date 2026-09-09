@@ -5,6 +5,15 @@
 v2 desktop must keep doing. A revision that drops one amends this ledger through
 the sanctioned path; it does not edit a story quietly.
 
+**Amendment — 2026-09-08, issue #389.** Connor Griffin instructed: “We dont'
+need historical reads in the app.” Historical past-setting tuning reads are
+removed entirely; the earlier proposed Watching-only parity correction is
+superseded. HV2-31 is re-settled in the lock manifest and mock header. S98 retains
+its current-setting coherent replacement/failure/retry/stale obligations and uses
+`ic-lower`; Trial/Focus records and endings remain. R18 adds the permanent absence
+check. The original 129-story results below remain provenance of the earlier
+contract, not a claim that this new obligation has passed.
+
 The lock manifest (`mockups/harmonic-v2-desktop.lock.md`, 34 terms) says what the
 surface looks like. This says what it **does**. Together they are the build
 contract; neither alone is sufficient.
@@ -1613,10 +1622,11 @@ S97 · P19b: a new-window load or failed replacement shows only count-free
   status:   app opener only — owed by the build, never passed
 ```
 ```
-S98 · The selected I:C coherent case/canvas pair survives a failed replacement
+S98 · The selected current-setting I:C coherent case/canvas pair survives a failed replacement
       with staging withheld, and a dated same-subject stale result is a separate
       state.
   lock:     HV2-30          evidence: app opener only
+  data:     current ic-lower; historical past-setting reads were retired by Connor Griffin on 2026-09-08
   status:   app opener only — owed by the build, never passed
 ```
 ```
@@ -2078,3 +2088,20 @@ absence assertion in the replay that prints that sanction on every run.
 The 17 retirements below are permanent. They stay through every later sweep,
 revision, port and lock of this surface: the ledger records what the surface does
 **and** what it deliberately stopped doing.
+
+
+## Added retirement — 2026-09-08, issue #389
+
+```
+R18 · Historical past-setting tuning reads are absent everywhere in the app.
+  predecessor: finding-evidence-routing.behavior.md S41, S43–S48, S53–S56,
+               S63–S64 and S68; only the historical clauses of S42 and S74
+  lock:     HV2-31
+  verdict:  retired
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  premise:  the input actually contains a register=history row; current-setting
+            evidence remains browsable and Trial/Focus records are not removed
+  replay:   fn R18 checks roster/counts, Watching, All Charts and stale selected
+            historical identity, and prints the sanction
+  status:   owed by the build — no passing result recorded
+```

@@ -18,7 +18,7 @@ contract; it does not establish that the new prototype performs it.
 
 | Existing job | Current source or behavior contract | Selected prototype checkpoint | Proof still needed before v1 retirement |
 | --- | --- | --- | --- |
-| Read a finding in its evidence context | `mockups/finding-evidence-routing.behavior.md`; Diagnose case-file, clock and event projections | Glucose-first comparison and occurrence investigation under development | All settings and behavioral families, held and historical findings, source-owned windows and correct return context |
+| Read a finding in its evidence context | `mockups/finding-evidence-routing.behavior.md`; Diagnose case-file, clock and event projections | Glucose-first comparison and occurrence investigation under development | All current settings and behavioral families, held/thin findings, source-owned windows and correct return context; past-setting tuning reads retired by the 2026-09-08 ruling |
 | Compare matching events with eligible alternatives | `frontend/diagnose-event-comparison.js`; event-comparison behavior replay | Shipped renderer and generated cohort membership; matched, nearly matched and other opportunities remain distinct | Full filter/window/selection lifecycle and support states across the relevant families |
 | Inspect a setting's supporting observations | Basal night, carb-ratio block and correction-factor rest-window evidence producers | Basal setting walkthrough is the representative path | Carb ratio and correction factor retain their own support, evidence and delivery paths |
 | Review and enter a complete Plan | `frontend/plan.js`; `frontend/plan-first-match.browser.mjs` | Shared schedule construction and reconciliation in the setting walkthrough | Restored drafts, one-variable edits, all supported setting paths and pump-profile limitations |
@@ -32,8 +32,10 @@ contract; it does not establish that the new prototype performs it.
 | Recover from an ordinary failed read | Cockpit S11; current evidence replays | Prototype load Retry exists | Failed replacement after a good result, unchanged subject ownership and honest stale-result labeling |
 | Use the workstation by keyboard and at narrow width | Cockpit S6/S7/S9; occurrence roster keyboard behavior | Narrow figure switch and member sheet verified in round 3b | Each complete journey, visible focus, labels, escape/return focus and reachable controls |
 
-No row here is marked retired. Missing prototype coverage is recorded as missing;
-it is neither a sanctioned omission from v2 nor evidence that v1 lost the job.
+The 2026-09-08 operator ruling retires historical past-setting tuning reads from
+both app surfaces. Its exact predecessor IDs and retained mixed-story obligations
+are recorded in the two frozen ledgers and desktop lock. All other missing
+prototype coverage remains missing, rather than a sanctioned omission.
 The original comparison and selected direction remain in
 [the rendered review](../../../mockups/harmonic-v2.exploration/REVIEW.md).
 

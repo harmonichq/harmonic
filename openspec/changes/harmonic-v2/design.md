@@ -1715,3 +1715,20 @@ backend-owned and is read from the selected record's retained comparison, never
 from watch maturity. Mobile, root-route cutover and v1 retirement remain the
 later gates of tasks 4.1–4.3. Human acceptance of the complete first usable
 release stays a separate step after the pull request, outside every chunk.
+
+
+## ADR 389 — Remove historical past-setting reads from the app
+
+On 2026-09-08 Connor rejected retaining historical tuning reads in a collapsed
+Watching disclosure and instructed: “We dont' need historical reads in the app.”
+Historical past-setting findings therefore leave both v1 and v2 entirely,
+including Watching, All Charts and historical-setting inspection. Their removal
+is an explicit operator change to the prior preservation contract, not a claim
+that the existing app had already removed them.
+
+The shared queue and v1 presentation changes belong to chunk 1; v2 changes belong
+to chunk 2. Current-setting held and thin evidence remains distinct. This deletes
+no persisted source data and does not remove Trial/Focus original decisions,
+endings, or the past glucose evidence used to assess a current setting. The
+retired historical-setting predecessor stories, mixed-story retained obligations,
+lock amendments and rendered absence proof are recorded together before review.

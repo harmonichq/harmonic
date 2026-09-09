@@ -873,7 +873,7 @@ complete Plan lifecycle.
 | `frontend/plan.js` | `buildDeliverable`, `collapseDeliverable`, `reconcileDeliverable`, `deliverableSegmentCount`, `effectivePlanItems`, `detectOnPump`, `formatStartMin`, `segmentAt`, `PLAN_PARAMS`, `PLAN_FAMILIES`, `PARAM_PRECISION`, `PARAM_LABEL` | the Plan owner. Schedule construction, collapsing, reconciliation, rounding and the single-family rule come from here |
 | `frontend/diagnose-event-comparison.js` | `renderEventSurface(surface, caseFile, hosts)`, `eventComparisonChartOption`, `eventComparisonGlucoseValues`, `glucoseRange`, `caseFileSelectionCohort` | the event-comparison mount, its cohorts, support labels and cursor |
 | `frontend/diagnose-evidence-charts.js` | `DIAGNOSE_EVIDENCE_CHARTS` | the evidence chart registry |
-| `frontend/diagnose-findings-queue.js` | `TIER` | the ranking vocabulary, rendered verbatim |
+| `frontend/diagnose-findings-queue.js` | `TIER`, `queueRows` | the ranking vocabulary and row visibility; historical past-setting reads are omitted under the 2026-09-08 operator ruling, while held and blind current-setting reads retain their existing treatment |
 | `frontend/diagnose-workstation-chart.js` | `GRID` | chart geometry |
 | `frontend/day-hero-chart.js` | `buildHeroOption`, `HERO` | the day figure beside an occurrence |
 | `frontend/scenario-chart.js` | `scnBuildEpisodeOption` | the episode figure |
@@ -891,7 +891,22 @@ implement neither.
 
 **Owns these paths.** `frontend-v2/overview.js`, `frontend-v2/explore.js`,
 `frontend-v2/plan-view.js` and their tests; `frontend/plan.js` and its test.
+The v1 segment-capacity consumer in `frontend/index.html` and its immediate
+binding/test are included solely to use that same shared representation.
 Adds its own client functions to `frontend/data.js` in that module's idiom.
+
+**Operator update, 2026-09-08 — remove historical past-setting reads.** Connor
+rejected retaining them behind Watching: “We dont' need historical reads in the app.”
+Chunk 1 owns the shared queue and v1 historical-setting presentation removal,
+including affected workstation/chart/selection helpers and their tests/replay.
+Chunk 2 owns v2 roster, counts and selection removal. No app entry, including
+Watching or All Charts, presents a historical past-setting tuning read. Current
+setting evidence, including held or thin reads, retains its existing behavior.
+The change deletes no source data and does not retire Trial/Focus decision records
+or their endings. Current I:C evidence, such as the `ic-lower` case, supplies S98;
+a historical I:C row no longer serves as its fixture. A rendered absence check
+must start from an input that contains a historical row. The operator-sanctioned
+predecessor/lock/replay amendments travel in the same PR.
 
 ### Chunk 3 — follow-up, endings and history
 

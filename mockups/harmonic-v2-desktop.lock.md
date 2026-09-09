@@ -96,6 +96,22 @@ than redesigning it.
 This is prototype evidence. Built-app fidelity pairs, the fidelity ledger and
 human release acceptance belong to the build and to task 3.4/3.5.
 
+## Re-settlement — 2026-09-08, historical past-setting reads
+
+Sanction: Connor Griffin · 2026-09-08 · “We dont' need historical reads in the app.”
+This supersedes the proposed Watching-only parity correction. HV2-31's former
+“historical states” included past-setting tuning reads; the amended term excludes
+those reads entirely while preserving Trial/Focus original records and endings.
+No source data is deleted. Held/thin current-setting evidence and the past glucose
+observations used for a current setting remain available.
+
+The same ruling changes the selected-I:C fixture obligation to current `ic-lower`
+and retires the historical-setting predecessors named in the registry below.
+HV2-30/S98 still owe coherent replacement, failure, retry and dated stale-state
+proof on a current setting. R18 owes rendered absence from an input that actually
+contains a historical row. Earlier prototype captures are evidence only for
+unchanged states; new absence evidence is owed by the build.
+
 ## Precedence
 
 Three authorities, in this order, over three different questions.
@@ -152,7 +168,7 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-28 | History distinguishes original decision or first-observed context, observed change, immutable saved ending, current/retained reassessment and explicitly unavailable legacy facts. A finished record first opens itself rather than immediately promoting another concern. | gate | Historical selection and sequential-change replay |
 | HV2-29 | A new-window load or failed replacement obeys P19b: show only count-free loading/error content for the requested range, withdraw former rows/recommendations/support/staging, and never masquerade the previous projection as the new result. | gate | P19b pending/failed/sliced-window replay |
 | HV2-30 | P19b does not erase the selected I:C exception: a replacement may preserve the last coherent selected I:C case/canvas pair while withholding staging. A clearly dated same-subject stale result may also remain during an ordinary failed refresh. These are separate states. | gate | I:C coherent-pair and same-subject refresh fixtures |
-| HV2-31 | Quiet, held, held-for-safety, thin, missing, pending, ready, unavailable, failed, stale, superseded and historical states make distinct claims and expose only backend-permitted actions. Unavailable carries a served reason; it is not an unresolved criterion. | gate | One addressable fixture per state |
+| HV2-31 | Quiet, held, held-for-safety, thin, missing, pending, ready, unavailable, failed, stale and superseded states, plus retained Trial/Focus records, make distinct claims and expose only backend-permitted actions. Unavailable carries a served reason; it is not an unresolved criterion. Historical past-setting tuning reads are absent from Overview, Explore, Watching, All Charts, counts and selection in both app surfaces. | gate | One addressable fixture per state |
 | HV2-32 | Destination arrival focuses its pane heading unless the caller supplies a precise target. Selection, cohort, chart cursor, slot, night, date and utilities remain keyboard-operable; color semantics always have label, shape or positional redundancy. Fractional-hour chart speech is repaired in `frontend/diagnose-event-comparison.js`, not in a v2-only formatter. | gate | Keyboard, accessible-name/readout and color-redundancy checks |
 | HV2-33 | Escape follows the repaired hierarchy, restores launcher/focus, preserves established unsaved utility input, and does not discard a draft implicitly. Destination changes preserve only state owned by their route contract. | gate | Layered Escape, focus and scroll replay |
 | HV2-34 | Rebinding, chart replacement, `ResizeObserver`, pagehide/unmount and late-response paths clean up fully. Mock source/clock/failure controls, scenario switchers and Review notes never enter production. | gate | Repeated mount/unmount, stale-response and DOM-absence assertions |
@@ -465,8 +481,8 @@ intentionally absent.
 | S01–S08 | Keep shell and clock fundamentals. |
 | S09–S23 | Keep selection/roster/setting successors; honor the partial retirements in S12 and S17. |
 | S24–S40 | Keep case/event successors; old global mechanics in S33–S35 and S37–S38 remain retired. |
-| S41–S71 | Keep history, loading, failure, retry, stale replacement, supersession and non-actionability; retired global canvas mechanics remain absent. |
-| S72–S91 | Keep current window/selection/history successors; do not revive global Align. |
+| S41–S71 | The 2026-09-08 historical-setting ruling retires S41, S43–S48, S53–S56, S63–S64 and S68 as attributed absence checks. S42 keeps the held/blind Watching disclosure and sift. Earlier global-canvas retirements remain in force. Current-setting replacement obligations remain under HV2-29/HV2-30. |
+| S72–S91 | Keep current window/selection successors; S74 retains default-collapsed held/blind Watching and footer absence, with historical rows removed. Do not revive global Align. |
 | S92–S101 | Keep the retired old fixed-seat mechanics retired; preserve the successor Spotlight/All Charts behavior. |
 | S102–S108 | Keep chart state, scale, retry and full-screen behavior. |
 | S109, S112, S113 | Keep the retired old mode/layout/duplicate-tile mechanics retired. This does not retire ADR 348's Explore destination. |
@@ -539,7 +555,7 @@ whole-profile or Focus threshold.
 | Overview/guidance | Load priority, active Plan/Trial/Focus and quiet guidance states. | Failed/unavailable cannot become quiet; the frontend cannot choose a competing action or infer admission. | #387 admission envelope |
 | Explore/window | Draw, resize, slide, cross midnight, clear, restore route, select roster/case and open All Charts. | Click without movement does nothing; occurrence selection does not change the window; global Align and Event-charts controls stay absent. | Existing APIs/renderers |
 | P19b replacement | Select a new window, hold its request pending, fail it, retry, then settle it. | No former projection counts, rows, recommendation, support or staging masquerades as the new result. | Existing findings protocol |
-| Selected I:C replacement | Open a coherent selected I:C historical case, request a replacement, fail and retry. | Preserve only the coherent case/canvas pair; never mix generations or expose staging. | Existing findings protocol |
+| Selected I:C replacement | Open a coherent selected current-setting I:C case (`ic-lower`), request a replacement, fail and retry. | Preserve only the coherent case/canvas pair; never mix generations or expose staging. | Existing findings protocol |
 | Setting evidence | Open Basal, Correction factor and Carb ratio; inspect evidence and all 48 basal slots; open a night in Day and return. | Held/thin/missing rows keep values but cannot stage unless the backend permits; no frontend support/readiness derivation. | Existing producers |
 | Plan | Stage one family, inspect complete schedule/capacity, save draft, record decision, reconcile pending→mismatch/match, withdraw where allowed. | Save/apply failure records no success; stale revision conflicts; empty plan; divergent first plan; edit-revert manufactures no history. | #387 lifecycle protocol |
 | Trial/readiness | Open an accumulating Trial; inspect live chart/value/direction; render its type-specific unit/count/criterion; finish when permitted; reload the record. | Unavailable comparison; count met but inference unclear; >14-day accumulation; inconclusive finish; immature finish refused; no session Keep; Revert uses the supplied Plan route only. | #387 readiness fields/permissions |

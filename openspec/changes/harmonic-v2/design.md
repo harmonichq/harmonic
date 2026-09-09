@@ -1856,7 +1856,11 @@ query only, each `remain_pattern` roster entry becomes one served ranked row
 `settled_price` or null when unadmitted), its admitted habit member rows stay
 served and gain one additive `claimed_by` stamp, and the finding case file
 accepts the Pattern subject, returning the Pattern's own Exposure population
-with each occurrence's existing per-member verdict and claiming member. A
+read from the same exposures feed that prices the row (one occurrence list
+serves the row's n and k and the case file's denominator and claimed count, so
+the two cannot disagree), with each occurrence's existing per-member verdict
+and claiming member; one predicate, `pattern_chartable`, decides both whether
+the row carries a chart coordinate and whether the case file serves. A
 scoped window serves no Pattern row, because the roster's counts are
 whole-feed and every other row is window-local. No membership, rate,
 admission, collapse or readiness rule moves: the projection re-shapes what

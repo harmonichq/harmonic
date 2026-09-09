@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildCapture } from '../mockups/diagnose-event-comparison.synthetic/generate.mjs';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
   populateFindingCasePreparation,
@@ -88,8 +89,63 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
 
 test('browser fixture population supplies the backend-prepared Pattern roster', () => {
   assert.deepEqual(populateFindingsProjectionInput({}).outcome_patterns,
-    findingsFixture.inputs.outcome_patterns,
+    findingsFixture.browser_outcome_patterns,
     'every browser gate receives the frozen prepared roster from one adapter');
+});
+
+test('browser Pattern rows and case files share the public producer denominator', () => {
+  const inputs = populateFindingsProjectionInput({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  });
+  const projection = projectFindings(inputs);
+  const preparation = populateFindingCasePreparation(
+    structuredClone(caseFiles.preparation), projection, capture,
+  );
+  const row = preparation.rendered_rows.find(({ id }) => id === 'pattern:highs_after_meals');
+  const caseFile = projectPatternCaseFile(capture, {
+    key: 'highs_after_meals', projectionId: preparation.projection_id,
+  });
+
+  assert.deepEqual(
+    [caseFile.summary.denominator, caseFile.summary.claimed],
+    [row.pattern.n, row.pattern.k],
+  );
+  assert.deepEqual(row.pattern_chart, row.case_header.pattern_chart);
+  assert.equal(row.event_chart, null);
+});
+
+test('a claimed member outside its Pattern population tags no occurrence', () => {
+  const inputs = populateFindingsProjectionInput({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  });
+  const projection = projectFindings(inputs);
+  const member = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
+  const caseFile = projectPatternCaseFile(capture, { key: 'lows_after_correcting_highs' });
+
+  assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
+  assert.equal(caseFile.summary.claimed, 0);
+  assert.ok(caseFile.occurrences.every((row) => row.member === 'clean'));
+});
+
+test('memberless Patterns remain served without an invented chart', () => {
+  const inputs = populateFindingsProjectionInput({
+    analysis: payload.analyze,
+    exposures: payload.exposures,
+    scenarios: payload.scenarios,
+  });
+  const projection = projectFindings(inputs);
+  const preparation = populateFindingCasePreparation(
+    structuredClone(caseFiles.preparation), projection, capture,
+  );
+  const row = preparation.rendered_rows.find(({ id }) => id === 'pattern:lows_after_meals');
+
+  assert.equal(row.pattern.n, 20);
+  assert.equal(row.pattern_chart, null);
+  assert.equal(projectPatternCaseFile(capture, { key: row.pattern.key }), null);
 });
 
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {

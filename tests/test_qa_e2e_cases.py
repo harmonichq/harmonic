@@ -8,6 +8,8 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from ciq_autotune.store import Store
+from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
+from ciq_autotune.window_membership import WindowQuery
 
 from scripts.qa_e2e_cases import (
     BASAL_SOURCE_SPAN_DAYS,
@@ -80,6 +82,32 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
+    def test_generator_owned_pattern_case_matches_the_served_roster_counts(self):
+        case = next(case for case in QA_CASES
+                    if case.name == "pattern-near-tie")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, case)
+                prepared = prepare_case_files(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios, analysis_generation="qa:0",
+                )
+
+            pattern = next(row for row in execution.findings["whole_day"]["rows"]
+                           if row["id"] == "pattern:highs_after_meals")
+            case_file = prepared.case(pattern["id"], "event", None)
+            self.assertEqual(
+                (case_file["summary"]["denominator"], case_file["summary"]["claimed"]),
+                (pattern["pattern"]["n"], pattern["pattern"]["k"]),
+            )
+            rendered = next(row for row in wrap(prepared)["rendered_rows"]
+                            if row["id"] == pattern["id"])
+            self.assertEqual(rendered["pattern_chart"], pattern["pattern_chart"])
+            self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
+
     def test_outcome_pattern_expectation_is_required(self):
         with self.assertRaises(TypeError):
             QaExpectation(

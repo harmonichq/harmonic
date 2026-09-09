@@ -196,8 +196,20 @@ class PreparedCases:
         if row is None or row.get("kind") != "pattern":
             return None
         pattern = row["pattern"]
-        habits = [Lever(member["subject"].removeprefix("habit:"))
-                  for member in pattern["members"] if member["kind"] == "habit"]
+        member_order = {
+            member["subject"]: index
+            for index, member in enumerate(pattern["members"])
+            if member["kind"] == "habit"
+        }
+        habits = sorted(
+            {
+                Lever(candidate["lever"])
+                for candidate in self.findings["rows"]
+                if candidate.get("claimed_by") == finding_id
+                and candidate.get("lever") is not None
+            },
+            key=lambda lever: member_order[f"habit:{lever.value}"],
+        )
         rate_levers = [Lever(subject.removeprefix("habit:"))
                        for subject in pattern["rate_levers"]]
         if not habits or not rate_levers:
@@ -210,21 +222,25 @@ class PreparedCases:
         if not roster:
             return None
         subject_by_lever = {lever: f"habit:{lever.value}" for lever in habits}
+        states_by_lever = {
+            lever: {candidate.id: candidate.verdict
+                    for candidate in self._roster(lever)}
+            for lever in habits
+        }
         claimed_by_id = {}
         verdicts = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         for member in roster:
-            choices = [lever for lever in habits
-                       if member.id in self.associations[lever]]
-            if choices:
-                chosen = choices[0]
+            claimants = [lever for lever in habits
+                         if member.id in self.associations[lever]]
+            if claimants:
+                chosen = claimants[0]
                 claimed_by_id[member.id] = subject_by_lever[chosen]
-                states = [next((candidate.verdict for candidate in self._roster(lever)
-                                if candidate.id == member.id), "clean")
-                          for lever in choices]
-                verdicts[member.id] = max(states, key=lambda state: precedence[state])
+                verdicts[member.id] = states_by_lever[chosen].get(member.id, "fired")
             else:
-                verdicts[member.id] = "clean"
+                states = [states_by_lever[lever].get(member.id, "clean")
+                          for lever in habits]
+                verdicts[member.id] = max(states, key=lambda state: precedence[state])
         pattern_roster = tuple(Member(member.opportunity, member.outcome_t,
                                       verdicts[member.id], member.occurrence_id)
                                for member in roster)

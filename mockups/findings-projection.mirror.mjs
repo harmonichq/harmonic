@@ -732,7 +732,7 @@ const compare = (a, b, patterns) => {
     if (left[i] < right[i]) return -1;
     if (left[i] > right[i]) return 1;
   }
-  return 0;
+  return left.length - right.length;
 };
 
 /**
@@ -761,31 +761,27 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of inputs.outcome_patterns) {
       if (pattern.collapse !== 'remain_pattern') continue;
+      let hasClaimedRow = false;
       for (const member of pattern.members || []) {
         if (member.kind === 'habit' && member.admitted) {
           const claimed = byId.get(`finding:${member.subject.replace('habit:', '')}`);
-          if (claimed) claimed.claimed_by = pattern.subject;
+          if (claimed) {
+            claimed.claimed_by = pattern.subject;
+            hasClaimedRow = true;
+          }
         }
       }
       const projected = stampedRow({
         id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
         priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
         pattern: structuredClone(pattern), window_scope: 'whole_day',
+        pattern_chart: hasClaimedRow
+          ? { key: pattern.key, window: structuredClone(query.dict) } : null,
       });
       rows.push(projected); patterns.set(pattern.subject, projected);
     }
   }
   rows.sort((a, b) => compare(a, b, patterns));
-  if (patterns.size) {
-    const claimed = new Map();
-    for (const row of rows) {
-      if (row.claimed_by) {
-        const members = claimed.get(row.claimed_by) || [];
-        members.push(row); claimed.set(row.claimed_by, members);
-      }
-    }
-    rows = rows.flatMap((row) => row.claimed_by ? [] : [row, ...(claimed.get(row.id) || [])]);
-  }
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
     else if (row.register === 'assert') row.tier = 'next_in_line';

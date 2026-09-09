@@ -69,9 +69,13 @@ export function validFindingCaseFile(caseFile) {
     || !occurrences.every((row) => recurrenceIdentity.test(row?.id || '')
       && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
       && validAnchor(row.anchor))) return false;
+  const patternId = caseFile.finding.id.startsWith('pattern:');
   const patternCase = typeof caseFile.finding.subject === 'string';
-  if (patternCase && (caseFile.finding.subject !== caseFile.finding.id
-    || !occurrences.every((row) => typeof row.member === 'string'))) return false;
+  if (patternId !== patternCase
+    || (patternCase && (caseFile.finding.subject !== caseFile.finding.id
+    || !caseFile.finding.subject.startsWith('pattern:')
+    || !occurrences.every((row) => row.member === 'clean'
+      || /^habit:[a-z0-9_]+$/.test(row.member))))) return false;
 
   const roster = new Map(occurrences.map((row) => [row.id, row]));
   if (roster.size !== occurrences.length) return false;
@@ -231,13 +235,20 @@ export function assertMatchingFindingCasePreparation(next, requested) {
   const validPatternChart = (chart, lever, window) => chart === null
     || (typeof chart === 'object' && !Array.isArray(chart)
       && chart.key === lever && sameWindow(chart.window, window));
-  const validHeader = (header, findingId, window) => header?.finding_id === findingId
-    && header.inspectability === 'ready'
-    && typeof header.lever === 'string' && typeof header.title === 'string'
-    && typeof header.family === 'string' && validSummary(header.summary)
-    && validCounts(header.verdict_counts, header.summary.denominator)
-    && ((header.pattern_chart && validPatternChart(header.pattern_chart, header.lever, window))
-      || validEventChart(header.event_chart, header.lever, window));
+  const validHeader = (header, findingId, window) => {
+    const pattern = findingId.startsWith('pattern:');
+    return header?.finding_id === findingId
+      && header.inspectability === 'ready'
+      && typeof header.lever === 'string' && typeof header.title === 'string'
+      && typeof header.family === 'string' && validSummary(header.summary)
+      && validCounts(header.verdict_counts, header.summary.denominator)
+      && (pattern
+        ? header.event_chart == null
+          && Boolean(header.pattern_chart)
+          && validPatternChart(header.pattern_chart, header.lever, window)
+        : header.pattern_chart == null
+          && validEventChart(header.event_chart, header.lever, window));
+  };
   const sameHeader = (left, right) => left.finding_id === right.finding_id
     && left.inspectability === right.inspectability && left.lever === right.lever
     && left.title === right.title && left.family === right.family

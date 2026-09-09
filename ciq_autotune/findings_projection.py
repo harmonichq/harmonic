@@ -185,13 +185,6 @@ class FindingsProjection:
             pattern_rows, pattern_by_subject = self._pattern_rows(rows, query)
             rows += pattern_rows
         rows.sort(key=lambda row: _sort_key(row, pattern_by_subject))
-        if pattern_by_subject:
-            claimed = {row["claimed_by"]: [] for row in rows if row.get("claimed_by")}
-            for row in rows:
-                if row.get("claimed_by"):
-                    claimed[row["claimed_by"]].append(row)
-            rows = [item for row in rows if not row.get("claimed_by")
-                    for item in (row, *claimed.get(row["id"], ()))]
         _assign_tiers(rows)
         for row in rows:
             row["headline"] = _headline_for(row)
@@ -236,15 +229,19 @@ class FindingsProjection:
             subject = pattern["subject"]
             claimed = [member["subject"] for member in pattern["members"]
                        if member["kind"] == "habit" and member["admitted"]]
+            has_claimed_row = False
             for member in claimed:
                 row = by_id.get(f"finding:{member.removeprefix('habit:')}")
                 if row is not None:
                     row["claimed_by"] = subject
+                    has_claimed_row = True
             pattern_row = _row(
                 id=subject, register="finding", kind="pattern", title=pattern["title"],
                 priority=(pattern["settled_price"]
                           if pattern["admission_route"] != "none" else None),
                 episodes=None, pattern=deepcopy(pattern), window_scope="whole_day",
+                pattern_chart=({"key": pattern["key"], "window": query.to_dict()}
+                               if has_claimed_row else None),
             )
             pattern_rows.append(pattern_row)
             pattern_by_subject[subject] = pattern_row
@@ -1011,8 +1008,6 @@ def _sort_key(row: dict, patterns: Optional[Dict[str, dict]] = None):
     if row.get("claimed_by") and patterns and row["claimed_by"] in patterns:
         parent = patterns[row["claimed_by"]]
         return _sort_key(parent) + (1, *key)
-    if row["kind"] == "pattern":
-        return key + (0,)
     return key + (0,)
 
 

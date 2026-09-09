@@ -7,6 +7,7 @@ export const STORIES = [
   { id: 'isf', label: 'Correction factor evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'carb-ratio', label: 'Carb ratio evidence', modes: ['event', 'clock'], sizes: true, range: true },
   { id: 'event-comparison', label: 'Response comparison', modes: [], sizes: true, range: true },
+  { id: 'pattern', label: 'Pattern evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'strip', label: 'Glucose by clock', modes: [], sizes: false, range: true },
   { id: 'workstation', label: 'Diagnose workstation', modes: [], sizes: false, range: false },
 ];
@@ -113,6 +114,7 @@ async function drawWorkstation(host, state, story) {
           : story.id === 'isf' ? candidate.dataset.chartId === 'isf'
             : story.id === 'carb-ratio' ? candidate.dataset.chartId.startsWith('ic:')
               : story.id === 'event-comparison' ? candidate.dataset.chartId.startsWith('finding:')
+                : story.id === 'pattern' ? candidate.dataset.chartId.startsWith('pattern:')
                 : false));
   if (story.id === 'strip' || story.id === 'workstation') return 'Diagnose workstation · undrilled';
   const tile = await new Promise((resolve) => {

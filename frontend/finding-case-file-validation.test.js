@@ -7,12 +7,16 @@ import {
   validFindingCaseFile,
 } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const capture = JSON.parse(await readFile(new URL(
   '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url,
 )));
 const projectionFixture = JSON.parse(await readFile(new URL(
   './__fixtures__/findings-projection.json', import.meta.url,
+)));
+const patternCapture = JSON.parse(await readFile(new URL(
+  '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url,
 )));
 const missedMealFixture = JSON.parse(await readFile(new URL(
   './__fixtures__/missed-meal-comparison.json', import.meta.url,
@@ -25,6 +29,25 @@ const mealBolusShortCase = () => independent(capture.cases['finding:meal_bolus_s
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 const selectedEventCase = () => independent(
   Object.values(capture.cases['finding:over_treated_low'].selected_event)[0]);
+
+test('accepts the generator-owned Pattern case file and its additive member tags', () => {
+  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  assert.equal(validFindingCaseFile(caseFile), true);
+  assert.ok(caseFile.occurrences.some((row) => row.member.startsWith('habit:')));
+  assert.ok(caseFile.occurrences.some((row) => row.member === 'clean'));
+});
+
+test('rejects a Pattern case file with a browser-invented member subject', () => {
+  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  caseFile.occurrences[0].member = 'setting:carb_ratio';
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
+
+test('rejects a Pattern case file without its canonical subject', () => {
+  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  delete caseFile.finding.subject;
+  assert.equal(validFindingCaseFile(caseFile), false);
+});
 
 test('accepts a preparation carrying the current v2 findings projection', () => {
   const preparation = independent(missedMealFixture.preparation);

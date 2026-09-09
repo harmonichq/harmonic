@@ -44,6 +44,15 @@ const WINDOWS = [null, { start_min: 0, end_min: 360 },
   { start_min: 465, end_min: 780 }, { start_min: 720, end_min: 1440 },
   { start_min: 840, end_min: 900 }];
 const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort === plan[index]).length;
+const patternFamily = {
+  carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
+  over_treated_low: 'lows', correction_on_iob: 'lows',
+  correction_stacking: 'correction_clusters',
+};
+const patternLabels = {
+  meals: ['meal', 'Completed carb bolus'], lows: ['low', 'Low excursion'],
+  correction_clusters: ['correction', 'Correction cluster'], highs: ['high', 'High excursion'],
+};
 
 function traceIncludes(cohort, rank, minute, start, end) {
   const span = end - start;
@@ -307,34 +316,79 @@ function sourceRows(workstationExposures, family) {
 }
 
 /** Build and validate the fixture-only capture from the canonical workstation input. */
-export function buildCapture(workstationExposures) {
+export function buildCapture(workstationExposures, outcomePatterns = []) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
+  const views = {
+    meals: attachVisualSupport({
+      anchor: 'completed carb-bolus', window: [-60, 300],
+      factors: factors.meals, default_factor: 'carb_undercount',
+      factor_labels: Object.fromEntries(factors.meals.map((key) => [key, labels[key]])),
+      occurrences: plan.map((_, index) => occurrence('meals', index, meals[index])),
+    }),
+    lows: attachVisualSupport({
+      anchor: 'excursion nadir', window: [-60, 120],
+      factors: factors.lows, default_factor: 'over_treated_low',
+      factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
+      occurrences: plan.map((_, index) => occurrence('lows', index, lows[index])),
+    }),
+  };
+  const richBySource = new Map(Object.entries(views).flatMap(([family, view]) =>
+    view.occurrences.map((row) => [`${family}|${row.ep_id}|${row.anchor_t}`, row])));
+  const patternPopulations = Object.fromEntries(
+    Object.entries(workstationExposures.exposures).map(([family, payload], familyIndex) => {
+      const [kind, label] = patternLabels[family] || [family, family];
+      return [family, payload.occurrences.map((row, index) => {
+        const rich = richBySource.get(`${family}|${row.ep_id}|${row.t}`);
+        return {
+          id: `o_${((familyIndex + 1) * 1000 + index + 1).toString(16).padStart(32, '0')}`,
+          ep_id: row.ep_id, date: row.date, anchor_t: row.t,
+          anchor_bg: row.bg ?? null, kind, label,
+          cause_lever: row.cause_lever ?? null,
+          verdicts: structuredClone(row.verdicts || []),
+          trace: structuredClone(rich?.trace || { cgm: [], boluses: [], suspends: [] }),
+        };
+      })];
+    }),
+  );
+  // The capture freezes the server-side attribution used by the browser gates.
+  // It is deliberately generated here, beside the population, rather than
+  // inferred by the browser projector.  A member can claim an occurrence only
+  // when its own Exposure family is the Pattern's population family; this keeps
+  // correction_on_iob visible beneath lows_after_correcting_highs without
+  // relabeling correction clusters as lows.
+  const patternAttribution = Object.fromEntries(outcomePatterns.map((pattern) => {
+    const rateLever = pattern.rate_levers.map((subject) => subject.replace('habit:', ''))
+      .find((lever) => patternFamily[lever]);
+    const family = rateLever ? patternFamily[rateLever] : null;
+    const members = new Set(pattern.members
+      .filter((member) => member.kind === 'habit' && member.admitted)
+      .map((member) => member.subject)
+      .filter((subject) => patternFamily[subject.replace('habit:', '')] === family));
+    const population = patternPopulations[family] || [];
+    return [pattern.key, Object.fromEntries(population.map((row) => [
+      row.id, `habit:${row.cause_lever}`,
+    ]).filter(([, member]) => members.has(member)))];
+  }));
   return {
     schema: 'finding-case-file-event-capture-v1',
     fixture: 'labeled-synthetic',
     source_window: structuredClone(workstationExposures.window),
-    views: {
-      meals: attachVisualSupport({
-        anchor: 'completed carb-bolus', window: [-60, 300],
-        factors: factors.meals, default_factor: 'carb_undercount',
-        factor_labels: Object.fromEntries(factors.meals.map((key) => [key, labels[key]])),
-        occurrences: plan.map((_, index) => occurrence('meals', index, meals[index])),
-      }),
-      lows: attachVisualSupport({
-        anchor: 'excursion nadir', window: [-60, 120],
-        factors: factors.lows, default_factor: 'over_treated_low',
-        factor_labels: Object.fromEntries(factors.lows.map((key) => [key, labels[key]])),
-        occurrences: plan.map((_, index) => occurrence('lows', index, lows[index])),
-      }),
-    },
+    outcome_patterns: structuredClone(outcomePatterns),
+    pattern_families: patternFamily,
+    pattern_populations: patternPopulations,
+    pattern_attribution: patternAttribution,
+    views,
   };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const workstationExposures = JSON.parse(readFileSync(
     new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8')).exposures;
-  const capture = buildCapture(workstationExposures);
+  const outcomePatterns = JSON.parse(readFileSync(
+    new URL('../../frontend/__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
+    .browser_outcome_patterns;
+  const capture = buildCapture(workstationExposures, outcomePatterns);
   const serialized = JSON.stringify(capture, null, 2) + '\n';
   const target = new URL('./capture.json', import.meta.url);
   if (process.argv.includes('--check')) {

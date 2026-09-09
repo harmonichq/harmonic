@@ -59,6 +59,7 @@ from ciq_autotune.analyzers.scenario.payload import (  # noqa: E402
     PreemptedLows,
     ScenarioReport,
 )
+from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns  # noqa: E402
 from ciq_autotune.analyzers.scenario.levers import Lever, recommendation, title  # noqa: E402
 from ciq_autotune.analyzers.ic_regression import analyze_ic_blocks_fuzzy  # noqa: E402
 from ciq_autotune.analyzers.tuning_priority import (  # noqa: E402
@@ -721,6 +722,31 @@ def payload() -> dict:
     active_history, aged_history, unavailable_history = history_catalogs()
     density_history = density_history_catalog()
     selected_id = active_history[0].history_id
+    browser_payload = json.loads((
+        pathlib.Path(__file__).resolve().parents[1]
+        / "mockups" / "diagnose-workstation.synthetic" / "payload.json"
+    ).read_text())
+    browser_analysis = {
+        **browser_payload["analyze"],
+        "tuning_levers": prepared._analysis["tuning_levers"],
+    }
+    browser_exposures = json.loads(json.dumps(browser_payload["exposures"]))
+    memberless_low = next(
+        row for row in browser_exposures["exposures"]["meals"]["occurrences"]
+        if not row.get("attributed")
+    )
+    memberless_low.update(attributed=True, cause_lever=Lever.MEAL_OVER_DELIVERY.value)
+    browser_scenarios = json.loads(json.dumps(prepared._scenarios))
+    browser_scenarios["patterns"].extend([
+        Pattern(lever=Lever.LATE_BOLUS,
+                confidence=Confidence(n=50, k=7, effect=0.38), rank=3,
+                recommendation=recommendation(Lever.LATE_BOLUS),
+                hero_episode="ep70", occurrences=["ep70"]).to_dict(),
+        Pattern(lever=Lever.CORRECTION_ON_IOB,
+                confidence=Confidence(n=45, k=8, effect=0.35), rank=4,
+                recommendation=recommendation(Lever.CORRECTION_ON_IOB),
+                hero_episode="ep90", occurrences=["ep90"]).to_dict(),
+    ])
 
     def with_catalog(catalog):
         analysis_payload = dict(prepared._analysis)
@@ -750,6 +776,12 @@ def payload() -> dict:
             "outcome_patterns": prepared._outcome_patterns,
             "analysis_generation": ANALYSIS_GENERATION,
         },
+        # The browser-gate workstation has a denser, independently generated
+        # exposure feed than this projection fixture. Run that feed through the
+        # same public Pattern producer so its rows and case files share k and n.
+        "browser_outcome_patterns": build_outcome_patterns(
+            browser_analysis, browser_exposures, browser_scenarios,
+        ),
         "direction_only_inputs": {
             "analysis": direction_only._analysis,
             "exposures": direction_only._exposures,

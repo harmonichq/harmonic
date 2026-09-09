@@ -24,9 +24,13 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _EVENT_CHART_FAMILIES,
+    _PATTERN_CHIPS,
+    _chips_for,
+    _row as projection_row,
     FindingsProjection,
     WindowQuery,
     prepare_findings_projection,
@@ -702,6 +706,101 @@ class QueueOrderTest(unittest.TestCase):
         order = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
         ranks = [order[row["register"]] for row in rows]
         self.assertEqual(ranks, sorted(ranks))
+
+
+class PatternProjectionTest(unittest.TestCase):
+    def setUp(self):
+        self.projection = gen.projection()
+        self.result = self.projection.project(WindowQuery.whole_day())
+
+    def test_patterns_are_whole_day_only_and_claimed_members_follow_their_parent(self):
+        pattern = next(row for row in self.result["rows"]
+                       if row["id"] == "pattern:highs_after_meals")
+        index = self.result["rows"].index(pattern)
+        member = self.result["rows"][index + 1]
+
+        self.assertEqual(member["id"], "finding:carb_undercount")
+        self.assertEqual(member["claimed_by"], pattern["id"])
+        self.assertEqual(pattern["pattern_chart"], {
+            "key": "highs_after_meals", "window": WindowQuery.whole_day().to_dict(),
+        })
+        self.assertIsNone(pattern["event_chart"])
+
+        scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
+        self.assertFalse(any(row["kind"] == "pattern" for row in scoped["rows"]))
+        self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
+
+    def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
+        rows = [row for row in self.result["rows"] if not row.get("claimed_by")]
+        expected_counts = {name: 0 for name in self.result["counts"]}
+        expected_chips = {name: 0 for name in self.result["chip_counts"]}
+        for row in rows:
+            expected_counts[row["register"]] += 1
+            for chip in row["chips"]:
+                expected_chips[chip] += 1
+        self.assertEqual(self.result["counts"], expected_counts)
+        self.assertEqual(self.result["chip_counts"], expected_chips)
+
+    def test_collapse_member_passes_through_and_unadmitted_pattern_is_title_only(self):
+        ids = {row["id"] for row in self.result["rows"]}
+        self.assertNotIn("pattern:highs_after_treating_lows", ids)
+        collapsed_member = next(row for row in self.result["rows"]
+                                if row["id"] == "finding:over_treated_low")
+        self.assertIsNone(collapsed_member["claimed_by"])
+
+        unadmitted = next(row for row in self.result["rows"]
+                          if row["id"] == "pattern:lows_after_correcting_highs")
+        self.assertIsNone(unadmitted["priority"])
+        self.assertEqual(unadmitted["headline"], unadmitted["title"])
+        self.assertIsNone(unadmitted["pattern_chart"])
+
+    def test_memberless_patterns_keep_their_count_without_a_chart(self):
+        browser = json.loads((pathlib.Path(__file__).resolve().parents[1]
+                              / "frontend" / "__fixtures__"
+                              / "findings-projection.json").read_text())
+        pattern = next(row for row in browser["browser_outcome_patterns"]
+                       if row["key"] == "lows_after_meals")
+        self.assertGreater(pattern["k"], 0)
+        self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
+
+        overnight = next(row for row in self.result["rows"]
+                         if row["id"] == "pattern:overnight_lows_no_iob")
+        self.assertEqual(overnight["chips"], ["lows"])
+        self.assertIsNone(overnight["pattern_chart"])
+
+    def test_count_status_has_an_explicit_headline_and_no_blank_rate(self):
+        source = next(row for row in self.projection._outcome_patterns
+                      if row["key"] == "highs_after_meals")
+        inconsistent = json.loads(json.dumps(source))
+        inconsistent.update(k=4, n=3, rate=None, wilson=None,
+                            count_status={"status": "inconsistent_counts", "k": 4, "n": 3})
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=self.projection._exposures,
+            _scenarios=self.projection._scenarios, _outcome_patterns=[inconsistent],
+        )
+        row = next(row for row in projection.project(WindowQuery.whole_day())["rows"]
+                   if row["kind"] == "pattern")
+        self.assertEqual(row["headline"], "Highs after meals: counts under review")
+
+    def test_closed_pattern_chips_equal_the_union_of_their_member_chips(self):
+        member_rows = {
+            "carb_undercount": ["meals"], "late_bolus": ["meals"],
+            "meal_over_delivery": ["meals"], "over_treated_low": ["lows"],
+            "correction_on_iob": ["lows"],
+            "correction_stacking": ["correction_clusters"],
+        }
+        for key, _title, members, _rate_levers, _setting, _family in _ROSTER:
+            with self.subTest(key=key):
+                union = []
+                for lever in members:
+                    chips = _chips_for(projection_row(
+                        register="finding", kind="habit", lever=lever,
+                        appearances=[{"family": family} for family in member_rows[lever]],
+                    ))
+                    union.extend(chip for chip in chips if chip not in union)
+                if key == "overnight_lows_no_iob":
+                    union = ["lows"]
+                self.assertEqual(list(_PATTERN_CHIPS[key]), union)
 
 
 class WindowQueryTest(unittest.TestCase):

@@ -297,7 +297,8 @@ function patternState(occurrence, lever) {
 function patternOccurrence(row, habits, attributedMember) {
   const claimant = attributedMember?.startsWith('habit:')
     ? attributedMember.replace('habit:', '') : null;
-  const states = habits.map((lever) => patternState(row, lever));
+  const states = habits.map((lever) => patternState(row, lever))
+    .map((state) => !claimant && state === 'fired' ? 'outranked' : state);
   const verdict = patternVerdict(states, Boolean(claimant));
   return {
     id: row.id, date: row.date, verdict,
@@ -324,24 +325,32 @@ function patternCohort(key, name, rows, window) {
 
 /** Fixture-only server answer for the canonical Pattern case-file coordinate. */
 export function projectPatternCaseFile(capture, {
-  key, projectionId = `fp_${'2'.repeat(32)}`, alignment = 'event',
+  patternChart, projectionId = `fp_${'2'.repeat(32)}`, alignment = 'event',
 } = {}) {
+  if (!patternChart) return null;
+  const { key } = patternChart;
   const pattern = capture.outcome_patterns.find((row) => row.key === key);
-  if (!pattern || pattern.collapse !== 'remain_pattern') return null;
-  const habits = pattern.members.filter((member) => member.kind === 'habit' && member.admitted)
+  if (!pattern || pattern.collapse !== 'remain_pattern') {
+    throw new Error(`served Pattern coordinate has no roster entry: ${key}`);
+  }
+  const habits = pattern.members.filter((member) => member.kind === 'habit')
     .map((member) => member.subject.replace('habit:', ''));
   const rateLever = pattern.rate_levers.map((subject) => subject.replace('habit:', ''))
     .find((lever) => capture.pattern_families[lever]);
-  if (!habits.length || !rateLever) return null;
+  if (!rateLever) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
   const family = capture.pattern_families[rateLever];
   const source = capture.pattern_populations[family] || [];
-  if (!source.length) return null;
+  if (!source.length) throw new Error(`served Pattern coordinate has no population: ${key}`);
   const attribution = capture.pattern_attribution?.[key] || {};
   const occurrences = source.map((row) => patternOccurrence(row, habits, attribution[row.id]));
   const claimed = occurrences.filter((row) => row.member !== 'clean');
   const counts = Object.fromEntries(patternVerdicts.map((verdict) => [
     verdict, occurrences.filter((row) => row.verdict === verdict).length,
   ]));
+  if (occurrences.length !== pattern.n || claimed.length !== pattern.k
+      || counts.fired !== pattern.k) {
+    throw new Error(`Pattern exposure counts diverged for ${key}`);
+  }
   let projection;
   if (alignment === 'clock') {
     const buckets = Array.from({ length: 12 }, (_, index) => ({
@@ -385,7 +394,7 @@ export function projectPatternCaseFile(capture, {
     schema: 'diagnose-finding-case-file-v1', projection_id: projectionId,
     finding: { id: pattern.subject, lever: pattern.key, subject: pattern.subject,
       title: pattern.title },
-    window: windowWire(null), family: family.replace('_', ' '),
+    window: structuredClone(patternChart.window), family: family.replace('_', ' '),
     population: family.replace('_', ' '), cross_population: false,
     summary: { claimed: claimed.length, denominator: occurrences.length,
       noun: family.replace('_', ' ') },

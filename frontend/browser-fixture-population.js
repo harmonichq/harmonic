@@ -12,6 +12,8 @@ import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.syn
 
 const findingsFixture = JSON.parse(readFileSync(new URL(
   './__fixtures__/findings-projection.json', import.meta.url), 'utf8'));
+const defaultPatternCapture = JSON.parse(readFileSync(new URL(
+  '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
 
 /** Add the server-prepared Pattern roster to every browser-gate mirror input. */
 export function populateFindingsProjectionInput(input) {
@@ -21,7 +23,9 @@ export function populateFindingsProjectionInput(input) {
   };
 }
 
-export function populateFindingCasePreparation(preparation, projection, patternCapture = null) {
+export function populateFindingCasePreparation(
+  preparation, projection, patternCapture = defaultPatternCapture,
+) {
   const readyRows = new Map(preparation.rendered_rows
     .filter((row) => row.case_header?.inspectability === 'ready')
     .map((row) => [row.id, row]));
@@ -30,21 +34,18 @@ export function populateFindingCasePreparation(preparation, projection, patternC
   preparation.rendered_rows = structuredClone(projection.rows).flatMap((row) => {
     if (row.register !== 'finding') return [row];
     if (row.kind === 'pattern') {
-      const caseFile = patternCapture && projectPatternCaseFile(patternCapture, {
-        key: row.pattern.key, projectionId: preparation.projection_id,
+      if (!row.pattern_chart) return [row];
+      const caseFile = projectPatternCaseFile(patternCapture, {
+        patternChart: row.pattern_chart, projectionId: preparation.projection_id,
       });
-      if (!caseFile) return [row];
-      const patternChart = {
-        key: row.pattern.key,
-        window: structuredClone(preparation.coordinates.window),
-      };
+      if (!caseFile) throw new Error(`chartable Pattern fixture has no case: ${row.id}`);
       const header = {
         finding_id: row.id, lever: row.pattern.key, title: row.title,
         family: caseFile.family, summary: caseFile.summary,
         verdict_counts: caseFile.verdict_counts, inspectability: 'ready',
-        pattern_chart: patternChart,
+        pattern_chart: structuredClone(row.pattern_chart),
       };
-      return [{ ...row, pattern_chart: patternChart, case_header: header }];
+      return [{ ...row, case_header: header }];
     }
     const ready = readyRows.get(row.id);
     if (!ready) return [];

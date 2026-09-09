@@ -101,17 +101,29 @@ class QaE2ECasesTest(unittest.TestCase):
                     scenarios=execution.scenarios, analysis_generation="qa:0",
                 )
 
-            pattern = next(row for row in projection["rows"]
-                           if row["id"] == "pattern:highs_after_meals")
-            case_file = prepared.case(pattern["id"], "event", None)
-            self.assertEqual(
-                (case_file["summary"]["denominator"], case_file["summary"]["claimed"]),
-                (pattern["pattern"]["n"], pattern["pattern"]["k"]),
-            )
-            rendered = next(row for row in wrap(prepared)["rendered_rows"]
-                            if row["id"] == pattern["id"])
-            self.assertEqual(rendered["pattern_chart"], pattern["pattern_chart"])
-            self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
+            patterns = {row["key"]: row for row in projection["outcome_patterns"]}
+            self.assertEqual(set(patterns), {
+                "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+                "lows_after_correcting_highs", "overnight_lows_no_iob",
+            })
+            rendered_by_id = {row["id"]: row for row in wrap(prepared)["rendered_rows"]}
+            rows_by_id = {row["id"]: row for row in projection["rows"]}
+            for key, pattern in patterns.items():
+                with self.subTest(key=key):
+                    row = rows_by_id.get(pattern["subject"])
+                    if row is None or not row["pattern_chart"]:
+                        self.assertIsNone(prepared.case(pattern["subject"], "event", None))
+                        continue
+                    case_file = prepared.case(pattern["subject"], "event", None)
+                    self.assertEqual(
+                        (case_file["summary"]["denominator"],
+                         case_file["summary"]["claimed"],
+                         case_file["verdict_counts"]["fired"]),
+                        (pattern["n"], pattern["k"], pattern["k"]),
+                    )
+                    rendered = rendered_by_id[pattern["subject"]]
+                    self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
+                    self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
 
     def test_outcome_pattern_expectation_is_required(self):
         with self.assertRaises(TypeError):

@@ -29,22 +29,31 @@ const mealBolusShortCase = () => independent(capture.cases['finding:meal_bolus_s
 const zeroMissedMealCase = () => independent(missedMealFixture.zero_payload);
 const selectedEventCase = () => independent(
   Object.values(capture.cases['finding:over_treated_low'].selected_event)[0]);
+const patternChart = (key) => ({ key, window: {
+  scoped: false, start_min: null, end_min: null, label: null,
+} });
 
 test('accepts the generator-owned Pattern case file and its additive member tags', () => {
-  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  const caseFile = projectPatternCaseFile(patternCapture, {
+    patternChart: patternChart('highs_after_meals'),
+  });
   assert.equal(validFindingCaseFile(caseFile), true);
   assert.ok(caseFile.occurrences.some((row) => row.member.startsWith('habit:')));
   assert.ok(caseFile.occurrences.some((row) => row.member === 'clean'));
 });
 
 test('rejects a Pattern case file with a browser-invented member subject', () => {
-  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  const caseFile = projectPatternCaseFile(patternCapture, {
+    patternChart: patternChart('highs_after_meals'),
+  });
   caseFile.occurrences[0].member = 'setting:carb_ratio';
   assert.equal(validFindingCaseFile(caseFile), false);
 });
 
 test('rejects a Pattern case file without its canonical subject', () => {
-  const caseFile = projectPatternCaseFile(patternCapture, { key: 'highs_after_meals' });
+  const caseFile = projectPatternCaseFile(patternCapture, {
+    patternChart: patternChart('highs_after_meals'),
+  });
   delete caseFile.finding.subject;
   assert.equal(validFindingCaseFile(caseFile), false);
 });

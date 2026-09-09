@@ -53,6 +53,20 @@ const EXPOSURE_FAMILY = {
   over_treated_low: 'lows', correction_stacking: 'correction_clusters',
   correction_on_iob: 'lows', missed_meal: 'highs', meal_bolus_short: 'highs',
 };
+
+function patternRateFamily(pattern) {
+  const families = new Set((pattern.rate_levers || [])
+    .map((subject) => EXPOSURE_FAMILY[subject.replace('habit:', '')]));
+  families.delete(undefined);
+  return families.size === 1 ? [...families][0] : null;
+}
+
+function patternChartable(pattern, exposures) {
+  const family = patternRateFamily(pattern);
+  const hasAdmittedHabit = (pattern.members || [])
+    .some((member) => member.kind === 'habit' && member.admitted);
+  return hasAdmittedHabit && Number(exposures.exposures?.[family]?.n || 0) > 0;
+}
 // evidence_population.policy_for — Meal bolus fell short recurs over eligible
 // meal groups even though each member episode lands in the Highs family.
 const RECURRENCE_GROUP_POLICY = {
@@ -769,13 +783,11 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of inputs.outcome_patterns) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      let hasClaimedRow = false;
       for (const member of pattern.members || []) {
         if (member.kind === 'habit' && member.admitted) {
           const claimed = byId.get(`finding:${member.subject.replace('habit:', '')}`);
           if (claimed) {
             claimed.claimed_by = pattern.subject;
-            hasClaimedRow = true;
           }
         }
       }
@@ -783,7 +795,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
         id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
         priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
         pattern: structuredClone(pattern), window_scope: 'whole_day',
-        pattern_chart: hasClaimedRow
+        pattern_chart: patternChartable(pattern, exposures)
           ? { key: pattern.key, window: structuredClone(query.dict) } : null,
       });
       rows.push(projected); patterns.set(pattern.subject, projected);

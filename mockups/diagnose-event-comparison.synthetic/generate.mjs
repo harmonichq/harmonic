@@ -344,6 +344,7 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
           id: `o_${((familyIndex + 1) * 1000 + index + 1).toString(16).padStart(32, '0')}`,
           ep_id: row.ep_id, date: row.date, anchor_t: row.t,
           anchor_bg: row.bg ?? null, kind, label,
+          attributed: Boolean(row.attributed),
           cause_lever: row.cause_lever ?? null,
           verdicts: structuredClone(row.verdicts || []),
           trace: structuredClone(rich?.trace || { cgm: [], boluses: [], suspends: [] }),
@@ -351,24 +352,19 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
       })];
     }),
   );
-  // The capture freezes the server-side attribution used by the browser gates.
-  // It is deliberately generated here, beside the population, rather than
-  // inferred by the browser projector.  A member can claim an occurrence only
-  // when its own Exposure family is the Pattern's population family; this keeps
-  // correction_on_iob visible beneath lows_after_correcting_highs without
-  // relabeling correction clusters as lows.
+  // The capture freezes the same exposure-feed identities `_rate()` counts.
+  // The projector consumes these tags; it never reconstructs attribution from
+  // the Pattern's admitted rows.
   const patternAttribution = Object.fromEntries(outcomePatterns.map((pattern) => {
     const rateLever = pattern.rate_levers.map((subject) => subject.replace('habit:', ''))
       .find((lever) => patternFamily[lever]);
     const family = rateLever ? patternFamily[rateLever] : null;
-    const members = new Set(pattern.members
-      .filter((member) => member.kind === 'habit' && member.admitted)
-      .map((member) => member.subject)
-      .filter((subject) => patternFamily[subject.replace('habit:', '')] === family));
+    const rateLevers = new Set(pattern.rate_levers.map((subject) => subject.replace('habit:', '')));
     const population = patternPopulations[family] || [];
-    return [pattern.key, Object.fromEntries(population.map((row) => [
-      row.id, `habit:${row.cause_lever}`,
-    ]).filter(([, member]) => members.has(member)))];
+    return [pattern.key, Object.fromEntries(population.flatMap((row) => (
+      row.attributed && rateLevers.has(row.cause_lever)
+        ? [[row.id, `habit:${row.cause_lever}`]] : []
+    )))];
   }));
   return {
     schema: 'finding-case-file-event-capture-v1',

@@ -52,12 +52,14 @@ def _findings(lever, episodes=1, extra_rows=()):
             "chip_counts": {}, "uncaused_highs": {"count": 0, "text": None}}
 
 
-def _pattern_row(key, members, *, k, n, rate_levers):
+def _pattern_row(key, members, *, k, n, rate_levers, chart=True):
     subject = f"pattern:{key}"
     return {
         "id": subject, "register": "finding", "kind": "pattern",
         "title": key.replace("_", " ").title(),
         "appearances": None, "episodes": None,
+        "pattern_chart": ({"key": key, "window": WindowQuery.whole_day().to_dict()}
+                          if chart else None),
         "pattern": {
             "key": key, "subject": subject,
             "title": key.replace("_", " ").title(),
@@ -72,9 +74,9 @@ def _pattern_row(key, members, *, k, n, rate_levers):
     }
 
 
-def _pattern_findings(key, members, *, k, n, rate_levers):
+def _pattern_findings(key, members, *, k, n, rate_levers, chart=True):
     subject = f"pattern:{key}"
-    rows = [_pattern_row(key, members, k=k, n=n, rate_levers=rate_levers)]
+    rows = [_pattern_row(key, members, k=k, n=n, rate_levers=rate_levers, chart=chart)]
     for lever in members:
         row = _findings(lever)["rows"][0]
         row["claimed_by"] = subject
@@ -87,7 +89,7 @@ def _pattern_findings(key, members, *, k, n, rate_levers):
 
 
 def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
-              withheld=frozenset()):
+              withheld=frozenset(), exposures=None):
     opportunity = _opportunity(lever)
     members = tuple(members or (Member(opportunity, opportunity.anchor_t, "fired"),))
     claimed = frozenset({members[0].id}) if claimed is None else claimed
@@ -109,6 +111,7 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
         {item: claimed if item is lever else frozenset() for item in Lever},
         {item: () for item in Lever},
         withheld, cgm, (), bolus, (), time.monotonic() + 60,
+        exposures=exposures,
     )
 
 
@@ -555,6 +558,16 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
     )
     prepared = _prepared(
         Lever.CARB_UNDERCOUNT, carb, frozenset({carb[0].id}), findings=findings,
+        exposures={"exposures": {"meals": {"n": 3, "occurrences": [
+            {"ep_id": f"ep-{index}", "t": member.outcome_t.strftime("%Y-%m-%d %H:%M:%S"),
+             "date": member.outcome_t.date().isoformat(), "kind": "meal", "bg": 120,
+             "attributed": index < 2,
+             "cause_lever": ("carb_undercount", "late_bolus", None)[index],
+             "verdicts": ([{"classifier": "carb_undercount", "matched": False,
+                             "silence_reason": "under_threshold"}]
+                          if index == 2 else [])}
+            for index, member in enumerate(carb)
+        ]}}},
     )
     prepared.members[Lever.LATE_BOLUS] = late
     prepared.associations[Lever.LATE_BOLUS] = frozenset({late[1].id})
@@ -580,23 +593,23 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
 def test_pattern_case_is_chartless_without_a_served_habit_or_population():
     setting_only = _pattern_findings(
         "overnight_lows_no_iob", (), k=1, n=8, rate_levers=(),
+        chart=False,
     )
     prepared = _prepared(Lever.CARB_UNDERCOUNT, findings=setting_only)
     assert prepared.case("pattern:overnight_lows_no_iob", "event", None) is None
 
     memberless = _pattern_findings(
         "highs_after_meals", (), k=1, n=1,
-        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS),
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS), chart=False,
     )
     prepared.findings = memberless
     assert prepared.case("pattern:highs_after_meals", "event", None) is None
 
     empty = _pattern_findings(
         "highs_after_meals", (Lever.CARB_UNDERCOUNT,), k=0, n=0,
-        rate_levers=(Lever.CARB_UNDERCOUNT,),
+        rate_levers=(Lever.CARB_UNDERCOUNT,), chart=False,
     )
     prepared.findings = empty
-    prepared.members[Lever.CARB_UNDERCOUNT] = ()
     assert prepared.case("pattern:highs_after_meals", "event", None) is None
 
 
@@ -606,7 +619,15 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
         "highs_after_meals", (lever,), k=1, n=1, rate_levers=(lever,),
     )
     findings["rows"][0]["headline"] = "Highs After Meals in 1 of 1 meals"
-    prepared = _prepared(lever, findings=findings, withheld=frozenset({lever}))
+    member = _opportunity(lever)
+    prepared = _prepared(
+        lever, findings=findings, withheld=frozenset({lever}),
+        exposures={"exposures": {"meals": {"n": 1, "occurrences": [{
+            "ep_id": "ep-1", "t": member.anchor_t.strftime("%Y-%m-%d %H:%M:%S"),
+            "date": member.anchor_t.date().isoformat(), "kind": "meal", "bg": 120,
+            "attributed": True, "cause_lever": lever.value, "verdicts": [],
+        }]}}},
+    )
 
     payload = wrap(prepared)
 
@@ -621,23 +642,20 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
     assert payload["withheld_findings"][0]["finding_id"] == "finding:carb_undercount"
 
 
-def test_wrap_strips_pattern_chart_when_its_rate_population_is_unavailable():
+def test_wrap_passes_through_a_chartless_pattern_unchanged():
     member_lever = Lever.CORRECTION_ON_IOB
     rate_lever = Lever.CORRECTION_STACKING
     findings = _pattern_findings(
         "lows_after_correcting_highs", (member_lever,), k=1, n=1,
         rate_levers=(rate_lever,),
     )
-    findings["rows"][0]["pattern_chart"] = {
-        "key": "lows_after_correcting_highs",
-        "window": WindowQuery.whole_day().to_dict(),
-    }
+    findings["rows"][0]["pattern_chart"] = None
     prepared = _prepared(member_lever, findings=findings)
 
     payload = wrap(prepared)
 
     pattern = payload["rendered_rows"][0]
-    assert pattern["pattern_chart"] is None
+    assert pattern == findings["rows"][0]
     assert "case_header" not in pattern
     assert pattern["id"] not in payload["behavioral_case_headers"]
     assert payload["rendered_rows"][1]["id"] == "finding:correction_on_iob"

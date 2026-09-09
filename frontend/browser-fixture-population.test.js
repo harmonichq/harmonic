@@ -81,7 +81,7 @@ test('browser preparation joins keep each scoped event-chart coordinate intact',
   }), requested);
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
-  populateFindingCasePreparation(preparation, projection);
+  populateFindingCasePreparation(preparation, projection, capture);
 
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, requested));
   const row = preparation.rendered_rows.find(({ id }) => id === 'finding:over_treated_low');
@@ -108,15 +108,17 @@ test('browser Pattern rows and case files share the public producer denominator'
   );
   const row = preparation.rendered_rows.find(({ id }) => id === 'pattern:highs_after_meals');
   const caseFile = projectPatternCaseFile(capture, {
-    key: 'highs_after_meals', projectionId: preparation.projection_id,
+    patternChart: row.pattern_chart, projectionId: preparation.projection_id,
   });
 
   assert.deepEqual(
     [caseFile.summary.denominator, caseFile.summary.claimed],
     [row.pattern.n, row.pattern.k],
   );
+  assert.equal(caseFile.verdict_counts.fired, row.pattern.k);
   assert.deepEqual(row.pattern_chart, row.case_header.pattern_chart);
   assert.equal(row.event_chart, null);
+  assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
 test('a claimed member outside its Pattern population tags no occurrence', () => {
@@ -127,7 +129,8 @@ test('a claimed member outside its Pattern population tags no occurrence', () =>
   });
   const projection = projectFindings(inputs);
   const member = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
-  const caseFile = projectPatternCaseFile(capture, { key: 'lows_after_correcting_highs' });
+  const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
+  const caseFile = projectPatternCaseFile(capture, { patternChart: pattern.pattern_chart });
 
   assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
   assert.equal(caseFile.summary.claimed, 0);
@@ -153,7 +156,22 @@ test('memberless Patterns remain served without an invented chart', () => {
 
   assert.equal(row.pattern.n, 20);
   assert.equal(row.pattern_chart, null);
-  assert.equal(projectPatternCaseFile(capture, { key: row.pattern.key }), null);
+  assert.equal(projectPatternCaseFile(capture, { patternChart: row.pattern_chart }), null);
+});
+
+test('every chartable fixture Pattern resolves through preparation validation', () => {
+  const projection = projectFindings(populateFindingsProjectionInput({
+    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+  }));
+  const preparation = populateFindingCasePreparation(
+    structuredClone(caseFiles.preparation), projection, capture,
+  );
+  const chartable = projection.rows.filter((row) => row.pattern_chart);
+
+  assert.ok(chartable.length > 0);
+  assert.deepEqual(chartable.map((row) => row.id), preparation.rendered_rows
+    .filter((row) => row.pattern_chart).map((row) => row.id));
+  assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
 test('browser preparation mirrors the wrapped row: both families, case file first, headline from the lead', () => {
@@ -164,7 +182,7 @@ test('browser preparation mirrors the wrapped row: both families, case file firs
   }));
   const preparation = structuredClone(caseFiles.preparation);
   preparation.coordinates.window = projection.window;
-  populateFindingCasePreparation(preparation, projection);
+  populateFindingCasePreparation(preparation, projection, capture);
 
   const projected = projection.rows.find(({ id }) => id === 'finding:correction_on_iob');
   assert.deepEqual(projected.appearances.map(({ family }) => family),

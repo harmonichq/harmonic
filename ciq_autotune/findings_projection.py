@@ -62,9 +62,9 @@ from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
-from .analyzers.scenario.levers import Lever, outcome_kind
+from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
-from .analyzers.scenario.outcome_patterns import build_outcome_patterns
+from .analyzers.scenario.outcome_patterns import _ROSTER, build_outcome_patterns
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -138,6 +138,27 @@ _REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2, "history": 3
 # (ADR 41). The frontend only labels these; it never derives membership or counts.
 FINDING_VERDICTS = ("fired", "outranked", "near_miss", "no_data", "clean")
 DIAGNOSE_SOURCE_WINDOW_DAYS = 30
+PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key, *_ in _ROSTER)
+
+
+def pattern_rate_family(pattern: dict) -> Exposure | None:
+    """Return the one Exposure family the Pattern producer prices against."""
+    families = {
+        exposure(Lever(subject.removeprefix("habit:")))
+        for subject in pattern.get("rate_levers") or ()
+    }
+    return next(iter(families)) if len(families) == 1 else None
+
+
+def pattern_chartable(pattern: dict, exposures: dict) -> bool:
+    """One server predicate for whether a Pattern owns inspectable evidence."""
+    family = pattern_rate_family(pattern)
+    has_admitted_habit = any(
+        member.get("kind") == "habit" and member.get("admitted")
+        for member in pattern.get("members") or ()
+    )
+    source = ((exposures.get("exposures") or {}).get(family.value) or {}) if family else {}
+    return has_admitted_habit and (source.get("n") or 0) > 0
 
 
 def _hhmm(minute: int) -> str:
@@ -229,19 +250,17 @@ class FindingsProjection:
             subject = pattern["subject"]
             claimed = [member["subject"] for member in pattern["members"]
                        if member["kind"] == "habit" and member["admitted"]]
-            has_claimed_row = False
             for member in claimed:
                 row = by_id.get(f"finding:{member.removeprefix('habit:')}")
                 if row is not None:
                     row["claimed_by"] = subject
-                    has_claimed_row = True
             pattern_row = _row(
                 id=subject, register="finding", kind="pattern", title=pattern["title"],
                 priority=(pattern["settled_price"]
                           if pattern["admission_route"] != "none" else None),
                 episodes=None, pattern=deepcopy(pattern), window_scope="whole_day",
                 pattern_chart=({"key": pattern["key"], "window": query.to_dict()}
-                               if has_claimed_row else None),
+                               if pattern_chartable(pattern, self._exposures) else None),
             )
             pattern_rows.append(pattern_row)
             pattern_by_subject[subject] = pattern_row

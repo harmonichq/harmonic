@@ -419,6 +419,7 @@
         "anchor_bg": 70.5,
         "kind": "correction",
         "label": "Correction cluster",
+        "attributed": true,
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -450,6 +451,7 @@
         "anchor_bg": 65.5,
         "kind": "correction",
         "label": "Correction cluster",
+        "attributed": true,
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -483,6 +485,7 @@
         "anchor_bg": 77.8,
         "kind": "high",
         "label": "High excursion",
+        "attributed": true,
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -514,6 +517,7 @@
         "anchor_bg": 70,
         "kind": "high",
         "label": "High excursion",
+        "attributed": true,
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -545,6 +549,7 @@
         "anchor_bg": 76.4,
         "kind": "high",
         "label": "High excursion",
+        "attributed": true,
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -576,6 +581,7 @@
         "anchor_bg": 72.1,
         "kind": "high",
         "label": "High excursion",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -609,6 +615,7 @@
         "anchor_bg": 64.3,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -811,6 +818,7 @@
         "anchor_bg": 65.2,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -984,6 +992,7 @@
         "anchor_bg": 65.8,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1145,6 +1154,7 @@
         "anchor_bg": 69.3,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1298,6 +1308,7 @@
         "anchor_bg": 77.1,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1443,6 +1454,7 @@
         "anchor_bg": 71.9,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1580,6 +1592,7 @@
         "anchor_bg": 64.8,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1709,6 +1722,7 @@
         "anchor_bg": 71.6,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1870,6 +1884,7 @@
         "anchor_bg": 72.1,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -2027,6 +2042,7 @@
         "anchor_bg": 68.3,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -2184,6 +2200,7 @@
         "anchor_bg": 68.4,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2349,6 +2366,7 @@
         "anchor_bg": 65.2,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2530,6 +2548,7 @@
         "anchor_bg": 72.8,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2707,6 +2726,7 @@
         "anchor_bg": 66,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -2876,6 +2896,7 @@
         "anchor_bg": 60.2,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -3037,6 +3058,7 @@
         "anchor_bg": 70.9,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3190,6 +3212,7 @@
         "anchor_bg": 65.5,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3335,6 +3358,7 @@
         "anchor_bg": 65.2,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3516,6 +3540,7 @@
         "anchor_bg": 77.6,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3697,6 +3722,7 @@
         "anchor_bg": 72.6,
         "kind": "low",
         "label": "Low excursion",
+        "attributed": true,
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3880,6 +3906,7 @@
         "anchor_bg": 62.1,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": true,
         "cause_lever": "late_bolus",
         "verdicts": [
           {
@@ -4212,6 +4239,7 @@
         "anchor_bg": 65.3,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": true,
         "cause_lever": "late_bolus",
         "verdicts": [
           {
@@ -4536,6 +4564,7 @@
         "anchor_bg": 63,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -4868,6 +4897,7 @@
         "anchor_bg": 68,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -5172,6 +5202,7 @@
         "anchor_bg": 63.2,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -5468,6 +5499,7 @@
         "anchor_bg": 76.9,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -5756,6 +5788,7 @@
         "anchor_bg": 65.5,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -6036,6 +6069,7 @@
         "anchor_bg": 67.1,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -6324,6 +6358,7 @@
         "anchor_bg": 77.3,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -6612,6 +6647,7 @@
         "anchor_bg": 66.9,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -6900,6 +6936,7 @@
         "anchor_bg": 72.4,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -7200,6 +7237,7 @@
         "anchor_bg": 59.1,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -7532,6 +7570,7 @@
         "anchor_bg": 74.5,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -7860,6 +7899,7 @@
         "anchor_bg": 77.9,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -8180,6 +8220,7 @@
         "anchor_bg": 74.1,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -8492,6 +8533,7 @@
         "anchor_bg": 71.1,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -8796,6 +8838,7 @@
         "anchor_bg": 75.7,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -9092,6 +9135,7 @@
         "anchor_bg": 66.8,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -9424,6 +9468,7 @@
         "anchor_bg": 75,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {
@@ -9756,6 +9801,7 @@
         "anchor_bg": 61.3,
         "kind": "meal",
         "label": "Completed carb bolus",
+        "attributed": false,
         "cause_lever": null,
         "verdicts": [
           {

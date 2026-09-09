@@ -32,6 +32,7 @@ from ciq_autotune.findings_projection import (
     _chips_for,
     _row as projection_row,
     FindingsProjection,
+    PATTERN_SUBJECTS,
     WindowQuery,
     prepare_findings_projection,
 )
@@ -709,9 +710,36 @@ class QueueOrderTest(unittest.TestCase):
 
 
 class PatternProjectionTest(unittest.TestCase):
+    def test_public_pattern_subjects_match_the_closed_roster(self):
+        self.assertEqual(PATTERN_SUBJECTS, {f"pattern:{key}" for key, *_ in _ROSTER})
+
     def setUp(self):
         self.projection = gen.projection()
         self.result = self.projection.project(WindowQuery.whole_day())
+
+    def test_chartability_reads_admitted_members_and_rate_family_not_claimed_rows(self):
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis,
+            _exposures=self.projection._exposures,
+            _scenarios={},
+            _outcome_patterns=self.projection._outcome_patterns,
+        )
+        result, _ = projection._pattern_rows([], WindowQuery.whole_day())
+        pattern = next(row for row in result
+                       if row["id"] == "pattern:highs_after_meals")
+
+        self.assertFalse(any(row.get("claimed_by") == pattern["id"] for row in result))
+        self.assertIsNotNone(pattern["pattern_chart"])
+
+        empty_exposures = json.loads(json.dumps(self.projection._exposures))
+        empty_exposures["exposures"]["meals"].update(n=0, occurrences=[])
+        empty, _ = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=empty_exposures,
+            _scenarios={}, _outcome_patterns=self.projection._outcome_patterns,
+        )._pattern_rows([], WindowQuery.whole_day())
+        pattern = next(row for row in empty
+                       if row["id"] == "pattern:highs_after_meals")
+        self.assertIsNone(pattern["pattern_chart"])
 
     def test_patterns_are_whole_day_only_and_claimed_members_follow_their_parent(self):
         pattern = next(row for row in self.result["rows"]

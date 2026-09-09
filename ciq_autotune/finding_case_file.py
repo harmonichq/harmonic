@@ -13,6 +13,7 @@ from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
+from .analyzers.scenario.outcome_patterns import _identity as _pattern_identity
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
@@ -85,6 +86,7 @@ class PreparedCases:
     lease_until: float
     source_window_days: int = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     pins: int = 0
+    exposures: dict | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -195,55 +197,53 @@ class PreparedCases:
         row = self._authoritative_row(finding_id)
         if row is None or row.get("kind") != "pattern":
             return None
+        if not row.get("pattern_chart"):
+            return None
         pattern = row["pattern"]
-        member_order = {
-            member["subject"]: index
-            for index, member in enumerate(pattern["members"])
-            if member["kind"] == "habit"
+        family = findings_projection.pattern_rate_family(pattern)
+        if family is None or self.exposures is None:
+            raise InconsistentProjection("missing Pattern exposure population")
+        source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
+        source_rows = tuple(source.get("occurrences") or ())
+        rate_levers = {
+            subject.removeprefix("habit:") for subject in pattern["rate_levers"]
         }
-        habits = sorted(
-            {
-                Lever(candidate["lever"])
-                for candidate in self.findings["rows"]
-                if candidate.get("claimed_by") == finding_id
-                and candidate.get("lever") is not None
-            },
-            key=lambda lever: member_order[f"habit:{lever.value}"],
-        )
-        rate_levers = [Lever(subject.removeprefix("habit:"))
-                       for subject in pattern["rate_levers"]]
-        if not habits or not rate_levers:
-            return None
-        # The rate Lever names the Pattern's one Exposure population.  Other
-        # members may claim a different family; they remain members but cannot
-        # manufacture occurrences in this population.
-        population_lever = rate_levers[0]
-        roster = self._roster(population_lever)
-        if not roster:
-            return None
-        subject_by_lever = {lever: f"habit:{lever.value}" for lever in habits}
-        states_by_lever = {
-            lever: {candidate.id: candidate.verdict
-                    for candidate in self._roster(lever)}
-            for lever in habits
+        habits = [
+            Lever(member["subject"].removeprefix("habit:"))
+            for member in pattern["members"] if member["kind"] == "habit"
+        ]
+        population_lever = Lever(pattern["rate_levers"][0].removeprefix("habit:"))
+        claimed_identities = {
+            identity for candidate in source_rows
+            if candidate.get("attributed") and candidate.get("cause_lever") in rate_levers
+            if (identity := _pattern_identity(candidate)) is not None
         }
         claimed_by_id = {}
-        verdicts = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
-        for member in roster:
-            claimants = [lever for lever in habits
-                         if member.id in self.associations[lever]]
-            if claimants:
-                chosen = claimants[0]
-                claimed_by_id[member.id] = subject_by_lever[chosen]
-                verdicts[member.id] = states_by_lever[chosen].get(member.id, "fired")
+        pattern_roster = []
+        remaining_claims = set(claimed_identities)
+        for index, candidate in enumerate(source_rows):
+            identity = _pattern_identity(candidate)
+            t = datetime.strptime(candidate["t"], FMT)
+            occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
+            claimant = candidate.get("cause_lever")
+            if (candidate.get("attributed") and claimant in rate_levers
+                    and identity in remaining_claims):
+                claimed_by_id[occurrence_id] = f"habit:{claimant}"
+                verdict = "fired"
+                remaining_claims.remove(identity)
             else:
-                states = [states_by_lever[lever].get(member.id, "clean")
+                states = [findings_projection._occurrence_verdict(candidate, lever.value)
                           for lever in habits]
-                verdicts[member.id] = max(states, key=lambda state: precedence[state])
-        pattern_roster = tuple(Member(member.opportunity, member.outcome_t,
-                                      verdicts[member.id], member.occurrence_id)
-                               for member in roster)
+                states = ["outranked" if state == "fired" else state for state in states]
+                verdict = max(states or ["clean"], key=lambda state: precedence[state])
+            opportunity = opportunities.Opportunity(
+                family=family, source_key=(identity, index), anchor_t=t,
+                anchor_kind=candidate.get("kind") or _event_anchor(family)[0],
+                anchor_bg=candidate.get("bg"),
+            )
+            pattern_roster.append(Member(opportunity, t, verdict, occurrence_id))
+        pattern_roster = tuple(pattern_roster)
         claimed_ids = frozenset(claimed_by_id)
         counts = {key: sum(member.verdict == key for member in pattern_roster)
                   for key in findings_projection.FINDING_VERDICTS}
@@ -296,7 +296,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
     return PreparedCases("fp_" + uuid.uuid4().hex, version, query, findings, recurrence,
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
-                         source_window_days=window_days)
+                         source_window_days=window_days, exposures=deepcopy(exposures))
 
 
 def _population(
@@ -489,15 +489,9 @@ def wrap(prepared):
             rendered.append(deepcopy(row)); continue
         finding_id = row["id"]
         case = prepared.case(finding_id, "clock", None)
-        if row.get("kind") == "pattern" and case is None:
-            # A Pattern can keep its roster-owned count while its rate population
-            # or inspectable member association is unavailable.  Preparation is
-            # the authority for whether its coordinate resolves to a case.
-            changed = deepcopy(row)
-            changed["pattern_chart"] = None
-            changed.pop("case_header", None)
-            rendered.append(changed); continue
         if case is None:
+            if row.get("kind") == "pattern":
+                rendered.append(deepcopy(row)); continue
             withheld.append({"finding_id": finding_id,
                              "code": "uninspectable_attribution",
                              "message": "Canonical association is unavailable."})
@@ -511,8 +505,7 @@ def wrap(prepared):
                   # `null` for a case the server serves — correction stacking is
                   # counted in correction clusters, not the lows that map names —
                   # leaving the reader no By-event path into it.
-                  chart_key: ({"key": case["finding"]["lever"],
-                               "window": prepared.query.to_dict()}
+                  chart_key: (deepcopy(row["pattern_chart"])
                               if chart_key == "pattern_chart" else
                               {"lever": case["finding"]["lever"],
                                "window": prepared.query.to_dict()}),

@@ -169,15 +169,21 @@ export function harnessDataPlugin({ repositoryRoot }) {
         if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
           const projection = projectFindings(findingsInputs, bounds, url.searchParams.get('selected_id'));
           const prepared = scopedPreparation(caseFiles, projection, bounds, patternCapture);
-          preparedWindows.set(prepared.projection_id, clone(prepared.coordinates.window));
+          preparedWindows.set(prepared.projection_id, {
+            window: clone(prepared.coordinates.window),
+            patternCharts: Object.fromEntries(prepared.rendered_rows
+              .filter((row) => row.pattern_chart)
+              .map((row) => [row.id, clone(row.pattern_chart)])),
+          });
           send(res, 200, prepared);
           return;
         }
         if (url.pathname === '/api/diagnose/finding-case-file') {
           const findingId = url.searchParams.get('finding_id');
+          const retained = preparedWindows.get(url.searchParams.get('projection_id'));
           const patternCase = findingId?.startsWith('pattern:')
             ? projectPatternCaseFile(patternCapture, {
-              key: findingId.slice('pattern:'.length),
+              patternChart: retained?.patternCharts[findingId],
               projectionId: url.searchParams.get('projection_id'),
               alignment: url.searchParams.get('alignment'),
             }) : null;
@@ -191,7 +197,7 @@ export function harnessDataPlugin({ repositoryRoot }) {
           const body = clone(patternCase || (occurrence
             ? finding[`selected_${alignment}`][occurrence] || finding[`unavailable_${alignment}`]
             : finding[alignment]));
-          const preparedWindow = preparedWindows.get(url.searchParams.get('projection_id'));
+          const preparedWindow = retained?.window;
           if (preparedWindow) {
             body.projection_id = url.searchParams.get('projection_id');
             body.window = clone(preparedWindow);

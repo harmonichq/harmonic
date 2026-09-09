@@ -33,7 +33,6 @@ from typing import Optional
 from . import credentials
 from .analyze import analyze
 from .analyzers.scenario.levers import Lever
-from .analyzers.scenario.outcome_patterns import _ROSTER as _OUTCOME_PATTERN_ROSTER
 from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .config import resolve_runtime_configuration
 from .explore_exposures import build_exposures
@@ -474,10 +473,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
-            valid_patterns = {f"pattern:{key}" for key, *_ in _OUTCOME_PATTERN_ROSTER}
+            valid_findings |= findings_projection_module.PATTERN_SUBJECTS
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or ((finding is None) == (lever is None))
-                    or (finding is not None and finding not in valid_findings | valid_patterns)
+                    or (finding is not None and finding not in valid_findings)
                     or (lever is not None and lever not in {item.value for item in Lever})
                     or alignment not in {"clock", "event"}
                     or (occ is not None and not re.fullmatch(r"[om]_[0-9a-f]{32}", occ))):

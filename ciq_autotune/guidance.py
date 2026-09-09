@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from .analyzers.scenario.outcome_patterns import _GATES, build_outcome_patterns
 from .analyzers.scenario.levers import Lever
 from .watched_change import is_pinnable
 from .window_membership import _hhmm as _clock_label
@@ -31,14 +32,14 @@ _SETTING_SUBJECTS = frozenset({
 })
 _INVESTIGATION_SUBJECTS = frozenset({"investigation:uncaused_highs"})
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
-_PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _INVESTIGATION_SUBJECTS
-_BUILDING_PATTERNS = False
+_PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
+_PREFERENCE_SUBJECTS = (_SETTING_SUBJECTS | _HABIT_SUBJECTS
+                        | _INVESTIGATION_SUBJECTS | _PATTERN_SUBJECTS)
 
 
 def is_preference_subject(subject):
-    """Whether ``subject`` belongs to ADR 383's closed stable identity set."""
-    return subject in _PREFERENCE_SUBJECTS or (
-        isinstance(subject, str) and subject.startswith("pattern:"))
+    """Whether ``subject`` is one of the closed setting, habit, or Pattern ids."""
+    return subject in _PREFERENCE_SUBJECTS
 
 
 def _factual(value):
@@ -236,7 +237,8 @@ def _source_candidates(analysis, exposures, scenarios):
 def _pattern_candidate(pattern, sources):
     """Adapt the outcome roster; its policy remains owned by its producer."""
     chosen = next((member for member in pattern["members"]
-                   if member.get("action") == pattern.get("action")), None)
+                   if member.get("admitted")
+                   and member.get("action") == pattern.get("action")), None)
     action = ({"action_id": pattern["action"]} if pattern.get("action") else None)
     readiness = pattern["readiness"]
     habit_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
@@ -244,18 +246,25 @@ def _pattern_candidate(pattern, sources):
     setting_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
                        if member["kind"] == "setting"]
     concerns = [*habit_sources, *setting_sources]
-    selected_source = next((row for row in concerns if row.get("action") and
-                            (row.get("parameter") == pattern.get("action") or
-                             row.get("action", {}).get("action_id") == pattern.get("action"))), None)
+    selected_source = sources.get(chosen["subject"]) if chosen is not None else None
     if selected_source is not None:
-        action = deepcopy(selected_source["action"])
+        if chosen["kind"] == "setting":
+            action = deepcopy(selected_source.get("action"))
+        elif chosen["kind"] == "habit":
+            # The roster's admission is authoritative.  A legacy source row may
+            # have applied the retired Priority threshold and withheld this action.
+            action = {"action_id": chosen["action"]}
     unavailable = any(row.get("unavailable") for row in habit_sources)
     return {
         "subject": pattern["subject"], "kind": "pattern", "pattern_key": pattern["key"],
         "title": pattern["title"], "units": None, "priority": pattern["settled_price"],
         "action": action, "seriousness": pattern.get("seriousness"),
-        "members": deepcopy(pattern["members"]), "evidence": [], "support": {},
-        "population": [], "occurrence_ids": [], "source_window": None,
+        "members": deepcopy(pattern["members"]),
+        "evidence": deepcopy((selected_source or {}).get("evidence") or []),
+        "support": deepcopy((selected_source or {}).get("support") or {}),
+        "population": deepcopy((selected_source or {}).get("population") or []),
+        "occurrence_ids": list((selected_source or {}).get("occurrence_ids") or []),
+        "source_window": deepcopy((selected_source or {}).get("source_window")),
         "priority_inputs": {"member_set_fingerprint": pattern["member_set_fingerprint"]},
         "unavailable": unavailable,
         "unknowns": (["Required owner-produced guidance inputs are unavailable."] if unavailable else
@@ -273,16 +282,8 @@ def _pattern_candidate(pattern, sources):
 
 def candidates(analysis, exposures, scenarios):
     """Return setting rows plus the one deterministic backend Pattern roster."""
-    global _BUILDING_PATTERNS
     source = _source_candidates(analysis, exposures, scenarios)
-    if _BUILDING_PATTERNS:
-        return source
-    from .analyzers.scenario.outcome_patterns import build_outcome_patterns
-    _BUILDING_PATTERNS = True
-    try:
-        roster = build_outcome_patterns(analysis, exposures, scenarios)
-    finally:
-        _BUILDING_PATTERNS = False
+    roster = build_outcome_patterns(analysis, exposures, scenarios)
     # Settings remain inspectable and independently stageable. Only roster-owned
     # habits move to Pattern subjects; other legacy behavioral rows retain their
     # existing public identity until a Pattern owns them.
@@ -299,8 +300,16 @@ def _state(candidate):
         return {"kind": "setting", "action": _canonical_actions(candidate.get("action") or []),
                 "seriousness": candidate.get("seriousness") or []}
     if candidate["kind"] == "pattern":
-        return {"kind": "pattern", "action": candidate.get("action"),
-                "seriousness": candidate.get("seriousness"),
+        chosen = candidate.get("chosen_member") or {}
+        seriousness = candidate.get("seriousness")
+        if isinstance(seriousness, list):
+            seriousness = max(
+                (row.get("seriousness") for row in seriousness
+                 if isinstance(row, dict)),
+                key=lambda value: _SEVERITY.get(value, -1), default=None,
+            )
+        return {"kind": "pattern", "action": chosen.get("action"),
+                "seriousness": seriousness,
                 "member_set_fingerprint": candidate["priority_inputs"]["member_set_fingerprint"]}
     return {"kind": candidate["kind"], "action": candidate.get("action"), "seriousness": candidate.get("seriousness")}
 

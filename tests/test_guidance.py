@@ -3,6 +3,7 @@ import importlib.util
 import pathlib
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 
 from ciq_autotune.analyzers.scenario import assemble
@@ -12,6 +13,7 @@ from ciq_autotune.guidance import (
     COMPARISON_VERSION,
     baseline_for,
     build_guidance,
+    is_preference_subject,
     preference_status,
 )
 from ciq_autotune.store import Store
@@ -63,6 +65,35 @@ def _treatment_fields(value):
 
 
 class GuidanceTest(unittest.TestCase):
+    def test_pattern_subjects_are_a_closed_preference_set(self):
+        self.assertTrue(is_preference_subject("pattern:highs_after_meals"))
+        self.assertFalse(is_preference_subject("pattern:not-in-the-roster"))
+
+    def test_candidates_are_pure_under_concurrent_calls(self):
+        analysis, exposures, scenarios = _producer()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            rows = list(pool.map(
+                lambda _index: build_guidance(
+                    analysis=analysis, exposures=exposures, scenarios=scenarios,
+                ),
+                range(2),
+            ))
+        self.assertEqual(rows[0], rows[1])
+        self.assertEqual(
+            len([row for row in rows[0]["candidates"] if row["kind"] == "pattern"]),
+            5,
+        )
+
+    def test_every_pattern_publishes_named_readiness(self):
+        result, _execution = _qa("showcase")
+        patterns = [row for row in result["candidates"] if row["kind"] == "pattern"]
+        self.assertEqual(len(patterns), 5)
+        for row in patterns:
+            self.assertIn(row["readiness"]["verdict"], ("ready", "withheld"))
+            self.assertIsInstance(row["readiness"]["count"], int)
+            self.assertIsInstance(row["readiness"]["gate"], int)
+            self.assertTrue(row["readiness"]["reason"])
+
     def test_generated_public_payload_selects_actual_staged_subject(self):
         analysis, exposures, scenarios = _producer()
         result = build_guidance(analysis=analysis, exposures=exposures, scenarios=scenarios)
@@ -254,6 +285,47 @@ class GuidanceTest(unittest.TestCase):
         self.assertNotEqual(aside["selected"]["subject"], selected["subject"])
         restored = build_guidance(analysis=analysis, exposures=exposures, scenarios=scenarios)
         self.assertEqual(restored["selected"]["subject"], selected["subject"])
+
+    def test_pattern_set_aside_never_withholds_its_setting_candidate(self):
+        analysis, exposures, scenarios = _producer()
+        current = build_guidance(
+            analysis=analysis, exposures=exposures, scenarios=scenarios,
+        )
+        pattern = next(row for row in current["candidates"]
+                       if row["subject"] == "pattern:highs_after_meals")
+        result = build_guidance(
+            analysis=analysis, exposures=exposures, scenarios=scenarios,
+            preferences=[{
+                "subject": pattern["subject"], "decided_at": "2026-01-01 00:00:00",
+                "reason": "later", **baseline_for(pattern),
+            }],
+        )
+        setting = next(row for row in result["candidates"]
+                       if row["subject"] == "setting:carb_ratio")
+        self.assertTrue(setting["action"])
+        self.assertFalse(setting["preference"]["set_aside"])
+
+    def test_pattern_baseline_contains_only_meaningful_comparison_state(self):
+        analysis, exposures, scenarios = _producer()
+        current = build_guidance(
+            analysis=analysis, exposures=exposures, scenarios=scenarios,
+        )
+        pattern = next(row for row in current["candidates"]
+                       if row["subject"] == "pattern:highs_after_meals")
+        baseline = baseline_for(pattern)
+        self.assertEqual(set(baseline["state"]), {
+            "kind", "action", "seriousness", "member_set_fingerprint",
+        })
+        self.assertIsInstance(baseline["state"]["action"], str)
+        self.assertIn(baseline["state"]["seriousness"],
+                      (None, "info", "low", "medium", "high"))
+
+    def test_setting_source_before_habit_source_is_safe(self):
+        result, _execution = _qa("basal-raise")
+        pattern = next(row for row in result["candidates"]
+                       if row["subject"] == "pattern:overnight_lows_without_iob")
+        self.assertEqual(pattern["chosen_member"]["kind"], "setting")
+        self.assertIsInstance(pattern["action"], list)
 
     def test_habit_returns_for_semantic_action_or_worse_owner_seriousness(self):
         saved = {"comparison_version": COMPARISON_VERSION,

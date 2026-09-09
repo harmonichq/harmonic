@@ -1460,8 +1460,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if (receipt["operation"] != operation or receipt["kind"] != kind
                     or (identity is not None and receipt["id"] != identity)):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
-            if operation == "pin" and receipt["result"]["record"]["lever"] != payload.get("lever"):
-                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if operation == "pin":
+                expected = (f"pattern:{payload['pattern_key']}" if payload.get("pattern_key")
+                            else "habit:" + str(payload.get("lever")))
+                actual = (receipt["result"]["record"].get("subject")
+                          or "habit:" + receipt["result"]["record"]["lever"])
+                if actual != expected:
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
@@ -1531,14 +1536,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def source_context(source, candidate, recorded_at):
         from .guidance import COMPARISON_VERSION
+        actions = candidate["action"] if isinstance(candidate.get("action"), list) else []
         return {"version": "386:1", "state": "available",
                 "captured_at": recorded_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "input_revision": source["input_revision"], "analysis_generation": source["analysis_generation"],
                 "action": candidate["action"], "explanation": candidate["title"] or "Supported setting change",
                 "source_window": candidate["source_window"], "policy": COMPARISON_VERSION,
                 "subjects": [candidate["subject"]], "occurrences": candidate["occurrence_ids"],
-                "settings": [{"value": action["recommended"], "unit": candidate["units"]}
-                             for action in candidate["action"]] if candidate["kind"] == "setting" else [],
+                "settings": [{"value": action["recommended"], "unit": action["units"]}
+                             for action in actions],
                 "support": candidate["support"], "unknowns": candidate["unknowns"]}
 
     def selected_source(store, source, payload, subject, durable):
@@ -1636,11 +1642,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
-        from .watched_change import pinnable_levers
+        from .watched_change import is_pinnable, pinnable_levers
         guidance = guidance_or_unavailable()
         patterns = [row for row in guidance["candidates"]
                     if row.get("kind") == "pattern" and row["readiness"]["verdict"] == "ready"
-                    and any(member["kind"] == "habit" for member in row["members"])]
+                    and row.get("action") is not None
+                    and any(member["kind"] == "habit" and is_pinnable(
+                        member["subject"].split(":", 1)[1], row["pattern_key"])
+                            for member in row["members"])]
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
             return {"focuses": store.follow_up_records("focus"), "pinnable": sorted(pinnable_levers()),
@@ -1676,17 +1685,19 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise FollowUpConflict("occupied_admission", store.input_data_revision())
             subject = f"pattern:{pattern_key}" if pattern_key else "habit:" + lever
             if pattern_key is None:
-                # Legacy lever Focus stays supported; its Pattern is the durable
-                # guidance source when the roster owns that lever.
                 candidate = next((row for row in source["candidates"]
                                   if row.get("kind") == "pattern" and any(
-                                      member["subject"] == subject for member in row["members"])), None)
+                                      member["subject"] == subject
+                                      for member in row["members"])), None)
                 if candidate is None:
                     candidate = selected_source(store, source, payload, subject, durable)
             else:
                 candidate = selected_source(store, source, payload, subject, durable)
+                if candidate["readiness"]["verdict"] != "ready":
+                    raise FollowUpConflict("ineligible_source", store.input_data_revision())
             focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
             return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
+                **({"subject": subject} if pattern_key else {}),
                 "decision_context": source_context(source, candidate, at),
                 "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
         return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)

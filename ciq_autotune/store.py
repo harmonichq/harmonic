@@ -523,7 +523,6 @@ _ADDED_COLUMNS = [
     ("bolus_events", "isf", "REAL"),          # #159 dose-stamped ISF
     ("bolus_events", "target_bg", "REAL"),    # #159 dose-stamped target BG
     ("bolus_events", "carb_ratio", "REAL"),   # #159 dose-stamped carb ratio
-    ("focus", "pattern_key", "TEXT"),
 ]
 
 
@@ -533,7 +532,7 @@ _FOLLOW_UP_FIELDS = {
     'trial': {'parameter', 'slot', 'changed_at', 'before', 'after',
               'block', 'members', 'first_observed_at', 'observed_context',
               'comparison_context', 'reconciliation', 'ending'},
-    'focus': {'lever', 'pattern_key', 'pinned_at', 'status', 'decision_context',
+    'focus': {'lever', 'subject', 'pattern_key', 'pinned_at', 'status', 'decision_context',
               'comparison_context', 'ending'},
 }
 _FOLLOW_UP_ENVELOPES = frozenset((
@@ -568,10 +567,16 @@ class Store:
             # No schema creation or migration on a read-only connection: the
             # caller takes the file's schema as-is (see :meth:`open_readonly`).
             return
+        pattern_migration = (
+            self.conn.execute("PRAGMA user_version").fetchone()[0] < 393
+            and self.conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='guidance_preferences'"
+            ).fetchone() is not None
+        )
         self.conn.executescript(_SCHEMA)
-        self._migrate()
+        self._migrate(pattern_migration=pattern_migration)
 
-    def _migrate(self) -> None:
+    def _migrate(self, *, pattern_migration: bool = False) -> None:
         """Add post-release columns to a database created by an earlier schema."""
         additions = [(table, column, coltype) for table, column, coltype in _ADDED_COLUMNS
                      if column not in {r["name"] for r in
@@ -584,50 +589,68 @@ class Store:
             statements.extend(f"DROP TABLE {table}" for table in stale)
             if stale:
                 statements.append(_SCHEMA)
-            # The Pattern Focus compatibility key and its identity migration run
-            # before a serving cache exists; unlike analyzer-input migrations it
-            # must not create a synthetic analysis generation.
-            if stale or any((table, column) != ("focus", "pattern_key")
-                            for table, column, _type in additions):
-                statements.append("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
+            statements.append("UPDATE input_data_revision SET revision = revision + 1 WHERE id = 1")
             statements.append("COMMIT")
             self.conn.executescript(";\n".join(statements) + ";")
+        if not pattern_migration:
+            self.conn.execute("PRAGMA user_version = 393")
+            return
         from .analyzers.scenario.outcome_patterns import _ROSTER
-        from hashlib import sha256
         owner = {lever: key for key, _title, levers, _rates, _setting, _family in _ROSTER
                  for lever in levers}
         pattern_rows = [row for row in self.conn.execute("SELECT subject, decided_at, reason, comparison_version, state_json FROM guidance_preferences WHERE subject LIKE 'habit:%'").fetchall()
                         if row["subject"].split(":", 1)[1] in owner]
-        focus_rows = [row for row in self.conn.execute("SELECT id, lever FROM focus WHERE status = 'active' AND pattern_key IS NULL").fetchall()
-                      if row["lever"] in owner]
-        if not pattern_rows and not focus_rows:
-            return
+        focus_rows = [row for row in self.conn.execute(
+            "SELECT id, lever, pinned_at, status FROM focus WHERE status = 'active'"
+        ).fetchall() if row["lever"] in owner and not (
+            self.conn.execute(
+                "SELECT 1 FROM follow_up_records WHERE kind='focus' AND id=? "
+                "AND json_extract(record_json, '$.pattern_key') IS NOT NULL",
+                (str(row["id"]),),
+            ).fetchone()
+        )]
         grouped = {}
         for row in pattern_rows:
             key = owner.get(row["subject"].split(":", 1)[1])
             if key:
                 grouped.setdefault(key, []).append(row)
+        baselines = {}
+        if grouped:
+            from .analyze import analyze
+            from .analyzers.scenario import build_scenarios
+            from .explore_exposures import build_exposures
+            from .guidance import _state, candidates
+            window_days = 30
+            analysis = analyze(
+                self, window_days=window_days, ignore_setting_changes=False,
+                pool_agreeing_basal_regimes=True, carb_entries=self.carb_entries(),
+                prompt_responses=self.prompt_responses(),
+            ).to_dict()
+            exposures = build_exposures(self, window_days=window_days)
+            scenarios = build_scenarios(self, window_days=window_days).to_dict()
+            baselines = {
+                row["pattern_key"]: _state(row)
+                for row in candidates(analysis, exposures, scenarios)
+                if row.get("kind") == "pattern"
+            }
         with self.conn:
             for key, rows in grouped.items():
-                winner = min(rows, key=lambda row: row["decided_at"])
-                _key, _title, levers, _rates, setting, _family = next(item for item in _ROSTER if item[0] == key)
-                members = [f"habit:{lever}" for lever in levers] + ([f"setting:{setting}"] if setting else [])
-                old = json.loads(winner["state_json"])
-                state = {"kind": "pattern", "action": old.get("action"), "seriousness": old.get("seriousness"),
-                         "member_set_fingerprint": sha256(",".join(sorted(members)).encode()).hexdigest()[:16]}
+                winner = min(rows, key=lambda row: (row["decided_at"], row["subject"]))
+                state = baselines[key]
                 self.conn.execute("INSERT INTO guidance_preferences (subject, decided_at, reason, comparison_version, state_json) VALUES (?, ?, ?, ?, ?) ON CONFLICT(subject) DO UPDATE SET decided_at=excluded.decided_at, reason=excluded.reason, comparison_version=excluded.comparison_version, state_json=excluded.state_json",
                                   (f"pattern:{key}", winner["decided_at"], winner["reason"], winner["comparison_version"], json.dumps(state, sort_keys=True)))
                 self.conn.executemany("DELETE FROM guidance_preferences WHERE subject=?", [(row["subject"],) for row in rows])
             for row in focus_rows:
                 key = owner.get(row["lever"])
                 if key:
-                    self.conn.execute("UPDATE focus SET pattern_key=? WHERE id=?", (key, row["id"]))
                     record = self.follow_up_record("focus", row["id"])
-                    if record is not None and record.get("pattern_key") != key:
-                        self.conn.execute(
-                            "UPDATE follow_up_records SET record_json=? WHERE kind='focus' AND id=?",
-                            (json.dumps({**record, "pattern_key": key}, sort_keys=True), str(row["id"])),
-                        )
+                    migrated = {**record, "pattern_key": key}
+                    self.conn.execute(
+                        "INSERT INTO follow_up_records (kind, id, record_json) VALUES ('focus', ?, ?) "
+                        "ON CONFLICT(kind, id) DO UPDATE SET record_json=excluded.record_json",
+                        (str(row["id"]), json.dumps(migrated, sort_keys=True)),
+                    )
+            self.conn.execute("PRAGMA user_version = 393")
 
     # The pump-feed tables re-keyed on the pump's stable ``seq_num`` — basal by
     # #194, the rest by #198. Each is a re-fetchable cache keyed on its own event
@@ -1290,8 +1313,8 @@ class Store:
         with self._write_transaction():
             try:
                 cur = self.conn.execute(
-                    "INSERT INTO focus (lever, pattern_key, pinned_at, status) VALUES (?, ?, ?, 'active')",
-                    (lever, pattern_key, pinned_at),
+                    "INSERT INTO focus (lever, pinned_at, status) VALUES (?, ?, 'active')",
+                    (lever, pinned_at),
                 )
             except sqlite3.IntegrityError as exc:
                 # sqlite_errorname is unavailable on supported Python 3.9/3.10.
@@ -1300,8 +1323,11 @@ class Store:
                     raise
                 raise FocusAlreadyActive("a Focus is already active") from exc
             self._advance_revision()
-            return {"id": cur.lastrowid, "lever": lever, "pattern_key": pattern_key,
-                    "pinned_at": pinned_at, "status": "active"}
+            result = {"id": cur.lastrowid, "lever": lever,
+                      "pinned_at": pinned_at, "status": "active"}
+            if pattern_key is not None:
+                result["pattern_key"] = pattern_key
+            return result
 
     def active_focus(self) -> Optional[dict]:
         """The single active Focus, or ``None`` if nothing is pinned."""
@@ -1375,7 +1401,7 @@ class Store:
     @staticmethod
     def _focus_row(row: sqlite3.Row) -> dict:
         return {"id": row["id"], "lever": row["lever"],
-                "pattern_key": row["pattern_key"], "pinned_at": row["pinned_at"], "status": row["status"]}
+                "pinned_at": row["pinned_at"], "status": row["status"]}
 
     # --- Durable Plan / Trial / Focus history (ADR 386) -------------------
 

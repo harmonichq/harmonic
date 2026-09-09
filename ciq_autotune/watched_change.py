@@ -577,8 +577,15 @@ def is_pinnable(lever: str, pattern_key: str | None = None) -> bool:
     if pattern_key is None:
         return lever in pinnable_levers()
     from .analyzers.scenario.outcome_patterns import _ROSTER
-    return any(key == pattern_key and bool(levers)
+    return any(key == pattern_key and lever in levers
                for key, _title, levers, _rates, _setting, _family in _ROSTER)
+
+
+def _focus_identity(store, focus: dict) -> dict:
+    """Join retained Pattern identity onto the legacy Focus row when present."""
+    record = store.follow_up_record("focus", focus["id"])
+    key = record.get("pattern_key") if record is not None else None
+    return {**focus, **({"pattern_key": key} if key else {})}
 
 
 @dataclass(frozen=True)
@@ -1365,6 +1372,7 @@ def follow_up_admission(store, *, now):
                            can_finish_trial=not trial.view.maturing.is_maturing)
     focus = store.active_focus()
     if verdict["active_kind"] is None and focus:
+        focus = _focus_identity(store, focus)
         if not is_pinnable(focus["lever"], focus.get("pattern_key")):
             return {**verdict, "state": "unavailable", "reason": "reconciliation_required"}
         verdict.update(active_kind="focus", active_id=focus["id"], reason="active_focus")
@@ -1466,6 +1474,8 @@ def reconcile_follow_up(store, *, now, recorded_at):
         if expiry <= now and "kind" not in record["ending"]:
             capture_ending(store, record, kind="expired_unreviewed", effective_at=expiry, recorded_at=recorded_at, data_cutoff=now)
     focus = store.active_focus()
+    if focus:
+        focus = _focus_identity(store, focus)
     active_trial = store.follow_up_record("trial", frontier["trial_id"]) if frontier and frontier["trial_id"] else None
     if focus and (not is_pinnable(focus["lever"], focus.get("pattern_key")) or (active_trial and "kind" not in active_trial["ending"])):
         record = store.follow_up_record("focus", focus["id"])
@@ -1489,8 +1499,7 @@ def active_watched_change(store, basal_events, bolus_events, snaps, *, now, cgm_
         return _retained_trial(store, store.follow_up_record("trial", verdict["active_id"]), now).view
     if verdict["active_kind"] == "focus":
         record = store.follow_up_record("focus", verdict["active_id"])
-        focus = store.active_focus()
-        return focus_view({**record, "pattern_key": focus.get("pattern_key")})
+        return focus_view(record)
     return None
 
 

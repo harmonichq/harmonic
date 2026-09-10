@@ -6,7 +6,7 @@ import {
   glucoseRange,
 } from './diagnose-event-comparison.js';
 import { PATTERN_OUTCOME } from './diagnose-findings-queue.js';
-import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
+import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -150,6 +150,43 @@ const patternMiniLabel = (data) => {
     ? 'AFTER A CORRECTION' : (PATTERN_OUTCOME[key] || '').toUpperCase();
   return `${phrase} · ${data?.summary?.claimed ?? 0}`;
 };
+
+/* Pattern rail furniture wraps the shipped response preview. The case file
+   still supplies every point; this changes only the sanctioned inks and labels. */
+function patternQueuePreview(descriptor, range, colors) {
+  const data = descriptor.data;
+  const option = queuePreviewOption(descriptor, range, {
+    ...colors, cohorts: { matched: colors.high, comparison: colors.muted },
+  });
+  option.graphic = [
+    { type: 'text', left: 8, top: 5, silent: true,
+      style: { text: patternMiniLabel(data), fill: colors.high, font: `600 9px ${FONT}` } },
+    { type: 'text', right: 8, top: 5, silent: true,
+      style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
+        font: `600 9px ${FONT}`, align: 'right' } },
+  ];
+  // Only the typical cohort carries the interquartile band in this treatment.
+  option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
+  for (const series of option.series) {
+    if (!series.id.endsWith(':median')) continue;
+    series.symbol = 'none';
+    series.showSymbol = false;
+    series.lineStyle.type = 'solid';
+  }
+  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
+  const marker = anchor.renderItem;
+  const label = data.family === 'meals' ? 'MEAL' : 'LOW';
+  anchor.renderItem = (params, api) => ({ type: 'group', children: [
+    marker(params, api),
+    { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
+      style: { text: label, fill: colors.text, font: `600 9px ${FONT}` } },
+  ] });
+  option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
+    markLine: { silent: true, symbol: 'none', label: { show: false },
+      lineStyle: { color: colors.line, width: 1, type: 'dashed' },
+      data: [{ yAxis: 180 }] } });
+  return option;
+}
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the
    engine's own closed display set (`Status` in `ciq_autotune/safety.py`), so the
@@ -990,6 +1027,7 @@ const entries = [
   },
   {
     kind: 'pattern-case-file',
+    queuePreview: patternQueuePreview,
     name: 'Pattern response',
     modes: null,
     meta: () => 'responses aligned to each event',

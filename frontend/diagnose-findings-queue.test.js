@@ -4,6 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
@@ -492,5 +494,35 @@ test('#63 · the sentence never enters the queue meta, which counts the window',
   // reader take the highs number as a statement about the hours they drew.
   for (const name of ['global', 'afternoon', 'quiet']) {
     assert.doesNotMatch(queueMeta(W[name]), /no cause/);
+  }
+});
+
+// The default replay input differs from the history fixture above. Exercise its
+// actual preparation and painter so a claimed Lever cannot disappear in the join.
+test('#395 · the default replay keeps its claimed Late bolus reachable under every matching sift', () => {
+  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
+  const projection = projectFindings(populateFindingsProjectionInput({
+    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+    event_charts: fixture.inputs.event_charts,
+  }));
+  assert.ok(!projection.rows.some((row) => row.id === 'finding:carb_undercount'),
+    'Carb undercount is not a subject in this input');
+  const preparation = populateFindingCasePreparation(
+    read('../mockups/diagnose-workstation.synthetic/finding-case-files.json').preparation, projection);
+  const input = { ...preparation.findings, rows: preparation.rendered_rows };
+  const chips = ['highs', 'lows', 'meals', 'corrections'];
+  for (let mask = 1; mask < 16; mask += 1) {
+    const selected = new Set(chips.filter((_, index) => mask & (1 << index)));
+    if (!selected.has('highs') && !selected.has('meals')) continue;
+    const { host, rows } = paint(input, { selected });
+    const member = rows.find((row) => row.id === 'finding:late_bolus');
+    assert.equal(member.claimedBy, 'pattern:highs_after_meals');
+    assert.equal(member.hidden, false);
+    assert.equal(member.collapsed, false);
+    const list = host.children.find((node) => node.className === 'q');
+    const button = list.children.flatMap((node) => node.children || [])
+      .find((node) => node.dataset?.id === member.id);
+    assert.equal(button?.tag, 'button', `Late bolus remains a control under ${[...selected]}`);
   }
 });

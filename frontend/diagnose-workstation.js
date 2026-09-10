@@ -1535,7 +1535,9 @@ function boot(root, data, callbacks, signal) {
         host.textContent = '';
         const styles = getComputedStyle(host);
         const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
-        const option = queuePreviewOption(descriptor, sharedGlucoseRange, {
+        const preview = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === descriptor.kind)
+          ?.queuePreview || queuePreviewOption;
+        const option = preview(descriptor, sharedGlucoseRange, {
           text: token('--mk-text', '#f2ede2'), muted: token('--mk-muted', '#a49c90'),
           line: token('--wk-rule', '#3f3833'), signal: token('--in-range', '#86ad78'),
           high: token('--high', '#e2be4c'), basal: token('--basal', '#a89a85'),

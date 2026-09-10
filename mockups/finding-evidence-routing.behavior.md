@@ -3571,3 +3571,31 @@ queue position. C42 and C60 likewise name a Lever Finding explicitly.
 S150 is strengthened: a claimed member has the quiet orange tick but no ranked
 numeral, and contributes neither another Findings count nor another Sift chip
 count. This is a rendering of the served `claimed_by` relation alone.
+
+## Amendment — 2026-09-09, replay subjects and member ticks (issue #395)
+
+The coordinator's failed-first run of `48a23210` reports
+`app: 155 of 174 stories passed` in Scratch's `coord-verify-2/replay.log`.
+The default payload's mirror projection publishes `finding:late_bolus`, not
+`finding:carb_undercount`; preparation preserves that claimed row. The previous
+amendment's Carb undercount anchor was incorrect for the default input (it
+belongs to the history input used by S144). S09–S14, S20–S21, S26, S78–S79,
+S81, S107, S110–S111 and D1–D3 now target Late bolus by canonical id. Their
+Lever drill, keyboard, window and chart behaviors are unchanged.
+
+S118 explicitly distinguishes the sanctioned member tick from ranked numerals:
+claimed members must carry the tick, and the remaining visible priced rows
+must still carry consecutive numerals. The failed-first run parsed those ticks
+as numbers and failed this assertion. No story is retired or skipped.
+
+S20 returns from its opening Pattern case to Findings before selecting the Lever.
+S107 and S110–S111 use All charts to reach that Lever's catalog cell; opening
+frames remain server-ordered. Pattern case interception now forwards the
+requested alignment and occurrence instead of always returning event alignment.
+
+The Pattern rail mini now applies the round-3 sanction through its registry entry
+and the existing shared mini mount: matched median in the member-tick hue,
+typical median and interquartile band, outcome/count legends, the 180 reference
+line, and the MEAL/LOW marker label inside the plot beneath the legend. S147
+checks the mounted Pattern preview's outcome legend. Node coverage checks the
+served window, shared glucose range, marker placement and cohort styling.

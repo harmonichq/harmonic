@@ -748,7 +748,7 @@ export async function openApp(browser, {
       const occ = url.searchParams.get('occ');
       const pattern = findingId?.startsWith('pattern:')
         ? projectPatternCaseFile(capture, { patternChart: { key: findingId.slice('pattern:'.length) },
-          projectionId: url.searchParams.get('projection_id') }) : null;
+          projectionId: url.searchParams.get('projection_id'), alignment, occurrenceId: occ }) : null;
       const body = pattern ? independent(pattern)
         : !finding
         ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
@@ -1509,6 +1509,8 @@ export const S19 = async (page) => {
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
 // LOCK:diagnose-workstation:33
 export const S20 = async (page) => {
+  await page.getByRole('button', { name: 'Findings', exact: true }).click();
+  await openWholeDay(page);
   await page.click(LEVER_FINDING);
   await settle(page, 450);
   // The canonical Lever case carries the coincidence line.
@@ -2065,7 +2067,9 @@ const clickQueueRow = async (page, title) => {
   await settle(page, 500);
 };
 
-const LEVER_FINDING = '#level .qrow[data-id="finding:carb_undercount"]';
+// The default payload publishes Late bolus; Carb undercount belongs to the
+// separate history fixture. Keep the generic Lever stories on their own input.
+const LEVER_FINDING = '#level .qrow[data-id="finding:late_bolus"]';
 
 /** Draw an exact clock window. The plot's minute→pixel map is linear
     (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
@@ -4148,6 +4152,13 @@ export const S147 = async (page) => {
   ok(row, 'S147 a chartable Pattern is served');
   is(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count(), 1,
     'S147 the Pattern uses the shared mini host');
+  const legends = await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).evaluate((host) =>
+    window.echarts.getInstanceByDom(host).getOption().graphic.flatMap((group) =>
+      (group.elements || []).map((item) => item.style?.text).filter(Boolean)));
+  ok(legends.some((label) => label.startsWith('RAN HIGH · ')),
+    'S147 the rail mini carries the sanctioned outcome legend');
+  ok(legends.some((label) => label.startsWith('TYPICAL · ')),
+    'S147 the rail mini labels its typical cohort');
   await openAllCharts(page);
   is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${row.id}"]`).count(), 1,
     'S147 the same Pattern reaches All charts');
@@ -4512,10 +4523,12 @@ export const S106 = async (page) => {
 // STORY:finding-evidence-routing:S107
 export const S107 = async (page) => {
   await openCanvas(page);
-  const held = page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]');
+  await openAllCharts(page);
+  const held = page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]');
   const heldFindingId = await held.getAttribute('data-chart-id');
   ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
   await held.locator('.tile-pin').click();
+  await page.keyboard.press('Escape');
   const preparations = [];
   const cases = [];
   const observe = (request) => {
@@ -4613,7 +4626,8 @@ export const S109 = retiredStory('S109');
 // STORY:finding-evidence-routing:S110
 export const S110 = async (page) => {
   await openCanvas(page);
-  const tile = page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]');
+  await openAllCharts(page);
+  const tile = page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]');
   const id = await tile.getAttribute('data-chart-id');
   await tile.locator('.tile-body').click(); await settle(page, 500);
   /* RETIRED CLAUSE — S110's provenance-name half. The #drill-provenance
@@ -4635,7 +4649,8 @@ export const S110 = async (page) => {
 // STORY:finding-evidence-routing:S111
 export const S111 = async (page) => {
   await openCanvas(page);
-  await page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]').locator('.tile-body').click();
+  await openAllCharts(page);
+  await page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]').locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().click();
   await page.locator('#level .clear-trace').waitFor();
   const crumb = (await state(page)).crumb;
@@ -4758,8 +4773,11 @@ export const S118 = async (page) => {
     summary: node.querySelector('.sum')?.textContent.trim() || '',
     register: node.dataset.state || '',
     tier: node.dataset.tier || '',
+    claimed: node.parentElement.classList.contains('claimed'),
   })));
-  const ranks = rows.map((row) => row.rank).filter(Boolean).map(Number);
+  ok(rows.filter((row) => row.claimed).every((row) => row.rank === '│'),
+    'S118 claimed members carry the non-rank tick');
+  const ranks = rows.filter((row) => !row.claimed).map((row) => row.rank).filter(Boolean).map(Number);
   is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
     'S118 visible priced ranked rows carry consecutive numerals only');
   ok(rows.some((row) => row.summary),

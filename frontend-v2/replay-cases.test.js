@@ -22,41 +22,65 @@ test('c2 app selection contains concrete story bodies and excludes the c3 Trial 
 
 function icReplacementDriver({ requestRecovery = true, inspectionError = null } = {}) {
   const routes = new Map(); const responses = []; const order = [];
+  const source = { findings: { analysis_generation: 'synthetic:before', window: { scoped: true } },
+    rendered_rows: [{ id: 'ic:0', parameter: 'carb_ratio', register: 'assert', span: { start_min: 0 } }] };
   const node = {
     first() { return this; }, filter() { return this; },
     waitFor: async () => {}, click: async () => {},
-    getAttribute: async () => 'ic:current', innerText: async () => 'Current I:C evidence', count: async () => 1,
+    getAttribute: async () => 'ic:0', innerText: async () => 'Current I:C evidence', count: async () => 1,
   };
   const page = {
-    locator: () => node, waitForFunction: async () => {},
+    locator: selector => ({ ...node, click: async () => {
+      if (selector.endsWith('.tile-pin')) order.push('pin');
+      if (selector.endsWith('.tile-body')) order.push('body');
+    } }),
+    waitForFunction: async () => {},
     evaluate: async () => ({ values: ['10'], series: [{ id: 'current', data: [120] }] }),
     route: async (pattern, handler) => routes.set(pattern, handler),
     unroute: async pattern => routes.delete(pattern),
     getByText: () => ({ ...node, waitFor: async () => {
       if (inspectionError) throw inspectionError;
-      assert.deepEqual(order, ['Morning preparation', 'I:C 409', 'findings recovery']);
+      assert.deepEqual(order, ['All charts', 'pin', 'body', 'Afternoon', 'new generation', 'I:C 409', 'findings recovery', 'All charts']);
       assert.equal(responses.length, 1, 'recovery remains paused while stale evidence is inspected');
     } }),
     getByRole: (_role, { name }) => ({ ...node, click: async () => {
-      if (name !== 'Morning') return;
-      assert.equal(routes.has('**/api/diagnose/finding-case-file-preparation*'), false,
-        'holding Morning preparation prevents the I:C request and its stale recovery');
-      order.push('Morning preparation');
-      await routes.get('**/api/diagnose/carb-ratio-block-evidence*')({ fulfill: async response => {
-        responses.push(response); order.push('I:C 409');
-      } });
-      if (!requestRecovery) return;
-      const recovery = routes.get('**/api/diagnose/findings*');
-      assert.equal(typeof recovery, 'function', 'the I:C stale response recovers through findings');
-      const detached = recovery({ fulfill: async response => responses.push(response) });
-      assert.equal(detached, undefined, 'the route callback owns no detached promise or rejection timer');
-      order.push('findings recovery');
+      assert.notEqual(name, 'Morning', 'an unchanged Morning generation does not re-request I:C evidence');
+      if (name === 'All charts') { order.push(name); return; }
+      if (name !== 'Afternoon') return;
+      assert.deepEqual(order, ['All charts', 'pin', 'body'], 'S106 keeps and drills the selected tile before the preset');
+      assert.ok(routes.has('**/api/diagnose/carb-ratio-block-evidence*'), '409 installed before the trigger');
+      order.push(name);
+      const prepare = routes.get('**/api/diagnose/finding-case-file-preparation*');
+      assert.equal(typeof prepare, 'function', 'S106 requires its scoped generation perturbation');
+      const captured = prepare({
+        fetch: async () => ({ ok: () => true, status: () => 200, json: async () => structuredClone(source) }),
+        fulfill: async ({ json }) => {
+          assert.deepEqual({ ...json, findings: { ...json.findings, analysis_generation: source.findings.analysis_generation } }, source,
+            'the perturbation changes only the generation, never the rows or clinical facts');
+          assert.equal(json.findings.analysis_generation, 'synthetic:before:scoped');
+          order.push('new generation');
+          const stale = routes.get('**/api/diagnose/carb-ratio-block-evidence*');
+          let bypassed = false;
+          await stale({ request: () => ({ url: () => 'http://synthetic/api/diagnose/carb-ratio-block-evidence?block_id=30' }),
+            fallback: async () => { bypassed = true; } });
+          assert.ok(bypassed, 'an unrelated I:C block must not consume the one-shot 409');
+          await stale({ request: () => ({ url: () => 'http://synthetic/api/diagnose/carb-ratio-block-evidence?block_id=0' }),
+            fulfill: async response => { responses.push(response); order.push('I:C 409'); } });
+          if (!requestRecovery) return;
+          const recovery = routes.get('**/api/diagnose/findings*');
+          assert.equal(typeof recovery, 'function');
+          const detached = recovery({ fulfill: async response => responses.push(response) });
+          assert.equal(detached, undefined, 'the holding callback owns no detached promise or rejection timer');
+          order.push('findings recovery');
+        },
+      });
+      assert.equal(captured, undefined, 'preparation capture is synchronous too');
     } }),
   };
   return { page, responses, routes };
 }
 
-test('S98 lets Morning preparation finish before the I:C 409 and holds only findings recovery', async () => {
+test('S98 copies the S106 pinned Afternoon trigger with a scoped generation before the selected I:C 409', async () => {
   const { C2_STORIES } = await import('./c2.replay.mjs');
   const { page, responses, routes } = icReplacementDriver();
   await C2_STORIES.S98(page);
@@ -77,7 +101,7 @@ test('S98 missing recovery rejects into the story chain, clears deadlines and pe
   try {
     const missing = icReplacementDriver({ requestRecovery: false });
     await assert.rejects(C2_STORIES.S98(missing.page),
-      /Timed out after 30000 ms: S98 findings recovery after Morning preparation and I:C 409/);
+      /Timed out after 30000 ms: S98 findings recovery after scoped generation and selected I:C 409/);
     assert.equal(missing.routes.size, 0, 'timed-out story removes its interceptions');
     await C2_STORIES.S98(icReplacementDriver().page);
     assert.equal(timers.size, 0, 'both failed and successful story chains clear their deadlines');
@@ -157,4 +181,27 @@ test('S99 reads the full-width unavailable stage without requiring a two-pane wr
   };
   await C2_STORIES.S99(page);
   assert.equal(reads.filter(selector => selector === '.gf-stage[aria-label="Changes"]').length, 2);
+});
+
+test('S9 loads the measured Inter face even when document fonts ready already resolved', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const previousDocument = globalThis.document;
+  const previousStyle = globalThis.getComputedStyle;
+  const face = { family: 'Inter', status: 'unloaded' };
+  let loaded = false;
+  globalThis.document = { fonts: {
+    ready: Promise.resolve(),
+    async load(font, text) {
+      assert.equal(font, '700 18.24px Inter'); assert.equal(text, 'Current change');
+      await Promise.resolve(); face.status = 'loaded'; loaded = true; return [face];
+    },
+    *[Symbol.iterator]() { yield face; },
+  } };
+  globalThis.getComputedStyle = () => ({ fontFamily: 'Inter', fontSize: '18.24px', fontWeight: '700' });
+  const node = { first() { return this; }, filter() { return this; }, waitFor: async () => {},
+    click: async () => {}, evaluate: run => run({ textContent: 'Current change' }) };
+  try {
+    await C2_STORIES.S9({ locator: () => node, waitForFunction: async () => {} });
+    assert.ok(loaded, 'the title waits for its own font rather than the earlier ready snapshot');
+  } finally { globalThis.document = previousDocument; globalThis.getComputedStyle = previousStyle; }
 });

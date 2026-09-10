@@ -38,7 +38,7 @@ const responseFor = (page, path, predicate = () => true) => page.waitForResponse
 async function holdResponses(page, pattern) {
   const held = new Set();
   let arrive; const arrived = new Promise(resolve => { arrive = resolve; });
-  const handler = route => { held.add(route); arrive(); };
+  const handler = route => { held.add(route); arrive(route); };
   await page.route(pattern, handler);
   const release = response => boundedWait(Promise.all([...held].map(async route => {
     await route.fulfill(response); held.delete(route);
@@ -242,16 +242,40 @@ async function icReplacement(page) {
   }, id);
   const coherent = await pair();
   check(coherent.series && coherent.values.length, 'the current I:C case and canvas are both populated');
-  // Morning first loads preparation. Only after it is adopted can the I:C
-  // evidence return 409 and fetchTile recover via loadFindings. Blocking the
-  // preparation here deadlocks before that recovery can even be requested.
+  // Shipped S106 + withGeneratedCarbRatioRecovery: keep/drill the same tile,
+  // then adopt an Afternoon preparation with a changed generation. A preset
+  // alone reuses I:C evidence when its descriptor coordinates are unchanged.
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await page.locator(`.evidence-tile[data-chart-id="${id}"] .tile-pin`).click();
+  await page.locator(`.evidence-tile[data-chart-id="${id}"] .tile-body`).click();
+  const scoped = await holdResponses(page, '**/api/diagnose/finding-case-file-preparation*');
   const replacement = await holdResponses(page, '**/api/diagnose/findings*');
   const failure = { status: 503, json: { detail: 'Synthetic replacement failed' } };
-  await page.route('**/api/diagnose/carb-ratio-block-evidence*', route => route.fulfill({
-    status: 409, json: { detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
-  }));
+  let staleSent = false;
+  await page.route('**/api/diagnose/carb-ratio-block-evidence*', route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('block_id') !== id.slice('ic:'.length) || staleSent) return route.fallback();
+    staleSent = true;
+    return route.fulfill({ status: 409, json: { detail: {
+      code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.',
+    } } });
+  });
   try {
-    await page.getByRole('button', { name: 'Morning', exact: true }).click(); await replacement.wait('S98 findings recovery after Morning preparation and I:C 409');
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const request = await scoped.wait('S98 Afternoon preparation request');
+    const response = await boundedWait(request.fetch({ timeout: 30000 }), 'S98 served Afternoon preparation');
+    check(response.ok(), `S98 Afternoon preparation: ${response.status()}`);
+    const preparation = await boundedWait(response.json(), 'S98 Afternoon preparation body');
+    check(preparation.rendered_rows.some(row => row.id === id), 'the served scope retains the same I:C identity');
+    check(preparation.findings.window?.scoped && typeof preparation.findings.analysis_generation === 'string',
+      'S106 generation perturbation requires a served scoped generation');
+    // The S106 fixture adapter changes only this token. Keep all actual rows,
+    // coordinates, counts and verdicts from the synthetic server unchanged.
+    preparation.findings.analysis_generation += ':scoped';
+    await scoped.release({ response, json: preparation });
+    await replacement.wait('S98 findings recovery after scoped generation and selected I:C 409');
+    check(staleSent, 'the selected block actually returned the one-shot I:C 409');
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
     await page.getByText('Evidence changed. Refresh findings.', { exact: true }).first().waitFor();
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1, 'stale state keeps the exact current I:C identity');
     await replacement.release(failure);
@@ -262,7 +286,10 @@ async function icReplacement(page) {
     check(before.includes('Current'), 'the source was a current-setting case');
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1,
       'failed replacement must retain the selected subject rather than choose another I:C block');
-  } finally { await page.unroute('**/api/diagnose/carb-ratio-block-evidence*'); await replacement.close(failure); }
+  } finally {
+    await page.unroute('**/api/diagnose/carb-ratio-block-evidence*');
+    await scoped.close(failure); await replacement.close(failure);
+  }
 }
 
 async function permittedActions(page) {
@@ -330,6 +357,8 @@ export const C2_STORIES = {
   S9: async page => {
     await go(page, 'changes');
     const type = await boundedWait(page.locator('.gf-title').first().evaluate(async node => {
+      const face = getComputedStyle(node);
+      await document.fonts.load(`${face.fontWeight} ${face.fontSize} ${face.fontFamily}`, node.textContent);
       await document.fonts.ready; const css = getComputedStyle(node);
       return { family: css.fontFamily, size: parseFloat(css.fontSize), weight: css.fontWeight,
         loaded: [...document.fonts].some(face => face.family.replace(/['"]/g, '') === 'Inter' && face.status === 'loaded') };

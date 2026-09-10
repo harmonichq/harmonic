@@ -531,13 +531,14 @@ export const C2_STORIES = {
       try {
         await waitForDesk(page);
         await waitForCharts(page);
-        // The slot's night evidence paints its served groups (`.ev-group`,
-        // diagnose-workstation.js) in place of the pending line once the read
-        // lands; waiting for the groups is the structural signal, with no
-        // copied copy that a renamed noun could make vacuous.
+        // The rail's pending night evidence is its `.empty` line
+        // (diagnose-workstation.js, "Loading nights…"); the line leaves when
+        // the read lands. Waiting for no `.empty` in the level is the
+        // structural signal — an "unavailable" line would hold the wait and
+        // surface in the dump — with no copied copy a renamed noun could void.
         await page.waitForFunction(() => {
           const level = document.getElementById('level');
-          return level && level.dataset.loading !== 'true' && level.querySelector('.ev-group');
+          return level && level.dataset.loading !== 'true' && !level.querySelector('.empty');
         }, null, { timeout: 30000 });
         await waitForLevelAnimations(page);
       } catch (error) {

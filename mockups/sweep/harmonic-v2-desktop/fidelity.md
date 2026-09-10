@@ -20,7 +20,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-03 | Inner scrolling | ported | S4/S10/S10b; S14/S31/S45/S59/S60 captures | Both viewport renders and actual overflow judgments pending. |
 | HV2-04 | Shell tracks | ported | S5; computed capture facts | Both viewport grid tracks pending. |
 | HV2-05 | Reading pane and empty Changes | ported | S6/S7/S7b; S7b/S37 captures | Paired pane/divider and full-width empty state pending. |
-| HV2-06 | Fixed diagnostic desk | ported | app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; app-S18-1280x720 / app-S18-1440x900 | Coordinator · 2026-09-10: PASS at both sizes for dense Diagnose, paired Trial and full-width empty Changes. Stage/reading spines and table rows remain aligned, with no overflow or stale roster. Judgment is limited to these named states; no Focus judgment is supplied. |
+| HV2-06 | Fixed diagnostic desk | ported | app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S59-1280x720 / app-S59-1440x900 | Coordinator · 2026-09-10: geometry PASS at both sizes for dense Diagnose, paired Trial, paired Focus and full-width empty Changes. Stage/reading spines and table rows remain aligned, with no overflow or stale roster. S59 copy defects (raw Pattern subject and period reasons) fixed under amendment 7 with failing-first renderer tests; the final replay uses the rebuilt shells. Judgment is limited to these named states. |
 | HV2-07 | Shipped dark material | ported | S8; computed consuming-element styles | No new palette. Compare against shipped styles, not the historical theme scaffold. |
 | HV2-08 | Inter and clinical typography | ported | app-S9-1280x720 / app-S9-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900 | Coordinator · 2026-09-10: PASS at both sizes across these named states. Inter-only inventory, 700-weight headings within the 1.5rem ceiling, tabular clinical numerals, flat surfaces/hairlines and legible dark-ground contrast, including small captions. |
 | HV2-09 | Three persistent destinations | ported | S1/S2/S3/S11/S12; S1/S3 captures | ADR 397 navigation adaptation; historical four-button screenshots are not new evidence. |
@@ -51,7 +51,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-34 | Cleanup and no mock controls | ported | S28/S83/S84/S85; desk browser suite | Coordinator reports inherited rail 160/160 after teardown fix. Complete v2 run pending. |
 
 The named HV2-06 and HV2-08 judgments above are the coordinator's, dated
-2026-09-10 and transcribed under amendment 6; this builder assigns no eye verdict.
+2026-09-10 and transcribed under amendments 6 and 7; this builder assigns no eye verdict.
 Capture labels refer to the synthetic HTML wrappers and their paired PNGs. HV2-09/10/11 and contextual HV2-14 require updated navigation
 and copy evidence, even where older material and geometry still match.
 
@@ -97,9 +97,23 @@ the coordinator's later named-state judgments above.
 Judge: coordinator · 2026-09-10. HV2-06 covers S37 dense Diagnose on basal-lower,
 S45 paired Trial on c3-trial, and S18 empty Changes on basal-no-change, each at
 1280×720 and 1440×900. S37's served “Finding has no inspectable member” is the
-asserted endpoint, not a defect. The supplied judgment does not include a
-separate Focus geometry inspection, despite its broader section heading.
+asserted endpoint, not a defect. The amendment 6 judgment did not include a
+separate Focus geometry inspection; amendment 7 supplies it below.
 HV2-08 covers S9, S18, S37 and S45 at both sizes. These named-state passes do
 not assign a full-ledger verdict. Full-ledger results of record remain
 coordinator-owned until posted; same-byte clinical pairs still await the
 corrected driver's captures and subsequent coordinator judgment.
+
+## Coordinator amendment 7 — Focus pair
+
+Judge: coordinator · 2026-09-10. S59 on c3-focus passes geometry at 1280×720
+and 1440×900 (`app-S59-1280x720`, `app-S59-1440x900`). The Before → After chart,
+observed behaviour and glucose outcomes tables retain the Trial pair's spines.
+The evidence column remains intact without wrapping, including the served
+opportunity readiness of “12 of 12 meals · 4 days elapsed · ready · Criterion met”.
+The coordinator identified two copy defects in these captures. The follow-up
+now uses the Pattern title retained in its served decision context and renders
+known period reasons as spaced desk copy, omitting unmapped reasons. Both fixes
+have failing-first Node renderer tests. This records the supplied geometry
+judgment and the copy repair; the final full-ledger run is coordinator-owned
+and must use the amendment 7 build.

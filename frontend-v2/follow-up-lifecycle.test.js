@@ -5,6 +5,7 @@ let fail = true;
 const requests = [];
 let kind = 'trial';
 let identity = 'basal_rate-03-00-synthetic';
+let context = {};
 const admission = () => ({ state: 'available', active_kind: kind, active_id: identity,
   can_finish_trial: true, focus_pin: { available: false } });
 const comparison = { availability: { state: 'available' }, periods: {}, views: {}, outcomes: [],
@@ -18,7 +19,7 @@ globalThis.fetch = async (path, options = {}) => {
     trials: kind === 'trial' ? [{ id: identity }] : [],
     focuses: kind === 'focus' ? [{ id: identity, pattern_key: 'served-pattern', pinned_at: '2024-05-05 00:00:00' }] : [],
     ...(selected ? { selected: { id: identity, kind, changes: kind === 'trial' ? [{ parameter: 'basal_rate', slot: '03:00', before: 0.6, after: 0.54 }] : [],
-      lever: kind === 'focus' ? 'late_bolus' : undefined, original: { context: {} },
+      lever: kind === 'focus' ? 'late_bolus' : undefined, original: { context },
       reassessment: { comparison } } } : {}),
   };
   return { ok: true, json: async () => result };
@@ -67,4 +68,15 @@ test('retained inspection uses the original slot and canonical Pattern identity'
     { subject: 'setting:basal_rate', from: 'changes', occurrence: '', window: '180-210', lever: 'basal_rate', focus: '#crumb-trail' });
   assert.equal(retainedEvidenceContext({ pattern_key: 'served-pattern', lever: 'late_bolus' }).subject, 'pattern:served-pattern');
   assert.equal(retainedEvidenceContext({ lever: 'retired-unmapped' }).subject, '', 'an unmapped legacy record cannot impersonate a Pattern');
+});
+
+test('Focus mount titles the Pattern with the title retained in its decision context', async () => {
+  kind = 'focus'; identity = 'focus-title-synthetic';
+  // source_context retains the candidate's title as explanation, not title.
+  context = { explanation: 'Highs after meals', subjects: ['pattern:served-pattern'] };
+  try {
+    const seat = host(); await mountActive(seat, 'focus-title');
+    assert.match(seat.innerHTML, /<h2 class="gf-title"[^>]*>Highs after meals<\/h2>/);
+    assert.doesNotMatch(seat.innerHTML, />pattern:served-pattern</);
+  } finally { context = {}; }
 });

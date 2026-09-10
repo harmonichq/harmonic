@@ -60,9 +60,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from .analyzers.ic import BLOCK_WINDOW_DAYS
 from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
-# on. `window_membership` asks the same question for the same reason, so this is
-# one definition read twice, never a second copy of the mapping.
-from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind
+# on. The sequence marker requires explicit witness membership while retaining
+# the habit causes' highs/meals display chips.
+from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.outcome_patterns import _ROSTER, build_outcome_patterns
 from .safety import Status
@@ -245,7 +245,12 @@ class FindingsProjection:
             if pattern.get("collapse") != "remain_pattern":
                 continue
             subject = pattern["subject"]
-            for lever in pattern.get("rate_levers") or ():
+            subjects = dict.fromkeys([
+                *(pattern.get("rate_levers") or ()),
+                *(member["subject"] for member in pattern.get("members") or ()
+                  if member["kind"] == "habit"),
+            ])
+            for lever in subjects:
                 row = by_id.get(f"finding:{lever.removeprefix('habit:')}")
                 if row is not None:
                     row["claimed_by"] = subject
@@ -622,7 +627,54 @@ class FindingsProjection:
                 verdict_counts_by_family=verdict_counts_by_family,
                 event_chart=event_chart_coordinate(lever, query, entry["families"]),
             ))
+        for lever in self._exposures.get("sequence_evidence") or {}:
+            if lever not in patterns:
+                continue
+            population = sequence_population(self._exposures, lever, query)
+            claimed = [item for item in population if item["attributed"]]
+            if not claimed:
+                continue
+            counts = {state: sum(item["verdict"] == state for item in population)
+                      for state in FINDING_VERDICTS}
+            rows.append(_row(
+                id=f"finding:{lever}", register="finding", kind="habit", lever=lever,
+                title=title(Lever(lever)), priority=priced.get(lever),
+                appearances=[{"family": "sequences", "noun": "sequences",
+                              "n": len(claimed), "m": len(population)}],
+                episodes=len(claimed), evidence=population,
+                verdict_counts=counts, verdict_counts_by_family={"sequences": counts},
+                event_chart={"lever": lever, "window": query.to_dict()},
+            ))
         return rows
+
+
+def sequence_population(exposures: dict, lever: str, query: WindowQuery) -> List[dict]:
+    """Project the producer's eligible identities and witnessed episode matches.
+
+    A sequence counts once even when several episodes match. References have no
+    outcome witness and remain in the whole-source population only. Clock-scoped
+    rosters include exactly the sequences with a witnessed match in that window.
+    Losing matches still meet this row's criteria; only winners are attributed.
+    """
+    evidence = (exposures.get("sequence_evidence") or {}).get(lever) or {}
+    matches = {}
+    for occurrence in evidence.get("occurrences") or ():
+        minute = outcome_minute({**occurrence, "cause_lever": lever}, exposures)
+        if minute is not None and (not query.scoped or query.contains(minute)):
+            matches.setdefault(occurrence["id"], []).append(occurrence)
+    result = []
+    for record in evidence.get("population") or ():
+        episodes = matches.get(record["id"], [])
+        if query.scoped and not episodes:
+            continue
+        winners = [episode for episode in episodes if episode["attributed"]]
+        result.append({
+            "id": record["id"], "sequence": deepcopy(record),
+            "episodes": deepcopy(episodes), "attributed": bool(winners),
+            "outcome_minute": (winners or episodes)[0]["outcome_minute"] if episodes else None,
+            "verdict": "fired" if episodes else "clean",
+        })
+    return result
 
 
 # Silence reasons that keep an occurrence "calm" for a lever whose classifier
@@ -950,6 +1002,8 @@ def _chips_for(row: dict) -> List[str]:
 
     chips = []
     kind = outcome_kind(row["lever"])
+    if kind == "sequence":
+        return ["highs", "meals"]
     if kind == "high":
         chips.append("highs")
     elif kind == "low":

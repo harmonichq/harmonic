@@ -9,17 +9,17 @@ import time
 import uuid
 
 from .analyzers.classifiers import classify_correction_stacking
-from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
-from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
+from .analyzers.scenario.anchors import Anchor, AnchorKind
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import _lever_identities
 from .analyzers.scenario.evidence_population import policy_for
-from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
+from .analyzers.scenario.model_view import _build_episode_view
 from .analyzers.scenario import opportunities
-from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
 from .analyzers.scenario_config import ScenarioConfig
 from . import event_comparison, findings_projection
+from .rescue_evidence import eligible_carb_entries
+from .analyzers.eating_sequences import build_eating_sequence_report, report_dict
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 from .result_cache import PREPARATION_LEASE_SECONDS
 from .window_membership import WindowQuery
@@ -88,6 +88,7 @@ class PreparedCases:
     pins: int = 0
     exposures: dict | None = None
     scenarios: dict | None = None
+    sequence_report: dict | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -117,6 +118,8 @@ class PreparedCases:
         row = self._authoritative_row(finding_id) if finding_keyed else None
         if finding_keyed and row is None:
             return None
+        if policy_for(lever).recurrence_noun == "sequences":
+            return self._sequence_case(finding_id, lever, row, alignment, occ)
         roster = self._roster(lever)
         policy = policy_for(lever)
         claimed_ids = (self.associations[lever].intersection(member.id for member in roster)
@@ -171,6 +174,43 @@ class PreparedCases:
             "projection": projection, "selection": selection,
         }
 
+    def _sequence_case(self, finding_id, lever, row, alignment, occ):
+        roster = findings_projection.sequence_population(self.exposures or {}, lever.value, self.query)
+        claimed = [item for item in roster if item["attributed"]] if finding_id else []
+        if finding_id and not claimed:
+            return None
+        counts = {state: sum(item["verdict"] == state for item in roster)
+                  for state in findings_projection.FINDING_VERDICTS}
+        if finding_id and row["episodes"] != len(claimed):
+            raise InconsistentProjection("inconsistent_projection")
+        recurrence = self.recurrence.get(lever)
+        if (finding_id and not self.query.scoped and recurrence is not None
+                and recurrence != (len(claimed), len(roster))):
+            raise InconsistentProjection("inconsistent_projection")
+        occurrences = [{
+            **item, "id": _opaque("o_", "sequences", item["id"]),
+            "date": item["sequence"]["sequence_start"][:10],
+            "anchor": {"t": item["sequence"]["sequence_start"], "kind": "sequence",
+                       "label": "Eating sequence", "bg": None},
+        } for item in roster]
+        selected = next((item for item in occurrences if item["id"] == occ), None)
+        selection = {"state": "none" if occ is None else "unavailable", "requested_id": occ,
+                     "detail": None}
+        if selected is not None:
+            selection = {"state": "selected", "requested_id": occ, "detail": deepcopy(selected)}
+        return {
+            "schema": CASE_SCHEMA, "projection_id": self.projection_id,
+            "analysis_generation": self.findings["analysis_generation"],
+            "finding": {"id": finding_id, "lever": lever.value, "title": title(lever)},
+            "window": self.query.to_dict(), "family": "sequences", "population": "sequences",
+            "cross_population": False,
+            "summary": {"claimed": len(claimed), "denominator": len(roster), "noun": "sequences"},
+            "verdict_counts": counts, "occurrences": occurrences,
+            "projection": {"alignment": alignment, "kind": "eating-sequence",
+                           "report": deepcopy(self.sequence_report)},
+            "selection": selection,
+        }
+
     def _pattern_case(self, finding_id, alignment, occ):
         """Expose one Pattern's already-built Exposure population.
 
@@ -209,6 +249,7 @@ class PreparedCases:
                 claims_by_identity.setdefault(identity, lever)
         claimed_identities = set(claims_by_identity)
         claimed_by_id = {}
+        member_associations = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         pattern_roster = []
         remaining_claims = set(claimed_identities)
@@ -216,6 +257,7 @@ class PreparedCases:
             identity = candidate.get("t")
             t = datetime.strptime(candidate["t"], FMT)
             occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
+            member_associations[occurrence_id] = list(candidate.get("member_associations") or ())
             claimant = claims_by_identity.get(identity)
             if claimant is not None and identity in remaining_claims:
                 claimed_by_id[occurrence_id] = f"habit:{claimant}"
@@ -243,7 +285,9 @@ class PreparedCases:
             occ, alignment, projection, pattern_roster, population_lever,
             self.cgm, self.basal, self.bolus, self.carbs,
         )
-        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
+        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean"),
+                                                **({"member_associations": member_associations[member.id]}
+                                                   if member_associations[member.id] else {})})
                        for member in pattern_roster]
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
@@ -261,7 +305,7 @@ class PreparedCases:
 
 
 def prepare(store, *, query, version, analysis, exposures, scenarios, selected_id=None,
-            analysis_generation="standalone:0"):
+            analysis_generation="standalone:0", sequence_report=None):
     """Materialize queue, opportunities, attribution, and traces in one read snapshot."""
     store.conn.execute("BEGIN")
     try:
@@ -276,6 +320,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
         findings = projection.project(
             query, selected_id, analysis_generation=analysis_generation,
         )
+        if sequence_report is None:
+            sequence_report = report_dict(build_eating_sequence_report(store, window_days=window_days))
         recurrence = {
             Lever(row["lever"]): (row["confidence"]["k"], row["confidence"]["n"])
             for row in ((projection._scenarios.get("patterns") or [])
@@ -290,7 +336,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
                          source_window_days=window_days, exposures=deepcopy(exposures),
-                         scenarios=deepcopy(scenarios))
+                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report))
 
 
 def _population(
@@ -311,9 +357,16 @@ def _population(
         false_low_span_records(cgm, store.prompt_responses())))
     filtered_bolus = _slice(bolus, start, end)
     filtered_basal = _slice(basal, start, end)
-    opportunity_families = opportunities.build_opportunities(
-        filtered_bolus, filtered_cgm, filtered_basal, scenario_config=config,
+    from .analyzers.scenario.evaluation import evaluate
+    answers = low_prompt_answers(store, start, end)
+    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
+    evaluated = evaluate(
+        filtered_bolus, filtered_cgm, filtered_basal, isf=isf,
+        scenario_config=config, low_answers=answers,
+        carb_entries=_slice(eligible_carb_entries(store.carb_entries(), end), start, end),
+        window_start=start, window_end=end,
     )
+    opportunity_families = evaluated.families
     by_family = {family: {item.source_key: item for item in rows}
                  for family, rows in opportunity_families.items()}
     states = {lever: {} for lever in Lever}
@@ -321,39 +374,13 @@ def _population(
     associations = {lever: set() for lever in Lever}
     provenance = {lever: [] for lever in Lever}
     withheld = set()
-    answers = low_prompt_answers(store, start, end)
-    isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
-    anchors = collect_anchors(filtered_bolus, filtered_cgm, filtered_basal,
-                              scenario_config=config)
-    episodes = split_caused_over_treatments(
-        split_low_rebounds(
-            split_double_humps(
-                segment(anchors, scenario_config=config),
-                filtered_cgm,
-                scenario_config=config,
-            ),
-            filtered_cgm,
-            filtered_bolus,
-            scenario_config=config,
-        ),
-        filtered_cgm,
-        filtered_bolus,
-        filtered_basal,
-        isf=isf,
-        scenario_config=config,
-        low_answers=answers,
-    )
-
-    for index, episode in enumerate(episodes):
-        lo = episode.start - timedelta(minutes=_CONTEXT_PAD_MIN)
-        hi = episode.end + timedelta(minutes=_CONTEXT_PAD_MIN)
-        attr = attribute(episode, _slice(filtered_cgm, lo, hi),
-                         _slice(filtered_bolus, lo, hi), _slice(filtered_basal, lo, hi),
-                         isf=isf, scenario_config=config, low_answers=answers)
+    for index, evaluated_episode in enumerate(evaluated.episodes):
+        episode = evaluated_episode.anchors
+        attr = evaluated_episode.attribution
         view = _build_episode_view(index, episode, filtered_cgm, filtered_bolus,
                                    filtered_basal, isf=isf, scenario_config=config,
-                                   low_answers=answers)
-        ordered = sorted(episode.anchors, key=lambda anchor: (anchor.t, _anchor_seq(anchor)))
+                                   low_answers=answers, evaluated=evaluated_episode)
+        ordered = sorted(episode.anchors, key=lambda anchor: anchor.t)
         for source, row in zip(ordered, view["anchors"]):
             family, key = opportunities.canonical_anchor_key(source)
             if family is None or key not in by_family[family]:
@@ -365,17 +392,14 @@ def _population(
                     states[lever][key] = findings_projection._occurrence_verdict(
                         occurrence, lever.value,
                     )
-        if attr.lever is None:
+        if attr.lever is None or policy_for(attr.lever).recurrence_noun == "sequences":
             continue
         policy = policy_for(attr.lever)
         if policy.recurrence_family is None:
             # The rise onset the classifier judged, not the driver anchor's peak —
             # see the same note in `explore_exposures`. These associations are checked
             # against the engine's occurrence groups, so a second key disagrees.
-            occurrence_id = policy.occurrence_for_episode(
-                str(index), filtered_bolus, attr.trigger_t,
-                scenario_config=config,
-            )
+            occurrence_id = evaluated_episode.occurrence_id
             served_id = _opaque("m_", occurrence_id)
             associations[attr.lever].add(served_id)
             landing_kind = outcome_kind(attr.lever)
@@ -424,6 +448,9 @@ def _population(
     members = {}
     for lever in Lever:
         policy = policy_for(lever)
+        if policy.recurrence_noun == "sequences":
+            members[lever] = ()
+            continue
         if policy.recurrence_family is None:
             meals = {item.members[0].seq_num: item
                      for item in opportunity_families[Exposure.MEALS]}
@@ -444,10 +471,6 @@ def _population(
                                for key, item in by_family[family].items())
     return (members, {lever: frozenset(ids) for lever, ids in associations.items()},
             {lever: tuple(rows) for lever, rows in provenance.items()}, frozenset(withheld))
-
-
-def _anchor_seq(anchor):
-    return anchor.bolus.seq_num if anchor.bolus is not None else -1
 
 
 def _association(attr, episode, by_family):
@@ -542,7 +565,8 @@ def wrap(prepared):
                 "window": prepared.query.to_dict(),
             },
             "findings": deepcopy(prepared.findings), "rendered_rows": rendered,
-            "behavioral_case_headers": headers, "withheld_findings": withheld}
+            "behavioral_case_headers": headers, "withheld_findings": withheld,
+            "eating_sequence_report": deepcopy(prepared.sequence_report)}
 
 
 def _noun(family):

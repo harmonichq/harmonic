@@ -84,3 +84,17 @@ class BuildCatalogTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SequenceCatalogContractTest(unittest.TestCase):
+    def test_sequence_habits_keep_meals_affinity_and_sequence_recurrence(self):
+        from ciq_autotune.analyzers.scenario.evidence_population import policy_for
+        catalog = {row["value"]: row for row in build_catalog()["levers"]}
+        for value, expected_title in (("high_carb_sequence", "High-carb sequence"),
+                                      ("repeat_eating", "Repeat eating")):
+            lever = Lever(value)
+            self.assertEqual(catalog[value]["title"], expected_title)
+            self.assertEqual(catalog[value]["exposure"], "meals")
+            self.assertEqual(levers.outcome_kind(lever), "sequence")
+            self.assertEqual(policy_for(lever).recurrence_noun, "sequences")
+            self.assertIsNone(policy_for(lever).recurrence_family)

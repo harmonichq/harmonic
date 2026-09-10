@@ -592,6 +592,7 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
     hasTouch: true, isMobile: true, appSource: 'fixture', findingsInputs: twoFamilyInputs,
   });
   try {
+    await settle(page, 450);
     await touchTap(page, page.getByRole('button', { name: '24 h', exact: true }));
     await page.waitForFunction(() => document.querySelectorAll(
       '#level .mini[data-preview-kind] canvas',
@@ -624,6 +625,7 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
     assert.equal((await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim(),
       drawnWindow, 'All charts dismissal preserves the drawn window');
 
+    await settle(page, 450);
     const rows = page.locator('#level .qrow.priced');
     assert.ok(await rows.count() > 1, 'the touch path has a lower-ranked finding');
     await touchTap(page, rows.nth(1));

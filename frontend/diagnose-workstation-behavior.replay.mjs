@@ -4167,9 +4167,15 @@ export const S147 = async (page) => {
   ok(row, 'S147 a chartable Pattern is served');
   is(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count(), 1,
     'S147 the Pattern uses the shared mini host');
-  const legends = await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).evaluate((host) =>
-    window.echarts.getInstanceByDom(host).getOption().graphic.flatMap((group) =>
-      (group.elements || []).map((item) => item.style?.text).filter(Boolean)));
+  // Preparation and evidence arrival can replace the mini. Wait and read in
+  // one browser turn so a repaint cannot dispose the instance between them.
+  const legends = await (await page.waitForFunction((id) => {
+    const host = document.querySelector(`#level .qrow[data-id="${id}"] .mini`);
+    const chart = host && window.echarts.getInstanceByDom(host);
+    if (!host?.querySelector('canvas') || !chart) return false;
+    return chart.getOption().graphic.flatMap((group) =>
+      (group.elements || []).map((item) => item.style?.text).filter(Boolean));
+  }, row.id)).jsonValue();
   ok(legends.some((label) => label.startsWith('RAN HIGH · ')),
     'S147 the rail mini carries the sanctioned outcome legend');
   ok(legends.some((label) => label.startsWith('TYPICAL · ')),
@@ -4961,6 +4967,7 @@ export const S120 = async (page) => {
 // STORY:finding-evidence-routing:S121
 export const S121 = async (page) => {
   await openWholeDay(page);
+  await settle(page, 450);
   const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
   const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
     title: node.querySelector('.lab')?.textContent.trim() || '',

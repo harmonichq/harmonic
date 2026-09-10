@@ -134,26 +134,108 @@ while True:
 
 
 class ReplayWrapperTest(unittest.TestCase):
-    def test_complete_replay_keeps_s100_but_never_captures_its_closed_endpoint(self):
+    ids = [f"S{i}" for i in range(1, 113)] + [f"R{i}" for i in range(1, 19)]
+
+    def replay(self, shard=None, output=None):
         from contextlib import nullcontext
         testcase = self
-        class Run:
-            out = Path("/tmp/synthetic-wrapper-test")
-            def command(self, name, args, *, env, timeout):
-                testcase.assertEqual(name, "complete-replay")
-                testcase.assertEqual(timeout, 3000, "the complete replay ceiling ACCEPTANCE.md states (inside the 60-minute CI job)")
-                testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
-                testcase.assertNotIn("ONLY", env, "S100 must remain in the complete registry run")
-                testcase.assertNotIn("STORY_CASES", env)
-                captures = env["CAPTURE_ONLY"].split(",")
-                testcase.assertNotIn("S100", captures, "Event S8 closes its borrowed page before endpoint capture")
-                testcase.assertIn("S99", captures, "other endpoints must still be captured")
-                testcase.assertTrue(env["CAPTURE_DIR"])
-                return 0, "# executed 130 · failed 0 · deferred 0 · selected 130"
-        with patch.object(acceptance, "inventory"), patch.object(acceptance, "free_port"), \
-             patch.object(acceptance, "auth_server", return_value=nullcontext()), \
-             patch.dict(os.environ, {"PLAYWRIGHT_MODULE": "synthetic", "ONLY": "S99", "STORY_CASES": "S100=wrong"}):
-            acceptance.replay(Run(), "1280x720")
+        with tempfile.TemporaryDirectory() as directory:
+            class Run:
+                out = Path(directory)
+                def command(self, name, args, *, env, timeout):
+                    testcase.assertEqual(name, "complete-replay")
+                    testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
+                    testcase.assertNotIn("STORY_CASES", env)
+                    captures = env["CAPTURE_ONLY"].split(",")
+                    testcase.assertNotIn("S100", captures)
+                    testcase.assertIn("S99", captures)
+                    testcase.assertTrue(env["CAPTURE_DIR"])
+                    if shard:
+                        chosen = env["ONLY"].split(",")
+                    else:
+                        testcase.assertNotIn("ONLY", env)
+                        chosen = testcase.ids
+                    return 0, output if output is not None else (
+                        "\n".join(f"PASS {id}" for id in chosen) +
+                        f"\n# executed {len(chosen)} · failed 0 · deferred 0 · selected {len(chosen)}")
+            with patch.object(acceptance, "inventory", return_value=self.ids) as inventory, \
+                 patch.object(acceptance, "free_port"), \
+                 patch.object(acceptance, "auth_server", return_value=nullcontext()), \
+                 patch.dict(os.environ, {"PLAYWRIGHT_MODULE": "synthetic", "ONLY": "S99", "STORY_CASES": "S100=wrong"}):
+                acceptance.replay(Run(), "1280x720", shard)
+                inventory.assert_called_once()
+            return json.loads((Path(directory) / "selection.json").read_text())["selected"]
+
+    def test_complete_replay_ignores_inherited_selection(self):
+        self.assertEqual(self.replay(), self.ids)
+
+    def test_shards_concatenate_to_the_complete_registry_without_overlap(self):
+        # Read the CI shard inventory; this test does not own a second list.
+        import re
+        workflow = (acceptance.REPO / ".github/workflows/ci.yml").read_text()
+        shards = list(dict.fromkeys(re.findall(r"--shard (\d+/\d+)", workflow)))
+        self.assertTrue(shards)
+        groups = [self.replay(acceptance.shard_arg(shard)) for shard in shards]
+        self.assertEqual([id for group in groups for id in group], self.ids)
+        self.assertLessEqual(max(map(len, groups)) - min(map(len, groups)), 1)
+        self.assertIn("S100", [id for group in groups for id in group])
+
+    def test_one_shard_is_the_full_registry(self):
+        self.assertEqual(self.replay((1, 1)), self.ids)
+
+    def test_empty_shards_are_rejected(self):
+        with self.assertRaisesRegex(RuntimeError, "empty shards"):
+            self.replay((1, len(self.ids) + 1))
+
+    def test_incomplete_wrong_duplicate_and_deferred_output_are_rejected(self):
+        for output in [
+            "# executed 1 · failed 0 · deferred 0 · selected 1",
+            "# executed 0 · failed 0 · deferred 0 · selected 0",
+            "# executed 129 · failed 0 · deferred 1 · selected 130",
+            "\n".join(["PASS S1"] * 130) + "\n# executed 130 · failed 0 · deferred 0 · selected 130",
+            "no summary",
+        ]:
+            with self.subTest(output=output[:50]), self.assertRaises(RuntimeError):
+                self.replay(output=output)
+
+    def test_invalid_shard_cli_fails_before_creating_output(self):
+        for value in ["0/4", "5/4", "1/0", "1", "-1/4", "1/2/3", "a/b"]:
+            with tempfile.TemporaryDirectory() as directory:
+                out = Path(directory) / "absent"
+                result = subprocess.run([sys.executable, acceptance.__file__, "replay",
+                    "--shard=" + value, "--out", str(out)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse(out.exists())
+
+
+class CaseCacheTest(unittest.TestCase):
+    def test_real_case_reconciles_once_and_warm_copies_discard_story_mutations(self):
+        import shutil
+        uv = shutil.which("uv")
+        self.assertIsNotNone(uv)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            audit = root / "uv.jsonl"
+            wrapper = bin_dir / "uv"
+            wrapper.write_text(f"#!{sys.executable}\n" +
+                "import json, os, sys\n" +
+                f"with open({str(audit)!r}, 'a') as log: log.write(json.dumps(sys.argv[1:]) + '\\n')\n" +
+                f"os.execv({uv!r}, [{uv!r}, *sys.argv[1:]])\n")
+            wrapper.chmod(0o755)
+            with patch.dict(os.environ, {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"]}):
+                run = acceptance.Run(root / "out")
+                acceptance.case_cache(run, check=True, cases=["basal-lower"])
+            calls = [json.loads(line) for line in audit.read_text().splitlines()]
+            reconciles = [call for call in calls if any("reconcile_ingested_follow_up" in arg for arg in call)]
+            cached = [call for call in reconciles if Path(call[-1]).name == "generated-basal-lower.sqlite"]
+            self.assertEqual(len(cached), 1, "warm copies must never reconcile again")
+            self.assertEqual(len(reconciles), 4, "one cached preparation plus three old-path measurements")
+            self.assertFalse(any("serve" in call for call in calls))
+            rows = json.loads((run.out / "case-times.json").read_text())
+            self.assertEqual(len(rows), 3)
+            self.assertTrue(all(row["before_ms"] > 0 and row["after_ms"] > 0 for row in rows))
 
 
 class InventoryProofTest(unittest.TestCase):

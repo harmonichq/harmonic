@@ -2824,6 +2824,7 @@ async function main() {
   process.stdout.write('# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md\n');
 
   for (const [id, fn, state] of selected) {
+    const started = performance.now();
     if (fn.deferred && TARGET === 'mock') {
       deferredCount += 1;
       process.stdout.write(`DEFERRED ${id} — app opener only · LOCK:harmonic-v2-desktop:${fn.deferred.term} · ${fn.deferred.what}\n`);
@@ -2863,6 +2864,7 @@ async function main() {
     } finally {
       if (opened && opened.context) await opened.context.close().catch(() => {});
       if (caseServer) await caseServer.stop();
+      process.stdout.write(`# story-time ${id} milliseconds=${(performance.now() - started).toFixed(3)}\n`);
     }
   }
 

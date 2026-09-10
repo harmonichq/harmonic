@@ -110,16 +110,21 @@ owns a separate synthetic copy with the disposable token on 8766 for S87.
 Both servers use `--no-fetch`. `ONLY` and case overrides are removed by the
 wrapper; each applicable ledger entry must execute, with zero deferred.
 
-The coordinator reports about 13 minutes per size on this Mac. In CI run
-34528197575 (head 60340672), the 30-minute wrapper ceiling killed both sizes
-after 123 passes at 1280×720 and 122 at 1440×900, reaching R13 and R15.
-The coordinator estimates about 35 minutes per size on that runner; this is
-an estimate from the interrupted runs, not a completed CI timing. The complete
-replay's `acceptance.py` wrapper ceiling is 3000 seconds (50 minutes), inside
-the `timeout: 60` on both "V2 complete frozen ledger" entries in
-[ci.yml](../../../.github/workflows/ci.yml). That job limit leaves ten minutes
-outside the replay for setup and teardown. Other wrapper commands keep their
-existing limit.
+The full command remains unsharded by default. `--shard k/n` selects a
+contiguous slice of registry order after the same complete inventory check.
+Empty shards, malformed shard arguments, missing/duplicate/wrong PASS IDs,
+deferred entries and incomplete summaries fail. The wrapper discards inherited
+`ONLY` and `STORY_CASES` before applying its own selection.
+
+CI's matrix in [ci.yml](../../../.github/workflows/ci.yml) owns the shard list.
+Each size runs four shards, with 32 or 33 entries each. Every artifact has a
+unique size/shard name and retains `selection.json`, `inputs.json`, command
+records, raw logs and captures. Concatenating `complete-replay.log` files in
+numeric shard order preserves the complete registry's story order. Keep all
+shard headers and summaries; require every shard and the same input hashes
+before citing their union as a complete run. The receipt must cite the whole
+artifact set for each size. Local shards must run serially on this machine;
+they own the same ports. Timeout measurements and ceilings are stated below.
 
 ```sh
 /opt/homebrew/bin/python3.14 mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$evidence/app-1280x720"
@@ -196,6 +201,75 @@ VIEWPORT=1440x900 CAPTURE_DIR="$evidence/clinical-pairs-1440" node mockups/sweep
 These commands are prepared, not run. Same-byte transport is only one part of
 clinical fidelity; the coordinator must inspect each Basal, Correction factor
 and I:C pair and record whether the plotted data, axes and reading are faithful.
+
+## Fast-gates measurements and ceilings (#406)
+
+Every browser matrix leg has an explicit job timeout. These are whole-job
+ceilings, including setup and artifact retention. The table is the single
+written timeout rationale; ci.yml holds the executable values. Measurements
+are from ubuntu-latest jobs on 2026-09-10 in runs
+[34528197575](https://github.com/harmonichq/harmonic/actions/runs/34528197575),
+[34534519065](https://github.com/harmonichq/harmonic/actions/runs/34534519065),
+and completed legs of
+[34537427194](https://github.com/harmonichq/harmonic/actions/runs/34537427194).
+Use the largest observed whole-job duration across those samples. A cancelled
+or failed run is identified explicitly; it is not a successful timing proof.
+
+| Browser leg | Measured runner wall time | Job ceiling | Headroom above sample |
+| --- | --- | --- | --- |
+| Day lifecycle | 0m57s | 5 min | 4m03s |
+| Diagnose workstation | 4m37s | 10 min | 5m23s |
+| Diagnose canvas composition | 2m32s | 6 min | 3m28s |
+| Cockpit shell | 1m04s | 5 min | 3m56s |
+| Browser runner lifecycle | 0m26s | 5 min | 4m34s |
+| V2 desk | 0m47s | 5 min | 4m13s |
+| V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
+| V2 frozen ledger, each shard at either size | Full 1280 job: 24m49s successful; earlier full jobs stopped at 30m33s / 30m31s | 20 min | Provisional: roughly 6–9 min per shard extrapolated from full runs, plus 11–14 min |
+| First-plan reconcile | 0m38s | 5 min | 4m22s |
+| Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
+| Diagnose event comparisons | 1m28s | 5 min | 3m32s |
+| Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
+| Verify behaviour ledger | 0m36s | 5 min | 4m24s |
+
+The replay process ceiling is 900 seconds for a shard, leaving five minutes
+inside its CI job for setup, server teardown and retention. The unsharded local
+process keeps its 3000-second ceiling. Other acceptance commands keep their
+existing limits. Shard duration is an estimate from measured full jobs, not a
+measured sharded run. Contiguous partitions have equal counts, not proven equal
+cost. The coordinator must retain the first sharded PR's timings and full local
+run before claiming the CI latency improvement or starting chunk 3. No runner
+tier, workflow trigger, story body or assertion changes in this chunk.
+
+The case transport already generated each raw case once per run. It now also
+reconciles that template once, then copies it for every story. Each copy clears
+its old WAL, SHM and derived-store files. Stories never serve or mutate the
+template. Nested case changes and Trial/Focus use this same transport. No cache
+is shared across commands, shards or commits.
+
+`case-cache --check` regenerates every default registry case twice and compares
+logical SQLite dumps using the existing generator's dump rule. `c3-history`
+generation stamps observation metadata with the wall clock; the comparison
+freezes `watched_change.datetime` for both generations instead of dropping
+fields. Normal replay generation uses its existing clock. The check also
+mutates each story copy and its derived file, then requires the next copy to
+match the prepared template byte-for-byte with no derived file. CI runs this
+browser-free check. `--case` can add a specific nested variant or limit a local
+measurement; it does not change the replay's case mapping.
+
+```sh
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$evidence/case-cache"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$evidence/shard-1"
+```
+
+The first command writes `case-times.json`: three warm measurements per case,
+each comparing the previous raw-copy-plus-reconcile path with prepared copying,
+and the first cold preparation cost. On this Mac, the twelve registry cases
+measured 87–190 ms before versus 0.6–1.2 ms after (per-case medians); cold
+preparation was 183–833 ms. The full check took 20.805 s. This isolates store
+preparation; it is not an end-to-end story or CI speedup. Full replay logs now
+include `# story-time <id> milliseconds=...` through story teardown and
+`# case-copy ... milliseconds=...` for each prepared copy. Retain both when
+measuring runner cost and nested case switches.
 
 ## Historical comparison renders
 

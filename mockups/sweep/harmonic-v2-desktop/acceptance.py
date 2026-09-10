@@ -54,7 +54,8 @@ class Run:
         self.records = []
         inputs = ["mockups/harmonic-v2-desktop.lock.md", "mockups/harmonic-v2-desktop.behavior.md",
                   "frontend/harmonic-v2-desktop-behavior.replay.mjs", "frontend-v2/c2.replay.mjs",
-                  "frontend-v2/c3.replay.mjs", "frontend-v2/c4.replay.mjs", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
+                  "frontend-v2/c3.replay.mjs", "frontend-v2/c4.replay.mjs", "frontend-v2/replay-cases.mjs",
+                  "mockups/sweep/harmonic-v2-desktop/acceptance.py", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
                   "scripts/gen_qa_e2e_db.py", "mockups/qa-e2e.synthetic/harmonic.sqlite"]
         (self.out / "inputs.json").write_text(json.dumps({
             "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
@@ -163,8 +164,25 @@ def auth_server(run):
             free_port(8766)
 
 
-def replay(run, viewport):
-    inventory(run)
+def shard_arg(value):
+    if not re.fullmatch(r"[1-9]\d*/[1-9]\d*", value):
+        raise argparse.ArgumentTypeError("--shard must be k/n with 1 <= k <= n")
+    k, n = map(int, value.split("/"))
+    if k > n:
+        raise argparse.ArgumentTypeError("--shard must be k/n with 1 <= k <= n")
+    return k, n
+
+
+def replay(run, viewport, shard=None):
+    ids = inventory(run)
+    selected_ids = ids
+    if shard:
+        k, n = shard
+        require(n <= len(ids), "--shard would produce empty shards")
+        selected_ids = ids[len(ids) * (k - 1) // n:len(ids) * k // n]
+    (run.out / "selection.json").write_text(json.dumps({
+        "viewport": viewport, "shard": shard, "registry": ids, "selected": selected_ids,
+    }, indent=2) + "\n")
     require(os.environ.get("PLAYWRIGHT_MODULE"), "PLAYWRIGHT_MODULE is required")
     free_port(8765)
     env = {**os.environ, "TARGET": "app", "VIEWPORT": viewport,
@@ -178,14 +196,18 @@ def replay(run, viewport):
     # An inherited developer selection must never turn acceptance into a subset.
     env.pop("ONLY", None)
     env.pop("STORY_CASES", None)
+    if shard:
+        env["ONLY"] = ",".join(selected_ids)
     with auth_server(run):
         # See ACCEPTANCE.md's Runnable legs for timing evidence and the CI ceiling relationship.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=3000)
+        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=900 if shard else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
-    require(executed > 0 and executed == selected and failed == deferred == 0,
+    require(executed == selected == len(selected_ids) and failed == deferred == 0,
             f"incomplete app replay: {match.group(0)}")
+    passed = re.findall(r"^PASS ([SR]\d+[a-z]?)$", output, re.M)
+    require(passed == selected_ids, "replay PASS inventory differs from selected registry")
     print(match.group(0))
 
 
@@ -207,6 +229,94 @@ def inventory(run):
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")
     require(required and not missing and not extra and len(ids) == len(set(ids)),
             f"frozen ledger/registry mismatch: missing={missing}, extra={extra}")
+    return ids
+
+
+def case_cache(run, check=False, cases=None):
+    """Measure the old warm path and cached copies without a browser or server."""
+    env = {**os.environ, "CACHE_OUT": str(run.out), "CACHE_CHECK": str(int(check)),
+           "CACHE_CASES": json.dumps(cases)}
+    script = r"""
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { copyFile, readFile, writeFile, access } from 'node:fs/promises';
+import { join } from 'node:path';
+import { REGISTRY } from './frontend/harmonic-v2-desktop-behavior.replay.mjs';
+import { createCaseServer, storyCase } from './frontend-v2/replay-cases.mjs';
+const directory = process.env.CACHE_OUT;
+const checking = process.env.CACHE_CHECK === '1';
+const cases = JSON.parse(process.env.CACHE_CASES) || [...new Set(REGISTRY.map(([id]) => storyCase(id)))];
+const server = createCaseServer({ directory, repo: process.cwd() });
+const rows = [];
+function python(args) {
+  const result = spawnSync('uv', ['run', 'python', ...args], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+}
+try {
+  for (const name of cases) {
+    assert.match(name, /^[a-z][a-z0-9-]*$/);
+    const raw = join(directory, `raw-${name}.sqlite`);
+    if (name === 'showcase') await copyFile('mockups/qa-e2e.synthetic/harmonic.sqlite', raw);
+    else python(['scripts/gen_qa_e2e_db.py', '--case', name, '--out', raw]);
+    if (checking) {
+      // Use the existing logical dump rule and control the observation clock:
+      // c3-history stamps first_observed_at during generation.
+      python(['-c', `import sys; from pathlib import Path
+sys.path.insert(0, 'scripts')
+from gen_qa_e2e_db import generate, _dump
+from qa_e2e_cases import QA_CASES
+name, raw, out = sys.argv[1:]
+case = None if name == 'showcase' else next(c for c in QA_CASES if c.name == name)
+from datetime import datetime
+from unittest.mock import patch
+from ciq_autotune import watched_change
+clock = datetime.now()
+class Clock(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return clock if tz is None else clock.astimezone(tz)
+with patch.object(watched_change, 'datetime', Clock):
+    generate(Path(out), case)
+    reference = Path(out).with_suffix('.reference.sqlite')
+    generate(reference, case)
+assert _dump(reference) == _dump(Path(out)), 'case generator drift: ' + name
+if name == 'showcase':
+    assert _dump(Path(raw)) == _dump(Path(out)), 'committed showcase drift'
+
+`, name, raw, join(directory, `regenerated-${name}.sqlite`)]);
+    }
+    const coldStart = performance.now();
+    const first = await server.prepare('cold', name);
+    const coldMs = performance.now() - coldStart;
+    const expected = await readFile(first.db);
+    for (let repeat = 0; repeat < 3; repeat++) {
+      // Baseline is the pre-406 warm path: raw generation was already cached.
+      const before = performance.now();
+      const old = join(directory, 'before.sqlite');
+      await copyFile(raw, old);
+      python(['-c', 'import sys; from ciq_autotune.store import Store; from ciq_autotune.watched_change import reconcile_ingested_follow_up\nwith Store.open(sys.argv[1]) as store: reconcile_ingested_follow_up(store)', old]);
+      const beforeMs = performance.now() - before;
+      if (checking) {
+        await writeFile(first.db, 'synthetic story mutation');
+        await writeFile(`${first.db}.derived.sqlite`, 'synthetic derived mutation');
+      }
+      const after = performance.now();
+      const fresh = await server.prepare(`warm-${repeat}`, name);
+      const afterMs = performance.now() - after;
+      if (checking) {
+        assert.deepEqual(await readFile(fresh.db), expected, 'a story mutated the cached template');
+        await assert.rejects(access(`${fresh.db}.derived.sqlite`), { code: 'ENOENT' });
+      }
+      rows.push({ case: name, repeat, cold_ms: coldMs, before_ms: beforeMs, after_ms: afterMs });
+    }
+  }
+} finally { await server.stop(); }
+await writeFile(join(directory, 'case-times.json'), JSON.stringify(rows, null, 2) + '\n');
+console.log(JSON.stringify(rows));
+"""
+    driver = run.out / "case-cache.mjs"
+    driver.write_text(script.replace("from './", f"from '{REPO.as_uri()}/"))
+    run.command("case-cache", ["node", str(driver)], env=env)
 
 
 def checks(run):
@@ -346,20 +456,29 @@ def package(run, image=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory"])
+    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache"])
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--image", help="package leg: use an image built by the preceding CI step")
     parser.add_argument("--viewport", choices=["1280x720", "1440x900"], default="1280x720")
+    parser.add_argument("--shard", type=shard_arg, help="replay: contiguous registry partition k/n")
+    parser.add_argument("--check", action="store_true", help="case-cache: verify generation and copy isolation")
+    parser.add_argument("--case", action="append", help="case-cache: measure this case (repeatable; default: registry cases)")
     args = parser.parse_args()
+    if args.shard and args.leg != "replay":
+        parser.error("--shard is only valid for replay")
+    if (args.check or args.case) and args.leg != "case-cache":
+        parser.error("--check and --case are only valid for case-cache")
     run = Run(args.out)
     if args.leg == "replay":
-        replay(run, args.viewport)
+        replay(run, args.viewport, args.shard)
     elif args.leg == "package":
         package(run, args.image)
     elif args.leg == "probe":
         rows = probe("http://127.0.0.1:8765", None)
         (run.out / "probe.json").write_text(json.dumps(rows, indent=2) + "\n")
         print(f"offline runtime: {len(rows)} requests passed")
+    elif args.leg == "case-cache":
+        case_cache(run, args.check, args.case)
     else:
         {"checks": checks, "budget": budget, "public-tree": public_tree, "inventory": inventory}[args.leg](run)
 

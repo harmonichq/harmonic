@@ -35,6 +35,8 @@ jobs:
         run: uv run python -m pytest
       - name: Check the runtime acceptance probe rejects incomplete proofs
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
+      - name: Check generated case caching and measure copy cost
+        run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
       # The frontend's I:C block fixtures are real analyzer output, not literals
@@ -204,7 +206,7 @@ jobs:
     name: browser gates — ${{ matrix.gate }}
     needs: browser-gate-setup
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.timeout || 15 }}
+    timeout-minutes: ${{ matrix.timeout }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
@@ -212,18 +214,23 @@ jobs:
       matrix:
         include:
           - gate: Day lifecycle
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
           - gate: Diagnose workstation
+            timeout: 10
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
           - gate: Diagnose canvas composition
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
           - gate: Cockpit shell
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
       # #554: the shared browser-runner.js front door itself — proves it
       # launches Chromium once per command and still isolates scenarios.
       # #672: fails closed like every other browser gate, so it's a
       # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
       # #389: the v2 desk's own browser gate. Browser suites are never
       # discovered by a glob in this repository — they are hand-listed matrix
@@ -232,20 +239,46 @@ jobs:
       # answers the API from manufactured payloads in the driver, so it needs no
       # Python and no server.
           - gate: V2 desk
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
           - gate: V2 Trial and Pattern Focus
+            timeout: 30
             python: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
-            timeout: 30
-          - gate: V2 complete frozen ledger 1280x720
+          - gate: V2 complete frozen ledger 1280x720 shard-1-of-4
             python: true
-            timeout: 60
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$RUNNER_TEMP/v2-1280x720"
-          - gate: V2 complete frozen ledger 1440x900
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$RUNNER_TEMP/v2-1280x720-shard-1"
+          - gate: V2 complete frozen ledger 1280x720 shard-2-of-4
             python: true
-            timeout: 60
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out "$RUNNER_TEMP/v2-1440x900"
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 2/4 --out "$RUNNER_TEMP/v2-1280x720-shard-2"
+          - gate: V2 complete frozen ledger 1280x720 shard-3-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 3/4 --out "$RUNNER_TEMP/v2-1280x720-shard-3"
+          - gate: V2 complete frozen ledger 1280x720 shard-4-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 4/4 --out "$RUNNER_TEMP/v2-1280x720-shard-4"
+          - gate: V2 complete frozen ledger 1440x900 shard-1-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 1/4 --out "$RUNNER_TEMP/v2-1440x900-shard-1"
+          - gate: V2 complete frozen ledger 1440x900 shard-2-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 2/4 --out "$RUNNER_TEMP/v2-1440x900-shard-2"
+          - gate: V2 complete frozen ledger 1440x900 shard-3-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 3/4 --out "$RUNNER_TEMP/v2-1440x900-shard-3"
+          - gate: V2 complete frozen ledger 1440x900 shard-4-of-4
+            python: true
+            timeout: 20
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 4/4 --out "$RUNNER_TEMP/v2-1440x900-shard-4"
           - gate: First-plan reconcile
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
       # glob never discovers, so it gets its own explicit step. It fails closed —
@@ -259,6 +292,7 @@ jobs:
       # leg) has been archived; the anti-drift guarantee lives on in these
       # stories replaying against the built app forever.
           - gate: Diagnose workstation behaviour ledger
+            timeout: 20
             server: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
       # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
@@ -269,8 +303,10 @@ jobs:
       # (S1–S12). It fails closed when browser infrastructure or a fixture is
       # absent (#672).
           - gate: Diagnose event comparisons
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
           - gate: Diagnose comparison support audit
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
       # #660: the Verify workstation's own frozen ledger. This surface has
       # shipped (#722): the app is now the contract artifact, so this is the
@@ -278,6 +314,7 @@ jobs:
       # synthetic set. It fails closed — a run that executes zero stories
       # exits nonzero.
           - gate: Verify behaviour ledger
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
     steps:
       - uses: actions/checkout@v5
@@ -328,7 +365,7 @@ jobs:
         with:
           name: ${{ matrix.gate }}
           path: |
-            ${{ runner.temp }}/v2-*/commands.json
+            ${{ runner.temp }}/v2-*/*.json
             ${{ runner.temp }}/v2-*/*.log
             ${{ runner.temp }}/v2-*/captures/
 

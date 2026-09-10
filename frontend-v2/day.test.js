@@ -159,21 +159,21 @@ test('direct entry invents no prior subject and offers no return', () => {
   assert.ok(!markup.includes('Opened from'), 'direct Day entry named a prior subject');
   assert.ok(!markup.includes('data-day="return"'), 'direct Day entry invented a return target');
   assert.equal(dayReturnTarget(null), null);
-  assert.equal(dayReturnTarget({ from: 'explore' }), null, 'a return needs the entry that carried it');
+  assert.equal(dayReturnTarget({ from: 'diagnose' }), null, 'a return needs the entry that carried it');
 });
 
 test('a contextual entry names its subject verbatim and returns to what it left', () => {
   const entry = {
     date: '2024-06-26', subject: 'Selected occurrence · Jun 26 13:55',
-    from: 'explore', focus: ".gf-member-row[data-occ='occ-7']",
+    from: 'diagnose', focus: ".gf-member-row[data-occ='occ-7']",
   };
   const markup = dayFrame(state({ entry }));
   assert.match(markup, /<h3>Opened from<\/h3><p>Selected occurrence · Jun 26 13:55<\/p>/);
-  assert.match(markup, /data-day="return">Return to Explore</);
+  assert.match(markup, /data-day="return">Return to Diagnose</);
 
   const back = dayReturnTarget(entry);
   assert.deepEqual(back, {
-    utility: null, destination: 'explore', label: 'Explore',
+    utility: null, destination: 'diagnose', label: 'Diagnose',
     focus: ".gf-member-row[data-occ='occ-7']", subject: 'Selected occurrence · Jun 26 13:55',
   });
 });
@@ -182,12 +182,12 @@ test('a utility entry is named for the utility and returns over the destination 
   // S76 and the lock's verbatim `Return to Carb questions`.
   const entry = {
     date: '2024-06-26', subject: 'Questions · Jun 26 13:55',
-    from: 'explore.questions', focus: "[data-question-card='q-7'] [data-action='day']",
+    from: 'diagnose.questions', focus: "[data-question-card='q-7'] [data-action='day']",
   };
   assert.match(dayFrame(state({ entry })), /data-day="return">Return to Carb questions</);
   const back = dayReturnTarget(entry);
   assert.equal(back.utility, 'questions');
-  assert.equal(back.destination, 'explore');
+  assert.equal(back.destination, 'diagnose');
   assert.equal(back.label, 'Carb questions');
 });
 
@@ -199,5 +199,5 @@ test('a date the read does not carry says so rather than showing an empty day as
 test('a store with no recorded day says so and offers the way back', () => {
   const markup = dayFrame({ iso: null });
   assert.match(markup, /No days recorded/);
-  assert.match(markup, /data-destination-action="overview"/);
+  assert.match(markup, /data-destination-action="diagnose"/);
 });

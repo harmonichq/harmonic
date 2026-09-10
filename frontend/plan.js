@@ -439,6 +439,36 @@ export function deliverableSegmentCount(rows) {
 }
 
 /**
+ * How many schedule segments the pump profile can hold.
+ *
+ * A Tandem profile is a fixed sixteen-segment schedule, which is why the
+ * deliverable is a "≤16-segment" table throughout this module. The number was a
+ * literal in each surface that showed it; one fact with two spellings drifts, so
+ * it is named once here and read by every surface that renders the badge.
+ */
+export const PROFILE_SEGMENT_CAPACITY = 16;
+
+/**
+ * The deliverable's segment use against that capacity, as one fact.
+ *
+ * `used` is computed from the rows — a different schedule counts differently —
+ * and `capacity` is the profile's, never a number the caller remembers. `text`
+ * is the copy both surfaces show, so the wording cannot diverge either.
+ *
+ * @param {Array<row>} rows  from buildDeliverable (uncollapsed OK)
+ * @returns {{ used: number, capacity: number, over: boolean, text: string }}
+ */
+export function segmentCapacity(rows) {
+  const used = deliverableSegmentCount(rows || []);
+  return {
+    used,
+    capacity: PROFILE_SEGMENT_CAPACITY,
+    over: used > PROFILE_SEGMENT_CAPACITY,
+    text: `${used} of ${PROFILE_SEGMENT_CAPACITY} segments used`,
+  };
+}
+
+/**
  * Returns true iff the deliverable carries at least one pending change — i.e.
  * any row has any of the four params where value !== current.  An all-'current'
  * deliverable (nothing staged, no hand-edits) returns false.

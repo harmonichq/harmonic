@@ -58,7 +58,7 @@ const LEVER_WORD = { over_treated_low: 'over-treated low', correction_on_iob: 'c
 // itself, because that is what the reader closed to get here (S76) — and it
 // names it out of the utility layer's own title table, so the label on the
 // Open Day control and the label on the return can never disagree.
-const DESTINATION_LABEL = { overview: 'Overview', explore: 'Explore', changes: 'Changes', day: 'Day' };
+const DESTINATION_LABEL = { diagnose: 'Diagnose', changes: 'Changes', day: 'Day' };
 
 /* ------------------------------------------------------- the desk's memory */
 
@@ -131,7 +131,7 @@ function adopt(context) {
   if (context.date) {
     memory.entry = { key, ...context };
     memory.date = context.date;
-    memory.focusT = null;
+    memory.focusT = context.moment || null;
   } else {
     memory.entry = { key };
   }
@@ -152,11 +152,17 @@ export function dayReturnTarget(entry = memory.entry) {
   const [destination, utility = null] = String(entry.from).split('.');
   return {
     utility,
-    destination: DESTINATION_LABEL[destination] ? destination : 'explore',
-    label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Explore'),
+    destination: DESTINATION_LABEL[destination] ? destination : 'diagnose',
+    label: utility ? (UTILITY_TITLE[utility] || utility) : (DESTINATION_LABEL[destination] || 'Diagnose'),
     focus: entry.focus || null,
     subject: entry.subject || '',
   };
+}
+
+/** Keep the evidence address, including the opaque occurrence, on return. */
+export function dayReturnContext(entry = memory.entry) {
+  const { key, ...context } = entry || {};
+  return context;
 }
 
 /** A contextual Day entry. The caller supplies the context; Day owns the rest. */
@@ -248,7 +254,7 @@ export function dayFrame(state) {
   } = state;
   if (!iso) {
     return emptyFrame('Day', 'No days recorded', 'This store has no recorded day yet.',
-      '<button class="gf-btn primary" data-destination-action="overview">Return to Overview</button>');
+      '<button class="gf-btn primary" data-destination-action="diagnose">Return to Diagnose</button>');
   }
   const held = decorate(iso, rows);
   const recordedCount = rows.filter((row) => row.has_data).length;
@@ -383,10 +389,11 @@ function bind(host) {
         // focuses its toggle. A utility origin reopens that utility over the
         // destination it was opened on.
         const back = dayReturnTarget();
+        const context = dayReturnContext();
         memory.entry = null;
         if (back.utility) reopenUtility(back.utility);
         view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : [back.focus, '.gf-reading > header h2'].filter(Boolean);
-        navigate(back.destination);
+        navigate(back.destination, context);
         return;
       }
       view.focusAfterRender = action === 'month' ? '.gf-month-toggle' : `[data-day="${action}"]:not(:disabled), .gf-month-toggle`;

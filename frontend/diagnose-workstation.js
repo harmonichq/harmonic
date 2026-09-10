@@ -1337,7 +1337,7 @@ function boot(root, data, callbacks, signal) {
     const next = await refreshFindingsGeneration();
     // `still` is the CALLER's currency: a tile recovery is current while the
     // reader has not moved the window out from under it.
-    if (key !== currentFindingsKey() || !still(key)) return null;
+    if (signal.aborted || key !== currentFindingsKey() || !still(key)) return null;
     return { next, key };
   }
 
@@ -1588,7 +1588,7 @@ function boot(root, data, callbacks, signal) {
     }
     const recovery = (tileRecoveryGenerations.get(chartId) || 0) + 1;
     tileRecoveryGenerations.set(chartId, recovery);
-    const currentRecovery = () => tileRecoveryGenerations.get(chartId) === recovery;
+    const currentRecovery = () => !signal.aborted && tileRecoveryGenerations.get(chartId) === recovery;
     if (!markTileStale(chartId, staleResult.message, { pending: true })) return;
     try {
       const adopted = await requestFindingsGeneration({
@@ -1633,7 +1633,7 @@ function boot(root, data, callbacks, signal) {
     runtimeNow().request = request;
     runtimeNow().pending = true;
     paint();
-    const superseded = () => runtimeNow()?.request !== request
+    const superseded = () => signal.aborted || runtimeNow()?.request !== request
       || !tileDescriptors.includes(descriptor);
     try {
       const data = await load(descriptor.coordinates);
@@ -1670,7 +1670,7 @@ function boot(root, data, callbacks, signal) {
     alert.setAttribute('role', 'alert'); alert.dataset.code = activeCaseError.code;
     alert.textContent = activeCaseError.message; host.append(alert);
   };
-  const isCurrentCaseRequest = (generation, frame) => generation === caseGeneration
+  const isCurrentCaseRequest = (generation, frame) => !signal.aborted && generation === caseGeneration
     && top() === frame;
   const caseCoordinates = (source, frame, alignment, occ = null) => ({
     projection_id: source.projection_id,
@@ -1764,7 +1764,7 @@ function boot(root, data, callbacks, signal) {
     const waitFor = (request, requestedKey) => {
       dragPreparationWait = request;
       request.then(() => {
-        if (dragPreparationWait !== request) return;
+        if (signal.aborted || dragPreparationWait !== request) return;
         dragPreparationWait = null;
         const wantedKey = dragPreparationWantedKey;
         dragPreparationWantedKey = null;
@@ -1874,7 +1874,7 @@ function boot(root, data, callbacks, signal) {
     if (frame) frame.loading = true;
     const request = Promise.resolve(callbacks.loadPreparation?.(requested))
       .then((response) => {
-        if (generation !== preparationGeneration || currentPreparationKey() !== key) return null;
+        if (signal.aborted || generation !== preparationGeneration || currentPreparationKey() !== key) return null;
         const next = matchingPreparation(response, requested);
         if (!frame) {
           if (!adoptFindings(findingsFromPreparation(next), key)) return null;
@@ -1908,7 +1908,7 @@ function boot(root, data, callbacks, signal) {
         });
       })
       .then((shadow) => {
-        if (!shadow || generation !== preparationGeneration
+        if (signal.aborted || !shadow || generation !== preparationGeneration
           || currentPreparationKey() !== key || top() !== frame) return;
         if (!adoptFindings(findingsFromPreparation(shadow.next), key)) return;
         preparation = shadow.next;
@@ -1929,7 +1929,7 @@ function boot(root, data, callbacks, signal) {
         paint();
       })
       .catch((error) => {
-        if (generation !== preparationGeneration || currentPreparationKey() !== key) return;
+        if (signal.aborted || generation !== preparationGeneration || currentPreparationKey() !== key) return;
         pendingKey = null;
         failedKey = key;
         if (frame) frame.loading = false;
@@ -3391,6 +3391,7 @@ function boot(root, data, callbacks, signal) {
   /** Position the plot-only clock brace. The basal lane carries no drag listener
    * and no window-selection paint, so it stays click-only and verdict-authored. */
   function paintBrace() {
+    if (signal.aborted) return;
     const brace = el('brace');
     const chartEl = el('chart');
     const laneEl = el('lane');
@@ -3722,6 +3723,7 @@ function boot(root, data, callbacks, signal) {
   }
 
   function paint() {
+    if (signal.aborted) return;
     /* The queue measures mini hosts while it paints. Clear a dismissed
        full-canvas state before that measurement or its inert/hidden inspector
        has zero width and every useful preview is removed for the return. */

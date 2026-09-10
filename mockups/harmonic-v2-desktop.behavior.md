@@ -14,6 +14,36 @@ its current-setting coherent replacement/failure/retry/stale obligations and use
 check. The original 129-story results below remain provenance of the earlier
 contract, not a claim that this new obligation has passed.
 
+**Amendment — 2026-09-10, ADR 397 / execution lock v2 389 2.**
+Connor Griffin · 2026-09-08: “v2 ships three destinations: Diagnose, Changes
+and Day. Overview and Explore collapse into Diagnose carrying the shipped v1
+rail as-is”. Changes guidance placement follows the coordinator's explicit
+#397 instruction. The dated original obligations and their recorded runs remain
+historical evidence; they do not prove the amended obligations below. No ID or
+functional job is retired. C2 ports; the independent verifier records verdicts.
+
+The app defaults to Diagnose with exactly Diagnose, Changes and Day. Legacy
+`overview` and `explore` addresses take the unknown-destination fallback;
+there are no destination aliases, registrations or buttons for either old name.
+S1/S3 and R15 prove these absences and the retained successors. S1/S2/S11/S12
+prove chrome and within-Diagnose evidence geometry at both desktop sizes.
+S14–S18, S37 and S38 belong to Changes; S19/S20/S20b, S21–S35 and S37b
+belong to Diagnose. S36 retains Changes → the Trial's original Diagnose evidence;
+c3 owns its complete proof. S54b ends in Changes and offers Back to Diagnose.
+S56/S56b start canonical Pattern Focus and land in Changes; S57–S59 retain
+separate served behavior/outcome tables and endings. Pattern comparison arms
+render c2b's served opportunity count, gate, unit, verdict and reason, without
+an elapsed-day floor or client criterion. C3 owns those story bodies.
+
+All evidence-origin Day and utility returns say Diagnose and retain the precise
+subject and focus; Changes-origin returns stay Changes. S61/S69/S81 and the
+handler, opener, cleanup and QUESTION inventory carry those substitutions.
+S13 still has four sources. R15 retains its ADR 215 sanction; its amended
+premise is: Diagnose preserves Findings, Spotlight and All Charts under ADR 397;
+the retired mode/layout/duplicate-tile mechanics remain absent. R18 and all
+predecessor retirements remain. Historical captures prove unchanged material
+and geometry only. S100 and coupled Event S8 speech repair/proof belong to c2.
+
 The lock manifest (`mockups/harmonic-v2-desktop.lock.md`, 34 terms) says what the
 surface looks like. This says what it **does**. Together they are the build
 contract; neither alone is sufficient.
@@ -249,6 +279,10 @@ S1 · Overview is the default destination on a cold load; the four destination
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S1 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S2 · Pressing a destination button moves the desk to it and moves
      aria-current with it; the topbar and footer keep their own geometry across
@@ -272,6 +306,10 @@ S3 · Pressing the destination already in hand is the way back up: on the shared
   evidence: replay fn S3
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S3 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S4 · Persistent chrome renders its locked strings and does not move across
@@ -404,6 +442,10 @@ S11 · Across destinations, chrome the reader keeps seeing does not move.
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S11 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S12 · Across interaction, nothing reflows that the interaction did not name.
       The comparison's canvas head reserves its space at rest, so filling the
@@ -418,6 +460,10 @@ S12 · Across interaction, nothing reflows that the interaction did not name.
   evidence: replay fn S12
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S12 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S13 · Across data shape, containers sized for live values do not resize per
@@ -444,6 +490,10 @@ S14 · Overview owns the decision: the lead concern's action and one named route
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S14 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S15 · Set aside opens its own form in the reading pane, focuses the reason
       field, accepts an optional reason, and on submit lands on the
@@ -457,6 +507,10 @@ S15 · Set aside opens its own form in the reading pane, focuses the reason
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S15 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S16 · Restore returns the eligible subject and clears the set-aside state.
   element:  [data-action="restore"]; [data-restore] on the shared journey
@@ -466,6 +520,10 @@ S16 · Restore returns the eligible subject and clears the set-aside state.
   evidence: replay fn S16
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S16 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S17 · Cancelling the set-aside form closes it without recording anything and
@@ -478,6 +536,10 @@ S17 · Cancelling the set-aside form closes it without recording anything and
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S17 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S18 · The quiet disposition says no priority needs action and keeps Day
       reachable; it is a distinct claim from thin, failed or held.
@@ -488,6 +550,10 @@ S18 · The quiet disposition says no priority needs action and keeps Day
   evidence: replay fn S18
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S18 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S19 · A failed evidence read renders the error frame with Retry and cannot
@@ -500,6 +566,10 @@ S19 · A failed evidence read renders the error frame with Retry and cannot
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S19 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained failed-evidence and successful-retry job belongs to Diagnose, including with an active change; Current read failed offers Open Diagnose and no stale roster is presented as new.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S20 · Retry re-runs the load and, on success, returns the desk to its
       investigate scenario rather than leaving the error frame standing.
@@ -510,6 +580,10 @@ S20 · Retry re-runs the load and, on success, returns the desk to its
   evidence: replay fn S20
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S20 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained failed-evidence and successful-retry job belongs to Diagnose, including with an active change; Current read failed offers Open Diagnose and no stale roster is presented as new.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Explore — comparison, cohorts, occurrences
 
@@ -531,6 +605,10 @@ S20b · The shared journey's own failed read is its own control and its own
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S20b · 2026-09-10 · ADR 397 / lock v2 389 2: The retained failed-evidence and successful-retry job belongs to Diagnose, including with an active change; Current read failed offers Open Diagnose and no stale roster is presented as new.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S21 · The reading pane lists every served cohort with its own support line, and
       the row's mark is the comparison key's own item so cohort and legend share
@@ -543,6 +621,10 @@ S21 · The reading pane lists every served cohort with its own support line, and
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S21 · 2026-09-10 · ADR 397 / coordinator amendment 1: Diagnose lists the shared owner’s served comparison cohorts, support text and legend marks. Arrival renders the served initial selection without choosing a member locally.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S22 · Pressing a cohort row holds it, and if the held member does not belong to
       it, selects that cohort's last member.
@@ -553,6 +635,10 @@ S22 · Pressing a cohort row holds it, and if the held member does not belong to
   evidence: replay fn S22
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S22 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shipped comparison roster groups members by their served cohort. Selecting a member in another cohort holds that requested occurrence; no prototype-only cohort button or automatic last-member selection is added around the owner.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S23 · A member row selects its occurrence and the selection is always held —
@@ -565,6 +651,10 @@ S23 · A member row selects its occurrence and the selection is always held —
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S23 · 2026-09-10 · ADR 397 / coordinator amendment 1: On arrival Diagnose renders the shipped case file’s own initial selection state: selection.state=none renders the cohort without a selected reading. A member row selects its occurrence and that selection is then held. No automatic selection is added around the carried owner.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S24 · The Occurrence ↑ / ↓ controls step through the held cohort's members and
       wrap at its ends, scrolling the pressed row into view.
@@ -575,6 +665,10 @@ S24 · The Occurrence ↑ / ↓ controls step through the held cohort's members 
   evidence: replay fn S24
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S24 · 2026-09-10 · ADR 397 / coordinator amendment 1: After an explicit member selection, the shared occurrence roster owns vertical keyboard traversal and focus/scroll retention, stopping at the first and last member as shipped. Arrival itself does not select a member.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S25 · Model step rows select a served step and put the figure on Episode; the
@@ -587,6 +681,10 @@ S25 · Model step rows select a served step and put the figure on Episode; the
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S25 · 2026-09-10 · ADR 397 / coordinator amendment 1: Selected evidence is rendered through the shipped case file and chart owner, retaining its served facts and evidence tiers. The prototype’s separate model-step painter is not copied into the carried rail.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S26 · The Figure segment switches between Episode and Day, and Episode is
       disabled for a member the generator served no episode link for.
@@ -598,6 +696,10 @@ S26 · The Figure segment switches between Episode and Day, and Episode is
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S26 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shared selected trace and contextual Open in Day control carry the occurrence’s served evidence. No Episode link is invented for an occurrence whose source does not publish one. The initial selection may be none.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S27 · The Window segment moves only the comparison's visible x extent; cohort
       membership, medians and the y range are the adapter's and do not change.
@@ -608,6 +710,10 @@ S27 · The Window segment moves only the comparison's visible x extent; cohort
   evidence: replay fn S27
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S27 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shared comparison renderer owns the visible comparison extent and its population, medians and y range. This is separate from the Diagnose clock window, which requests a new scoped population. An extent change does not automatically select a member.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S28 · The comparison mounts through the shipped renderer with its headline host
@@ -636,6 +742,10 @@ S29 · A roster row on the shared journey opens its subject and sends focus to
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S29 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped Findings row opens its case and focuses #level; the Findings crumb restores the exact originating row and its scroll. Re-pressing Diagnose returns to the Findings index. No second roster or focus handler is added to the shared owner.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S30 · The Findings crumb is the persistent parent in the basal lane's head and
       returns to the findings index.
@@ -649,6 +759,10 @@ S30 · The Findings crumb is the persistent parent in the basal lane's head and
   evidence: replay fn S30
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S30 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Explore — basal evidence
 
@@ -678,6 +792,10 @@ S31 · All 48 basal slots are independently discoverable as lane cells, and the
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S31 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: All 48 shipped #lane > button.lane-cell controls remain independently reachable in Diagnose. There is no duplicate All basal slots painter.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S32 · A lane cell is keyboard-operable: ArrowLeft and ArrowRight move the held
       slot and wrap, and the moved-to cell takes focus.
@@ -688,6 +806,10 @@ S32 · A lane cell is keyboard-operable: ArrowLeft and ArrowRight move the held
   evidence: replay fn S32
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S32 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped lane owns left/right traversal, wrap and focus on the moved-to cell.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S33 · The slot's supporting nights traverse by keyboard on the occurrence list
@@ -707,6 +829,10 @@ S33 · The slot's supporting nights traverse by keyboard on the occurrence list
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S33 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped supporting-night roster uses an explicit selection followed by vertical arrow traversal and focus retention. It stops at its ends; prototype-only previous/next-night buttons are not added.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S34 · Previous/next-slot controls move the held slot alongside the lane itself.
   element:  [data-basal="previous-slot"], [data-basal="next-slot"]
@@ -716,6 +842,10 @@ S34 · Previous/next-slot controls move the held slot alongside the lane itself.
   evidence: replay fn S34
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S34 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: Adjacent independently reachable shipped lane cells and their left/right keys perform the previous/next-slot job. No second set of prototype slot controls is installed around the rail.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S35 · Basal is available on any held slot; Night and Day stay disabled until a
@@ -731,6 +861,10 @@ S35 · Basal is available on any held slot; Night and Day stay disabled until a
   evidence: replay fn S35
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S35 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The basal evidence is present before a night is selected. Selection adds the shipped night trace and Open in Day affordance; no invented initial night or prototype-only Figure segment is added.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S36 · A Trial's Inspect nights opens the evidence that Trial was decided from —
@@ -765,6 +899,14 @@ S37 · Changes with no change underway names the concern and offers one route
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S37 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: Changes retains the backend-selected concern, Stage change and the named evidence route. Its canonical subject and served affected window are passed to Diagnose.
+The preceding wording and results are the attributed pre-amendment record.
+
+
+Amended S37 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ### Changes — Plan and the setting journey
 
 ```
@@ -780,6 +922,10 @@ S38 · Staging a setting moves to Changes with that setting staged. The Undo
   evidence: replay fn S38
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S38 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S39 · Plan renders the complete pump-entry schedule with its capacity copy,
@@ -867,6 +1013,10 @@ S43 · A slot row and a night row select within the setting journey's own stage,
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S43 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The setting evidence uses the shared basal lane and supporting-night roster in Diagnose; slot and night changes retain their own selections and shared keyboard controls.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S44 · The setting journey's own figure and seat controls take its stage, and do
       not move another owner's figure on the shared desk.
@@ -877,6 +1027,10 @@ S44 · The setting journey's own figure and seat controls take its stage, and do
   evidence: replay fn S44
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S44 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shared setting evidence and selected-night trace lead to contextual Day through the carried owner. Prototype-only Figure segments are not copied.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Changes — Trial evidence, readiness and the conclusion
 
@@ -1008,6 +1162,14 @@ S37b · At the following read the concern's own roster row offers "All basal
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S37b · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The concern’s own shipped Findings row drills its served basal span within the same independently reachable 48-slot lane. It never substitutes the current first-ranked concern for an addressed subject.
+The preceding wording and results are the attributed pre-amendment record.
+
+
+Amended S37b · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S54 · The saved record distinguishes the original decision context, the observed
       change, the immutable ending and explicitly unavailable legacy facts —
@@ -1034,6 +1196,10 @@ S54b · A finished change stays reachable from Overview through "View change
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S54b · 2026-09-10 · ADR 397 / lock v2 389 2: The finished summary belongs to Changes; View change record retains the saved subject; Back to Diagnose preserves it.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S55 · A profile change naming several settings titles itself by its count, and a
       single setting names itself with its slot and its before → after values.
@@ -1058,6 +1224,10 @@ S56 · Starting a Focus pins it and lands on Overview, leaving no Retry standing
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S56 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
        retry then succeeds.
@@ -1068,6 +1238,10 @@ S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
   evidence: replay fn S56b
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S56b · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S57 · The Focus stage renders observed behavior separately from mapped glucose
@@ -1087,6 +1261,10 @@ S57 · The Focus stage renders observed behavior separately from mapped glucose
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S57 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S58 · A dropped (preempted) Focus stays reachable in Changes as history, names
       preemption as its reason, and never silently resumes.
@@ -1099,6 +1277,10 @@ S58 · A dropped (preempted) Focus stays reachable in Changes as history, names
   evidence: replay fn S58
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S58 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S59 · At the locked desktop viewports the Focus stage shows both trend tables at
@@ -1122,6 +1304,10 @@ S59 · At the locked desktop viewports the Focus stage shows both trend tables a
   evidence: replay fn S59
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S59 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Day
 
@@ -1149,6 +1335,10 @@ S61 · A subject's Open Day is a contextual entry: it carries the date, the
   evidence: replay fn S61
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S61 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S62 · Returning restores the originating context rather than merely reopening a
@@ -1350,6 +1540,10 @@ S73c · A Guide article's inline cross-link opens the destination it names, and
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S73c · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S74 · A password field's reveal control toggles the field type and its own
       pressed state and label together.
@@ -1481,6 +1675,10 @@ S81 · The reading pane keeps its scroll only while it stays on the same subject
   evidence: replay fn S81
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S81 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S82 · Colour semantics always carry a label, shape or positional redundancy —
@@ -1629,6 +1827,12 @@ S98 · The selected current-setting I:C coherent case/canvas pair survives a fai
   data:     current ic-lower; historical past-setting reads were retired by Connor Griffin on 2026-09-08
   status:   app opener only — owed by the build, never passed
 ```
+Amended S98 · 2026-09-10 · ADR 397 / coordinator amendment 11: After a failed replacement, the selected current-setting I:C case identity is retained: the same tile id and subject remain, and no other block is chosen. Staging is withheld. The tile shows the shipped named stale/failed state, including the served wording, in place of its canvas; the pre-failure series is not retained. A dated same-subject stale result remains a separate state.
+The preceding wording and results are the attributed pre-amendment record.
+
+Amended S98 · 2026-09-10 · ADR 397 / coordinator amendment 12: The selected current-setting I:C tile id and subject remain, with no other block chosen, and the tile's named stale/failed state replaces its canvas. Staging follows the backend's verdict on the served row and is not withheld by a failed tile replacement: any staging control is the served row's existing control, with no new control introduced. The backend's 409 on a stale write protects against acting on a stale generation (S89). A dated same-subject stale result remains a separate state. This supersedes amendment 11's staging-withheld clause; its other obligations remain.
+The preceding wording and results are the attributed pre-amendment record.
+
 ```
 S99 · Every limiting state exposes only backend-permitted actions, and an
       unavailable disposition carries its served reason.
@@ -1643,6 +1847,10 @@ S100 · Fractional-hour chart speech is repaired in
   lock:     HV2-32          evidence: app opener only
   status:   app opener only — owed by the build, never passed
 ```
+
+Amended S100 · 2026-09-10 · ADR 397 / lock v2 389 2: C2 repairs fractional-hour speech in the shared renderer, amends Event S8, and proves the accessible readout. C4 verifies the integrated repair.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S80b · A full-width empty destination focuses its own heading rather than
@@ -1911,6 +2119,10 @@ R15 · The old mode/layout/duplicate-tile mechanics are gone; the dock is the
             and the Explore destination, and prints this sanction line
   status:   retired (permanent) · absence and premise replayed-pass · negative proof: proved
 ```
+
+Amended R15 · 2026-09-10 · ADR 397 / lock v2 389 2: Diagnose preserves Findings, Spotlight and All Charts under ADR 397; no Overview/Explore destination buttons, registrations or selected destinations, and no retired mode/layout/duplicate-tile mechanics. ADR 215 sanction remains unchanged.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 R16 · The duplicate provenance word chip is gone; the ring and the raised rail

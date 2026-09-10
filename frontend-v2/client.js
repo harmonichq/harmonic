@@ -31,4 +31,11 @@ export {
   fetchCredentials,
   saveCredentials,
   fetchPumpSettings,
+  fetchAnalysis, fetchScenarios, fetchExploreTimeOfDay, fetchExploreExposures,
+  fetchOutcomesTrend, fetchDiagnoseFindings, fetchDiagnoseFindingCasePreparation,
+  fetchDiagnoseFindingCase, fetchDiagnoseBasalNightEvidence,
+  fetchDiagnoseIsfRestWindowEvidence, fetchDiagnoseCarbRatioBlockEvidence,
+  fetchDiagnoseCarbRatioHistoryEvents,
+  applyPlan, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
+  fetchGuidance, setGuidancePreference, restoreGuidancePreference,
 } from '../frontend/data.js';

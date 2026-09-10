@@ -481,7 +481,7 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
   for (let step = 0; step < 3; step += 1) {
     await chart.press('ArrowRight');
   }
-  const cursorLabel = '+0.25 h';
+  const cursorLabel = '+15 min'; // #389 HV2-32 / amended Event S8
   const readout = page.locator('#canvas-head[data-full] #canvas-fullhead #ec-readout');
   ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
   const shown = await readout.evaluate((element) => ({

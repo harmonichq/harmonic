@@ -402,3 +402,37 @@ test('non-2xx without detail falls back to statusText', async () => {
     },
   );
 });
+
+test('guidance preferences use the legacy generation body and plain detail errors', async () => {
+  const { fetch, calls } = makeFakeFetch({ subject: 'setting:basal_rate', set_aside: true });
+  const client = makeDeps({ fetch });
+  await client.fetchGuidance();
+  await client.setGuidancePreference('setting:basal_rate', { generation: 'synthetic:r8', reason: 'Later' });
+  await client.restoreGuidancePreference('setting:basal_rate');
+  assert.equal(calls[0].url, '/api/guidance');
+  assert.equal(calls[1].opts.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[1].opts.body), { generation: 'synthetic:r8', reason: 'Later' });
+  assert.equal(calls[2].opts.method, 'DELETE');
+  assert.equal(calls[2].opts.body, undefined);
+  const failed = makeDeps({ fetch: makeFakeFetch({}, 409).fetch });
+  await assert.rejects(failed.setGuidancePreference('setting:basal_rate', { generation: 'old' }), error => {
+    assert.equal(error.status, 409);
+    assert.equal(error.detail, 'server error detail');
+    return true;
+  });
+});
+
+test('Plan preserves v1 bodyless apply and carries v2 durable fields unchanged', async () => {
+  const { fetch, calls } = makeFakeFetch({});
+  const client = makeDeps({ fetch });
+  const request = { request_id: 'synthetic-plan-1', input_revision: 8, subject: 'setting:basal_rate',
+    analysis_generation: 'synthetic:r8', draft_updated_at: '2024-06-02 00:00:00' };
+  await client.applyPlan();
+  await client.applyPlan(request);
+  assert.equal(calls[0].opts.body, undefined);
+  assert.deepEqual(JSON.parse(calls[1].opts.body), request);
+  const withdrawal = { request_id: 'synthetic-withdraw-1', input_revision: 9, applied_at: '2024-06-02 00:01:00', reason: null };
+  await client.withdrawPlan(withdrawal);
+  assert.equal(calls[2].url, '/api/plan/history/withdraw');
+  assert.deepEqual(JSON.parse(calls[2].opts.body), withdrawal);
+});

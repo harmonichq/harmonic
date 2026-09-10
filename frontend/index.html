@@ -1706,7 +1706,7 @@
             <!-- LAYER 3: editable unified deliverable -->
             <div class="card full">
               <h2>Deliverable — pump-ready schedule
-                <span class="pill" :class="deliverableCount > 16 ? 'warn' : 'ok'" style="margin-left:auto;">{{ deliverableCount }} / 16 segments</span>
+                <span class="pill" :class="deliverableCapacity.over ? 'warn' : 'ok'" style="margin-left:auto;">{{ deliverableCapacity.text }}</span>
               </h2>
               <p class="muted" style="margin-top:-8px;">
                 One unified ≤16-segment four-parameter schedule you can program into your Tandem pump.
@@ -2333,7 +2333,7 @@
       buildDeliverable as planBuildDeliverable,
       collapseDeliverable as planCollapseDeliverable,
       deliverableHasChanges as planDeliverableHasChanges,
-      deliverableSegmentCount as planSegmentCount,
+      segmentCapacity as planSegmentCapacity,
       effectivePlanItems as planEffectivePlanItems,
       isDeliverableEditRevert as planIsDeliverableEditRevert,
       isStageableIsf,
@@ -5079,8 +5079,8 @@
         });
         const deliverableRows = computed(() =>
           planCollapseDeliverable(deliverableRowsRaw.value));
-        const deliverableCount = computed(() =>
-          planSegmentCount(deliverableRowsRaw.value));
+        const deliverableCapacity = computed(() =>
+          planSegmentCapacity(deliverableRowsRaw.value));
         const deliverableHasChanges = computed(() =>
           planDeliverableHasChanges(deliverableRowsRaw.value));
 
@@ -5555,7 +5555,7 @@
           inPlan, togglePlan,
           planItems, planHistory, applyingPlan, planReviewGuidance,
           // #99 Plan layers (deliverable via plan.js)
-          planChips, deliverableRows, deliverableCount, deliverableHasChanges,
+          planChips, deliverableRows, deliverableCapacity, deliverableHasChanges,
           // #94 reconcile state machine + mismatch resolutions
           reconcileStatus, rekeyRecheck,
           planStep, chipTypeLabel, editDeliverable, removeChip, jumpToReview, confirmOnPump,

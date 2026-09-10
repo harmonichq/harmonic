@@ -7,14 +7,14 @@ import { ADVISORY, DESTINATIONS, FOOTER_UTILITIES, shellMarkup } from './shell.j
 // the selected mock so drift is a diff rather than a judgment call. These read
 // them back off the markup the shell actually builds.
 
-test('the four destinations render in the locked order with Overview current', () => {
-  assert.deepEqual(DESTINATIONS.map(([id]) => id), ['overview', 'explore', 'changes', 'day']);
+test('the three destinations render in the locked order with Diagnose current', () => {
+  assert.deepEqual(DESTINATIONS.map(([id]) => id), ['diagnose', 'changes', 'day']);
   const markup = shellMarkup();
   const order = [...markup.matchAll(/data-destination="([a-z]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(order, ['overview', 'explore', 'changes', 'day']);
-  // Exactly one is current on a cold load, and it is Overview (HV2-09).
+  assert.deepEqual(order, ['diagnose', 'changes', 'day']);
+  // Exactly one is current on a cold load, and it is Diagnose (HV2-09).
   const current = [...markup.matchAll(/data-destination="([a-z]+)" aria-current="page"/g)].map((m) => m[1]);
-  assert.deepEqual(current, ['overview']);
+  assert.deepEqual(current, ['diagnose']);
   assert.match(markup, /<nav class="v2-nav" aria-label="Main">/);
 });
 
@@ -39,4 +39,11 @@ test('the footer serves Carb questions with its open count, Guide, Settings and 
   assert.match(markup, /class="cockpit-questions" data-utility="questions">Carb questions <span class="cockpit-count">0<\/span>/);
   // Pump settings is reached from Changes (HV2-12), never from this strip.
   assert.ok(!markup.includes('data-utility="pump"'), 'Pump settings must not sit in the footer strip');
+});
+
+test('retired destinations cannot be registered as hidden journey surfaces', async () => {
+  const { registerDestination } = await import('./routes.js');
+  for (const id of ['overview', 'explore']) {
+    assert.throws(() => registerDestination({ id, title: id, mount() {} }), /unknown v2 destination/);
+  }
 });

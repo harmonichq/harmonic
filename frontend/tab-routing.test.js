@@ -112,14 +112,14 @@ test('the stable glucose route keeps only its compatibility view state', () => {
 
 // --- the v2 desk's address (#389) -------------------------------------------
 
-test('the v2 desk resolves a destination and defaults to Overview', () => {
-  for (const destination of ['overview', 'explore', 'changes', 'day']) {
+test('the v2 desk resolves a destination and defaults to Diagnose', () => {
+  for (const destination of ['diagnose', 'changes', 'day']) {
     assert.equal(resolveDestination(destination), destination);
   }
-  // Overview is the default destination (HV2-09), so a missing or unknown `to`
+  // Diagnose is the default destination (HV2-09), so a missing or unknown `to`
   // opens there rather than on nothing.
-  for (const unknown of ['', null, undefined, 'diagnose', 'plan', 'verify']) {
-    assert.equal(resolveDestination(unknown), 'overview');
+  for (const unknown of ['', null, undefined, 'overview', 'explore', 'plan', 'verify']) {
+    assert.equal(resolveDestination(unknown), 'diagnose');
   }
 });
 
@@ -132,7 +132,7 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
   // applicable lever, source destination and precise return-focus target.
   const context = {
     date: '2024-06-26', subject: 'Questions · Jun 26 13:55', occurrence: 'occ-7',
-    window: '0-120', lever: 'over_treated_low', from: 'explore.questions',
+    window: '0-120', lever: 'over_treated_low', from: 'diagnose.questions',
     focus: "[data-question-card='q-7'] [data-action='day']",
   };
   const address = serializeV2Route({ destination: 'day', context });
@@ -143,16 +143,16 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
 
 test('the v2 address is written and subscribed through the one routing owner', () => {
   const pushes = [];
-  writeRoute({ destination: 'explore', context: { occurrence: 'low-7' } }, {
-    location: { pathname: '/v2/', search: '?to=overview', hash: '' },
+  writeRoute({ destination: 'diagnose', context: { occurrence: 'low-7' } }, {
+    location: { pathname: '/v2/', search: '?to=diagnose', hash: '' },
     history: { pushState: (_state, _title, address) => pushes.push(address) },
     serialize: serializeV2Route,
   });
-  assert.deepEqual(pushes, ['/v2/?to=explore&occurrence=low-7']);
+  assert.deepEqual(pushes, ['/v2/?to=diagnose&occurrence=low-7']);
 
   const listeners = new Map();
   const browser = {
-    location: { pathname: '/v2/', search: '?to=day&date=2024-06-26&from=explore', hash: '' },
+    location: { pathname: '/v2/', search: '?to=day&date=2024-06-26&from=diagnose', hash: '' },
     addEventListener(type, listener) { listeners.set(type, listener); },
     removeEventListener() {},
   };
@@ -160,5 +160,5 @@ test('the v2 address is written and subscribed through the one routing owner', (
   const unsubscribe = subscribeRoute((next) => seen.push(next), browser, parseV2Route);
   listeners.get('popstate')();
   unsubscribe();
-  assert.deepEqual(seen, [{ destination: 'day', context: { date: '2024-06-26', from: 'explore' } }]);
+  assert.deepEqual(seen, [{ destination: 'day', context: { date: '2024-06-26', from: 'diagnose' } }]);
 });

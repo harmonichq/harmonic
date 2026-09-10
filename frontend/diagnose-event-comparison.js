@@ -31,7 +31,11 @@ const dateLabel = (date) => new Date(`${date}T00:00:00`).toLocaleDateString(
    finding the events belong to. */
 const axisLabel = (minute, anchor) => {
   if (minute === 0) return anchor;
-  return `${minute < 0 ? '−' : '+'}${Math.abs(minute) / 60} h`;
+  const absolute = Math.abs(minute);
+  const hours = Math.floor(absolute / 60);
+  const minutes = absolute % 60;
+  const duration = [hours ? `${hours} h` : '', minutes ? `${minutes} min` : ''].filter(Boolean).join(' ');
+  return `${minute < 0 ? '−' : '+'}${duration}`;
 };
 
 export function caseFileSelectionCohort(detail) {

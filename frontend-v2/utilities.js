@@ -36,7 +36,7 @@ import {
 // is called by all read it, so the three cannot drift apart (S76).
 export const UTILITY_TITLE = { settings: 'App settings', pump: 'Pump settings', carbs: 'Log carbs', questions: 'Carb questions', guide: 'Guide', glossary: 'Glossary' };
 // The v1 articles hand off to v1 tabs; on this desk those read as these destinations.
-const HANDOFF = { diagnose: ['explore', 'Explore'], day: ['day', 'Day'], plan: ['changes', 'Changes'] };
+const HANDOFF = { diagnose: ['diagnose', 'Diagnose'], day: ['day', 'Day'], plan: ['changes', 'Changes'] };
 // Presentation only (CONTEXT.md): the two v1 glossary labels shown under their
 // approved names, the v1 term kept small beside them. Definitions are untouched.
 const PRESENT = { ISF: 'Correction factor', 'I:C': 'Carb ratio' };
@@ -280,7 +280,7 @@ function authoredArticle(article) {
   const html = renderMarkdown(state.articles.get(article.slug))
     .replace(/<a class="handoff-inline" data-app="(\w+)">([^<]*)<\/a>/g, (_, app, text) => (HANDOFF[app] ? `<button class="linkbtn" data-utility-go="${HANDOFF[app][0]}">${text}</button> <small>(${HANDOFF[app][1]} here)</small>` : text))
     .replace(/<a class="xlink" data-slug="([\w-]+)">([^<]*)<\/a>/g, '<button class="linkbtn" data-utility-slug="$1">$2</button>');
-  return `<p class="gf-meta">Written for the v1 tabs: Diagnose reads as Explore here, Plan as Changes.</p>${html}`;
+  return `<p class="gf-meta">Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes.</p>${html}`;
 }
 
 function generatedArticle(article) {
@@ -323,8 +323,23 @@ export function seatUtility(destination) {
     const reading = surface.querySelector('.gf-desk > .gf-reading');
     if (reading) reading.outerHTML = utilityPane();
     else {
-      const stage = surface.querySelector('.pane');
-      if (stage) stage.outerHTML = desk(stage.outerHTML, utilityPane());
+      const inspector = surface.querySelector('[data-v2-diagnose] .panes > .inspector');
+      if (inspector) {
+        // Keep the carried owner's DOM, handlers and scroll in its seat. The
+        // utility temporarily covers that seat; closing it restores the same
+        // inspector rather than reconstructing any shared rail markup.
+        const visibility = inspector.style.visibility;
+        const inert = inspector.inert;
+        inspector.style.visibility = 'hidden';
+        inspector.inert = true;
+        inspector.insertAdjacentHTML('afterend', utilityPane());
+        const pane = inspector.nextElementSibling;
+        pane.classList.add('v2-diagnose-utility');
+        hold(() => { pane.remove(); inspector.style.visibility = visibility; inspector.inert = inert; });
+      } else {
+        const stage = surface.querySelector('.pane');
+        if (stage) stage.outerHTML = desk(stage.outerHTML, utilityPane());
+      }
     }
   }
   // The detected pump settings open from Changes, beside the proposed Plan.

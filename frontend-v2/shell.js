@@ -10,8 +10,7 @@
 import { e } from './frame.js';
 
 export const DESTINATIONS = [
-  ['overview', 'Overview'],
-  ['explore', 'Explore'],
+  ['diagnose', 'Diagnose'],
   ['changes', 'Changes'],
   ['day', 'Day'],
 ];

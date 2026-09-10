@@ -13,6 +13,8 @@ from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 class EvidencePopulationPolicyContractTest(unittest.TestCase):
     def test_every_lever_declares_its_complete_evidence_population_contract(self):
         expected = {
+            Lever.HIGH_CARB_SEQUENCE: (None, "sequences", None, "Q1–Q4 sequences", "sequence", (0, 360), False, "episode-1"),
+            Lever.REPEAT_EATING: (None, "sequences", None, "Single-window sequences at matched carb quintile", "sequence", (0, 360), False, "episode-1"),
             Lever.CARB_UNDERCOUNT: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),
             Lever.LATE_BOLUS: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),
             Lever.MEAL_OVER_DELIVERY: (Exposure.MEALS, "meals", Exposure.MEALS, "Other meal opportunities", "completed_carb_bolus", (-60, 300), False, "episode-1"),

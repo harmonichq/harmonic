@@ -1609,6 +1609,10 @@ and it authorizes no production edit on its own.
 
 ## ADR 389 — Freeze the desktop behavior contract and admit four bounded production chunks
 
+Amended 2026-09-10 under coordinator amendment 13: remove the static Scope · 30 d chip from the v2 topbar at Connor Griffin’s instruction because it has no interaction and the analysis window is not user-changeable; retain the rest of the persistent chrome.
+
+Amended 2026-09-10 under coordinator amendment 12 / ADR 397: remove the v2 Diagnose column override so the carried rail keeps its shipped 430px geometry, correcting the 300px paired-desk token that was mis-targeted at the carried column.
+
 Amended 2026-09-10 under Coordinator Amendment 2: committed set-aside and Restore preference writes reconcile through the existing ingestion completion adapter, `reconcile_ingested_follow_up`, before their HTTP endpoints return success.
 
 Amended 2026-09-10 under #389 c3 Coordinator Amendment 2: inherited stories S129/S131 require an All Charts pick to select its chart's drill, so v2 observes tile click/Enter/Space before the shipped handler and invalidates the previous case request, while preserving the owner's same-chart no-op and treating pin/alignment controls as non-drill actions.

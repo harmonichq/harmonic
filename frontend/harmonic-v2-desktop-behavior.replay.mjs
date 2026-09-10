@@ -59,8 +59,10 @@ import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
+import { C4_STORIES, C4_RETIREMENTS, historicalAbsence } from '../frontend-v2/c4.replay.mjs';
 import { C3_STORIES } from '../frontend-v2/c3.replay.mjs';
-import { C2_STORIES } from '../frontend-v2/c2.replay.mjs';
+import { C2_STORIES, waitForDesk } from '../frontend-v2/c2.replay.mjs';
+import { captureStory } from '../frontend-v2/capture.mjs';
 
 const require = createRequire(import.meta.url);
 const { createBrowserRunner } = require('./browser-runner.js');
@@ -130,7 +132,9 @@ const FIXTURES = [
 function requireAssets() {
   const missing = [];
   if (!existsSync(ECHARTS_FILE)) missing.push(`${ECHARTS_FILE} — run npm ci`);
-  if (!existsSync(MOCK_FILE)) missing.push(MOCK_FILE);
+  // The accepted app replay survives the bounded prototype archive move.
+  // TARGET=mock still fails closed without its original executable source.
+  if (TARGET === 'mock' && !existsSync(MOCK_FILE)) missing.push(MOCK_FILE);
   for (const relative of FIXTURES) {
     if (!existsSync(join(REPO, relative))) missing.push(relative);
   }
@@ -338,7 +342,7 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   // a scenario select. Ported app bodies read and assert the state of their
   // registered case store instead. A prototype-only body still cannot request
   // a non-default scenario from the app.
-  if (state !== 'investigate' && !C2_STORIES[storyId] && !C3_STORIES[storyId]) {
+  if (state !== 'investigate' && !C2_STORIES[storyId] && !C3_STORIES[storyId] && !C4_RETIREMENTS[storyId]) {
     fail(`TARGET=app cannot honour state=${state}: the app has no scenario select. `
       + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
   }
@@ -485,6 +489,11 @@ const destinationOf = (page) => page.evaluate(() =>
 /** The first VISIBLE match, or a loud failure naming how many were hidden. */
 export async function visible(page, selector) {
   if (TARGET === 'app') selector = selector.replaceAll('data-destination="explore"', 'data-destination="diagnose"').replaceAll('data-destination="overview"', 'data-destination="changes"');
+  if (TARGET === 'app') {
+    const control = page.locator(selector).filter({ visible: true }).first();
+    await control.waitFor({ state: 'visible', timeout: 30000 });
+    return control;
+  }
   const all = page.locator(selector);
   const total = await all.count();
   ok(total > 0, `no control matched ${selector} — a story must drive the affordance a reader uses`);
@@ -499,8 +508,13 @@ export async function visible(page, selector) {
 /** Click through the affordance a reader would use. */
 export async function activate(page, selector) {
   const locator = await visible(page, selector);
+  const utilityWrite = TARGET === 'app' && await locator.evaluate(node => node.matches(
+    '[data-utility-log], [data-utility-answer], [data-utility-undo], [data-utility-remove], [data-utility-retry]'));
   await locator.click();
-  await page.waitForTimeout(160);
+  if (utilityWrite) await page.locator('.gf-utility .gf-flash, .gf-utility [role="alert"]').first()
+    .waitFor({ state: 'visible', timeout: 30000 });
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(160);
 }
 
 /* ------------------------------------------------ reader-route setup helpers */
@@ -594,14 +608,12 @@ export const S3 = async (page) => {
 export const S4 = async (page) => {
   const chrome = await page.evaluate(() => ({
     identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    scope: document.querySelector('.cockpit-scope')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
     carbs: document.querySelector('.cockpit-log-carbs')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
     advisory: document.querySelector('.cockpit-advisory')?.textContent.trim() ?? null,
     utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
   }));
   ok(/Harmonic/.test(chrome.identity || '') && /advisory/i.test(chrome.identity || ''),
     `the identity mark is not the locked one: ${chrome.identity}`);
-  ok(/Scope/i.test(chrome.scope || '') && /30 d/.test(chrome.scope || ''), `scope reads ${chrome.scope}`);
   ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
     `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
   ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',
@@ -1672,7 +1684,7 @@ export const S68 = async (page) => {
   for (const kind of ['guide', 'glossary', 'settings']) {
     await activate(page, `[data-utility="${kind}"]`);
     ok(await countOf(page, `.gf-utility[data-utility="${kind}"]`) === 1, `the ${kind} utility did not take the reading seat`);
-    ok(await countOf(page, '.gf-stage') >= 1, `opening ${kind} removed the destination underneath it`);
+    ok(await countOf(page, TARGET === 'app' ? '[data-v2-diagnose] .canvas-pane' : '.gf-stage') >= 1, `opening ${kind} removed the destination underneath it`);
     const launcher = await visible(page, `nav.cockpit-utilities [data-utility="${kind}"]`);
     ok(await launcher.getAttribute('aria-pressed') === 'true', `the visible ${kind} launcher is not marked pressed`);
     await activate(page, '[data-utility-close]');
@@ -1874,7 +1886,8 @@ export const S74 = async (page) => {
   const before = await typeOf();
   const pressedBefore = await reveal.getAttribute('aria-pressed');
   await reveal.click();
-  await page.waitForTimeout(180);
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(180);
   ok(await typeOf() !== before, 'the reveal control did not toggle the field type');
   ok(await reveal.getAttribute('aria-pressed') !== pressedBefore,
     'the reveal control did not flip its own pressed state with the field');
@@ -1902,7 +1915,10 @@ export const S75 = async (page, ctx) => {
     `the token form's submit is not the Save token control: ${await submit.textContent()}`);
   await page.fill('#ut-token', 'synthetic-token');
   await submit.click();
-  await page.waitForTimeout(300);
+  if (TARGET === 'app') await page.waitForFunction(() =>
+    /Token saved in this browser/.test(document.querySelector('[data-utility-form="token"]')?.textContent || ''),
+    null, { timeout: 30000 });
+  else await page.waitForTimeout(300);
   const pane = await page.locator('.gf-utility').first().innerText();
   if (ctx.target === 'app') {
     ok(/token saved in this browser/i.test(pane), `saving the token reported nothing: ${pane.slice(0, 200)}`);
@@ -1928,14 +1944,18 @@ export const S75b = async (page, ctx) => {
   await page.fill('#ut-email', 'wearer@example.test');
   await page.fill('#ut-password', 'synthetic-password');
   await page.selectOption('#ut-region', 'EU');
-  await page.waitForTimeout(180);
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(180);
   ok(await page.inputValue('#ut-password') === 'synthetic-password', 'the password field did not keep what was typed');
 
   const submit = await visible(page, '[data-utility-form="credentials"] button[type="submit"]');
   ok(/Save credentials/i.test(((await submit.textContent()) || '').trim()),
     `the credentials submit is not the Save credentials control: ${await submit.textContent()}`);
   await submit.click();
-  await page.waitForTimeout(300);
+  if (TARGET === 'app') await page.waitForFunction(() =>
+    /Credentials saved/.test(document.querySelector('[data-utility-form="credentials"]')?.textContent || '')
+    && document.querySelector('#ut-password')?.value === '', null, { timeout: 30000 });
+  else await page.waitForTimeout(300);
 
   const saved = await pane();
   if (ctx.target === 'app') {
@@ -1957,7 +1977,8 @@ export const S75b = async (page, ctx) => {
   const dev = await visible(page, '[data-utility-form="dev"] input');
   ok(await dev.isChecked() === false, 'Developer mode did not start off');
   await dev.check();
-  await page.waitForTimeout(180);
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(180);
   ok(await dev.isChecked(), 'Developer mode did not take the change');
   ok(/never the analysis/i.test(await pane()),
     'Developer mode does not say it changes disclosure only');
@@ -1968,7 +1989,7 @@ export const S75b = async (page, ctx) => {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
   await activate(page, '[data-utility="settings"]');
-  await page.waitForTimeout(400);
+  await waitForDesk(page);
   const reloaded = await pane();
   ok(/credentials saved/i.test(reloaded) && !/no credentials saved/i.test(reloaded),
     `the saved credentials did not survive a reload: ${reloaded.slice(0, 200)}`);
@@ -1991,7 +2012,8 @@ export const S76 = async (page, ctx) => {
   const label = await open.getAttribute('data-utility-label');
   ok(label, 'the utility\'s Open Day carries no origin label to return to');
   await open.click();
-  await page.waitForTimeout(350);
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(350);
   // The prototype had its day in hand already; the app reads it. Waiting on the
   // Day desk's own public selector is waiting for the state this story is about
   // to assert — not a longer sleep, and not a weaker assertion. Until it
@@ -2009,7 +2031,8 @@ export const S76 = async (page, ctx) => {
   ok(((await back.textContent()) || '').trim() === `Return to ${label}`,
     `the return control is not named for its origin: ${await back.textContent()}`);
   await back.click();
-  await page.waitForTimeout(350);
+  if (TARGET === 'app') await waitForDesk(page);
+  else await page.waitForTimeout(350);
   ok(await countOf(page, `.gf-utility[data-utility="${origin}"]`) === 1,
     'following the return did not reopen the utility it came from');
 };
@@ -2268,7 +2291,11 @@ export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authentica
     // requests rather than anything installed into the page.
     const reads = [];
     page.on('response', async (response) => {
-      const path = new URL(response.url()).pathname;
+      const url = new URL(response.url());
+      // Only the token server's answers count: a late read still settling from
+      // the previous story's token-less case server is not this boundary.
+      if (url.origin !== new URL(AUTH_BASE_URL).origin) return;
+      const path = url.pathname;
       if (!path.startsWith('/api/')) return;
       const entry = {
         path, status: response.status(),
@@ -2500,6 +2527,7 @@ export const R1 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-18
 export const R2 = async (page) => {
   printSanction('R2');
+  if (TARGET === 'app') return C4_RETIREMENTS.R2(page);
   // Corrected: reach the contracted successor first. Root's capture showed this
   // reporting a dead premise from the initial Overview, where the in-place case
   // successor had simply not been opened yet.
@@ -2515,6 +2543,7 @@ export const R2 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-25
 export const R3 = async (page) => {
   printSanction('R3');
+  if (TARGET === 'app') return C4_RETIREMENTS.R3(page);
   await goto(page, 'explore');
   const windowOf = () => page.evaluate(() => document.querySelector('[data-window][aria-pressed="true"]')?.dataset.window ?? null);
   const before = await windowOf();
@@ -2527,6 +2556,7 @@ export const R3 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-19
 export const R4 = async (page) => {
   printSanction('R4');
+  if (TARGET === 'app') return C4_RETIREMENTS.R4(page);
   await goto(page, 'explore');
   const windowOf = () => page.evaluate(() => document.querySelector('[data-window][aria-pressed="true"]')?.dataset.window ?? null);
   const before = await windowOf();
@@ -2541,6 +2571,7 @@ export const R4 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-23
 export const R5 = async (page) => {
   printSanction('R5');
+  if (TARGET === 'app') return C4_RETIREMENTS.R5(page);
   // Corrected: the vertical roster is the slot lane's supporting-night list,
   // reached through Explore's "All basal slots" row.
   await openBasalLane(page);
@@ -2574,6 +2605,7 @@ export const R6 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-27
 export const R7 = async (page) => {
   printSanction('R7');
+  if (TARGET === 'app') return C4_RETIREMENTS.R7(page);
   await goto(page, 'explore');
   const series = await page.evaluate(() => {
     const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
@@ -2592,6 +2624,7 @@ export const R7 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-27
 export const R8 = async (page) => {
   printSanction('R8');
+  if (TARGET === 'app') return C4_RETIREMENTS.R8(page);
   await goto(page, 'explore');
   const series = await page.evaluate(() => {
     const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
@@ -2610,6 +2643,7 @@ export const R8 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-19
 export const R9 = async (page) => {
   printSanction('R9');
+  if (TARGET === 'app') return C4_RETIREMENTS.R9(page);
   await goto(page, 'explore');
   ok(await countOf(page, '.occurrence-level, .drill-level, .counter-example-subgroup') === 0,
     'R9 replayed-fail: a separate drill level or nested subgroup is back');
@@ -2620,6 +2654,7 @@ export const R9 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-19
 export const R10 = async (page) => {
   printSanction('R10');
+  if (TARGET === 'app') return C4_RETIREMENTS.R10(page);
   // Corrected: reach the queue/case successor first. The premise is about the
   // successor route existing, not about whatever the initial Overview showed.
   await goto(page, 'explore');
@@ -2632,6 +2667,7 @@ export const R10 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-19
 export const R11 = async (page) => {
   printSanction('R11');
+  if (TARGET === 'app') return C4_RETIREMENTS.R11(page);
   await goto(page, 'explore');
   const chevrons = await page.evaluate(() => [...document.querySelectorAll('.gf-row')]
     .filter((el) => /[›»❯]/.test(el.textContent || '')).length);
@@ -2643,6 +2679,7 @@ export const R11 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-19
 export const R12 = async (page) => {
   printSanction('R12');
+  if (TARGET === 'app') return C4_RETIREMENTS.R12(page);
   await goto(page, 'explore');
   ok(await countOf(page, '.lens-inspector, [data-lens]') === 0,
     'R12 replayed-fail: the standalone lens inspector is back');
@@ -2653,6 +2690,7 @@ export const R12 = async (page) => {
 // RETIRED:Connor Griffin:2026-08-25
 export const R13 = async (page) => {
   printSanction('R13');
+  if (TARGET === 'app') return C4_RETIREMENTS.R13(page);
   await goto(page, 'explore');
   ok(await countOf(page, '[data-filter="event-charts"], .event-charts-root, [data-control="by-event"]') === 0,
     'R13 replayed-fail: the global Event-charts filter or By event control is back');
@@ -2670,23 +2708,11 @@ export const R14 = async (page) => {
 // RETIRED:ADR 215 amendment:2026-08-26
 export const R15 = async (page) => {
   printSanction('R15');
+  if (TARGET === 'app') return C4_RETIREMENTS.R15(page);
   ok(await countOf(page, '[data-dock-mode], .dock-layout-toggle, .duplicate-tile') === 0,
     'R15 replayed-fail: the old mode/layout/duplicate-tile mechanics are back');
-  if (TARGET === 'app') {
-    process.stdout.write('AMENDED R15 premise — ADR 397 · Connor Griffin · 2026-09-08; transcribed 2026-09-10: Diagnose preserves Findings, Spotlight and All Charts.\n');
-    await goto(page, 'diagnose');
-    ok(await countOf(page, '[data-destination="overview"], [data-destination="explore"]') === 0,
-      'R15 retired Overview/Explore destination buttons returned');
-    ok(await countOf(page, '[data-destination="diagnose"]') === 1
-      && await countOf(page, '[data-destination="changes"]') === 1,
-      'R15 the Diagnose/Changes successors are missing');
-    ok(await countOf(page, '#level .qrow') > 0 && await countOf(page, '#tile-focal') === 1
-      && await countOf(page, '#explorer-trigger') === 1,
-      'R15 Diagnose lost Findings, Spotlight or All Charts');
-  } else {
-    ok(await countOf(page, '[data-destination="explore"]') === 1,
-      'R15 historical premise failed: the ADR 348 Explore destination is gone');
-  }
+  ok(await countOf(page, '[data-destination="explore"]') === 1,
+    'R15 historical premise failed: the ADR 348 Explore destination is gone');
 };
 
 // RETIRED:Connor Griffin:2026-08-26
@@ -2699,12 +2725,15 @@ export const R16 = async (page) => {
 // RETIRED:ADR 340:2026-09-04
 export const R17 = async (page) => {
   printSanction('R17');
+  if (TARGET === 'app') return C4_RETIREMENTS.R17(page);
   const keep = await page.evaluate(() => [...document.querySelectorAll('button')]
     .filter((b) => (b.textContent || '').trim() === 'Keep').length);
   ok(keep === 0, 'R17 replayed-fail: the session-only Trial Keep action is back');
   ok(/Conclusion|Revert/i.test(await deskText(page)),
     'R17 premise failed: neither Revert-to-Plan nor the durable conclusion is present — re-settle, not a fail');
 };
+
+export const R18 = appOnly('HV2-31', 'historical input absent while current evidence and retained records remain', historicalAbsence);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -2753,7 +2782,7 @@ export const REGISTRY = [
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],
   ['R9', R9, M()], ['R10', R10, J()], ['R11', R11, M()], ['R12', R12, M()],
   ['R13', R13, M()], ['R14', R14, J()], ['R15', R15, J()], ['R16', R16, J()],
-  ['R17', R17, M('ready')],
+  ['R17', R17, M('ready')], ['R18', R18, J()],
 ];
 
 /* ------------------------------------------------------------------- runner */
@@ -2803,13 +2832,29 @@ async function main() {
     let opened = null;
     try {
       const caseName = storyCase(id, process.env.STORY_CASES || '');
+      let shownCaseName = caseName;
       if (caseServer) {
         await caseServer.start(id, caseName);
         process.stdout.write(`# ${id} synthetic case=${caseName} (fresh copy)\n`);
       }
       opened = await open({ ...state, viewport, storyId: id, caseName });
-      const body = TARGET === 'app' ? (C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
-      await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump });
+      const body = TARGET === 'app' ? (C4_STORIES[id] || C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
+      await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump,
+        withCase: async (name, prove) => {
+          ok(caseServer, `${id} requires CASE_STORE_DIR for its manufactured acceptance cases`);
+          await opened.context.close();
+          await caseServer.start(id, name);
+          opened = await open({ ...state, viewport, storyId: id, caseName: name });
+          await prove(opened.page);
+          shownCaseName = name;
+          process.stdout.write(`# ${id} proved synthetic variant=${name}\n`);
+        },
+      });
+      if (process.env.CAPTURE_DIR && (!process.env.CAPTURE_ONLY
+          || process.env.CAPTURE_ONLY.split(',').includes(id))) {
+        await captureStory(opened.page, { directory: process.env.CAPTURE_DIR, id,
+          target: TARGET, viewport, caseName: TARGET === 'app' ? shownCaseName : state.source });
+      }
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);
     } catch (error) {

@@ -67,6 +67,14 @@ const UNIT = { basal_rate: 'U/h', carb_ratio: 'g/U', target_bg: 'mg/dL' };
 // on this surface can claim a favourable ending (lock "Backend binding notes").
 const STATE_WORD = { concerning: 'Concerning', unclear: 'Unclear', context: 'Context only', favorable: 'Favourable' };
 const PERIOD_WORD = { before: 'Before', after: 'After' };
+const BOUNDARY_WORD = {
+  available_history: 'Available history', pin: 'Pinned', data_tail: 'Data read through',
+  data_cutoff: 'Data read through', setting_change: 'Setting change',
+  previous_relevant_setting_change: 'Previous relevant setting change',
+  next_relevant_setting_change: 'Next relevant setting change',
+  effective_ending: 'Effective ending', '90_day_cap': '90-day limit',
+  missing_continuous_setting_history: 'Continuous setting history unavailable',
+};
 
 /** One programmed value in its own unit; a correction factor reads insulin first. */
 const settingValue = (parameter, value) => {
@@ -198,7 +206,8 @@ export function periodsSection(comparison, kind = 'trial') {
   const row = (name) => {
     const period = periods[name];
     const reasons = period.boundary_reasons || {};
-    return `<dt>${e(word[name])}</dt><dd data-period="${e(name)}">${e(stamp(period.start))} to ${e(stamp(period.end))}<small>${e(reasons.start || '')} → ${e(reasons.end || '')}</small></dd>`;
+    const boundaries = [reasons.start, reasons.end].map(reason => BOUNDARY_WORD[reason]).filter(Boolean).join(' → ');
+    return `<dt>${e(word[name])}</dt><dd data-period="${e(name)}">${e(stamp(period.start))} to ${e(stamp(period.end))}${boundaries ? ` <small>${e(boundaries)}</small>` : ''}</dd>`;
   };
   return `<section class="gf-section" data-part="periods"><h3>Evidence periods</h3>
     <dl>${row('before')}${row('after')}</dl>
@@ -649,7 +658,7 @@ function focusFrame(state) {
   const context = (detail.original || {}).context || {};
   const stage = `<section class="pane gf-stage gf-stage-focus" aria-label="Focus evidence">${nameplate({
     kicker: 'Focus · <b>Active</b>',
-    title: e(context.title || (detail.pattern_key ? `pattern:${detail.pattern_key}` : detail.subject) || LEVER_NAME[detail.lever] || detail.lever),
+    title: e(detail.title || 'Focus'),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -659,7 +668,7 @@ function focusFrame(state) {
     <div class="gf-scroll">${comparisonTables(comparison, 'focus')}</div></section>`;
   const reading = `<aside class="pane gf-reading" aria-label="This Focus">${readingHeader('This Focus', 'Active')}<div class="gf-pane-body">
     <section class="gf-section" data-part="intent"><h3>What this Focus watches</h3>
-      <p>${e(context.explanation || LEVER_NAME[detail.lever] || detail.lever)}</p>
+      ${context.explanation === detail.title ? '' : `<p>${e(context.explanation || LEVER_NAME[detail.lever] || detail.lever)}</p>`}
       <p class="gf-meta">Pinned ${e(stamp(detail.pinned_at))}. No pump setting changed.</p></section>
     ${readinessSection(comparison, { kind: 'focus' })}
     ${periodsSection(comparison, 'focus')}

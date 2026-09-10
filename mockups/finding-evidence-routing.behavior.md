@@ -3893,4 +3893,54 @@ hand-set.
   comparison labels retain their meaning.
 
 Revision evidence and chart-direction review remain pending with the coordinator.
-The issued inventory is 183, with 182 active IDs and the one inherited retirement.
+The issued inventory is 183, with 168 active IDs and 15 retired IDs.
+
+## Amendment — 2026-09-10, issue #389 coordinator amendment 11
+
+The 2026-09-08 retirement in `895b596b` remains in force: Connor Griffin,
+shown the past-setting row, said “no.” and “We dont' need historical reads in
+the app.” Three browser-only assertions still depended on that removed row or
+its refresh path. Their surviving contracts are reconciled here; no history
+surface returns and no additional executable ID is retired.
+
+- **#100 Backspace browser probe / P23.** Drill the served Carb undercount
+  Finding instead of `ich1_WzAsNzIwLCI2Il0`, then assert Backspace restores focus
+  to that originating row. Both use the workstation's shared `popTo`,
+  `pendingRowFocus` and `applyPendingFocus` path. The detail must open before
+  Backspace. S76's separate Enter/Findings-crumb contract is unchanged.
+- **issue81SlicedProjection / P19.** The issue-scoped historical “S43” label is
+  not ticket 10's retired executable S43. The frozen projection inputs and the
+  checked projection mirror serve twelve rows globally and three at
+  04:30–06:00. `presentedRows` excludes `register: history`, leaving eleven
+  global rows and exactly `Basal 05:30 · raise` and `ISF` in the slice. The crumb
+  remains `8 findings · 30 days` globally and `1 in this window` in the slice;
+  claimed members and the held ISF read do not inflate those actionable counts.
+  This supersedes the past-setting membership clauses in the earlier #81/P19
+  evidence notes, preserving positive membership, exclusion and content-spine
+  assertions.
+- **Composition window-adoption probe / P19.** Hold Morning's
+  `finding-case-file-preparation` response, let Afternoon settle, then release
+  Morning. The remaining `ensurePreparation` generation/window checks and
+  `adoptFindings` key check own this invariant. Assert Afternoon's chart remains,
+  no Morning-only chart is seated, the Afternoon preset stays pressed and no
+  page error occurs. Expected identities use the actual preset bounds
+  (06:00–12:00 and 12:00–18:00); the fixture's named morning/afternoon windows
+  are different slices. The removed history refresh and `.history-pending`
+  marker are no longer exercised.
+
+Inventory is unchanged: **183 issued, 168 active, 15 retired**. The ledger parity
+guard remains authoritative and is run with this amendment. No new browser pass
+is claimed here; the coordinator owns the workstation suite, composition suite
+and complete finding-evidence-routing replay on this change.
+
+
+## Amendment — 2026-09-10, issue #389 coordinator amendment 14
+
+The composition window-adoption probe now draws the frozen findings-projection
+fixture's `windows.morning` (04:30–08:00) and `windows.afternoon` (14:00–21:00)
+windows through the public clock brace. It reads expected IDs directly from those
+frozen Python answers, which `findings-projection-mirror.test.js` deep-compares;
+it never computes its expectation through the mirror. This supersedes amendment
+11's preset-bound and preset-button clauses: the selected-window assertion checks
+the 14:00–21:00 window chip. The held-response ordering, retained Afternoon chart,
+absence of Morning-only charts and no-page-error assertions remain.

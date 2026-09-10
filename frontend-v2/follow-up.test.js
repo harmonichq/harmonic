@@ -356,11 +356,21 @@ test('a period with no served day says that instead of an empty select', () => {
 
 /* -------------------------------------------------- periods and the figure */
 
-test('the periods section names each boundary the backend chose', () => {
+test('the periods section gives served boundaries readable words separated from the timestamps', () => {
   const html = periodsSection(SETTING_COMPARISON);
   assert.match(html, /data-period="before"/);
-  assert.match(html, /previous_relevant_setting_change → setting_change/);
-  assert.match(html, /setting_change → data_tail/);
+  assert.match(html, / <small>Previous relevant setting change → Setting change<\/small>/);
+  assert.match(html, / <small>Setting change → Data read through<\/small>/);
+  const focus = periodsSection(FOCUS_COMPARISON, 'focus');
+  assert.match(focus, / <small>Available history → Pinned<\/small>/);
+  assert.match(focus, / <small>Pinned → Data read through<\/small>/);
+  assert.doesNotMatch(focus, /available_history|data_tail|→ pin</);
+  const unknown = structuredClone(FOCUS_COMPARISON);
+  unknown.periods.before.boundary_reasons = { start: 'new_unmapped_start', end: 'new_unmapped_end' };
+  unknown.periods.after.boundary_reasons = { start: 'pin', end: 'new_unmapped_end' };
+  const omitted = periodsSection(unknown, 'focus');
+  assert.doesNotMatch(omitted, /new_unmapped|→|<small>\s*<\/small>/);
+  assert.match(omitted, / <small>Pinned<\/small>/);
 });
 
 test('the figure pairs only the clock bins both periods served', () => {

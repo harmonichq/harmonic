@@ -283,18 +283,11 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
     assert.equal(await countOf(page, '[data-destination][aria-current="page"]'), 1);
     const chrome = await page.evaluate(() => ({
       identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim(),
-      scope: document.querySelector('.cockpit-scope')?.textContent.replace(/\s+/g, ' ').trim(),
       carbs: document.querySelector('.cockpit-log-carbs')?.textContent.replace(/\s+/g, ' ').trim(),
       advisory: document.querySelector('.cockpit-advisory')?.textContent.trim(),
       utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
     }));
     assert.match(chrome.identity, /Harmonic advisory/);
-    // Scope is three elements — the label, the CSS-drawn dot, and the range —
-    // so its textContent reads "Scope30 d". The locked strings are the two
-    // words; the separator is material, not copy.
-    assert.match(chrome.scope, /^Scope/);
-    assert.match(chrome.scope, /30 d$/);
-    assert.equal(await countOf(page, '.cockpit-scope .cockpit-scope-dot'), 1);
     assert.ok(chrome.carbs.includes('＋'), 'Log carbs lost its fullwidth plus');
     assert.equal(chrome.advisory, 'Advisory only — review with your clinician before changing pump settings.');
     for (const label of ['Carb questions', 'Guide', 'Settings', 'Glossary']) {

@@ -33,6 +33,8 @@ jobs:
         run: uv sync --frozen --extra api --extra sync
       - name: Run tests
         run: uv run python -m pytest
+      - name: Check the runtime acceptance probe rejects incomplete proofs
+        run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
       # The frontend's I:C block fixtures are real analyzer output, not literals
@@ -202,7 +204,7 @@ jobs:
     name: browser gates — ${{ matrix.gate }}
     needs: browser-gate-setup
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.timeout || 15 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
@@ -234,6 +236,14 @@ jobs:
           - gate: V2 Trial and Pattern Focus
             python: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
+          - gate: V2 complete frozen ledger 1280x720
+            python: true
+            timeout: 40
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$RUNNER_TEMP/v2-1280x720"
+          - gate: V2 complete frozen ledger 1440x900
+            python: true
+            timeout: 40
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out "$RUNNER_TEMP/v2-1440x900"
           - gate: First-plan reconcile
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
@@ -311,6 +321,15 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
+      - name: Retain v2 acceptance output
+        if: always() && startsWith(matrix.gate, 'V2 complete frozen ledger')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.gate }}
+          path: |
+            ${{ runner.temp }}/v2-*/commands.json
+            ${{ runner.temp }}/v2-*/*.log
+            ${{ runner.temp }}/v2-*/captures/
 
   frontend-browser:
     name: browser gates
@@ -338,26 +357,16 @@ jobs:
           push: false
           load: true
           tags: harmonic:pr-test
-      - name: Require the runtime image to exclude Node
-        run: docker run --rm --entrypoint sh harmonic:pr-test -c '! command -v node'
-      - name: Serve the built shell from the runtime image
-        run: |
-          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          chmod 666 "$RUNNER_TEMP/harmonic-qa.sqlite"
-          docker run --detach --name harmonic-pr-smoke --publish 8765:8765 \
-            --env TIMEZONE_NAME=America/Phoenix \
-            --volume "$RUNNER_TEMP/harmonic-qa.sqlite:/app/tconnect-data/harmonic.sqlite" \
-            harmonic:pr-test --host 0.0.0.0 --port 8765 --no-fetch --token '' --db /app/tconnect-data/harmonic.sqlite
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:8765/ | grep --quiet '/assets/index-'; then
-              docker rm --force harmonic-pr-smoke
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs harmonic-pr-smoke
-          docker rm --force harmonic-pr-smoke
-          exit 1
+      - name: Prove both packaged shells, assets, authentication and closed routes
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/v2-package"
+      - name: Retain packaged runtime proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-packaged-runtime
+          path: |
+            ${{ runner.temp }}/v2-package/*.log
+            ${{ runner.temp }}/v2-package/*.json
 
   docker:
     name: build + push image

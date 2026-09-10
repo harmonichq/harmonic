@@ -691,6 +691,16 @@ def _reviewable_trials(store, now, *, horizon_start=None):
     return trials
 
 
+def _review_focus_title(record):
+    """Historical records can outlive the lever vocabulary of the active view."""
+    from .analyzers.scenario.outcome_patterns import _ROSTER
+    pattern_titles = {key: title for key, title, *_ in _ROSTER}
+    title = pattern_titles.get(record.get("pattern_key"))
+    if title is not None:
+        return title
+    return _focus_meta(record["lever"])[0] if is_pinnable(record["lever"]) else "Focus"
+
+
 def review_trials(store, *, now: datetime, selected=None, kind="trial", assessment="original"):
     """Read retained history and optional reassessment without resolving a watch."""
     from .follow_up_comparison import compare_follow_up
@@ -710,7 +720,9 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
                    watch_disposition=("active" if admission["active_kind"] == "trial"
                                       and admission["active_id"] == row["id"] else "not_selected_for_watch"))
         roster.append(row)
-    result = {"trials": roster, "focuses": store.follow_up_records("focus"), "selected": None,
+    focuses = [{**record, "title": _review_focus_title(record)}
+               for record in store.follow_up_records("focus")]
+    result = {"trials": roster, "focuses": focuses, "selected": None,
               "input_revision": store.input_data_revision(), "admission": admission}
     if selected is None:
         return result
@@ -724,7 +736,8 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
     else:
         if record is None:
             raise KeyError(identity)
-        detail = {"id": identity, "lever": record["lever"], "status": record["status"]}
+        detail = {"id": identity, "lever": record["lever"], "status": record["status"],
+                  "title": _review_focus_title(record)}
     detail.update(kind=kind, admission=admission,
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),

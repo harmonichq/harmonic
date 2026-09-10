@@ -324,6 +324,9 @@ S4 · Persistent chrome renders its locked strings and does not move across
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S4 · 2026-09-10 · coordinator amendment 13: Connor Griffin instructed, "kill that scope thing unless we're going to include some kind of modal or something to go with it, it serves nothing." Remove Scope · 30 d from the persistent-chrome strings and elements; identity, destinations, Log carbs, advisory and utilities retain their existing assertions. This also amends the product-chrome overview above. S4 remains active; no story was solely about the chip.
+The preceding wording and results are the attributed pre-amendment record.
+
 ```
 S5 · Shell rows are 38px / minmax(0,1fr) / 24px below 860px viewport height,
      including 1280×720, and 42px / minmax(0,1fr) / 26px at 1440×900.
@@ -357,6 +360,9 @@ S7 · A paired state is one flexible evidence stage beside a 300px reading pane
   evidence: replay fn S7
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+Amended S7 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector is the carried v1 Findings rail at its shipped 430px, with a wider evidence stage; the 300px reading pane belongs to the paired desk states (Changes, Day), measured on .gf-desk > .gf-reading. The app replay uses a Changes case with a Trial underway to prove that paired width.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S7b · The selected full-width empty Changes state is preserved as observed: with
@@ -476,6 +482,9 @@ S13 · Across data shape, containers sized for live values do not resize per
   evidence: replay fn S13
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+Amended S13 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector keeps the carried v1 rail’s shipped 430px across all four sources. The 300px reading pane belongs to paired desk states (Changes, Day), not the carried Diagnose column; the existing 256px paired-desk adaptation remains unchanged.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Overview, guidance, set aside
 
@@ -1981,6 +1990,10 @@ R3 · A factor drill does not rewrite the clock window to its peak.
   status:   retired (permanent) · absence and premise replayed-pass · negative proof: proved
 ```
 
+Amended R3 · 2026-09-10 · Coordinator amendment 4, transcribed by Codex for Connor Griffin under ADR 397 (Connor Griffin · 2026-09-08): The app's factor drill is a shipped Findings row opening its case file. Its served cohorts are member groups, not prototype cohort buttons. Selecting that Finding leaves the independently chosen Diagnose clock window unchanged and exposes its occurrence roster. The retirement and its original sanction remain permanent.
+The preceding wording and results are the attributed pre-amendment record; integrated replay verification is pending.
+
+
 ```
 R4 · Occurrence selection does not rewrite the clock window.
   predecessor: finding-evidence-routing.behavior.md P21 (:678)
@@ -2147,6 +2160,10 @@ R17 · The Trial's session-only Keep action is gone. Revert-to-Plan remains the
             durable finish, and prints this sanction line
   status:   retired (permanent) · absence and premise replayed-pass · negative proof: proved
 ```
+
+Amended R17 · 2026-09-10 · Coordinator amendment 4, transcribed by Codex for Connor Griffin under ADR 397 (Connor Griffin · 2026-09-08): The app's data premise is a manufactured active Trial whose served admission permits finishing, not the prototype's ready scenario selector. The session-only Keep remains absent; the served Revert-to-Plan entry remains, and submitting a conclusion creates a durable ending that survives reload. The retirement and ADR 340 sanction are unchanged.
+The preceding wording and results are the attributed pre-amendment record; integrated replay verification is pending.
+
 
 ### The P55 pair, recorded so it is not re-ruled
 

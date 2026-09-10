@@ -1331,23 +1331,25 @@ test('#100 · the Findings crumb restores focus to the drilled finding row', asy
     'no opener problems while exercising #100 crumb restoration');
 });
 
-test('#100 · Backspace restores focus to the drilled history row', async () => {
+test('#100 · Backspace restores focus to the drilled Finding row', async () => {
   const browser = await runner.browser();
   const before = openerProblems().length;
   const page = await openApp(browser, {
     state: 'dense', history: true, appSource: 'fixture',
   });
   try {
-    await expandWatching(page);
-    const historyId = 'ich1_WzAsNzIwLCI2Il0';
-    const historyRow = page.locator(`#level .qrow[data-id="${historyId}"]`);
-    assert.equal(await historyRow.count(), 1,
-      'the history row intended for Backspace restoration is present in the queue');
-    await historyRow.focus();
+    const findingId = 'finding:carb_undercount';
+    const findingRow = page.locator(`#level .qrow[data-id="${findingId}"]`);
+    assert.equal(await findingRow.count(), 1,
+      'the Finding row intended for Backspace restoration is present in the queue');
+    await findingRow.focus();
     await page.keyboard.press('Enter');
+    await page.locator('#level .inner .who').waitFor();
     await page.keyboard.press('Backspace');
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), historyId,
-      'Backspace returns focus to the drilled history row');
+    await page.waitForFunction(id => document.activeElement?.getAttribute('data-id') === id,
+      findingId, { timeout: 30000 });
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,
+      'Backspace returns focus to the drilled Finding row');
   } finally {
     await page.close();
   }

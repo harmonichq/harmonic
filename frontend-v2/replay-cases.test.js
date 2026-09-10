@@ -2,7 +2,42 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { storyCase, createCaseServer } from './replay-cases.mjs';
 
+test('S56 requires the saved Focus title after reload, rather than its raw subject', async () => {
+  const { C3_STORIES } = await import('./c3.replay.mjs');
+  const offered = { key: 'synthetic-pattern', subject: 'pattern:synthetic-pattern' };
+  const saved = { id: 7, pattern_key: offered.key, subject: offered.subject };
+  const title = 'Served Pattern title';
+  const pageFor = stageText => {
+    let reloaded = false;
+    return {
+      url: () => 'http://127.0.0.1:8765/v2/?to=changes',
+      goto: async () => {}, reload: async () => { reloaded = true; },
+      request: { get: async url => {
+        const path = new URL(url).pathname;
+        assert.ok(['/api/focus', '/api/verify/trials'].includes(path));
+        const payload = path === '/api/focus'
+          ? { admission: { state: 'available', active_id: saved.id, focus_pin: { available: true } },
+            pinnable_patterns: [offered], focuses: [saved] }
+          : { focuses: [{ id: 8, title: 'Another Focus' }, { ...saved, title }] };
+        return { status: () => 200, text: async () => JSON.stringify(payload), json: async () => payload };
+      } },
+      locator: selector => ({
+        filter() { return this; }, first() { return this; },
+        waitFor: async () => {}, click: async () => {}, count: async () => 0,
+        innerText: async () => {
+          assert.equal(selector, '.gf-stage-focus');
+          assert.ok(reloaded, 'the saved Focus title must survive reload');
+          return stageText;
+        },
+      }),
+    };
+  };
+  await assert.rejects(C3_STORIES.S56(pageFor(offered.subject)), /served Focus title/);
+  await C3_STORIES.S56(pageFor(title));
+});
+
 test('one invocation selects the generated case each story needs', () => {
+  assert.equal(storyCase('S7'), 'c3-trial');
   assert.equal(storyCase('S88'), 'basal-lower');
   assert.equal(storyCase('S90'), 'basal-lower');
   assert.equal(storyCase('S100'), 'showcase');
@@ -10,6 +45,42 @@ test('one invocation selects the generated case each story needs', () => {
   assert.equal(storyCase('S90', 'S90=basal-raise,S100=showcase'), 'basal-raise');
   assert.throws(() => storyCase('S88', 'S88=../../real'), /Invalid/);
   assert.throws(() => createCaseServer({ directory: '/tmp', baseURL: 'https://example.com' }), /8765/);
+});
+
+test('S7 distinguishes the carried Diagnose rail from the paired Changes reading pane', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const pageFor = (inspectorWidth, readingWidth) => ({
+    url: () => 'http://127.0.0.1:8765/v2/',
+    request: { get: async () => ({ ok: () => true, status: () => 200,
+      json: async () => ({ admission: { active_kind: 'trial' } }) }) },
+    waitForFunction: async () => {},
+    locator: selector => ({
+      filter() { return this; }, first() { return this; }, waitFor: async () => {}, click: async () => {},
+      boundingBox: async () => {
+        const widths = { '.inspector': inspectorWidth, '.canvas-pane': 700,
+          '.gf-desk > .gf-reading': readingWidth, '.gf-desk > .gf-stage': 830 };
+        assert.ok(Object.hasOwn(widths, selector), `measure the owning element: ${selector}`);
+        return { width: widths[selector] };
+      },
+    }),
+  });
+  await C2_STORIES.S7(pageFor(430, 300));
+  await assert.rejects(C2_STORIES.S7(pageFor(300, 300)), /carried rail width/);
+  await assert.rejects(C2_STORIES.S7(pageFor(430, 430)), /reading-pane width/);
+});
+
+test('S13 keeps the carried rail at 430px across all four sources', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const sources = []; let closed = 0;
+  await C2_STORIES.S13(null, { viewport: '1280x720', open: async options => {
+    sources.push(options.source);
+    return { page: { waitForFunction: async () => {}, locator: selector => {
+      assert.equal(selector, '.inspector');
+      return { boundingBox: async () => ({ width: 430 }) };
+    } }, context: { close: async () => { closed++; } } };
+  } });
+  assert.deepEqual(sources, ['meals', 'setting', 'focus', 'journey']);
+  assert.equal(closed, 4);
 });
 
 test('c2 app selection contains concrete story bodies and excludes the c3 Trial inspection', async () => {
@@ -241,4 +312,88 @@ test('S9 loads the measured Inter face even when document fonts ready already re
     await C2_STORIES.S9({ locator: () => node, waitForFunction: async () => {} });
     assert.ok(loaded, 'the title waits for its own font rather than the earlier ready snapshot');
   } finally { globalThis.document = previousDocument; globalThis.getComputedStyle = previousStyle; }
+});
+
+
+test('desk readiness waits past immediate navigation and utility loading, without sleeps', async () => {
+  const { waitForDesk } = await import('./c2.replay.mjs');
+  const original = globalThis.document;
+  let loading = true;
+  globalThis.document = {
+    querySelector: selector => selector === '#level' ? { dataset: { loading: String(loading) } }
+      : selector.includes('.gf-loading') && loading ? {} : null,
+    querySelectorAll: () => loading ? [{ textContent: 'Loading settings…' }] : [],
+  };
+  try {
+    await waitForDesk({ waitForFunction: async (ready, _arg, options) => {
+      assert.equal(options.timeout, 30000);
+      assert.equal(ready(), false, 'aria-current can change while Day or settings still loads');
+      loading = false;
+      assert.equal(ready(), true, 'the same predicate accepts the completed read');
+    } });
+  } finally { globalThis.document = original; }
+});
+
+test('chart readiness does not count a cold overview before its evidence tiles mount', async () => {
+  const { waitForCharts } = await import('./c2.replay.mjs');
+  const original = globalThis.document;
+  let tiles = [];
+  globalThis.document = { querySelectorAll: () => tiles };
+  try {
+    await waitForCharts({
+      locator: () => ({ first() { return this; }, waitFor: async () => {} }),
+      waitForFunction: async (ready, _arg, options) => {
+        assert.equal(options.timeout, 30000);
+        assert.equal(ready(), false, 'the overview canvas alone cannot settle the composition');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: selector => selector === '.tile-state'
+          ? { textContent: 'Loading evidence…' } : null }];
+        assert.equal(ready(), false, 'a served tile still loading cannot be counted');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: () => null }];
+        assert.equal(ready(), false, 'an ok tile with no canvas cannot be counted');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: selector => selector === 'canvas' ? {} : null }];
+        assert.equal(ready(), true, 'completed evidence is ready for the unchanged count assertion');
+      },
+    });
+  } finally { globalThis.document = original; }
+});
+
+
+test('S29 observes the focus event before a later repaint can move activeElement', async () => {
+  const { clickAndObserveFocus } = await import('./c2.replay.mjs');
+  const previous = globalThis.document;
+  let listener; let removed = false; let disposed = false;
+  const target = { matches: selector => selector === '#level' };
+  globalThis.document = {
+    activeElement: null,
+    addEventListener: (type, fn, capture) => { assert.equal(type, 'focusin'); assert.equal(capture, true); listener = fn; },
+    removeEventListener: (type, fn, capture) => { assert.equal(type, 'focusin'); assert.equal(fn, listener); assert.equal(capture, true); removed = true; },
+  };
+  const page = {
+    evaluateHandle: async (install, selector) => {
+      const value = install(selector);
+      return { value, evaluate: async fn => fn(value), dispose: async () => { disposed = true; } };
+    },
+    waitForFunction: async (ready, handle, options) => {
+      assert.equal(options.timeout, 30000);
+      assert.equal(document.activeElement, null, 'a late instantaneous focus poll would miss the successful handoff');
+      assert.equal(ready(handle.value), true);
+    },
+  };
+  try {
+    assert.equal(await clickAndObserveFocus(page, { click: async () => {
+      assert.equal(typeof listener, 'function', 'listen before the navigation click');
+      document.activeElement = target; listener({ target });
+      document.activeElement = null; // an intervening repaint before the await resumes
+    } }, '#level'), true);
+    assert.ok(removed && disposed);
+    removed = disposed = false;
+    page.waitForFunction = async (ready, handle) => {
+      assert.equal(ready(handle.value), false, 'a different focus target cannot satisfy the proof');
+      throw new Error('synthetic bounded focus deadline');
+    };
+    await assert.rejects(clickAndObserveFocus(page, { click: async () => {
+      const wrong = { matches: () => false }; document.activeElement = wrong; listener({ target: wrong });
+    } }, '#level'), /bounded focus deadline/);
+    assert.ok(removed && disposed, 'failure removes the observer too');
+  } finally { globalThis.document = previous; }
 });

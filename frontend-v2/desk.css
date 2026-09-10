@@ -15,7 +15,6 @@
    against the built app. Stated once for the shell, as the app states it. */
 .cockpit-shell button { font-family:inherit; cursor:pointer; }
 .gf-main { padding:0; overflow:hidden; display:grid; grid-template-rows:minmax(0,1fr); }
-.v2-diagnose { --side:var(--gf-reading); }
 .v2-diagnose, .v2-diagnose > .ec-host { min-height:0; height:100%; overflow:hidden; }
 .v2-diagnose .panes:has(> .v2-diagnose-utility) > .inspector,
 .v2-diagnose .v2-diagnose-utility { grid-column:2; grid-row:1; }

@@ -70,6 +70,7 @@ EXPECTED_CASE_NAMES = (
     'repeat-eating-losing',
     'repeat-eating-multiple',
     "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
+    "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
 )
 
 

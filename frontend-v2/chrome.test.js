@@ -21,8 +21,6 @@ test('the three destinations render in the locked order with Diagnose current', 
 test('the topbar and footer carry their verbatim strings', () => {
   const markup = shellMarkup();
   assert.match(markup, /<div class="cockpit-identity">.*Harmonic <small>advisory<\/small>/);
-  assert.match(markup, /<span class="cockpit-scope-label">Scope<\/span>/);
-  assert.match(markup, /<span>30 d<\/span>/);
   // U+FF0B, the fullwidth plus, not an ASCII '+'.
   assert.match(markup, /<span class="plus">＋<\/span>Log carbs/);
   assert.equal(ADVISORY, 'Advisory only — review with your clinician before changing pump settings.');

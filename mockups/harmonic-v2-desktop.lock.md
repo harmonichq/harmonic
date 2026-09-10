@@ -30,6 +30,8 @@ Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded 
 Old (superseded): "Overview is the default destination. Overview, Explore, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
 New: "Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
 
+Amended HV2-09 · 2026-09-10 · coordinator amendment 13: Connor Griffin instructed, "kill that scope thing unless we're going to include some kind of modal or something to go with it, it serves nothing." The preceding New statement is now superseded as to Scope only. Current: Diagnose is the default destination; Diagnose, Changes, Day, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes.
+
 Old (superseded): "Overview owns the backend-selected active change or leading available priority and its next action. It does not duplicate Explore's full findings roster."
 New: "Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster."
 
@@ -363,11 +365,11 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-02 | V1 and `/v2/` coexist against the same authenticated Python API and database. This contract admits neither cutover nor v1 retirement. | gate | Route/auth matrix exercising both surfaces |
 | HV2-03 | At `1280×720` and `1440×900`, the document has no root/page scroll or horizontal overflow; populated stage and reading content scroll only inside their owned panes. | gate | Computed geometry assertions and paired renders |
 | HV2-04 | Shell rows are `38px / minmax(0,1fr) / 24px` below `860px` viewport height, including `1280×720`; at `1440×900` they are `42px / minmax(0,1fr) / 26px`. | gate | Computed grid-track assertions |
-| HV2-05 | Paired evidence/reading states use one flexible evidence stage plus a `300px` reading pane separated by the shipped one-pixel hairline. Preserve the selected full-width empty Changes state when no change is underway; do not manufacture a reading pane there. The approved intermediate-width rule for paired states is `256px` at `701–1100px`; it is inherited behavior, not mobile admission. | gate | Computed width/divider assertions |
+| HV2-05 | Original (superseded as to Diagnose): Paired evidence/reading states use one flexible evidence stage plus a `300px` reading pane separated by the shipped one-pixel hairline. Preserve the selected full-width empty Changes state when no change is underway; do not manufacture a reading pane there. The approved intermediate-width rule for paired states is `256px` at `701–1100px`; it is inherited behavior, not mobile admission. Amended 2026-09-10 · coordinator amendment 12 / amendment 14: Diagnose is the carried v1 Findings rail at its shipped `430px`, with no v2 narrow-width override. The `300px` reading pane and existing `256px` adaptation belong to paired desk states (Changes, Day); empty Changes remains full-width. | gate | Computed width/divider assertions |
 | HV2-06 | Preserve the premium fixed cockpit: dark diagnostic desk, paired stage/reading panes where the selected state uses them, the selected full-width empty states, and flat role-based surfaces. No page banner, hero-metric template, repeated card grid, or bottom action bar. | eye | Named eye judgment at both target sizes |
 | HV2-07 | Material uses the shipped dark role ladder: desk `#0F0D0B`, chart well `#14120F`, field `#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, edge `#453D35`, and inks `#F2EDE2`, `#CFC8BD`, `#A49C90` with nav `#C6BFB3`. Theme controls and theme storage remain absent; their retirement does not retire dark material. | gate | Computed styles on consuming elements |
 | HV2-08 | Inter remains the single UI family. Stage titles use the selected `1.14rem`, weight `700`, line-height `1.3`, tracking `-.01em`; clinical numbers use tabular figures. No heading exceeds the design-system `1.5rem` ceiling. | gate/eye | Computed type assertions plus eye judgment |
-| HV2-09 | Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes. | gate | Route/default and cross-view geometry replay |
+| HV2-09 | Amended 2026-09-10 · coordinator amendment 13: Diagnose is the default destination. Diagnose, Changes, Day, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes; Scope is removed. Superseded wording is preserved in the HV2-09 amendment record above. | gate | Route/default and cross-view geometry replay |
 | HV2-10 | Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster. | gate | Guidance-state replay |
 | HV2-11 | Diagnose owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. It carries the shipped v1 Findings rail as-is, including #395's Patterns. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08. | gate | Diagnose workflow and paired render |
 | HV2-12 | Changes owns current Plan or Focus, Trial/Focus progress, endings, saved conclusions, original records, history, reassessments and Pump settings. | gate | Setting and habit history workflows |
@@ -394,6 +396,8 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-33 | Escape follows the repaired hierarchy, restores launcher/focus, preserves established unsaved utility input, and does not discard a draft implicitly. Destination changes preserve only state owned by their route contract. | gate | Layered Escape, focus and scroll replay |
 | HV2-34 | Rebinding, chart replacement, `ResizeObserver`, pagehide/unmount and late-response paths clean up fully. Mock source/clock/failure controls, scenario switchers and Review notes never enter production. | gate | Repeated mount/unmount, stale-response and DOM-absence assertions |
 
+The following two chrome paragraphs are the superseded pre-amendment-13 record (Scope only).
+
 **Default view and persistent chrome** are stated in HV2-09 rather than in two
 extra terms: Diagnose is the default destination, and the destination switcher
 itself (`Diagnose` / `Changes` / `Day`) is named as persistent
@@ -407,6 +411,8 @@ is reached from Changes (HV2-12), not from the footer strip. An open utility
 takes the reading pane's seat and leaves the destination underneath standing
 (HV2-33). Diagnose carries the shipped Findings rail as-is within this chrome;
 this paragraph authorizes no rail redesign.
+
+Amended persistent chrome · 2026-09-10 · coordinator amendment 13: remove Scope from both lists above. Every destination retains the same identity, three destination buttons, gap and Log carbs in the topbar, and the same advisory and utilities footer. All other statements in those paragraphs remain current.
 
 ### Backend binding notes
 
@@ -548,7 +554,7 @@ footer injection):
 
 - Identity: `Harmonic` with `advisory` as its small mark
 - Destinations: `Diagnose` · `Changes` · `Day` (nav label `Main`)
-- Scope: `Scope` · `30 d`
+- Superseded 2026-09-10 · coordinator amendment 13: Scope: `Scope` · `30 d` — removed from the current persistent chrome.
 - `＋Log carbs` (the mark is U+FF0B, fullwidth plus)
 - Advisory line: `Advisory only — review with your clinician before changing pump settings.`
 - Footer utilities (nav label `Utilities`): `Carb questions` with its open
@@ -846,6 +852,11 @@ and supplies updated evidence; no superseded navigation requirement survives
 through the port instruction.
 
 ## What this lock does not do
+
+The #389 c4 builder evidence index is
+[`sweep/harmonic-v2-desktop/fidelity.md`](sweep/harmonic-v2-desktop/fidelity.md).
+It contains one ported row per term and the outstanding execution evidence.
+It changes no term or sanction and records no final fidelity or eye verdict.
 
 It does not implement anything, does not prove built-app fidelity, and does not
 carry release acceptance. It admits no mobile design, no root-route cutover and

@@ -13,6 +13,26 @@ export async function boundedWait(promise, description, timeout = 30000) {
   } finally { clearTimeout(timer); }
 }
 
+// Navigation marks aria-current before its served desk exists. Utilities and
+// month navigation also publish explicit loading copy while their reads run.
+export const waitForDesk = page => page.waitForFunction(() =>
+  !document.querySelector('.gf-loading, .gf-nav-loading')
+  && document.querySelector('#level')?.dataset.loading !== 'true'
+  && ![...document.querySelectorAll('.gf-utility [role="status"]')]
+    .some(node => /^Loading\b/.test(node.textContent.trim())), null, { timeout: 30000 });
+
+// #chart mounts before the lazy evidence tiles. Count the complete composition
+// on both sides of a teardown, not a cold first canvas against warm tiles.
+export async function waitForCharts(page) {
+  await page.locator('#chart canvas').first().waitFor({ timeout: 30000 });
+  await page.waitForFunction(() => {
+    const tiles = [...document.querySelectorAll('#tile-field .evidence-tile')];
+    return tiles.length > 0 && tiles.every(tile =>
+      !/Loading evidence/.test(tile.querySelector('.tile-state')?.textContent || '')
+      && (tile.dataset.state !== 'ok' || tile.querySelector('canvas')));
+  }, null, { timeout: 30000 });
+}
+
 const check = (condition, message) => assert.ok(condition, message);
 const settled = page => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
 const read = async (page, path) => {
@@ -57,15 +77,38 @@ const choose = async (page, row) => {
   await page.waitForFunction(id => document.querySelector(`.case-occurrence[data-occurrence-id="${CSS.escape(id)}"]`)?.getAttribute('aria-pressed') === 'true', id);
   return id;
 };
-async function openComparisonCase(page) {
+// A click's focus event may precede the awaited response and the next paint.
+// Observe that exact outcome before pressing; keep it across later repaints.
+// No polling window, synthetic focus, or fallback target can satisfy the proof.
+export async function clickAndObserveFocus(page, control, selector) {
+  const observation = await page.evaluateHandle(selector => {
+    const state = { seen: false, active: false };
+    const listener = event => {
+      if (!event.target.matches(selector)) return;
+      state.seen = true;
+      state.active = document.activeElement === event.target;
+    };
+    document.addEventListener('focusin', listener, true);
+    return { state, listener };
+  }, selector);
+  try {
+    await control.click();
+    await page.waitForFunction(observation => observation.state.seen, observation, { timeout: 30000 });
+    return await observation.evaluate(observation => observation.state.active);
+  } finally {
+    await observation.evaluate(observation => document.removeEventListener('focusin', observation.listener, true));
+    await observation.dispose();
+  }
+}
+
+async function openComparisonCase(page, id = 'finding:over_treated_low', openRow = row => row.click()) {
   await go(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click(); await settled(page);
-  const id = 'finding:over_treated_low';
+  await waitForCharts(page);
   const row = page.locator(`#level .qrow[data-id="${id}"]`);
   await row.waitFor();
   const response = responseFor(page, casePath, r => new URL(r.url()).searchParams.get('finding_id') === id && r.ok());
-  await row.click();
-  const file = await (await response).json();
+  const [, file] = await Promise.all([openRow(row), response.then(reply => reply.json())]);
   await page.locator('#level .case-occurrence').first().waitFor();
   check(file.projection.alignment === 'event', 'the production case owns event alignment');
   return file;
@@ -114,7 +157,8 @@ async function failedCurrentRead(page) {
   assert.equal(await page.locator('[data-action="retry"]').evaluate(n => n === document.activeElement), true);
   await page.unroute('**/api/analyze*');
   await press(page, '[data-action="retry"]'); await settled(page);
-  check(await page.locator('#level .qrow').count() > 0);
+  await page.locator('#level .qrow').first().waitFor({ timeout: 30000 }); // the retried read paints its rows before the count is judged
+  check(await page.locator('#level .qrow').count() > 0, 'S20b the retried read renders the roster');
 }
 async function selectedMember(page) {
   const file = await openComparisonCase(page);
@@ -122,8 +166,8 @@ async function selectedMember(page) {
   await page.locator('#level .occ-detail').waitFor();
   return { file, id };
 }
-async function comparisonFigure(page) {
-  const file = await openComparisonCase(page);
+async function comparisonFigure(page, id) {
+  const file = await openComparisonCase(page, id);
   const tile = page.locator(`#tile-field .evidence-tile[data-chart-id="${file.finding.id}"]`);
   if (!await tile.locator('.tile-fullscreen').isVisible()) {
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
@@ -338,7 +382,7 @@ async function permittedActions(page) {
 
 async function cleanup(page, ctx, pagehide = false) {
   await go(page, 'diagnose');
-  await page.locator('#chart canvas').first().waitFor();
+  await waitForCharts(page);
   const counts = () => page.locator('[data-v2-diagnose] canvas').count();
   const before = await counts(); const errors = ctx.consoleErrors.length;
   if (pagehide) {
@@ -348,8 +392,9 @@ async function cleanup(page, ctx, pagehide = false) {
     for (let i = 0; i < 3; i += 1) {
       await go(page, 'changes'); assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
       await go(page, 'diagnose');
-      await page.locator('#chart canvas').first().waitFor();
-      await press(page, '[data-utility="guide"]'); await press(page, '[data-utility-close]');
+      await waitForCharts(page);
+      await press(page, '[data-utility="guide"]'); await waitForDesk(page);
+      await press(page, '[data-utility-close]'); await waitForCharts(page);
       assert.equal(await page.locator('[data-v2-diagnose]').count(), 1);
       assert.equal(await page.locator('.gf-utility').count(), 0);
     }
@@ -359,16 +404,26 @@ async function cleanup(page, ctx, pagehide = false) {
 }
 
 export const C2_STORIES = {
-  openBasalLane, openComparisonCase, stageIntoPlan,
+  openBasalLane, openComparisonCase, comparisonFigure, stageIntoPlan,
   S6: async page => {
     const overflow = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
     check(overflow.x <= 1 && overflow.y <= 1, `root overflow ${JSON.stringify(overflow)}`);
     check(await page.locator('#level').count(), 'the shipped reading pane owns scrolling');
   },
   S7: async page => {
-    await go(page, 'diagnose'); const reading = await page.locator('.inspector').boundingBox();
-    const stage = await page.locator('.canvas-pane').boundingBox();
-    assert.equal(Math.round(reading.width), 300); check(stage.width > reading.width);
+    await go(page, 'diagnose');
+    const inspector = await page.locator('.inspector').boundingBox();
+    const canvas = await page.locator('.canvas-pane').boundingBox();
+    assert.equal(Math.round(inspector.width), 430, 'Diagnose keeps the carried rail width');
+    check(canvas.width > inspector.width);
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'trial', 'S7 requires a change underway');
+    await go(page, 'changes');
+    await page.locator('.gf-desk > .gf-stage-trial').waitFor({ state: 'visible', timeout: 30000 });
+    const reading = await page.locator('.gf-desk > .gf-reading').boundingBox();
+    const stage = await page.locator('.gf-desk > .gf-stage').boundingBox();
+    assert.equal(Math.round(reading.width), 300, 'paired Changes keeps the desk reading-pane width');
+    check(stage.width > reading.width);
   },
   S9: async page => {
     await go(page, 'changes');
@@ -397,7 +452,7 @@ export const C2_STORIES = {
       try { await settled(opened.page); widths.push(Math.round((await opened.page.locator('.inspector').boundingBox()).width)); }
       finally { await opened.context.close(); }
     }
-    assert.equal(widths.length, 4); assert.deepEqual([...new Set(widths)], [300]);
+    assert.equal(widths.length, 4); assert.deepEqual([...new Set(widths)], [430]);
   },
   S14: async page => { await go(page, 'changes'); const g = await read(page, '/api/guidance'); check(g.selected); check((await page.locator('.gf-desk').innerText()).includes(g.selected.title)); check(await page.locator('[data-action="explore"]').count()); assert.equal(await page.locator('.gf-reading .qrow').count(), 0); },
   S15: async page => { await go(page, 'changes'); await press(page, '[data-action="aside"]'); assert.equal(await page.locator('#aside-reason').evaluate(n => n === document.activeElement), true); await page.fill('#aside-reason', 'Synthetic reason'); await press(page, 'form[data-form="aside"] [type="submit"]'); await page.locator('[data-restore]').first().waitFor(); check((await page.locator('.gf-desk').innerText()).includes('Synthetic reason')); },
@@ -439,10 +494,16 @@ export const C2_STORIES = {
   S27: async page => { const file = await comparisonFigure(page); const before = await chartOption(page); assert.equal(before.xAxis[0].min, file.projection.window_min[0]); assert.equal(before.xAxis[0].max, file.projection.window_min[1]); await page.locator('#ec-chart').focus(); await page.keyboard.press('ArrowRight'); const after = await chartOption(page); assert.deepEqual(after.series, before.series, 'cursor/visible inspection changes no served series'); assert.deepEqual(after.yAxis, before.yAxis); },
   S28: cleanup,
   S29: async page => {
-    const file = await openComparisonCase(page);
-    assert.equal(await page.locator('#level').evaluate(n => n === document.activeElement), true);
-    await page.getByRole('button', { name: 'Findings', exact: true }).click();
-    assert.equal(await page.locator(`#level .qrow[data-id="${file.finding.id}"]`).evaluate(n => n === document.activeElement), true);
+    let focused;
+    const file = await openComparisonCase(page, 'finding:over_treated_low', async row => {
+      focused = await clickAndObserveFocus(page, row, '#level');
+    });
+    // openComparisonCase has now awaited the case file and rendered roster.
+    assert.equal(focused, true, 'S29 opening a case focuses the reading pane');
+    const restored = await clickAndObserveFocus(page,
+      page.getByRole('button', { name: 'Findings', exact: true }),
+      `#level .qrow[data-id="${file.finding.id}"]`);
+    assert.equal(restored, true, 'S29 Findings restores the originating row');
     await go(page, 'diagnose'); check(await page.locator('#level .qrow').count());
   },
   S30: async page => { await openBasalLane(page); await page.getByRole('button', { name: 'Findings', exact: true }).click(); check(await page.locator('#level .qrow').count()); },

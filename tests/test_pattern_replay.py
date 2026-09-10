@@ -75,6 +75,11 @@ EXPECTED_ACTIVE_KINDS = {
     "c3-history": "trial",
     "c3-preempted": "trial",
     "c3-pin": None,
+    "c4-ic": "trial",
+    "c4-isf": None,
+    "c4-profile": None,
+    "c4-missing": "trial",
+    "c4-history": "trial",
 }
 
 

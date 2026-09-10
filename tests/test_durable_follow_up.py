@@ -34,6 +34,69 @@ class DurableApiTest(unittest.TestCase):
             "request_id": "finish", "input_revision": 0})
         self.assertEqual(response.status_code, 401)
 
+    def test_pattern_follow_up_reads_serve_the_roster_title_separately_from_context(self):
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                focus = store.pin_focus("late_bolus", "2024-05-05 00:00:00",
+                                        pattern_key="highs_after_meals")
+                store.save_follow_up_record({"kind": "focus", "version": "386:1", **focus,
+                    "decision_context": {"version": "386:1", "state": "available",
+                        "captured_at": "2024-05-05 00:00:00", "input_revision": store.input_data_revision(),
+                        "explanation": "Watch meal timing.", "action": None, "policy": "386:1",
+                        "source_window": {"start": "2024-05-01 00:00:00", "end": "2024-05-05 00:00:00"},
+                        "subjects": ["pattern:highs_after_meals"], "occurrences": [],
+                        "settings": [], "support": {}, "unknowns": []}})
+        for params in ({}, {"kind": "focus", "selected": focus["id"]},
+                       {"kind": "focus", "selected": focus["id"], "assessment": "retained"}):
+            with self.subTest(params=params):
+                response = self.client.get("/api/verify/trials", headers=self.headers, params=params)
+                self.assertEqual(response.status_code, 200, response.text)
+                payload = response.json()
+                self.assertEqual(payload["focuses"][0].get("title"), "Highs after meals")
+                if params:
+                    self.assertEqual(payload["selected"]["title"], "Highs after meals")
+                    self.assertEqual(payload["selected"]["original"]["context"]["explanation"],
+                                     "Watch meal timing.")
+        with Store.open_readonly(self.path) as store:
+            self.assertNotIn("title", store.follow_up_record("focus", focus["id"]))
+
+    def test_generated_c3_stores_serve_follow_up_history_and_retained_readiness(self):
+        import subprocess
+        import sys
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        for case in ("c3-trial", "c3-focus", "c3-history", "c3-preempted"):
+            with self.subTest(case=case):
+                path = Path(self.directory.name) / f"{case}.sqlite"
+                generated = subprocess.run(
+                    [sys.executable, str(root / "scripts/gen_qa_e2e_db.py"),
+                     "--case", case, "--out", str(path)],
+                    cwd=root, capture_output=True, text=True, check=False)
+                self.assertEqual(generated.returncode, 0, generated.stderr)
+                client = TestClient(create_app(db_path=str(path), token="", enable_fetch_loop=False),
+                                    raise_server_exceptions=False)
+                response = client.get("/api/verify/trials")
+                self.assertEqual(response.status_code, 200, response.text)
+                roster = response.json()
+                self.assertTrue(roster["trials"] or roster["focuses"])
+                for kind, rows in (("trial", roster["trials"]), ("focus", roster["focuses"])):
+                    for row in rows:
+                        params = {"kind": kind, "selected": row["id"]}
+                        original = client.get("/api/verify/trials", params=params)
+                        self.assertEqual(original.status_code, 200, original.text)
+                        retained = client.get("/api/verify/trials", params={**params, "assessment": "retained"})
+                        self.assertEqual(retained.status_code, 200, retained.text)
+                        detail = retained.json()["selected"]
+                        comparison = detail["reassessment"]["comparison"]
+                        if row.get("lever") == "overnight_drift":
+                            self.assertEqual(detail["title"], "Focus")
+                            self.assertEqual(comparison["availability"]["state"], "unavailable")
+                        else:
+                            self.assertIn("before", comparison["readiness"], (case, kind, row["id"]))
+                            self.assertIn("after", comparison["readiness"])
+                            if kind == "focus":
+                                self.assertEqual(detail["title"], "Highs after meals")
+
     def seed_trial(self):
         from datetime import datetime, timedelta
         from tests.test_trial_evidence import _seed_block_ic_switch

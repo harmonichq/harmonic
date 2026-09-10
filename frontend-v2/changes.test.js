@@ -53,11 +53,12 @@ test('a fresh Changes read keeps Restore as a control when no concern is selecte
   }
 });
 
-test('one Escape outside the reason field cancels the innermost set-aside form like Cancel', async () => {
+test('set-aside Escape follows the frozen order without opening a sheet', async () => {
   failure = false;
   answer = { disposition: 'eligible_action', selected: candidate, candidates: [candidate], reasons: {} };
   await loadGuidance({ force: true });
-  const { startDesk, view } = await import('./routes.js');
+  const { startDesk, view, ESCAPE_ORDER } = await import('./routes.js');
+  assert.deepEqual(ESCAPE_ORDER, ['utility', 'sheet', 'aside', 'day', 'journey', 'figure']);
   const { installChanges } = await import('./changes.js');
   const listeners = new Map();
   const previousDocument = globalThis.document;
@@ -66,6 +67,7 @@ test('one Escape outside the reason field cancels the innermost set-aside form l
   const seat = {
     innerHTML: '', dataset: {},
     querySelectorAll(selector) {
+      if (selector === '[data-action="open-sheet"]') return [controls.get('open-sheet')].filter(Boolean);
       if (selector !== '[data-action]') return [];
       controls.clear();
       for (const match of this.innerHTML.matchAll(/data-action="([^"]+)"/g)) {
@@ -78,6 +80,7 @@ test('one Escape outside the reason field cancels the innermost set-aside form l
       if (selector === 'form[data-form="aside"]' && this.innerHTML.includes('data-form="aside"')) {
         return { querySelector: () => field };
       }
+      if (selector === '.gf-sheet-toggle') return controls.get('open-sheet');
       return selector === '[data-action="aside"]' ? controls.get('aside') : null;
     },
   };
@@ -90,6 +93,7 @@ test('one Escape outside the reason field cancels the innermost set-aside form l
   try {
     installChanges(); startDesk(seat, { browser });
     controls.get('aside').onclick();
+    assert.equal(view.sheetOpen, false, 'opening the form must not seat the sheet');
     field.value = 'half-written'; field.oninput();
     document.activeElement = { tagName: 'TEXTAREA' };
     listeners.get('keydown')({ key: 'Escape' });
@@ -105,6 +109,21 @@ test('one Escape outside the reason field cancels the innermost set-aside form l
     assert.doesNotMatch(seat.innerHTML, /data-form="aside"/);
     assert.equal(view.sheetOpen, false);
     assert.equal(document.activeElement.dataset.action, 'aside', 'Cancel returns the same launcher focus');
+
+    controls.get('open-sheet').onclick();
+    assert.equal(view.sheetOpen, true, 'the sheet control seats its own layer');
+    controls.get('aside').onclick();
+    assert.equal(view.sheetOpen, true, 'opening the form preserves an already seated sheet');
+    field.value = 'held behind the sheet'; field.oninput();
+    document.activeElement = { tagName: 'BODY' };
+    listeners.get('keydown')({ key: 'Escape' });
+    assert.equal(view.sheetOpen, false, 'the sheet precedes aside in the frozen hierarchy');
+    assert.match(seat.innerHTML, /data-form="aside"/);
+    assert.match(seat.innerHTML, /held behind the sheet/, 'closing the sheet does not cancel the form');
+    assert.equal(document.activeElement.dataset.action, 'open-sheet');
+    listeners.get('keydown')({ key: 'Escape' });
+    assert.doesNotMatch(seat.innerHTML, /data-form="aside"/, 'the next Escape cancels the form');
+    assert.equal(document.activeElement.dataset.action, 'aside');
   } finally {
     globalThis.document = previousDocument; globalThis.window = previousWindow;
   }

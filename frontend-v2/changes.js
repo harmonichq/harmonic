@@ -221,7 +221,6 @@ function bind(host) {
       button.onclick = () => {
         aside.open = true;
         aside.subject = selectedConcern()?.subject || null;
-        view.sheetOpen = true;
         view.focusAfterRender = '#aside-reason';
         render();
       };

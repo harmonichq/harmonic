@@ -116,6 +116,14 @@ const assertGateContained = async (page, story) => {
 
 /* ------------------------------------------------------------- page readers */
 
+// A loading=false level may still be translating during its 90ms push/pop.
+// Geometry assertions wait for that presentation to finish, including re-renders
+// after Watching expands. Do not wait for data here: S41 measures loading copy.
+const waitForLevelAnimations = page => page.waitForFunction(() => {
+  const level = document.getElementById('level');
+  return level && level.getAnimations().length === 0;
+}, undefined, { timeout: 5000 });
+
 /** One structured read of everything the stories assert on. */
 export const state = (page) => page.evaluate(() => {
   const q = (s) => document.querySelector(s);
@@ -1751,6 +1759,7 @@ export const D3 = async (page) => {
 // LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:36 LOCK:diagnose-workstation:37 LOCK:diagnose-workstation:43 LOCK:diagnose-workstation:44 LOCK:diagnose-workstation:45
 export const S24 = async (page) => {
   await expandWatching(page);
+  await waitForLevelAnimations(page);
   const open = await state(page);
   is(open.crumb, ['Findings'], 'S24 the crumb root is the queue\u2019s own noun');
   ok(open.queue.length > 0, 'S24 the queue renders rows');
@@ -2758,6 +2767,7 @@ export const issue81PendingProjection = async (page) => {
   ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
 
   await drawWindow(page, [900, 1260], [330, 360]);      // 15:00–21:00, delayed
+  await waitForLevelAnimations(page);
   const pending = await state(page);
   is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
   is(pending.levelText, 'Loading findings for 15:00–21:00…',
@@ -2906,8 +2916,8 @@ export const issue81FailedProjection = async (page) => {
 export const issue81SlicedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(5)');   // 24 h
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  await settle(page, 150);                              // the level's 90 ms swap has landed
   await expandWatching(page);
+  await waitForLevelAnimations(page);
   const wholeDay = await state(page);
   is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
   is(wholeDay.queue.length, 11, 'S43 whole day renders the presented rows including claimed members, without past settings');
@@ -2917,6 +2927,7 @@ export const issue81SlicedProjection = async (page) => {
   await resizeWindowStart(page, 330, [0, 360]);          // minimum-width 04:30–06:00 slice
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await expandWatching(page);
+  await waitForLevelAnimations(page);
   const sliced = await state(page);
   is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
   is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
@@ -3809,6 +3820,7 @@ export const S138 = async (page) => {
   await openBasalNightRoster(page);
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-02"]').click();
   await settle(page, 200);
+  await waitForLevelAnimations(page);
   const boxes = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     return ['.inspector', '#level', '#chart', '#level .occ-detail'].map((selector) => {

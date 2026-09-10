@@ -455,3 +455,31 @@ test('Pattern readiness preserves the served opportunity verdict even above its 
   assert.doesNotMatch(html, /of .* days elapsed/);
   assert.doesNotMatch(html, /data-focus-population/);
 });
+
+test('the produced basal setting arm keeps its count requirement when it also carries an elapsed requirement', () => {
+  // comparison_evidence(parameter='basal') uses the coverage-qualified setting
+  // arm, also produced for target_bg/profile; basal_rate has its own night arm.
+  const html = readinessArm('after', {
+    elapsed_days: 32, contributing_dates: [], criterion_met: false,
+    reason: 'collecting', available: true, unit: 'coverage-qualified informative dates',
+    required: 30, required_elapsed_days: 30, observed: 0,
+  });
+  assert.match(html, /0 of 30 coverage-qualified informative dates/);
+  assert.match(html, /data-required="30"/);
+  assert.match(html, /32 days elapsed of 30 required/);
+  assert.match(html, /data-readiness-available="true"/);
+  assert.match(html, /data-criterion-met="false"/);
+  assert.doesNotMatch(html, /data-focus-population|— measured|— unmeasured/);
+});
+
+test('a Pattern arm without a required alias shows its opportunity gate without a fabricated requirement', () => {
+  const html = readinessArm('before', {
+    count: 17, gate: 12, observed: 17, unit: 'meals', verdict: 'withheld',
+    criterion_met: false, reason: 'served hold', measured: 4, unmeasured: 2,
+    required_elapsed_days: null, elapsed_days: 4, contributing_dates: [],
+  });
+  assert.match(html, /17 of 12 meals/);
+  assert.match(html, /data-opportunity-verdict="withheld"/);
+  assert.match(html, /data-criterion-met="false"/);
+  assert.doesNotMatch(html, /data-required|data-focus-population|of .* days elapsed/);
+});

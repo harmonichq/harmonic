@@ -932,6 +932,15 @@ endings, preemption and the history record.
   non-Pattern Focus omits `available` and `required` and carries `{unit, observed,
   measured, unmeasured, elapsed_days, required_elapsed_days: 14, criterion_met,
   contributing_dates, reason}`.
+  **Amended 2026-09-10 — #389 c3, Coordinator Amendment 2:** The produced
+  setting shape also carries `required_elapsed_days: 30` alongside `required: 30`
+  in `trial_evidence.comparison_evidence`'s coverage-qualified-date branch
+  (`profile`, `target_bg`, and the `basal` parameter passed through that branch);
+  the distinct `basal_rate` branch carries `required: 14` qualifying nights
+  without an elapsed requirement. A `verdict` identifies a Pattern arm;
+  otherwise `required` identifies a setting arm, and legacy Focus has neither.
+  An elapsed requirement does not identify the arm as Focus; the producer is
+  unchanged.
   **Amended 2026-09-10 — #389 c2b, Coordinator Amendment 1:** Pattern Focus
   retains every named Focus field, with `required_elapsed_days: null`, and adds
   `{count, gate, verdict, required}` from the backend opportunity owner over each

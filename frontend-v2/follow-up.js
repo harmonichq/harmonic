@@ -103,28 +103,29 @@ export function figureColors(root) {
 /**
  * ONE readiness arm, rendered by the fields that arrived.
  *
- * `required` present is the setting shape and gets its meter;
- * `required_elapsed_days` non-null is the legacy Focus shape and gets its duration and
- * its measured population instead. Neither branch compares a count to a
- * requirement: `criterion_met` and `reason` are the backend's words.
+ * A `verdict` identifies a Pattern arm; otherwise `required` identifies a
+ * setting arm, including settings with an elapsed requirement. The remaining
+ * legacy Focus shape gets its duration and measured population. No branch
+ * compares a count to a requirement: `criterion_met` and `reason` are served.
  */
 export function readinessArm(name, arm, { lever = null } = {}) {
   if (!arm) {
     return `<div class="gf-figure" data-readiness="${e(name)}">${e(PERIOD_WORD[name] || name)}<small>no readiness served for this period</small></div>`;
   }
-  const isPatternArm = 'verdict' in arm;
-  const isFocusArm = !isPatternArm && arm.required_elapsed_days != null;
+  const armKind = 'verdict' in arm ? 'pattern' : 'required' in arm ? 'setting' : 'legacy-focus';
   const dates = arm.contributing_dates || [];
   const met = arm.criterion_met === true;
   // The criterion line: what was observed, in the unit the backend named, and
   // the requirement it named beside it. The legacy Focus arm has no required count, so
   // it prints its measured and unmeasured opportunities in that place.
-  const figure = isFocusArm
+  const requirement = arm.required == null ? ''
+    : `<small data-required="${e(count(arm.required))}">required</small>`;
+  const figure = armKind === 'legacy-focus'
     ? `${e(count(arm.observed))} ${e(arm.unit)}<small data-focus-population>${e(count(arm.measured))} measured · ${e(count(arm.unmeasured))} unmeasured</small>`
-    : `${e(count(isPatternArm ? arm.count : arm.observed))} of ${e(count(isPatternArm ? arm.gate : arm.required))} ${e(arm.unit)}<small data-required="${e(count(arm.required))}">required</small>`;
+    : `${e(count(armKind === 'pattern' ? arm.count : arm.observed))} of ${e(count(armKind === 'pattern' ? arm.gate : arm.required))} ${e(arm.unit)}${requirement}`;
   // Elapsed days are reported alongside the evidence count and are never
   // labelled as observations of their own.
-  const duration = isFocusArm
+  const duration = armKind === 'legacy-focus'
     ? `<p class="gf-meta" data-elapsed>${e(days(arm.elapsed_days))} of ${e(count(arm.required_elapsed_days))} days elapsed</p>`
     : `<p class="gf-meta" data-elapsed>${e(days(arm.elapsed_days))} days elapsed${arm.required_elapsed_days != null ? ` of ${e(count(arm.required_elapsed_days))} required` : ''}</p>`;
   // `available` belongs to the setting arms only. The Focus override omits it,
@@ -140,7 +141,7 @@ export function readinessArm(name, arm, { lever = null } = {}) {
   return `<div data-readiness="${e(name)}" data-criterion-met="${met ? 'true' : 'false'}">
     <div class="gf-figure">${figure}</div>
     ${duration}
-    ${isPatternArm ? `<p class="gf-meta" data-opportunity-verdict="${e(arm.verdict)}">${e(arm.verdict)}${arm.reason ? ` · ${e(arm.reason)}` : ''}</p>` : ''}
+    ${armKind === 'pattern' ? `<p class="gf-meta" data-opportunity-verdict="${e(arm.verdict)}">${e(arm.verdict)}${arm.reason ? ` · ${e(arm.reason)}` : ''}</p>` : ''}
     <p class="gf-meta" data-criterion>${met ? 'Criterion met.' : `Not met — ${e(arm.reason || 'collecting')}.`}</p>
     ${availability}
     ${supporting}</div>`;

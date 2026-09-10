@@ -31,7 +31,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   S151, S152, S153, S154, S155, S156, S157, S158,
-  drawWindow,
+  drawWindow, waitForPreparationWindow,
   generatedFindingPose,
   generatedFindingProjection,
   openApp,
@@ -465,6 +465,7 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
   const browser = await runner.browser();
   const requested = [];
   let holdMorning = false;
+  let expectAfternoon = false;
   let releaseMorning;
   const morningReleased = new Promise((resolve) => { releaseMorning = resolve; });
   let markMorningHeld;
@@ -477,10 +478,12 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
       if (url.pathname !== '/api/diagnose/finding-case-file-preparation') return;
       const window = [url.searchParams.get('start_min'), url.searchParams.get('end_min')];
       requested.push(window);
-      if (window[0] === '840' && window[1] === '1260') markAfternoonRequested();
-      if (holdMorning && window[0] === '270' && window[1] === '480') {
-        markMorningHeld();
-        await morningReleased;
+      // Resolve with the first observed bounds, including a mis-draw. The
+      // caller checks the frozen bounds rather than waiting forever for them.
+      if (expectAfternoon) markAfternoonRequested(window);
+      if (holdMorning) {
+        markMorningHeld(window);
+        if (window[0] === '270' && window[1] === '480') await morningReleased;
       }
     },
   });
@@ -490,10 +493,11 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
     await page.getByRole('button', { name: 'Evening', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
     holdMorning = true;
-    await drawWindow(page, [270, 480], [1080, 1440]);
-    await morningHeld;
-    await drawWindow(page, [840, 1260], [270, 480]);
-    await afternoonRequested;
+    await drawWindow(page, [270, 480]);
+    await waitForPreparationWindow(morningHeld, ['270', '480'], requested);
+    expectAfternoon = true;
+    await drawWindow(page, [840, 1260]);
+    await waitForPreparationWindow(afternoonRequested, ['840', '1260'], requested);
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
       && document.querySelector('.evidence-tile[data-chart-id="ic:720"]'));
     const morningResponse = page.waitForResponse(response => {

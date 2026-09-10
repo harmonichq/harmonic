@@ -2079,22 +2079,32 @@ const clickQueueRow = async (page, title) => {
 // separate history fixture. Keep the generic Lever stories on their own input.
 const LEVER_FINDING = '#level .qrow[data-id="finding:late_bolus"]';
 
-/** Draw an exact clock window. The plot's minute→pixel map is linear
-    (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
-    already showing fixes it: two known edges, two known minutes. Solved rather
-    than estimated, because the story's whole subject is one exact window. */
-export const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) => {
+/** Draw against the plot's 15-minute grid, not a standing brace: the visible
+    24:00 brace edge is clamped to 23:45, so its nominal duration miscalibrates
+    pixel distances. chartXAt uses the same 0–1425 axis as minuteAtX. */
+export const drawWindow = async (page, [fromMin, toMin]) => {
   const b = await plot(page);
-  const before = await state(page);
-  const perMinute = (before.gripB - before.gripA) / (standingTo - standingFrom);
-  const xAt = (m) => b.x + before.gripA + (m - standingFrom) * perMinute;
   const y = b.y + b.h * 0.5;
-  await page.mouse.move(xAt(fromMin), y);
+  await page.mouse.move(chartXAt(b, fromMin), y);
   await page.mouse.down();
-  await page.mouse.move(xAt(toMin), y, { steps: 8 });
+  await page.mouse.move(chartXAt(b, toMin), y, { steps: 8 });
   await page.mouse.up();
   await settle(page, 500);
 };
+
+/** A drawn request must match its frozen fixture window, even if the mouse
+    misses. Report every observed window on a miss or a bounded timeout. */
+export async function waitForPreparationWindow(pending, expected, requested, timeout = 30000) {
+  let timer;
+  const evidence = () => `frozen preparation window ${JSON.stringify(expected)}; barrier saw ${JSON.stringify(requested)}`;
+  try {
+    const actual = await Promise.race([pending, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new ReplayError(`Timed out after ${timeout} ms waiting for ${evidence()}`)), timeout);
+    })]);
+    is(actual, expected, `drawn request must match ${evidence()}`);
+    return actual;
+  } finally { clearTimeout(timer); }
+}
 
 /** Resize the public clock brace's leading edge to an exact minute. */
 const resizeWindowStart = async (page, toMin, [standingFrom, standingTo]) => {
@@ -2766,7 +2776,7 @@ export const issue81PendingProjection = async (page) => {
   ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
   ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
 
-  await drawWindow(page, [900, 1260], [330, 360]);      // 15:00–21:00, delayed
+  await drawWindow(page, [900, 1260]);      // 15:00–21:00, delayed
   await waitForLevelAnimations(page);
   const pending = await state(page);
   is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
@@ -2860,7 +2870,7 @@ export const issue81FailedProjection = async (page) => {
     return candidate.status() === 500
       && url.pathname === '/api/diagnose/finding-case-file-preparation';
   });
-  await drawWindow(page, [900, 1260], [330, 360]);      // only this scoped load fails
+  await drawWindow(page, [900, 1260]);      // only this scoped load fails
   await failedResponse;
   await settle(page, 150);
   const detail = await state(page);
@@ -5008,7 +5018,7 @@ export const S126 = async (page) => {
      out of the findings response entirely. Basal (330-360) and I:C
      (720-1440) are window-filtered; ISF is not (`isfRows` takes no window
      argument), so its check draws a window that overlaps neither. */
-  await drawWindow(page, [300, 420], [0, 1440]);
+  await drawWindow(page, [300, 420]);
   const drawn1 = await state(page);
   ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
   await openAllCharts(page);
@@ -5019,7 +5029,7 @@ export const S126 = async (page) => {
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
-  await drawWindow(page, [700, 900], [0, 1440]);
+  await drawWindow(page, [700, 900]);
   const drawn2 = await state(page);
   ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
   await openAllCharts(page);
@@ -5031,7 +5041,7 @@ export const S126 = async (page) => {
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
-  await drawWindow(page, [540, 660], [0, 1440]);
+  await drawWindow(page, [540, 660]);
   const drawn3 = await state(page);
   ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
   await captureEvidence(page, 'S126-before-isf-chart-click');

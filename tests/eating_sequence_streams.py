@@ -1,6 +1,9 @@
 """Manufactured eating-sequence event streams shared by detector consumers."""
 
 from datetime import datetime, timedelta
+from dataclasses import replace
+from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
+from ciq_autotune.analyzers.eating_sequences import build_sequences
 
 from ciq_autotune.events import BasalEvent, BolusEvent, CarbEntry, CgmReading
 
@@ -47,3 +50,30 @@ def repeat_eating_stream(*, start=datetime(2040, 1, 1, 12), repeat_count=8,
 
 def carb_entry(t):
     return CarbEntry(t, 17.3, "exact", "manual")
+
+
+def sequence_episode_stream(lever, *, covered=False, competitor="mild", multi=False):
+    factory = high_carb_stream if lever == "high_carb_sequence" else repeat_eating_stream
+    bolus, _, carbs, basal = factory()
+    bolus = [replace(b, insulin=0.5, seq_num=i + 1) for i, b in enumerate(bolus)]
+    sequences = build_sequences(bolus, config=EatingSequenceConfig())
+    cgm = []
+    for index, sequence in enumerate(sequences):
+        adverse = index >= 32 if lever == "high_carb_sequence" else sequence.window_count >= 3
+        delay = 60 if covered else 330
+        stop = int((sequence.end - sequence.start).total_seconds() / 60) + 360
+        for minute in range(-15, stop + 1, 5):
+            t = sequence.start + timedelta(minutes=minute)
+            high = sequence.end + timedelta(minutes=delay) <= t < sequence.end + timedelta(minutes=delay + 25)
+            if multi:
+                high = high or sequence.end + timedelta(minutes=245) <= t < sequence.end + timedelta(minutes=260)
+            cgm.append(CgmReading(t, 270.0 if adverse and high else 110.0))
+    if competitor is not None:
+        # A separate unbolused excursion changes the existing missed-meal price
+        # without changing any sequence cohort or contested episode geometry.
+        t = bolus[0].t - timedelta(hours=12)
+        peak, duration = (260, 5) if competitor == "mild" else (390, 120)
+        cgm.extend(CgmReading(t + timedelta(minutes=m), peak if 30 <= m < 30 + duration else 110)
+                   for m in range(0, 190, 5))
+    cgm.sort(key=lambda r: r.t)
+    return bolus, cgm, carbs, [replace(basal[0], t=cgm[-1].t)]

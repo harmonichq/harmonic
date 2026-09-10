@@ -116,7 +116,7 @@ Empty shards, malformed shard arguments, missing/duplicate/wrong PASS IDs,
 deferred entries and incomplete summaries fail. The wrapper discards inherited
 `ONLY` and `STORY_CASES` before applying its own selection.
 
-CI's matrix in [ci.yml](../../../.github/workflows/ci.yml) owns the shard list.
+CI's `v2-ledger` matrix in [ci.yml](../../../.github/workflows/ci.yml) owns the shard list.
 Every artifact has a unique size/shard name and retains `selection.json`, `inputs.json`, command
 records, raw logs and captures. Concatenating `complete-replay.log` files in
 numeric shard order preserves the complete registry's story order. Keep all
@@ -223,16 +223,19 @@ or failed run is identified explicitly; it is not a successful timing proof.
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
 | V2 desk | 0m47s | 5 min | 4m13s |
 | V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
-| V2 frozen ledger, each shard at either size | Local shard: 195.91 s; derived runner time: 527.45 s (see calculation below) | 20 min | 672.55 s above the derived runner time |
+| V2 full ledger, each shard at either size | Local shard: 195.91 s; derived runner time: 527.45 s (see calculation below) | 20 min | 672.55 s above the derived runner time |
+| V2 PR smoke, each size | May select the full ledger: 24m49s successful full job; reported runner estimate approximately 35 min | 60 min | 25 min above the full-run estimate, including setup and retention |
 | First-plan reconcile | 0m38s | 5 min | 4m22s |
 | Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
 | Diagnose event comparisons | 1m28s | 5 min | 3m32s |
 | Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
 | Verify behaviour ledger | 0m36s | 5 min | 4m24s |
 
-The replay process ceiling is 900 seconds for a shard, leaving five minutes
-inside its CI job for setup, server teardown and retention. The unsharded local
-process keeps its 3000-second ceiling. Other acceptance commands keep their
+The full-ledger replay process ceiling is 900 seconds for a shard, leaving five
+minutes inside its CI job for setup, server teardown and retention. Unsharded
+local runs and PR smoke runs use 3000 seconds. A smoke run can include every
+story after a shared helper or runner change; its job reserves ten minutes
+outside the process ceiling. Other acceptance commands keep their
 existing limits. On 2026-09-10 the coordinator measured shard 1/4 at 1280×720
 on 9652979a: 195.91 s wall time, build excluded, all selected stories passed.
 The reported full-ledger local/runner timings are approximately 13/35 minutes;
@@ -244,8 +247,30 @@ from the measured local shard and the reported ratio, not an actual runner
 shard measurement. Contiguous partitions have equal counts, not proven equal
 cost. The coordinator must record the first sharded PR's actual timings in
 the receipt and retain the full local run before claiming the CI latency
-improvement or starting chunk 3. No runner tier, workflow trigger, story body
-or assertion changes in this chunk.
+improvement. No runner tier, story body or assertion changes accompany these
+CI scheduling changes.
+
+
+The backend timing sources are the same two #405 runs above: 34534519065 and
+34537427194. Pytest alone completed in 948 s and 959 s. Guidance/Plan parity
+completed in 4 s, the I:C fixture check in 1 s, and the evidence-canvas check in
+under one second. Both jobs stopped during the v2 exploration check at 228 s;
+subsequent checks did not run. Those are interrupted durations, not a measured
+complete generator-job total.
+
+| New job | Timing basis | Job ceiling | Allowance |
+| --- | --- | --- | --- |
+| Each backend test shard | 959 s divided by the configured test shards, approximately 320 s before setup | 15 min | Approximately 580 s for uneven file cost, setup and retention |
+| Generator drift checks | 233 s observed before the interruption above | 10 min | 367 s for remaining drifts, wrapper/cache checks and setup |
+| Backend aggregate | Only compares the two job results | 3 min | Runner startup and one shell command |
+| Latest nightly | One GitHub API request, bounded at 30 s | 3 min | Checkout, request and receipt retention |
+| Refresh nightly status | PR enumeration and status requests, each bounded at 30 s | 5 min | Derived operational allowance; first scheduled run supplies total timing |
+
+The backend wrapper process has an 840-second ceiling. Test-file sizes do not
+prove equal runtime; the first CI run must record each shard's actual duration.
+The cited generator runs ended before later steps, so its ceiling is derived
+from a lower bound with explicit allowance. The original thirty-minute stopgap
+from e331cb2e was cherry-picked before replacing the serial backend job.
 
 The case transport already generated each raw case once per run. It now also
 reconciles that template once, then copies it for every story. Each copy clears
@@ -284,6 +309,90 @@ receipt. This isolates store preparation; it is not an end-to-end story or CI
 speedup. Full replay logs include `# story-time <id> milliseconds=...` through
 story teardown and `# case-copy ... milliseconds=...` for each prepared copy.
 Retain both when measuring runner cost and nested case switches.
+
+## PR smoke, full main/nightly runs, and backend shards (#406 chunk 2)
+
+Every event runs the complete backend suite as deterministic, sorted-file
+round-robin partitions. Each partition receives explicit test-file arguments;
+pytest's zero-collection exit is a failure. The wrapper test enumerates `tests/`
+independently and requires the CI partitions' union to equal that inventory
+without overlap. `test-files.json` and raw output are retained per shard.
+The generator job runs the existing twelve fixture drift commands, both Python
+exploration checks and guidance/Plan parity in parallel with pytest. It also
+owns the wrapper and cache checks. The `pytest (backend)` aggregate requires
+all test shards and the generator job, preserving the existing required name.
+
+On pull requests, `v2-ledger` runs the fixed `SMOKE_STORIES` slice from
+acceptance.py plus touched stories, with one matrix partition per size. The
+fixed slice is pinned by a digest and checked against the actual dependency
+closures for every generated case, including nested variants, and all three
+destinations. It includes the utility entry points. It is not a second registry.
+
+`--base <ref>` compares the merge-base with committed HEAD. The selector uses
+Babel's parser already pinned in the frontend lockfile (run `npm ci` first).
+It compares exported story functions, object-method stories and the transitive
+helpers and constants they reference. Imported replay helpers are followed too;
+the inherited `STORY:` comments retain their namespaced identities. The v2
+files themselves have no `STORY:` comments, so their exported registry names
+supply that identity. Both old and new graphs participate, retaining deleted
+helpers and renamed bindings in the affected set. Python's AST supplies case
+recipe and materializer dependencies without executing recipes. Shared runner,
+registry, transport, generator or acceptance-driver changes select the full
+ledger. Unrelated production changes receive the fixed smoke coverage. Selection
+errors fail; they never return a silently empty subset.
+
+`smoke.json` records the comparison commits, changed files, affected symbols,
+case/destination coverage and selected IDs. `selection.json` distinguishes
+`smoke` and `full` receipts. A PR smoke receipt cannot be cited as full coverage.
+The other explicit browser suites and inherited ledgers retain their existing
+commands on every event.
+
+Main pushes and the scheduled event run every full v2 partition. ci.yml owns
+the nightly cron and both matrix inventories. Nightly runs do not publish an
+image. The `latest nightly` PR check queries the latest completed scheduled
+CI run on main and fails on a missing run, API failure, cancellation or any
+non-success conclusion. An in-progress nightly does not erase the last
+completed result. Its retained `nightly.json` identifies the run consulted.
+
+After the first scheduled CI run exists on main, configure branch protection
+to require `latest nightly` as well as the existing backend/browser checks.
+This workflow exposes that check; it does not edit repository protection.
+Before the first nightly, the check deliberately fails rather than treating
+missing history as green. At the end of every scheduled run, `nightly-status` publishes the aggregate
+backend, docs, frontend and browser result to each open PR's head and test-merge
+commit under the same `latest nightly` context. This blocks an existing PR
+whose earlier check read a green nightly before the new failure. Both a check
+and commit status with the same required name must pass, per
+[GitHub's required-check rules](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+Only the scheduled job has status-write permission; it checks out main and
+never executes a PR's code with that token. A prior failed PR check still needs
+a rerun after a healthy nightly. Retain the publication receipt and investigate
+a failed publisher before relying on the refreshed statuses.
+
+Preview a PR selection without launching Chromium:
+
+```sh
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py smoke --base origin/main --out "$evidence/smoke-selection"
+```
+
+The full local v2 ledger remains one shell command, run serially at both sizes
+once on the commit that will be pushed. Omit `--base` to run the full inventory.
+Build both shells and set PLAYWRIGHT_MODULE as documented above first. This
+cost was approximately thirteen minutes per size before the cache change.
+
+```sh
+(
+  for viewport in 1280x720 1440x900; do
+    uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "$viewport" --out "$evidence/full-$viewport" || exit
+  done
+)
+```
+
+To verify one backend partition without executing its tests, use the desired
+shard argument from ci.yml with `acceptance.py pytest --collect-only --shard
+<k/n> --out <fresh scratch>`. Without `--collect-only`, the same command executes
+that partition. Run the full backend locally with the existing `uv run python
+-m pytest` command after building both shells.
 
 ## Historical comparison renders
 

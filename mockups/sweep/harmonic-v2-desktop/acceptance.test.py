@@ -136,7 +136,7 @@ while True:
 class ReplayWrapperTest(unittest.TestCase):
     ids = [f"S{i}" for i in range(1, 113)] + [f"R{i}" for i in range(1, 19)]
 
-    def replay(self, shard=None, output=None, expected_timeout=None):
+    def replay(self, shard=None, output=None, expected_timeout=None, base=None):
         from contextlib import nullcontext
         testcase = self
         with tempfile.TemporaryDirectory() as directory:
@@ -153,7 +153,7 @@ class ReplayWrapperTest(unittest.TestCase):
                     testcase.assertNotIn("S100", captures)
                     testcase.assertIn("S99", captures)
                     testcase.assertTrue(env["CAPTURE_DIR"])
-                    if shard:
+                    if shard or base:
                         chosen = env["ONLY"].split(",")
                     else:
                         testcase.assertNotIn("ONLY", env)
@@ -162,10 +162,11 @@ class ReplayWrapperTest(unittest.TestCase):
                         "\n".join(f"PASS {id}" for id in chosen) +
                         f"\n# executed {len(chosen)} · failed 0 · deferred 0 · selected {len(chosen)}")
             with patch.object(acceptance, "inventory", return_value=self.ids) as inventory, \
+                 patch.object(acceptance, "smoke_selection", return_value=self.ids[:20]), \
                  patch.object(acceptance, "free_port"), \
                  patch.object(acceptance, "auth_server", return_value=nullcontext()), \
                  patch.dict(os.environ, {"PLAYWRIGHT_MODULE": "synthetic", "ONLY": "S99", "STORY_CASES": "S100=wrong"}):
-                acceptance.replay(Run(), "1280x720", shard)
+                acceptance.replay(Run(), "1280x720", shard, base)
                 inventory.assert_called_once()
             return json.loads((Path(directory) / "selection.json").read_text())["selected"]
 
@@ -180,12 +181,17 @@ class ReplayWrapperTest(unittest.TestCase):
         # Read the CI shard inventory; this test does not own a second list.
         import re
         workflow = (acceptance.REPO / ".github/workflows/ci.yml").read_text()
-        shards = list(dict.fromkeys(re.findall(r"--shard (\d+/\d+)", workflow)))
+        matrix = workflow.split("  v2-ledger:\n", 1)[1].split("    steps:\n", 1)[0]
+        candidates = [json.loads(value) for value in re.findall(r"'(\[.*?\])'", matrix)]
+        shards = max(candidates, key=len)
         self.assertTrue(shards)
         groups = [self.replay(acceptance.shard_arg(shard)) for shard in shards]
         self.assertEqual([id for group in groups for id in group], self.ids)
         self.assertLessEqual(max(map(len, groups)) - min(map(len, groups)), 1)
         self.assertIn("S100", [id for group in groups for id in group])
+
+    def test_smoke_uses_its_own_selection_and_allows_full_fallback_ceiling(self):
+        self.assertEqual(self.replay((1, 1), base="base", expected_timeout=3000), self.ids[:20])
 
     def test_one_shard_is_the_full_registry(self):
         self.assertEqual(self.replay((1, 1)), self.ids)
@@ -284,6 +290,202 @@ class InventoryProofTest(unittest.TestCase):
         self.assertEqual(len(ids), 130)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
+
+class BackendShardTest(unittest.TestCase):
+    def test_ci_shards_partition_every_test_file_once(self):
+        import re
+        workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
+        matrix = workflow.split('  backend-tests:\n', 1)[1].split('    steps:\n', 1)[0]
+        shards = re.search(r'shard: \[(.*?)\]', matrix).group(1).split(', ')
+        self.assertEqual(len(shards), 3)
+        groups = [acceptance.test_files(acceptance.shard_arg(shard)) for shard in shards]
+        expected = {str(path.relative_to(acceptance.REPO))
+                    for pattern in ['tests/**/test_*.py', 'tests/**/*_test.py']
+                    for path in acceptance.REPO.glob(pattern)}
+        actual = [path for group in groups for path in group]
+        self.assertTrue(expected)
+        self.assertEqual(set(actual), expected)
+        self.assertEqual(len(actual), len(expected))
+        self.assertEqual(acceptance.test_files(), sorted(expected))
+
+    def test_empty_file_shard_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(acceptance, 'REPO', Path(directory)):
+            with self.assertRaisesRegex(RuntimeError, 'no backend test files'):
+                acceptance.test_files((1, 3))
+            tests = Path(directory) / 'tests'
+            tests.mkdir()
+            (tests / 'test_one.py').write_text('def test_one(): pass\n')
+            with self.assertRaisesRegex(RuntimeError, 'empty backend test shard'):
+                acceptance.test_files((2, 3))
+
+    def test_pytest_zero_collection_exit_cannot_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory) / 'out')
+            with patch.object(acceptance, 'test_files', return_value=['tests/test_empty.py']), \
+                 patch.object(acceptance.subprocess, 'Popen') as child:
+                child.return_value.wait.return_value = 5
+                with self.assertRaisesRegex(RuntimeError, 'pytest failed'):
+                    acceptance.pytest_shard(run, (1, 3), collect_only=True)
+                self.assertEqual(child.call_args.args[0], ['uv', 'run', 'python', '-m', 'pytest',
+                                                          'tests/test_empty.py', '--collect-only', '-q'])
+
+
+class SmokeSelectionTest(unittest.TestCase):
+    replay_path = 'frontend/harmonic-v2-desktop-behavior.replay.mjs'
+    recipe_path = 'scripts/qa_e2e_cases.py'
+    source = '''
+// STORY:manufactured:S2
+export const S2 = page => first(page);
+export const S3 = page => first(page);
+export const S4 = page => unrelated(page);
+function first(page) { return second(page); }
+function second(page) { return page.read('before'); }
+function unrelated(page) { return page.read('unchanged'); }
+'''
+    recipe = '''
+def build(store): return helper(store)
+def helper(store): return 1
+QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
+'''
+
+    def select(self, before, after, recipe_before=None, recipe_after=None):
+        ids = [*acceptance.SMOKE_STORIES, 'S2', 'S3', 'S4', 'R10']
+        snapshots = {'base': {self.replay_path: before}, 'HEAD': {self.replay_path: after}}
+        recipes = {'base': recipe_before or self.recipe, 'HEAD': recipe_after or recipe_before or self.recipe}
+        changed = [path for path in snapshots['base'] if snapshots['base'][path] != snapshots['HEAD'][path]]
+        if recipes['base'] != recipes['HEAD']:
+            changed.append(self.recipe_path)
+        def git(args, **kwargs):
+            if args[1] == 'merge-base': return 'base\n'
+            if args[1] == 'diff': return '\n'.join(changed)
+            if args[1] == 'rev-parse': return 'head\n'
+            if args[1] == 'ls-tree': return '\n'.join(snapshots[args[4]])
+            if args[1] == 'show':
+                ref, path = args[2].split(':', 1)
+                return recipes[ref] if path == self.recipe_path else snapshots[ref][path]
+            self.fail(f'unexpected git command: {args}')
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            with patch.object(acceptance.subprocess, 'check_output', side_effect=git):
+                selected = acceptance.smoke_selection(run, 'base', ids)
+            return set(selected)
+
+    def test_unchanged_diff_is_exactly_fixed_smoke(self):
+        self.assertEqual(self.select(self.source, self.source), set(acceptance.SMOKE_STORIES))
+
+    def test_changed_function_selects_only_that_additional_story(self):
+        self.assertEqual(self.select(self.source, self.source.replace('page => first(page);',
+            "page => first(page, 'new');", 1)), set(acceptance.SMOKE_STORIES) | {'S2'})
+
+    def test_transitive_helper_change_selects_all_callers(self):
+        self.assertEqual(self.select(self.source, self.source.replace("'before'", "'after'")),
+                         set(acceptance.SMOKE_STORIES) | {'S2', 'S3'})
+
+    def test_deleted_helper_and_story_comment_changes_remain_visible(self):
+        self.assertEqual(self.select(self.source, self.source.replace("function second(page) { return page.read('before'); }", '')),
+                         set(acceptance.SMOKE_STORIES) | {'S2', 'S3'})
+        self.assertEqual(self.select(self.source, self.source.replace('STORY:manufactured:S2', 'STORY:renamed:S2')),
+                         set(acceptance.SMOKE_STORIES) | {'S2'})
+
+    def test_changed_recipe_selects_its_consumers(self):
+        after = self.recipe.replace("QaCase('ic-lower', build)", "QaCase('ic-lower', build, 'new recipe')")
+        self.assertEqual(self.select(self.source, self.source, recipe_after=after),
+                         set(acceptance.SMOKE_STORIES) | {'R10'})
+
+    def test_changed_recipe_helper_selects_transitive_case_consumers(self):
+        self.assertEqual(self.select(self.source, self.source, recipe_after=self.recipe.replace('return 1', 'return 2')),
+                         set(acceptance.SMOKE_STORIES) | {'S2', 'S3', 'S4', 'R10'})
+
+    def test_imported_story_and_nested_variant_are_part_of_the_graph(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            sources = {self.replay_path: "import { S9 as carried } from './carried.replay.mjs'; export const S2 = page => carried(page);",
+                       'frontend/carried.replay.mjs': "// STORY:carried:S9\nexport const S9 = page => helper(page); function helper(page) { return page.withCase('c4-missing'); }"}
+            graph, = acceptance.replay_graph(run, [sources])
+            reached = acceptance.closure(graph, [self.replay_path + '::S2'])
+            self.assertIn('frontend/carried.replay.mjs::helper', reached)
+            self.assertIn('carried:S9', graph['frontend/carried.replay.mjs::S9']['tags'])
+            self.assertIn('c4-missing', {value for key in reached for value in graph[key]['strings']})
+
+    def test_fixed_slice_is_pinned_and_covers_every_real_replay_case(self):
+        import hashlib
+        self.assertEqual(len(set(acceptance.SMOKE_STORIES)), 20)
+        self.assertEqual(hashlib.sha256(','.join(acceptance.SMOKE_STORIES).encode()).hexdigest(),
+                         '01b990c54f14c457825fa57b458f0f8a6b6ba93bb62419346599083b7b3c534b')
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            ids = acceptance.inventory(run)
+            selected = acceptance.smoke_selection(run, 'HEAD', ids)
+            self.assertEqual(set(selected), set(acceptance.SMOKE_STORIES))
+            report = json.loads((run.out / 'smoke.json').read_text())
+            all_cases = {name for cases in report['case_coverage'].values() for name in cases}
+            selected_cases = {name for id in selected for name in report['case_coverage'][id]}
+            self.assertEqual(selected_cases, all_cases)
+            self.assertEqual({destination for id in selected for destination in report['destination_coverage'][id]},
+                             {'diagnose', 'changes', 'day'})
+
+
+class NightlyCheckTest(unittest.TestCase):
+    def check(self, payload, code=200):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'manufactured/repo', 'GITHUB_TOKEN': 'synthetic'}), \
+                 patch.object(acceptance, 'request', return_value=(code, json.dumps(payload).encode(), {})) as request:
+                acceptance.nightly_check(run)
+                self.assertIn('event=schedule&branch=main&status=completed', request.call_args.args[1])
+
+    def test_successful_completed_main_nightly_passes(self):
+        self.check({'workflow_runs': [{'id': 1, 'event': 'schedule', 'head_branch': 'main',
+                                      'status': 'completed', 'conclusion': 'success'}]})
+
+    def test_missing_failed_cancelled_unrelated_and_api_failure_are_rejected(self):
+        for payload, code in [({'workflow_runs': []}, 200), ({}, 403)]:
+            with self.subTest(payload=payload, code=code), self.assertRaises(RuntimeError):
+                self.check(payload, code)
+        for overrides in [{'conclusion': 'failure'}, {'conclusion': 'cancelled'},
+                          {'event': 'push'}, {'head_branch': 'other'}, {'status': 'in_progress'}]:
+            with self.subTest(overrides=overrides), self.assertRaises(RuntimeError):
+                self.check({'workflow_runs': [{'id': 1, 'event': 'schedule', 'head_branch': 'main',
+                    'status': 'completed', 'conclusion': 'success', **overrides}]})
+
+class NightlyPublicationTest(unittest.TestCase):
+    def test_new_nightly_refreshes_both_commits_of_previously_green_prs(self):
+        head, merge = 'a' * 40, 'b' * 40
+        for result, state in [('success', 'success'), ('failure', 'failure'), ('cancelled', 'failure'), ('skipped', 'failure')]:
+            with self.subTest(result=result), tempfile.TemporaryDirectory() as directory:
+                run = acceptance.Run(Path(directory))
+                env = {'GITHUB_EVENT_NAME': 'schedule', 'GITHUB_REPOSITORY': 'manufactured/repo',
+                       'GITHUB_TOKEN': 'synthetic', 'GITHUB_RUN_ID': '123',
+                       'NIGHTLY_RESULTS': json.dumps({'backend': {'result': 'success'}, 'browser': {'result': result}})}
+                replies = [(200, json.dumps([{'number': 7, 'head': {'sha': head}, 'merge_commit_sha': merge}]).encode(), {}),
+                           (201, b'{}', {}), (201, b'{}', {})]
+                with patch.dict(os.environ, env), patch.object(acceptance, 'request', side_effect=replies) as request:
+                    acceptance.nightly_publish(run)
+                writes = request.call_args_list[1:]
+                self.assertEqual(len(writes), 2)
+                self.assertEqual({item.args[1] for item in writes},
+                                 {f'/repos/manufactured/repo/statuses/{sha}' for sha in [head, merge]})
+                self.assertTrue(all(item.kwargs['data']['context'] == 'latest nightly' for item in writes))
+                self.assertTrue(all(item.kwargs['data']['state'] == state for item in writes))
+                self.assertEqual(len(json.loads((run.out / 'nightly-statuses.json').read_text())), 2)
+
+    def test_publication_refuses_pr_execution_and_failed_api_writes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            env = {'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_REPOSITORY': 'manufactured/repo',
+                   'GITHUB_TOKEN': 'synthetic', 'GITHUB_RUN_ID': '123',
+                   'NIGHTLY_RESULTS': json.dumps({'backend': {'result': 'success'}})}
+            with patch.dict(os.environ, env), patch.object(acceptance, 'request') as request:
+                with self.assertRaisesRegex(RuntimeError, 'schedule-only'):
+                    acceptance.nightly_publish(run)
+                request.assert_not_called()
+            env['GITHUB_EVENT_NAME'] = 'schedule'
+            with patch.dict(os.environ, env), patch.object(acceptance, 'request', side_effect=[
+                (200, json.dumps([{'number': 7, 'head': {'sha': 'a' * 40}, 'merge_commit_sha': None}]).encode(), {}),
+                (403, b'{}', {}),
+            ]):
+                with self.assertRaisesRegex(RuntimeError, 'publication failed'):
+                    acceptance.nightly_publish(run)
 
 
 if __name__ == "__main__":

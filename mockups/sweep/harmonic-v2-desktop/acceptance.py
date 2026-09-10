@@ -7,6 +7,7 @@ This driver records execution, never assigns fidelity or release verdicts.
 from __future__ import annotations
 
 import argparse
+import ast
 from contextlib import contextmanager
 import hashlib
 from html.parser import HTMLParser
@@ -28,6 +29,12 @@ import xml.etree.ElementTree as ET
 REPO = Path(__file__).resolve().parents[3]
 SHOWCASE = REPO / "mockups/qa-e2e.synthetic/harmonic.sqlite"
 TOKEN = "synthetic-replay-token"
+# One fixed PR slice: all default and nested case stores, all three destinations,
+# and the Guide, Settings, Carb questions and Pump settings entry points.
+SMOKE_STORIES = (
+    "S7", "S7b", "S13", "S14", "S49", "S54", "S56", "S57", "S58", "S60", "S73",
+    "S74", "S76", "S77", "S87", "S91", "S98", "S99", "R8", "R18",
+)
 DRIFTS = [
     "scripts/gen_ic_block_fixtures.py", "scripts/gen_annotation_fixtures.py",
     "scripts/gen_chart_builder_fixtures.py", "scripts/check_demo_fixtures.py",
@@ -89,13 +96,67 @@ class Run:
         return elapsed, log.read_text()
 
 
-def request(base, path, token=None):
+def request(base, path, token=None, *, data=None):
     headers = {"Authorization": f"Bearer {token}"} if token else {}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
     try:
-        with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers), timeout=30) as r:
+        with urllib.request.urlopen(urllib.request.Request(base + path, headers=headers,
+                data=json.dumps(data).encode() if data is not None else None), timeout=30) as r:
             return r.status, r.read(), {k.lower(): v for k, v in r.headers.items()}
     except urllib.error.HTTPError as error:
         return error.code, error.read(), {k.lower(): v for k, v in error.headers.items()}
+
+
+def nightly_check(run):
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    require(re.fullmatch(r"[\w.-]+/[\w.-]+", repository), "GITHUB_REPOSITORY is required")
+    token = os.environ.get("GITHUB_TOKEN")
+    require(token, "GITHUB_TOKEN with actions:read is required")
+    code, body, _ = request("https://api.github.com",
+        f"/repos/{repository}/actions/workflows/ci.yml/runs?event=schedule&branch=main&status=completed&per_page=1", token)
+    require(code == 200, f"nightly lookup failed: HTTP {code}")
+    runs = json.loads(body).get("workflow_runs", [])
+    require(runs, "no completed nightly exists; bootstrap the schedule before requiring this check")
+    latest = runs[0]
+    (run.out / "nightly.json").write_text(json.dumps(latest, indent=2) + "\n")
+    require(latest.get("event") == "schedule" and latest.get("head_branch") == "main"
+            and latest.get("status") == "completed", "nightly lookup returned an unrelated run")
+    require(latest.get("conclusion") == "success",
+            f"latest nightly {latest.get('id')}: {latest.get('conclusion')}; see {latest.get('html_url')}")
+    print(f"latest nightly {latest['id']}: success")
+
+
+def nightly_publish(run):
+    """Refresh existing PRs too; their earlier green check is not a nightly latch."""
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    token = os.environ.get("GITHUB_TOKEN")
+    require(os.environ.get("GITHUB_EVENT_NAME") == "schedule", "nightly publication is schedule-only")
+    require(re.fullmatch(r"[\w.-]+/[\w.-]+", repository) and token, "repository and token are required")
+    results = json.loads(os.environ["NIGHTLY_RESULTS"])
+    require(results, "nightly publication requires dependency results")
+    state = "success" if all(job["result"] == "success" for job in results.values()) else "failure"
+    target = f"https://github.com/{repository}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+    receipts, page = [], 1
+    while True:
+        code, body, _ = request("https://api.github.com",
+            f"/repos/{repository}/pulls?state=open&base=main&per_page=100&page={page}", token)
+        require(code == 200, f"open PR lookup failed: HTTP {code}")
+        pulls = json.loads(body)
+        for pull in pulls:
+            # GitHub may evaluate the test merge commit instead of the head.
+            for sha in sorted({pull["head"]["sha"], pull.get("merge_commit_sha")} - {None}):
+                require(re.fullmatch(r"[0-9a-f]{40}", sha), "invalid PR commit in status response")
+                code, _, _ = request("https://api.github.com", f"/repos/{repository}/statuses/{sha}", token,
+                    data={"state": state, "context": "latest nightly", "target_url": target,
+                          "description": "Latest scheduled backend, generator and browser checks: " + state})
+                require(code == 201, f"nightly status publication failed: HTTP {code}")
+                receipts.append({"pr": pull["number"], "sha": sha, "state": state})
+        if len(pulls) < 100:
+            break
+        page += 1
+    (run.out / "nightly-statuses.json").write_text(json.dumps(receipts, indent=2) + "\n")
+    print(f"nightly {state}: refreshed {len(receipts)} PR commit statuses")
 
 
 def free_port(port):
@@ -173,15 +234,224 @@ def shard_arg(value):
     return k, n
 
 
-def replay(run, viewport, shard=None):
-    ids = inventory(run)
-    selected_ids = ids
+def test_files(shard=None):
+    files = sorted(str(path.relative_to(REPO)) for path in (REPO / "tests").rglob("*.py")
+                   if path.name.startswith("test_") or path.name.endswith("_test.py"))
+    require(files, "no backend test files found")
     if shard:
         k, n = shard
-        require(n <= len(ids), "--shard would produce empty shards")
-        selected_ids = ids[len(ids) * (k - 1) // n:len(ids) * k // n]
+        files = files[k - 1::n]
+    require(files, "empty backend test shard")
+    return files
+
+
+def pytest_shard(run, shard=None, collect_only=False):
+    files = test_files(shard)
+    (run.out / "test-files.json").write_text(json.dumps(files, indent=2) + "\n")
+    # pytest exits 5 on zero collected tests. Run.command rejects every nonzero
+    # status, including collection/import failures; no success-shaped skip.
+    run.command("pytest", ["uv", "run", "python", "-m", "pytest", *files]
+                + (["--collect-only", "-q"] if collect_only else []), timeout=840)
+
+
+def recipe_graph(source):
+    """Recipe literals and their transitive Python helpers, without executing them."""
+    tree = ast.parse(source)
+    nodes = {}
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            nodes[node.name] = node
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id != "QA_CASES":
+                    nodes[target.id] = node
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "QaCase":
+            name = node.args[0] if node.args else next(k.value for k in node.keywords if k.arg == "name")
+            if isinstance(name, ast.Name) and name.id in nodes:
+                name = nodes[name.id].value
+            require(isinstance(name, ast.Constant) and isinstance(name.value, str), "nonliteral QA case name")
+            nodes["case:" + name.value] = node
+    return {name: {"text": ast.dump(node, include_attributes=False),
+                   "deps": sorted({child.id for child in ast.walk(node)
+                                   if isinstance(child, ast.Name) and child.id in nodes})}
+            for name, node in nodes.items()}
+
+
+def closure(graph, roots):
+    found, pending = set(), list(roots)
+    while pending:
+        name = pending.pop()
+        if name in found or name not in graph:
+            continue
+        found.add(name)
+        pending.extend(graph[name]["deps"])
+    return found
+
+
+def replay_graph(run, sources):
+    """Read JS symbols with the parser already pinned by the frontend lockfile."""
+    payload = run.out / "replay-sources.json"
+    payload.write_text(json.dumps(sources))
+    script = r"""
+import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+const require = createRequire(process.cwd() + '/package.json');
+const { parse } = require('@babel/parser');
+const snapshots = JSON.parse(readFileSync(process.argv[1], 'utf8'));
+function graph(files) {
+  const result = {};
+  for (const [file, source] of Object.entries(files)) {
+    const ast = parse(source, { sourceType: 'module' });
+    const nodes = Object.create(null), imports = Object.create(null), shared = [];
+    const add = (name, node, comments = []) => {
+      nodes[name] = { node, tags: comments.flatMap(c => [...c.value.matchAll(/STORY:([\w-]+:[SR]\d+[a-z]?)/g)].map(m => m[1])) };
+    };
+    for (const top of ast.program.body) {
+      const node = top.type === 'ExportNamedDeclaration' ? top.declaration : top;
+      if (node?.type === 'ImportDeclaration') {
+        const target = posix.normalize(posix.join(posix.dirname(file), node.source.value));
+        if (files[target]) for (const spec of node.specifiers) {
+          imports[spec.local.name] = [target, spec.imported?.name || '*'];
+          add(spec.local.name, node);
+        }
+      } else if (node?.type === 'FunctionDeclaration' || node?.type === 'ClassDeclaration') {
+        add(node.id.name, node, top.leadingComments || []);
+      } else if (node?.type === 'VariableDeclaration') {
+        for (const decl of node.declarations) {
+          if (decl.id.type !== 'Identifier') { shared.push(source.slice(top.start, top.end)); continue; }
+          add(decl.id.name, decl, top.leadingComments || []);
+          if (decl.init?.type === 'ObjectExpression') for (const prop of decl.init.properties) {
+            const name = prop.key?.name || prop.key?.value;
+            if (name) add(`${decl.id.name}.${name}`, prop, prop.leadingComments || []);
+          }
+        }
+      } else shared.push(source.slice(top.start, top.end));
+    }
+    const full = name => `${file}::${name}`;
+    const ref = name => {
+      const [first, ...tail] = name.split('.');
+      if (imports[first]) {
+        const [target, imported] = imports[first];
+        return `${target}::${[imported === '*' ? '' : imported, ...tail].filter(Boolean).join('.')}`;
+      }
+      return nodes[name] ? full(name) : nodes[first] ? full(first) : null;
+    };
+    function member(node) {
+      if (node.type === 'Identifier') return node.name;
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const base = member(node.object);
+        const field = node.computed ? node.property.value : node.property.name;
+        return base && typeof field === 'string' ? `${base}.${field}` : null;
+      }
+      return null;
+    }
+    function references(node, refs, strings, destinations) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'StringLiteral') strings.add(node.value);
+      if (node.type === 'CallExpression' && ['go', 'goto'].includes(node.callee?.name)
+          && node.arguments[1]?.type === 'StringLiteral') {
+        const destination = node.arguments[1].value;
+        if (['diagnose', 'explore', 'changes', 'day'].includes(destination))
+          destinations.add(destination === 'explore' ? 'diagnose' : destination);
+      }
+      if (node.type === 'Identifier') { refs.add(node.name); return; }
+      if (['MemberExpression', 'OptionalMemberExpression'].includes(node.type)) {
+        const name = member(node);
+        if (name) { refs.add(name); return; }
+      }
+      for (const [key, value] of Object.entries(node)) {
+        if (['loc', 'start', 'end', 'leadingComments', 'trailingComments', 'innerComments'].includes(key)) continue;
+        if (Array.isArray(value)) value.forEach(child => references(child, refs, strings, destinations));
+        else if (value && typeof value === 'object') references(value, refs, strings, destinations);
+      }
+    }
+    result[full('@module')] = { text: shared.join('\n'), deps: [], strings: [], tags: [] };
+    for (const [name, { node, tags }] of Object.entries(nodes)) {
+      const refs = new Set(), strings = new Set(), destinations = new Set(); references(node, refs, strings, destinations);
+      result[full(name)] = { text: source.slice(node.start, node.end) + tags.join(','),
+        deps: [...new Set([...refs].map(ref).filter(Boolean)), full('@module')], strings: [...strings], destinations: [...destinations], tags };
+    }
+  }
+  return result;
+}
+console.log(JSON.stringify(snapshots.map(graph)));
+"""
+    _, output = run.command("replay-graph", ["node", "--input-type=module", "-e", script, str(payload)])
+    return json.loads(output)
+
+
+def smoke_selection(run, base, ids):
+    """Select the fixed smoke slice plus affected replay/recipe dependency closures."""
+    def git(*args):
+        return subprocess.check_output(["git", *args], cwd=REPO, text=True)
+
+    base = git("merge-base", base, "HEAD").strip()
+    changed_files = set(git("diff", "--name-only", base, "HEAD").splitlines())
+    sources = []
+    recipes = []
+    for ref in [base, "HEAD"]:
+        paths = git("ls-tree", "-r", "--name-only", ref, "--", "frontend", "frontend-v2").splitlines()
+        paths = [p for p in paths if p.endswith(".replay.mjs") or p == "frontend-v2/replay-cases.mjs"]
+        sources.append({path: git("show", f"{ref}:{path}") for path in paths})
+        recipes.append(recipe_graph(git("show", f"{ref}:scripts/qa_e2e_cases.py")))
+    before, after = replay_graph(run, sources)
+    changed = {key for key in before.keys() | after.keys()
+               if before.get(key) != after.get(key)}
+    changed_recipes = {key for key in recipes[0].keys() | recipes[1].keys()
+                       if recipes[0].get(key) != recipes[1].get(key)}
+    _, output = run.command("story-cases", ["node", "--input-type=module", "-e",
+        "import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';"
+        "import {storyCase} from './frontend-v2/replay-cases.mjs';"
+        "console.log(JSON.stringify(Object.fromEntries(REGISTRY.map(([id])=>[id,storyCase(id)]))))"])
+    defaults = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
+    require(len(SMOKE_STORIES) == 20 and len(set(SMOKE_STORIES)) == 20
+            and set(SMOKE_STORIES) <= set(ids), "smoke inventory differs from the frozen registry")
+    case_names = {key.removeprefix("case:") for graph in recipes for key in graph if key.startswith("case:")}
+    selected, reasons, coverage, destinations = set(SMOKE_STORIES), {}, {}, {}
+    # Changes to the runner itself, registry, transport or generator can affect
+    # every story. They must not disappear behind a function-only comparison.
+    global_files = {"scripts/gen_qa_e2e_db.py", "frontend-v2/replay-cases.mjs",
+                    "frontend-v2/capture.mjs", "frontend/browser-runner.js",
+                    "mockups/sweep/harmonic-v2-desktop/acceptance.py", "package-lock.json"}
+    global_symbols = {"frontend/harmonic-v2-desktop-behavior.replay.mjs::" + name
+                      for name in ["REGISTRY", "main", "openApp", "requireEnvironment", "requireAssets"]}
+    global_change = bool(changed_files & global_files or changed & global_symbols)
+    for identity in ids:
+        touched, used_cases, visited = set(), {defaults[identity]}, set()
+        for graph in [before, after]:
+            roots = [f"frontend-v2/c{chunk}.replay.mjs::C{chunk}_STORIES.{identity}" for chunk in [4, 3, 2]]
+            root = next((key for key in roots if key in graph),
+                        f"frontend/harmonic-v2-desktop-behavior.replay.mjs::{identity}")
+            dependencies = closure(graph, [root])
+            touched.update(dependencies & changed)
+            visited.update(value for key in dependencies for value in graph[key].get("destinations", []))
+            used_cases.update(value for key in dependencies for value in graph[key].get("strings", []) if value in case_names)
+        coverage[identity] = sorted(used_cases)
+        destinations[identity] = sorted(visited)
+        for graph in recipes:
+            touched.update(closure(graph, ["case:" + name for name in used_cases]) & changed_recipes)
+        if global_change or touched:
+            selected.add(identity)
+            reasons[identity] = sorted(touched) if not global_change else ["shared replay infrastructure"]
+    (run.out / "smoke.json").write_text(json.dumps({"base": base, "head": git("rev-parse", "HEAD").strip(),
+        "changed_files": sorted(changed_files), "reasons": reasons, "case_coverage": coverage, "destination_coverage": destinations,
+        "fixed": SMOKE_STORIES, "selected": [identity for identity in ids if identity in selected]}, indent=2) + "\n")
+    return [identity for identity in ids if identity in selected]
+
+
+def replay(run, viewport, shard=None, base=None):
+    ids = inventory(run)
+    selected_ids = smoke_selection(run, base, ids) if base else ids
+    if shard:
+        k, n = shard
+        require(n <= len(selected_ids), "--shard would produce empty shards")
+        selected_ids = selected_ids[len(selected_ids) * (k - 1) // n:len(selected_ids) * k // n]
     (run.out / "selection.json").write_text(json.dumps({
         "viewport": viewport, "shard": shard, "registry": ids, "selected": selected_ids,
+        "mode": "smoke" if base else "full", "base": base,
     }, indent=2) + "\n")
     require(os.environ.get("PLAYWRIGHT_MODULE"), "PLAYWRIGHT_MODULE is required")
     free_port(8765)
@@ -196,11 +466,11 @@ def replay(run, viewport, shard=None):
     # An inherited developer selection must never turn acceptance into a subset.
     env.pop("ONLY", None)
     env.pop("STORY_CASES", None)
-    if shard:
+    if shard or base:
         env["ONLY"] = ",".join(selected_ids)
     with auth_server(run):
         # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=900 if shard else 3000)
+        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=900 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
@@ -460,22 +730,40 @@ def package(run, image=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache"])
+    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache", "pytest", "smoke", "nightly", "nightly-publish"])
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--image", help="package leg: use an image built by the preceding CI step")
     parser.add_argument("--viewport", choices=["1280x720", "1440x900"], default="1280x720")
-    parser.add_argument("--shard", type=shard_arg, help="replay: contiguous registry partition k/n")
+    parser.add_argument("--shard", type=shard_arg, help="replay or pytest: deterministic partition k/n")
+    parser.add_argument("--base", help="replay or smoke: include the fixed PR slice and stories touched since this Git base")
+    parser.add_argument("--collect-only", action="store_true", help="pytest: verify shard collection without executing tests")
     parser.add_argument("--check", action="store_true", help="case-cache: verify generation and copy isolation")
     parser.add_argument("--benchmark", action="store_true", help="case-cache: opt in to before/after preparation measurements")
     parser.add_argument("--case", action="append", help="case-cache: select this case (repeatable; default: registry cases)")
     args = parser.parse_args()
-    if args.shard and args.leg != "replay":
-        parser.error("--shard is only valid for replay")
+    if args.shard and args.leg not in {"replay", "pytest"}:
+        parser.error("--shard is only valid for replay or pytest")
+    if args.base and args.leg not in {"replay", "smoke"}:
+        parser.error("--base is only valid for replay or smoke")
+    if args.leg == "smoke" and not args.base:
+        parser.error("smoke requires --base")
+    if args.collect_only and args.leg != "pytest":
+        parser.error("--collect-only is only valid for pytest")
     if (args.check or args.case or args.benchmark) and args.leg != "case-cache":
         parser.error("--check, --benchmark and --case are only valid for case-cache")
     run = Run(args.out)
     if args.leg == "replay":
-        replay(run, args.viewport, args.shard)
+        replay(run, args.viewport, args.shard, args.base)
+    elif args.leg == "pytest":
+        pytest_shard(run, args.shard, args.collect_only)
+    elif args.leg == "smoke":
+        ids = inventory(run)
+        selected = smoke_selection(run, args.base, ids)
+        print(f"smoke: {len(selected)} selected")
+    elif args.leg == "nightly":
+        nightly_check(run)
+    elif args.leg == "nightly-publish":
+        nightly_publish(run)
     elif args.leg == "package":
         package(run, args.image)
     elif args.leg == "probe":

@@ -23,8 +23,12 @@ Amendment 2 supersedes amendment 1's publication ruling: the v2 replay depends
 on six private exploration JSON files and stays private. Its c3/c4 importing
 tests and the follow-up browser test that launches it are also excluded from
 the public tree. Literal prototype paths and comments remain visible in source.
-The tracked files retain their exact-path synthetic-date provenance pins,
-including c3's calendar label. No scan threshold or dose/ratio baseline changed.
+Amendment 3 removes scan-config pins for these excluded files, including c3's
+calendar-label prose exemption, because the public-tree scan never sees them.
+The generated dose/ratio baseline remains the only prose exemption; no scan
+threshold or dose/ratio baseline changed.
+CI steps naming private sweep tools follow the existing precedent documented in
+CLAUDE.md: private exploration `--check` commands also live in ci.yml.
 
 Obligation 6 previously lacked I:C, Correction factor and whole-profile retained
 follow-up records, and a real missing-outcome rendering input. `c4-ic`, `c4-isf`,

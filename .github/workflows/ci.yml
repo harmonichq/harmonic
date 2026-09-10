@@ -146,7 +146,7 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@v5
-      - name: Require the latest completed main nightly to be green
+      - name: Require the latest completed main nightly aggregate to be green and fresh
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py nightly --out "$RUNNER_TEMP/latest-nightly"
@@ -401,14 +401,14 @@ jobs:
     needs: browser-gate-setup
     runs-on: ubuntu-latest
     # A PR touching shared replay infrastructure can select the whole ledger.
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 60 || 20 }}
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 60 || 18 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
       fail-fast: false
       matrix:
         viewport: [1280x720, 1440x900]
-        shard: ${{ fromJSON(github.event_name == 'pull_request' && '["1/1"]' || '["1/4","2/4","3/4","4/4"]') }}
+        shard: ${{ fromJSON('{"smoke":["1/1"],"full":["1/4","2/4","3/4","4/4"]}')[github.event_name == 'pull_request' && 'smoke' || 'full'] }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -470,29 +470,41 @@ jobs:
           V2_RESULT: ${{ needs.v2-ledger.result }}
         run: test "$BROWSER_LEGS_RESULT" = success && test "$V2_RESULT" = success
 
+  nightly-result:
+    name: nightly result
+    needs: [backend, docs, frontend, frontend-browser]
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compute the one nightly aggregate read by PRs and publication
+        env:
+          NIGHTLY_RESULTS: ${{ toJSON(needs) }}
+        run: python3 -c 'import json,os,sys; sys.exit(not all(job["result"] == "success" for job in json.loads(os.environ["NIGHTLY_RESULTS"]).values()))'
+
   nightly-status:
     name: refresh nightly status on open PRs
-    needs: [backend, docs, frontend, frontend-browser]
+    needs: nightly-result
     if: ${{ always() && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
       pull-requests: read
       statuses: write
     steps:
       - uses: actions/checkout@v5
-      - name: Publish the nightly dependency result on current PR commits
+      - name: Read and publish the nightly aggregate on current PR commits
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          NIGHTLY_RESULTS: ${{ toJSON(needs) }}
         run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py nightly-publish --out "$RUNNER_TEMP/nightly-status"
       - name: Retain refreshed commit statuses
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nightly-statuses
-          path: ${{ runner.temp }}/nightly-status/nightly-statuses.json
+          path: ${{ runner.temp }}/nightly-status/*.json
 
   docker-pr:
     name: build + smoke-test image

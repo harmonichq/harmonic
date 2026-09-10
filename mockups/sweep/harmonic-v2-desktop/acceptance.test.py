@@ -175,15 +175,15 @@ class ReplayWrapperTest(unittest.TestCase):
 
     def test_wrapper_applies_both_ceilings_stated_in_acceptance(self):
         self.replay(expected_timeout=3000)
-        self.replay((1, 1), expected_timeout=900)
+        self.replay((1, 1), expected_timeout=780)
 
     def test_shards_concatenate_to_the_complete_registry_without_overlap(self):
         # Read the CI shard inventory; this test does not own a second list.
         import re
         workflow = (acceptance.REPO / ".github/workflows/ci.yml").read_text()
         matrix = workflow.split("  v2-ledger:\n", 1)[1].split("    steps:\n", 1)[0]
-        candidates = [json.loads(value) for value in re.findall(r"'(\[.*?\])'", matrix)]
-        shards = max(candidates, key=len)
+        inventories = json.loads(re.search(r"fromJSON\('([^']+)'\)", matrix).group(1))
+        shards = inventories['full']
         self.assertTrue(shards)
         groups = [self.replay(acceptance.shard_arg(shard)) for shard in shards]
         self.assertEqual([id for group in groups for id in group], self.ids)
@@ -325,9 +325,11 @@ class BackendShardTest(unittest.TestCase):
                  patch.object(acceptance.subprocess, 'Popen') as child:
                 child.return_value.wait.return_value = 5
                 with self.assertRaisesRegex(RuntimeError, 'pytest failed'):
-                    acceptance.pytest_shard(run, (1, 3), collect_only=True)
+                    acceptance.pytest_shard(run, (1, 3))
                 self.assertEqual(child.call_args.args[0], ['uv', 'run', 'python', '-m', 'pytest',
-                                                          'tests/test_empty.py', '--collect-only', '-q'])
+                                                          'tests/test_empty.py'])
+                # Pin the actual process ceiling stated in ACCEPTANCE.md.
+                child.return_value.wait.assert_called_once_with(timeout=840)
 
 
 class SmokeSelectionTest(unittest.TestCase):
@@ -425,67 +427,125 @@ QA_CASES = (QaCase('showcase', build), QaCase('ic-lower', build))
                              {'diagnose', 'changes', 'day'})
 
 
-class NightlyCheckTest(unittest.TestCase):
-    def check(self, payload, code=200):
-        with tempfile.TemporaryDirectory() as directory:
-            run = acceptance.Run(Path(directory))
-            with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'manufactured/repo', 'GITHUB_TOKEN': 'synthetic'}), \
-                 patch.object(acceptance, 'request', return_value=(code, json.dumps(payload).encode(), {})) as request:
-                acceptance.nightly_check(run)
-                self.assertIn('event=schedule&branch=main&status=completed', request.call_args.args[1])
+class NightlyTest(unittest.TestCase):
+    now = acceptance.datetime.fromisoformat('2026-09-10T12:00:00+00:00')
+    env = {'GITHUB_EVENT_NAME': 'schedule', 'GITHUB_REPOSITORY': 'manufactured/repo',
+           'GITHUB_TOKEN': 'synthetic', 'GITHUB_RUN_ID': '123'}
 
-    def test_successful_completed_main_nightly_passes(self):
-        self.check({'workflow_runs': [{'id': 1, 'event': 'schedule', 'head_branch': 'main',
-                                      'status': 'completed', 'conclusion': 'success'}]})
+    def run_data(self, age=0, **changes):
+        from datetime import timedelta
+        return {'id': 123, 'event': 'schedule', 'head_branch': 'main', 'status': 'completed',
+                'conclusion': 'success', 'run_started_at': (self.now - timedelta(hours=age)).isoformat(),
+                **changes}
 
-    def test_missing_failed_cancelled_unrelated_and_api_failure_are_rejected(self):
-        for payload, code in [({'workflow_runs': []}, 200), ({}, 403)]:
-            with self.subTest(payload=payload, code=code), self.assertRaises(RuntimeError):
-                self.check(payload, code)
-        for overrides in [{'conclusion': 'failure'}, {'conclusion': 'cancelled'},
-                          {'event': 'push'}, {'head_branch': 'other'}, {'status': 'in_progress'}]:
-            with self.subTest(overrides=overrides), self.assertRaises(RuntimeError):
-                self.check({'workflow_runs': [{'id': 1, 'event': 'schedule', 'head_branch': 'main',
-                    'status': 'completed', 'conclusion': 'success', **overrides}]})
+    def job_data(self, **changes):
+        return {'name': 'nightly result', 'status': 'completed', 'conclusion': 'success', **changes}
 
-class NightlyPublicationTest(unittest.TestCase):
-    def test_new_nightly_refreshes_both_commits_of_previously_green_prs(self):
-        head, merge = 'a' * 40, 'b' * 40
-        for result, state in [('success', 'success'), ('failure', 'failure'), ('cancelled', 'failure'), ('skipped', 'failure')]:
-            with self.subTest(result=result), tempfile.TemporaryDirectory() as directory:
+    def reply(self, value, code=200):
+        return code, json.dumps(value).encode(), {}
+
+    def test_both_callers_read_the_same_aggregate_and_freshness_boundary(self):
+        # A failed publication changes the workflow conclusion, not its test aggregate.
+        for age, aggregate, workflow, expected in [
+            (0, 'success', 'failure', 'success'),
+            (36, 'success', 'success', 'success'),
+            (36.001, 'success', 'success', 'failure'),
+            (-1, 'success', 'success', 'failure'),
+            (0, 'failure', 'success', 'failure'),
+            (0, 'cancelled', 'cancelled', 'failure'),
+            (0, 'skipped', 'success', 'failure'),
+        ]:
+            with self.subTest(age=age, aggregate=aggregate, workflow=workflow), tempfile.TemporaryDirectory() as directory:
+                data = self.run_data(age, conclusion=workflow)
+                jobs = {'jobs': [self.job_data(conclusion=aggregate)]}
                 run = acceptance.Run(Path(directory))
-                env = {'GITHUB_EVENT_NAME': 'schedule', 'GITHUB_REPOSITORY': 'manufactured/repo',
-                       'GITHUB_TOKEN': 'synthetic', 'GITHUB_RUN_ID': '123',
-                       'NIGHTLY_RESULTS': json.dumps({'backend': {'result': 'success'}, 'browser': {'result': result}})}
-                replies = [(200, json.dumps([{'number': 7, 'head': {'sha': head}, 'merge_commit_sha': merge}]).encode(), {}),
-                           (201, b'{}', {}), (201, b'{}', {})]
-                with patch.dict(os.environ, env), patch.object(acceptance, 'request', side_effect=replies) as request:
-                    acceptance.nightly_publish(run)
-                writes = request.call_args_list[1:]
-                self.assertEqual(len(writes), 2)
-                self.assertEqual({item.args[1] for item in writes},
-                                 {f'/repos/manufactured/repo/statuses/{sha}' for sha in [head, merge]})
-                self.assertTrue(all(item.kwargs['data']['context'] == 'latest nightly' for item in writes))
-                self.assertTrue(all(item.kwargs['data']['state'] == state for item in writes))
-                self.assertEqual(len(json.loads((run.out / 'nightly-statuses.json').read_text())), 2)
+                with patch.dict(os.environ, self.env), patch.object(acceptance, 'datetime', wraps=acceptance.datetime) as clock:
+                    clock.now.return_value = self.now
+                    with patch.object(acceptance, 'request', side_effect=[
+                        self.reply({'workflow_runs': [data]}), self.reply(jobs),
+                    ]) as request:
+                        if expected == 'success':
+                            acceptance.nightly_check(run)
+                        else:
+                            with self.assertRaisesRegex(RuntimeError, 'failed or older than 36 h'):
+                                acceptance.nightly_check(run)
+                        self.assertIn('event=schedule&branch=main&status=completed', request.call_args_list[0].args[1])
+                    checked = json.loads((run.out / 'nightly.json').read_text())
+                    self.assertEqual(checked['state'], expected)
+                    # Publication can read the completed aggregate before the whole run ends.
+                    data['status'] = 'in_progress'
+                    head, merge = 'a' * 40, 'b' * 40
+                    with patch.object(acceptance, 'request', side_effect=[
+                        self.reply(data), self.reply(jobs),
+                        self.reply([{'number': 7, 'head': {'sha': head}, 'merge_commit_sha': merge}]),
+                        self.reply({}, 201), self.reply({}, 201),
+                    ]) as request:
+                        acceptance.nightly_publish(run)
+                    self.assertEqual(request.call_args_list[0].args[1], '/repos/manufactured/repo/actions/runs/123')
+                    writes = request.call_args_list[3:]
+                    self.assertEqual({item.args[1] for item in writes},
+                                     {f'/repos/manufactured/repo/statuses/{sha}' for sha in [head, merge]})
+                    self.assertTrue(all(item.kwargs['data']['context'] == 'latest nightly' for item in writes))
+                    self.assertTrue(all(item.kwargs['data']['state'] == expected for item in writes))
+                    published = json.loads((run.out / 'nightly.json').read_text())
+                    self.assertEqual(published['state'], checked['state'])
+                    self.assertEqual(published['aggregate'], checked['aggregate'])
+                    self.assertEqual(len(json.loads((run.out / 'nightly-statuses.json').read_text())), 2)
+
+    def test_missing_unrelated_incomplete_and_api_failure_are_rejected(self):
+        for replies in [
+            [self.reply({}, 403)], [self.reply({'workflow_runs': []})],
+            *[[self.reply({'workflow_runs': [self.run_data(**changes)]})] for changes in
+              [{'event': 'push'}, {'head_branch': 'other'}, {'status': 'in_progress'}]],
+            [self.reply({'workflow_runs': [self.run_data()]}), self.reply({}, 403)],
+            *[[self.reply({'workflow_runs': [self.run_data()]}), self.reply({'jobs': jobs})] for jobs in
+              [[], [self.job_data(name='unrelated')], [self.job_data(status='in_progress')],
+               [self.job_data(), self.job_data()]]],
+        ]:
+            with self.subTest(replies=replies), tempfile.TemporaryDirectory() as directory:
+                with patch.dict(os.environ, self.env), patch.object(acceptance, 'request', side_effect=replies):
+                    with self.assertRaises(RuntimeError):
+                        acceptance.nightly_check(acceptance.Run(Path(directory)))
+
+    def test_job_pagination_finds_the_named_aggregate(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, self.env), \
+             patch.object(acceptance, 'datetime', wraps=acceptance.datetime) as clock:
+            clock.now.return_value = self.now
+            with patch.object(acceptance, 'request', side_effect=[
+                self.reply({'workflow_runs': [self.run_data()]}),
+                self.reply({'jobs': [self.job_data(name='other')] * 100}),
+                self.reply({'jobs': [self.job_data()]}),
+            ]) as request:
+                acceptance.nightly_check(acceptance.Run(Path(directory)))
+                self.assertIn('filter=latest&per_page=100&page=2', request.call_args.args[1])
 
     def test_publication_refuses_pr_execution_and_failed_api_writes(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, self.env):
             run = acceptance.Run(Path(directory))
-            env = {'GITHUB_EVENT_NAME': 'pull_request', 'GITHUB_REPOSITORY': 'manufactured/repo',
-                   'GITHUB_TOKEN': 'synthetic', 'GITHUB_RUN_ID': '123',
-                   'NIGHTLY_RESULTS': json.dumps({'backend': {'result': 'success'}})}
-            with patch.dict(os.environ, env), patch.object(acceptance, 'request') as request:
+            with patch.dict(os.environ, {'GITHUB_EVENT_NAME': 'pull_request'}), patch.object(acceptance, 'request') as request:
                 with self.assertRaisesRegex(RuntimeError, 'schedule-only'):
                     acceptance.nightly_publish(run)
                 request.assert_not_called()
-            env['GITHUB_EVENT_NAME'] = 'schedule'
-            with patch.dict(os.environ, env), patch.object(acceptance, 'request', side_effect=[
-                (200, json.dumps([{'number': 7, 'head': {'sha': 'a' * 40}, 'merge_commit_sha': None}]).encode(), {}),
-                (403, b'{}', {}),
+            with patch.object(acceptance, 'request', side_effect=[
+                self.reply(self.run_data()), self.reply({'jobs': [self.job_data()]}),
+                self.reply([{'number': 7, 'head': {'sha': 'a' * 40}, 'merge_commit_sha': None}]),
+                self.reply({}, 403),
             ]):
                 with self.assertRaisesRegex(RuntimeError, 'publication failed'):
                     acceptance.nightly_publish(run)
+
+    def test_ci_computes_one_aggregate_for_both_readers(self):
+        workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
+        result = workflow.split('  nightly-result:\n', 1)[1].split('  nightly-status:\n', 1)[0]
+        self.assertIn('    name: nightly result\n', result)
+        self.assertIn('    needs: [backend, docs, frontend, frontend-browser]\n', result)
+        self.assertIn('    needs: nightly-result\n', workflow.split('  nightly-status:\n', 1)[1])
+        command = result.split("run: python3 -c '", 1)[1].split("'", 1)[0]
+        for state in ['success', 'failure', 'cancelled', 'skipped']:
+            with self.subTest(state=state):
+                env = {**os.environ, 'NIGHTLY_RESULTS': json.dumps({'backend': {'result': state}, 'frontend': {'result': 'success'}})}
+                executed = subprocess.run([sys.executable, '-c', command], env=env, capture_output=True)
+                self.assertEqual(executed.returncode, 0 if state == 'success' else 1)
 
 
 if __name__ == "__main__":

@@ -157,11 +157,13 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verif
 fixed smoke slice and stories affected by replay/helper or case-recipe changes,
 at both sizes. Pushes to main and the nightly schedule run its complete sharded
 inventory. The other explicit browser suites and inherited ledgers keep running
-on every event. `latest nightly` exposes the latest completed main nightly's
-result for branch protection to require; its consulted run is retained as an
-artifact. The scheduled completion job also refreshes that status on open PR
-commits, so an earlier green PR check cannot hide a later failed nightly. The backend runs all test files across its matrix partitions while a
-separate generator job checks drift. The CI matrices and
+on every event. The PR `latest nightly` check and scheduled publisher read the
+same `nightly result` job aggregate. A result older than 36 hours from the
+scheduled run's start does not satisfy either reader. Both retain the consulted
+run and age as an artifact. The scheduled completion job also refreshes that
+status on open PR commits, so an earlier green PR check cannot hide a later
+failed nightly. The backend runs all test files across its matrix partitions
+while a separate generator job checks drift. The CI matrices and
 `mockups/sweep/harmonic-v2-desktop/ACCEPTANCE.md` own the commands, selection rules
 and measured ceilings.
 

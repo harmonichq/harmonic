@@ -223,32 +223,37 @@ or failed run is identified explicitly; it is not a successful timing proof.
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
 | V2 desk | 0m47s | 5 min | 4m13s |
 | V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
-| V2 full ledger, each shard at either size | Local shard: 195.91 s; derived runner time: 527.45 s (see calculation below) | 20 min | 672.55 s above the derived runner time |
-| V2 PR smoke, each size | May select the full ledger: 24m49s successful full job; reported runner estimate approximately 35 min | 60 min | 25 min above the full-run estimate, including setup and retention |
+| V2 full ledger, each shard at either size | Measured-derived: 1575 / 4 = 393.75 s (see calculation below) | 18 min | 686.25 s above the derived shard time |
+| V2 PR smoke, each size | May select the full ledger: measured jobs 1430 s / 1575 s, with story failures | 60 min | 2025 s above the longer measured job, including setup and retention |
 | First-plan reconcile | 0m38s | 5 min | 4m22s |
 | Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
 | Diagnose event comparisons | 1m28s | 5 min | 3m32s |
 | Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
 | Verify behaviour ledger | 0m36s | 5 min | 4m24s |
 
-The full-ledger replay process ceiling is 900 seconds for a shard, leaving five
+The full-ledger replay process ceiling is 780 seconds for a shard, leaving five
 minutes inside its CI job for setup, server teardown and retention. Unsharded
 local runs and PR smoke runs use 3000 seconds. A smoke run can include every
 story after a shared helper or runner change; its job reserves ten minutes
-outside the process ceiling. Other acceptance commands keep their
-existing limits. On 2026-09-10 the coordinator measured shard 1/4 at 1280×720
-on 9652979a: 195.91 s wall time, build excluded, all selected stories passed.
-The reported full-ledger local/runner timings are approximately 13/35 minutes;
-the runner figure comes from the interrupted #405 CI runs. Applying that ratio
-gives `195.91 × 35 / 13 = 527.45 s` expected runner time. The process ceiling
-therefore leaves 372.55 s of headroom over that derived time; the job adds the
-setup/teardown/retention allowance stated above. These ceilings are derived
-from the measured local shard and the reported ratio, not an actual runner
-shard measurement. Contiguous partitions have equal counts, not proven equal
-cost. The coordinator must record the first sharded PR's actual timings in
-the receipt and retain the full local run before claiming the CI latency
-improvement. No runner tier, story body or assertion changes accompany these
-CI scheduling changes.
+outside the process ceiling. Other acceptance commands keep their existing limits.
+
+The coordinator measured complete unsharded jobs in CI run
+[34539350410](https://github.com/harmonichq/harmonic/actions/runs/34539350410)
+on e331cb2e: 1430 s at 1280×720 (128/130 passed) and 1575 s at 1440×900
+(129/130 passed). These are measured runner durations with story failures,
+not green acceptance evidence. The measured-derived shard time is
+`1575 / 4 = 393.75 s`. Preserve the prior 372.55 s process headroom allowance:
+`393.75 + 372.55 = 766.30 s`, rounded up to a whole minute gives 780 s.
+Adding the same five-minute setup/teardown/retention allowance gives an
+18-minute job. The actual process headroom after rounding is 386.25 s.
+The older local shard measurement remains 195.91 s for shard 1/4 at 1280×720
+on 9652979a, with build excluded and all 32 stories passing; it is no longer
+the basis of the runner derivation.
+
+Contiguous partitions have equal counts, not proven equal cost. The coordinator
+must record the first sharded PR's actual timings in the receipt and retain the
+full local run before claiming the CI latency improvement. No runner tier,
+story body or assertion changes accompany these CI scheduling changes.
 
 
 The backend timing sources are the same two #405 runs above: 34534519065 and
@@ -263,7 +268,8 @@ complete generator-job total.
 | Each backend test shard | 959 s divided by the configured test shards, approximately 320 s before setup | 15 min | Approximately 580 s for uneven file cost, setup and retention |
 | Generator drift checks | 233 s observed before the interruption above | 10 min | 367 s for remaining drifts, wrapper/cache checks and setup |
 | Backend aggregate | Only compares the two job results | 3 min | Runner startup and one shell command |
-| Latest nightly | One GitHub API request, bounded at 30 s | 3 min | Checkout, request and receipt retention |
+| Nightly result aggregate | Only compares backend, docs, frontend and browser results | 3 min | Runner startup and one Python command |
+| Latest nightly | Run and aggregate-job API lookups, each bounded at 30 s | 3 min | Checkout, requests and receipt retention |
 | Refresh nightly status | PR enumeration and status requests, each bounded at 30 s | 5 min | Derived operational allowance; first scheduled run supplies total timing |
 
 The backend wrapper process has an 840-second ceiling. Test-file sizes do not
@@ -329,7 +335,8 @@ closures for every generated case, including nested variants, and all three
 destinations. It includes the utility entry points. It is not a second registry.
 
 `--base <ref>` compares the merge-base with committed HEAD. The selector uses
-Babel's parser already pinned in the frontend lockfile (run `npm ci` first).
+Babel's parser declared as a direct devDependency and pinned in the frontend
+lockfile (run `npm ci` first).
 It compares exported story functions, object-method stories and the transitive
 helpers and constants they reference. Imported replay helpers are followed too;
 the inherited `STORY:` comments retain their namespaced identities. The v2
@@ -349,31 +356,38 @@ commands on every event.
 
 Main pushes and the scheduled event run every full v2 partition. ci.yml owns
 the nightly cron and both matrix inventories. Nightly runs do not publish an
-image. The `latest nightly` PR check queries the latest completed scheduled
-CI run on main and fails on a missing run, API failure, cancellation or any
-non-success conclusion. An in-progress nightly does not erase the last
-completed result. Its retained `nightly.json` identifies the run consulted.
+image. The `nightly result` job computes the backend, docs, frontend and browser
+aggregate once. The PR `latest nightly` check and the scheduled publisher both
+read that same job's conclusion through the shared `nightly_result()` lookup.
+The PR reads it from the latest completed scheduled CI run on main; publication
+reads it from its own scheduled run after the aggregate finishes. Neither
+reader substitutes the overall workflow conclusion or recomputes the job results.
+The [workflow-jobs API](https://docs.github.com/en/rest/actions/workflow-jobs)
+lookup uses the latest attempt and follows pagination.
 
-After the first scheduled CI run exists on main, configure branch protection
-to require `latest nightly` as well as the existing backend/browser checks.
-This workflow exposes that check; it does not edit repository protection.
-Before the first nightly, the check deliberately fails rather than treating
-missing history as green. At the end of every scheduled run, `nightly-status` publishes the aggregate
-backend, docs, frontend and browser result to each open PR's head and test-merge
-commit under the same `latest nightly` context. This blocks an existing PR
-whose earlier check read a green nightly before the new failure. Both a check
-and commit status with the same required name must pass, per
+A result older than 36 hours, measured from the scheduled run's `run_started_at`,
+does not satisfy either reader, even when its aggregate is green. Exactly 36
+hours is allowed. Missing history, a missing/incomplete aggregate and API errors
+fail closed. A failed, cancelled or skipped aggregate fails. An in-progress
+nightly does not erase the last completed result used by a PR. Both readers
+retain `nightly.json` with the run, aggregate, age and resulting state.
+
+After the first scheduled CI run with the aggregate exists on main, configure
+branch protection to require `latest nightly` as well as the existing
+backend/browser checks. This workflow exposes the check; it does not edit
+repository protection. Before that first nightly, the check fails.
+At the end of every scheduled run, `nightly-status` publishes the shared result
+to each open PR's head and test-merge commit under the same `latest nightly`
+context. This blocks an existing PR whose earlier check read a green nightly
+before the new failure. Both a check and commit status with the same required
+name must pass, per
 [GitHub's required-check rules](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
-Only the scheduled job has status-write permission; it checks out main and
-never executes a PR's code with that token. A prior failed PR check still needs
-a rerun after a healthy nightly. Retain the publication receipt and investigate
-a failed publisher before relying on the refreshed statuses.
-
-Preview a PR selection without launching Chromium:
-
-```sh
-uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py smoke --base origin/main --out "$evidence/smoke-selection"
-```
+Only the scheduled publisher has status-write permission; it checks out main
+and never executes a PR's code with that token. A prior failed PR check still
+needs a rerun after a healthy nightly. Freshness is evaluated when a check or
+publication runs; GitHub statuses do not expire by themselves. Retain the
+publication receipt and investigate a failed publisher before relying on the
+refreshed statuses. A publisher failure does not change the shared test aggregate.
 
 The full local v2 ledger remains one shell command, run serially at both sizes
 once on the commit that will be pushed. Omit `--base` to run the full inventory.
@@ -388,11 +402,11 @@ cost was approximately thirteen minutes per size before the cache change.
 )
 ```
 
-To verify one backend partition without executing its tests, use the desired
-shard argument from ci.yml with `acceptance.py pytest --collect-only --shard
-<k/n> --out <fresh scratch>`. Without `--collect-only`, the same command executes
-that partition. Run the full backend locally with the existing `uv run python
--m pytest` command after building both shells.
+To execute a backend partition, use the desired shard argument from ci.yml
+with `acceptance.py pytest --shard <k/n> --out <fresh scratch>`. Run the full
+backend locally with the existing `uv run python -m pytest` command after
+building both shells. PR smoke selection is part of `replay --base <ref>`;
+it has no separate preview command.
 
 ## Historical comparison renders
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import ast
 from contextlib import contextmanager
+from datetime import datetime, timezone
 import hashlib
 from html.parser import HTMLParser
 import json
@@ -108,23 +109,46 @@ def request(base, path, token=None, *, data=None):
         return error.code, error.read(), {k.lower(): v for k, v in error.headers.items()}
 
 
-def nightly_check(run):
+def nightly_result(run, run_id=None):
+    """Both callers read the one CI aggregate, with the same freshness rule."""
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     require(re.fullmatch(r"[\w.-]+/[\w.-]+", repository), "GITHUB_REPOSITORY is required")
     token = os.environ.get("GITHUB_TOKEN")
     require(token, "GITHUB_TOKEN with actions:read is required")
-    code, body, _ = request("https://api.github.com",
-        f"/repos/{repository}/actions/workflows/ci.yml/runs?event=schedule&branch=main&status=completed&per_page=1", token)
+    path = (f"/repos/{repository}/actions/runs/{run_id}" if run_id else
+            f"/repos/{repository}/actions/workflows/ci.yml/runs?event=schedule&branch=main&status=completed&per_page=1")
+    code, body, _ = request("https://api.github.com", path, token)
     require(code == 200, f"nightly lookup failed: HTTP {code}")
-    runs = json.loads(body).get("workflow_runs", [])
+    runs = [json.loads(body)] if run_id else json.loads(body).get("workflow_runs", [])
     require(runs, "no completed nightly exists; bootstrap the schedule before requiring this check")
     latest = runs[0]
-    (run.out / "nightly.json").write_text(json.dumps(latest, indent=2) + "\n")
     require(latest.get("event") == "schedule" and latest.get("head_branch") == "main"
-            and latest.get("status") == "completed", "nightly lookup returned an unrelated run")
-    require(latest.get("conclusion") == "success",
-            f"latest nightly {latest.get('id')}: {latest.get('conclusion')}; see {latest.get('html_url')}")
-    print(f"latest nightly {latest['id']}: success")
+            and (run_id or latest.get("status") == "completed"), "nightly lookup returned an unrelated run")
+    jobs, page = [], 1
+    while True:
+        code, body, _ = request("https://api.github.com",
+            f"/repos/{repository}/actions/runs/{latest['id']}/jobs?filter=latest&per_page=100&page={page}", token)
+        require(code == 200, f"nightly aggregate lookup failed: HTTP {code}")
+        batch = json.loads(body)["jobs"]
+        jobs.extend(job for job in batch if job["name"] == "nightly result")
+        if len(batch) < 100:
+            break
+        page += 1
+    require(len(jobs) == 1 and jobs[0].get("status") == "completed", "missing completed nightly result")
+    started = datetime.fromisoformat(latest["run_started_at"].replace("Z", "+00:00"))
+    age = (datetime.now(timezone.utc) - started).total_seconds()
+    fresh = 0 <= age <= 36 * 60 * 60
+    state = "success" if fresh and jobs[0].get("conclusion") == "success" else "failure"
+    result = {"run": latest, "aggregate": jobs[0], "age_seconds": age, "fresh": fresh, "state": state}
+    (run.out / "nightly.json").write_text(json.dumps(result, indent=2) + "\n")
+    return result
+
+
+def nightly_check(run):
+    result = nightly_result(run)
+    require(result["state"] == "success",
+            f"latest nightly {result['run']['id']}: failed or older than 36 h; see {result['run'].get('html_url')}")
+    print(f"latest nightly {result['run']['id']}: success")
 
 
 def nightly_publish(run):
@@ -133,9 +157,8 @@ def nightly_publish(run):
     token = os.environ.get("GITHUB_TOKEN")
     require(os.environ.get("GITHUB_EVENT_NAME") == "schedule", "nightly publication is schedule-only")
     require(re.fullmatch(r"[\w.-]+/[\w.-]+", repository) and token, "repository and token are required")
-    results = json.loads(os.environ["NIGHTLY_RESULTS"])
-    require(results, "nightly publication requires dependency results")
-    state = "success" if all(job["result"] == "success" for job in results.values()) else "failure"
+    result = nightly_result(run, os.environ["GITHUB_RUN_ID"])
+    state = result["state"]
     target = f"https://github.com/{repository}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
     receipts, page = [], 1
     while True:
@@ -149,7 +172,7 @@ def nightly_publish(run):
                 require(re.fullmatch(r"[0-9a-f]{40}", sha), "invalid PR commit in status response")
                 code, _, _ = request("https://api.github.com", f"/repos/{repository}/statuses/{sha}", token,
                     data={"state": state, "context": "latest nightly", "target_url": target,
-                          "description": "Latest scheduled backend, generator and browser checks: " + state})
+                          "description": "Latest nightly aggregate (36 h freshness limit): " + state})
                 require(code == 201, f"nightly status publication failed: HTTP {code}")
                 receipts.append({"pr": pull["number"], "sha": sha, "state": state})
         if len(pulls) < 100:
@@ -245,13 +268,12 @@ def test_files(shard=None):
     return files
 
 
-def pytest_shard(run, shard=None, collect_only=False):
+def pytest_shard(run, shard=None):
     files = test_files(shard)
     (run.out / "test-files.json").write_text(json.dumps(files, indent=2) + "\n")
     # pytest exits 5 on zero collected tests. Run.command rejects every nonzero
     # status, including collection/import failures; no success-shaped skip.
-    run.command("pytest", ["uv", "run", "python", "-m", "pytest", *files]
-                + (["--collect-only", "-q"] if collect_only else []), timeout=840)
+    run.command("pytest", ["uv", "run", "python", "-m", "pytest", *files], timeout=840)
 
 
 def recipe_graph(source):
@@ -470,7 +492,7 @@ def replay(run, viewport, shard=None, base=None):
         env["ONLY"] = ",".join(selected_ids)
     with auth_server(run):
         # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=900 if shard and not base else 3000)
+        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=780 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())
@@ -730,36 +752,27 @@ def package(run, image=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache", "pytest", "smoke", "nightly", "nightly-publish"])
+    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache", "pytest", "nightly", "nightly-publish"])
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--image", help="package leg: use an image built by the preceding CI step")
     parser.add_argument("--viewport", choices=["1280x720", "1440x900"], default="1280x720")
     parser.add_argument("--shard", type=shard_arg, help="replay or pytest: deterministic partition k/n")
-    parser.add_argument("--base", help="replay or smoke: include the fixed PR slice and stories touched since this Git base")
-    parser.add_argument("--collect-only", action="store_true", help="pytest: verify shard collection without executing tests")
+    parser.add_argument("--base", help="replay: include the fixed PR slice and stories touched since this Git base")
     parser.add_argument("--check", action="store_true", help="case-cache: verify generation and copy isolation")
     parser.add_argument("--benchmark", action="store_true", help="case-cache: opt in to before/after preparation measurements")
     parser.add_argument("--case", action="append", help="case-cache: select this case (repeatable; default: registry cases)")
     args = parser.parse_args()
     if args.shard and args.leg not in {"replay", "pytest"}:
         parser.error("--shard is only valid for replay or pytest")
-    if args.base and args.leg not in {"replay", "smoke"}:
-        parser.error("--base is only valid for replay or smoke")
-    if args.leg == "smoke" and not args.base:
-        parser.error("smoke requires --base")
-    if args.collect_only and args.leg != "pytest":
-        parser.error("--collect-only is only valid for pytest")
+    if args.base and args.leg != "replay":
+        parser.error("--base is only valid for replay")
     if (args.check or args.case or args.benchmark) and args.leg != "case-cache":
         parser.error("--check, --benchmark and --case are only valid for case-cache")
     run = Run(args.out)
     if args.leg == "replay":
         replay(run, args.viewport, args.shard, args.base)
     elif args.leg == "pytest":
-        pytest_shard(run, args.shard, args.collect_only)
-    elif args.leg == "smoke":
-        ids = inventory(run)
-        selected = smoke_selection(run, args.base, ids)
-        print(f"smoke: {len(selected)} selected")
+        pytest_shard(run, args.shard)
     elif args.leg == "nightly":
         nightly_check(run)
     elif args.leg == "nightly-publish":

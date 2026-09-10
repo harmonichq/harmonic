@@ -105355,7 +105355,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "52a0c68ac658eb568d3161f7158002c02fc942ce425466474b00e3240607c2f4",
+              "code_version": "d7b0d05195429c6b72517c91ea36ee414041980413743f2bc0a68a3afab6aa5a",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105447,7 +105447,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "2424bb29e22318da6996de0b589a6c3186b9db301690a631d04ac04dd53bf965",
+              "id": "b2b453b23032a2b9e196e2060e689b23454cea5ff2abdeb9aa862a7cec4bbd79",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105535,7 +105535,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "52a0c68ac658eb568d3161f7158002c02fc942ce425466474b00e3240607c2f4",
+                  "code_version": "d7b0d05195429c6b72517c91ea36ee414041980413743f2bc0a68a3afab6aa5a",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105627,7 +105627,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "2424bb29e22318da6996de0b589a6c3186b9db301690a631d04ac04dd53bf965",
+                  "id": "b2b453b23032a2b9e196e2060e689b23454cea5ff2abdeb9aa862a7cec4bbd79",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {

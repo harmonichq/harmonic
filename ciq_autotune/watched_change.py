@@ -691,9 +691,18 @@ def _reviewable_trials(store, now, *, horizon_start=None):
     return trials
 
 
+def _review_focus_title(record):
+    """Historical records can outlive the lever vocabulary of the active view."""
+    from .analyzers.scenario.outcome_patterns import _ROSTER
+    pattern_titles = {key: title for key, title, *_ in _ROSTER}
+    title = pattern_titles.get(record.get("pattern_key"))
+    if title is not None:
+        return title
+    return _focus_meta(record["lever"])[0] if is_pinnable(record["lever"]) else "Focus"
+
+
 def review_trials(store, *, now: datetime, selected=None, kind="trial", assessment="original"):
     """Read retained history and optional reassessment without resolving a watch."""
-    from .analyzers.scenario.outcome_patterns import _ROSTER
     from .follow_up_comparison import compare_follow_up
     trials = _reviewable_trials(store, now)
     by_id = {_review_id(t.view, t.block): t for t in trials}
@@ -711,8 +720,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
                    watch_disposition=("active" if admission["active_kind"] == "trial"
                                       and admission["active_id"] == row["id"] else "not_selected_for_watch"))
         roster.append(row)
-    pattern_titles = {key: title for key, title, *_ in _ROSTER}
-    focuses = [{**record, "title": pattern_titles.get(record.get("pattern_key")) or focus_view(record).title}
+    focuses = [{**record, "title": _review_focus_title(record)}
                for record in store.follow_up_records("focus")]
     result = {"trials": roster, "focuses": focuses, "selected": None,
               "input_revision": store.input_data_revision(), "admission": admission}
@@ -729,7 +737,7 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
         if record is None:
             raise KeyError(identity)
         detail = {"id": identity, "lever": record["lever"], "status": record["status"],
-                  "title": next(row["title"] for row in focuses if row["id"] == identity)}
+                  "title": _review_focus_title(record)}
     detail.update(kind=kind, admission=admission,
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),

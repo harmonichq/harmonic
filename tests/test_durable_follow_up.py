@@ -60,6 +60,43 @@ class DurableApiTest(unittest.TestCase):
         with Store.open_readonly(self.path) as store:
             self.assertNotIn("title", store.follow_up_record("focus", focus["id"]))
 
+    def test_generated_c3_stores_serve_follow_up_history_and_retained_readiness(self):
+        import subprocess
+        import sys
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        for case in ("c3-trial", "c3-focus", "c3-history", "c3-preempted"):
+            with self.subTest(case=case):
+                path = Path(self.directory.name) / f"{case}.sqlite"
+                generated = subprocess.run(
+                    [sys.executable, str(root / "scripts/gen_qa_e2e_db.py"),
+                     "--case", case, "--out", str(path)],
+                    cwd=root, capture_output=True, text=True, check=False)
+                self.assertEqual(generated.returncode, 0, generated.stderr)
+                client = TestClient(create_app(db_path=str(path), token="", enable_fetch_loop=False),
+                                    raise_server_exceptions=False)
+                response = client.get("/api/verify/trials")
+                self.assertEqual(response.status_code, 200, response.text)
+                roster = response.json()
+                self.assertTrue(roster["trials"] or roster["focuses"])
+                for kind, rows in (("trial", roster["trials"]), ("focus", roster["focuses"])):
+                    for row in rows:
+                        params = {"kind": kind, "selected": row["id"]}
+                        original = client.get("/api/verify/trials", params=params)
+                        self.assertEqual(original.status_code, 200, original.text)
+                        retained = client.get("/api/verify/trials", params={**params, "assessment": "retained"})
+                        self.assertEqual(retained.status_code, 200, retained.text)
+                        detail = retained.json()["selected"]
+                        comparison = detail["reassessment"]["comparison"]
+                        if row.get("lever") == "overnight_drift":
+                            self.assertEqual(detail["title"], "Focus")
+                            self.assertEqual(comparison["availability"]["state"], "unavailable")
+                        else:
+                            self.assertIn("before", comparison["readiness"], (case, kind, row["id"]))
+                            self.assertIn("after", comparison["readiness"])
+                            if kind == "focus":
+                                self.assertEqual(detail["title"], "Highs after meals")
+
     def seed_trial(self):
         from datetime import datetime, timedelta
         from tests.test_trial_evidence import _seed_block_ic_switch

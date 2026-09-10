@@ -89,5 +89,7 @@ parent retains pattern-case-file. Navigation remains under ADR 397. The c4 QA
 catalog adds twelve manufactured cases covering both causes' covered, empty,
 below-candidate-floor, below-reference-floor, losing and multiple-episode states.
 The projection fixture also covers absent, null and midnight witness transport.
-The coordinator owns the active specification, checklist, budget appendix and
-final browser/review evidence.
+The coordinator owns the active specification and final browser/review
+evidence; the checklist ticks and budget appendix were completed by c4 under the
+coordinator's dated delegation, with the coordinator's own browser and timing
+measurements cited where the ticks rest on them (2026-09-10).

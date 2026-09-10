@@ -7,7 +7,7 @@ export function createCaseContext(delegate) {
   return {
     select(subject, occurrence = null) {
       intent = subject ? { subject, occurrence } : null;
-      if (selected?.subject !== subject) selected = null;
+      selected = null;
       generation += 1;
     },
     current: () => selected,
@@ -20,7 +20,7 @@ export function createCaseContext(delegate) {
           && data.projection_id === coordinates.projection_id
           && data.selection?.requested_id === (coordinates.occ || null)) {
           selected = { subject: intent.subject, occurrence: intent.occurrence,
-            window: data.window, detail: data.selection.detail || null };
+            finding: data.finding, window: data.window, detail: data.selection.detail || null };
         }
         return data;
       });

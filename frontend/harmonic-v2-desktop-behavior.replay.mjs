@@ -59,6 +59,7 @@ import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
+import { C3_STORIES } from '../frontend-v2/c3.replay.mjs';
 import { C2_STORIES } from '../frontend-v2/c2.replay.mjs';
 
 const require = createRequire(import.meta.url);
@@ -2809,7 +2810,7 @@ async function main() {
         process.stdout.write(`# ${id} synthetic case=${caseName} (fresh copy)\n`);
       }
       opened = await open({ ...state, viewport, storyId: id, caseName });
-      const body = TARGET === 'app' ? (C2_STORIES[id] || fn) : fn;
+      const body = TARGET === 'app' ? (C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
       await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump });
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);

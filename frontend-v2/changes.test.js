@@ -125,6 +125,7 @@ test('set-aside Escape follows the frozen order without opening a sheet', async 
     assert.doesNotMatch(seat.innerHTML, /data-form="aside"/, 'the next Escape cancels the form');
     assert.equal(document.activeElement.dataset.action, 'aside');
   } finally {
+    await (await import('./focus-entry.js')).readFocusOptions();
     globalThis.document = previousDocument; globalThis.window = previousWindow;
   }
 });

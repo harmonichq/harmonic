@@ -171,7 +171,10 @@ def replay(run, viewport):
            "BASE_URL": "http://127.0.0.1:8765", "AUTH_BASE_URL": "http://127.0.0.1:8766",
            "AUTH_TOKEN": TOKEN, "CASE_STORE_DIR": str(run.out / "cases"),
            "CAPTURE_DIR": str(run.out / "captures"),
-           "CAPTURE_ONLY": "S1,S3,S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S36,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77,S93,S99,S100"}
+           "CAPTURE_ONLY": "S1,S3,S7b,S9,S14,S15,S18,S19,S21,S23,S31,S33,S36,S37,S39,S45,S49,S51,S54,S56,S57,S58,S59,S60,S61,S64,S65,S66,S68,S69,S74,S75,S77,S93,S99"}
+    # S100 delegates to Event S8, whose use() closes its page after asserting.
+    # It still executes in the full registry; only its unavailable post-story
+    # endpoint is excluded from captures (as with S91's multi-context proof).
     # An inherited developer selection must never turn acceptance into a subset.
     env.pop("ONLY", None)
     env.pop("STORY_CASES", None)

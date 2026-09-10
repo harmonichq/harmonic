@@ -133,6 +133,28 @@ while True:
                 self.assertTrue(spawn.call_args.kwargs["start_new_session"])
 
 
+class ReplayWrapperTest(unittest.TestCase):
+    def test_complete_replay_keeps_s100_but_never_captures_its_closed_endpoint(self):
+        from contextlib import nullcontext
+        testcase = self
+        class Run:
+            out = Path("/tmp/synthetic-wrapper-test")
+            def command(self, name, args, *, env):
+                testcase.assertEqual(name, "complete-replay")
+                testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
+                testcase.assertNotIn("ONLY", env, "S100 must remain in the complete registry run")
+                testcase.assertNotIn("STORY_CASES", env)
+                captures = env["CAPTURE_ONLY"].split(",")
+                testcase.assertNotIn("S100", captures, "Event S8 closes its borrowed page before endpoint capture")
+                testcase.assertIn("S99", captures, "other endpoints must still be captured")
+                testcase.assertTrue(env["CAPTURE_DIR"])
+                return 0, "# executed 130 · failed 0 · deferred 0 · selected 130"
+        with patch.object(acceptance, "inventory"), patch.object(acceptance, "free_port"), \
+             patch.object(acceptance, "auth_server", return_value=nullcontext()), \
+             patch.dict(os.environ, {"PLAYWRIGHT_MODULE": "synthetic", "ONLY": "S99", "STORY_CASES": "S100=wrong"}):
+            acceptance.replay(Run(), "1280x720")
+
+
 class InventoryProofTest(unittest.TestCase):
     def inventory(self, ids):
         class Run:

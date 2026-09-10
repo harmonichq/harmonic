@@ -285,3 +285,44 @@ test('chart readiness does not count a cold overview before its evidence tiles m
     });
   } finally { globalThis.document = original; }
 });
+
+
+test('S29 observes the focus event before a later repaint can move activeElement', async () => {
+  const { clickAndObserveFocus } = await import('./c2.replay.mjs');
+  const previous = globalThis.document;
+  let listener; let removed = false; let disposed = false;
+  const target = { matches: selector => selector === '#level' };
+  globalThis.document = {
+    activeElement: null,
+    addEventListener: (type, fn, capture) => { assert.equal(type, 'focusin'); assert.equal(capture, true); listener = fn; },
+    removeEventListener: (type, fn, capture) => { assert.equal(type, 'focusin'); assert.equal(fn, listener); assert.equal(capture, true); removed = true; },
+  };
+  const page = {
+    evaluateHandle: async (install, selector) => {
+      const value = install(selector);
+      return { value, evaluate: async fn => fn(value), dispose: async () => { disposed = true; } };
+    },
+    waitForFunction: async (ready, handle, options) => {
+      assert.equal(options.timeout, 30000);
+      assert.equal(document.activeElement, null, 'a late instantaneous focus poll would miss the successful handoff');
+      assert.equal(ready(handle.value), true);
+    },
+  };
+  try {
+    assert.equal(await clickAndObserveFocus(page, { click: async () => {
+      assert.equal(typeof listener, 'function', 'listen before the navigation click');
+      document.activeElement = target; listener({ target });
+      document.activeElement = null; // an intervening repaint before the await resumes
+    } }, '#level'), true);
+    assert.ok(removed && disposed);
+    removed = disposed = false;
+    page.waitForFunction = async (ready, handle) => {
+      assert.equal(ready(handle.value), false, 'a different focus target cannot satisfy the proof');
+      throw new Error('synthetic bounded focus deadline');
+    };
+    await assert.rejects(clickAndObserveFocus(page, { click: async () => {
+      const wrong = { matches: () => false }; document.activeElement = wrong; listener({ target: wrong });
+    } }, '#level'), /bounded focus deadline/);
+    assert.ok(removed && disposed, 'failure removes the observer too');
+  } finally { globalThis.document = previous; }
+});

@@ -127,13 +127,17 @@ committed fixtures. No screenshot is an independent eye verdict.
 
 The selected endpoints are S1, S3, S7b, S9, S14, S15, S18, S19, S21, S23,
 S31, S33, S36, S37, S39, S45, S49, S51, S54, S56, S57, S58, S59, S60,
-S61, S64, S65, S66, S68, S69, S74, S75, S77, S93, S99 and S100. Their
+S61, S64, S65, S66, S68, S69, S74, S75, S77, S93 and S99. Their
 names remain their frozen story IDs; the transcript says exactly which
 post-story state was captured. Live inspection must additionally pause inside
 P19b pending/failure, I:C replacement/failure, save/finish/pin failures, selected
 cursor/clock gestures and unsaved utility drafts before their retries/cleanup.
 
-S100 is included in both full runs. To isolate its integrated shared repair,
+S100 is included in both full runs. Its inherited Event S8 helper closes the
+page in `finally`, so S100 has no post-story capture endpoint. The wrapper
+excludes only that capture; it neither skips S100 nor suppresses capture errors
+for other stories. Its speech assertions remain the evidence of the integrated
+repair. To isolate those assertions,
 with port 8765 free:
 
 ```sh
@@ -324,3 +328,33 @@ folders and no ONLY/STORY_CASES restriction. Reuse the current built shells.
 The focused 30-story diagnostic selection is
 `S28,S29,S60,S63,S64,S65,S66,S67,S68,S72,S72b,S74,S75,S75b,S76,S83,S100,R2,R3,R4,R5,R7,R8,R9,R10,R11,R12,R13,R15,R17`;
 it cannot substitute for either complete 130-entry acceptance run.
+
+
+## Coordinator amendment 5 — residual execution corrections
+
+On 2026-09-10 the coordinator reported 128 passed / 2 failed (S29, S100)
+at 1280×720 and 129 passed / 1 failed (S100) at 1440×900 on 82ab9e7f.
+Isolated S100 passed at both sizes. The failure is after its assertions:
+Event S8 closes the borrowed page and the wrapper then tried to capture it.
+S100's body remains unchanged; its post-story capture selection is corrected.
+
+S29 now observes the exact reading-pane and originating-row `focusin` outcomes
+before pressing their launchers. It waits for the case response and rendered
+roster, then checks the recorded focus outcome; a repaint cannot erase the event
+before the assertion reads it. Both exact-target assertions remain, and a
+missing or wrong focus event still fails within thirty seconds.
+
+The clinical pair driver now sets the same manufactured browser token used by
+other v1 offline replays before opening either shell. V1's `hasToken` gate
+otherwise prevents Diagnose from mounting, leaving no clock control to press.
+Both consumers use the shared owner's `#seg-window` 24 h button after `#level`
+mounts. Basal exposes supporting nights; Correction factor and Carb ratio expose
+numeric evidence. Every capture requires its exact focal clinical canvas and
+an observed request to its expected endpoint; paired proof still requires a
+shared response key with identical bytes. No clinical endpoint check was removed.
+
+The coordinator also reported R18/S49/S91 3 of 3 and eye legs 7 of 7 at both
+sizes with captures. Clinical pairing remains unaccepted: the previous driver
+stopped after its v2 basal capture. Fresh full-ledger and pair runs are required;
+no new browser pass, fidelity verdict or packaged-runtime result is claimed here.
+No app source or built shell changed in this amendment.

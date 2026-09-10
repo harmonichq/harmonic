@@ -77,15 +77,38 @@ const choose = async (page, row) => {
   await page.waitForFunction(id => document.querySelector(`.case-occurrence[data-occurrence-id="${CSS.escape(id)}"]`)?.getAttribute('aria-pressed') === 'true', id);
   return id;
 };
-async function openComparisonCase(page, id = 'finding:over_treated_low') {
+// A click's focus event may precede the awaited response and the next paint.
+// Observe that exact outcome before pressing; keep it across later repaints.
+// No polling window, synthetic focus, or fallback target can satisfy the proof.
+export async function clickAndObserveFocus(page, control, selector) {
+  const observation = await page.evaluateHandle(selector => {
+    const state = { seen: false, active: false };
+    const listener = event => {
+      if (!event.target.matches(selector)) return;
+      state.seen = true;
+      state.active = document.activeElement === event.target;
+    };
+    document.addEventListener('focusin', listener, true);
+    return { state, listener };
+  }, selector);
+  try {
+    await control.click();
+    await page.waitForFunction(observation => observation.state.seen, observation, { timeout: 30000 });
+    return await observation.evaluate(observation => observation.state.active);
+  } finally {
+    await observation.evaluate(observation => document.removeEventListener('focusin', observation.listener, true));
+    await observation.dispose();
+  }
+}
+
+async function openComparisonCase(page, id = 'finding:over_treated_low', openRow = row => row.click()) {
   await go(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click(); await settled(page);
   await waitForCharts(page);
   const row = page.locator(`#level .qrow[data-id="${id}"]`);
   await row.waitFor();
   const response = responseFor(page, casePath, r => new URL(r.url()).searchParams.get('finding_id') === id && r.ok());
-  await row.click();
-  const file = await (await response).json();
+  const [, file] = await Promise.all([openRow(row), response.then(reply => reply.json())]);
   await page.locator('#level .case-occurrence').first().waitFor();
   check(file.projection.alignment === 'event', 'the production case owns event alignment');
   return file;
@@ -460,12 +483,16 @@ export const C2_STORIES = {
   S27: async page => { const file = await comparisonFigure(page); const before = await chartOption(page); assert.equal(before.xAxis[0].min, file.projection.window_min[0]); assert.equal(before.xAxis[0].max, file.projection.window_min[1]); await page.locator('#ec-chart').focus(); await page.keyboard.press('ArrowRight'); const after = await chartOption(page); assert.deepEqual(after.series, before.series, 'cursor/visible inspection changes no served series'); assert.deepEqual(after.yAxis, before.yAxis); },
   S28: cleanup,
   S29: async page => {
-    const file = await openComparisonCase(page);
-    await page.waitForFunction(() => document.activeElement?.id === 'level', null, { timeout: 30000 });
-    assert.equal(await page.locator('#level').evaluate(n => n === document.activeElement), true, 'S29 opening a case focuses the reading pane');
-    await page.getByRole('button', { name: 'Findings', exact: true }).click();
-    await page.waitForFunction(id => document.activeElement?.matches('#level .qrow') && document.activeElement.dataset.id === id, file.finding.id, { timeout: 30000 });
-    assert.equal(await page.locator(`#level .qrow[data-id="${file.finding.id}"]`).evaluate(n => n === document.activeElement), true, 'S29 Findings restores the originating row');
+    let focused;
+    const file = await openComparisonCase(page, 'finding:over_treated_low', async row => {
+      focused = await clickAndObserveFocus(page, row, '#level');
+    });
+    // openComparisonCase has now awaited the case file and rendered roster.
+    assert.equal(focused, true, 'S29 opening a case focuses the reading pane');
+    const restored = await clickAndObserveFocus(page,
+      page.getByRole('button', { name: 'Findings', exact: true }),
+      `#level .qrow[data-id="${file.finding.id}"]`);
+    assert.equal(restored, true, 'S29 Findings restores the originating row');
     await go(page, 'diagnose'); check(await page.locator('#level .qrow').count());
   },
   S30: async page => { await openBasalLane(page); await page.getByRole('button', { name: 'Findings', exact: true }).click(); check(await page.locator('#level .qrow').count()); },

@@ -116,7 +116,8 @@
      "rate": 0.3333,
      "rate_levers": [
       "habit:carb_undercount",
-      "habit:late_bolus"
+      "habit:late_bolus",
+      "habit:meal_bolus_short"
      ],
      "rate_producer": "exposures",
      "readiness": {
@@ -276,11 +277,11 @@
      "collapse": "remain_pattern",
      "harm_low_overlap": [
       {
-       "count": null,
+       "count": 0,
        "habit_subject": "habit:correction_stacking",
-       "reason": "different_identity_spaces",
+       "reason": "shared_low_episode_nadir",
        "setting_subject": "setting:isf",
-       "status": "not_comparable"
+       "status": "comparable"
       },
       {
        "count": 0,
@@ -308,7 +309,7 @@
        "subject": "setting:isf"
       }
      ],
-     "n": 1,
+     "n": 5,
      "overlap_counts": {
       "highs_after_meals": {
        "count": null,
@@ -331,14 +332,15 @@
        "status": "not_comparable"
       }
      },
-     "rate": 1,
+     "rate": 0.2,
      "rate_levers": [
-      "habit:correction_stacking"
+      "habit:correction_stacking",
+      "habit:correction_on_iob"
      ],
      "rate_producer": "exposures",
      "readiness": {
-      "count": 1,
-      "gate": 27,
+      "count": 5,
+      "gate": 12,
       "verdict": "withheld"
      },
      "seriousness": null,
@@ -346,8 +348,8 @@
      "subject": "pattern:lows_after_correcting_highs",
      "title": "Lows after correcting highs",
      "wilson": {
-      "hi": 1,
-      "lo": 0.3784
+      "hi": 0.4865,
+      "lo": 0.0619
      }
     },
     {
@@ -569,7 +571,8 @@
       "rate": 0.3333,
       "rate_levers": [
        "habit:carb_undercount",
-       "habit:late_bolus"
+       "habit:late_bolus",
+       "habit:meal_bolus_short"
       ],
       "rate_producer": "exposures",
       "readiness": {
@@ -1442,11 +1445,11 @@
       "collapse": "remain_pattern",
       "harm_low_overlap": [
        {
-        "count": null,
+        "count": 0,
         "habit_subject": "habit:correction_stacking",
-        "reason": "different_identity_spaces",
+        "reason": "shared_low_episode_nadir",
         "setting_subject": "setting:isf",
-        "status": "not_comparable"
+        "status": "comparable"
        },
        {
         "count": 0,
@@ -1474,7 +1477,7 @@
         "subject": "setting:isf"
        }
       ],
-      "n": 1,
+      "n": 5,
       "overlap_counts": {
        "highs_after_meals": {
         "count": null,
@@ -1497,14 +1500,15 @@
         "status": "not_comparable"
        }
       },
-      "rate": 1,
+      "rate": 0.2,
       "rate_levers": [
-       "habit:correction_stacking"
+       "habit:correction_stacking",
+       "habit:correction_on_iob"
       ],
       "rate_producer": "exposures",
       "readiness": {
-       "count": 1,
-       "gate": 27,
+       "count": 5,
+       "gate": 12,
        "verdict": "withheld"
       },
       "seriousness": null,
@@ -1512,8 +1516,8 @@
       "subject": "pattern:lows_after_correcting_highs",
       "title": "Lows after correcting highs",
       "wilson": {
-       "hi": 1,
-       "lo": 0.3784
+       "hi": 0.4865,
+       "lo": 0.0619
       }
      },
      "pattern_chart": null,

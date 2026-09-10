@@ -25,3 +25,17 @@ check of record. The chunk-1 baseline for this and later chunks is the
 pre-change tree's 160 s on the current machine, giving a 2.5× ceiling of
 **400 s**; the c5 head at 202.62 s is within it. No other limit changed. Task
 2.5.2 is ticked under this ruling.
+
+## #395 c2c roster remeasurement
+
+Chunk c2c re-ran the same five budgets after the operator-amended Pattern
+roster and its generator-owned literal expectations were regenerated. All
+inputs remain manufactured.
+
+| Budget | c2c measurement | Limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,314,816 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.17 s | 30 s |
+| Focused QA suite | 21.57 s / 21.78 s wall (58 tests) | 90 s |
+| Slowest generated case | 2.81 s (`test_case_showcase`) | 15 s |
+| Whole pytest | 208.25 s / 208.62 s wall (2421 passed, 1 skipped) | 400 s |

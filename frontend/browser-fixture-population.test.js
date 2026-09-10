@@ -147,7 +147,7 @@ test('browser Pattern rows and case files share the public producer denominator'
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
-test('a claimed member outside its Pattern population tags no occurrence', () => {
+test('correction-on-IOB claims the lows in its Pattern population', () => {
   const inputs = populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
@@ -159,11 +159,15 @@ test('a claimed member outside its Pattern population tags no occurrence', () =>
   const caseFile = projectPatternCaseFile(capture, { patternChart: pattern.pattern_chart });
 
   assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
-  assert.equal(caseFile.summary.claimed, 0);
-  assert.ok(caseFile.occurrences.every((row) => row.member === 'clean'));
+  assert.equal(caseFile.family, 'lows');
+  assert.equal(caseFile.summary.denominator, payload.exposures.exposures.lows.n);
+  assert.equal(caseFile.summary.claimed, pattern.pattern.k);
+  assert.equal(caseFile.occurrences.filter(
+    (row) => row.member === 'habit:correction_on_iob',
+  ).length, pattern.pattern.k);
 });
 
-test('Pattern selected detail transcribes correction-cluster source doses', () => {
+test('correcting-highs Pattern selection uses the low-nadir comparison idiom', () => {
   const inputs = populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
@@ -172,11 +176,7 @@ test('Pattern selected detail transcribes correction-cluster source doses', () =
   const projection = projectFindings(inputs);
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
   const enriched = structuredClone(capture);
-  const source = enriched.pattern_populations.correction_clusters[0];
-  source.trace.boluses = [
-    { minute: -15, seq_num: 991, insulin: 1.25, carbs: null },
-    { minute: 5, seq_num: 992, insulin: 0.75, carbs: null },
-  ];
+  const source = enriched.pattern_populations.lows[0];
 
   const caseFile = projectPatternCaseFile(enriched, {
     patternChart: pattern.pattern_chart,
@@ -186,8 +186,13 @@ test('Pattern selected detail transcribes correction-cluster source doses', () =
 
   assert.equal(caseFile.selection.state, 'selected');
   assert.equal('member' in caseFile.selection.detail, false);
-  assert.deepEqual(caseFile.selection.detail.source_corrections,
-    caseFile.selection.detail.markers.map(({ seq_num, t, insulin }) => ({ seq_num, t, insulin })));
+  assert.equal(caseFile.selection.detail.anchor.kind, 'low');
+  const eventCase = projectPatternCaseFile(enriched, {
+    patternChart: pattern.pattern_chart,
+  });
+  assert.equal(eventCase.projection.anchor.kind, 'excursion_nadir');
+  assert.deepEqual(eventCase.projection.window_min, [-60, 120]);
+  assert.deepEqual(caseFile.selection.detail.source_corrections, []);
 });
 
 test('Pattern misses prefer near misses over outranked member states', () => {
@@ -331,4 +336,39 @@ test('buildCapture rejects a source row outside the inclusive window by name', (
   input.exposures.meals.occurrences[0].date = '1999-12-31';
   assert.throws(() => buildCapture(input),
     /meals source row 1 date 1999-12-31 outside inclusive window/);
+});
+
+test('buildCapture transcribes cross-family Pattern identities onto meals and lows', () => {
+  const exposures = structuredClone(payload.exposures);
+  for (const source of Object.values(exposures.exposures)) {
+    for (const row of source.occurrences) {
+      row.attributed = false;
+      row.cause_lever = null;
+    }
+  }
+  const meal = exposures.exposures.meals.occurrences[0];
+  const low = exposures.exposures.lows.occurrences[1];
+  const short = exposures.exposures.highs.occurrences[0];
+  const stacked = exposures.exposures.correction_clusters.occurrences[0];
+  Object.assign(short, { attributed: true, cause_lever: 'meal_bolus_short' });
+  Object.assign(stacked, { attributed: true, cause_lever: 'correction_stacking' });
+  const generated = buildCapture(exposures, [{
+    key: 'highs_after_meals', rate_levers: ['habit:meal_bolus_short'],
+  }, {
+    key: 'lows_after_correcting_highs', rate_levers: ['habit:correction_stacking'],
+  }], { episodes: {
+    [short.ep_id]: { steps: [{ citation: { facts: { meal_at: meal.t } } }] },
+    [stacked.ep_id]: { steps: [{ citation: { facts: { nadir_at: low.t } } }] },
+  } });
+  const mealId = generated.pattern_populations.meals.find(
+    (row) => row.anchor_t === meal.t,
+  ).id;
+  const lowId = generated.pattern_populations.lows.find(
+    (row) => row.anchor_t === low.t,
+  ).id;
+
+  assert.equal(generated.pattern_attribution.highs_after_meals[mealId],
+    'habit:meal_bolus_short');
+  assert.equal(generated.pattern_attribution.lows_after_correcting_highs[lowId],
+    'habit:correction_stacking');
 });

@@ -143,11 +143,8 @@ PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key, *_ in _ROSTER)
 
 def pattern_rate_family(pattern: dict) -> Exposure | None:
     """Return the one Exposure family the Pattern producer prices against."""
-    families = {
-        exposure(Lever(subject.removeprefix("habit:")))
-        for subject in pattern.get("rate_levers") or ()
-    }
-    return next(iter(families)) if len(families) == 1 else None
+    family = next((row[5] for row in _ROSTER if row[0] == pattern.get("key")), None)
+    return Exposure(family) if family in {item.value for item in Exposure} else None
 
 
 def pattern_chartable(pattern: dict, exposures: dict) -> bool:
@@ -908,12 +905,8 @@ def _headline_for(row: dict) -> str:
         if pattern["rate_producer"] == "harm_band_source_nights":
             noun = "nights"
         else:
-            rate_policy = policy_for(Lever(
-                pattern["rate_levers"][0].removeprefix("habit:")
-            ))
-            noun = (rate_policy.recurrence_noun
-                    if rate_policy.recurrence_family is None
-                    else _FAMILY_NOUN[rate_policy.recurrence_family.value])
+            family = pattern_rate_family(pattern)
+            noun = _FAMILY_NOUN[family.value]
         return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)

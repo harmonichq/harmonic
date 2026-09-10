@@ -828,7 +828,7 @@ class PatternProjectionTest(unittest.TestCase):
             "highs_after_meals": "meals",
             "lows_after_meals": "meals",
             "highs_after_treating_lows": "lows",
-            "lows_after_correcting_highs": "correction clusters",
+            "lows_after_correcting_highs": "lows",
             "overnight_lows_no_iob": "nights",
         }
         for key, noun in nouns.items():
@@ -857,6 +857,21 @@ class PatternProjectionTest(unittest.TestCase):
                 if key == "overnight_lows_no_iob":
                     union = ["lows"]
                 self.assertEqual(list(_PATTERN_CHIPS[key]), union)
+
+    def test_stacking_finding_keeps_its_correction_cluster_population(self):
+        row = next(row for row in self.result["rows"]
+                   if row["id"] == "finding:correction_stacking")
+
+        self.assertEqual(row["appearances"], [{
+            "family": "correction_clusters", "noun": "correction clusters",
+            "n": 1, "m": 1,
+        }])
+        self.assertEqual(row["verdict_counts_by_family"], {
+            "correction_clusters": {
+                "fired": 1, "outranked": 0, "near_miss": 0,
+                "no_data": 0, "clean": 0,
+            },
+        })
 
 
 class WindowQueryTest(unittest.TestCase):

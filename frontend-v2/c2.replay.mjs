@@ -157,7 +157,8 @@ async function failedCurrentRead(page) {
   assert.equal(await page.locator('[data-action="retry"]').evaluate(n => n === document.activeElement), true);
   await page.unroute('**/api/analyze*');
   await press(page, '[data-action="retry"]'); await settled(page);
-  check(await page.locator('#level .qrow').count() > 0);
+  await page.locator('#level .qrow').first().waitFor({ timeout: 30000 }); // the retried read paints its rows before the count is judged
+  check(await page.locator('#level .qrow').count() > 0, 'S20b the retried read renders the roster');
 }
 async function selectedMember(page) {
   const file = await openComparisonCase(page);

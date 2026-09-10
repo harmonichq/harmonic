@@ -124,7 +124,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
                             for row in payload["rendered_rows"]))
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
                                        "findings", "rendered_rows",
-                                       "behavioral_case_headers", "withheld_findings"})
+                                       "behavioral_case_headers", "withheld_findings", "eating_sequence_report"})
         self.assertEqual(set(payload["findings"]), {
             "schema", "analysis_generation", "window", "findings_window", "rows",
             "selection", "counts", "chip_counts", "uncaused_highs",
@@ -631,7 +631,7 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
     def assert_preparation_tree(self, prepared):
         self.assertEqual(set(prepared), {
             "schema", "projection_id", "coordinates", "findings", "rendered_rows",
-            "behavioral_case_headers", "withheld_findings",
+            "behavioral_case_headers", "withheld_findings", "eating_sequence_report",
         })
         self.assertEqual(set(prepared["coordinates"]), {"source_window_days", "window"})
         self.assert_window_tree(prepared["coordinates"]["window"])
@@ -1264,3 +1264,70 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
             "finding:over_treated_low",
             [row["id"] for row in crash_only["rendered_rows"]],
         )
+
+
+@unittest.skipUnless(HAS_API, "api extra is installed")
+class SequenceFindingCaseFileRouteTest(unittest.TestCase):
+    def test_both_empty_target_causes_drill_and_recover_on_generation_change(self):
+        from tests.eating_sequence_streams import sequence_episode_stream
+        from tests.test_findings_projection import seed_sequence_store
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            with self.subTest(lever=lever), tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+                bolus, cgm, _, _ = sequence_episode_stream(lever)
+                with Store.open(database.name) as store:
+                    seed_sequence_store(store, bolus, cgm)
+                app = create_app(db_path=database.name, token=None, enable_fetch_loop=False,
+                                 analysis_incarnation="sequence-http")
+                with TestClient(app) as client:
+                    response = client.get("/api/diagnose/finding-case-file-preparation")
+                    self.assertEqual(response.status_code, 200, response.text)
+                    prepared = response.json()
+                    row = next(r for r in prepared["rendered_rows"] if r["id"] == f"finding:{lever}")
+                    self.assertEqual(row["claimed_by"], "pattern:highs_after_meals")
+                    params = {"projection_id": prepared["projection_id"], "finding_id": row["id"],
+                              "alignment": "event"}
+                    response = client.get("/api/diagnose/finding-case-file", params=params)
+                    self.assertEqual(response.status_code, 200, response.text)
+                    case = response.json()
+                    self.assertEqual(case["summary"]["claimed"], 8)
+                    self.assertEqual(case["analysis_generation"], prepared["findings"]["analysis_generation"])
+                    occurrence = next(r for r in case["occurrences"] if r["attributed"])
+                    selected = client.get("/api/diagnose/finding-case-file", params={**params, "occ": occurrence["id"]})
+                    self.assertEqual(selected.status_code, 200, selected.text)
+                    self.assertEqual(selected.json()["selection"]["detail"]["sequence"], occurrence["sequence"])
+                    report = client.get("/api/diagnose/eating-sequences", params={
+                        "analysis_generation": case["analysis_generation"],
+                    })
+                    self.assertEqual(report.status_code, 200, report.text)
+                    self.assertEqual(report.json()["analysis_generation"],
+                                     case["analysis_generation"])
+                    self.assertEqual(report.json()["high_carb_sequence"],
+                                     case["projection"]["report"]["high_carb_sequence"])
+                    app.state.result_cache.bump()
+                    stale = client.get("/api/diagnose/finding-case-file", params=params)
+                    self.assertEqual(stale.status_code, 409)
+                    self.assertEqual(stale.json()["detail"]["code"], "stale_projection")
+                    fresh = client.get("/api/diagnose/finding-case-file-preparation").json()
+                    self.assertNotEqual(fresh["projection_id"], prepared["projection_id"])
+                    self.assertEqual(fresh["findings"]["analysis_generation"], "sequence-http:1")
+                    stale_report = client.get("/api/diagnose/eating-sequences", params={
+                        "analysis_generation": case["analysis_generation"],
+                    })
+                    self.assertEqual(stale_report.status_code, 409)
+                    self.assertEqual(stale_report.json()["detail"]["code"],
+                                     "analysis_generation_mismatch")
+                    fresh_case = client.get("/api/diagnose/finding-case-file", params={
+                        **params, "projection_id": fresh["projection_id"],
+                    })
+                    self.assertEqual(fresh_case.status_code, 200, fresh_case.text)
+                    fresh_generation = fresh_case.json()["analysis_generation"]
+                    self.assertEqual(fresh_generation, fresh["findings"]["analysis_generation"])
+                    fresh_report = client.get("/api/diagnose/eating-sequences", params={
+                        "analysis_generation": fresh_generation,
+                    })
+                    # A divergent report-generation derivation returns 409 here.
+                    self.assertEqual(fresh_report.status_code, 200, fresh_report.text)
+                    self.assertEqual(fresh_report.json()["analysis_generation"], fresh_generation)
+                    for key in ("high_carb_sequence", "repeat_eating_amplifier"):
+                        self.assertEqual(fresh_report.json()[key],
+                                         fresh_case.json()["projection"]["report"][key])

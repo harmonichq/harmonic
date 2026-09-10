@@ -362,3 +362,23 @@ class GuidanceTest(unittest.TestCase):
                 self.assertEqual(result["disposition"], "unavailable")
                 self.assertIsNotNone(result["unavailable"])
                 self.assertTrue(result["candidates"][0]["unavailable"])
+
+
+class SequenceGuidanceExclusionTest(unittest.TestCase):
+    def test_supported_habit_members_have_no_setting_instruction(self):
+        from tests.test_findings_projection import sequence_products
+        from ciq_autotune.window_membership import WindowQuery
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            projection, _ = sequence_products(lever)
+            rows = projection.project(WindowQuery.whole_day())["rows"]
+            cause = next(row for row in rows if row["id"] == f"finding:{lever}")
+            self.assertIsNone(cause["parameter"])
+            self.assertIsNone(cause.get("asserts_move"))
+            self.assertEqual(cause["kind"], "habit")
+            guidance = build_guidance(analysis=projection._analysis, exposures=projection._exposures,
+                                      scenarios=projection._scenarios)
+            candidate = next(row for row in guidance["candidates"]
+                             if row["subject"] == "pattern:highs_after_meals")
+            self.assertEqual(_treatment_fields(candidate), [])
+            member = next(row for row in candidate["members"] if row["subject"] == f"habit:{lever}")
+            self.assertEqual(member["kind"], "habit")

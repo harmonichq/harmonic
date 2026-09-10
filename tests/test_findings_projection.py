@@ -25,6 +25,7 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
@@ -256,7 +257,7 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
         # The closed set stays closed: a new lever has to answer the anchoring
         # question rather than silently falling back to its trigger.
         for lever in Lever:
-            self.assertIn(outcome_kind(lever), {"low", "high", "meal", "correction"},
+            self.assertIn(outcome_kind(lever), {"low", "high", "meal", "correction", "sequence"},
                           f"{lever.value} declares no outcome anchor")
 
     def test_a_family_denominator_never_undercounts_what_it_denominates(self):
@@ -421,9 +422,10 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
                          ["lows"])
 
-    def test_every_declared_lever_chips_by_its_closed_outcome_kind(self):
+    def test_episode_levers_chip_by_their_closed_outcome_kind(self):
+        levers = [lever for lever in Lever if policy_for(lever).recurrence_noun != "sequences"]
         occurrences = []
-        for index, lever in enumerate(Lever):
+        for index, lever in enumerate(levers):
             occurrences.append({
                 "t": f"2026-08-17 {index:02d}:00:00", "date": "2026-08-17",
                 "kind": "high", "cause_lever": lever.value,
@@ -440,8 +442,8 @@ class ChipProjectionTest(unittest.TestCase):
         # sits at hour `index`, so a hard-coded span silently drops the newest lever
         # off its end the day one is added — which is precisely what the closed set
         # exists to catch.
-        rows = projection.project(WindowQuery.clock(0, len(Lever) * 60))["rows"]
-        self.assertEqual(len(rows), len(Lever))
+        rows = projection.project(WindowQuery.clock(0, len(levers) * 60))["rows"]
+        self.assertEqual(len(rows), len(levers))
         for row in rows:
             expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
             if row["lever"] == Lever.MEAL_BOLUS_SHORT.value:
@@ -1034,6 +1036,7 @@ class PatternProjectionTest(unittest.TestCase):
             "meal_over_delivery": ["meals"], "over_treated_low": ["lows"],
             "correction_on_iob": ["lows"],
             "correction_stacking": ["correction_clusters"],
+            "high_carb_sequence": ["sequences"], "repeat_eating": ["sequences"],
         }
         for key, _title, members, _rate_levers, _setting, _family in _ROSTER:
             with self.subTest(key=key):
@@ -2029,3 +2032,152 @@ class HeadlineTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExplicitOutcomeWitnessTest(unittest.TestCase):
+    def test_explicit_witness_precedes_static_kind_for_both_directions(self):
+        from ciq_autotune.window_membership import outcome_minute
+        for minute in (30, 1380):
+            occurrence = {"cause_lever": "carb_undercount", "ep_id": "episode",
+                          "t": "2026-08-01 12:00:00", "outcome_minute": minute}
+            self.assertEqual(outcome_minute(occurrence, {"exposures": {}}), minute)
+
+    def test_missing_sequence_witness_has_no_trigger_fallback(self):
+        from ciq_autotune.window_membership import outcome_minute
+        with patch("ciq_autotune.window_membership.outcome_kind", return_value="sequence"):
+            for extra in ({}, {"outcome_minute": None}):
+                self.assertIsNone(outcome_minute(
+                    {"cause_lever": "high_carb_sequence", "t": "2026-08-01 12:00:00", **extra}, {}))
+
+    def test_habit_only_member_is_nested_without_becoming_a_rate_lever(self):
+        projection = gen.projection()
+        pattern = next(p for p in projection._outcome_patterns
+                       if p["key"] == "highs_after_meals")
+        pattern["members"].append({"kind": "habit", "subject": "habit:missed_meal"})
+        source = projection_row(id="finding:missed_meal", register="finding", kind="habit",
+                                lever="missed_meal", appearances=[], title="Missed meal")
+        projection._pattern_rows([source], WindowQuery.whole_day())
+        self.assertEqual(source["claimed_by"], "pattern:highs_after_meals")
+        self.assertNotIn("habit:missed_meal", pattern["rate_levers"])
+
+
+def seed_sequence_store(store, bolus, cgm, log=()):
+    """A manufactured programmed I:C keeps the parent Pattern above collapse."""
+    from tests.test_meal_bolus_short_attribution import _seed
+    from tests.test_outcomes_trend import _snapshot_with_ic
+    _seed(store, bolus, cgm)
+    store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
+                                   _snapshot_with_ic(10).settings)
+    for entry in log:
+        store.upsert_carb_entry(entry)
+
+
+def sequence_products(lever, *, covered=False, competitor="mild", multi=False, thin=None, low=False):
+    """Manufactured public-producer inputs; requires the c1 integration contract."""
+    from ciq_autotune.store import Store
+    from ciq_autotune.analyze import analyze
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
+    from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
+    from ciq_autotune.events import CarbEntry
+    from tests.eating_sequence_streams import sequence_episode_stream
+    b, c, log, basal = sequence_episode_stream(lever, covered=covered,
+                                               competitor=competitor, multi=multi)
+    if low:
+        initial = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
+                                     config=EatingSequenceConfig())
+        nadirs = {reading.t for row in initial.populations[lever] if row.candidate
+                  for reading in c
+                  if row.sequence.end + timedelta(minutes=80) <= reading.t
+                  < row.sequence.end + timedelta(minutes=90)}
+        c = [replace(r, bg=55) if r.t in nadirs else r for r in c]
+    if thin is not None:
+        evaluation = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
+                                        config=EatingSequenceConfig())
+        cohort = [r for r in evaluation.populations[lever] if r.candidate == thin]
+        log = [CarbEntry(r.sequence.end + timedelta(minutes=1), 17.3, "exact", "manual")
+               for r in cohort[7:]]
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, b, c, log)
+        analysis = analyze(store, window_days=30, pool_agreeing_basal_regimes=True).to_dict()
+        scenarios = build_scenarios(store, window_days=30).to_dict()
+        exposures = build_exposures(store, window_days=30)
+    projection = prepare_findings_projection(analysis=analysis, exposures=exposures, scenarios=scenarios)
+    return projection, (b, c, log, basal)
+
+
+class SequenceProducerProjectionTest(unittest.TestCase):
+    def test_empty_and_covered_winners_keep_their_own_counts_and_nesting(self):
+        for lever, expected_n in (("high_carb_sequence", 40), ("repeat_eating", 16)):
+            for covered in (False, True):
+                with self.subTest(lever=lever, covered=covered):
+                    projection, _ = sequence_products(lever, covered=covered)
+                    result = projection.project(WindowQuery.whole_day())
+                    rows = {row["id"]: row for row in result["rows"]}
+                    cause = rows[f"finding:{lever}"]
+                    parent = rows["pattern:highs_after_meals"]
+                    self.assertEqual(cause["episodes"], 8)
+                    self.assertEqual(cause["appearances"], [{"family": "sequences", "noun": "sequences",
+                                                           "n": 8, "m": expected_n}])
+                    self.assertEqual(cause["chips"], ["highs", "meals"])
+                    self.assertEqual(cause["claimed_by"], parent["id"])
+                    member = next(m for m in parent["pattern"]["members"] if m["subject"] == f"habit:{lever}")
+                    self.assertTrue(member["admitted"])
+                    self.assertNotIn(f"habit:{lever}", parent["pattern"]["rate_levers"])
+                    meals = projection._exposures["exposures"]["meals"]["occurrences"]
+                    associated = [m for m in meals if f"habit:{lever}" in m.get("member_associations", [])]
+                    self.assertEqual(bool(associated), covered)
+                    self.assertEqual(parent["pattern"]["n"], len(meals))
+                    self.assertTrue(all(lever not in m["attributed_levers"] for m in meals))
+
+    def test_each_cohort_floor_withholds_the_served_finding(self):
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            for candidate in (True, False):
+                with self.subTest(lever=lever, candidate=candidate):
+                    projection, _ = sequence_products(lever, covered=True, thin=candidate)
+                    rows = projection.project(WindowQuery.whole_day())["rows"]
+                    self.assertNotIn(f"finding:{lever}", {r["id"] for r in rows})
+
+    def test_scoped_membership_uses_witness_with_source_price_and_no_parent(self):
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            projection, _ = sequence_products(lever, multi=True)
+            whole = projection.project(WindowQuery.whole_day())
+            source = next(r for r in whole["rows"] if r["id"] == f"finding:{lever}")
+            occurrence = next(e for e in projection._exposures["sequence_evidence"][lever]["occurrences"]
+                              if e["attributed"])
+            minute = occurrence["outcome_minute"]
+            query = WindowQuery.clock(minute, (minute + 1) % 1440)
+            scoped = projection.project(query)
+            cause = next(r for r in scoped["rows"] if r["id"] == source["id"])
+            self.assertEqual(cause["priority"], source["priority"])
+            self.assertLessEqual(cause["episodes"], 8)
+            self.assertGreater(cause["episodes"], 0)
+            self.assertIsNone(cause["claimed_by"])
+            self.assertFalse(any(r["kind"] == "pattern" for r in scoped["rows"]))
+            for evidence in projection._exposures["sequence_evidence"][lever]["occurrences"]:
+                evidence.pop("outcome_minute", None)
+            self.assertNotIn(source["id"], {r["id"] for r in projection.project(query)["rows"]})
+
+    def test_losing_sequence_matches_remain_evidence_without_ownership(self):
+        from ciq_autotune.findings_projection import sequence_population
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            projection, _ = sequence_products(lever, competitor="severe")
+            roster = sequence_population(projection._exposures, lever, WindowQuery.whole_day())
+            matched = [r for r in roster if r["verdict"] == "fired"]
+            self.assertEqual(len(matched), 8)
+            self.assertTrue(all(not r["attributed"] for r in matched))
+            self.assertNotIn(f"finding:{lever}", {r["id"] for r in projection.project(WindowQuery.whole_day())["rows"]})
+
+    def test_low_witness_uses_the_same_sequence_membership_as_highs(self):
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            projection, (_, cgm, _, _) = sequence_products(lever, covered=True, low=True)
+            episodes = projection._exposures["sequence_evidence"][lever]["occurrences"]
+            low_minutes = {r.t.hour * 60 + r.t.minute for r in cgm if r.bg == 55}
+            winners = [r for r in episodes if r["attributed"] and r["outcome_minute"] in low_minutes]
+            self.assertTrue(winners)
+            minute = winners[0]["outcome_minute"]
+            rows = projection.project(WindowQuery.clock(minute, (minute + 1) % 1440))["rows"]
+            cause = next(r for r in rows if r["id"] == f"finding:{lever}")
+            self.assertGreater(cause["episodes"], 0)
+            self.assertEqual(cause["chips"], ["highs", "meals"])

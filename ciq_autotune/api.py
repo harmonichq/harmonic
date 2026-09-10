@@ -495,6 +495,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise ValueError("window coordinates must be decimal minutes")
         return WindowQuery.clock(int(start), int(end)), selected_id, lever
 
+    def eating_sequence_result(window):
+        return fixed(
+            ("eating-sequences", window), "eating-sequences-v1",
+            lambda store: report_dict(build_eating_sequence_report(store, window_days=window)),
+            serve_stale=False,
+        )
+
     def _prepared_cases(query, selected_id):
         key = ("finding-case-file", query.start_min, query.end_min, selected_id)
         def build(version):
@@ -506,6 +513,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     store, query=query, version=version, analysis=analysis,
                     exposures=exposures, scenarios=scenarios, selected_id=selected_id,
                     analysis_generation=cache.generation_for_version(version),
+                    sequence_report=eating_sequence_result(
+                        findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS).value,
                 )
         def before_commit():
             hook = app.state.finding_case_file_before_commit
@@ -906,18 +915,30 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.get("/api/diagnose/eating-sequences")
     def diagnose_eating_sequences_endpoint(
         window: int = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS,
+        analysis_generation: Optional[str] = None,
         _: None = Depends(require_token),
     ) -> dict:
-        """Aggregate-only high-carb sequence evidence for Diagnose."""
+        """Fixed-source sequence evidence, optionally bound to a Finding generation."""
         if window != findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS:
             raise HTTPException(status_code=400, detail=(
                 "eating sequences requires its fixed "
                 f"{findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS}-day source window"))
-        return fixed_response(fixed(
-            ("eating-sequences", window), "eating-sequences-v1",
-            lambda store: report_dict(build_eating_sequence_report(store, window_days=window)),
-            serve_stale=False,
-        ))
+        try:
+            generation, result = cache.stable_read(
+                ("eating-sequences-snapshot", window), lambda: eating_sequence_result(window),
+                validate=current_fixed_result,
+            )
+            if analysis_generation is not None and analysis_generation != generation:
+                raise HTTPException(status_code=409, detail={
+                    "code": "analysis_generation_mismatch",
+                    "message": "Refresh the finding before loading its sequence evidence."})
+            return fixed_response(result, lambda report: {
+                **report, "analysis_generation": generation,
+            })
+        except ResultCache.GenerationChanged as error:
+            raise HTTPException(status_code=409, detail={
+                "code": "analysis_generation_mismatch",
+                "message": "Input data changed while loading sequence evidence."}) from error
 
     @app.get("/api/diagnose/carb-ratio-history/events")
     def diagnose_ic_history_events_endpoint(

@@ -236,6 +236,7 @@ jobs:
           - gate: V2 Trial and Pattern Focus
             python: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
+            timeout: 30
           - gate: V2 complete frozen ledger 1280x720
             python: true
             timeout: 60

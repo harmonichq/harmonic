@@ -159,6 +159,20 @@ silently ran zero assertions is the exact failure mode that design guards
 against, and `frontend/browser-gates-fail-closed.test.js` is a
 dependency-free regression test for it.
 
+**Run only what a change touches; run the whole ledger once, before the push.**
+A full frozen-ledger replay is 130 stories at each of two sizes, each story on a
+fresh synthetic store and a fresh server: about 13 minutes per size on a fast
+Mac and 35 on a CI runner. The v1 workstation ledger is 168 more. Running that
+after every commit turns a one-line story fix into an hour, and running it in
+parallel with itself on one machine only collides on the case-store port. So,
+while iterating: run the stories the change touches (`ONLY=S20b,S32` on the v2
+replay; the wrapper's `--story` selection; a single `--test-name-pattern` on a
+browser suite), at the one size that reproduces the problem. Run each complete
+ledger exactly once per push, on the commit that will be pushed, and never two
+port-bound legs at the same time. Connor, 2026-09-10: "I spend all my life
+waiting for replays and ledgers and CI to run" — this rule is the answer, not a
+suggestion.
+
 **A sandboxed agent cannot launch Chromium — escalate, do not diagnose.** Under
 a seatbelt sandbox (Codex `workspace-write`, and anything else built on
 `sandbox-exec`), every browser leg above dies at launch with

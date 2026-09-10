@@ -105383,7 +105383,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "04e1b7f743ca5536acfed2cf0eb81860ba942ccdfeab2af6de142277cd7287aa",
+              "code_version": "3695394d6c02edc4b909306a3f7f9828021888abc751437b63525c1a7a191b67",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105475,7 +105475,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "b914b43cddb5914912ad0d86a1d5f5e064894ff157547fbbcd38796023ac48d2",
+              "id": "4a012927f0613a9c4086a28f5d5d7fa7334b9398f004132370ea3abd613dcf80",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105563,7 +105563,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "04e1b7f743ca5536acfed2cf0eb81860ba942ccdfeab2af6de142277cd7287aa",
+                  "code_version": "3695394d6c02edc4b909306a3f7f9828021888abc751437b63525c1a7a191b67",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105655,7 +105655,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "b914b43cddb5914912ad0d86a1d5f5e064894ff157547fbbcd38796023ac48d2",
+                  "id": "4a012927f0613a9c4086a28f5d5d7fa7334b9398f004132370ea3abd613dcf80",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -106350,6 +106350,7 @@
             "lever": "over_treated_low",
             "pinned_at": "2024-06-02 12:00:00",
             "status": "dropped",
+            "title": "Over-treated low",
             "version": "386:1"
           }
         ],

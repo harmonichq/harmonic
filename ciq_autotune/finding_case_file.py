@@ -14,6 +14,7 @@ from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.outcome_patterns import _lever_identities
 from .analyzers.scenario.evidence_population import policy_for
+from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.model_view import _build_episode_view
 from .analyzers.scenario import opportunities
 from .analyzers.scenario_config import ScenarioConfig
@@ -265,7 +266,7 @@ class PreparedCases:
                 remaining_claims.remove(identity)
             else:
                 states = [findings_projection._occurrence_verdict(candidate, lever.value)
-                          for lever in habits]
+                          for lever in habits if policy_for(lever).rate_family is family]
                 states = ["outranked" if state == "fired" else state for state in states]
                 verdict = max(states or ["clean"], key=lambda state: precedence[state])
             opportunity = opportunities.Opportunity(
@@ -357,7 +358,6 @@ def _population(
         false_low_span_records(cgm, store.prompt_responses())))
     filtered_bolus = _slice(bolus, start, end)
     filtered_basal = _slice(basal, start, end)
-    from .analyzers.scenario.evaluation import evaluate
     answers = low_prompt_answers(store, start, end)
     isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, end)
     evaluated = evaluate(

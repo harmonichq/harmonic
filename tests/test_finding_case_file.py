@@ -864,3 +864,36 @@ def test_case_file_preserves_exposure_classifier_reach():
     assert case["summary"]["claimed"] == 1
     assert case["summary"]["denominator"] == 1
     assert case["occurrences"][0]["verdict"] == "fired"
+
+
+@pytest.mark.parametrize("lever,meal_count", [("high_carb_sequence", 40), ("repeat_eating", 100)])
+def test_sequence_habit_preserves_clean_pattern_meal_verdicts(lever, meal_count):
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    projection, (bolus, cgm, _, _) = sequence_products(lever)
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0,
+            analysis=projection._analysis, exposures=projection._exposures,
+            scenarios=projection._scenarios,
+        )
+    cause = prepared.case(f"finding:{lever}", "event", None)
+    assert cause["summary"]["claimed"] == 8
+    case = prepared.case("pattern:highs_after_meals", "clock", None)
+
+    # Retain the same produced meal population, removing only the new habit
+    # from the transport roster to pin the pre-sequence Pattern verdicts.
+    baseline = deepcopy(prepared)
+    parent = next(row for row in baseline.findings["rows"]
+                  if row["id"] == "pattern:highs_after_meals")
+    parent["pattern"]["members"] = [member for member in parent["pattern"]["members"]
+                                     if member["subject"] != f"habit:{lever}"]
+    before = baseline.case("pattern:highs_after_meals", "clock", None)
+    assert before["verdict_counts"] == {
+        "fired": 0, "outranked": 0, "near_miss": 0, "no_data": 0, "clean": meal_count,
+    }
+    assert case["occurrences"][0]["verdict"] == "clean"
+    assert case["verdict_counts"] == before["verdict_counts"]
+    assert case["summary"] == before["summary"] == {
+        "claimed": 0, "denominator": meal_count, "noun": "meals",
+    }

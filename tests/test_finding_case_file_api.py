@@ -1299,6 +1299,8 @@ class SequenceFindingCaseFileRouteTest(unittest.TestCase):
                         "analysis_generation": case["analysis_generation"],
                     })
                     self.assertEqual(report.status_code, 200, report.text)
+                    self.assertEqual(report.json()["analysis_generation"],
+                                     case["analysis_generation"])
                     self.assertEqual(report.json()["high_carb_sequence"],
                                      case["projection"]["report"]["high_carb_sequence"])
                     app.state.result_cache.bump()
@@ -1308,3 +1310,24 @@ class SequenceFindingCaseFileRouteTest(unittest.TestCase):
                     fresh = client.get("/api/diagnose/finding-case-file-preparation").json()
                     self.assertNotEqual(fresh["projection_id"], prepared["projection_id"])
                     self.assertEqual(fresh["findings"]["analysis_generation"], "sequence-http:1")
+                    stale_report = client.get("/api/diagnose/eating-sequences", params={
+                        "analysis_generation": case["analysis_generation"],
+                    })
+                    self.assertEqual(stale_report.status_code, 409)
+                    self.assertEqual(stale_report.json()["detail"]["code"],
+                                     "analysis_generation_mismatch")
+                    fresh_case = client.get("/api/diagnose/finding-case-file", params={
+                        **params, "projection_id": fresh["projection_id"],
+                    })
+                    self.assertEqual(fresh_case.status_code, 200, fresh_case.text)
+                    fresh_generation = fresh_case.json()["analysis_generation"]
+                    self.assertEqual(fresh_generation, fresh["findings"]["analysis_generation"])
+                    fresh_report = client.get("/api/diagnose/eating-sequences", params={
+                        "analysis_generation": fresh_generation,
+                    })
+                    # A divergent report-generation derivation returns 409 here.
+                    self.assertEqual(fresh_report.status_code, 200, fresh_report.text)
+                    self.assertEqual(fresh_report.json()["analysis_generation"], fresh_generation)
+                    for key in ("high_carb_sequence", "repeat_eating_amplifier"):
+                        self.assertEqual(fresh_report.json()[key],
+                                         fresh_case.json()["projection"]["report"][key])

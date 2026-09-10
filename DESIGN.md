@@ -313,7 +313,7 @@ and Pattern case chart.
 
 The sixth registry family, eating-sequence, reuses the shared tile, mini mount,
 All charts and fullscreen shell. Its cohort aggregate dots use the shipped
-comparison/observed colors with diamond/circle redundancy. Time in range (%) and
+comparison/matched colors with diamond/circle redundancy. Time in range (%) and
 glucose SD (mg/dL) have separate labeled rulers. Three served intervals remain
 visible; a labeled dot identifies the producer-selected period. Cohort counts
 come from that comparison. Nulls stay absent numeric points with an explicit

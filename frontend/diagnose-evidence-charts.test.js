@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from '../harness/dev-server.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -1068,7 +1069,7 @@ test('glucose projections expose served values and thumbnails have no axis furni
     'the comparison reports the medians the case file serves');
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     if (entry.kind === 'eating-sequence') {
-      const data = fixture('../mockups/eating-sequence-findings.synthetic/payload.json')
+      const data = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
         .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'].event;
       const thumb = entry.thumbnail(data);
       assert.ok(thumb.xAxis.every((axis) => axis.axisLabel.show === false));

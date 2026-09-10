@@ -1,3 +1,5 @@
+import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
+import { expandSequenceFixture } from '../harness/dev-server.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -97,9 +99,9 @@ import { eatingSequenceComparison, eatingSequenceChartOption, validEatingSequenc
 import { DIAGNOSE_EVIDENCE_CHARTS } from './diagnose-evidence-charts.js';
 import { descriptorsFromFindings } from './diagnose-canvas-layout.js';
 
-const sequenceFixture = JSON.parse(readFileSync(
+const sequenceFixture = expandSequenceFixture(JSON.parse(readFileSync(
   new URL('../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8',
-));
+)));
 
 test('public sequence cases select the dedicated chart before the generic response chart', () => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
@@ -178,5 +180,38 @@ test('a supported case keeps a null period visible without a zero-filled point',
     assert.equal(option.series[1].data[0].value[1], null);
     assert.equal(option.series[0].data[0].status, 'insufficient');
     assert.match(option.graphic[0].style.text, /Unavailable: During sequence/);
+  }
+});
+
+test('sequence detail shares the existing Clear trace control and family copy authority', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  assert.equal([...source.matchAll(/clear.textContent = 'Clear trace'/g)].length, 1);
+  assert.match(source, /function renderClearTrace[\s\S]*?addEventListener\('click', onClearTrace\)/);
+  assert.match(source, /renderClearTrace\(foot, onClearTrace\)/);
+  assert.match(source, /renderClearTrace\(host, onClearTrace\)/);
+  assert.doesNotMatch(source, /Clear selection|FAMILY_(?:SHORT|LABEL)\[family\] \|\|/);
+  for (const map of ['FAMILY_SHORT', 'FAMILY_LABEL']) {
+    assert.match(source.match(new RegExp(`const ${map} = \\{([\\s\\S]*?)\\};`))[1], /sequences: 'sequences'/);
+  }
+});
+
+test('expanded sequence fixtures satisfy preparation and selection transport contracts', () => {
+  for (const state of Object.values(sequenceFixture.states)) {
+    assert.deepEqual(Object.keys(state.windows).sort(), ['0-360', 'global']);
+    assert.equal(state.analyze, undefined);
+    assert.equal(state.exposures, undefined);
+    assert.equal(state.scenarios, undefined);
+    for (const [key, window] of Object.entries(state.windows)) {
+      assert.doesNotThrow(() => assertMatchingFindingCasePreparation(window.preparation,
+        key === 'global' ? null : { start_min: 0, end_min: 360 }));
+      for (const stored of Object.values(window.cases)) {
+        if (stored.event.family !== 'sequences') continue;
+        assert.equal(validEatingSequenceCase(stored.event), true);
+        assert.equal(validEatingSequenceCase(stored.clock), true);
+        for (const selection of Object.values(stored.selections)) {
+          assert.equal(validEatingSequenceCase({ ...stored.event, selection }), true);
+        }
+      }
+    }
   }
 });

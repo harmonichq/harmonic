@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from collections import Counter
 from datetime import timedelta
 from hashlib import sha256
 from dataclasses import replace
@@ -97,20 +98,17 @@ def findings_payload():
                 continue
             key = f"{lever}_{name}"
             projection, (bolus, cgm, log, _) = products(lever, **options)
+            # FindingsProjection has no public accessors for its three source payloads.
             # Freeze only the transport capture clock; all judgments remain producer-owned.
             projection._analysis["generated_at"] = cgm[-1].t.strftime("%Y-%m-%d %H:%M:%S")
             with Store.open(":memory:") as store:
                 seed_sequence_store(store, bolus, cgm, log)
                 windows = {}
-                # Fixed clock presets, plus the actual served witness window.
+                # The stories boot Overnight, then inspect 24 h; S157 returns Overnight.
                 occurrences = projection._exposures.get("sequence_evidence", {}).get(lever, {}).get("occurrences", [])
                 witness = next((r["outcome_minute"] for r in occurrences if r["attributed"]), None)
                 queries = {"global": WindowQuery.whole_day(),
-                           "0-360": WindowQuery.clock(0, 360),
-                           "360-1440": WindowQuery.clock(360, 1440)}
-                if witness is not None:
-                    end = (witness + 90) % 1440
-                    queries[f"{witness}-{end}"] = WindowQuery.clock(witness, end)
+                           "0-360": WindowQuery.clock(0, 360)}
                 for window_key, query in queries.items():
                     prepared = finding_case_file.prepare(
                         store, query=query, version=0, analysis=projection._analysis,
@@ -119,6 +117,8 @@ def findings_payload():
                     )
                     prepared.projection_id = "fp_" + sha256(f"{key}:{window_key}".encode()).hexdigest()[:32]
                     wrapped = finding_case_file.wrap(prepared)
+                    # Consumers serve rendered_rows; the unprepared projection roster is unused.
+                    del wrapped["findings"]["rows"]
                     cases = {}
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
@@ -137,12 +137,61 @@ def findings_payload():
                     windows[window_key] = {"preparation": wrapped, "cases": cases}
                 states[key] = {
                     "lever": lever, "witness_minute": witness,
-                    "analyze": projection._analysis, "scenarios": projection._scenarios,
-                    "exposures": projection._exposures, "windows": windows,
+                    "windows": windows,
                 }
     return {"_generated_by": "scripts/gen_eating_sequence_fixtures.py",
             "_note": "SYNTHETIC. Manufactured event streams through public Python producers; no personal data.",
             "states": states}
+
+
+def compact_findings_payload(body):
+    """Intern repeated JSON containers without changing any served value."""
+    counts = Counter()
+
+    def identity(value):
+        return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+    def count(value):
+        if isinstance(value, (dict, list)):
+            key = identity(value)
+            if len(key) > 120:
+                counts[key] += 1
+            for child in value.values() if isinstance(value, dict) else value:
+                count(child)
+
+    count(body["states"])
+    shared, indices = [], {}
+
+    def pack(value):
+        if not isinstance(value, (dict, list)):
+            return value
+        key = identity(value)
+        if counts[key] > 1:
+            if key not in indices:
+                packed = walk(value)
+                indices[key] = len(shared)
+                shared.append(packed)
+            return {"$ref": indices[key]}
+        return walk(value)
+
+    def walk(value):
+        return ({key: pack(child) for key, child in value.items()}
+                if isinstance(value, dict) else [pack(child) for child in value])
+
+    states = pack(body["states"])
+    return {**body, "states": states, "shared": shared}
+
+
+def expand_findings_payload(body):
+    """Restore independent transports for producer equality tests."""
+    def expand(value):
+        if isinstance(value, dict):
+            if set(value) == {"$ref"}:
+                return expand(body["shared"][value["$ref"]])
+            return {key: expand(child) for key, child in value.items()}
+        return [expand(child) for child in value] if isinstance(value, list) else value
+
+    return {key: expand(value) for key, value in body.items() if key != "shared"}
 
 
 def main() -> int:
@@ -150,7 +199,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     stale = False
-    for path, body in ((OUT, payload()), (FINDINGS_OUT, findings_payload())):
+    for path, body in ((OUT, payload()), (FINDINGS_OUT, compact_findings_payload(findings_payload()))):
         rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
         if args.check:
             if (path.read_text() if path.exists() else "") != rendered:

@@ -234,13 +234,13 @@ const PLOT_BOTTOM = 26;
 // the long form, for the level-2 stat line where there is room for it
 const FAMILY_LABEL = {
   lows: 'low episodes', meals: 'meal responses',
-  highs: 'high episodes', correction_clusters: 'correction clusters',
+  highs: 'high episodes', correction_clusters: 'correction clusters', sequences: 'sequences',
 };
 /* The compact form, for the level-1 row: it serves BOTH the denominator phrase
    ("of 68 lows") and the disambiguating qualifier ("· clusters"). Spending width
    on "correction clusters" twice per row is what squeezed the names. */
 const FAMILY_SHORT = {
-  lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters',
+  lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters', sequences: 'sequences',
 };
 
 const VERDICT_KEY = {
@@ -544,9 +544,9 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
   const box = document.createElement('div');
   box.className = 'inner';
   box.innerHTML = `
-    <div class="who">${finding.title} <span class="qual">· ${FAMILY_SHORT[family] || summary.noun}</span></div>
+    <div class="who">${finding.title} <span class="qual">· ${FAMILY_SHORT[family]}</span></div>
     <div class="statline"><b>${summary.claimed}</b> of <b>${summary.denominator}</b>
-      ${FAMILY_LABEL[family] || summary.noun} in ${caseFile.window.label || '24 h'}
+      ${FAMILY_LABEL[family]} in ${caseFile.window.label || '24 h'}
       · <b>${summary.denominator - summary.claimed}</b> not attributed</div>`;
   const clock = projection.alignment === 'clock' ? projection.clock : null;
   renderCaseClock(box, clock);
@@ -629,13 +629,18 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
    release the trace, or hand the day off to Day. The Finding case file and the
    basal night roster are both real callers, and the pair's wording is
    user-visible copy that must not drift between them. */
-function renderOccurrenceFoot(host, date, onClearTrace, onOpenDay) {
-  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+function renderClearTrace(host, onClearTrace) {
   const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'linkbtn clear-trace';
   clear.textContent = 'Clear trace'; clear.addEventListener('click', onClearTrace);
+  host.append(clear);
+}
+
+function renderOccurrenceFoot(host, date, onClearTrace, onOpenDay) {
+  const foot = document.createElement('div'); foot.className = 'inner occ-foot';
+  renderClearTrace(foot, onClearTrace);
   const day = document.createElement('button'); day.type = 'button'; day.className = 'linkbtn';
   day.textContent = `Open ${fmtDate(date)} in Day`; day.addEventListener('click', onOpenDay);
-  foot.append(clear, day); host.append(foot);
+  foot.append(day); host.append(foot);
 }
 
 function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
@@ -660,10 +665,7 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
       episodes.append(fact);
     }
     host.append(box, episodes);
-    const clear = document.createElement('button');
-    clear.type = 'button'; clear.className = 'linkbtn clear-trace';
-    clear.textContent = 'Clear selection'; clear.onclick = onClearTrace;
-    host.append(clear);
+    renderClearTrace(host, onClearTrace);
     return;
   }
   const comparison = caseFile.projection.alignment === 'event';

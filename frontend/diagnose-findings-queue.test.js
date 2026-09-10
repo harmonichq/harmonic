@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from '../harness/dev-server.js';
 /* The findings queue's copy and row grammar (lock terms 34–45), against the real
  * projection's own frozen output — never a hand-written row.
  */
@@ -644,8 +645,8 @@ test('#395 · Pattern and Lever drills request event cases; chartless rows retai
 });
 
 test('#342 · sequence habits reuse the inherited member grammar and count exclusions', () => {
-  const generated = JSON.parse(readFileSync(new URL(
-    '../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8'));
+  const generated = expandSequenceFixture(JSON.parse(readFileSync(new URL(
+    '../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8')));
   for (const name of ['high_carb_sequence_empty', 'repeat_eating_empty', 'both_covered']) {
     const prepared = generated.states[name].windows.global.preparation;
     const projection = { ...prepared.findings, rows: prepared.rendered_rows };

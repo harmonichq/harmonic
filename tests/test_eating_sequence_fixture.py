@@ -73,13 +73,15 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.root = Path(__file__).resolve().parents[1]
-        cls.fixture = json.loads((
+        from scripts.gen_eating_sequence_fixtures import expand_findings_payload
+        cls.fixture = expand_findings_payload(json.loads((
             cls.root / "mockups/eating-sequence-findings.synthetic/payload.json"
-        ).read_text())
+        ).read_text()))
 
     def test_dedicated_payload_is_deterministic_public_producer_output(self):
         from scripts.gen_eating_sequence_fixtures import findings_payload
         self.assertEqual(self.fixture, findings_payload())
+        self.assertLess((self.root / "mockups/eating-sequence-findings.synthetic/payload.json").stat().st_size, 1_000_000)
         self.assertIn("SYNTHETIC", self.fixture["_note"])
 
     def test_empty_and_covered_cases_keep_sequence_counts_outside_the_meal_rate(self):

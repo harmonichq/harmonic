@@ -19,6 +19,27 @@ const MIME = {
 const clone = (value) => structuredClone(value);
 const json = async (path) => JSON.parse(await readFile(path, 'utf8'));
 
+/** Expand the generator's shared JSON values into independent served transports. */
+export function expandSequenceFixture(payload) {
+  function expand(value) {
+    if (Array.isArray(value)) return value.map(expand);
+    if (value && typeof value === 'object') {
+      if (Object.keys(value).length === 1 && Object.hasOwn(value, '$ref')) {
+        return expand(payload.shared[value.$ref]);
+      }
+      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, expand(child)]));
+    }
+    return value;
+  }
+  const states = expand(payload.states);
+  for (const state of Object.values(states)) {
+    for (const { preparation } of Object.values(state.windows)) {
+      preparation.findings.rows = structuredClone(preparation.rendered_rows);
+    }
+  }
+  return { ...payload, states };
+}
+
 function send(res, status, body, contentType = 'application/json') {
   res.statusCode = status;
   res.setHeader('Content-Type', contentType);
@@ -79,7 +100,7 @@ export function harnessDataPlugin({ repositoryRoot }) {
     json(join(fixtureRoot, 'ic-history-events.capture.json')),
     json(join(repositoryRoot, 'mockups/diagnose-event-comparison.synthetic/capture.json')),
   ]);
-  const sequenceLoad = json(join(repositoryRoot, 'mockups/eating-sequence-findings.synthetic/payload.json'));
+  const sequenceLoad = json(join(repositoryRoot, 'mockups/eating-sequence-findings.synthetic/payload.json')).then(expandSequenceFixture);
   let sequenceState = null;
   let source = 'manufactured';
   const preparedWindows = new Map();
@@ -158,13 +179,6 @@ export function harnessDataPlugin({ repositoryRoot }) {
           const key = url.searchParams.has('start_min')
             ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
           const prepared = state.windows[key];
-          const feeds = {
-            '/api/analyze': state.analyze, '/api/scenarios': state.scenarios,
-            '/api/explore/exposures': state.exposures,
-          };
-          if (Object.hasOwn(feeds, url.pathname)) {
-            send(res, 200, feeds[url.pathname]); return;
-          }
           if (['/api/diagnose/findings', '/api/diagnose/finding-case-file-preparation'].includes(url.pathname)) {
             if (!prepared) { send(res, 404, { detail: 'Window absent from manufactured state' }); return; }
             send(res, 200, url.pathname.endsWith('preparation') ? prepared.preparation

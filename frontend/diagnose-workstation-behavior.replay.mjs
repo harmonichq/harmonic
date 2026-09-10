@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from '../harness/dev-server.js';
 // Behaviour replay for the Diagnose workstation — the executable half of the
 // frozen behaviour ledger for the shipped Diagnose workstation.
 //
@@ -494,8 +495,8 @@ export function patternCaseResponse(capture, url, window) {
  * on-disk source explicitly. Every intercepted endpoint is named.
  */
 const sequenceStates = new WeakMap();
-const sequencePayload = JSON.parse(await readFile(
-  join(ROOT, 'mockups/eating-sequence-findings.synthetic/payload.json'), 'utf8'));
+const sequencePayload = expandSequenceFixture(JSON.parse(await readFile(
+  join(ROOT, 'mockups/eating-sequence-findings.synthetic/payload.json'), 'utf8')));
 
 export async function openApp(browser, {
   state: want = 'typical', viewport = { width: 1440, height: 900 }, findingsInputs = null,
@@ -707,12 +708,7 @@ export async function openApp(browser, {
       const key = url.searchParams.has('start_min')
         ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
       const window = sequence.windows[key];
-      const feeds = {
-        '/api/analyze': sequence.analyze, '/api/scenarios': sequence.scenarios,
-        '/api/explore/exposures': sequence.exposures,
-      };
       let body;
-      if (Object.hasOwn(feeds, path)) body = feeds[path];
       if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
         if (!window) fail(`Missing generated sequence window: ${sequenceName}/${key}`);
         body = path.endsWith('preparation') ? window.preparation
@@ -5356,6 +5352,7 @@ async function sequenceDrill(page, lever) {
   await first.click();
   await page.locator('#level .sequence-detail').waitFor();
   const detail = await page.locator('#level .sequence-detail').innerText();
+  is(await page.locator('#level .clear-trace').innerText(), 'Clear trace', 'sequence selection uses the shared clear label');
   const windowBefore = (await state(page)).pressed;
   const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
   await control.click();

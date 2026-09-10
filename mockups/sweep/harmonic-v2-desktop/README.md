@@ -1,5 +1,9 @@
 # Sweep evidence — harmonic-v2-desktop
 
+The #389 build evidence index is [fidelity.md](fidelity.md), with the coordinator
+commands and scenario coverage in [ACCEPTANCE.md](ACCEPTANCE.md). Those records
+do not turn the historical observations below into built-app acceptance.
+
 Frozen observations behind `mockups/harmonic-v2-desktop.behavior.md`, produced by
 `frontend/harmonic-v2-desktop-behavior.replay.mjs` against the ★ LOCKED
 prototype at the lock's two target viewports.

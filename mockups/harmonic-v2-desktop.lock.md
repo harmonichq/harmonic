@@ -847,6 +847,11 @@ through the port instruction.
 
 ## What this lock does not do
 
+The #389 c4 builder evidence index is
+[`sweep/harmonic-v2-desktop/fidelity.md`](sweep/harmonic-v2-desktop/fidelity.md).
+It contains one ported row per term and the outstanding execution evidence.
+It changes no term or sanction and records no final fidelity or eye verdict.
+
 It does not implement anything, does not prove built-app fidelity, and does not
 carry release acceptance. It admits no mobile design, no root-route cutover and
 no v1 retirement — those remain separate later gates under tasks 4.1–4.3. It

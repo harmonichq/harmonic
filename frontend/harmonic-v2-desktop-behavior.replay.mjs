@@ -61,6 +61,7 @@ import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js'
 import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
 import { C3_STORIES } from '../frontend-v2/c3.replay.mjs';
 import { C2_STORIES } from '../frontend-v2/c2.replay.mjs';
+import { captureStory } from '../frontend-v2/capture.mjs';
 
 const require = createRequire(import.meta.url);
 const { createBrowserRunner } = require('./browser-runner.js');
@@ -130,7 +131,9 @@ const FIXTURES = [
 function requireAssets() {
   const missing = [];
   if (!existsSync(ECHARTS_FILE)) missing.push(`${ECHARTS_FILE} — run npm ci`);
-  if (!existsSync(MOCK_FILE)) missing.push(MOCK_FILE);
+  // The accepted app replay survives the bounded prototype archive move.
+  // TARGET=mock still fails closed without its original executable source.
+  if (TARGET === 'mock' && !existsSync(MOCK_FILE)) missing.push(MOCK_FILE);
   for (const relative of FIXTURES) {
     if (!existsSync(join(REPO, relative))) missing.push(relative);
   }
@@ -2810,6 +2813,11 @@ async function main() {
       opened = await open({ ...state, viewport, storyId: id, caseName });
       const body = TARGET === 'app' ? (C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
       await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump });
+      if (process.env.CAPTURE_DIR && (!process.env.CAPTURE_ONLY
+          || process.env.CAPTURE_ONLY.split(',').includes(id))) {
+        await captureStory(opened.page, { directory: process.env.CAPTURE_DIR, id,
+          target: TARGET, viewport, caseName: TARGET === 'app' ? caseName : state.source });
+      }
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);
     } catch (error) {

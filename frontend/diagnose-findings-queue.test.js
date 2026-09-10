@@ -57,7 +57,7 @@ test('the root filter has no retired Event charts view or state', () => {
 
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
-  assert.equal(queueMeta(W.global), '11 findings · 30 days');
+  assert.equal(queueMeta(W.global), '8 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '3 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
@@ -480,7 +480,7 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
 });
 
 test('metadata and empty copy describe Sift, the only root filter', () => {
-  assert.equal(queueMeta(W.global, new Set(['meals'])), '3 findings · 30 days');
+  assert.equal(queueMeta(W.global, new Set(['meals'])), '2 findings · 30 days');
   assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '30 days');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });

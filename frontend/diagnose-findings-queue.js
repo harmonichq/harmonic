@@ -50,6 +50,16 @@ export const TIER = {
    measurement and mounting lifecycle; this is the rail's legibility floor. */
 export const MIN_ROW_MINI_WIDTH = 120;
 
+/* The roster key is server-owned; this closed table spells the sanctioned
+   reader-facing outcome without deriving one from member findings. */
+export const PATTERN_OUTCOME = Object.freeze({
+  highs_after_meals: 'ran high',
+  lows_after_meals: 'ran low',
+  highs_after_treating_lows: 'rebounded high',
+  lows_after_correcting_highs: 'followed a correction',
+  overnight_lows_no_iob: 'ran low overnight',
+});
+
 /* Display units per parameter. Formatting, not policy: the projection publishes the
    numbers and the parameter id, and a unit is how a number is spelled. */
 const UNIT = { basal_rate: 'U/hr', carb_ratio: 'g/U', isf: 'mg/dL/U' };
@@ -97,7 +107,7 @@ export function eventChartCoordinate(row) {
  */
 export function queueMeta(projection, selected = null) {
   const rows = queueRows(projection, selected)
-    .filter((row) => !row.hidden && !row.collapsed);
+    .filter((row) => !row.hidden && !row.collapsed && !row.claimedBy);
   const days = projection?.findings_window?.days;
   const dayWord = days === 1 ? 'day' : 'days';
   if (!rows.length) return `${days} ${dayWord}`;
@@ -116,9 +126,15 @@ function appearanceParts(row) {
    is the only supplied reader-facing recurrence sentence, so this trims only
    the repeated title before seating it in the rail's denominator slot. */
 function patternPart(row) {
-  const headline = typeof row.headline === 'string' ? row.headline : '';
-  const prefix = `${row.title} in `;
-  return headline.startsWith(prefix) ? headline.slice(prefix.length) : headline;
+  const pattern = row.pattern || {};
+  const noun = row.case_header?.summary?.noun || row.case_header?.family
+    || (typeof row.headline === 'string'
+      ? row.headline.match(/\bin \d+ of \d+\s+(.+)$/)?.[1] : null);
+  const outcome = PATTERN_OUTCOME[pattern.key];
+  if (pattern.k != null && pattern.n != null && noun && outcome) {
+    return `${pattern.k} of ${pattern.n} ${noun} ${outcome}`;
+  }
+  return typeof row.headline === 'string' ? row.headline : '';
 }
 
 /**
@@ -379,7 +395,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     node.dataset.id = row.id;
     item.append(node);
     // the numeral restates the position a screen reader already announces
-    add(node, 'n', row.rank == null ? '' : String(row.rank))
+    add(node, 'n', row.claimedBy ? '│' : row.rank == null ? '' : String(row.rank))
       .setAttribute('aria-hidden', 'true');
     // The first served tier word is read before the first row's title; later tier
     // changes use the caption inserted immediately before their first row.
@@ -404,7 +420,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // to two lines by the stylesheet
     if (row.summary) add(node, 'sum', row.summary);
     const detail = paintDetail(node, row.detail);
-    if (detail && row.raw.window_scope === 'whole_day') {
+    if (detail && row.raw.window_scope === 'whole_day' && !row.pattern) {
       add(detail, 'scope-note', ' · Whole day');
     }
     /* Chart-backed Watching rows use the same evidence preview as ranked rows

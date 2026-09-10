@@ -1243,7 +1243,7 @@ export const S08 = async (page) => {
 export const S09 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 350);
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const s = await state(page);
   is(s.crumb.length, 2, 'S09 one level pushed');
@@ -1269,7 +1269,7 @@ export const S09 = async (page) => {
     this story now asserts the retirement itself. */
 // LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18
 export const S10 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   ok((await state(page)).evRows > 0, 'S10 the served case roster remains readable');
   is((await state(page)).evCounterGone, 0,
@@ -1282,7 +1282,7 @@ export const S10 = async (page) => {
     evidence, never viewport navigation (ADR 31 part 5). */
 // LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:19 LOCK:diagnose-workstation:20
 export const S11 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const peak = await state(page);
   await page.click('#level .ev-row');
@@ -1302,7 +1302,7 @@ export const S11 = async (page) => {
 export const S12 = async (page) => {
   const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-23 · "the roster is drawn vertically; one key model per list."`;
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
@@ -1325,7 +1325,7 @@ export const S12 = async (page) => {
     occurrence (P35 retired) never adds a level for it to pop. */
 // LOCK:diagnose-workstation:21
 export const S13 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   is((await state(page)).crumb.length, 2, 'S13 at depth 2');
   await page.click('#level .ev-row');
@@ -1345,7 +1345,7 @@ export const S13 = async (page) => {
     occurrence in place (P35 retired) adds no ancestor of its own. */
 // LOCK:diagnose-workstation:4
 export const S14 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
@@ -1509,7 +1509,9 @@ export const S19 = async (page) => {
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
 // LOCK:diagnose-workstation:33
 export const S20 = async (page) => {
-  // `drill` opens ON a factor, so the coincidence line is already rendered
+  await page.click(LEVER_FINDING);
+  await settle(page, 450);
+  // The canonical Lever case carries the coincidence line.
   ok((await state(page)).linkBtns.length === 2, 'S20 precondition: opens at the factor level');
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View slot').click());
   await settle(page, 450);
@@ -1535,7 +1537,7 @@ export const S20 = async (page) => {
 export const S21 = async (page) => {
   const start = await state(page);
   ok(start.chip !== null, 'S21 precondition: a drawn window stands');
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
@@ -1642,7 +1644,7 @@ async function setupWorkspaceAtFactor(page) {
   // factor, THEN draw the window so drilling preserves it (never a lane click)
   await page.click('#crumb-trail button');   // the Findings ancestor
   await settle(page, 400);
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 400);
   const b = await plot(page);
   const y = b.y + b.h * 0.4;
@@ -1863,7 +1865,7 @@ export const S25 = async (page) => {
 export const S26 = async (page) => {
   const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   ok((await state(page)).evRows > 0, 'S26 precondition: evidence rows render');
   const shape = await page.evaluate(() => ({
@@ -1892,7 +1894,7 @@ export const S27 = async (page) => {
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
   const sift = await page.getByRole('menuitemcheckbox').allTextContents();
-  is(sift, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
+  is(sift, ['Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1'],
     'S27 the four Sift items spell the server-published global counts');
 };
 
@@ -1905,7 +1907,9 @@ export const S28 = async (page) => {
   await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
   await settle(page, 350);
   const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
-  is(ids, ['finding:correction_on_iob', 'finding:late_bolus'],
+  is(ids, ['pattern:highs_after_meals', 'finding:late_bolus',
+    'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+    'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob'],
     'S28 a deselected Highs choice hides high-only rows while preserving multi-Sift matches');
 };
 
@@ -2060,6 +2064,8 @@ const clickQueueRow = async (page, title) => {
   await page.locator('#level .qrow').nth(at).click();
   await settle(page, 500);
 };
+
+const LEVER_FINDING = '#level .qrow[data-id="finding:carb_undercount"]';
 
 /** Draw an exact clock window. The plot's minute→pixel map is linear
     (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
@@ -2566,7 +2572,7 @@ export const S77 = async (page) => {
     leave the Finding case file's standing navigation untouched. */
 // STORY:finding-evidence-routing:S78
 export const S78 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const rows = page.locator('#level .case-occurrence');
   ok(await rows.count() >= 2, 'S78 the vertical case roster exposes two keyboard targets');
@@ -2586,7 +2592,7 @@ export const S78 = async (page) => {
     selected roster row after the asynchronous case-file paint. */
 // STORY:finding-evidence-routing:S79
 export const S79 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const first = page.locator('#level .case-occurrence').first();
   await first.focus();
@@ -2614,7 +2620,7 @@ export const S80 = async (page) => {
 /** S81 · Choosing a rendered Occurrence keeps the reader's place on that row. */
 // STORY:finding-evidence-routing:S81
 export const S81 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const rows = page.locator('#level .case-occurrence');
   ok(await rows.count() >= 2, 'S81 precondition: the case file renders at least two Occurrences');
@@ -3289,7 +3295,7 @@ export const C41 = async (page) => {
 
 export const C42 = async (page) => {
   await openWholeDay(page);
-  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
+  const titles = await page.locator('#level .qrow[data-state="finding"][data-id^="finding:"] .lab').allTextContents();
   ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
   for (const title of titles) {
     await clickQueueRow(page, title);
@@ -3383,7 +3389,7 @@ export const C57 = async (page) => {
 export const C60 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  const [{ id, title }] = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => ({
+  const [{ id, title }] = await page.locator('#level .qrow[data-id^="finding:"]').evaluateAll((rows) => rows.map((row) => ({
     id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
   })));
   const control = page.locator('#level .q').getByRole('button', { name: title });
@@ -4105,12 +4111,12 @@ export const S144 = async (page) => {
   }
   await page.keyboard.press('Escape');
   await settle(page, 450);
-  const first = page.locator('#level .qrow.priced');
-  is(await first.count(), 1, 'S144 the meals-only sift paints one priced row');
-  is((await first.locator('.lab').innerText()).trim(), 'Carb undercount',
-    'S144 the promoted row keeps the served title');
-  is(await focalId(page), 'finding:carb_undercount',
-    'S144 the promoted row chart moves onto the stage');
+  const priced = page.locator('#level .qrow.priced');
+  is(await priced.count(), 2, 'S144 the meals-only sift retains both served priced rows');
+  is((await priced.first().locator('.lab').innerText()).trim(), 'Highs after meals',
+    'S144 the served Pattern remains ahead of its claimed member');
+  is(await focalId(page), 'pattern:highs_after_meals',
+    'S144 the served Pattern chart moves onto the stage');
 };
 
 // STORY:finding-evidence-routing:S145
@@ -4176,7 +4182,7 @@ export const S150 = async (page) => {
   const node = page.locator(`#level .qrow[data-id="${member.id}"]`);
   ok((await node.locator('xpath=..').getAttribute('class')).includes('claimed'),
     'S150 claimed member is nested by the served flag');
-  is(await node.locator('.n').innerText(), '', 'S150 nested member has no ranked numeral');
+  is(await node.locator('.n').innerText(), '│', 'S150 nested member has the quiet non-rank tick');
 };
 
 /* ---- #353 · one denominator per rendered row --------------------------- */
@@ -4506,7 +4512,7 @@ export const S106 = async (page) => {
 // STORY:finding-evidence-routing:S107
 export const S107 = async (page) => {
   await openCanvas(page);
-  const held = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const held = page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]');
   const heldFindingId = await held.getAttribute('data-chart-id');
   ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
   await held.locator('.tile-pin').click();
@@ -4607,7 +4613,7 @@ export const S109 = retiredStory('S109');
 // STORY:finding-evidence-routing:S110
 export const S110 = async (page) => {
   await openCanvas(page);
-  const tile = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  const tile = page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]');
   const id = await tile.getAttribute('data-chart-id');
   await tile.locator('.tile-body').click(); await settle(page, 500);
   /* RETIRED CLAUSE — S110's provenance-name half. The #drill-provenance
@@ -4629,7 +4635,7 @@ export const S110 = async (page) => {
 // STORY:finding-evidence-routing:S111
 export const S111 = async (page) => {
   await openCanvas(page);
-  await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().locator('.tile-body').click();
+  await page.locator('.evidence-tile[data-chart-id="finding:carb_undercount"]').locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().click();
   await page.locator('#level .clear-trace').waitFor();
   const crumb = (await state(page)).crumb;

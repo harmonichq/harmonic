@@ -2096,7 +2096,7 @@ test('the Filter menu renders each server-published Sift count', async () => {
       await settle(page, 450);
       await page.getByRole('button', { name: /Filter/ }).click();
       assert.deepEqual(await page.getByRole('menuitemcheckbox').allTextContents(), [
-        'Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1',
+        'Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1',
       ], 'the four Sift items spell the server-published global counts');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
@@ -2253,7 +2253,9 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
       await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
-        'finding:correction_on_iob', 'finding:late_bolus',
+        'pattern:highs_after_meals', 'finding:late_bolus',
+        'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+        'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob',
       ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],

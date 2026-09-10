@@ -5,6 +5,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
+import { PATTERN_OUTCOME } from './diagnose-findings-queue.js';
 import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
@@ -142,6 +143,13 @@ function thumbnail(name, count, series = []) {
     series,
   };
 }
+
+const patternMiniLabel = (data) => {
+  const key = data?.finding?.lever;
+  const phrase = key === 'lows_after_correcting_highs'
+    ? 'AFTER A CORRECTION' : (PATTERN_OUTCOME[key] || '').toUpperCase();
+  return `${phrase} · ${data?.summary?.claimed ?? 0}`;
+};
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the
    engine's own closed display set (`Status` in `ciq_autotune/safety.py`), so the
@@ -991,8 +999,8 @@ const entries = [
     }),
     option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
       eventComparisonChartOption(caseFile, range, surface, mini),
-    thumbnail: (data, title) => thumbnail((title || 'Pattern response').toUpperCase(),
-      data?.summary?.denominator ?? 0,
+    thumbnail: (data) => thumbnail(patternMiniLabel(data),
+      `TYPICAL · ${data?.summary?.denominator ?? 0}`,
       [{ type: 'line', symbol: 'none', connectNulls: true,
         data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),

@@ -3550,3 +3550,24 @@ C62 · A finding claimed in two families keeps both on the rendered row, the
 issued by its sibling children of sweep #350 (#364, #354, #363 and #372), and
 the sweep's integration branch carries all five, which is why the issued and
 active lines read a contiguous `C41–C62`.
+
+## Amendment — 2026-09-09, served Pattern rows revise the Sift and legacy drills (issue #395)
+
+The #395 rail revision adds server-published Pattern rows to the same ordered
+Findings queue. A failed-first whole replay against the initial c3 build
+reported `app: 152 of 174 stories passed`: S27 and S28 still asserted the
+pre-Pattern Sift counts and row list; S144 still asserted a Meals-only list had
+one priced Lever row; and legacy case stories opened the first `finding` row,
+which can now be a Pattern.
+
+**Revised behavior.** S27 now reads the served counts `Highs 4`, `Lows 3`,
+`Meals 2`, and `Corrections 1`. S28 leaves the six served rows matching the
+remaining chips, in server order. S144 retains the two Meals-priced rows and
+keeps the server-ranked `pattern:highs_after_meals` and its case-file chart
+ahead of `finding:carb_undercount`. S09–S14, S20, S26, S78, S79 and S81 anchor
+their Lever case assertions by canonical `finding:carb_undercount`, never by
+queue position. C42 and C60 likewise name a Lever Finding explicitly.
+
+S150 is strengthened: a claimed member has the quiet orange tick but no ranked
+numeral, and contributes neither another Findings count nor another Sift chip
+count. This is a rendering of the served `claimed_by` relation alone.

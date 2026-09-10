@@ -1854,18 +1854,20 @@ own data, which showed the same behaviour split across a Pattern and a member
 it could not count. (1) Highs after meals counts meal bolus fell short as a
 rate lever beside carb undercount and late bolus: it is the same under-dosed
 meal judged from the high it produced rather than from the meal, identified by
-the meal it cites (`meal_at`), so a meal caught by both detectors counts once;
+the meal opportunity its episode covers, which the exposures feed stamps on the
+meals population itself, so a meal caught by both detectors counts once;
 it stays observation-only for actions and admission. (2) Lows after correcting
 highs counts over lows, not correction clusters: `k` lows preceded by a
 correction on active insulin, stacked or not, of `n` lows, with both correction
 stacking and correction on active insulin as rate levers identified by the low
-they reach (the existing low-nadir identity), anchored on the low in its case
-file. Correction clusters (adjacent pairs of user corrections) remain the
+opportunity their episode reaches, stamped by the exposures feed on the lows
+population itself (a lever whose target lies outside its own episode stamps
+nothing), anchored on the low in its case file. Correction clusters (adjacent pairs of user corrections) remain the
 stacking detector's own evidence population and stop being a Pattern
-denominator. The readiness gate for that Pattern is re-derived from the #391
-receipt's lows count by the same Wilson positive-lower-bound rule (floored at
-12) that set the other lows-denominated gates, and HV2-24's criterion line
-drops "27 correction clusters".
+denominator. The #391 receipt carries no union-of-both-levers rate over lows, so
+the readiness gate for that Pattern is the lows-family floor of 12 by the
+ADR 391 rule rather than a derived bound, and HV2-24's criterion line drops
+"27 correction clusters".
 
 Sanction: Connor Griffin · 2026-09-09 · "Personally I feel like those are
 actually just the same finding in different clothes" (corrections), "It's the
@@ -1882,8 +1884,8 @@ Pattern because an un-bolused rise is not a meal opportunity.
 existing findings projection rather than beside it. On the unscoped whole-day
 query only, each `remain_pattern` roster entry becomes one served ranked row
 (`id` `pattern:<key>`, register `finding`, kind `pattern`, priority
-`settled_price` or null when unadmitted), its admitted habit member rows stay
-served and gain one additive `claimed_by` stamp, and the finding case file
+`settled_price` or null when unadmitted), the rows of every lever that feeds its rate,
+admitted or not, stay served and gain one additive `claimed_by` stamp, and the finding case file
 accepts the Pattern subject, returning the Pattern's own Exposure population
 read from the same exposures feed that prices the row (one occurrence list
 serves the row's n and k and the case file's denominator and claimed count, so

@@ -9,7 +9,7 @@ import { populateFindingsProjectionInput, populateFindingCasePreparation } from 
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
-  MIN_ROW_MINI_WIDTH, TIER,
+  MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY,
   renderFindingsQueue,
   queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
@@ -32,17 +32,17 @@ class Node {
   }
   append(...nodes) { this.children.push(...nodes); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
-  addEventListener() {}
+  addEventListener(name, callback) { (this.listeners ||= {})[name] = callback; }
 }
 
 /* Paint one projection through the module's own entry point and hand back the
    host beside what the render returned. */
-const paint = (projection, view = null) => {
+const paint = (projection, view = null, onDrill = () => {}) => {
   const previous = globalThis.document;
   globalThis.document = { createElement: (tag) => new Node(tag) };
   try {
     const host = new Node();
-    return { host, ...renderFindingsQueue(host, projection, () => {}, view) };
+    return { host, ...renderFindingsQueue(host, projection, onDrill, view) };
   } finally {
     globalThis.document = previous;
   }
@@ -525,4 +525,56 @@ test('#395 · the default replay keeps its claimed Late bolus reachable under ev
       .find((node) => node.dataset?.id === member.id);
     assert.equal(button?.tag, 'button', `Late bolus remains a control under ${[...selected]}`);
   }
+});
+
+
+test('#395 · Pattern recurrence reads one closed copy table and ignores headline wording', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  for (const [key, noun, outcome] of [
+    ['highs_after_meals', 'meals', 'ran high'],
+    ['lows_after_meals', 'meals', 'ran low'],
+    ['highs_after_treating_lows', 'lows', 'rebounded high'],
+    ['lows_after_correcting_highs', 'lows', 'followed a correction'],
+    ['overnight_lows_no_iob', 'nights', 'ran low overnight'],
+  ]) {
+    assert.deepEqual(PATTERN_COPY[key], { noun, outcome });
+    const row = { ...base, headline: 'A headline with no recurrence to parse',
+      pattern: { ...base.pattern, key, k: 3, n: 20 } };
+    assert.equal(queueRows({ rows: [row] })[0].detail.text, `3 of 20 ${noun} ${outcome}`);
+  }
+});
+
+test('#395 · counts under review keeps its drill without a rate or chart host', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  const raw = { ...base, pattern: { ...base.pattern, k: 21, n: 20, count_status: 'under_review' } };
+  let drilled;
+  const { host, miniSlots } = paint({ rows: [raw] }, null, (row) => { drilled = row; });
+  const list = host.children.find((node) => node.className === 'q');
+  const button = list.children.find((node) => node.className.startsWith('qitem')).children[0];
+  assert.equal(button.children.find((node) => node.className === 'den pattern-status').textContent,
+    'counts under review');
+  assert.ok(!button.children.some((node) => ['mini', 'sum', 'tag pattern'].includes(node.className)));
+  assert.deepEqual(miniSlots, []);
+  button.listeners.click();
+  assert.equal(drilled, raw);
+});
+
+test('#395 · an unpriced claimed member precedes the tail seam and prints its parent-family count', () => {
+  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
+  const projection = projectFindings(populateFindingsProjectionInput({
+    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+    event_charts: fixture.inputs.event_charts,
+  }));
+  const { host, rows } = paint(projection);
+  const member = rows.find((row) => row.id === 'finding:late_bolus');
+  assert.equal(member.raw.priority, null);
+  assert.equal(member.seam, false);
+  assert.equal(member.caption, null);
+  const appearance = member.raw.appearances.find((item) => item.family === 'meals');
+  assert.equal(member.memberCount, ` · ${appearance.n} of ${appearance.m} ${appearance.noun}`);
+  const children = host.children.find((node) => node.className === 'q').children;
+  const at = children.findIndex((node) => node.children?.[0]?.dataset.id === member.id);
+  assert.equal(children[at - 1].children[0].dataset.id, member.claimedBy,
+    'no seam or caption separates the adjacent served parent and member');
 });

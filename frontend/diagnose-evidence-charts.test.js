@@ -1069,7 +1069,10 @@ test('glucose projections expose served values and thumbnails have no axis furni
       : entry.kind === 'isf' ? { counts: { detected_windows: 0, qualifying_windows: 0,
         qualifying_steps: 0 }, windows: [], steps: [] }
         : entry.kind === 'carb-ratio' ? { block: { examined_runs: 0, support: 0 }, runs: [], series: [] }
-          : event;
+          : entry.kind === 'pattern-case-file' ? projectPatternCaseFile(
+            fixture('../mockups/diagnose-event-comparison.synthetic/capture.json'), {
+              patternChart: { key: 'highs_after_meals' },
+            }) : event;
     const thumbnail = entry.thumbnail(thumbData);
     assert.equal(thumbnail.xAxis.show, false);
     assert.equal(thumbnail.yAxis.show, false);
@@ -1265,10 +1268,11 @@ test('glucose chart options fail closed without one injected field range', () =>
 test('#395 · the Pattern rail preview labels served cohorts and seats the event label inside the plot', () => {
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
   const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
-  const colors = { high: '#a94f21', muted: '#3d5848', text: '#141a15', line: '#c3bfb4' };
+  const colors = { misses: '#d08150', body: '#c7bca8', muted: '#3d5848',
+    warn: '#e2be4c', text: '#141a15', line: '#c3bfb4' };
   for (const [key, label, outcome] of [
     ['highs_after_meals', 'MEAL', 'RAN HIGH'],
-    ['lows_after_correcting_highs', 'LOW', 'AFTER A CORRECTION'],
+    ['lows_after_correcting_highs', 'LOW', 'FOLLOWED A CORRECTION'],
   ]) {
     const data = projectPatternCaseFile(capture, {
       patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
@@ -1282,13 +1286,17 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
     assert.deepEqual([option.yAxis.min, option.yAxis.max], [60, 260]);
     assert.ok(!option.series.some((series) => series.id.includes('matched:band:')));
     const median = option.series.find((series) => series.id === 'queue:event:matched:median');
-    assert.equal(median.lineStyle.color, colors.high);
+    assert.equal(median.lineStyle.color, colors.misses);
     assert.equal(median.showSymbol, false);
+    assert.equal(option.series.find((series) => series.id === 'queue:event:comparison:median')
+      .lineStyle.color, colors.body);
+    assert.equal(option.series.find((series) => series.id === 'queue:pattern:180')
+      .markLine.lineStyle.color, colors.warn);
     const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
       .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
     assert.equal(marker.children[1].style.text, label);
     assert.equal(marker.children[1].y, option.grid.top + 3, 'label rides inside the existing plot');
     assert.deepEqual(option.series.find((series) => series.id === 'queue:pattern:180')
-      .markLine.data, [{ yAxis: 180 }]);
+      .markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
   }
 });

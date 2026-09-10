@@ -3599,3 +3599,59 @@ typical median and interquartile band, outcome/count legends, the 180 reference
 line, and the MEAL/LOW marker label inside the plot beneath the legend. S147
 checks the mounted Pattern preview's outcome legend. Node coverage checks the
 served window, shared glucose range, marker placement and cohort styling.
+
+
+## Amendment — 2026-09-09, review round 1 and coordinator verification (issue #395)
+
+Authority: ORDER.md coordinator amendment 3, including review findings F1–F6.
+Failed-first browser evidence is Scratch `coord-verify-3/replay.log`
+(`app: 171 of 174 stories passed`) and `coord-verify-3/dw.log` (five failing
+workstation tests). The coordinator's `coord-renders/harness-rail-*.png` renders
+showed the member separated from its priced Pattern by the tail seam and the
+incorrect yellow misses ink. The coordinator owns the next browser verification.
+
+**S24 is amended in two clauses.** The flavor grammar admits `◇Pattern` beside
+`⚙Setting` and `◈Cause`; these are DOM text, while uppercase is CSS presentation.
+S145 reads the same DOM spelling. The constant-x assertion covers visible,
+non-claimed flavor chips only: claimed member chips are suppressed by the
+sanctioned nested treatment. Review found this latent Pattern/claimed path in
+the old S24 assertion; the preceding S24 run passed its narrower scoped input.
+
+**S145–S147 and S150 render the revised copy/anatomy.** One closed table supplies
+each Pattern's noun and outcome. Recurrence uses its served k and n without
+parsing the headline. The mini uppercases that same outcome, including
+`FOLLOWED A CORRECTION`; the separate `AFTER A CORRECTION` spelling is retired by
+this coordinator ruling. A count-status row prints its title and `counts under
+review`, retains its drill, and creates no mini host (queue-module node coverage;
+this state is not reachable in generator-owned replay fixtures). Claimed rows
+never open a seam or tier caption. Their inline member count uses their own
+appearance in the Pattern family, falling back to their first appearance.
+S150 checks the inline count and adjacency. Misses and the member tick use
+`--mk-accent`; typical median uses `--mk-body`, its band muted ink, and the
+70/180 reference rails use dashed `--mk-warn` ink.
+
+**S20, S21 and S107 preserve their existing behaviors with reachable subjects.**
+S20 uses the opener's clock-aligned case, whose coincidence links exist; clicking
+a queue Lever had switched it to event alignment, where those links do not
+render. S21 uses Over-treated low, which the producer serves in its standing
+02:15–04:45 window; Late bolus is absent there. S107 pins Over-treated low,
+served in both its ordinary and wrapped windows. Late bolus leaves the served
+wrapped window, so it cannot provide that story's continued evidence read.
+No pin-retention or membership policy changes.
+
+**The workstation's issue-scoped probes are amended to the served Pattern list.**
+The two-family whole-day input has 8 independently counted findings and 12
+rendered rows including claimed members and Watching. The Lows sift includes
+Lows after correcting highs, its Correction on active insulin member, Lows after
+meals and Overnight lows with no insulin on board. Narrow-preview and scroll
+probes wait for all actual mini hosts to mount rather than pinning five charts.
+Their nonempty-evidence, width, height, clipping and scroll checks remain.
+
+**The narrow Spotlight keeps readable ticks as the shared glucose range widens.**
+Pattern evidence can widen that range. Tick spacing now uses the actual short
+plot height; endpoint labels are omitted to avoid partial-interval collisions,
+while the shared bounds are unchanged. The browser check measures the ticks
+whose labels are shown, retaining its 14px separation floor. Node coverage pins
+the range and tick spacing. Ordinary noun `habit` is restored in the glossary,
+with `Cause` named explicitly as the chip word; the two guide chip labels are
+updated accordingly.

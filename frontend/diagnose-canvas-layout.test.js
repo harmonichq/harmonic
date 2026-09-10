@@ -216,3 +216,18 @@ test('a starred focal chart keeps the focal seat whatever order it was retained 
     { chartId: 'first', seat: 'mini', pinned: true },
   ]);
 });
+
+
+test('a short Spotlight spaces glucose ticks without narrowing the shared field range', () => {
+  const registry = [{ kind: 'glucose', option: () => ({
+    grid: { top: 26, bottom: 42 },
+    yAxis: { name: 'mg/dL', min: 60, max: 420, axisLabel: { show: true } },
+  }) }];
+  const option = optionForDescriptor({ kind: 'glucose' }, registry, [60, 420], {
+    surface: { clientWidth: 320, clientHeight: 185 }, mini: false,
+  });
+  assert.deepEqual([option.yAxis.min, option.yAxis.max], [60, 420]);
+  assert.ok(option.yAxis.interval / 360 * 117 >= 20);
+  assert.equal(option.yAxis.axisLabel.showMinLabel, false);
+  assert.equal(option.yAxis.axisLabel.showMaxLabel, false);
+});

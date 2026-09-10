@@ -676,7 +676,11 @@ test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async (
     const geometry = await page.locator('#tile-focal .tile-chart').evaluate((host) => {
       const chart = window.echarts.getInstanceByDom(host);
       const grid = chart.getModel().getComponent('grid').coordinateSystem.getRect();
-      const ticks = chart.getModel().getComponent('yAxis').axis.scale.getTicks()
+      const axis = chart.getModel().getComponent('yAxis');
+      const extent = axis.axis.scale.getExtent();
+      const ticks = axis.axis.scale.getTicks()
+        .filter(({ value }) => (axis.get('axisLabel.showMinLabel') !== false || value !== extent[0])
+          && (axis.get('axisLabel.showMaxLabel') !== false || value !== extent[1]))
         .map(({ value }) => chart.convertToPixel({ yAxisIndex: 0 }, value))
         .filter(Number.isFinite).sort((left, right) => left - right);
       return { hostHeight: host.getBoundingClientRect().height, plotHeight: grid.height,
@@ -749,7 +753,9 @@ test('#341 · useful queue previews remain present and legible at narrow width',
     await page.waitForFunction(() => {
       const level = document.querySelector('#level');
       return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
-        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length
+          === document.querySelectorAll('#level .mini').length
+        && document.querySelectorAll('#level .mini').length > 0
         && !level.textContent.includes('Loading evidence');
     });
     const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
@@ -829,7 +835,9 @@ test('#341 · All charts dismissal preserves a genuinely scrolled phone reading 
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.waitForFunction(() => {
       const node = document.querySelector('#level');
-      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length
+          === document.querySelectorAll('#level .mini').length
+        && document.querySelectorAll('#level .mini').length > 0
         && !node.textContent.includes('Loading evidence')
         && document.querySelector('.cockpit-stage > .main-content').scrollHeight
           > document.querySelector('.cockpit-stage > .main-content').clientHeight;

@@ -5,7 +5,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
-import { PATTERN_OUTCOME } from './diagnose-findings-queue.js';
+import { PATTERN_COPY } from './diagnose-findings-queue.js';
 import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
@@ -146,8 +146,7 @@ function thumbnail(name, count, series = []) {
 
 const patternMiniLabel = (data) => {
   const key = data?.finding?.lever;
-  const phrase = key === 'lows_after_correcting_highs'
-    ? 'AFTER A CORRECTION' : (PATTERN_OUTCOME[key] || '').toUpperCase();
+  const phrase = PATTERN_COPY[key].outcome.toUpperCase();
   return `${phrase} · ${data?.summary?.claimed ?? 0}`;
 };
 
@@ -156,11 +155,11 @@ const patternMiniLabel = (data) => {
 function patternQueuePreview(descriptor, range, colors) {
   const data = descriptor.data;
   const option = queuePreviewOption(descriptor, range, {
-    ...colors, cohorts: { matched: colors.high, comparison: colors.muted },
+    ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
   });
   option.graphic = [
     { type: 'text', left: 8, top: 5, silent: true,
-      style: { text: patternMiniLabel(data), fill: colors.high, font: `600 9px ${FONT}` } },
+      style: { text: patternMiniLabel(data), fill: colors.misses, font: `600 9px ${FONT}` } },
     { type: 'text', right: 8, top: 5, silent: true,
       style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
         font: `600 9px ${FONT}`, align: 'right' } },
@@ -168,6 +167,15 @@ function patternQueuePreview(descriptor, range, colors) {
   // Only the typical cohort carries the interquartile band in this treatment.
   option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
   for (const series of option.series) {
+    if (series.id.startsWith('queue:event:comparison:band:')) {
+      const paint = series.renderItem;
+      series.renderItem = (params, api) => {
+        const mark = paint(params, api);
+        if (mark.style.fill) mark.style.fill = colors.muted;
+        if (mark.style.stroke) mark.style.stroke = colors.muted;
+        return mark;
+      };
+    }
     if (!series.id.endsWith(':median')) continue;
     series.symbol = 'none';
     series.showSymbol = false;
@@ -175,7 +183,7 @@ function patternQueuePreview(descriptor, range, colors) {
   }
   const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
   const marker = anchor.renderItem;
-  const label = data.family === 'meals' ? 'MEAL' : 'LOW';
+  const label = PATTERN_COPY[data.finding.lever].noun === 'meals' ? 'MEAL' : 'LOW';
   anchor.renderItem = (params, api) => ({ type: 'group', children: [
     marker(params, api),
     { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
@@ -183,8 +191,8 @@ function patternQueuePreview(descriptor, range, colors) {
   ] });
   option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
     markLine: { silent: true, symbol: 'none', label: { show: false },
-      lineStyle: { color: colors.line, width: 1, type: 'dashed' },
-      data: [{ yAxis: 180 }] } });
+      lineStyle: { color: colors.warn, width: 1, type: 'dashed' },
+      data: [{ yAxis: 70 }, { yAxis: 180 }] } });
   return option;
 }
 

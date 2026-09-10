@@ -31,7 +31,7 @@ import {
   populateFindingsProjectionInput,
 } from './browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
-import { MIN_ROW_MINI_WIDTH, TIER } from './diagnose-findings-queue.js';
+import { MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY } from './diagnose-findings-queue.js';
 import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
@@ -218,6 +218,7 @@ export const state = (page) => page.evaluate(() => {
     queue: [...document.querySelectorAll('#level .qrow')].map((n) => ({
       title: n.querySelector('.lab')?.textContent.trim() ?? null,
       tag: n.querySelector('.tag')?.textContent.trim() ?? null,
+      claimed: n.parentElement.classList.contains('claimed'),
       register: n.dataset.state ?? null,
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),
@@ -1509,11 +1510,10 @@ export const S19 = async (page) => {
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
 // LOCK:diagnose-workstation:33
 export const S20 = async (page) => {
-  await page.getByRole('button', { name: 'Findings', exact: true }).click();
-  await openWholeDay(page);
-  await page.click(LEVER_FINDING);
+  // The drill opener requests the leading case in clock alignment. Coincidence
+  // links belong to that clock case, not the event-aligned queue entry.
   await settle(page, 450);
-  // The canonical Lever case carries the coincidence line.
+  // The clock case carries the coincidence line.
   ok((await state(page)).linkBtns.length === 2, 'S20 precondition: opens at the factor level');
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View slot').click());
   await settle(page, 450);
@@ -1539,7 +1539,7 @@ export const S20 = async (page) => {
 export const S21 = async (page) => {
   const start = await state(page);
   ok(start.chip !== null, 'S21 precondition: a drawn window stands');
-  await page.click(LEVER_FINDING);
+  await page.click('#level .qrow[data-id="finding:over_treated_low"]');
   await settle(page, 450);
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
@@ -1753,9 +1753,10 @@ export const S24 = async (page) => {
   is(headings.entries, 0, 'S24 no per-parameter tier rows (term 34)');
   is(open.queueRules, 0, 'S24 no hairline between queue rows — spacing separates (term 44)');
   // term 36: a fixed right-aligned tag column at ONE constant x on every row
-  is(new Set(open.queue.map((r) => r.tagX)).size, 1,
+  const tagged = open.queue.filter((row) => !row.claimed && row.tag);
+  is(new Set(tagged.map((r) => r.tagX)).size, 1,
     `S24 the tag column sits at one constant x (${JSON.stringify(open.queue.map((r) => r.tagX))})`);
-  ok(open.queue.every((r) => /^[⚙◈](Setting|Cause)$/.test(r.tag || '')),
+  ok(tagged.every((r) => /^(⚙Setting|◈Cause|◇Pattern)$/.test(r.tag)),
     `S24 every row wears a glyph+word flavor tag (${JSON.stringify(open.queue.map((r) => r.tag))})`);
 
   // term 37 — a PRESET re-scopes the queue in place; the crumb stays at its root
@@ -3074,8 +3075,8 @@ export const issue81SlicedProjection = async (page) => {
   await settle(page, 150);                              // the level's 90 ms swap has landed
   await expandWatching(page);
   const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '7 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
-  is(wholeDay.queue.length, 8, 'S43 whole day renders all eight server rows');
+  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
+  is(wholeDay.queue.length, 12, 'S43 whole day renders the served rows including claimed members and Watching');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
@@ -3137,7 +3138,8 @@ export const issue86FilteredRoot = async (page) => {
     await page.getByRole('menuitemcheckbox', { name: new RegExp(`^${label} `) }).click();
   }
   const lows = await state(page);
-  is(lows.queue.map((row) => row.title), ['Correction on active insulin'],
+  is(lows.queue.map((row) => row.title), ['Lows after correcting highs',
+    'Correction on active insulin', 'Lows after meals', 'Overnight lows with no insulin on board'],
     '#86 Sift contains only the server-published low Finding');
   const positions = lows.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
   ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
@@ -4131,7 +4133,7 @@ export const S145 = async (page) => {
   const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
   is(await node.count(), 1, 'S145 the served Pattern has one rail row');
   is((await node.locator('.lab').innerText()).trim(), row.title, 'S145 title is server-owned');
-  is((await node.locator('.tag').innerText()).trim(), '◇PATTERN', 'S145 Pattern chip is identified');
+  is((await node.locator('.tag').textContent()).trim(), '◇Pattern', 'S145 Pattern chip is identified');
 };
 
 // STORY:finding-evidence-routing:S146
@@ -4194,6 +4196,15 @@ export const S150 = async (page) => {
   ok((await node.locator('xpath=..').getAttribute('class')).includes('claimed'),
     'S150 claimed member is nested by the served flag');
   is(await node.locator('.n').innerText(), '│', 'S150 nested member has the quiet non-rank tick');
+  const parent = rows.find((row) => row.id === member.claimed_by);
+  const family = PATTERN_COPY[parent.pattern.key].noun;
+  const appearance = member.appearances.find((item) => item.family === family) || member.appearances[0];
+  is((await node.locator('.member-count').textContent()).trim(),
+    `· ${appearance.n} of ${appearance.m} ${appearance.noun}`,
+    'S150 the inline count names the member appearance in its Pattern family');
+  is(await node.evaluate((button) => button.parentElement.previousElementSibling
+    ?.querySelector('.qrow')?.dataset.id), parent.id,
+    'S150 no seam or tier caption separates the first claimed member from its Pattern');
 };
 
 /* ---- #353 · one denominator per rendered row --------------------------- */
@@ -4524,7 +4535,7 @@ export const S106 = async (page) => {
 export const S107 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const held = page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]');
+  const held = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
   const heldFindingId = await held.getAttribute('data-chart-id');
   ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
   await held.locator('.tile-pin').click();

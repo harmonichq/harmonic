@@ -1654,10 +1654,10 @@
    Pattern owns their rank and count. */
 .dw .qitem.claimed { margin-top: calc(2px - var(--q-gap)); }
 .dw .qitem.claimed .qrow { min-height: 30px; padding-block: 3px; }
-.dw .qitem.claimed .qrow .n { color: var(--high); }
+.dw .qitem.claimed .qrow .n { color: var(--mk-accent); }
 .dw .qitem.claimed .qrow .lab { font-size: var(--ck-data); font-weight: 500; }
 .dw .qitem.claimed .qrow .tag { display: none; }
-.dw .qitem.claimed .qrow .go { color: var(--high); }
+.dw .qitem.claimed .qrow .go { color: var(--mk-accent); }
 .dw .qitem.claimed .qrow .den { font-size: var(--ck-micro); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
@@ -2083,3 +2083,7 @@
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`
    owns only the one-chart field geometry. */
+
+.dw .qitem.claimed .member-title { grid-column: 2 / 4; grid-row: 1; text-align: left; }
+.dw .qitem.claimed .member-count { color: var(--mk-muted); font-size: var(--ck-micro); }
+.dw .qitem.claimed .member-title .lab { white-space: normal; }

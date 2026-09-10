@@ -3696,3 +3696,38 @@ Both exploration extracts are regenerated from their owners to carry Cause;
 their --check commands remain the drift proofs. The stylesheet's two remaining
 Habit comments now say Cause, and its member-count styles precede the trailing
 comment block.
+
+
+## Amendment — 2026-09-09, gate failures F12–F14 (issue #395)
+
+Authority: ORDER.md coordinator amendment 5. Failed-first evidence is the
+coordinator's `coord-verify-5/replay.log` (173/174, S20 coordinate mismatch),
+`diagnose-workstation.browser.test.mjs.log` (#341 minimum tick gap 6.5px), and
+`cockpit-shell.browser.test.mjs.log` (malformed-case timeout and unhandled
+missing-cohorts rejection), under this chunk's Scratch directory.
+
+**S20 retains both coincidence-route assertions.** The Pattern projector was
+called without its preparation window, so the case response had no window and
+the unchanged coordinate validator rejected it. Both fixture routes now pass
+the requested preparation's window along with the projection id, finding id,
+alignment and occurrence id through one helper. A node test validates both
+clock and event responses and checks every coordinate against the request.
+No server response, projector implementation or validator is weakened.
+
+**S147's Pattern preview owns its range.** Pattern evidence no longer widens
+the mixed field. Generated cases demonstrate the difference: the Lever field
+is [60, 200], while a Pattern supplies [40, 220]. The Pattern preview applies
+the existing 60–200 envelope and 20 mg/dL quantization to its own plotted
+values; the Pattern catalog chart also contains its own values. No shared
+axis tick spacing changes. The existing #341 narrow I:C assertion is unchanged.
+
+**Malformed Pattern previews fail closed.** A Pattern tile validates its case
+before committing data and uses the existing Evidence unavailable state on
+failure; the mini mount also catches a named validation failure before reading
+cohorts. Node coverage includes missing projection and unknown support. The
+cockpit fixture now serves Pattern cases instead of handing its mutation
+callback a 404 body without a projection. Its existing Over-treated low
+canonical-id drill remains, and the same malformed-case check additionally
+runs on Highs after meals, requiring a failed mini with no canvas and an
+owning drilled tile with no stale cohort rows. No story is skipped or retired.
+The coordinator owns the post-fix browser reruns and renders.

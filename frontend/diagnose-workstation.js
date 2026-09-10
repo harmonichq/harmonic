@@ -1739,6 +1739,8 @@ function boot(root, data, callbacks, signal) {
         else markTileStale(descriptor.chartId, data.message);
         return;
       }
+      const validate = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === descriptor.kind)?.validateData;
+      if (validate && !validate(data)) throw new Error('Pattern evidence is unavailable.');
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;

@@ -5,6 +5,7 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
+import { validFindingCaseFile } from './finding-case-file-validation.js';
 import { PATTERN_COPY } from './diagnose-findings-queue.js';
 import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
@@ -144,6 +145,10 @@ function thumbnail(name, count, series = []) {
   };
 }
 
+const validPatternEvidence = (data) => validFindingCaseFile(data)
+  && data.projection.alignment === 'event'
+  && Object.hasOwn(PATTERN_COPY, data.finding.lever);
+
 const patternMiniLabel = (data) => {
   const key = data?.finding?.lever;
   const phrase = PATTERN_COPY[key].outcome.toUpperCase();
@@ -152,9 +157,13 @@ const patternMiniLabel = (data) => {
 
 /* Pattern rail furniture wraps the shipped response preview. The case file
    still supplies every point; this changes only the sanctioned inks and labels. */
-function patternQueuePreview(descriptor, range, colors) {
+function patternQueuePreview(descriptor, _range, colors) {
   const data = descriptor.data;
-  const option = queuePreviewOption(descriptor, range, {
+  if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
+  const drawnValues = data.projection.cohorts.flatMap((cohort) => cohort.points
+    .filter((point) => point.support !== 'withheld')
+    .flatMap((point) => [point.median, point.p25, point.p75]));
+  const option = queuePreviewOption(descriptor, glucoseRange(drawnValues), {
     ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
   });
   option.graphic = [
@@ -1035,6 +1044,7 @@ const entries = [
   },
   {
     kind: 'pattern-case-file',
+    validateData: validPatternEvidence,
     queuePreview: patternQueuePreview,
     name: 'Pattern response',
     modes: null,
@@ -1043,8 +1053,8 @@ const entries = [
       title: row.title || 'Pattern response',
       meta: `${row.pattern?.n ?? 0} opportunities aligned to each event`,
     }),
-    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
-      eventComparisonChartOption(caseFile, range, surface, mini),
+    option: (_mode, { data, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface, mini),
     thumbnail: (data) => thumbnail(patternMiniLabel(data),
       `TYPICAL · ${data?.summary?.denominator ?? 0}`,
       [{ type: 'line', symbol: 'none', connectNulls: true,

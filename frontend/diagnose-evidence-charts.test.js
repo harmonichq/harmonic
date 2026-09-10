@@ -1283,7 +1283,8 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       `${outcome} · ${data.summary.claimed}`, `TYPICAL · ${data.summary.denominator}`,
     ]);
     assert.deepEqual([option.xAxis.min, option.xAxis.max], data.projection.window_min);
-    assert.deepEqual([option.yAxis.min, option.yAxis.max], [60, 260]);
+    assert.deepEqual([option.yAxis.min, option.yAxis.max], glucoseRange(data.projection.cohorts
+      .flatMap((cohort) => cohort.points.flatMap((point) => [point.median, point.p25, point.p75]))));
     assert.ok(!option.series.some((series) => series.id.includes('matched:band:')));
     const median = option.series.find((series) => series.id === 'queue:event:matched:median');
     assert.equal(median.lineStyle.color, colors.misses);
@@ -1306,5 +1307,30 @@ test('#395 · an unknown Pattern coordinate is not mounted as a supported chart 
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
   for (const key of ['future_pattern', '__proto__']) {
     assert.equal(entry.matches({ pattern_chart: { key } }), false);
+  }
+});
+
+
+test('#395 · Pattern evidence cannot widen the shared field and malformed previews fail closed', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
+  const data = projectPatternCaseFile(capture, {
+    patternChart: { key: 'lows_after_correcting_highs', window: caseFiles().preparation.coordinates.window },
+  });
+  const lever = { kind: 'event-comparison', state: 'ok', data: eventCase() };
+  const pattern = { kind: entry.kind, state: 'ok', data };
+  assert.deepEqual(glucoseRange(entry.glucoseValues(data)), [40, 220]);
+  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
+    fieldRange([lever], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange));
+  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 200]);
+  assert.equal(entry.validateData(data), true);
+  const invalidSupport = structuredClone(data);
+  invalidSupport.projection.cohorts[0].support = 'unknown';
+  for (const malformed of [null, {}, { ...data, projection: undefined }, invalidSupport]) {
+    assert.equal(entry.validateData(malformed), false,
+      'the tile rejects malformed evidence before mounting a preview');
+    assert.throws(() => entry.queuePreview({ ...pattern, data: malformed }, [60, 200], {}),
+      { name: 'Error', message: 'Pattern evidence is unavailable.' },
+      'the shared mini mount catches the named failure without dereferencing missing cohorts');
   }
 });

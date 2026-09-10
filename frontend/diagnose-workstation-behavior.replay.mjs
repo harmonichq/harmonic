@@ -474,6 +474,18 @@ export const withoutIsfProjectionVerdict = (projection) => ({
   }),
 });
 
+/** Both browser routes answer Pattern coordinates from the requested preparation. */
+export function patternCaseResponse(capture, url, window) {
+  const id = url.searchParams.get('finding_id');
+  if (!id?.startsWith('pattern:')) return null;
+  return projectPatternCaseFile(capture, {
+    patternChart: { key: id.slice('pattern:'.length), window },
+    projectionId: url.searchParams.get('projection_id'),
+    alignment: url.searchParams.get('alignment') || 'clock',
+    occurrenceId: url.searchParams.get('occ'),
+  });
+}
+
 /**
  * APP opener — boots the app page, answers deterministic API reads from the
  * committed synthetic replay payload, and drives it to the Diagnose tab.
@@ -747,9 +759,8 @@ export async function openApp(browser, {
       const finding = caseFiles.cases[findingId];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
-      const pattern = findingId?.startsWith('pattern:')
-        ? projectPatternCaseFile(capture, { patternChart: { key: findingId.slice('pattern:'.length) },
-          projectionId: url.searchParams.get('projection_id'), alignment, occurrenceId: occ }) : null;
+      const pattern = patternCaseResponse(capture, url,
+        preparedWindows.get(url.searchParams.get('projection_id')));
       const body = pattern ? independent(pattern)
         : !finding
         ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }

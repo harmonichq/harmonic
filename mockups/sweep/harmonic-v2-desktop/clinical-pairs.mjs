@@ -23,9 +23,22 @@ export async function openClinicalConsumer(page, side, family) {
   await page.locator('#level[data-loading="false"]').waitFor({ state: 'visible', timeout: 60000 });
   await page.locator('#seg-window').getByRole('button', { name: '24 h', exact: true }).click();
   await page.locator('#level[data-loading="false"]').waitFor({ state: 'visible', timeout: 60000 });
-  const row = page.locator(`#level .qrow[data-id^="${family}:"]`).first();
+  const response = await page.request.get('http://127.0.0.1:8765/api/diagnose/findings', { timeout: 60000 });
+  assert.ok(response.ok(), `clinical ${family} findings: HTTP ${response.status()}`);
+  const projection = await response.json();
+  const parameter = { basal: 'basal_rate', isf: 'isf', ic: 'carb_ratio' }[family];
+  // IDs belong to the projection: ISF is "isf", without a colon or slot suffix.
+  const finding = projection.rows.find(row => row.parameter === parameter && row.register !== 'history');
+  assert.ok(finding, `the 24 h findings projection has no current ${family} row`);
+  if (finding.register === 'held' || finding.register === 'blind') {
+    const watching = page.locator('#level .qcollapse');
+    await watching.waitFor({ state: 'visible', timeout: 60000 });
+    if (await watching.getAttribute('aria-expanded') !== 'true') await watching.click();
+  }
+  const id = finding.id;
+  const row = page.locator(`#level .qrow[data-id=${JSON.stringify(id)}]`);
   await row.waitFor({ timeout: 60000 });
-  const id = await row.getAttribute('data-id'); await row.click();
+  await row.click();
   // Basal has a supporting-night roster; the ISF and I:C owners expose their
   // served numeric evidence instead of a prototype occurrence list.
   await page.locator(family === 'basal' ? '#level .case-occurrence' : '#level .numrow').first().waitFor({ timeout: 60000 });

@@ -172,6 +172,11 @@ response, and fails if the expected endpoint is not consumed by both. It uses
 v1's shared clinical renderer as the source reference; the historical prototype
 captures below remain a separate material/geometry reference under ADR 397.
 
+`CAPTURE_DIR` must be a fresh, nonexistent directory outside the worktree with
+an existing parent. The driver creates it and refuses any existing path, even
+an empty directory. For a rerun, choose new directory names for both viewports;
+do not pre-create those two directories.
+
 ```sh
 VIEWPORT=1280x720 CAPTURE_DIR="$evidence/clinical-pairs-1280" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs
 VIEWPORT=1440x900 CAPTURE_DIR="$evidence/clinical-pairs-1440" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs

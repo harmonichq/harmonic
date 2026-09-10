@@ -41,18 +41,32 @@ test('R17 requires the generated finishable Trial, never a mock ready selector',
 });
 
 
-test('clinical pairs initialize the synthetic token before mounting either real Diagnose consumer', async () => {
+test('clinical pairs use served setting IDs and the shared Watching control when needed', async () => {
   const { openClinicalConsumer } = await import('../mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs');
   const original = globalThis.localStorage;
   try {
-    for (const side of ['v1', 'v2']) for (const family of ['basal', 'isf', 'ic']) {
-      const storage = new Map(); const waits = []; let navigated = false;
+    for (const side of ['v1', 'v2']) for (const [family, id, parameter] of [
+      ['basal', 'basal:180-210', 'basal_rate'], ['isf', 'isf', 'isf'], ['ic', 'ic:0', 'carb_ratio'],
+    ]) for (const register of ['assert', 'held', 'blind']) {
+      const storage = new Map(); const waits = []; let navigated = false; let expanded = false;
+      const watching = register === 'held' || register === 'blind';
+      const rowSelector = `#level .qrow[data-id="${id}"]`;
       globalThis.localStorage = { setItem: (key, value) => storage.set(key, value) };
       const node = selector => ({
         first() { return this; },
-        waitFor: async options => { assert.ok(navigated); assert.equal(options.timeout, 60000); waits.push(selector); },
-        getAttribute: async name => { assert.equal(name, 'data-id'); return `${family}:0`; },
-        click: async () => {},
+        waitFor: async options => {
+          assert.ok(navigated); assert.equal(options.timeout, 60000);
+          if (selector.includes('.qrow')) {
+            assert.equal(selector, rowSelector, 'the exact served ID owns the row');
+            assert.equal(expanded, watching, 'Watching opens before waiting for its row');
+          }
+          waits.push(selector);
+        },
+        getAttribute: async name => {
+          if (name === 'aria-expanded') return String(expanded);
+          assert.equal(name, 'data-id'); return id;
+        },
+        click: async () => { if (selector === '#level .qcollapse') expanded = true; },
         getByRole: (role, options) => {
           assert.equal(selector, '#seg-window'); assert.equal(role, 'button');
           assert.deepEqual(options, { name: '24 h', exact: true });
@@ -66,9 +80,15 @@ test('clinical pairs initialize the synthetic token before mounting either real 
           assert.equal(storage.get('tab'), 'diagnose');
           assert.equal(new URL(url).pathname, side === 'v1' ? '/diagnose' : '/v2/'); navigated = true;
         }, locator: node,
+        request: { get: async url => {
+          assert.equal(url, 'http://127.0.0.1:8765/api/diagnose/findings');
+          return { ok: () => true, status: () => 200, json: async () => ({ rows: [
+            { id: 'retired-setting', parameter, register: 'history' }, { id, parameter, register },
+          ] }) };
+        } },
       }, side, family);
       assert.ok(waits.includes(family === 'basal' ? '#level .case-occurrence' : '#level .numrow'));
-      assert.equal(waits.at(-1), `#tile-focal .evidence-tile[data-chart-id="${family}:0"] canvas`);
+      assert.equal(waits.at(-1), `#tile-focal .evidence-tile[data-chart-id="${id}"] canvas`);
     }
   } finally { globalThis.localStorage = original; }
 });

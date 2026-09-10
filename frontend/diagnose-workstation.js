@@ -240,7 +240,7 @@ const FAMILY_LABEL = {
    ("of 68 lows") and the disambiguating qualifier ("· clusters"). Spending width
    on "correction clusters" twice per row is what squeezed the names. */
 const FAMILY_SHORT = {
-  lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters', sequences: 'eating',
+  lows: 'lows', meals: 'meals', highs: 'highs', correction_clusters: 'clusters', sequences: 'sequences',
 };
 
 const VERDICT_KEY = {

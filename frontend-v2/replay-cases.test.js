@@ -58,3 +58,56 @@ test('replay deadlines fail with the wait name and preserve resolved values/erro
   const error = new Error('original failure');
   await assert.rejects(boundedWait(Promise.reject(error), 'failed wait', 5), candidate => candidate === error);
 });
+
+test('draft retry waits for the PUT, not the disappearing error control', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  let items = []; let listen;
+  const response = { ok: () => true, url: () => 'http://127.0.0.1:8765/api/plan', request: () => ({ method: () => 'PUT' }) };
+  const page = {
+    url: () => 'http://127.0.0.1:8765/v2/?to=changes', waitForFunction: async () => {},
+    request: { get: async url => {
+      const snapshot = new URL(url).pathname === '/api/plan' ? { items: [...items] } : { history: [] };
+      return { ok: () => true, status: () => 200, json: async () => snapshot };
+    } },
+    waitForResponse: (predicate, options) => {
+      assert.ok(options.timeout > 0);
+      return new Promise(resolve => { listen = () => { if (predicate(response)) resolve(response); }; });
+    },
+    locator: selector => ({
+      first() { return this; }, filter() { return this; }, waitFor: async () => {},
+      innerText: async () => 'Saving the draft failed', evaluate: async () => true,
+      click: async () => {
+        if (selector !== '[data-set="retry-save"]') return;
+        // The view already removed Retry; the asynchronous PUT has not settled.
+        setImmediate(() => { items = [{ type: 'basal', start_min: 180, value: .54 }]; listen?.(); });
+      },
+    }),
+  };
+  await C2_STORIES.S40(page, { failNext: (method, path) => {
+    assert.equal(method, 'PUT'); assert.equal(path, '/api/plan');
+  } });
+  assert.equal(items.length, 1);
+});
+
+test('S99 reads the full-width unavailable stage without requiring a two-pane wrapper', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const guidance = { disposition: 'unavailable', selected: null, reasons: {}, unavailable: 'reconciliation_required' };
+  const reads = [];
+  const locator = selector => ({
+    first() { return this; }, filter() { return this; }, waitFor: async () => {}, click: async () => {},
+    count: async () => 0,
+    innerText: async () => {
+      reads.push(selector);
+      assert.notEqual(selector, '.gf-desk', 'emptyFrame has a full-width stage, not a two-pane desk');
+      return selector === '#level' ? 'No direction asserted' : 'No action from this read. Harmonic has not reconciled the latest data.';
+    },
+  });
+  const page = {
+    url: () => 'http://127.0.0.1:8765/v2/?to=changes',
+    request: { get: async () => ({ ok: () => true, status: () => 200, json: async () => guidance }) },
+    locator, getByRole: () => locator('button'), getByText: () => locator('text'),
+    waitForFunction: async () => {}, route: async () => {}, unroute: async () => {}, goto: async () => {},
+  };
+  await C2_STORIES.S99(page);
+  assert.equal(reads.filter(selector => selector === '.gf-stage[aria-label="Changes"]').length, 2);
+});

@@ -125,6 +125,16 @@ const chartOption = page => page.evaluate(() => {
   return { series: option.series.map(({ id, data }) => ({ id, data })), yAxis: option.yAxis, xAxis: option.xAxis };
 });
 
+async function retryPlanWrite(page, method, path) {
+  // Retry clears its error before refreshing and writing. Its disappearance
+  // cannot establish that the durable write has finished.
+  const [response] = await Promise.all([
+    responseFor(page, path, response => response.request().method() === method),
+    press(page, '[data-set="retry-save"]'),
+  ]);
+  check(response.ok(), `${method} ${path} retry failed`);
+}
+
 async function planFailure(page, ctx, kind) {
   await stageIntoPlan(page);
   const before = await read(page, '/api/plan/history');
@@ -136,7 +146,7 @@ async function planFailure(page, ctx, kind) {
   assert.deepEqual((await read(page, '/api/plan/history')).history, before.history, 'failed save creates no decision');
   if (kind === 'draft') assert.equal((await read(page, '/api/plan')).items.length, 0);
   assert.equal(await page.locator('[data-set="retry-save"]').evaluate(node => node === document.activeElement), true);
-  await press(page, '[data-set="retry-save"]');
+  await retryPlanWrite(page, kind === 'draft' ? 'PUT' : 'POST', path);
   await page.locator('[data-set="retry-save"]').waitFor({ state: 'hidden' });
   if (kind === 'draft') check((await read(page, '/api/plan')).items.length > 0, 'retry saves the draft');
   else check((await read(page, '/api/plan/history')).history.length > before.history.length, 'retry records the decision');
@@ -150,7 +160,7 @@ async function planPersistence(page, ctx) {
   ctx.failNext('POST', '/api/plan/apply');
   await press(page, '[data-set="record"]'); await page.locator('[data-set="retry-save"]').waitFor();
   assert.deepEqual((await read(page, '/api/plan/history')).history, history.history, 'failed decision is not saved');
-  await press(page, '[data-set="retry-save"]');
+  await retryPlanWrite(page, 'POST', '/api/plan/apply');
   await page.locator('[data-set="withdraw"]').waitFor();
   const saved = (await read(page, '/api/plan/history')).history.at(-1);
   check(saved.applied_at, 'saved decision has its durable time');
@@ -164,7 +174,7 @@ async function planPersistence(page, ctx) {
   ctx.failNext('POST', '/api/plan/history/withdraw');
   await press(page, '[data-set="withdraw"]'); await page.locator('[data-set="retry-save"]').waitFor();
   assert.deepEqual((await read(page, '/api/plan/history')).history.at(-1).withdrawal, saved.withdrawal);
-  await press(page, '[data-set="retry-save"]');
+  await retryPlanWrite(page, 'POST', '/api/plan/history/withdraw');
   await page.locator('[data-set="retry-save"]').waitFor({ state: 'hidden' });
   await page.reload();
   const withdrawn = (await read(page, '/api/plan/history')).history.find(row => row.applied_at === saved.applied_at);
@@ -248,7 +258,7 @@ async function permittedActions(page) {
     'Changes exposes only the backend-selected setting action');
   if (guidance.disposition === 'unavailable') {
     check(guidance.reasons, 'unavailable has a served reason');
-    check(/No action from this read/.test(await page.locator('.gf-desk').innerText()));
+    check(/No action from this read/.test(await page.locator('.gf-stage[aria-label="Changes"]').innerText()));
   }
   await go(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click(); await settled(page);
@@ -262,7 +272,7 @@ async function permittedActions(page) {
   } }));
   await page.goto(new URL('/v2/?to=changes', page.url()).href);
   await page.getByText('No action from this read', { exact: true }).waitFor();
-  check(/reconcil/i.test(await page.locator('.gf-desk').innerText()), 'the unavailable reason remains visible');
+  check(/reconcil/i.test(await page.locator('.gf-stage[aria-label="Changes"]').innerText()), 'the unavailable reason remains visible');
   assert.equal(await page.locator('[data-set="stage"], [data-action="aside"]').count(), 0);
   await page.unroute('**/api/guidance');
 }

@@ -2900,8 +2900,9 @@ export const issue81FailedProjection = async (page) => {
 
 /** S43 · #81 review — a settled slice keeps its own matching findings rather
     than proving exclusion only through an empty state. The same server-owned
-    projection now publishes eight whole-day rows and three rows for 04:30–06:00,
-    including ticket 10's server-published Morning history row in both scopes. */
+    projection publishes twelve whole-day rows and three for 04:30–06:00.
+    The queue presents eleven and two respectively: the past-setting row is
+    retired from presentation in both scopes (2026-09-08 operator sanction). */
 export const issue81SlicedProjection = async (page) => {
   await page.click('#seg-window button:nth-child(5)');   // 24 h
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
@@ -2909,7 +2910,7 @@ export const issue81SlicedProjection = async (page) => {
   await expandWatching(page);
   const wholeDay = await state(page);
   is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
-  is(wholeDay.queue.length, 12, 'S43 whole day renders the served rows including claimed members and Watching');
+  is(wholeDay.queue.length, 11, 'S43 whole day renders the presented rows including claimed members, without past settings');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
@@ -2920,8 +2921,8 @@ export const issue81SlicedProjection = async (page) => {
   is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
   is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
   is(sliced.queue.map((row) => row.title),
-    ['Basal 05:30 · raise', 'ISF', 'Carb ratio Morning. Past setting.'],
-    'S43 the slice keeps exactly its three server-published findings');
+    ['Basal 05:30 · raise', 'ISF'],
+    'S43 the slice keeps its two presented rows, including the held ISF read, without past settings');
   ok(!sliced.queue.some((row) => row.title === 'Basal 00:30 to 01:30 · raise'),
     'S43 the slice excludes an unrelated whole-day basal row');
   is(sliced.queueLeft, wholeDay.queueLeft,

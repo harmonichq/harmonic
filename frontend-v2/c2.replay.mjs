@@ -283,7 +283,7 @@ async function icReplacement(page) {
     check((await page.locator('#level').innerText()).length > 0, 'failed replacement names its state');
     // ADR 397 / coordinator amendment 11: the shipped stale state retains the
     // subject but replaces its canvas, preventing evidence-generation mixing.
-    check(before.includes('Current'), 'the source was a current-setting case');
+    check(/current/i.test(before), 'the source was a current-setting case'); // innerText carries the label's text-transform
     const tile = `#tile-field .evidence-tile[data-chart-id="${id}"]`;
     assert.equal(await page.locator(tile).count(), 1, 'failed replacement retains the exact I:C tile identity');
     assert.equal(await page.locator('#crumb-trail .here').innerText(), subject,

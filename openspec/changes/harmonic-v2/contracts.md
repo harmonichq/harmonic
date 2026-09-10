@@ -934,9 +934,9 @@ endings, preemption and the history record.
   contributing_dates, reason}`.
   **Amended 2026-09-10 — #389 c3, Coordinator Amendment 2:** The produced
   setting shape also carries `required_elapsed_days: 30` alongside `required: 30`
-  in `trial_evidence.comparison_evidence`'s coverage-qualified-date branch
-  (`profile`, `target_bg`, and the `basal` parameter passed through that branch);
-  the distinct `basal_rate` branch carries `required: 14` qualifying nights
+  in `trial_evidence.comparison_evidence`'s coverage-qualified-date `else` branch,
+  reached by exclusion for target glucose (`target_bg`) and whole profile
+  (`profile`); basal (`basal_rate`) has its own branch with `required: 14` qualifying nights
   without an elapsed requirement. A `verdict` identifies a Pattern arm;
   otherwise `required` identifies a setting arm, and legacy Focus has neither.
   An elapsed requirement does not identify the arm as Focus; the producer is

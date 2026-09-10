@@ -456,9 +456,9 @@ test('Pattern readiness preserves the served opportunity verdict even above its 
   assert.doesNotMatch(html, /data-focus-population/);
 });
 
-test('the produced basal setting arm keeps its count requirement when it also carries an elapsed requirement', () => {
-  // comparison_evidence(parameter='basal') uses the coverage-qualified setting
-  // arm, also produced for target_bg/profile; basal_rate has its own night arm.
+test('the produced profile setting arm keeps its count requirement when it also carries an elapsed requirement', () => {
+  // target_bg/profile reach the coverage-qualified setting branch by exclusion;
+  // basal_rate has its own qualifying-night branch.
   const html = readinessArm('after', {
     elapsed_days: 32, contributing_dates: [], criterion_met: false,
     reason: 'collecting', available: true, unit: 'coverage-qualified informative dates',
@@ -472,14 +472,16 @@ test('the produced basal setting arm keeps its count requirement when it also ca
   assert.doesNotMatch(html, /data-focus-population|— measured|— unmeasured/);
 });
 
-test('a Pattern arm without a required alias shows its opportunity gate without a fabricated requirement', () => {
+test('the produced Pattern arm shows its gate without the setting requirement label', () => {
+  // Before arm from the manufactured c3-focus selected retained API response.
   const html = readinessArm('before', {
-    count: 17, gate: 12, observed: 17, unit: 'meals', verdict: 'withheld',
-    criterion_met: false, reason: 'served hold', measured: 4, unmeasured: 2,
-    required_elapsed_days: null, elapsed_days: 4, contributing_dates: [],
+    unit: 'meals', observed: 12, measured: 12, unmeasured: 0, elapsed_days: 4,
+    required_elapsed_days: null, criterion_met: true,
+    contributing_dates: ['2024-05-01', '2024-05-02', '2024-05-03', '2024-05-04'],
+    reason: null, count: 12, gate: 12, verdict: 'ready', required: 12,
   });
-  assert.match(html, /17 of 12 meals/);
-  assert.match(html, /data-opportunity-verdict="withheld"/);
-  assert.match(html, /data-criterion-met="false"/);
+  assert.match(html, /12 of 12 meals/);
+  assert.match(html, /data-opportunity-verdict="ready"/);
+  assert.match(html, /data-criterion-met="true"/);
   assert.doesNotMatch(html, /data-required|data-focus-population|of .* days elapsed/);
 });

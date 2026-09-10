@@ -118,8 +118,8 @@ export function readinessArm(name, arm, { lever = null } = {}) {
   // The criterion line: what was observed, in the unit the backend named, and
   // the requirement it named beside it. The legacy Focus arm has no required count, so
   // it prints its measured and unmeasured opportunities in that place.
-  const requirement = arm.required == null ? ''
-    : `<small data-required="${e(count(arm.required))}">required</small>`;
+  const requirement = armKind === 'setting'
+    ? `<small data-required="${e(count(arm.required))}">required</small>` : '';
   const figure = armKind === 'legacy-focus'
     ? `${e(count(arm.observed))} ${e(arm.unit)}<small data-focus-population>${e(count(arm.measured))} measured · ${e(count(arm.unmeasured))} unmeasured</small>`
     : `${e(count(armKind === 'pattern' ? arm.count : arm.observed))} of ${e(count(armKind === 'pattern' ? arm.gate : arm.required))} ${e(arm.unit)}${requirement}`;

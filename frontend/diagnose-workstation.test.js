@@ -271,10 +271,13 @@ test('basal slot evidence states distinguish loading and unavailable data', () =
   const originalDocument = globalThis.document;
   try {
     globalThis.document = { createElement: (tagName) => new RosterElement(tagName) };
-    for (const [nightEvidence, message] of [[{ pending: true }, 'Loading nights…'], [{ stale: true }, 'Night evidence unavailable.']]) {
+    for (const [nightEvidence, message, busy] of [[{ pending: true }, 'Loading nights…', true], [{ stale: true }, 'Night evidence unavailable.', false]]) {
       const host = new RosterElement();
       renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence });
-      assert.match(host.html.join('\n'), new RegExp(message));
+      const html = host.html.join('\n');
+      assert.match(html, new RegExp(message));
+      // only the pending line tells assistive tech the region is being updated
+      assert.equal(/aria-busy="true"/.test(html), busy, `${message} aria-busy`);
       assert.equal(host.children.filter((child) => child.className === 'ev-row case-occurrence').length, 0);
     }
   } finally {

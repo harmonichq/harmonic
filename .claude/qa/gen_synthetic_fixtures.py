@@ -453,6 +453,10 @@ def build_case_file_capture():
     rows = []
     for priority, lever in enumerate(Lever, start=1):
         policy = policy_for(lever)
+        # Sequence cases come from the dedicated event-grounded #342 generator.
+        # This legacy capture has only Exposure opportunities.
+        if policy.sequence_lever is not None:
+            continue
         population = policy.recurrence_population(families, bolus)
         if policy.recurrence_family is None:
             roster = tuple(meal_opportunities[item.seq_num] for item in population)
@@ -510,7 +514,7 @@ def build_case_file_capture():
         time.monotonic() + 60,
     )
     cases = {}
-    for lever in Lever:
+    for lever in all_members:
         finding_id = f'finding:{lever.value}'
         event = prepared.case(finding_id, 'event', None)
         event_ids = tuple(member.id for member in all_members[lever])

@@ -7,6 +7,16 @@ browser dependencies as success. Browser launches on this Mac run outside the
 Codex sandbox. The graph was unavailable after repeated active-generation conflicts;
 ordinary source discovery was used, without terminating another session.
 
+## Recorded results and Amendment 2
+
+The results in [evidence/verification-lock-2.md](evidence/verification-lock-2.md)
+distinguish c4 checks from coordinator c3 browser evidence. The five budgets and
+contention ruling are in [coverage-appendix.md](coverage-appendix.md). Amendment 2
+forbids another c4 full pytest run; the touched scenario and closed-set modules pass
+4/4 after the final stub fix. The coordinator owns uncontended full pytest and
+whole-ticket browser/review acceptance. Commands below remain the reproducible gate,
+not a claim that every final-tree gate has already passed.
+
 ## Per-chunk checks
 
 Chunk 1: public scenario/sequence/uncertainty tests and existing behavioral consumers.
@@ -18,7 +28,8 @@ full inherited replay and new stories; correct only defects within this order.
 ## Fast gate (verbatim contributor commands)
 
 ```sh
-uv run python -m pytest                    # backend, stdlib unittest
+npm ci && npm run build                    # built shell required for backend delivery tests
+uv run python -m pytest                    # backend; coordinator-owned final rerun
 node --test 'frontend/**/*.test.js'        # frontend, Node's built-in runner
 npx --yes @fission-ai/openspec@1 validate --all --strict # OpenSpec requirements and changes
 python3 scripts/check_adr_numbers.py       # decision-record naming guard
@@ -43,8 +54,12 @@ uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
 uv run python scripts/gen_eating_sequence_fixtures.py --check
 ```
 
-Also run the evidence-canvas generator from CI:
-`uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check`.
+The two additional Python exploration drift commands from CI are:
+
+```sh
+uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check
+uv run python mockups/harmonic-v2.exploration/generate.py --check
+```
 
 ## Node and publish checks from CI
 
@@ -52,6 +67,7 @@ Also run the evidence-canvas generator from CI:
 node mockups/diagnose-event-comparison.synthetic/generate.mjs --check
 node mockups/finding-evidence-routing.exploration/build.mjs --check
 node --test scripts/screenshots.local.test.mjs
+node scripts/check_guidance_plan_contract.mjs
 ```
 
 Run the public-tree build, link and contamination scan as declared in CI in a new
@@ -93,3 +109,18 @@ is authorized. Record complete command output and applicable story count.
 
 The cohort report does not supply an intervention estimate; no evidence caption
 may claim that changing a behavior will save the displayed burden.
+
+## Focused Amendment 2 verification
+
+```sh
+uv run python -m pytest tests/test_scenario_opportunities.py tests/test_lever_closed_set_mirrors.py
+npx --yes @fission-ai/openspec@1 validate --all --strict
+python3 scripts/check_adr_numbers.py
+```
+
+On this machine standalone Python commands use `/opt/homebrew/bin/python3.14`;
+`uv run python` uses the project environment. Browser verification includes the
+S151–S158 targeted replay at 1280x720, 1440x900, 1280x800 and 390x844 using
+`ONLY=S151,S152,S153,S154,S155,S156,S157,S158` and `VIEWPORT=<size>` with the
+workstation replay command above. Those stories load the dedicated generated
+sequence payload, while inherited stories keep their existing shell payload.

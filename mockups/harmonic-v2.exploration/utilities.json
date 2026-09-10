@@ -9,7 +9,7 @@
   "guide": {
     "articles": {
       "reading-day": {
-        "markdown": "The **Day** tab is the forensic replay: *I crashed on Tuesday \u2014 what happened?*\nIt pairs one day's glucose chart with a chronological **Episode Log**.\n\n## The chart\n\nThe sticky glucose curve runs the width of the day, banded by target range.\nBoluses, carbs, and basal changes are marked on the timeline \u2014 every color is\npaired with a shape or label so the marks read without relying on color alone.\n\n## The Episode Log\n\nDown the right, each **episode** the engine assembled is a card in time order: an\nanchor (a meal bolus, a low, an unexplained rise), the window around it, and the\n**one lever** attributed to it \u2014 its earliest actionable driver. Behaviors that\nalso fired are folded in as *consequences* of that lever, never stacked as\nseparate blame.\n\nClick an episode to highlight its window on the chart above. That handoff \u2014 log\nrow \u2194 chart region \u2014 is how you read *why* a moment went the way it did.\n\n> **Open your [Day surface](app:day)** to replay a specific date.\n",
+        "markdown": "The **Day** tab is the forensic replay: *I crashed on Tuesday \u2014 what happened?*\nIt pairs one day's glucose chart with a chronological **Episode Log**.\n\n## The chart\n\nThe sticky glucose curve runs the width of the day, banded by target range.\nBoluses, carbs, and basal changes are marked on the timeline \u2014 every color is\npaired with a shape or label so the marks read without relying on color alone.\n\n## The Episode Log\n\nDown the right, each **episode** the engine assembled is a card in time order: an\nanchor (a meal bolus, a low, an unexplained rise), the window around it, and the\n**one lever** attributed to it. The shared evaluator compares observed impact\nwhen supported eating-sequence evidence competes for that episode. Other matching\nbehaviors remain inspectable as evidence, never stacked as separate blame.\n\nClick an episode to highlight its window on the chart above. That handoff \u2014 log\nrow \u2194 chart region \u2014 is how you read *why* a moment went the way it did.\n\n> **Open your [Day surface](app:day)** to replay a specific date.\n",
         "source_path": "docs/kb/reading-day.md"
       },
       "reading-diagnose": {
@@ -29,7 +29,7 @@
       "engine": {
         "is": [
           "A local, advisory read of your Control-IQ history. It explains your report; it does not drive your pump.",
-          "One actionable cause per episode: the earliest driver, with the other co-occurring behaviors narrated as its consequences.",
+          "One actionable cause per episode. Supported sequence candidates compete on observed impact; otherwise the earliest actionable driver wins. Other matches remain evidence.",
           "Every claim is tagged Observed, Inferred, or Not-in-data, and any inference is hedged, never asserted as fact."
         ],
         "name": "Scenario engine",
@@ -43,7 +43,7 @@
       },
       "exposures": [
         {
-          "denominator": "Scored against every meal in the window: how often a meal ran into this.",
+          "denominator": "Meal levers count meal opportunities. Sequence habits use their own eligible sequence populations and never add to the meals rate.",
           "label": "Meals",
           "value": "meals"
         },
@@ -127,6 +127,22 @@
           "recommendation": "A correction was needed behind this meal dose \u2014 worth watching how often that happens before changing anything.",
           "title": "Meal bolus fell short",
           "value": "meal_bolus_short"
+        },
+        {
+          "exposure": "meals",
+          "meaning": "Your highest-carb eating sequences were associated with less time in range or more glucose variability than the rest.",
+          "measured": "sequences",
+          "recommendation": "Watch how your largest eating sequences compare with smaller ones.",
+          "title": "High-carb sequence",
+          "value": "high_carb_sequence"
+        },
+        {
+          "exposure": "meals",
+          "meaning": "Sequences with three or more eating windows were associated with less time in range or more glucose variability than single-window sequences at similar total carbs.",
+          "measured": "sequences",
+          "recommendation": "Watch how repeated eating windows compare with a single window at similar total carbs.",
+          "title": "Repeat eating",
+          "value": "repeat_eating"
         }
       ],
       "pipeline": {
@@ -144,7 +160,7 @@
             "step": "Episode"
           },
           {
-            "body": "Exactly one lever is attributed per episode: its earliest actionable driver (root-cause-by-time). Other behaviors that also tripped are narrated as consequences of that lever, not as separate causes.",
+            "body": "Exactly one lever is attributed per episode. Supported sequence candidates compete on observed impact; otherwise the earliest actionable driver wins. Other matches remain evidence.",
             "color": "--accent",
             "one_liner": "The one actionable cause.",
             "step": "Lever"
@@ -158,7 +174,7 @@
         ],
         "suppression_truths": [
           {
-            "body": "A single dinner can trip three detectors at once. The engine does not report three problems. It attributes the earliest actionable driver and folds the rest in as its downstream consequences. A behavior that genuinely happened can be outranked by an earlier cause and suppressed. Fewer, truer flags beat a longer list.",
+            "body": "A single dinner can trip three detectors at once. The engine does not report three problems. Supported sequence candidates compete on observed impact; otherwise the earliest driver wins. A matched behavior can be outranked while remaining inspectable.",
             "title": "One episode, one lever."
           },
           {

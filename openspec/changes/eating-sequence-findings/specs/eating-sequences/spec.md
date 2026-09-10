@@ -48,3 +48,15 @@ window, comparison, population noun, counts and outcome interval SHALL be served
 - **WHEN** its episode members are evaluated and projected
 - **THEN** they refer to one sequence occurrence and one recurrence opportunity
 - **AND** excluded and two-window descriptive rows cannot inflate the candidate count
+
+### Requirement: Served summary precision preserves report values
+
+The report SHALL format summary-sentence percentages to one decimal place while
+retaining the precision of its numeric fields. Both family label and short-family
+copy for the lever findings SHALL use sequences.
+
+#### Scenario: Sentence rounding does not round the evidence
+- **GIVEN** a supported report whose percentage has precision beyond one decimal
+- **WHEN** the report and its summary are served
+- **THEN** the sentence percentage has one decimal place
+- **AND** the numeric percentage and difference keep their original precision

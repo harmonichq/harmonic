@@ -126,13 +126,39 @@ contribute their final winning counts, which may change under the approved compe
 The normative compatibility rule is in behavioral-layer requirement 3. Preserve old payload keys and
 add versioned/additive fields following each payload's current schema convention.
 
-The new finding rows use the normal server Priority queue and a served short title,
+The new lever finding rows use the normal server Priority queue and a served short title,
 headline and `asserts_move: false` where the row contract carries that field. No
 behavioral metadata maps to a pump parameter. Full source-window pricing stays
 stable under a drawn clock window; membership of the filtered row is decided by the
 served outcome witness. A chart and its finding must belong to the same analysis
 generation; reuse the existing coherence/retry behavior rather than introducing a
 new cache, registry or endpoint lifecycle.
+
+### Lock 2 reconciliation — habit membership and episode coverage
+
+High-carb sequence and Repeat eating are lever patterns and lever findings, not
+new outcome Patterns. Both are habit-member-only under **Highs after meals** in
+every window; neither enters its `rate_levers`. Each retains its own producer
+floor, eligible sequence denominator and Priority. The parent retains its meals
+population and the union of winning identities from its existing rate levers.
+Support is not pooled and no Exposure family or Verify trend tile is added.
+
+The exposures producer maps member associations only to emitted meal opportunities
+covered by the winning bounded episode. Sequence pump-event membership, nearby
+boluses, chart citations and witness instants do not supply meal targets. These
+additive `member_associations` are evidence, never rate claims. A supported winner
+with no covered meal stays visible in its own sequence case file and remains a
+habit member, without creating a Pattern meal occurrence. One episode still has
+one owner under this ADR's observed-impact decision.
+
+Whole-day `claimed_by` is the deduplicated union of served habit-member and
+rate-lever subjects, preserving rate-only meal_bolus_short. The inherited painter
+nests the causes with quiet ticks, member counts and server adjacency; it adds no
+rank numeral, Findings/Sift count or new Pattern copy/chip key. The parent keeps
+highs/meals chips and pattern-case-file; causes receive highs/meals chips and use
+eating-sequence charts. Scoped queries omit the whole-feed Pattern under the
+existing rule, follow each cause's explicit witness, preserve source-window
+prices and introduce no orphan `claimed_by`.
 
 ## ADR 342 — Extend the shipped chart through the design harness
 
@@ -147,7 +173,7 @@ The harness imports the real Diagnose composition and chart modules; the chart
 is not reimplemented in a separate mock. Use the existing shipped tokens, nameplate,
 thumbnail, compact-row mini, stage tile and fullscreen frame.
 
-The fifth registry kind is `eating-sequence`, selected for the two new levers before
+The added registry kind is `eating-sequence` (six total entries), selected for the two new levers before
 the generic event-comparison predicate. It shows served cohort pairs for
 in-sequence, post-4h and post-6h; the active detector headline comparison is identified
 without calculating another verdict. High-carb compares Q5 with the rest; Repeat
@@ -169,13 +195,39 @@ update `DESIGN.md`'s chart-family description and `mockups/INDEX.md`, and retain
 before/after synthetic evidence. No existing story is authorized for retirement by
 this change. Any base behavior gap blocks freeze and is recorded before admission.
 
+### Served transport and inherited controls
+
+The dedicated synthetic payload contains fifteen manufactured states, each with
+`global` and `0-360` (Overnight) windows. Each window retains the actual producer's
+preparation, including original `findings.rows`, `rendered_rows`, event/clock cases
+and every sequence selection. Repeated JSON containers are interned in `shared`
+and referenced by `$ref`. The single vue-free fixture decoder expands those values
+for the harness, replay and Node consumers; it reconstructs no findings, verdicts
+or population counts. This is fixture transport, not a new production API format.
+Python compares expanded captures with fresh public producers. The dedicated
+payload's size guard remains below 1,000,000 bytes.
+
+The sequence detail and occurrence footer call the same `renderClearTrace`
+control, with the existing Clear trace label and callback. Sequence detail does
+not add a Day handoff. Both family-label and short-family copy say `sequences`.
+The backend report formats percentages in the served summary sentence to one
+decimal; report numeric fields retain their precision.
+
+The ledger admits exactly S151–S158: covered/empty nesting and dual-cause adjacency
+(S151–S152), cause minis and All charts with the parent chart retained
+(S153–S154), canonical drill/fullscreen/return and shared clear control
+(S155–S156), scoped witness membership (S157), and truthful thin/null/period/unit/
+label states (S158). There are 183 issued and 182 active stories; S117 stays retired.
+No inherited behavior is retired by this change. Measured evidence and remaining
+coordinator gates are recorded in `evidence/verification-lock-2.md`.
+
 ## Risk contract
 
 - Must prevent: any pump-setting change or Plan staging from these levers; a frontend-derived verdict, median or difference; real data in fixtures, tests, prompts or logs; a finding that fires on fewer than eight qualifying sequences per cohort; secret exposure; irreversible loss of authoritative data; silent incorrect success.
 - Must recover: no new automatic recovery requirement.
 - Accepted failure: a window with no supported cohort shows no finding. Rare recoverable operational failures stop clearly for manual recovery.
 - Unsupported: live pulls, real-data fixtures, new pump-setting levers, new Diagnose surfaces or altered stage/dock/drawer behavior.
-- Evidence owed: a test through the analyzer interface showing each lever's Pattern appears in the projection from N synthetic sequences and is absent below the floor; the chart kind rendered in the shipped Diagnose tile with the existing browser gates green; a collision test for the settled one-lever rule.
+- Evidence owed: a test through the analyzer interface showing each lever's finding appears in the projection from N synthetic sequences and is absent below the floor; the chart kind rendered in the shipped Diagnose tile with the existing browser gates green; a collision test for the settled one-lever rule.
 
 ## Wiring and ownership
 
@@ -184,7 +236,7 @@ this change. Any base behavior gap blocks freeze and is recorded before admissio
 | Eating-sequence evaluation | Report + eligible sequence identities/cohorts/intervals | Scenario evaluation | Chunk 1 |
 | Scenario evaluation | Candidates, candidate impact, winner, unique counts and outcome witness | Scenario report, tally, model-view, exposures | Chunk 1 |
 | Population policy + evaluation | Served sequence case file and finding rows | Existing API generation/preparation, frontend adapter | Chunk 2 |
-| Served report/finding | Fifth registry descriptor and chart data | Shipped tile and harness story | Chunk 3 |
+| Served report/finding | Sixth registry descriptor and chart data | Shipped tile and harness story | Chunk 3 |
 | Synthetic recipes and real producers | Frozen fixtures and JS parity inputs | Tests, harness, replay | Chunk 4 |
 
 The exact path allowlists and acceptance partition are carried by the work order.

@@ -753,6 +753,53 @@ def pattern_clock_case(browser_analysis, browser_exposures, browser_scenarios):
     return prepared.case(finding_id, "clock", case["occurrences"][0]["id"])
 
 
+def sequence_cases() -> dict:
+    """Freeze public QA producers and explicit-witness transport edge cases."""
+    from copy import deepcopy
+    from scripts.qa_e2e_cases import QA_CASES, materialize_case, execute_case
+    from ciq_autotune.store import Store
+
+    result = {}
+    for case in QA_CASES:
+        if not case.name.startswith(("high-carb-sequence-", "repeat-eating-")):
+            continue
+        with Store.open(":memory:") as store:
+            materialize_case(store, case)
+            execution = execute_case(store, case)
+            execution.analysis["generated_at"] = store.cgm_readings()[-1].t.strftime("%Y-%m-%d %H:%M:%S")
+        inputs = {
+            "analysis": execution.analysis, "exposures": execution.exposures,
+            "scenarios": execution.scenarios,
+            "outcome_patterns": execution.outcome_patterns,
+            "analysis_generation": "qa:0",
+        }
+        variants = {case.name: inputs}
+        if case.name.endswith("-empty"):
+            # Transport faults exercise the projection's missing-witness rule;
+            # support, ownership and cohorts remain the real producers' output.
+            for variant in ("missing-witness", "null-witness", "midnight-witness"):
+                changed = deepcopy(inputs)
+                for evidence in changed["exposures"]["sequence_evidence"].values():
+                    for occurrence in evidence["occurrences"]:
+                        if variant == "missing-witness":
+                            occurrence.pop("outcome_minute", None)
+                        else:
+                            occurrence["outcome_minute"] = 0 if variant == "midnight-witness" else None
+                variants[case.name.removesuffix("empty") + variant] = changed
+        for name, source in variants.items():
+            projection = prepare_findings_projection(
+                analysis=source["analysis"], exposures=source["exposures"],
+                scenarios=source["scenarios"],
+            )
+            result[name] = {"inputs": source, "windows": {
+                name: projection.project(
+                    WindowQuery.whole_day() if bounds is None else WindowQuery.clock(*bounds),
+                    analysis_generation="qa:0",
+                ) for name, bounds in WINDOWS.items()
+            }}
+    return result
+
+
 def payload() -> dict:
     prepared = projection()
     no_data = empty_projection()
@@ -911,7 +958,12 @@ def main() -> int:
     with patch("ciq_autotune.analyze.analyze", forbidden), \
          patch("ciq_autotune.analyzers.scenario.build_scenarios", forbidden), \
          patch("ciq_autotune.explore_exposures.build_exposures", forbidden):
-        text = json.dumps(payload(), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+        body = payload()
+    # The legacy fixture forbids broad builders; these new event-grounded cases
+    # deliberately exercise that production composition over isolated QA stores.
+    from scripts.gen_eating_sequence_fixtures import compact_findings_payload
+    body["sequence_cases"] = compact_findings_payload({"states": sequence_cases()})
+    text = json.dumps(body, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     if args.check:
         current = OUT.read_text() if OUT.exists() else ""
         if current != text:

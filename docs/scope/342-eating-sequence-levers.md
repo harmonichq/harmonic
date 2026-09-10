@@ -72,3 +72,24 @@ Meals display affinity versus sequence recurrence, excluded sequence counts from
 legacy clean-rate accounts and existing Verify trend tiles, and regenerated the
 complete document inventory. These implement the settled impact and surface scope;
 no precedence or risk decision was reopened. Same-reviewer delta check: COUNTERSIGNED at ffb50efb81f17629333d7f5b77c493f94716eba3; no remaining blockers. Two nonblocking implementation notes remain within task 2.1 and its existing ownership: case-file landing resolution also consumes the explicit witness; retain the existing outcome_minute return contract and withhold missing-witness sequence membership at projection admission.
+
+
+## Execution lock 2 reconciliation — 2026-09-10
+
+The complete execution lock supersedes the September 5 scope wording above.
+High-carb sequence and Repeat eating are habit causes within Highs after meals,
+not two outcome Patterns. Their own sequence counts and Priority remain distinct
+from the parent's meals rate. Neither joins rate_levers. Winning bounded episodes
+may associate actual covered meals as evidence; empty coverage creates no meal
+claim and does not hide the cause. Whole-day claimed_by nesting comes from the
+server; scoped causes require an explicit outcome witness.
+
+The registry now has six chart families. Both causes use eating-sequence; the
+parent retains pattern-case-file. Navigation remains under ADR 397. The c4 QA
+catalog adds twelve manufactured cases covering both causes' covered, empty,
+below-candidate-floor, below-reference-floor, losing and multiple-episode states.
+The projection fixture also covers absent, null and midnight witness transport.
+The coordinator owns the active specification and final browser/review
+evidence; the checklist ticks and budget appendix were completed by c4 under the
+coordinator's dated delegation, with the coordinator's own browser and timing
+measurements cited where the ticks rest on them (2026-09-10).

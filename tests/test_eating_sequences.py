@@ -725,3 +725,29 @@ class EligibleSequenceIdentityTest(unittest.TestCase):
                 self.assertEqual(len({row.id for row in rows}), len(rows))
                 if lever == 'repeat_eating':
                     self.assertTrue(all(row.sequence.window_count != 2 for row in rows))
+
+
+class SummaryPrecisionTest(unittest.TestCase):
+    def test_report_sentences_round_percentages_without_rounding_numeric_fields(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from tests.eating_sequence_streams import sequence_episode_stream
+
+        for lever, key in (("high_carb_sequence", "high_carb_sequence"),
+                           ("repeat_eating", "repeat_eating_amplifier")):
+            with self.subTest(lever=lever):
+                bolus, cgm, log, _ = sequence_episode_stream(lever, covered=True)
+                payload = report_dict(build_report(
+                    bolus, cgm, log, window_start=cgm[0].t, window_end=cgm[-1].t,
+                    config=EatingSequenceConfig(),
+                ))
+                summary = payload[key]["finding"]["summary"]
+                self.assertIn("89.6%", summary)
+                self.assertIn("100.0%", summary)
+                self.assertNotRegex(summary, r"\d+\.\d{2,}%")
+                comparison = next(row for row in payload[key]["comparisons"]
+                                  if row["period"] == "post_4h"
+                                  and (row.get("scope") == "pooled"
+                                       or row.get("carb_quintile") == 5))
+                cohort = "high" if lever == "high_carb_sequence" else "repeat"
+                self.assertEqual(comparison[cohort]["tir_pct"], 89.583)
+                self.assertEqual(comparison["tir_difference_pct_points"], -10.417)

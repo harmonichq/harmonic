@@ -2,8 +2,10 @@
 
 ### Requirement: Diagnose hosts a non-advisory aggregate-evidence section outside Audit and Watching
 
-Diagnose SHALL place supported eating-sequence findings in its existing ranked
-queue with the fifth eating-sequence chart kind in the shipped tile. It SHALL NOT
+Diagnose SHALL nest supported eating-sequence lever findings as habit causes under
+Highs after meals in its existing queue. They SHALL have their own sequence counts
+and no rank numeral or extra Findings/Sift count. The eating-sequence descriptor
+SHALL bring the registry to six entries; the parent SHALL retain pattern-case-file. It SHALL NOT
 create a separate aggregate section or new stage, drawer or dock behavior. Neither
 finding SHALL stage a Plan change. Its adapter SHALL reshape
 served aggregates without deriving a verdict, median, difference, or status. An
@@ -59,3 +61,16 @@ axis. Cohort comparisons SHALL not appear as predicted individual glucose traces
 - **WHEN** a reader selects a new finding, opens its chart fullscreen and returns
 - **THEN** the existing stage, drawer, focus and selection behavior remains intact
 - **AND** the frozen Diagnose behavior replay passes against the built app
+
+### Requirement: Sequence drill reuses the shared clear control and frozen behavior
+
+Sequence detail and the occurrence footer SHALL use the same Clear trace control
+and callback. Canonical drill, All charts, fullscreen and return SHALL preserve
+selection, focus and window. Sequence detail SHALL NOT add a Day handoff. The
+revision SHALL satisfy S151–S158 in the existing ledger, preserve every inherited
+active story and retain S117's retirement.
+
+#### Scenario: Clear trace is shared across evidence kinds
+- **WHEN** a reader drills into either sequence cause from its row or All charts
+- **THEN** the existing Clear trace control is mounted with its inherited behavior
+- **AND** fullscreen and return preserve the canonical cause, selection, focus and window

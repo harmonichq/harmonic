@@ -2124,6 +2124,7 @@
     "start_min": null
    }
   },
+  "eating_sequence_report": null,
   "findings": {
    "analysis_generation": "synthetic:178",
    "chip_counts": {

@@ -1704,7 +1704,7 @@
   {
    "period": "post_4h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 89.583% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 89.6% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
   },
   {
    "in_sequence": {
@@ -9425,7 +9425,7 @@
   {
    "period": "post_6h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 93.056% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 93.1% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
   },
   {
    "in_sequence": {
@@ -13246,7 +13246,7 @@
   {
    "period": "post_6h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 88.889% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 88.9% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
   },
   {
    "in_sequence": {
@@ -13841,7 +13841,7 @@
   {
    "period": "post_6h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 92.958% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 93.0% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 8 vs 32)"
   },
   {
    "in_sequence": {
@@ -15400,7 +15400,7 @@
   {
    "period": "post_4h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 94.792% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 94.8% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
   },
   {
    "in_sequence": {
@@ -15908,7 +15908,7 @@
   {
    "carb_quintile": 5,
    "period": "post_4h",
-   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 89.583% of the four-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
+   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 89.6% of the four-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
   },
   {
    "carb_quintile": 1,
@@ -20411,7 +20411,7 @@
   {
    "period": "post_6h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 96.528% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 96.5% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
   },
   {
    "in_sequence": {
@@ -20511,7 +20511,7 @@
   {
    "carb_quintile": 5,
    "period": "post_6h",
-   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 93.056% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
+   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 93.1% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
   },
   {
    "carb_quintile": 5,
@@ -24541,7 +24541,7 @@
   {
    "period": "post_4h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 89.583% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 15 vs 64)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 89.6% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 15 vs 64)"
   },
   {
    "in_sequence": {
@@ -27340,7 +27340,7 @@
   {
    "period": "post_6h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 94.444% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 94.4% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
   },
   {
    "in_sequence": {
@@ -27440,7 +27440,7 @@
   {
    "carb_quintile": 5,
    "period": "post_6h",
-   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 88.889% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
+   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 88.9% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
   },
   {
    "carb_quintile": 5,
@@ -27883,11 +27883,6 @@
    {"$ref": 1273}
   ],
   {
-   "period": "post_6h",
-   "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 96.479% of the six-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
-  },
-  {
    "in_sequence": {
     "mean_mgdl": null,
     "n": 0,
@@ -28028,11 +28023,11 @@
    "sequence_n": 16
   },
   [
+   {"$ref": 1746},
    {"$ref": 1747},
    {"$ref": 1748},
    {"$ref": 1749},
-   {"$ref": 1750},
-   {"$ref": 1751}
+   {"$ref": 1750}
   ],
   {
    "boundaries_g": [
@@ -28041,7 +28036,7 @@
     122.94999999999999,
     159.74999999999997
    ],
-   "rows": {"$ref": 1752}
+   "rows": {"$ref": 1751}
   },
   {
    "in_sequence": {
@@ -28184,11 +28179,11 @@
    "sequence_n": 6
   },
   [
+   {"$ref": 1753},
    {"$ref": 1754},
    {"$ref": 1755},
    {"$ref": 1756},
-   {"$ref": 1757},
-   {"$ref": 1758}
+   {"$ref": 1757}
   ],
   {
    "boundaries_g": [
@@ -28197,11 +28192,11 @@
     122.94999999999999,
     159.74999999999997
    ],
-   "rows": {"$ref": 1759}
+   "rows": {"$ref": 1758}
   },
   {
-   "evening": {"$ref": 1760},
-   "pooled": {"$ref": 1753}
+   "evening": {"$ref": 1759},
+   "pooled": {"$ref": 1752}
   },
   {
    "high": {
@@ -28234,26 +28229,26 @@
   [
    {"$ref": 807},
    {"$ref": 1208},
-   {"$ref": 1762},
+   {"$ref": 1761},
    {"$ref": 145},
    {"$ref": 930},
    {"$ref": 931}
   ],
   {
-   "comparisons": {"$ref": 1763},
+   "comparisons": {"$ref": 1762},
    "exclusions": {
     "carb_log_contamination": 0,
     "cgm_coverage": 80,
     "next_sequence_overlap": 0
    },
-   "finding": {"$ref": 1746},
-   "scopes": {"$ref": 1761},
+   "finding": {"$ref": 1203},
+   "scopes": {"$ref": 1760},
    "status": "supported"
   },
   {
    "carb_quintile": 5,
    "period": "post_6h",
-   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 92.958% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
+   "summary": "In carb quintile 5 sequences, those with three or more eating windows spent 93.0% of the six-hour post-sequence interval in range against 100.0% for single-window sequences (n = 8 vs 8)"
   },
   {
    "carb_quintile": 1,
@@ -28424,21 +28419,21 @@
    "window_count_band": "3+"
   },
   [
-   {"$ref": 1766},
+   {"$ref": 1765},
    {"$ref": 151},
    {"$ref": 152},
-   {"$ref": 1767},
+   {"$ref": 1766},
    {"$ref": 154},
    {"$ref": 155},
-   {"$ref": 1768},
+   {"$ref": 1767},
    {"$ref": 157},
    {"$ref": 158},
-   {"$ref": 1769},
+   {"$ref": 1768},
    {"$ref": 160},
    {"$ref": 161},
-   {"$ref": 1770},
+   {"$ref": 1769},
    {"$ref": 163},
-   {"$ref": 1771}
+   {"$ref": 1770}
   ],
   {
    "carb_quintile": 5,
@@ -28483,23 +28478,23 @@
    {"$ref": 953},
    {"$ref": 818},
    {"$ref": 1214},
-   {"$ref": 1773}
+   {"$ref": 1772}
   ],
   {
-   "comparisons": {"$ref": 1774},
+   "comparisons": {"$ref": 1773},
    "exclusions": {
     "carb_log_contamination": 0,
     "cgm_coverage": 80,
     "next_sequence_overlap": 0
    },
-   "finding": {"$ref": 1765},
-   "matrix": {"$ref": 1772},
+   "finding": {"$ref": 1764},
+   "matrix": {"$ref": 1771},
    "status": "supported"
   },
   {
    "definitions": {"$ref": 125},
-   "high_carb_sequence": {"$ref": 1764},
-   "repeat_eating_amplifier": {"$ref": 1775},
+   "high_carb_sequence": {"$ref": 1763},
+   "repeat_eating_amplifier": {"$ref": 1774},
    "schema": "eating-sequence-report-v1",
    "window": {
     "days": 30,
@@ -28510,12 +28505,12 @@
   {
    "alignment": "event",
    "kind": "eating-sequence",
-   "report": {"$ref": 1776}
+   "report": {"$ref": 1775}
   },
   {
    "alignment": "clock",
    "kind": "eating-sequence",
-   "report": {"$ref": 1776}
+   "report": {"$ref": 1775}
   },
   {
    "action": "habit:high_carb_sequence",
@@ -28530,7 +28525,7 @@
    "subject": "habit:high_carb_sequence"
   },
   [
-   {"$ref": 1779},
+   {"$ref": 1778},
    {"$ref": 825},
    {"$ref": 1}
   ],
@@ -28542,7 +28537,7 @@
    "k": 0,
    "key": "highs_after_meals",
    "member_set_fingerprint": "917cafa46a067727",
-   "members": {"$ref": 1780},
+   "members": {"$ref": 1779},
    "n": 100,
    "overlap_counts": {"$ref": 3},
    "rate": 0.0,
@@ -28573,12 +28568,12 @@
    "sequence": {"$ref": 828}
   },
   [
-   {"$ref": 1782},
+   {"$ref": 1781},
    {"$ref": 830}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1783},
+   "candidates": {"$ref": 1782},
    "end": "2040-01-23T02:02:00",
    "ep_id": "ep-067",
    "id": "sequence-65",
@@ -28588,7 +28583,7 @@
    "start": "2040-01-22T21:02:00"
   },
   [
-   {"$ref": 1784}
+   {"$ref": 1783}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28597,12 +28592,12 @@
    "sequence": {"$ref": 834}
   },
   [
-   {"$ref": 1786},
+   {"$ref": 1785},
    {"$ref": 836}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1787},
+   "candidates": {"$ref": 1786},
    "end": "2040-01-23T10:33:00",
    "ep_id": "ep-071",
    "id": "sequence-68",
@@ -28612,7 +28607,7 @@
    "start": "2040-01-23T05:33:00"
   },
   [
-   {"$ref": 1788}
+   {"$ref": 1787}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28621,12 +28616,12 @@
    "sequence": {"$ref": 840}
   },
   [
-   {"$ref": 1790},
+   {"$ref": 1789},
    {"$ref": 842}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1791},
+   "candidates": {"$ref": 1790},
    "end": "2040-01-23T18:02:00",
    "ep_id": "ep-074",
    "id": "sequence-72",
@@ -28636,7 +28631,7 @@
    "start": "2040-01-23T13:02:00"
   },
   [
-   {"$ref": 1792}
+   {"$ref": 1791}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28645,12 +28640,12 @@
    "sequence": {"$ref": 846}
   },
   [
-   {"$ref": 1794},
+   {"$ref": 1793},
    {"$ref": 848}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1795},
+   "candidates": {"$ref": 1794},
    "end": "2040-01-24T02:33:00",
    "ep_id": "ep-078",
    "id": "sequence-75",
@@ -28660,7 +28655,7 @@
    "start": "2040-01-23T21:33:00"
   },
   [
-   {"$ref": 1796}
+   {"$ref": 1795}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28669,12 +28664,12 @@
    "sequence": {"$ref": 852}
   },
   [
-   {"$ref": 1798},
+   {"$ref": 1797},
    {"$ref": 854}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1799},
+   "candidates": {"$ref": 1798},
    "end": "2040-01-24T10:02:00",
    "ep_id": "ep-081",
    "id": "sequence-79",
@@ -28684,7 +28679,7 @@
    "start": "2040-01-24T05:02:00"
   },
   [
-   {"$ref": 1800}
+   {"$ref": 1799}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28693,12 +28688,12 @@
    "sequence": {"$ref": 858}
   },
   [
-   {"$ref": 1802},
+   {"$ref": 1801},
    {"$ref": 860}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1803},
+   "candidates": {"$ref": 1802},
    "end": "2040-01-24T18:33:00",
    "ep_id": "ep-085",
    "id": "sequence-82",
@@ -28708,7 +28703,7 @@
    "start": "2040-01-24T13:33:00"
   },
   [
-   {"$ref": 1804}
+   {"$ref": 1803}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28717,12 +28712,12 @@
    "sequence": {"$ref": 864}
   },
   [
-   {"$ref": 1806},
+   {"$ref": 1805},
    {"$ref": 866}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1807},
+   "candidates": {"$ref": 1806},
    "end": "2040-01-25T02:02:00",
    "ep_id": "ep-088",
    "id": "sequence-86",
@@ -28732,7 +28727,7 @@
    "start": "2040-01-24T21:02:00"
   },
   [
-   {"$ref": 1808}
+   {"$ref": 1807}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28741,12 +28736,12 @@
    "sequence": {"$ref": 870}
   },
   [
-   {"$ref": 1810},
+   {"$ref": 1809},
    {"$ref": 872}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1811},
+   "candidates": {"$ref": 1810},
    "end": "2040-01-25T10:33:00",
    "ep_id": "ep-092",
    "id": "sequence-89",
@@ -28756,11 +28751,11 @@
    "start": "2040-01-25T05:33:00"
   },
   [
-   {"$ref": 1812}
+   {"$ref": 1811}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1783},
+   "candidates": {"$ref": 1782},
    "end": "2040-01-23T02:02:00",
    "ep_id": "ep-067",
    "id": "sequence-65",
@@ -28770,11 +28765,11 @@
    "start": "2040-01-22T21:02:00"
   },
   [
-   {"$ref": 1814}
+   {"$ref": 1813}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1787},
+   "candidates": {"$ref": 1786},
    "end": "2040-01-23T10:33:00",
    "ep_id": "ep-071",
    "id": "sequence-68",
@@ -28784,11 +28779,11 @@
    "start": "2040-01-23T05:33:00"
   },
   [
-   {"$ref": 1816}
+   {"$ref": 1815}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1791},
+   "candidates": {"$ref": 1790},
    "end": "2040-01-23T18:02:00",
    "ep_id": "ep-074",
    "id": "sequence-72",
@@ -28798,11 +28793,11 @@
    "start": "2040-01-23T13:02:00"
   },
   [
-   {"$ref": 1818}
+   {"$ref": 1817}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1795},
+   "candidates": {"$ref": 1794},
    "end": "2040-01-24T02:33:00",
    "ep_id": "ep-078",
    "id": "sequence-75",
@@ -28812,11 +28807,11 @@
    "start": "2040-01-23T21:33:00"
   },
   [
-   {"$ref": 1820}
+   {"$ref": 1819}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1799},
+   "candidates": {"$ref": 1798},
    "end": "2040-01-24T10:02:00",
    "ep_id": "ep-081",
    "id": "sequence-79",
@@ -28826,11 +28821,11 @@
    "start": "2040-01-24T05:02:00"
   },
   [
-   {"$ref": 1822}
+   {"$ref": 1821}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1803},
+   "candidates": {"$ref": 1802},
    "end": "2040-01-24T18:33:00",
    "ep_id": "ep-085",
    "id": "sequence-82",
@@ -28840,11 +28835,11 @@
    "start": "2040-01-24T13:33:00"
   },
   [
-   {"$ref": 1824}
+   {"$ref": 1823}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1807},
+   "candidates": {"$ref": 1806},
    "end": "2040-01-25T02:02:00",
    "ep_id": "ep-088",
    "id": "sequence-86",
@@ -28854,11 +28849,11 @@
    "start": "2040-01-24T21:02:00"
   },
   [
-   {"$ref": 1826}
+   {"$ref": 1825}
   ],
   {
    "attributed": false,
-   "candidates": {"$ref": 1811},
+   "candidates": {"$ref": 1810},
    "end": "2040-01-25T10:33:00",
    "ep_id": "ep-092",
    "id": "sequence-89",
@@ -28868,7 +28863,7 @@
    "start": "2040-01-25T05:33:00"
   },
   [
-   {"$ref": 1828}
+   {"$ref": 1827}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28877,11 +28872,11 @@
    "sequence": {"$ref": 1465}
   },
   [
-   {"$ref": 1830}
+   {"$ref": 1829}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1831},
+   "candidates": {"$ref": 1830},
    "end": "2040-01-25T17:00:00",
    "ep_id": "ep-093",
    "id": "sequence-93",
@@ -28891,7 +28886,7 @@
    "start": "2040-01-25T12:00:00"
   },
   [
-   {"$ref": 1832}
+   {"$ref": 1831}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28900,11 +28895,11 @@
    "sequence": {"$ref": 1466}
   },
   [
-   {"$ref": 1834}
+   {"$ref": 1833}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1835},
+   "candidates": {"$ref": 1834},
    "end": "2040-01-26T01:00:00",
    "ep_id": "ep-094",
    "id": "sequence-94",
@@ -28914,7 +28909,7 @@
    "start": "2040-01-25T20:00:00"
   },
   [
-   {"$ref": 1836}
+   {"$ref": 1835}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28923,11 +28918,11 @@
    "sequence": {"$ref": 1467}
   },
   [
-   {"$ref": 1838}
+   {"$ref": 1837}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1839},
+   "candidates": {"$ref": 1838},
    "end": "2040-01-26T09:00:00",
    "ep_id": "ep-095",
    "id": "sequence-95",
@@ -28937,11 +28932,11 @@
    "start": "2040-01-26T04:00:00"
   },
   [
-   {"$ref": 1840}
+   {"$ref": 1839}
   ],
   {
    "attributed": true,
-   "episodes": {"$ref": 1841},
+   "episodes": {"$ref": 1840},
    "id": "sequence-95",
    "outcome_minute": 300,
    "sequence": {"$ref": 1467},
@@ -28954,11 +28949,11 @@
    "sequence": {"$ref": 1468}
   },
   [
-   {"$ref": 1843}
+   {"$ref": 1842}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1844},
+   "candidates": {"$ref": 1843},
    "end": "2040-01-26T17:00:00",
    "ep_id": "ep-096",
    "id": "sequence-96",
@@ -28968,7 +28963,7 @@
    "start": "2040-01-26T12:00:00"
   },
   [
-   {"$ref": 1845}
+   {"$ref": 1844}
   ],
   {
    "impact": 0.43419640852927077,
@@ -28977,11 +28972,11 @@
    "sequence": {"$ref": 1469}
   },
   [
-   {"$ref": 1847}
+   {"$ref": 1846}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1848},
+   "candidates": {"$ref": 1847},
    "end": "2040-01-27T01:00:00",
    "ep_id": "ep-097",
    "id": "sequence-97",
@@ -28991,7 +28986,7 @@
    "start": "2040-01-26T20:00:00"
   },
   [
-   {"$ref": 1849}
+   {"$ref": 1848}
   ],
   {
    "impact": 0.43419640852927077,
@@ -29000,11 +28995,11 @@
    "sequence": {"$ref": 1470}
   },
   [
-   {"$ref": 1851}
+   {"$ref": 1850}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1852},
+   "candidates": {"$ref": 1851},
    "end": "2040-01-27T09:00:00",
    "ep_id": "ep-098",
    "id": "sequence-98",
@@ -29014,11 +29009,11 @@
    "start": "2040-01-27T04:00:00"
   },
   [
-   {"$ref": 1853}
+   {"$ref": 1852}
   ],
   {
    "attributed": true,
-   "episodes": {"$ref": 1854},
+   "episodes": {"$ref": 1853},
    "id": "sequence-98",
    "outcome_minute": 300,
    "sequence": {"$ref": 1470},
@@ -29031,11 +29026,11 @@
    "sequence": {"$ref": 1471}
   },
   [
-   {"$ref": 1856}
+   {"$ref": 1855}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1857},
+   "candidates": {"$ref": 1856},
    "end": "2040-01-27T17:00:00",
    "ep_id": "ep-099",
    "id": "sequence-99",
@@ -29045,7 +29040,7 @@
    "start": "2040-01-27T12:00:00"
   },
   [
-   {"$ref": 1858}
+   {"$ref": 1857}
   ],
   {
    "candidate": true,
@@ -29066,14 +29061,14 @@
    "impact": 0.43419640852927077,
    "lever": "high_carb_sequence",
    "occurrence_id": "sequence-100",
-   "sequence": {"$ref": 1860}
+   "sequence": {"$ref": 1859}
   },
   [
-   {"$ref": 1861}
+   {"$ref": 1860}
   ],
   {
    "attributed": true,
-   "candidates": {"$ref": 1862},
+   "candidates": {"$ref": 1861},
    "end": "2040-01-28T01:00:00",
    "ep_id": "ep-100",
    "id": "sequence-100",
@@ -29083,10 +29078,10 @@
    "start": "2040-01-27T20:00:00"
   },
   [
-   {"$ref": 1863}
+   {"$ref": 1862}
   ],
   [
-   {"$ref": 1781},
+   {"$ref": 1780},
    {"$ref": 902},
    {"$ref": 99},
    {"$ref": 107},
@@ -29123,7 +29118,7 @@
   {
    "period": "post_4h",
    "scope": "pooled",
-   "summary": "In pooled sequences, the highest-carb fifth spent 89.583% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
+   "summary": "In pooled sequences, the highest-carb fifth spent 89.6% of the four-hour post-sequence interval in range against 100.0% for the rest (n = 16 vs 64)"
   },
   {
    "in_sequence": {
@@ -29158,7 +29153,7 @@
    {"$ref": 912},
    {"$ref": 913},
    {"$ref": 914},
-   {"$ref": 1868}
+   {"$ref": 1867}
   ],
   {
    "boundaries_g": [
@@ -29167,11 +29162,11 @@
     122.94999999999999,
     159.74999999999997
    ],
-   "rows": {"$ref": 1869}
+   "rows": {"$ref": 1868}
   },
   {
    "evening": {"$ref": 924},
-   "pooled": {"$ref": 1870}
+   "pooled": {"$ref": 1869}
   },
   {
    "high": {
@@ -29231,21 +29226,21 @@
   },
   [
    {"$ref": 926},
+   {"$ref": 1871},
    {"$ref": 1872},
-   {"$ref": 1873},
    {"$ref": 929},
    {"$ref": 930},
    {"$ref": 931}
   ],
   {
-   "comparisons": {"$ref": 1874},
+   "comparisons": {"$ref": 1873},
    "exclusions": {
     "carb_log_contamination": 0,
     "cgm_coverage": 0,
     "next_sequence_overlap": 0
    },
-   "finding": {"$ref": 1867},
-   "scopes": {"$ref": 1871},
+   "finding": {"$ref": 1866},
+   "scopes": {"$ref": 1870},
    "status": "supported"
   },
   {
@@ -29294,7 +29289,7 @@
    {"$ref": 938},
    {"$ref": 160},
    {"$ref": 161},
-   {"$ref": 1877},
+   {"$ref": 1876},
    {"$ref": 163},
    {"$ref": 940}
   ],
@@ -29368,24 +29363,24 @@
    {"$ref": 952},
    {"$ref": 953},
    {"$ref": 954},
-   {"$ref": 1879},
-   {"$ref": 1880}
+   {"$ref": 1878},
+   {"$ref": 1879}
   ],
   {
-   "comparisons": {"$ref": 1881},
+   "comparisons": {"$ref": 1880},
    "exclusions": {
     "carb_log_contamination": 0,
     "cgm_coverage": 0,
     "next_sequence_overlap": 0
    },
-   "finding": {"$ref": 1876},
-   "matrix": {"$ref": 1878},
+   "finding": {"$ref": 1875},
+   "matrix": {"$ref": 1877},
    "status": "supported"
   },
   {
    "definitions": {"$ref": 125},
-   "high_carb_sequence": {"$ref": 1875},
-   "repeat_eating_amplifier": {"$ref": 1882},
+   "high_carb_sequence": {"$ref": 1874},
+   "repeat_eating_amplifier": {"$ref": 1881},
    "schema": "eating-sequence-report-v1",
    "window": {
     "days": 30,
@@ -29606,14 +29601,14 @@
    {"$ref": 1048},
    {"$ref": 1049},
    {"$ref": 1050},
+   {"$ref": 1883},
    {"$ref": 1884},
    {"$ref": 1885},
    {"$ref": 1886},
    {"$ref": 1887},
    {"$ref": 1888},
    {"$ref": 1889},
-   {"$ref": 1890},
-   {"$ref": 1891}
+   {"$ref": 1890}
   ],
   {
    "anchor": {
@@ -29624,7 +29619,7 @@
    },
    "attributed": true,
    "date": "2040-01-22",
-   "episodes": {"$ref": 1785},
+   "episodes": {"$ref": 1784},
    "id": "o_31e3d12719f6f6f09964f33659b95b33",
    "outcome_minute": 1325,
    "sequence": {"$ref": 828},
@@ -29639,7 +29634,7 @@
    },
    "attributed": true,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1789},
+   "episodes": {"$ref": 1788},
    "id": "o_5399b7db586dc394ea575590070c2a7e",
    "outcome_minute": 395,
    "sequence": {"$ref": 834},
@@ -29654,7 +29649,7 @@
    },
    "attributed": true,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1793},
+   "episodes": {"$ref": 1792},
    "id": "o_8a4001edb0c51f1130cdba5576c47688",
    "outcome_minute": 845,
    "sequence": {"$ref": 840},
@@ -29669,7 +29664,7 @@
    },
    "attributed": true,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1797},
+   "episodes": {"$ref": 1796},
    "id": "o_a1c9b2d57d08c216382cd86513a6588c",
    "outcome_minute": 1355,
    "sequence": {"$ref": 846},
@@ -29684,7 +29679,7 @@
    },
    "attributed": true,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1801},
+   "episodes": {"$ref": 1800},
    "id": "o_da4f4436ead5c883440cadba3fdf1ff1",
    "outcome_minute": 365,
    "sequence": {"$ref": 852},
@@ -29699,7 +29694,7 @@
    },
    "attributed": true,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1805},
+   "episodes": {"$ref": 1804},
    "id": "o_8b9ce143bf49665ff38e258c9a9dabeb",
    "outcome_minute": 875,
    "sequence": {"$ref": 858},
@@ -29714,7 +29709,7 @@
    },
    "attributed": true,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1809},
+   "episodes": {"$ref": 1808},
    "id": "o_39997020596e7e580f428d5b2bd2c9d2",
    "outcome_minute": 1325,
    "sequence": {"$ref": 864},
@@ -29729,13 +29724,14 @@
    },
    "attributed": true,
    "date": "2040-01-25",
-   "episodes": {"$ref": 1813},
+   "episodes": {"$ref": 1812},
    "id": "o_9eb07f7aefec6e6347e5b8e5765ebef0",
    "outcome_minute": 395,
    "sequence": {"$ref": 870},
    "verdict": "fired"
   },
   [
+   {"$ref": 1892},
    {"$ref": 1893},
    {"$ref": 1894},
    {"$ref": 1895},
@@ -29743,7 +29739,6 @@
    {"$ref": 1897},
    {"$ref": 1898},
    {"$ref": 1899},
-   {"$ref": 1900},
    {"$ref": 1073},
    {"$ref": 1074},
    {"$ref": 1075},
@@ -29756,12 +29751,12 @@
   {
    "alignment": "event",
    "kind": "eating-sequence",
-   "report": {"$ref": 1883}
+   "report": {"$ref": 1882}
   },
   {
    "alignment": "clock",
    "kind": "eating-sequence",
-   "report": {"$ref": 1883}
+   "report": {"$ref": 1882}
   },
   {
    "anchor": {
@@ -29772,7 +29767,7 @@
    },
    "attributed": false,
    "date": "2040-01-22",
-   "episodes": {"$ref": 1815},
+   "episodes": {"$ref": 1814},
    "id": "o_31e3d12719f6f6f09964f33659b95b33",
    "outcome_minute": 1325,
    "sequence": {"$ref": 828},
@@ -29787,7 +29782,7 @@
    },
    "attributed": false,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1817},
+   "episodes": {"$ref": 1816},
    "id": "o_5399b7db586dc394ea575590070c2a7e",
    "outcome_minute": 395,
    "sequence": {"$ref": 834},
@@ -29802,7 +29797,7 @@
    },
    "attributed": false,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1819},
+   "episodes": {"$ref": 1818},
    "id": "o_8a4001edb0c51f1130cdba5576c47688",
    "outcome_minute": 845,
    "sequence": {"$ref": 840},
@@ -29817,7 +29812,7 @@
    },
    "attributed": false,
    "date": "2040-01-23",
-   "episodes": {"$ref": 1821},
+   "episodes": {"$ref": 1820},
    "id": "o_a1c9b2d57d08c216382cd86513a6588c",
    "outcome_minute": 1355,
    "sequence": {"$ref": 846},
@@ -29832,7 +29827,7 @@
    },
    "attributed": false,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1823},
+   "episodes": {"$ref": 1822},
    "id": "o_da4f4436ead5c883440cadba3fdf1ff1",
    "outcome_minute": 365,
    "sequence": {"$ref": 852},
@@ -29847,7 +29842,7 @@
    },
    "attributed": false,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1825},
+   "episodes": {"$ref": 1824},
    "id": "o_8b9ce143bf49665ff38e258c9a9dabeb",
    "outcome_minute": 875,
    "sequence": {"$ref": 858},
@@ -29862,7 +29857,7 @@
    },
    "attributed": false,
    "date": "2040-01-24",
-   "episodes": {"$ref": 1827},
+   "episodes": {"$ref": 1826},
    "id": "o_39997020596e7e580f428d5b2bd2c9d2",
    "outcome_minute": 1325,
    "sequence": {"$ref": 864},
@@ -29877,7 +29872,7 @@
    },
    "attributed": false,
    "date": "2040-01-25",
-   "episodes": {"$ref": 1829},
+   "episodes": {"$ref": 1828},
    "id": "o_9eb07f7aefec6e6347e5b8e5765ebef0",
    "outcome_minute": 395,
    "sequence": {"$ref": 870},
@@ -29892,7 +29887,7 @@
    },
    "attributed": true,
    "date": "2040-01-25",
-   "episodes": {"$ref": 1833},
+   "episodes": {"$ref": 1832},
    "id": "o_57af7a563ea6ecf9864a0fd72d226c0f",
    "outcome_minute": 780,
    "sequence": {"$ref": 1465},
@@ -29907,7 +29902,7 @@
    },
    "attributed": true,
    "date": "2040-01-25",
-   "episodes": {"$ref": 1837},
+   "episodes": {"$ref": 1836},
    "id": "o_19efeb4348ba8ebf1daa2dc05cedf294",
    "outcome_minute": 1260,
    "sequence": {"$ref": 1466},
@@ -29922,7 +29917,7 @@
    },
    "attributed": true,
    "date": "2040-01-26",
-   "episodes": {"$ref": 1841},
+   "episodes": {"$ref": 1840},
    "id": "o_2280fc8a2e8e0ec0f914c27fdd8b5242",
    "outcome_minute": 300,
    "sequence": {"$ref": 1467},
@@ -29937,7 +29932,7 @@
    },
    "attributed": true,
    "date": "2040-01-26",
-   "episodes": {"$ref": 1846},
+   "episodes": {"$ref": 1845},
    "id": "o_343111832f090700586b19398a9bdb72",
    "outcome_minute": 780,
    "sequence": {"$ref": 1468},
@@ -29952,7 +29947,7 @@
    },
    "attributed": true,
    "date": "2040-01-26",
-   "episodes": {"$ref": 1850},
+   "episodes": {"$ref": 1849},
    "id": "o_e322d6adb586680ec796e2e1ae3a77bb",
    "outcome_minute": 1260,
    "sequence": {"$ref": 1469},
@@ -29967,7 +29962,7 @@
    },
    "attributed": true,
    "date": "2040-01-27",
-   "episodes": {"$ref": 1854},
+   "episodes": {"$ref": 1853},
    "id": "o_698504040df12a7e199fa591f3e6d1bf",
    "outcome_minute": 300,
    "sequence": {"$ref": 1470},
@@ -29982,7 +29977,7 @@
    },
    "attributed": true,
    "date": "2040-01-27",
-   "episodes": {"$ref": 1859},
+   "episodes": {"$ref": 1858},
    "id": "o_0306cd2e2931ce0b7b6e8ee39f8f0882",
    "outcome_minute": 780,
    "sequence": {"$ref": 1471},
@@ -29997,10 +29992,10 @@
    },
    "attributed": true,
    "date": "2040-01-27",
-   "episodes": {"$ref": 1864},
+   "episodes": {"$ref": 1863},
    "id": "o_4080532ddbe21685e816fa2290078fee",
    "outcome_minute": 1260,
-   "sequence": {"$ref": 1860},
+   "sequence": {"$ref": 1859},
    "verdict": "fired"
   },
   [
@@ -30068,6 +30063,7 @@
    {"$ref": 1565},
    {"$ref": 1566},
    {"$ref": 1567},
+   {"$ref": 1903},
    {"$ref": 1904},
    {"$ref": 1905},
    {"$ref": 1906},
@@ -30082,16 +30078,15 @@
    {"$ref": 1915},
    {"$ref": 1916},
    {"$ref": 1917},
-   {"$ref": 1918},
-   {"$ref": 1919}
+   {"$ref": 1918}
   ],
   {
-   "detail": {"$ref": 1914},
+   "detail": {"$ref": 1913},
    "requested_id": "o_2280fc8a2e8e0ec0f914c27fdd8b5242",
    "state": "selected"
   },
   {
-   "detail": {"$ref": 1917},
+   "detail": {"$ref": 1916},
    "requested_id": "o_698504040df12a7e199fa591f3e6d1bf",
    "state": "selected"
   },
@@ -30124,8 +30119,8 @@
    }
   },
   [
-   {"$ref": 1914},
-   {"$ref": 1917}
+   {"$ref": 1913},
+   {"$ref": 1916}
   ]
  ],
  "states": {
@@ -30144,9 +30139,9 @@
          "lever": "high_carb_sequence",
          "title": "High-carb sequence"
         },
-        "occurrences": {"$ref": 1924},
+        "occurrences": {"$ref": 1923},
         "population": "sequences",
-        "projection": {"$ref": 1903},
+        "projection": {"$ref": 1902},
         "projection_id": "fp_afd22861f0585273bb59c3a9783df675",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30182,9 +30177,9 @@
          "lever": "high_carb_sequence",
          "title": "High-carb sequence"
         },
-        "occurrences": {"$ref": 1924},
+        "occurrences": {"$ref": 1923},
         "population": "sequences",
-        "projection": {"$ref": 1902},
+        "projection": {"$ref": 1901},
         "projection_id": "fp_afd22861f0585273bb59c3a9783df675",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30212,8 +30207,8 @@
         }
        },
        "selections": {
-        "o_2280fc8a2e8e0ec0f914c27fdd8b5242": {"$ref": 1921},
-        "o_698504040df12a7e199fa591f3e6d1bf": {"$ref": 1922}
+        "o_2280fc8a2e8e0ec0f914c27fdd8b5242": {"$ref": 1920},
+        "o_698504040df12a7e199fa591f3e6d1bf": {"$ref": 1921}
        }
       },
       "finding:missed_meal": {
@@ -30296,7 +30291,7 @@
      },
      "preparation": {
       "behavioral_case_headers": {
-       "finding:high_carb_sequence": {"$ref": 1923},
+       "finding:high_carb_sequence": {"$ref": 1922},
        "finding:missed_meal": {"$ref": 1102}
       },
       "coordinates": {
@@ -30308,7 +30303,7 @@
         "start_min": 0
        }
       },
-      "eating_sequence_report": {"$ref": 1883},
+      "eating_sequence_report": {"$ref": 1882},
       "findings": {
        "analysis_generation": "synthetic-342:0",
        "chip_counts": {
@@ -30329,7 +30324,7 @@
         "end": "2040-01-28",
         "start": "2039-12-29"
        },
-       "outcome_patterns": {"$ref": 1865},
+       "outcome_patterns": {"$ref": 1864},
        "rows": [
         {
          "annotation": null,
@@ -30361,8 +30356,8 @@
           }
          },
          "evidence": [
-          {"$ref": 1842},
-          {"$ref": 1855}
+          {"$ref": 1841},
+          {"$ref": 1854}
          ],
          "headline": "Ranks among this window's findings. Showed up in 2 of 2 sequences in this window.",
          "id": "finding:high_carb_sequence",
@@ -30433,7 +30428,7 @@
          }
         ],
         "asserts_move": null,
-        "case_header": {"$ref": 1923},
+        "case_header": {"$ref": 1922},
         "chips": [
          "highs",
          "meals"
@@ -30512,9 +30507,9 @@
          "lever": "high_carb_sequence",
          "title": "High-carb sequence"
         },
-        "occurrences": {"$ref": 1920},
+        "occurrences": {"$ref": 1919},
         "population": "sequences",
-        "projection": {"$ref": 1903},
+        "projection": {"$ref": 1902},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30550,9 +30545,9 @@
          "lever": "high_carb_sequence",
          "title": "High-carb sequence"
         },
-        "occurrences": {"$ref": 1920},
+        "occurrences": {"$ref": 1919},
         "population": "sequences",
-        "projection": {"$ref": 1902},
+        "projection": {"$ref": 1901},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30583,7 +30578,7 @@
         "o_012261df742c15e462f30ea8106a3b41": {"$ref": 1617},
         "o_02ee8673383eefd475114cb8986c242b": {"$ref": 1591},
         "o_0306cd2e2931ce0b7b6e8ee39f8f0882": {
-         "detail": {"$ref": 1918},
+         "detail": {"$ref": 1917},
          "requested_id": "o_0306cd2e2931ce0b7b6e8ee39f8f0882",
          "state": "selected"
         },
@@ -30595,7 +30590,7 @@
         "o_177ff56b5be26934fbe0147ac2a222e6": {"$ref": 1619},
         "o_19be8da36388762ed18d44f00ce3f4e6": {"$ref": 1625},
         "o_19efeb4348ba8ebf1daa2dc05cedf294": {
-         "detail": {"$ref": 1913},
+         "detail": {"$ref": 1912},
          "requested_id": "o_19efeb4348ba8ebf1daa2dc05cedf294",
          "state": "selected"
         },
@@ -30606,13 +30601,13 @@
         "o_1edc39eaa9f1327147254ce7652d8d9b": {"$ref": 1603},
         "o_20bf007e84ba080f6ab70e924cbc59a8": {"$ref": 1644},
         "o_21c7e593399544c5aef44be272258ef2": {"$ref": 1592},
-        "o_2280fc8a2e8e0ec0f914c27fdd8b5242": {"$ref": 1921},
+        "o_2280fc8a2e8e0ec0f914c27fdd8b5242": {"$ref": 1920},
         "o_23aadb72a9ef9aa91497861aec9c9b93": {"$ref": 1596},
         "o_2532c331198d461ac6ab7ae5fde5cd12": {"$ref": 1609},
         "o_2a8256124487644c1b72d93a37842efd": {"$ref": 1643},
         "o_2b3c3be21a73fef2776d656cae465c6b": {"$ref": 1630},
         "o_31e3d12719f6f6f09964f33659b95b33": {
-         "detail": {"$ref": 1904},
+         "detail": {"$ref": 1903},
          "requested_id": "o_31e3d12719f6f6f09964f33659b95b33",
          "state": "selected"
         },
@@ -30620,7 +30615,7 @@
         "o_332c058a22af4042de5a2a1070ec8654": {"$ref": 1635},
         "o_33f06c280f7e792f45b532ad20dcfc26": {"$ref": 1594},
         "o_343111832f090700586b19398a9bdb72": {
-         "detail": {"$ref": 1915},
+         "detail": {"$ref": 1914},
          "requested_id": "o_343111832f090700586b19398a9bdb72",
          "state": "selected"
         },
@@ -30628,7 +30623,7 @@
         "o_38055bb657d5a8577c8c416519befcd8": {"$ref": 1631},
         "o_397489a30d21d85b93b6dc84632dc47e": {"$ref": 1624},
         "o_39997020596e7e580f428d5b2bd2c9d2": {
-         "detail": {"$ref": 1910},
+         "detail": {"$ref": 1909},
          "requested_id": "o_39997020596e7e580f428d5b2bd2c9d2",
          "state": "selected"
         },
@@ -30638,21 +30633,21 @@
         "o_3e15aecb74be676dd5b5b090dcd4635c": {"$ref": 1597},
         "o_3f8d60038b67ef72440a3bc36d685b81": {"$ref": 1616},
         "o_4080532ddbe21685e816fa2290078fee": {
-         "detail": {"$ref": 1919},
+         "detail": {"$ref": 1918},
          "requested_id": "o_4080532ddbe21685e816fa2290078fee",
          "state": "selected"
         },
         "o_4df5c93978376691d81acf97b4ec308a": {"$ref": 1628},
         "o_50725fa8ea229c2e7df174d622102ad6": {"$ref": 1607},
         "o_5399b7db586dc394ea575590070c2a7e": {
-         "detail": {"$ref": 1905},
+         "detail": {"$ref": 1904},
          "requested_id": "o_5399b7db586dc394ea575590070c2a7e",
          "state": "selected"
         },
         "o_53d2d4845079113338b423531dd0b8ec": {"$ref": 1629},
         "o_56dfee590b3bf96409866e10eaadd4b2": {"$ref": 1599},
         "o_57af7a563ea6ecf9864a0fd72d226c0f": {
-         "detail": {"$ref": 1912},
+         "detail": {"$ref": 1911},
          "requested_id": "o_57af7a563ea6ecf9864a0fd72d226c0f",
          "state": "selected"
         },
@@ -30661,7 +30656,7 @@
         "o_61c086548d1b233328eee79be0af4c0a": {"$ref": 1620},
         "o_66afc1593e8f350bf5a725fc37742565": {"$ref": 1634},
         "o_68d1f277344e9f91ed25b8b932f05e98": {"$ref": 1610},
-        "o_698504040df12a7e199fa591f3e6d1bf": {"$ref": 1922},
+        "o_698504040df12a7e199fa591f3e6d1bf": {"$ref": 1921},
         "o_6dc0f59a7bca0c490a93157d66d812bd": {"$ref": 280},
         "o_71d63e41a96a5091839a90fdc2a72df2": {"$ref": 1590},
         "o_72149e82f7c6f392745f851cca3b2810": {"$ref": 1602},
@@ -30670,24 +30665,24 @@
         "o_79fd040b3d8c9936a649cad7ea73ebfa": {"$ref": 1611},
         "o_848affea3f0b5caad10aeef57def3ffa": {"$ref": 1627},
         "o_8a4001edb0c51f1130cdba5576c47688": {
-         "detail": {"$ref": 1906},
+         "detail": {"$ref": 1905},
          "requested_id": "o_8a4001edb0c51f1130cdba5576c47688",
          "state": "selected"
         },
         "o_8b9ce143bf49665ff38e258c9a9dabeb": {
-         "detail": {"$ref": 1909},
+         "detail": {"$ref": 1908},
          "requested_id": "o_8b9ce143bf49665ff38e258c9a9dabeb",
          "state": "selected"
         },
         "o_909cdb781ea0e257fac6ab3a1d16e813": {"$ref": 1632},
         "o_9eb07f7aefec6e6347e5b8e5765ebef0": {
-         "detail": {"$ref": 1911},
+         "detail": {"$ref": 1910},
          "requested_id": "o_9eb07f7aefec6e6347e5b8e5765ebef0",
          "state": "selected"
         },
         "o_9ef6b9804d4ce2d5a54282dd163dc15e": {"$ref": 1637},
         "o_a1c9b2d57d08c216382cd86513a6588c": {
-         "detail": {"$ref": 1907},
+         "detail": {"$ref": 1906},
          "requested_id": "o_a1c9b2d57d08c216382cd86513a6588c",
          "state": "selected"
         },
@@ -30702,12 +30697,12 @@
         "o_d74023b1b77ea1dd741d6ee01e6d06d4": {"$ref": 1626},
         "o_d823dabd0250d7c5a237ce9e1e61d7e0": {"$ref": 1615},
         "o_da4f4436ead5c883440cadba3fdf1ff1": {
-         "detail": {"$ref": 1908},
+         "detail": {"$ref": 1907},
          "requested_id": "o_da4f4436ead5c883440cadba3fdf1ff1",
          "state": "selected"
         },
         "o_e322d6adb586680ec796e2e1ae3a77bb": {
-         "detail": {"$ref": 1916},
+         "detail": {"$ref": 1915},
          "requested_id": "o_e322d6adb586680ec796e2e1ae3a77bb",
          "state": "selected"
         },
@@ -30805,9 +30800,9 @@
          "lever": "repeat_eating",
          "title": "Repeat eating"
         },
-        "occurrences": {"$ref": 1901},
+        "occurrences": {"$ref": 1900},
         "population": "sequences",
-        "projection": {"$ref": 1903},
+        "projection": {"$ref": 1902},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30843,9 +30838,9 @@
          "lever": "repeat_eating",
          "title": "Repeat eating"
         },
-        "occurrences": {"$ref": 1901},
+        "occurrences": {"$ref": 1900},
         "population": "sequences",
-        "projection": {"$ref": 1902},
+        "projection": {"$ref": 1901},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -30877,46 +30872,46 @@
         "o_19efeb4348ba8ebf1daa2dc05cedf294": {"$ref": 1083},
         "o_2280fc8a2e8e0ec0f914c27fdd8b5242": {"$ref": 1084},
         "o_31e3d12719f6f6f09964f33659b95b33": {
-         "detail": {"$ref": 1893},
+         "detail": {"$ref": 1892},
          "requested_id": "o_31e3d12719f6f6f09964f33659b95b33",
          "state": "selected"
         },
         "o_343111832f090700586b19398a9bdb72": {"$ref": 1085},
         "o_39997020596e7e580f428d5b2bd2c9d2": {
-         "detail": {"$ref": 1899},
+         "detail": {"$ref": 1898},
          "requested_id": "o_39997020596e7e580f428d5b2bd2c9d2",
          "state": "selected"
         },
         "o_4080532ddbe21685e816fa2290078fee": {"$ref": 1089},
         "o_5399b7db586dc394ea575590070c2a7e": {
-         "detail": {"$ref": 1894},
+         "detail": {"$ref": 1893},
          "requested_id": "o_5399b7db586dc394ea575590070c2a7e",
          "state": "selected"
         },
         "o_57af7a563ea6ecf9864a0fd72d226c0f": {"$ref": 1082},
         "o_698504040df12a7e199fa591f3e6d1bf": {"$ref": 1087},
         "o_8a4001edb0c51f1130cdba5576c47688": {
-         "detail": {"$ref": 1895},
+         "detail": {"$ref": 1894},
          "requested_id": "o_8a4001edb0c51f1130cdba5576c47688",
          "state": "selected"
         },
         "o_8b9ce143bf49665ff38e258c9a9dabeb": {
-         "detail": {"$ref": 1898},
+         "detail": {"$ref": 1897},
          "requested_id": "o_8b9ce143bf49665ff38e258c9a9dabeb",
          "state": "selected"
         },
         "o_9eb07f7aefec6e6347e5b8e5765ebef0": {
-         "detail": {"$ref": 1900},
+         "detail": {"$ref": 1899},
          "requested_id": "o_9eb07f7aefec6e6347e5b8e5765ebef0",
          "state": "selected"
         },
         "o_a1c9b2d57d08c216382cd86513a6588c": {
-         "detail": {"$ref": 1896},
+         "detail": {"$ref": 1895},
          "requested_id": "o_a1c9b2d57d08c216382cd86513a6588c",
          "state": "selected"
         },
         "o_da4f4436ead5c883440cadba3fdf1ff1": {
-         "detail": {"$ref": 1897},
+         "detail": {"$ref": 1896},
          "requested_id": "o_da4f4436ead5c883440cadba3fdf1ff1",
          "state": "selected"
         },
@@ -30928,7 +30923,7 @@
         "cross_population": false,
         "family": "meals",
         "finding": {"$ref": 184},
-        "occurrences": {"$ref": 1892},
+        "occurrences": {"$ref": 1891},
         "population": "meals",
         "projection": {"$ref": 236},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
@@ -30961,7 +30956,7 @@
         "cross_population": false,
         "family": "meals",
         "finding": {"$ref": 184},
-        "occurrences": {"$ref": 1892},
+        "occurrences": {"$ref": 1891},
         "population": "meals",
         "projection": {"$ref": 1064},
         "projection_id": "fp_f3c9ff6f09ac2d0a4ab3f584149b7c07",
@@ -30995,7 +30990,7 @@
      },
      "preparation": {
       "behavioral_case_headers": {
-       "finding:high_carb_sequence": {"$ref": 1866},
+       "finding:high_carb_sequence": {"$ref": 1865},
        "finding:missed_meal": {"$ref": 123},
        "finding:repeat_eating": {"$ref": 908},
        "pattern:highs_after_meals": {"$ref": 907}
@@ -31009,7 +31004,7 @@
         "start_min": null
        }
       },
-      "eating_sequence_report": {"$ref": 1883},
+      "eating_sequence_report": {"$ref": 1882},
       "findings": {
        "analysis_generation": "synthetic-342:0",
        "chip_counts": {
@@ -31030,7 +31025,7 @@
         "end": "2040-01-28",
         "start": "2039-12-29"
        },
-       "outcome_patterns": {"$ref": 1865},
+       "outcome_patterns": {"$ref": 1864},
        "rows": [
         {
          "annotation": null,
@@ -31056,7 +31051,7 @@
          "members": null,
          "parameter": null,
          "past_setting": null,
-         "pattern": {"$ref": 1781},
+         "pattern": {"$ref": 1780},
          "pattern_chart": {
           "key": "highs_after_meals",
           "window": {
@@ -31113,7 +31108,7 @@
          "evidence": [
           {
            "attributed": true,
-           "episodes": {"$ref": 1785},
+           "episodes": {"$ref": 1784},
            "id": "sequence-65",
            "outcome_minute": 1325,
            "sequence": {"$ref": 828},
@@ -31121,7 +31116,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1789},
+           "episodes": {"$ref": 1788},
            "id": "sequence-68",
            "outcome_minute": 395,
            "sequence": {"$ref": 834},
@@ -31129,7 +31124,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1793},
+           "episodes": {"$ref": 1792},
            "id": "sequence-72",
            "outcome_minute": 845,
            "sequence": {"$ref": 840},
@@ -31137,7 +31132,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1797},
+           "episodes": {"$ref": 1796},
            "id": "sequence-75",
            "outcome_minute": 1355,
            "sequence": {"$ref": 846},
@@ -31145,7 +31140,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1801},
+           "episodes": {"$ref": 1800},
            "id": "sequence-79",
            "outcome_minute": 365,
            "sequence": {"$ref": 852},
@@ -31153,7 +31148,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1805},
+           "episodes": {"$ref": 1804},
            "id": "sequence-82",
            "outcome_minute": 875,
            "sequence": {"$ref": 858},
@@ -31161,7 +31156,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1809},
+           "episodes": {"$ref": 1808},
            "id": "sequence-86",
            "outcome_minute": 1325,
            "sequence": {"$ref": 864},
@@ -31169,7 +31164,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1813},
+           "episodes": {"$ref": 1812},
            "id": "sequence-89",
            "outcome_minute": 395,
            "sequence": {"$ref": 870},
@@ -31320,7 +31315,7 @@
           {"$ref": 1440},
           {
            "attributed": false,
-           "episodes": {"$ref": 1815},
+           "episodes": {"$ref": 1814},
            "id": "sequence-65",
            "outcome_minute": 1325,
            "sequence": {"$ref": 828},
@@ -31328,7 +31323,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1817},
+           "episodes": {"$ref": 1816},
            "id": "sequence-68",
            "outcome_minute": 395,
            "sequence": {"$ref": 834},
@@ -31336,7 +31331,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1819},
+           "episodes": {"$ref": 1818},
            "id": "sequence-72",
            "outcome_minute": 845,
            "sequence": {"$ref": 840},
@@ -31344,7 +31339,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1821},
+           "episodes": {"$ref": 1820},
            "id": "sequence-75",
            "outcome_minute": 1355,
            "sequence": {"$ref": 846},
@@ -31352,7 +31347,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1823},
+           "episodes": {"$ref": 1822},
            "id": "sequence-79",
            "outcome_minute": 365,
            "sequence": {"$ref": 852},
@@ -31360,7 +31355,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1825},
+           "episodes": {"$ref": 1824},
            "id": "sequence-82",
            "outcome_minute": 875,
            "sequence": {"$ref": 858},
@@ -31368,7 +31363,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1827},
+           "episodes": {"$ref": 1826},
            "id": "sequence-86",
            "outcome_minute": 1325,
            "sequence": {"$ref": 864},
@@ -31376,7 +31371,7 @@
           },
           {
            "attributed": false,
-           "episodes": {"$ref": 1829},
+           "episodes": {"$ref": 1828},
            "id": "sequence-89",
            "outcome_minute": 395,
            "sequence": {"$ref": 870},
@@ -31384,7 +31379,7 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1833},
+           "episodes": {"$ref": 1832},
            "id": "sequence-93",
            "outcome_minute": 780,
            "sequence": {"$ref": 1465},
@@ -31392,16 +31387,16 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1837},
+           "episodes": {"$ref": 1836},
            "id": "sequence-94",
            "outcome_minute": 1260,
            "sequence": {"$ref": 1466},
            "verdict": "fired"
           },
-          {"$ref": 1842},
+          {"$ref": 1841},
           {
            "attributed": true,
-           "episodes": {"$ref": 1846},
+           "episodes": {"$ref": 1845},
            "id": "sequence-96",
            "outcome_minute": 780,
            "sequence": {"$ref": 1468},
@@ -31409,16 +31404,16 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1850},
+           "episodes": {"$ref": 1849},
            "id": "sequence-97",
            "outcome_minute": 1260,
            "sequence": {"$ref": 1469},
            "verdict": "fired"
           },
-          {"$ref": 1855},
+          {"$ref": 1854},
           {
            "attributed": true,
-           "episodes": {"$ref": 1859},
+           "episodes": {"$ref": 1858},
            "id": "sequence-99",
            "outcome_minute": 780,
            "sequence": {"$ref": 1471},
@@ -31426,10 +31421,10 @@
           },
           {
            "attributed": true,
-           "episodes": {"$ref": 1864},
+           "episodes": {"$ref": 1863},
            "id": "sequence-100",
            "outcome_minute": 1260,
-           "sequence": {"$ref": 1860},
+           "sequence": {"$ref": 1859},
            "verdict": "fired"
           }
          ],
@@ -31519,7 +31514,7 @@
         "members": null,
         "parameter": null,
         "past_setting": null,
-        "pattern": {"$ref": 1781},
+        "pattern": {"$ref": 1780},
         "pattern_chart": {
          "key": "highs_after_meals",
          "window": {
@@ -31556,7 +31551,7 @@
          }
         ],
         "asserts_move": null,
-        "case_header": {"$ref": 1866},
+        "case_header": {"$ref": 1865},
         "chips": [
          "highs",
          "meals"
@@ -42140,7 +42135,7 @@
         },
         "occurrences": {"$ref": 1288},
         "population": "sequences",
-        "projection": {"$ref": 1778},
+        "projection": {"$ref": 1777},
         "projection_id": "fp_f4bc507bf9d9bb39c2b88e1662337a56",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -42178,7 +42173,7 @@
         },
         "occurrences": {"$ref": 1288},
         "population": "sequences",
-        "projection": {"$ref": 1777},
+        "projection": {"$ref": 1776},
         "projection_id": "fp_f4bc507bf9d9bb39c2b88e1662337a56",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -42219,7 +42214,7 @@
         "start_min": 0
        }
       },
-      "eating_sequence_report": {"$ref": 1776},
+      "eating_sequence_report": {"$ref": 1775},
       "findings": {"$ref": 1281},
       "projection_id": "fp_f4bc507bf9d9bb39c2b88e1662337a56",
       "rendered_rows": {"$ref": 1286},
@@ -42318,7 +42313,7 @@
         },
         "occurrences": {"$ref": 1247},
         "population": "sequences",
-        "projection": {"$ref": 1778},
+        "projection": {"$ref": 1777},
         "projection_id": "fp_ae575235be83c8844b7803c18bd5fdf5",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -42356,7 +42351,7 @@
         },
         "occurrences": {"$ref": 1247},
         "population": "sequences",
-        "projection": {"$ref": 1777},
+        "projection": {"$ref": 1776},
         "projection_id": "fp_ae575235be83c8844b7803c18bd5fdf5",
         "schema": "diagnose-finding-case-file-v1",
         "selection": {
@@ -43089,7 +43084,7 @@
         "start_min": null
        }
       },
-      "eating_sequence_report": {"$ref": 1776},
+      "eating_sequence_report": {"$ref": 1775},
       "findings": {"$ref": 1198},
       "projection_id": "fp_ae575235be83c8844b7803c18bd5fdf5",
       "rendered_rows": {"$ref": 1201},

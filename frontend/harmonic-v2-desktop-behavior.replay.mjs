@@ -56,6 +56,8 @@ import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
+import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 
 const require = createRequire(import.meta.url);
 const { createBrowserRunner } = require('./browser-runner.js');
@@ -327,7 +329,7 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
  * the build command; a desk still on its loading frame, with no pane, or on a
  * destination other than the requested one fails before any story runs.
  */
-export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'overview' } = {}) {
+export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'diagnose' } = {}) {
   if (!VIEWPORTS[viewport]) fail(`unsupported viewport ${JSON.stringify(viewport)}`);
   // `source` and `state` are the MOCK's coordinates: four captured patients and
   // a scenario select. The app has one served database instead, so a story that
@@ -388,7 +390,7 @@ export async function openApp(browser, { source = null, state = 'investigate', v
     return route.continue();
   });
 
-  const target = `${APP_BASE_URL}/v2/${destination === 'overview' ? '' : `?to=${destination}`}`;
+  const target = `${APP_BASE_URL}/v2/${destination === 'diagnose' ? '' : `?to=${destination}`}`;
   const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
   ok(response, `no response from ${target}`);
   ok(response.status() !== 404 && response.status() !== 503,
@@ -481,6 +483,7 @@ const destinationOf = (page) => page.evaluate(() =>
 
 /** The first VISIBLE match, or a loud failure naming how many were hidden. */
 export async function visible(page, selector) {
+  if (TARGET === 'app') selector = selector.replaceAll('data-destination="explore"', 'data-destination="diagnose"').replaceAll('data-destination="overview"', 'data-destination="changes"');
   const all = page.locator(selector);
   const total = await all.count();
   ok(total > 0, `no control matched ${selector} — a story must drive the affordance a reader uses`);
@@ -502,7 +505,9 @@ export async function activate(page, selector) {
 /* ------------------------------------------------ reader-route setup helpers */
 
 /** Move destination through the topbar, the way a reader does. */
+// ADR 397 sanctioned target adaptation; historical mock addresses stay intact.
 export async function goto(page, destination) {
+  if (TARGET === 'app') destination = destination === 'explore' ? 'diagnose' : destination === 'overview' ? 'changes' : destination;
   await activate(page, `[data-destination="${destination}"]`);
   ok(await destinationOf(page) === destination,
     `pressing ${destination} did not arrive there (still ${await destinationOf(page)})`);
@@ -544,16 +549,16 @@ export async function stageIntoPlan(page) {
 
 export const S1 = async (page) => {
   const order = await page.evaluate(() => [...document.querySelectorAll('nav.v2-nav [data-destination]')].map((b) => b.dataset.destination));
-  ok(JSON.stringify(order) === JSON.stringify(['overview', 'explore', 'changes', 'day']),
+  ok(JSON.stringify(order) === JSON.stringify(TARGET === 'app' ? ['diagnose', 'changes', 'day'] : ['overview', 'explore', 'changes', 'day']),
     `the destination order is not the locked one: ${JSON.stringify(order)}`);
   const current = await page.evaluate(() => [...document.querySelectorAll('[data-destination][aria-current="page"]')].map((b) => b.dataset.destination));
-  ok(JSON.stringify(current) === JSON.stringify(['overview']),
+  ok(JSON.stringify(current) === JSON.stringify([TARGET === 'app' ? 'diagnose' : 'overview']),
     `Overview is not the sole default destination: ${JSON.stringify(current)}`);
 };
 
 export const S2 = async (page) => {
   const before = await box(page, 'header.cockpit-topbar');
-  for (const destination of ['explore', 'changes', 'day', 'overview']) {
+  for (const destination of (TARGET === 'app' ? ['changes', 'day', 'diagnose'] : ['explore', 'changes', 'day', 'overview'])) {
     await goto(page, destination);
   }
   const after = await box(page, 'header.cockpit-topbar');
@@ -562,6 +567,18 @@ export const S2 = async (page) => {
 
 export const S3 = async (page) => {
   await goto(page, 'explore');
+  if (TARGET === 'app') {
+    await page.locator('#level .qrow').first().waitFor();
+    const rows = await countOf(page, '#level .qrow');
+    await activate(page, '#level .qrow');
+    await activate(page, '[data-destination="diagnose"]');
+    await page.locator('#level .qrow').first().waitFor();
+    ok(await countOf(page, '#level .qrow') >= rows,
+      're-pressing Diagnose did not restore the shipped Findings index');
+    ok(await countOf(page, '[data-destination="overview"], [data-destination="explore"]') === 0,
+      'a retired destination remains available');
+    return;
+  }
   const rows = await countOf(page, '.gf-roster-row[data-row]');
   ok(rows > 0, 'the journey source rendered no roster rows to drill into');
   await activate(page, '.gf-roster-row[data-row]');
@@ -735,13 +752,14 @@ export const S13 = async (page, ctx) => {
 };
 
 export const S14 = async (page) => {
+  if (TARGET === 'app') await goto(page, 'changes');
   const heading = await page.locator('.gf-desk > .gf-reading > header h2').first().textContent();
-  ok((heading || '').trim().length > 0, 'Overview rendered no reading-pane heading');
+  ok((heading || '').trim().length > 0, 'Changes guidance rendered no reading-pane heading');
   const route = await visible(page, '[data-action="explore"]');
   ok(/^Inspect /i.test(((await route.textContent()) || '').trim()),
     `the Overview route is not an Inspect route: ${await route.textContent()}`);
   ok(await countOf(page, '.gf-desk > .gf-reading .gf-roster-row') === 0,
-    'Overview duplicated Explore\'s findings roster');
+    'Changes duplicated Diagnose\'s findings roster');
 };
 
 export const S15 = async (page) => {
@@ -2306,9 +2324,51 @@ export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authentica
     ok(v1Status.body === v2Status.body,
       `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
   });
-export const S88 = deferred('S88', 'HV2-16', 'Set aside and Restore are durable Store writes surviving reload');
+export const S88 = appOnly('HV2-16', 'Set aside and Restore are durable Store writes surviving reload', async (page) => {
+  await goto(page, 'changes');
+  const before = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
+  ok(before.selected, 'S88 needs a manufactured available priority before Set aside');
+  const subject = before.selected.subject;
+  await activate(page, '[data-action="aside"]');
+  await page.fill('#aside-reason', 'Synthetic S88 reload proof');
+  const writing = page.waitForRequest(request => request.method() === 'PUT'
+    && new URL(request.url()).pathname.startsWith('/api/guidance/preferences/'));
+  await page.locator('form[data-form="aside"] [type="submit"]').click();
+  const body = (await writing).postDataJSON();
+  ok(JSON.stringify(Object.keys(body).sort()) === JSON.stringify(['generation', 'reason']),
+    'S88 Set aside entered the durable receipt envelope');
+  await page.locator('[data-restore]').first().waitFor();
+  await page.reload();
+  await page.locator('[data-restore]').first().waitFor();
+  let read = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
+  ok(read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
+    'S88 Set aside did not survive the new page read');
+  const restored = page.waitForResponse(response => response.request().method() === 'GET'
+    && new URL(response.url()).pathname === '/api/guidance');
+  await page.locator(`[data-restore="${subject}"]`).first().click();
+  await restored;
+  await page.reload();
+  read = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
+  ok(!read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
+    'S88 Restore did not survive reload');
+});
 export const S89 = deferred('S89', 'HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist');
-export const S90 = deferred('S90', 'HV2-21', 'capacity copy is served by the Plan deliverable contract, not memorized');
+export const S90 = appOnly('HV2-21', 'capacity copy is served by the Plan deliverable contract, not memorized', async (page) => {
+  await goto(page, 'changes');
+  const guidance = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
+  const candidate = guidance.selected;
+  ok(Array.isArray(candidate?.action) && candidate.action.length > 0,
+    'S90 needs an available setting priority; serve the manufactured basal-lower case with a reconciled frontier');
+  const pump = await (await page.request.get(`${APP_BASE_URL}/api/pump-settings`)).json();
+  await activate(page, '[data-set="stage"]');
+  await activate(page, '[data-set="open-plan"]');
+  await page.waitForSelector('.gf-plan');
+  const acceptedItems = candidate.action.flatMap(row => (row.member_start_mins || [row.start_min])
+    .map(start_min => ({ type: PLAN_PARAM_FAMILY[row.parameter || candidate.parameter], start_min, value: row.recommended })));
+  const expected = segmentCapacity(buildDeliverable({ activeProfile: pump.profile, acceptedItems }));
+  ok((await page.locator('.gf-head .gf-sub').innerText()).includes(expected.text),
+    `S90 Plan does not render its shared owner's capacity: ${expected.text}`);
+});
 export const S91 = deferred('S91', 'HV2-22', 'readiness renders the record comparison fields; setting and Focus arms differ');
 export const S92 = deferred('S92', 'HV2-23', 'pre-ready values come from the second assessment=retained request');
 export const S93 = deferred('S93', 'HV2-24', 'each record renders its own criterion; no universal fourteen-day cutoff');
@@ -2318,7 +2378,28 @@ export const S96 = deferred('S96', 'HV2-28', 'original, saved ending and retaine
 export const S97 = deferred('S97', 'HV2-29', 'P19b pending, failed and sliced replacement withdraw the former projection');
 export const S98 = deferred('S98', 'HV2-30', 'the selected I:C coherent pair survives a failed replacement');
 export const S99 = deferred('S99', 'HV2-31', 'only backend-permitted actions are exposed; unavailable carries its reason');
-export const S100 = deferred('S100', 'HV2-32', 'fractional-hour speech repaired in the shared renderer');
+export const S100 = appOnly('HV2-32', 'fractional-hour speech repaired in the shared renderer', async (page) => {
+  await goto(page, 'diagnose');
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  const findingId = 'finding:over_treated_low';
+  await page.locator(`.qrow[data-id="${findingId}"]`).waitFor();
+  const preparation = await (await page.request.get(`${APP_BASE_URL}/api/diagnose/finding-case-file-preparation`)).json();
+  const coordinates = new URLSearchParams({ projection_id: preparation.projection_id, finding_id: findingId, alignment: 'event' });
+  const response = await page.request.get(`${APP_BASE_URL}/api/diagnose/finding-case-file?${coordinates}`);
+  ok(response.ok(), 'S100 needs the manufactured showcase event comparison');
+  const caseFile = await response.json();
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  const tile = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
+  await tile.locator('canvas').first().waitFor({ state: 'visible' });
+  await tile.click();
+  await page.locator('#tile-focal .tile-fullscreen').click();
+  await page.locator('#tile-focal #ec-chart').waitFor({ state: 'visible' });
+  page.__comparisonFindingId = findingId;
+  page.__comparisonServedByFinding = new Map([[findingId, caseFile]]);
+  // The inherited Event S8 assertion is the one speech/readout contract. This
+  // adapter changes only its opener to the real v2 desk and production payload.
+  await sharedEventSpeech(async () => page, null);
+});
 // New, from root's S80 capture: the full-width empty frame must also focus its
 // heading. HV2-32 contracts it; the unchanged prototype leaves focus on the
 // pressed navigation button because the empty frame's .gf-title is a DIV with
@@ -2587,8 +2668,21 @@ export const R15 = async (page) => {
   printSanction('R15');
   ok(await countOf(page, '[data-dock-mode], .dock-layout-toggle, .duplicate-tile') === 0,
     'R15 replayed-fail: the old mode/layout/duplicate-tile mechanics are back');
-  ok(await countOf(page, '[data-destination="explore"]') === 1,
-    'R15 premise failed: the ADR 348 Explore destination is gone — this retirement never covered it');
+  if (TARGET === 'app') {
+    process.stdout.write('AMENDED R15 premise — ADR 397 · Connor Griffin · 2026-09-08; transcribed 2026-09-10: Diagnose preserves Findings, Spotlight and All Charts.\n');
+    await goto(page, 'diagnose');
+    ok(await countOf(page, '[data-destination="overview"], [data-destination="explore"]') === 0,
+      'R15 retired Overview/Explore destination buttons returned');
+    ok(await countOf(page, '[data-destination="diagnose"]') === 1
+      && await countOf(page, '[data-destination="changes"]') === 1,
+      'R15 the Diagnose/Changes successors are missing');
+    ok(await countOf(page, '#level .qrow') > 0 && await countOf(page, '#tile-focal') === 1
+      && await countOf(page, '#explorer-trigger') === 1,
+      'R15 Diagnose lost Findings, Spotlight or All Charts');
+  } else {
+    ok(await countOf(page, '[data-destination="explore"]') === 1,
+      'R15 historical premise failed: the ADR 348 Explore destination is gone');
+  }
 };
 
 // RETIRED:Connor Griffin:2026-08-26

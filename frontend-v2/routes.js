@@ -1,11 +1,11 @@
 // The v2 desk's one router and its render loop, ported from the ★ LOCKED
 // desktop prototype under the harmonic-v2-desktop lock manifest.
 //
-// WHAT THIS MODULE OWNS. The four destinations and their default (Overview),
+// WHAT THIS MODULE OWNS. The three destinations and their default (Diagnose),
 // which one is current, the address that names it, the contextual entry's own
 // context, the focus a frame lands on, the reading pane's scroll, the layered
 // Escape, and the teardown every render performs before the next one builds
-// (HV2-34). It owns no destination's content: Overview, Explore and Changes are
+// (HV2-34). It owns no destination's content: Diagnose and Changes are
 // registered by their owners, and Day registers itself through the same seam.
 //
 // WHAT IT PUBLISHES, for chunks 2 and 3 (#389 desktop build contracts):
@@ -32,8 +32,9 @@ import { emptyFrame } from './frame.js';
 
 let surface = null;
 const destinations = new Map();
-let destination = 'overview';
+let destination = 'diagnose';
 let context = {};
+let navigation = 0;
 let cleanups = [];
 let seatLayer = null;
 
@@ -100,10 +101,10 @@ export function load(key, run, onFailure) {
 export const loading = () => inFlight.size > 0;
 
 /** Dispose everything the last render built. Also the pagehide path (S84). */
-function disposeDesk() {
+function disposeDesk(pagehide = false) {
   const held = cleanups;
   cleanups = [];
-  for (const cleanup of held) cleanup();
+  for (const cleanup of held) cleanup(pagehide);
 }
 
 // The utility layer takes the reading pane's seat over whichever frame
@@ -136,12 +137,13 @@ export function registerEscape(layer, handler) {
  * that always wins over the arrival default (HV2-32).
  */
 export function navigate(next, entryContext = {}) {
+  navigation += 1;
   destination = resolveDestination(next);
   context = { ...entryContext };
   writeRoute({ destination, context }, { serialize: (route) => serializeV2Route(route) });
   // Arriving at a destination puts the hand on its subject: the reading pane's
   // head, else the stage's title.
-  if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '.gf-stage .gf-title'];
+  if (!view.focusAfterRender) view.focusAfterRender = ['.gf-reading > header h2', '#crumb-trail', '.gf-stage .gf-title'];
   view.sheetOpen = false;
   render();
 }
@@ -181,7 +183,7 @@ export function render() {
   surface.dataset.sheet = view.sheetOpen ? 'open' : 'closed';
 
   const entry = destinations.get(destination);
-  if (entry) entry.mount(surface, { context: { ...context }, render, hold });
+  if (entry) entry.mount(surface, { context: { ...context }, navigation, render, hold });
   else surface.innerHTML = unclaimedFrame(destination);
 
   // An open utility takes the reading pane's seat on whichever frame rendered.
@@ -278,7 +280,7 @@ export function startDesk(element, { browser = window } = {}) {
   narrowQuery.addEventListener('change', () => { view.sheetOpen = false; render(); });
   bindTopbar();
   browser.addEventListener('keydown', onEscape);
-  browser.addEventListener('pagehide', disposeDesk);
+  browser.addEventListener('pagehide', () => disposeDesk(true));
   // The sheet is desktop-invisible chrome, so nothing about it belongs in the
   // address; the destination and the contextual entry's context do.
   registerEscape('sheet', () => {
@@ -289,6 +291,7 @@ export function startDesk(element, { browser = window } = {}) {
     return true;
   });
   subscribeRoute((route) => {
+    navigation += 1;
     destination = route.destination;
     context = route.context;
     render();

@@ -41,9 +41,9 @@ test('every utility Open Day declares its origin AND the label its return is nam
 
 test('the Day return is named by the same table the control declares from', () => {
   for (const [kind, title] of Object.entries(UTILITY_TITLE)) {
-    const back = dayReturnTarget({ date: '2024-06-26', subject: 's', from: `overview.${kind}` });
+    const back = dayReturnTarget({ date: '2024-06-26', subject: 's', from: `diagnose.${kind}` });
     assert.equal(back.label, title, `${kind} returns under a different name than its pane`);
     assert.equal(back.utility, kind);
-    assert.equal(back.destination, 'overview', 'the return lands on the destination it was opened over');
+    assert.equal(back.destination, 'diagnose', 'the return lands on the destination it was opened over');
   }
 });

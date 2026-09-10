@@ -25,6 +25,8 @@ import { renderShell } from './shell.js';
 import { startDesk } from './routes.js';
 import { installDay } from './day.js';
 import { installUtilities } from './utilities.js';
+import { installDiagnose } from './diagnose.js';
+import { installChanges } from './changes.js';
 
 // One bundled ECharts identity on the global, as frontend/main.js does for v1:
 // the shipped chart modules build options, and their hosts init through this.
@@ -36,4 +38,6 @@ const surface = renderShell();
 // draws its first frame.
 installUtilities({ glossary: glossaryGroups });
 installDay();
+installDiagnose();
+installChanges();
 startDesk(surface);

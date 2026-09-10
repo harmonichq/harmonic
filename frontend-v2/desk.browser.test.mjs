@@ -1,5 +1,5 @@
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
-// the four destinations, the Day desk, every utility, the layered Escape and the
+// the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
 // is the one chunks 2, 3 and 4 extend with their own.
 //
@@ -16,7 +16,10 @@
 import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput, populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 
 const require = createRequire(import.meta.url);
 const { createBuiltShell } = require('../frontend/built-shell.js');
@@ -121,7 +124,56 @@ const STATUS = {
   earliest_data_day: '2024-06-01', latest_data_day: '2024-06-30',
 };
 
+const generated = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+const evidence = generated('../mockups/diagnose-workstation.synthetic/payload.json');
+const caseFiles = generated('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
+const patternCapture = generated('../mockups/diagnose-event-comparison.synthetic/capture.json');
+const basalEvidence = generated('../frontend/__fixtures__/basal-night-evidence.json').expected;
+const isfEvidence = generated('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+const icEvidence = generated('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
+const fixtureInputs = populateFindingsProjectionInput({ analysis: evidence.analyze,
+  scenarios: evidence.scenarios, exposures: evidence.exposures });
+const preparations = new Map();
+function prepare(url) {
+  const start = url.searchParams.get('start_min');
+  const window = start === null ? null : { start_min: Number(start), end_min: Number(url.searchParams.get('end_min')) };
+  const source = window ? caseFiles.scoped[`${window.start_min}-${window.end_min}`]?.preparation : caseFiles.preparation;
+  assert.ok(source, `the generated fixture does not cover requested scope ${JSON.stringify(window)}`);
+  const body = populateFindingCasePreparation(structuredClone(source), projectFindings(fixtureInputs, window));
+  preparations.set(body.projection_id, body);
+  return body;
+}
+function caseFile(url) {
+  const id = url.searchParams.get('finding_id');
+  const alignment = url.searchParams.get('alignment');
+  const occ = url.searchParams.get('occ');
+  const preparation = preparations.get(url.searchParams.get('projection_id'));
+  assert.ok(preparation, 'case request must quote a served preparation');
+  const patternChart = preparation.rendered_rows.find(row => row.id === id)?.pattern_chart;
+  if (patternChart) return projectPatternCaseFile(patternCapture, { patternChart,
+    projectionId: preparation.projection_id, alignment, occurrenceId: occ });
+  const finding = caseFiles.cases[id];
+  assert.ok(finding, `missing generated case ${id}`);
+  const body = structuredClone(occ ? finding[`selected_${alignment}`][occ] || finding[`unavailable_${alignment}`] : finding[alignment]);
+  body.projection_id = preparation.projection_id;
+  body.window = structuredClone(preparation.coordinates.window);
+  return body;
+}
+
 const JSON_STUBS = [
+  [/^\/api\/analyze$/, () => evidence.analyze],
+  [/^\/api\/scenarios$/, () => evidence.scenarios],
+  [/^\/api\/explore\/time-of-day$/, () => evidence.evidence],
+  [/^\/api\/explore\/exposures$/, () => evidence.exposures],
+  [/^\/api\/outcomes\/trend$/, () => ({ points: [] })],
+  [/^\/api\/diagnose\/finding-case-file-preparation$/, prepare],
+  [/^\/api\/diagnose\/finding-case-file$/, caseFile],
+  [/^\/api\/diagnose\/basal-night-evidence$/, () => basalEvidence],
+  [/^\/api\/diagnose\/isf-rest-window-evidence$/, () => isfEvidence],
+  [/^\/api\/diagnose\/carb-ratio-block-evidence$/, () => icEvidence],
+  [/^\/api\/guidance$/, () => ({ disposition: 'quiet', selected: null, candidates: [] })],
+  [/^\/api\/plan\/history$/, () => ({ history: [] })],
+  [/^\/api\/plan$/, () => ({ items: [], updated_at: null })],
   [/^\/api\/status/, () => STATUS],
   [/^\/api\/day-navigator/, (url) => {
     const month = url.searchParams.get('month') || '2024-06';
@@ -214,13 +266,13 @@ async function press(page, selector) {
 
 /* ------------------------------------------------------------------ tests */
 
-test('the desk opens on Overview behind its persistent chrome', async () => {
+test('the desk opens on Diagnose behind its persistent chrome', async () => {
   const { page, close } = await openDesk();
   try {
     const order = await page.evaluate(() => [...document.querySelectorAll('nav.v2-nav [data-destination]')]
       .map((button) => button.dataset.destination));
-    assert.deepEqual(order, ['overview', 'explore', 'changes', 'day']);
-    assert.equal(await currentDestination(page), 'overview');
+    assert.deepEqual(order, ['diagnose', 'changes', 'day']);
+    assert.equal(await currentDestination(page), 'diagnose');
     assert.equal(await countOf(page, '[data-destination][aria-current="page"]'), 1);
     const chrome = await page.evaluate(() => ({
       identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim(),
@@ -267,7 +319,7 @@ test('the chrome holds still across every destination, and one is current at a t
   const { page, close } = await openDesk();
   try {
     const reference = { top: await box(page, 'header.cockpit-topbar'), foot: await box(page, 'footer.cockpit-footer') };
-    for (const destination of ['explore', 'changes', 'day', 'overview']) {
+    for (const destination of ['changes', 'day', 'diagnose']) {
       await press(page, `[data-destination="${destination}"]`);
       assert.equal(await currentDestination(page), destination);
       assert.equal(await countOf(page, '[data-destination][aria-current="page"]'), 1);
@@ -396,7 +448,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     const address = await page.evaluate(() => location.pathname + location.search);
     assert.match(address, /^\/v2\/\?to=day/);
     assert.match(address, /date=2024-06-26/);
-    assert.match(address, /from=overview\.questions/);
+    assert.match(address, /from=diagnose\.questions/);
 
     // Closing it reveals the Day desk's own return, named for that utility.
     await press(page, '[data-utility-close]');
@@ -404,7 +456,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     const label = await page.locator('[data-day="return"]').innerText();
     assert.equal(label.trim(), 'Return to Carb questions');
     await press(page, '[data-day="return"]');
-    assert.equal(await currentDestination(page), 'overview');
+    assert.equal(await currentDestination(page), 'diagnose');
     assert.equal(await countOf(page, '.gf-utility[data-utility="questions"]'), 1,
       'the return did not reopen the utility it was named for');
   } finally { await close(); }
@@ -422,7 +474,7 @@ test('repeated entry and exit leaves no duplicate chart, pane or utility behind'
     const first = await counts();
     assert.ok(first.canvases > 0, 'the Day figure mounted no chart to dispose');
     for (let i = 0; i < 3; i += 1) {
-      await press(page, '[data-destination="overview"]');
+      await press(page, '[data-destination="diagnose"]');
       await press(page, '[data-destination="day"]');
       await press(page, '.cockpit-utilities [data-utility="glossary"]');
       await press(page, '[data-utility-close]');
@@ -438,3 +490,28 @@ test('repeated entry and exit leaves no duplicate chart, pane or utility behind'
     assert.ok(live === null || live === 0, `pagehide left ${live} live ECharts instance(s)`);
   } finally { await close(); }
 });
+
+for (const viewport of Object.keys(VIEWPORTS)) {
+  test(`c2 carries one Findings composition, Patterns and all basal slots at ${viewport}`, async () => {
+    const desk = await openDesk({ viewport });
+    const { page } = desk;
+    try {
+      await page.waitForSelector('[data-v2-diagnose] #level .qrow');
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('.qrow[data-id^="pattern:"]').first().waitFor();
+      assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
+      assert.equal(await countOf(page, '#lane > button.lane-cell'), 48);
+      assert.ok(await countOf(page, '#level .qitem.claimed') > 0, 'the shipped Pattern rail retains nested causes');
+      const before = await countOf(page, '[data-v2-diagnose] canvas');
+      assert.ok(before > 0);
+      for (let visit = 0; visit < 3; visit += 1) {
+        await press(page, '[data-destination="changes"]');
+        assert.equal(await countOf(page, '[data-event-view="glucose"]'), 0);
+        await press(page, '[data-destination="diagnose"]');
+        await page.waitForSelector('[data-v2-diagnose] #level .qrow');
+        assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
+        assert.equal(await countOf(page, '#lane > button.lane-cell'), 48);
+      }
+    } finally { await desk.close(); }
+  });
+}

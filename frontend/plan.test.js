@@ -855,3 +855,10 @@ test('only an exact true backend ISF verdict is stageable (#468)', () => {
     parameter: 'isf', current: 36, recommended: 30.2, asserts_move: true,
   }), true);
 });
+
+test('the shared capacity text uses the collapsed deliverable count', async () => {
+  const { segmentCapacity, PROFILE_SEGMENT_CAPACITY } = await import('./plan.js');
+  const base = { basal_rate: 0.6, carb_ratio: 10, isf: 40, target_bg: 110 };
+  const rows = buildDeliverable({ activeProfile: { segments: [{ start_min: 0, ...base }] }, acceptedItems: [] });
+  assert.deepEqual(segmentCapacity(rows), { used: 1, capacity: PROFILE_SEGMENT_CAPACITY, over: false, text: `1 of ${PROFILE_SEGMENT_CAPACITY} segments used` });
+});

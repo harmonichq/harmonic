@@ -1270,12 +1270,12 @@ class PopulatedFindingCaseFileRouteTest(unittest.TestCase):
 class SequenceFindingCaseFileRouteTest(unittest.TestCase):
     def test_both_empty_target_causes_drill_and_recover_on_generation_change(self):
         from tests.eating_sequence_streams import sequence_episode_stream
-        from tests.test_meal_bolus_short_attribution import _seed
+        from tests.test_findings_projection import seed_sequence_store
         for lever in ("high_carb_sequence", "repeat_eating"):
             with self.subTest(lever=lever), tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
                 bolus, cgm, _, _ = sequence_episode_stream(lever)
                 with Store.open(database.name) as store:
-                    _seed(store, bolus, cgm)
+                    seed_sequence_store(store, bolus, cgm)
                 app = create_app(db_path=database.name, token=None, enable_fetch_loop=False,
                                  analysis_incarnation="sequence-http")
                 with TestClient(app) as client:

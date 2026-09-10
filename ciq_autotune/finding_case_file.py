@@ -364,7 +364,7 @@ def _population(
         filtered_bolus, filtered_cgm, filtered_basal, isf=isf,
         scenario_config=config, low_answers=answers,
         carb_entries=_slice(eligible_carb_entries(store.carb_entries(), end), start, end),
-        window_start=start, window_end=end,
+        window_start=start, window_end=end, bound_classifier_context=False,
     )
     opportunity_families = evaluated.families
     by_family = {family: {item.source_key: item for item in rows}

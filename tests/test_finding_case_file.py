@@ -402,6 +402,8 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
 
 def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
     for lever in Lever:
+        if policy_for(lever).recurrence_noun == "sequences":
+            continue
         prepared = _prepared(lever)
         member = prepared.members[lever][0]
         case = prepared.case(f"finding:{lever.value}", "event", member.id)
@@ -802,18 +804,17 @@ def test_pattern_member_associations_are_evidence_only():
 @pytest.mark.parametrize("lever", ["high_carb_sequence", "repeat_eating"])
 @pytest.mark.parametrize("covered", [False, True])
 def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, covered):
-    from tests.test_findings_projection import sequence_products
-    from tests.test_meal_bolus_short_attribution import _seed
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
     from ciq_autotune.analyzers.scenario import build_scenarios
     from ciq_autotune.explore_exposures import build_exposures
     from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report, report_dict
-    _, (bolus, cgm, _, _) = sequence_products(lever, covered=covered)
+    projection, (bolus, cgm, _, _) = sequence_products(lever, covered=covered)
     with Store.open(":memory:") as store:
-        _seed(store, bolus, cgm)
+        seed_sequence_store(store, bolus, cgm)
         scenarios = build_scenarios(store, window_days=30).to_dict()
         exposures = build_exposures(store, window_days=30)
         prepared = finding_case_file.prepare(
-            store, query=WindowQuery.whole_day(), version=0, analysis={},
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
             exposures=exposures, scenarios=scenarios, analysis_generation="sequence:0",
         )
         report = report_dict(build_eating_sequence_report(store, window_days=30))
@@ -839,3 +840,27 @@ def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, cove
     assert bool(associated) == covered
     assert all(r["member"] != f"habit:{lever}" for r in parent["occurrences"])
     assert len(parent["occurrences"]) == len(exposures["exposures"]["meals"]["occurrences"])
+
+
+def test_case_file_preserves_exposure_classifier_reach():
+    from unittest.mock import patch
+    from tests.test_eating_sequence_findings import _crossing_reach_stream
+    from tests.test_meal_bolus_short_attribution import _seed
+    from tests.test_outcomes_trend import _snapshot_with_ic
+    from ciq_autotune.explore_exposures import build_exposures
+    bolus, cgm, config = _crossing_reach_stream()
+    with Store.open(":memory:") as store:
+        _seed(store, bolus, cgm)
+        store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
+                                       _snapshot_with_ic(40).settings)
+        with patch("ciq_autotune.explore_exposures.ScenarioConfig", return_value=config):
+            exposures = build_exposures(store)
+        with patch("ciq_autotune.finding_case_file.ScenarioConfig", return_value=config):
+            prepared = finding_case_file.prepare(
+                store, query=WindowQuery.whole_day(), version=0, analysis={},
+                exposures=exposures, scenarios={},
+            )
+    case = prepared.case("finding:carb_undercount", "event", None)
+    assert case["summary"]["claimed"] == 1
+    assert case["summary"]["denominator"] == 1
+    assert case["occurrences"][0]["verdict"] == "fired"

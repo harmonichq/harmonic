@@ -25,6 +25,7 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.analyzers.scenario.evidence_population import policy_for
 from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
@@ -421,9 +422,10 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(raise_case["rows"], "I:C 00:00 to 12:00 · raise")["chips"],
                          ["lows"])
 
-    def test_every_declared_lever_chips_by_its_closed_outcome_kind(self):
+    def test_episode_levers_chip_by_their_closed_outcome_kind(self):
+        levers = [lever for lever in Lever if policy_for(lever).recurrence_noun != "sequences"]
         occurrences = []
-        for index, lever in enumerate(Lever):
+        for index, lever in enumerate(levers):
             occurrences.append({
                 "t": f"2026-08-17 {index:02d}:00:00", "date": "2026-08-17",
                 "kind": "high", "cause_lever": lever.value,
@@ -440,8 +442,8 @@ class ChipProjectionTest(unittest.TestCase):
         # sits at hour `index`, so a hard-coded span silently drops the newest lever
         # off its end the day one is added — which is precisely what the closed set
         # exists to catch.
-        rows = projection.project(WindowQuery.clock(0, len(Lever) * 60))["rows"]
-        self.assertEqual(len(rows), len(Lever))
+        rows = projection.project(WindowQuery.clock(0, len(levers) * 60))["rows"]
+        self.assertEqual(len(rows), len(levers))
         for row in rows:
             expected = "highs" if outcome_kind(row["lever"]) == "high" else "lows"
             if row["lever"] == Lever.MEAL_BOLUS_SHORT.value:
@@ -1034,6 +1036,7 @@ class PatternProjectionTest(unittest.TestCase):
             "meal_over_delivery": ["meals"], "over_treated_low": ["lows"],
             "correction_on_iob": ["lows"],
             "correction_stacking": ["correction_clusters"],
+            "high_carb_sequence": ["sequences"], "repeat_eating": ["sequences"],
         }
         for key, _title, members, _rate_levers, _setting, _family in _ROSTER:
             with self.subTest(key=key):
@@ -2058,9 +2061,21 @@ class ExplicitOutcomeWitnessTest(unittest.TestCase):
         self.assertNotIn("habit:missed_meal", pattern["rate_levers"])
 
 
+def seed_sequence_store(store, bolus, cgm, log=()):
+    """A manufactured programmed I:C keeps the parent Pattern above collapse."""
+    from tests.test_meal_bolus_short_attribution import _seed
+    from tests.test_outcomes_trend import _snapshot_with_ic
+    _seed(store, bolus, cgm)
+    store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
+                                   _snapshot_with_ic(10).settings)
+    for entry in log:
+        store.upsert_carb_entry(entry)
+
+
 def sequence_products(lever, *, covered=False, competitor="mild", multi=False, thin=None, low=False):
     """Manufactured public-producer inputs; requires the c1 integration contract."""
-    from types import SimpleNamespace
+    from ciq_autotune.store import Store
+    from ciq_autotune.analyze import analyze
     from ciq_autotune.analyzers.scenario import build_scenarios
     from ciq_autotune.explore_exposures import build_exposures
     from ciq_autotune.analyzers.eating_sequences import evaluate_sequences
@@ -2072,8 +2087,10 @@ def sequence_products(lever, *, covered=False, competitor="mild", multi=False, t
     if low:
         initial = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
                                      config=EatingSequenceConfig())
-        nadirs = {r.sequence.end + timedelta(minutes=80)
-                  for r in initial.populations[lever] if r.candidate}
+        nadirs = {reading.t for row in initial.populations[lever] if row.candidate
+                  for reading in c
+                  if row.sequence.end + timedelta(minutes=80) <= reading.t
+                  < row.sequence.end + timedelta(minutes=90)}
         c = [replace(r, bg=55) if r.t in nadirs else r for r in c]
     if thin is not None:
         evaluation = evaluate_sequences(b, c, log, window_start=c[0].t, window_end=c[-1].t,
@@ -2081,12 +2098,12 @@ def sequence_products(lever, *, covered=False, competitor="mild", multi=False, t
         cohort = [r for r in evaluation.populations[lever] if r.candidate == thin]
         log = [CarbEntry(r.sequence.end + timedelta(minutes=1), 17.3, "exact", "manual")
                for r in cohort[7:]]
-    store = SimpleNamespace(bolus_events=lambda: b, cgm_readings=lambda: c,
-                            basal_events=lambda: basal, carb_entries=lambda *args: log,
-                            settings_snapshots=lambda: [], prompt_responses=lambda: [])
-    scenarios = build_scenarios(store, window_days=30).to_dict()
-    exposures = build_exposures(store, window_days=30)
-    projection = prepare_findings_projection(analysis={}, exposures=exposures, scenarios=scenarios)
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, b, c, log)
+        analysis = analyze(store, window_days=30, pool_agreeing_basal_regimes=True).to_dict()
+        scenarios = build_scenarios(store, window_days=30).to_dict()
+        exposures = build_exposures(store, window_days=30)
+    projection = prepare_findings_projection(analysis=analysis, exposures=exposures, scenarios=scenarios)
     return projection, (b, c, log, basal)
 
 

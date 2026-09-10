@@ -375,7 +375,7 @@ class SequenceGuidanceExclusionTest(unittest.TestCase):
             self.assertIsNone(cause["parameter"])
             self.assertIsNone(cause.get("asserts_move"))
             self.assertEqual(cause["kind"], "habit")
-            guidance = build_guidance(analysis={}, exposures=projection._exposures,
+            guidance = build_guidance(analysis=projection._analysis, exposures=projection._exposures,
                                       scenarios=projection._scenarios)
             candidate = next(row for row in guidance["candidates"]
                              if row["subject"] == "pattern:highs_after_meals")

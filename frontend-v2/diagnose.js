@@ -182,7 +182,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         payload ? 'The current read failed. The last read that answered is not a new result.' : 'The evidence read could not load.',
         '<button class="gf-btn primary" data-action="retry">Retry</button><button class="gf-btn" data-action="open-diagnose">Open Diagnose</button>');
       host.querySelector('[data-action="retry"]').onclick = read;
-      host.querySelector('[data-action="open-diagnose"]').onclick = read;
+      // Retry preserves the failed entry; Open Diagnose starts at Findings.
+      host.querySelector('[data-action="open-diagnose"]').onclick = () => {
+        navigate('diagnose');
+        return read();
+      };
       view.focusAfterRender = '[data-action="retry"]';
       return;
     }
@@ -191,7 +195,6 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); }
     else if (deps.navigation !== arrival) { workstation.leaveSurface(); workstation.refresh(); restoreEntry(); }
     arrival = deps.navigation;
-    if (error) workstation.setError(error);
     (deps.hold || hold)((pagehide) => { if (pagehide || currentDestination() !== 'diagnose' || !host.isConnected) leave(); });
   }
   return { mount, read, leave };

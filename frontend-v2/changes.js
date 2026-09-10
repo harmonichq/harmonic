@@ -152,7 +152,7 @@ function quietFrame() {
   const set = asideRows().length;
   const copy = [set ? `${set} set aside` : '', `read ${guidance()?.window?.end || ''}`].filter(Boolean).join(' · ');
   return emptyFrame('Changes', 'No priority needs action', e(copy),
-    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="day">Open Day</button>', setAsideList(true));
+    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="day">Open Day</button>' + setAsideList(true));
 }
 
 /**
@@ -167,7 +167,7 @@ function unavailableFrame() {
   const reason = unavailableReason();
   return emptyFrame('Changes', 'No action from this read',
     e(reason?.said || 'The source served no reason.'),
-    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>', setAsideList(true));
+    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>' + setAsideList(true));
 }
 
 /**
@@ -201,6 +201,14 @@ function failedFrame() {
 
 /* --------------------------------------------------------------- the wiring */
 
+function cancelAside() {
+  aside.open = false;
+  aside.reason = '';
+  view.sheetOpen = false;
+  view.focusAfterRender = '[data-action="aside"]';
+  render();
+}
+
 function bind(host) {
   for (const button of host.querySelectorAll('[data-action]')) {
     const action = button.dataset.action;
@@ -220,13 +228,7 @@ function bind(host) {
     } else if (action === 'cancel-aside') {
       // Closes without recording anything: no write is attempted, and the half-
       // typed reason goes with the form it was typed into (S17).
-      button.onclick = () => {
-        aside.open = false;
-        aside.reason = '';
-        view.sheetOpen = false;
-        view.focusAfterRender = '[data-action="aside"]';
-        render();
-      };
+      button.onclick = cancelAside;
     }
   }
   for (const button of host.querySelectorAll('[data-restore]')) {
@@ -313,9 +315,7 @@ export function installChanges() {
   // discards nothing the wearer typed anywhere else.
   registerEscape('aside', () => {
     if (!aside.open) return false;
-    aside.open = false;
-    view.focusAfterRender = '[data-action="aside"]';
-    render();
+    cancelAside();
     return true;
   });
 }

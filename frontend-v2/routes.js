@@ -118,7 +118,7 @@ export function registerSeatLayer(seat) {
 // The settled Escape hierarchy, in one place, one level per press (S78). Owners
 // plug into their own layer; a layer with no owner is simply skipped, which is
 // how this chunk lands before the layers chunks 2 and 3 own exist.
-export const ESCAPE_ORDER = ['utility', 'sheet', 'aside', 'day', 'journey', 'figure'];
+export const ESCAPE_ORDER = ['utility', 'aside', 'sheet', 'day', 'journey', 'figure'];
 const escapes = new Map();
 
 export function registerEscape(layer, handler) {

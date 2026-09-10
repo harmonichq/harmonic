@@ -59,7 +59,15 @@ test('initial and failed current reads own distinct Diagnose frames and retry', 
   assert.match(seat.innerHTML, /Current read failed/);
   assert.match(seat.innerHTML, /last read that answered/);
   assert.match(seat.innerHTML, /Open Diagnose/);
-  served.fail(false); await seat.querySelector('[data-action="retry"]').onclick();
+  const previous = globalThis.window;
+  const addresses = [];
+  globalThis.window = { location: { pathname: '/v2/', search: '?to=diagnose&subject=retained' },
+    history: { pushState: (_state, _title, address) => addresses.push(address) } };
+  try {
+    served.fail(false);
+    await seat.querySelector('[data-action="open-diagnose"]').onclick();
+    assert.deepEqual(addresses, ['/v2/?to=diagnose'], 'Open Diagnose discards the contextual entry');
+  } finally { globalThis.window = previous; }
   destination.mount(seat, { navigation: 1, hold() {} });
   assert.ok(seat.node, 'successful retry seats the carried composition');
 });

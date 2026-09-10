@@ -67,7 +67,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"}]} }}
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"}]} }}
         roster = build_outcome_patterns(analysis, exposures, {"patterns": [_scenario("carb_undercount", price=20)], "low_confidence": []})
         high = roster[0]
         self.assertEqual(high["settled_price"], 10)
@@ -84,7 +85,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"},
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"},
         ]}}}
         high = build_outcome_patterns(
             analysis, exposures,
@@ -109,7 +111,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"},
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"},
         ]}}}
         high = build_outcome_patterns(
             analysis, exposures,
@@ -141,18 +144,23 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         exposures = {"exposures": {
             "meals": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "carb_undercount",
+                 "attributed_levers": ["carb_undercount"],
                  "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
                 {"attributed": True, "cause_lever": "meal_over_delivery",
+                 "attributed_levers": ["meal_over_delivery"],
                  "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
             ]},
             "lows": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "over_treated_low",
+                 "attributed_levers": ["over_treated_low"],
                  "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
                 {"attributed": True, "cause_lever": "correction_on_iob",
+                 "attributed_levers": ["correction_on_iob", "correction_stacking"],
                  "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
             ]},
             "correction_clusters": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "correction_stacking",
+                 "attributed_levers": ["correction_stacking"],
                  "ep_id": "stacked", "t": "2025-06-01 02:00:00"},
             ]},
         }}
@@ -283,7 +291,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
 
     def test_single_admitted_habit_collapses_to_its_member(self):
         exposures = {"exposures": {"lows": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "a"}]} }}
+            {"attributed": True, "attributed_levers": ["over_treated_low"],
+             "cause_lever": "over_treated_low", "ep_id": "a", "t": "a"}]} }}
         roster = build_outcome_patterns({}, exposures, {"patterns": [_scenario("over_treated_low")], "low_confidence": []})
         pattern = next(item for item in roster if item["key"] == "highs_after_treating_lows")
         self.assertEqual(pattern["collapse"], "collapse_to_member")
@@ -292,8 +301,10 @@ class OutcomePatternPolicyTest(unittest.TestCase):
     def test_inconsistent_source_counts_remain_a_published_pattern(self):
         exposures = {"exposures": {"lows": {"n": 1, "occurrences": [
             {"attributed": True, "cause_lever": "over_treated_low",
+             "attributed_levers": ["over_treated_low"],
              "ep_id": "a", "t": "2026-08-01 12:00:00"},
             {"attributed": True, "cause_lever": "over_treated_low",
+             "attributed_levers": ["over_treated_low"],
              "ep_id": "b", "t": "2026-08-02 12:00:00"},
         ]}}}
         pattern = next(item for item in build_outcome_patterns(

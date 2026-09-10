@@ -777,7 +777,11 @@ def payload() -> dict:
         row for row in browser_exposures["exposures"]["meals"]["occurrences"]
         if not row.get("attributed")
     )
-    memberless_low.update(attributed=True, cause_lever=Lever.MEAL_OVER_DELIVERY.value)
+    memberless_low.update(
+        attributed=True,
+        attributed_levers=[Lever.MEAL_OVER_DELIVERY.value],
+        cause_lever=Lever.MEAL_OVER_DELIVERY.value,
+    )
     browser_scenarios = json.loads(json.dumps(prepared._scenarios))
     browser_scenarios["patterns"].extend([
         Pattern(lever=Lever.LATE_BOLUS,

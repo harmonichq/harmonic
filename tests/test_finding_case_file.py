@@ -562,6 +562,8 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
             {"ep_id": f"ep-{index}", "t": member.outcome_t.strftime("%Y-%m-%d %H:%M:%S"),
              "date": member.outcome_t.date().isoformat(), "kind": "meal", "bg": 120,
              "attributed": index < 2,
+             "attributed_levers": (["carb_undercount", "late_bolus"][index:index + 1]
+                                     if index < 2 else []),
              "cause_lever": ("carb_undercount", "late_bolus", None)[index],
              "verdicts": ([{"classifier": "carb_undercount", "matched": False,
                              "silence_reason": "under_threshold"}]
@@ -635,7 +637,8 @@ def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member
         exposures={"exposures": {"meals": {"n": 1, "occurrences": [{
             "ep_id": "ep-1", "t": member.anchor_t.strftime("%Y-%m-%d %H:%M:%S"),
             "date": member.anchor_t.date().isoformat(), "kind": "meal", "bg": 120,
-            "attributed": True, "cause_lever": lever.value, "verdicts": [],
+            "attributed": True, "attributed_levers": [lever.value],
+            "cause_lever": lever.value, "verdicts": [],
         }]}}},
     )
 

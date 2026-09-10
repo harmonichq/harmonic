@@ -117,6 +117,9 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         window_cgm, window_bolus, window_basal,
         isf=isf, scenario_config=scenario_config, low_answers=low_answers,
     )
+    # A classifier's padded context can reach an opportunity in another episode.
+    # Cross-family attribution is therefore opportunistic: stamp a target only when
+    # this feed also emitted that opportunity, and otherwise preserve the feed.
     target_attributions = []
     for index, episode_anchors in enumerate(episodes):
         context_start = episode_anchors.start - timedelta(minutes=_CONTEXT_PAD_MIN)
@@ -135,15 +138,21 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         )
         if attribution.lever is Lever.MEAL_BOLUS_SHORT:
             policy = policy_for(attribution.lever)
-            occurrence_id = policy.occurrence_for_episode(
-                episode["id"], window_bolus, attribution.trigger_t,
-                scenario_config=scenario_config,
-            )
-            meal = next(
+            try:
+                occurrence_id = policy.occurrence_for_episode(
+                    episode["id"], window_bolus, attribution.trigger_t,
+                    scenario_config=scenario_config,
+                )
+            except ValueError:
+                occurrence_id = None
+            meal = None if occurrence_id is None else next((
                 item for item in window_bolus
                 if policy.occurrence_id(item) == occurrence_id
-            )
-            target_attributions.append(("meals", meal.t, attribution.lever.value))
+            ), None)
+            if meal is not None:
+                target_attributions.append(
+                    ("meals", meal.t, attribution.lever.value)
+                )
         elif attribution.lever is Lever.CORRECTION_STACKING:
             reached_low = min(
                 (
@@ -155,11 +164,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 key=lambda item: item.t,
                 default=None,
             )
-            if reached_low is None:
-                raise ValueError("correction_stacking attribution reaches no low")
-            target_attributions.append(
-                ("lows", reached_low.t, attribution.lever.value)
-            )
+            if reached_low is not None:
+                target_attributions.append(
+                    ("lows", reached_low.t, attribution.lever.value)
+                )
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
         ):
@@ -213,11 +221,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             ),
             None,
         )
-        if target is None:
-            raise ValueError(
-                f"{lever} attribution has no {family_name} target at {target_t}"
-            )
-        if lever not in target["attributed_levers"]:
+        if target is not None and lever not in target["attributed_levers"]:
             target["attributed_levers"].append(lever)
 
     for name, family in families.items():

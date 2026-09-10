@@ -161,10 +161,7 @@ def _lever_identities(exposures: dict, family: str, lever: str) -> set[str]:
     source = (exposures.get("exposures") or {}).get(family) or {}
     return {
         item["t"] for item in source.get("occurrences") or ()
-        if (
-            lever in (item.get("attributed_levers") or ())
-            or (item.get("attributed") and item.get("cause_lever") == lever)
-        )
+        if lever in (item.get("attributed_levers") or ())
         and item.get("t") is not None
     }
 

@@ -726,8 +726,8 @@ def _finding(compared: Sequence[_ComparedCohorts]) -> Optional[HighCarbFinding]:
     row, reference, high = chosen.row, chosen.reference, chosen.high
     period_label = _PERIOD_LABELS[row.period]
     if metric == "tir":
-        summary = (f"In {row.scope} sequences, the highest-carb fifth spent {high.tir_pct}% of the "
-                   f"{period_label} in range against {reference.tir_pct}% for the rest "
+        summary = (f"In {row.scope} sequences, the highest-carb fifth spent {high.tir_pct:.1f}% of the "
+                   f"{period_label} in range against {reference.tir_pct:.1f}% for the rest "
                    f"(n = {row.high_n} vs {row.reference_n})")
     else:
         summary = (f"In {row.scope} sequences, the highest-carb fifth's {period_label} glucose spread "
@@ -755,8 +755,8 @@ def _repeat_finding(compared: Sequence[_ComparedRepeatCohorts]) -> Optional[Repe
     period_label = _PERIOD_LABELS[row.period]
     if metric == "tir":
         summary = (f"In carb quintile {row.carb_quintile} sequences, those with three or more "
-                   f"eating windows spent {repeat.tir_pct}% of the {period_label} in range against "
-                   f"{reference.tir_pct}% for single-window sequences "
+                   f"eating windows spent {repeat.tir_pct:.1f}% of the {period_label} in range against "
+                   f"{reference.tir_pct:.1f}% for single-window sequences "
                    f"(n = {row.repeat_n} vs {row.reference_n})")
     else:
         summary = (f"In carb quintile {row.carb_quintile} sequences, those with three or more "

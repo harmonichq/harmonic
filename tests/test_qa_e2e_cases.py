@@ -56,6 +56,19 @@ EXPECTED_CASE_NAMES = (
     "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
     "pattern-near-tie", "pattern-collapse",
+    'high-carb-sequence-covered',
+    'high-carb-sequence-empty',
+    'high-carb-sequence-thin-candidate',
+    'high-carb-sequence-thin-reference',
+    'high-carb-sequence-losing',
+    'high-carb-sequence-multiple',
+    'repeat-eating-covered',
+    'repeat-eating-empty',
+    'repeat-eating-thin-candidate',
+    'repeat-eating-thin-reference',
+    'repeat-eating-losing',
+    'repeat-eating-multiple',
+
 )
 
 

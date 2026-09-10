@@ -92,3 +92,91 @@ test('closed selectors reject unknown values', () => {
   assert.throws(() => matrixSeries(adapted, { period: 'overnight', metric: 'tir_pct' }));
   assert.throws(() => matrixSeries(adapted, { period: 'post_4h', metric: 'mean_mgdl' }));
 });
+
+import { eatingSequenceComparison, eatingSequenceChartOption, validEatingSequenceCase } from './diagnose-eating-sequences.js';
+import { DIAGNOSE_EVIDENCE_CHARTS } from './diagnose-evidence-charts.js';
+import { descriptorsFromFindings } from './diagnose-canvas-layout.js';
+
+const sequenceFixture = JSON.parse(readFileSync(
+  new URL('../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8',
+));
+
+test('public sequence cases select the dedicated chart before the generic response chart', () => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    for (const state of ['covered', 'empty', 'multiple']) {
+      const generated = sequenceFixture.states[`${lever}_${state}`].windows.global;
+      const prepared = generated.preparation;
+      const data = generated.cases[`finding:${lever}`].event;
+      assert.equal(validEatingSequenceCase(data), true);
+      assert.equal(data.analysis_generation, prepared.findings.analysis_generation);
+      const descriptors = descriptorsFromFindings({
+        ...prepared.findings, projection_id: prepared.projection_id, rows: prepared.rendered_rows,
+      }, DIAGNOSE_EVIDENCE_CHARTS);
+      const cause = descriptors.find((d) => d.chartId === data.finding.id);
+      assert.equal(cause.kind, 'eating-sequence');
+      assert.equal(cause.coordinates.finding_id, data.finding.id);
+      assert.equal(cause.coordinates.projection_id, data.projection_id);
+      assert.equal(descriptors.find((d) => d.chartId === 'pattern:highs_after_meals').kind, 'pattern-case-file');
+      const view = eatingSequenceComparison(data);
+      const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
+      assert.equal(view.finding, detector.finding);
+      assert.equal(view.periods.find((p) => p.selected).period, detector.finding.period);
+      const option = eatingSequenceChartOption(data);
+      assert.match(option.title[0].text, /%/);
+      assert.match(option.title[1].text, /mg\/dL/);
+      for (const [axis, metric] of ['tir_pct', 'sd_mgdl'].entries()) {
+        for (const [index, cohort] of ['reference', 'comparison'].entries()) {
+          assert.deepEqual(option.series[axis * 2 + index].data.map((p) => p.value[1]),
+            view.periods.map((period) => period[cohort][metric]));
+          assert.deepEqual(option.series[axis * 2 + index].data.map((p) => p.n),
+            view.periods.map((period) => period[cohort].n));
+        }
+      }
+      const mini = eatingSequenceChartOption(data, { mini: true });
+      assert.equal(mini.tooltip.show, false);
+      assert.ok(mini.xAxis.every((axis) => !axis.axisLabel.show));
+      assert.ok(mini.series.every((series) => series.silent));
+    }
+  }
+});
+
+test('selection validation retains exact served sequence details and rejects malformed cases', () => {
+  const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'];
+  const selected = { ...stored.event, selection: Object.values(stored.selections)[0] };
+  assert.equal(validEatingSequenceCase(selected), true);
+  for (const mutate of [
+    (c) => { c.summary.claimed = c.summary.denominator + 1; },
+    (c) => { c.selection.detail.sequence.carbs = -1; },
+    (c) => { c.projection.report.high_carb_sequence.finding = null; },
+    (c) => { c.occurrences[0].id = 'bad'; },
+  ]) {
+    const broken = structuredClone(selected); mutate(broken);
+    assert.equal(validEatingSequenceCase(broken), false);
+  }
+});
+
+test('thin source cohorts produce no substitute finding and adapter nulls remain null', () => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    for (const cohort of ['candidate', 'reference']) {
+      const prepared = sequenceFixture.states[`${lever}_thin_${cohort}`].windows.global.preparation;
+      assert.ok(!prepared.rendered_rows.some((row) => row.id === `finding:${lever}`));
+      const adapted = adaptEatingSequenceReport(prepared.eating_sequence_report);
+      const cells = lever === 'repeat_eating'
+        ? matrixSeries(adapted, { period: 'post_4h', metric: 'tir_pct' }).series.flatMap((r) => r.cells)
+        : trajectorySeries(adapted, { scope: 'pooled', metric: 'tir_pct' }).series.flatMap((r) => r.points);
+      assert.ok(cells.some((cell) => cell.status === 'insufficient' && cell.value === null));
+    }
+  }
+});
+
+test('a supported case keeps a null period visible without a zero-filled point', () => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    const data = sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event;
+    assert.equal(validEatingSequenceCase(data), true);
+    const option = eatingSequenceChartOption(data);
+    assert.equal(option.series[0].data[0].value[1], null);
+    assert.equal(option.series[1].data[0].value[1], null);
+    assert.equal(option.series[0].data[0].status, 'insufficient');
+    assert.match(option.graphic[0].style.text, /Unavailable: During sequence/);
+  }
+});

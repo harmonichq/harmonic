@@ -22,6 +22,7 @@
  * Issue #341 revises the canvas composition below: the evidence spotlight
  * leads, followed by the real clock overview and basal lane.
  */
+import { isEatingSequence, validEatingSequenceCase, eatingSequenceComparison } from './diagnose-eating-sequences.js';
 import {
   buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
   buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
@@ -543,9 +544,9 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
   const box = document.createElement('div');
   box.className = 'inner';
   box.innerHTML = `
-    <div class="who">${finding.title} <span class="qual">· ${FAMILY_SHORT[family]}</span></div>
+    <div class="who">${finding.title} <span class="qual">· ${FAMILY_SHORT[family] || summary.noun}</span></div>
     <div class="statline"><b>${summary.claimed}</b> of <b>${summary.denominator}</b>
-      ${FAMILY_LABEL[family]} in ${caseFile.window.label || '24 h'}
+      ${FAMILY_LABEL[family] || summary.noun} in ${caseFile.window.label || '24 h'}
       · <b>${summary.denominator - summary.claimed}</b> not attributed</div>`;
   const clock = projection.alignment === 'clock' ? projection.clock : null;
   renderCaseClock(box, clock);
@@ -578,7 +579,7 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
   renderOccurrenceRoster(host, [{
     header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
-      <span class="n">· ${publishedCount} episode${publishedCount === 1 ? '' : 's'}</span></div>`,
+      <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
     rows: rows.map((row) => ({
       id: row.id,
@@ -646,6 +647,25 @@ function renderCaseSelection(host, caseFile, onDay, onClearTrace) {
   }
   if (selection.state !== 'selected') return;
   const detail = selection.detail;
+  if (caseFile.projection.kind === 'eating-sequence') {
+    const box = document.createElement('div');
+    box.className = 'inner occ-detail sequence-detail';
+    const sequence = detail.sequence;
+    box.textContent = `${sequence.sequence_start} · ${sequence.sequence_end} · ${sequence.carbs.toLocaleString(undefined, { maximumFractionDigits: 1 })} g · ${sequence.window_count} eating windows`;
+    const episodes = document.createElement('div');
+    episodes.className = 'ev-detail case-facts';
+    for (const episode of detail.episodes) {
+      const fact = document.createElement('div');
+      fact.textContent = `${episode.start} to ${episode.end} · ${episode.attributed ? 'Attributed' : 'Matched'} · ${episode.attributed ? 'Sequence evidence' : 'Other cause retained'}`;
+      episodes.append(fact);
+    }
+    host.append(box, episodes);
+    const clear = document.createElement('button');
+    clear.type = 'button'; clear.className = 'linkbtn clear-trace';
+    clear.textContent = 'Clear selection'; clear.onclick = onClearTrace;
+    host.append(clear);
+    return;
+  }
   const comparison = caseFile.projection.alignment === 'event';
   const rows = comparison
     ? (caseFile.projection.cohorts.find((cohort) => cohort.key === detail.comparison_cohort)
@@ -1454,6 +1474,7 @@ function boot(root, data, callbacks, signal) {
     if (descriptor.kind === 'carb-ratio') {
       return (data.runs || []).length > 0 || (data.series || []).length > 0;
     }
+    if (descriptor.kind === 'eating-sequence') return Boolean(data.projection?.report);
     return (data.projection?.cohorts || []).some((cohort) => (cohort.points || []).length > 0);
   };
 
@@ -1740,7 +1761,14 @@ function boot(root, data, callbacks, signal) {
         return;
       }
       const validate = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === descriptor.kind)?.validateData;
-      if (validate && !validate(data)) throw new Error('Pattern evidence is unavailable.');
+      if (validate && !validate(data)) throw new Error(descriptor.kind === 'eating-sequence'
+        ? 'Eating-sequence evidence is unavailable.' : 'Pattern evidence is unavailable.');
+      if (descriptor.kind === 'eating-sequence'
+        && (data.analysis_generation !== findings.analysis_generation
+          || data.projection_id !== descriptor.coordinates.projection_id
+          || data.finding.id !== descriptor.coordinates.finding_id)) {
+        throw new Error('Eating-sequence evidence did not match the requested generation.');
+      }
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
@@ -1981,7 +2009,9 @@ function boot(root, data, callbacks, signal) {
     const sourceWindow = source?.coordinates?.window;
     const requestedWindow = sourceWindow?.scoped
       ? { start_min: sourceWindow.start_min, end_min: sourceWindow.end_min } : null;
-    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && validFindingCaseFile(caseFile)
+    if (caseFile?.schema === 'diagnose-finding-case-file-v1' && (isEatingSequence(caseFile?.finding?.lever)
+      ? validEatingSequenceCase(caseFile) && caseFile.analysis_generation === source.findings.analysis_generation
+      : validFindingCaseFile(caseFile))
       && caseFile?.projection_id === source.projection_id
       && caseFile?.finding?.id === frame.rowId
       && sameFindingCaseWindow(caseFile?.window, requestedWindow)
@@ -2378,7 +2408,7 @@ function boot(root, data, callbacks, signal) {
      mutating fetch-owned state that an in-flight tile response can replace. */
   const tileCaseFile = (descriptor) => {
     const frame = top();
-    return descriptor.kind === 'event-comparison'
+    return ['event-comparison', 'eating-sequence'].includes(descriptor.kind)
       && frame.k === 'factor' && frame.rowId === descriptor.chartId
       && frame.caseFile?.projection?.alignment === 'event'
       ? frame.caseFile : descriptor.data;
@@ -3678,7 +3708,15 @@ function boot(root, data, callbacks, signal) {
     }
     const caseFile = f.caseFile;
     renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
-    const eventComparison = caseFile.projection.alignment === 'event';
+    if (caseFile.projection.kind === 'eating-sequence') {
+      const comparison = eatingSequenceComparison(caseFile);
+      const caption = document.createElement('div');
+      caption.className = 'statline sequence-comparison';
+      caption.textContent = comparison.finding.summary;
+      host.append(caption);
+    }
+    const eventComparison = caseFile.projection.alignment === 'event'
+      && caseFile.projection.kind !== 'eating-sequence';
     if (eventComparison) {
       /* The attribution header's verdict accounting and the meal comparison
          describe different server-owned populations. Keep both visible, but
@@ -4167,7 +4205,8 @@ function boot(root, data, callbacks, signal) {
       selectNight(f, siblings[next].date);
       return;
     }
-    const eventComparison = f.caseFile.projection.alignment === 'event';
+    const eventComparison = f.caseFile.projection.alignment === 'event'
+      && f.caseFile.projection.kind !== 'eating-sequence';
     const siblings = eventComparison
       ? (f.caseFile.projection.cohorts.find((cohort) => cohort.key
         === f.caseFile.selection.detail?.comparison_cohort)?.occurrence_ids.map((id) => ({ id })) || [])

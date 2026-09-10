@@ -30,6 +30,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  S151, S152, S153, S154, S155, S156, S157, S158,
   generatedFindingPose,
   generatedFindingProjection,
   openApp,
@@ -815,3 +816,44 @@ test('Backspace return restores provenance to the chart owning the finding frame
     await page.close();
   }
 });
+
+
+for (const [id, story, sequenceState] of [
+  ['S151', S151, 'high_carb_sequence_covered'],
+  ['S152', S152, 'repeat_eating_covered'],
+  ['S153', S153, 'high_carb_sequence_empty'],
+  ['S154', S154, 'repeat_eating_empty'],
+  ['S155', S155, 'high_carb_sequence_empty'],
+  ['S156', S156, 'repeat_eating_empty'],
+  ['S157', S157, 'high_carb_sequence_empty'],
+  ['S158', S158, 'high_carb_sequence_thin_candidate'],
+]) {
+  test(`eating-sequence composition ${id} uses generated Python transports`, async () => {
+    const browser = await runner.browser();
+    const page = await openApp(browser, { appSource: 'fixture', sequenceState });
+    try { await story(page); } finally { await page.close(); }
+  });
+}
+
+
+for (const defect of ['generation', 'counts']) {
+  test(`eating-sequence ${defect} mismatch uses the standing case error surface`, async () => {
+    const browser = await runner.browser();
+    const page = await openApp(browser, {
+      appSource: 'fixture', sequenceState: 'high_carb_sequence_empty',
+      caseScenario: { case: ({ body }) => {
+        if (body.finding.lever === 'high_carb_sequence') {
+          if (defect === 'generation') body.analysis_generation = 'other-process:0';
+          else body.summary.claimed = body.summary.denominator + 1;
+        }
+        return { body };
+      } },
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#level .qrow[data-id="finding:high_carb_sequence"]').click();
+      await page.locator('#level .case-file-error').waitFor();
+      assert.equal(await page.locator('#level .sequence-detail').count(), 0);
+    } finally { await page.close(); }
+  });
+}

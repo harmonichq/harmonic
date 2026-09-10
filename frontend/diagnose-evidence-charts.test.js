@@ -93,17 +93,18 @@ test('I:C block evidence turns only a stale-generation 409 into a typed stale re
   assert.equal(calls, 1, 'the transport reports staleness without retrying');
 });
 
-test('the registry declares five stateless chart kinds and their request coordinates', () => {
+test('the registry declares six stateless chart kinds and their request coordinates', () => {
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ kind }) => kind), [
-    'basal', 'isf', 'carb-ratio', 'event-comparison', 'pattern-case-file',
+    'basal', 'isf', 'carb-ratio', 'eating-sequence', 'event-comparison', 'pattern-case-file',
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    null, ['event', 'clock'], ['event', 'clock'], null, null,
+    null, ['event', 'clock'], ['event', 'clock'], null, null, null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -118,6 +119,7 @@ test('every entry produces exactly the coordinates it declares', () => {
     basal: { id: 'basal:30-60', parameter: 'basal_rate', span: { start_min: 30, end_min: 60 } },
     isf: { id: 'isf', parameter: 'isf' },
     'carb-ratio': { id: 'ic:720', parameter: 'carb_ratio', span: { start_min: 720, end_min: 1440 } },
+    'eating-sequence': { id: 'finding:high_carb_sequence', lever: 'high_carb_sequence', title: 'High-carb sequence', event_chart: { lever: 'high_carb_sequence' } },
     'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
       appearances: [{ family: 'highs', noun: 'highs' }],
       event_chart: { lever: 'missed_meal', window: { scoped: false } } },
@@ -1065,6 +1067,15 @@ test('glucose projections expose served values and thumbnails have no axis furni
   assert.ok(byKind['event-comparison'].glucoseValues(event).includes(servedMedian),
     'the comparison reports the medians the case file serves');
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
+    if (entry.kind === 'eating-sequence') {
+      const data = fixture('../mockups/eating-sequence-findings.synthetic/payload.json')
+        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'].event;
+      const thumb = entry.thumbnail(data);
+      assert.ok(thumb.xAxis.every((axis) => axis.axisLabel.show === false));
+      assert.ok(thumb.yAxis.every((axis) => axis.axisLabel.show === false));
+      assert.equal(thumb.tooltip.show, false);
+      continue;
+    }
     const thumbData = entry.kind === 'basal' ? { roster_count: 0, directional_support_count: 0, nights: [] }
       : entry.kind === 'isf' ? { counts: { detected_windows: 0, qualifying_windows: 0,
         qualifying_steps: 0 }, windows: [], steps: [] }

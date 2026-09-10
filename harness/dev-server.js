@@ -79,6 +79,8 @@ export function harnessDataPlugin({ repositoryRoot }) {
     json(join(fixtureRoot, 'ic-history-events.capture.json')),
     json(join(repositoryRoot, 'mockups/diagnose-event-comparison.synthetic/capture.json')),
   ]);
+  const sequenceLoad = json(join(repositoryRoot, 'mockups/eating-sequence-findings.synthetic/payload.json'));
+  let sequenceState = null;
   let source = 'manufactured';
   const preparedWindows = new Map();
 
@@ -100,6 +102,11 @@ export function harnessDataPlugin({ repositoryRoot }) {
               send(res, 400, { detail: 'source must be manufactured or live' });
               return;
             }
+            if (body.sequenceState && !(await sequenceLoad).states[body.sequenceState]) {
+              send(res, 400, { detail: 'Unknown eating-sequence state' });
+              return;
+            }
+            sequenceState = body.sequenceState || null;
             source = body.source;
             send(res, 200, { source });
           } catch {
@@ -146,6 +153,36 @@ export function harnessDataPlugin({ repositoryRoot }) {
 
         const [payload, findingsFixture, basal, isf, carbRatio, caseFiles, history,
           patternCapture] = await load;
+        if (sequenceState) {
+          const state = (await sequenceLoad).states[sequenceState];
+          const key = url.searchParams.has('start_min')
+            ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
+          const prepared = state.windows[key];
+          const feeds = {
+            '/api/analyze': state.analyze, '/api/scenarios': state.scenarios,
+            '/api/explore/exposures': state.exposures,
+          };
+          if (Object.hasOwn(feeds, url.pathname)) {
+            send(res, 200, feeds[url.pathname]); return;
+          }
+          if (['/api/diagnose/findings', '/api/diagnose/finding-case-file-preparation'].includes(url.pathname)) {
+            if (!prepared) { send(res, 404, { detail: 'Window absent from manufactured state' }); return; }
+            send(res, 200, url.pathname.endsWith('preparation') ? prepared.preparation
+              : { ...prepared.preparation.findings, rows: prepared.preparation.rendered_rows });
+            return;
+          }
+          if (url.pathname === '/api/diagnose/finding-case-file') {
+            const window = Object.values(state.windows).find((w) =>
+              w.preparation.projection_id === url.searchParams.get('projection_id'));
+            const finding = window?.cases[url.searchParams.get('finding_id')];
+            const body = clone(finding?.[url.searchParams.get('alignment')]);
+            if (!body) { send(res, 404, { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }); return; }
+            const occ = url.searchParams.get('occ');
+            if (occ) body.selection = clone(finding.selections[occ]
+              || { state: 'unavailable', requested_id: occ, detail: null });
+            send(res, 200, body); return;
+          }
+        }
         const findingsInputs = populateFindingsProjectionInput({
           analysis: payload.analyze,
           exposures: payload.exposures,

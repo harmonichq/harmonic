@@ -4,14 +4,25 @@ import argparse
 import json
 import sys
 from datetime import timedelta
+from hashlib import sha256
+from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from ciq_autotune.analyzers.eating_sequence_config import EatingSequenceConfig
-from ciq_autotune.analyzers.eating_sequences import build_report, report_dict
-from tests.eating_sequence_streams import repeat_eating_stream
+from ciq_autotune.analyzers.eating_sequences import build_report, report_dict, build_sequences, evaluate_sequences
+from tests.eating_sequence_streams import repeat_eating_stream, sequence_episode_stream
+from tests.test_findings_projection import seed_sequence_store
+from ciq_autotune import finding_case_file
+from ciq_autotune.events import CarbEntry
+from ciq_autotune.store import Store
+from ciq_autotune.analyze import analyze
+from ciq_autotune.analyzers.scenario import build_scenarios
+from ciq_autotune.explore_exposures import build_exposures
+from ciq_autotune.findings_projection import prepare_findings_projection
+from ciq_autotune.window_membership import WindowQuery
 
 
 OUT = ROOT / "frontend/__fixtures__/eating-sequence-report.json"
@@ -33,20 +44,125 @@ def payload() -> dict:
     }
 
 
+FINDINGS_OUT = ROOT / "mockups/eating-sequence-findings.synthetic/payload.json"
+
+
+def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False):
+    """Manufacture source events, then call the same public served producers."""
+    bolus, cgm, log, basal = sequence_episode_stream(
+        "repeat_eating" if lever == "both" else lever,
+        covered=covered, competitor=competitor, multi=multi)
+    sequences = build_sequences(bolus, config=EatingSequenceConfig())
+    if lever == "both":
+        # Lower single-window excursions keep their high-carb price below the
+        # repeat cohort's price: both can own disjoint sequences.
+        single_ends = [sequence.end for sequence in sequences[72:]]
+        cgm = [replace(reading, bg=230) if any(
+            end + timedelta(minutes=60) <= reading.t < end + timedelta(minutes=85)
+            for end in single_ends) else reading for reading in cgm]
+    if thin is not None:
+        evaluation = evaluate_sequences(bolus, cgm, log, window_start=cgm[0].t,
+                                        window_end=cgm[-1].t, config=EatingSequenceConfig())
+        cohort = [row for row in evaluation.populations[lever] if row.candidate == thin]
+        log = [CarbEntry(row.sequence.end + timedelta(minutes=1), 17.3, "exact", "manual",
+                         created_at=row.sequence.end + timedelta(minutes=1)) for row in cohort[7:]]
+    if null_period:
+        cgm = [reading for reading in cgm if not any(
+            sequence.start <= reading.t < sequence.end + timedelta(minutes=5)
+            for sequence in sequences)]
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm, log)
+        projection = prepare_findings_projection(
+            analysis=analyze(store, window_days=30, pool_agreeing_basal_regimes=True).to_dict(),
+            scenarios=build_scenarios(store, window_days=30).to_dict(),
+            exposures=build_exposures(store, window_days=30),
+        )
+    return projection, (bolus, cgm, log, basal)
+
+
+def findings_payload():
+    """Freeze public Python transports, never hand-set findings or ownership."""
+    states = {}
+    for lever in ("high_carb_sequence", "repeat_eating", "both"):
+        for name, options in (
+            ("covered", {"covered": True}),
+            ("empty", {}),
+            ("thin_candidate", {"covered": True, "thin": True}),
+            ("thin_reference", {"covered": True, "thin": False}),
+            ("losing", {"competitor": "severe"}),
+            ("multiple", {"multi": True}),
+            ("null_period", {"null_period": True}),
+        ):
+            if lever == "both" and name != "covered":
+                continue
+            key = f"{lever}_{name}"
+            projection, (bolus, cgm, log, _) = products(lever, **options)
+            # Freeze only the transport capture clock; all judgments remain producer-owned.
+            projection._analysis["generated_at"] = cgm[-1].t.strftime("%Y-%m-%d %H:%M:%S")
+            with Store.open(":memory:") as store:
+                seed_sequence_store(store, bolus, cgm, log)
+                windows = {}
+                # Fixed clock presets, plus the actual served witness window.
+                occurrences = projection._exposures.get("sequence_evidence", {}).get(lever, {}).get("occurrences", [])
+                witness = next((r["outcome_minute"] for r in occurrences if r["attributed"]), None)
+                queries = {"global": WindowQuery.whole_day(),
+                           "0-360": WindowQuery.clock(0, 360),
+                           "360-1440": WindowQuery.clock(360, 1440)}
+                if witness is not None:
+                    end = (witness + 90) % 1440
+                    queries[f"{witness}-{end}"] = WindowQuery.clock(witness, end)
+                for window_key, query in queries.items():
+                    prepared = finding_case_file.prepare(
+                        store, query=query, version=0, analysis=projection._analysis,
+                        exposures=projection._exposures, scenarios=projection._scenarios,
+                        analysis_generation="synthetic-342:0",
+                    )
+                    prepared.projection_id = "fp_" + sha256(f"{key}:{window_key}".encode()).hexdigest()[:32]
+                    wrapped = finding_case_file.wrap(prepared)
+                    cases = {}
+                    for row in wrapped["rendered_rows"]:
+                        if not row.get("case_header"):
+                            continue
+                        # Selection detail is stored separately to avoid duplicating
+                        # the same aggregate report for every occurrence.
+                        event = prepared.case(row["id"], "event", None)
+                        if event is None:
+                            continue
+                        cases[row["id"]] = {
+                            "event": event,
+                            "clock": prepared.case(row["id"], "clock", None),
+                            "selections": {o["id"]: prepared.case(row["id"], "event", o["id"])["selection"]
+                                           for o in event["occurrences"] if event["family"] == "sequences"},
+                        }
+                    windows[window_key] = {"preparation": wrapped, "cases": cases}
+                states[key] = {
+                    "lever": lever, "witness_minute": witness,
+                    "analyze": projection._analysis, "scenarios": projection._scenarios,
+                    "exposures": projection._exposures, "windows": windows,
+                }
+    return {"_generated_by": "scripts/gen_eating_sequence_fixtures.py",
+            "_note": "SYNTHETIC. Manufactured event streams through public Python producers; no personal data.",
+            "states": states}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    rendered = json.dumps(payload(), indent=1, sort_keys=True) + "\n"
-    if args.check:
-        if (OUT.read_text() if OUT.exists() else "") != rendered:
-            print(f"stale fixture: {OUT} — rerun scripts/gen_eating_sequence_fixtures.py")
-            return 1
-        print(f"eating-sequence report fixture current ({OUT})")
-        return 0
-    OUT.write_text(rendered)
-    print(f"wrote {OUT}")
-    return 0
+    stale = False
+    for path, body in ((OUT, payload()), (FINDINGS_OUT, findings_payload())):
+        rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
+        if args.check:
+            if (path.read_text() if path.exists() else "") != rendered:
+                print(f"stale fixture: {path} — rerun scripts/gen_eating_sequence_fixtures.py")
+                stale = True
+            else:
+                print(f"eating-sequence fixture current ({path})")
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(rendered)
+            print(f"wrote {path}")
+    return int(stale)
 
 
 if __name__ == "__main__":

@@ -302,3 +302,21 @@ Flat by default with exactly one shadow token (`--shadow`) reused everywhere ele
 - **Don't** use a `border-left` greater than 1px as a purely decorative colored stripe. The current `.card h2::before` 4px left-tab and its five sibling instances (advisory callouts, table-row grouping, warning callouts, popovers) are a known, flagged pattern — don't propagate it into new components; the in-flight Verify redesign has already dropped it ("no card accent").
 - **Don't** exceed 1.5rem for any heading or display text — there is no hero/display tier in this system; a bigger number belongs in a Stat-styled card, not a page headline.
 - **Don't** rely on hover-only interaction for any state-carrying element (flag lists, calendar heat-map cells currently do this) — pair with `:focus-visible` and a keyboard path, per the existing `.has-tooltip` precedent.
+
+
+### Eating-sequence evidence (#342)
+
+High-carb sequence and Repeat eating are habit causes nested under Highs after
+meals. Each retains its own sequence count and canonical evidence chart, including
+when its winning episode covers no meal. The parent keeps its meals denominator
+and Pattern case chart.
+
+The sixth registry family, eating-sequence, reuses the shared tile, mini mount,
+All charts and fullscreen shell. Its cohort aggregate dots use the shipped
+comparison/observed colors with diamond/circle redundancy. Time in range (%) and
+glucose SD (mg/dL) have separate labeled rulers. Three served intervals remain
+visible; a labeled dot identifies the producer-selected period. Cohort counts
+come from that comparison. Nulls stay absent numeric points with an explicit
+unavailable label. Mini rank omits axis furniture and interaction.
+The component harness reads generator-owned public Python cases. The coordinator
+owns rendered direction review and the three-viewport evidence matrix.

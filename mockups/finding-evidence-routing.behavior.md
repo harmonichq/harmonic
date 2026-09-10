@@ -3818,6 +3818,7 @@ Dedicated manufactured input:
 `scripts/gen_eating_sequence_fixtures.py` through the real analyzer, Scenario,
 exposures, findings and preparation/case producers. The aggregate report remains
 `frontend/__fixtures__/eating-sequence-report.json`. One --check covers both.
+The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js.
 The replay and harness serve these Python transports directly, independent of
 the legacy fixture-only JS mirror. Thin and losing source states have no invented
 supported row. The capture clock and opaque preparation identities are fixed

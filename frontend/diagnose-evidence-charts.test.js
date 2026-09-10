@@ -1,4 +1,4 @@
-import { expandSequenceFixture } from '../harness/dev-server.js';
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

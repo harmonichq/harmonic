@@ -37,6 +37,37 @@ function basalSlot(raw) {
   return value >= 48 && value % 30 === 0 ? value / 30 : value;
 }
 
+async function waitForStoryNode(find) {
+  const deadline = performance.now() + 8000;
+  while (performance.now() < deadline) {
+    const node = find();
+    if (node) return node;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return null;
+}
+
+/** Enter sequence evidence through the shipped nested row, retaining its mini in place. */
+export async function showSequenceStory(root, story, state, preparation) {
+  const id = `finding:${story.lever}`;
+  if (!preparation.rendered_rows.some((row) => row.id === id)) {
+    return `Diagnose workstation · no supported ${story.label} finding`;
+  }
+  const selector = `#level .qitem.claimed .qrow[data-id="${id}"]`;
+  const row = await waitForStoryNode(() => root.querySelector(selector));
+  if (!row) throw new Error(`The served ${story.label} row did not mount.`);
+  if (state.size === 'mini') {
+    const mini = await waitForStoryNode(() => root.querySelector(`${selector} .mini canvas, ${selector} .mini svg`));
+    if (!mini) throw new Error(`The served ${story.label} mini did not mount.`);
+    return `Diagnose workstation · ${story.label} mini`;
+  }
+  row.click();
+  const tile = await waitForStoryNode(() => root.querySelector(
+    `#tile-focal .evidence-tile[data-chart-id="${id}"][data-state="ok"]`));
+  if (!tile) throw new Error(`The served ${story.label} chart did not mount.`);
+  return `Diagnose workstation · drilled ${id}`;
+}
+
 async function drawWorkstation(host, state, story) {
   const slot = story.id === 'basal' ? basalSlot(state.slot) : null;
   const [analyze, scenarios, evidence, exposures, preparation, outcomes] = await Promise.all([
@@ -118,11 +149,11 @@ async function drawWorkstation(host, state, story) {
       button.textContent.trim() === '24 h');
     if (!wholeDay) throw new Error('The shipped whole-day clock control is unavailable.');
     wholeDay.click();
+    if (story.lever) return showSequenceStory(root, story, state, preparation);
   }
   const findTile = () => [...root.querySelectorAll('.evidence-tile[data-chart-id]')]
     .find((candidate) => candidate.dataset.state === 'ok' && (
-      story.lever ? candidate.dataset.chartId === `finding:${story.lever}`
-        : state.chart ? candidate.dataset.chartId === state.chart
+      state.chart ? candidate.dataset.chartId === state.chart
         : story.id === 'basal' ? candidate.dataset.chartId.startsWith('basal:')
           : story.id === 'isf' ? candidate.dataset.chartId === 'isf'
             : story.id === 'carb-ratio' ? candidate.dataset.chartId.startsWith('ic:')
@@ -139,12 +170,6 @@ async function drawWorkstation(host, state, story) {
     };
     poll();
   });
-  if (!tile && story.lever) {
-    if (preparation.rendered_rows.some((row) => row.id === `finding:${story.lever}`)) {
-      throw new Error(`The served ${story.label} chart did not mount.`);
-    }
-    return `Diagnose workstation · no supported ${story.label} finding`;
-  }
   if (!tile) return `Diagnose workstation · ${story.label} unavailable`;
   if (state.size === 'mini') return `Diagnose workstation · ${story.label} mini`;
   tile.click();

@@ -318,5 +318,6 @@ glucose SD (mg/dL) have separate labeled rulers. Three served intervals remain
 visible; a labeled dot identifies the producer-selected period. Cohort counts
 come from that comparison. Nulls stay absent numeric points with an explicit
 unavailable label. Mini rank omits axis furniture and interaction.
+The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js.
 The component harness reads generator-owned public Python cases. The coordinator
 owns rendered direction review and the three-viewport evidence matrix.

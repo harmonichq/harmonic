@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import sys
 from collections import Counter
 from datetime import timedelta
@@ -117,8 +118,6 @@ def findings_payload():
                     )
                     prepared.projection_id = "fp_" + sha256(f"{key}:{window_key}".encode()).hexdigest()[:32]
                     wrapped = finding_case_file.wrap(prepared)
-                    # Consumers serve rendered_rows; the unprepared projection roster is unused.
-                    del wrapped["findings"]["rows"]
                     cases = {}
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
@@ -201,6 +200,8 @@ def main() -> int:
     stale = False
     for path, body in ((OUT, payload()), (FINDINGS_OUT, compact_findings_payload(findings_payload()))):
         rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
+        # A shared-value reference fits on one line; keep its surrounding data indented.
+        rendered = re.sub(r'\{\n\s*"\$ref": (\d+)\n\s*\}', r'{"$ref": \1}', rendered)
         if args.check:
             if (path.read_text() if path.exists() else "") != rendered:
                 print(f"stale fixture: {path} — rerun scripts/gen_eating_sequence_fixtures.py")

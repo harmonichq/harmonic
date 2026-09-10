@@ -1,4 +1,4 @@
-import { expandSequenceFixture } from '../harness/dev-server.js';
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 // Behaviour replay for the Diagnose workstation — the executable half of the
 // frozen behaviour ledger for the shipped Diagnose workstation.
 //

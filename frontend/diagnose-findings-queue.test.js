@@ -1,4 +1,4 @@
-import { expandSequenceFixture } from '../harness/dev-server.js';
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 /* The findings queue's copy and row grammar (lock terms 34–45), against the real
  * projection's own frozen output — never a hand-written row.
  */

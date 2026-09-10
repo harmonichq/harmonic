@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from '../frontend/eating-sequence-fixture.js';
 import { readFile, realpath } from 'node:fs/promises';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import { projectFindings, projectIcHistoryEvents, windowQuery } from '../mockups/findings-projection.mirror.mjs';
@@ -18,27 +19,6 @@ const MIME = {
 
 const clone = (value) => structuredClone(value);
 const json = async (path) => JSON.parse(await readFile(path, 'utf8'));
-
-/** Expand the generator's shared JSON values into independent served transports. */
-export function expandSequenceFixture(payload) {
-  function expand(value) {
-    if (Array.isArray(value)) return value.map(expand);
-    if (value && typeof value === 'object') {
-      if (Object.keys(value).length === 1 && Object.hasOwn(value, '$ref')) {
-        return expand(payload.shared[value.$ref]);
-      }
-      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, expand(child)]));
-    }
-    return value;
-  }
-  const states = expand(payload.states);
-  for (const state of Object.values(states)) {
-    for (const { preparation } of Object.values(state.windows)) {
-      preparation.findings.rows = structuredClone(preparation.rendered_rows);
-    }
-  }
-  return { ...payload, states };
-}
 
 function send(res, status, body, contentType = 'application/json') {
   res.statusCode = status;

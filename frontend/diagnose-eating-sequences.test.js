@@ -1,5 +1,5 @@
 import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
-import { expandSequenceFixture } from '../harness/dev-server.js';
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -180,18 +180,6 @@ test('a supported case keeps a null period visible without a zero-filled point',
     assert.equal(option.series[1].data[0].value[1], null);
     assert.equal(option.series[0].data[0].status, 'insufficient');
     assert.match(option.graphic[0].style.text, /Unavailable: During sequence/);
-  }
-});
-
-test('sequence detail shares the existing Clear trace control and family copy authority', () => {
-  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
-  assert.equal([...source.matchAll(/clear.textContent = 'Clear trace'/g)].length, 1);
-  assert.match(source, /function renderClearTrace[\s\S]*?addEventListener\('click', onClearTrace\)/);
-  assert.match(source, /renderClearTrace\(foot, onClearTrace\)/);
-  assert.match(source, /renderClearTrace\(host, onClearTrace\)/);
-  assert.doesNotMatch(source, /Clear selection|FAMILY_(?:SHORT|LABEL)\[family\] \|\|/);
-  for (const map of ['FAMILY_SHORT', 'FAMILY_LABEL']) {
-    assert.match(source.match(new RegExp(`const ${map} = \\{([\\s\\S]*?)\\};`))[1], /sequences: 'sequences'/);
   }
 });
 

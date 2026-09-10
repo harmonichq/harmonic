@@ -58,6 +58,20 @@
        "reason": "different_identity_spaces",
        "setting_subject": "setting:carb_ratio",
        "status": "not_comparable"
+      },
+      {
+       "count": null,
+       "habit_subject": "habit:high_carb_sequence",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
+      },
+      {
+       "count": null,
+       "habit_subject": "habit:repeat_eating",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
       }
      ],
      "k": 1,
@@ -510,6 +524,20 @@
        {
         "count": null,
         "habit_subject": "habit:late_bolus",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       },
+       {
+        "count": null,
+        "habit_subject": "habit:high_carb_sequence",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       },
+       {
+        "count": null,
+        "habit_subject": "habit:repeat_eating",
         "reason": "different_identity_spaces",
         "setting_subject": "setting:carb_ratio",
         "status": "not_comparable"

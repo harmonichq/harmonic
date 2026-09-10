@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 // Behaviour replay for the Diagnose workstation — the executable half of the
 // frozen behaviour ledger for the shipped Diagnose workstation.
 //
@@ -493,6 +494,10 @@ export function patternCaseResponse(capture, url, window) {
  * no-fetch localhost server. The fixture-backed browser suite opts into the
  * on-disk source explicitly. Every intercepted endpoint is named.
  */
+const sequenceStates = new WeakMap();
+const sequencePayload = expandSequenceFixture(JSON.parse(await readFile(
+  join(ROOT, 'mockups/eating-sequence-findings.synthetic/payload.json'), 'utf8')));
+
 export async function openApp(browser, {
   state: want = 'typical', viewport = { width: 1440, height: 900 }, findingsInputs = null,
   findingsProjectionInputs = null, exposuresInputs = null, analysisInputs = null,
@@ -502,7 +507,7 @@ export async function openApp(browser, {
   history = false, selectedFindingsResponses = [], historyResponses = [], stageProbe = false,
   caseScenario = null, evidenceScenario = null, resizeProbe = false,
   hasTouch = false, isMobile = false,
-  frontendRoot = null, fixtureBaseUrl = null,
+  frontendRoot = null, fixtureBaseUrl = null, sequenceState = null,
 } = {}) {
   const shell = frontendRoot
     ? createBuiltShell({ dist: join(frontendRoot, 'dist') })
@@ -665,6 +670,7 @@ export async function openApp(browser, {
     localStorage.setItem('tab', 'diagnose');
     if (observeStage) window.__diagnoseStageProbe = { calls: [] };
   }, stageProbe);
+  if (sequenceState) sequenceStates.set(page, sequenceState);
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -695,6 +701,35 @@ export async function openApp(browser, {
     if (appSource === 'fixture' && url.origin === targetUrl.origin) {
       const response = shell.serve(path);
       if (response) return route.fulfill(response);
+    }
+    const sequenceName = sequenceStates.get(page);
+    if (sequenceName) {
+      const sequence = sequencePayload.states[sequenceName];
+      const key = url.searchParams.has('start_min')
+        ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
+      const window = sequence.windows[key];
+      let body;
+      if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
+        if (!window) fail(`Missing generated sequence window: ${sequenceName}/${key}`);
+        body = path.endsWith('preparation') ? window.preparation
+          : { ...window.preparation.findings, rows: window.preparation.rendered_rows };
+      }
+      if (path === '/api/diagnose/finding-case-file') {
+        const retained = Object.values(sequence.windows).find((w) =>
+          w.preparation.projection_id === url.searchParams.get('projection_id'));
+        const finding = retained?.cases[url.searchParams.get('finding_id')];
+        body = finding ? independent(finding[url.searchParams.get('alignment')]) : null;
+        if (!body) fail('Requested sequence case absent from generated input');
+        const occ = url.searchParams.get('occ');
+        if (occ) body.selection = independent(finding.selections[occ]
+          || { state: 'unavailable', requested_id: occ, detail: null });
+        if (caseScenario?.case) {
+          const response = await caseScenario.case({ request: ++caseRequests, url, body, caseFiles: retained });
+          return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+            body: JSON.stringify(response.body) });
+        }
+      }
+      if (body) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
     }
     /* The findings queue is a SERVER round trip, so a story that is about what
        the pane shows WHILE it is in flight needs that flight to last long enough
@@ -5214,7 +5249,194 @@ export const S126 = async (page) => {
   await captureEvidence(page, 'S126-after-isf-chart-click');
 };
 
+async function sequenceState(page, name) {
+  ok(sequencePayload.states[name], `generated sequence state exists: ${name}`);
+  sequenceStates.set(page, name);
+  await page.reload();
+  await page.locator('#seg-window').waitFor();
+  await openWholeDay(page);
+  await page.locator('#level .qrow').first().waitFor();
+  await settle(page, 500);
+  return sequencePayload.states[name];
+}
+
+async function sequenceNesting(page, lever) {
+  for (const kind of ['covered', 'empty']) {
+    const input = await sequenceState(page, `${lever}_${kind}`);
+    const served = input.windows.global.preparation;
+    const rows = served.rendered_rows;
+    const cause = rows.find((row) => row.id === `finding:${lever}`);
+    const parent = rows.find((row) => row.id === cause.claimed_by);
+    ok(parent, 'the producer admits the parent and nests the supported cause');
+    ok(!parent.pattern.rate_levers.includes(`habit:${lever}`), 'habit-only cause is never a rate lever');
+    const node = page.locator(`#level .qrow[data-id="${cause.id}"]`);
+    is(await node.locator('.n').innerText(), '│', 'cause uses the inherited quiet member tick');
+    is((await node.locator('.member-count').innerText()).trim(),
+      `· ${cause.appearances[0].n} of ${cause.appearances[0].m} sequences`, 'cause keeps its sequence count');
+    const order = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id));
+    is(order.indexOf(cause.id), order.indexOf(parent.id) + 1, 'cause stays adjacent beneath its parent');
+    is(served.findings.counts.finding,
+      rows.filter((r) => r.register === 'finding' && !r.claimed_by).length,
+      'server Findings count excludes nested causes');
+    is((await state(page)).crumbMeta, `${served.findings.counts.finding} findings · 30 days`,
+      'the rendered Findings count excludes causes');
+    const meals = input.windows.global.cases[parent.id].event;
+    is(meals.summary.claimed, parent.pattern.k, 'parent case rate claim count is unchanged');
+    is(meals.summary.denominator, parent.pattern.n, 'parent uses its own meals denominator');
+    const associated = meals.occurrences.filter((r) => r.member_associations?.includes(`habit:${lever}`));
+    is(associated.length > 0, kind === 'covered', 'only actual covered meals receive associations');
+    await captureEvidence(page, `${lever}-${kind}-nested`);
+  }
+}
+
+// STORY:finding-evidence-routing:S151
+export const S151 = (page) => sequenceNesting(page, 'high_carb_sequence');
+
+// STORY:finding-evidence-routing:S152
+export const S152 = async (page) => {
+  await sequenceNesting(page, 'repeat_eating');
+  const input = await sequenceState(page, 'both_covered');
+  const expected = input.windows.global.preparation.rendered_rows.filter((r) =>
+    r.id === 'pattern:highs_after_meals' || r.claimed_by === 'pattern:highs_after_meals').map((r) => r.id);
+  is(expected.length, 3, 'both supported causes are served');
+  const actual = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id));
+  const at = actual.indexOf(expected[0]);
+  is(actual.slice(at, at + 3), expected, 'both causes stay adjacent in server order');
+};
+
+async function sequenceCharts(page, lever) {
+  const input = await sequenceState(page, `${lever}_empty`);
+  const id = `finding:${lever}`;
+  const data = input.windows.global.cases[id].event;
+  const mini = `#level .qrow[data-id="${id}"] .mini`;
+  const readSeries = async (selector) => (await (await page.waitForFunction((selector) => {
+    const host = document.querySelector(selector);
+    const chart = host && window.echarts.getInstanceByDom(host);
+    return chart?.getOption().series?.some((s) => s.id.startsWith('sequence:'))
+      ? chart.getOption().series : false;
+  }, selector)).jsonValue());
+  const miniSeries = await readSeries(mini);
+  is(miniSeries.length, 4, 'mounted mini draws two served cohorts on two unit rulers');
+  await openAllCharts(page);
+  const tile = `#tile-row .evidence-tile[data-chart-id="${id}"]`;
+  const cellSeries = await readSeries(`${tile} .tile-chart`);
+  const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
+  const periods = detector.comparisons.filter((r) => lever === 'repeat_eating'
+    ? r.carb_quintile === detector.finding.carb_quintile : r.scope === detector.finding.scope);
+  is(cellSeries[0].data.map((p) => p.value[1]), periods.map((p) => p.reference.tir_pct),
+    'All charts retains exact served reference values');
+  is(cellSeries[1].data.map((p) => p.value[1]), periods.map((p) =>
+    (lever === 'repeat_eating' ? p.repeat : p.high).tir_pct), 'All charts retains exact served candidate values');
+  const parent = page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]');
+  is(await parent.count(), 1, 'parent retains its independent chart');
+  const parentSeries = await parent.locator('.tile-chart').evaluate((host) =>
+    window.echarts.getInstanceByDom(host)?.getOption().series || []);
+  ok(parentSeries.length > 0 && !parentSeries.some((s) => s.id?.startsWith('sequence:')),
+    'parent still renders its Pattern case file');
+};
+
+// STORY:finding-evidence-routing:S153
+export const S153 = (page) => sequenceCharts(page, 'high_carb_sequence');
+// STORY:finding-evidence-routing:S154
+export const S154 = (page) => sequenceCharts(page, 'repeat_eating');
+
+async function sequenceDrill(page, lever) {
+  const input = await sequenceState(page, `${lever}_empty`);
+  const id = `finding:${lever}`;
+  const row = page.locator(`#level .qrow[data-id="${id}"]`);
+  await row.focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#level .sequence-comparison').waitFor();
+  is(await focalId(page), id, 'keyboard drill uses the canonical finding id');
+  const first = page.locator('#level .case-occurrence').first();
+  await first.click();
+  await page.locator('#level .sequence-detail').waitFor();
+  const detail = await page.locator('#level .sequence-detail').innerText();
+  is(await page.locator('#level .clear-trace').innerText(), 'Clear trace', 'sequence selection uses the shared clear label');
+  const windowBefore = (await state(page)).pressed;
+  const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
+  await control.click();
+  await settle(page, 250);
+  await page.keyboard.press('Escape');
+  await settle(page, 250);
+  is(await focalId(page), id, 'fullscreen return retains selected cause');
+  is(await page.locator('#level .sequence-detail').innerText(), detail, 'fullscreen return retains sequence selection');
+  is((await state(page)).pressed, windowBefore, 'fullscreen return retains clock window');
+  ok(await control.evaluate((node) => node === document.activeElement), 'fullscreen returns focus to its opener');
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await openAllCharts(page);
+  await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-body`).click();
+  await page.locator('#level .sequence-comparison').waitFor();
+  is(await focalId(page), id, 'All charts selection drills to the same canonical cause');
+  is(await page.locator('#level .sequence-comparison').innerText(),
+    input.windows.global.cases[id].event.projection.report[
+      lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'].finding.summary,
+    'drill uses its coherent served report');
+  await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+  await page.locator(`#level .qrow[data-id="${id}"]`).click();
+  await page.locator('#level .sequence-comparison').waitFor();
+  is(await focalId(page), id, 'pointer row activation uses the canonical cause');
+}
+
+// STORY:finding-evidence-routing:S155
+export const S155 = (page) => sequenceDrill(page, 'high_carb_sequence');
+// STORY:finding-evidence-routing:S156
+export const S156 = (page) => sequenceDrill(page, 'repeat_eating');
+
+// STORY:finding-evidence-routing:S157
+export const S157 = async (page) => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    const input = await sequenceState(page, `${lever}_empty`);
+    const source = input.windows.global.preparation.rendered_rows.find((r) => r.lever === lever);
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await settle(page, 500);
+    const rows = await servedRows(page, [0, 360]);
+    ok(!rows.some((r) => r.kind === 'pattern'), 'scoped query omits whole-feed Patterns');
+    const cause = rows.find((r) => r.id === source.id);
+    ok(cause && !cause.claimed_by, 'witnessed scoped cause remains without an orphan parent');
+    is(cause.priority, source.priority, 'source-window Priority is stable');
+    const node = page.locator(`#level .qrow[data-id="${source.id}"]`);
+    is(await node.count(), 1, 'witnessed scoped cause renders');
+    is(await page.locator('#level .qitem.claimed').count(), 0, 'scoped rail invents no nesting');
+  }
+};
+
+// STORY:finding-evidence-routing:S158
+export const S158 = async (page) => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    for (const cohort of ['candidate', 'reference']) {
+      await sequenceState(page, `${lever}_thin_${cohort}`);
+      is(await page.locator(`#level .qrow[data-id="finding:${lever}"]`).count(), 0,
+        'below-floor source has no supported substitute finding');
+    }
+    await sequenceState(page, `${lever}_null_period`);
+    await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
+    await page.locator('#level .sequence-comparison').waitFor();
+    const option = await page.locator('#tile-focal .tile-chart').evaluate((host) =>
+      window.echarts.getInstanceByDom(host).getOption());
+    ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
+      'unlike units have separate labeled rulers');
+    ok(option.xAxis[0].data.some((label) => label.startsWith('● ')), 'served active period is identified');
+    ok(option.legend[0].data.every((label) => label.includes('n =')), 'cohort labels retain served counts');
+    is(option.series[0].data[0].value[1], null, 'reference null stays null in the mounted chart');
+    is(option.series[1].data[0].value[1], null, 'candidate null stays null in the mounted chart');
+    const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
+    ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
+    const text = await page.locator('#level .sequence-comparison').innerText();
+    ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
+    await captureEvidence(page, `${lever}-period-units-labels`);
+  }
+};
+
 export const STORIES = [
+  ['S151', S151, 'typical', { sequenceState: 'high_carb_sequence_covered' }],
+  ['S152', S152, 'typical', { sequenceState: 'repeat_eating_covered' }],
+  ['S153', S153, 'typical', { sequenceState: 'high_carb_sequence_empty' }],
+  ['S154', S154, 'typical', { sequenceState: 'repeat_eating_empty' }],
+  ['S155', S155, 'typical', { sequenceState: 'high_carb_sequence_empty' }],
+  ['S156', S156, 'typical', { sequenceState: 'repeat_eating_empty' }],
+  ['S157', S157, 'typical', { sequenceState: 'high_carb_sequence_empty' }],
+  ['S158', S158, 'typical', { sequenceState: 'high_carb_sequence_thin_candidate' }],
   ['S01', S01, 'drawn'], ['S02', S02, 'typical'],
   ['S03', S03, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],
   ['S04', S04, 'drawn', { viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true }],

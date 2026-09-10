@@ -64,9 +64,9 @@ class WindowQuery:
             return [(0, DAY_MINUTES)]
         return _segments(self.start_min % DAY_MINUTES, self.end_min)
 
-    def contains(self, minute: int) -> bool:
+    def contains(self, minute: Optional[int]) -> bool:
         """Whether a clock minute belongs to this projection's window."""
-        return _contains(minute, self._window())
+        return minute is not None and _contains(minute, self._window())
 
     def overlaps(self, start_min: int, end_min: int) -> bool:
         """Whether a circular interval overlaps this window."""
@@ -84,7 +84,7 @@ class WindowQuery:
         }
 
 
-def outcome_minute(occurrence: dict, exposures_payload: dict) -> int:
+def outcome_minute(occurrence: dict, exposures_payload: dict) -> Optional[int]:
     """Return the clock minute where an occurrence's consequence landed."""
     anchors = _episode_anchors(exposures_payload.get("exposures") or {})
     return _outcome_minute(occurrence, anchors)
@@ -100,8 +100,12 @@ def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:
     return anchors
 
 
-def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> int:
+def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> Optional[int]:
+    if occurrence.get("outcome_minute") is not None:
+        return occurrence["outcome_minute"]
     kind = outcome_kind(occurrence.get("cause_lever"))
+    if kind == "sequence":
+        return None
     if kind is not None:
         landings = [minute for minute, anchor_kind
                     in anchors.get(occurrence.get("ep_id"), [])

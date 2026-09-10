@@ -5,31 +5,37 @@ and archive legs. Nothing in this file claims those legs have run. The builder
 index is [fidelity.md](fidelity.md). Keep all command output and captures in
 fresh scratch directories. Never point a command at a live wearer database.
 
-## Current acceptance gaps
+## Amendment 1 disposition and remaining acceptance
 
-* The frozen ledger declares **130** entries; the executable registry has
-  **129**. R18 has no function or registration. The `inventory` leg fails before
-  Chromium. Return R18 to the historical-removal owner with its existing sanction;
-  its input must actually contain a historical row. Do not delete the ledger row
-  or merely lower the expected count.
-* The built v1 `/` HTML still references Google Fonts. V2's HTML references only
-  local packaged assets. The strict two-shell runtime probe rejects the v1
-  reference. Return the packaging discrepancy to c1; c4 changes no shared frontend.
-* The catalog supplies a basal Trial and Pattern Focus but does not yet provide
-  all setting-family follow-up records required by fixture obligation 6. C3's
-  receipt also explicitly disclaims rendered missing-outcome proof. Additional
-  catalog recipes would require updating the closed `EXPECTED_CASE_NAMES` expectation
-  in `tests/test_qa_e2e_cases.py`, outside c4's allowed paths. The coordinator must
-  dispatch the missing manufactured-case coverage with that test path admitted.
-* The materialized public-tree link check rejects `frontend-v2/c3.replay.test.js`
-  importing the explicitly excluded `frontend/harmonic-v2-desktop-behavior.replay.mjs`.
-  Return that publication boundary to the coordinator/c3 owner; do not remove the
-  check or quietly widen c4 into `scripts/public_allowlist.txt`. The independent
-  contamination scan also flags that test’s synthetic `May 15` string at line 65;
-  the fixture/provenance correction belongs with the same c3 publication fix.
-* Clinical same-byte pairs, intermediate-state captures, named HV2-06/HV2-08
-  judgments and the Fable 5.1 / medium presentation pass are outstanding. Do not
-  infer them from passing Node tests or from historical prototype screenshots.
+The ticket branch was merged before the amendment work, carrying #342's twelve
+sequence recipes and the rail's 183 issued / 168 active / 15 retired inventory.
+The v2 ledger remains 130 issued entries (112 active and 18 permanent retirements).
+R18 is now registered and uses `c4-history`, whose actual API input includes a
+historical I:C row beside current basal evidence and retained Trial/Focus records.
+The registry inventory is complete; browser verdicts remain coordinator-owned.
+
+The v1 Google Fonts link is a carried shipped fact under ADR 397 for a follow-up
+issue; amendment 1 scopes no-CDN acceptance to v2 and the assets #389 packages.
+The runtime probe records those v1 links without requesting them, verifies both
+shells' local assets, and rejects external v2 references.
+
+The v2 replay and its tests now publish like the sibling shipped replays. Private
+prototype references are described without broken public links; optional mock
+execution still needs the private checkout. Exact-path provenance rules cover
+the replay's attributed sanction dates and c3's manufactured calendar label.
+No scan threshold or acknowledged dose/ratio baseline changed.
+
+Obligation 6 previously lacked I:C, Correction factor and whole-profile retained
+follow-up records, and a real missing-outcome rendering input. `c4-ic`, `c4-isf`,
+`c4-profile` and `c4-missing` now supply those through existing producers. S91
+retains c3's served-verdict negative proof and then opens all three setting cases
+in fresh contexts. S49 retains its observed-zero proof and then renders the real
+missing-outcome case. The basal and Pattern cases remain c3's; the Pattern's
+opportunity gate supersedes the historical elapsed-days wording in obligation 6.
+
+HV2-06/HV2-08 named judgments, clinical pairs, transient-state captures, the full
+browser and Docker runs, final budgets, Fable polish and archive close remain
+coordinator-owned. No rendered evidence or independent verdict is claimed here.
 
 ## Twelve scenario obligations
 
@@ -45,7 +51,7 @@ This table inventories reachable sources and outstanding evidence, not passes.
 | 3 Basal evidence | basal-lower, basal-insufficient-seven-night and recurring-low catalog cases; S31–S36/S99 | Dense lane, held/thin numbers and exact Day return renders |
 | 4 Other setting families | isf-strengthen/isf-held, ic-lower/ic-held; S13/S43/S44 | Both-size evidence and distinct delivery paths |
 | 5 Plan | basal-lower plus the replay's public Store pump capture; S38–S44/S89/S90 | Full run, two capacity schedules and transient failed writes |
-| 6 Readiness | c3-trial (basal), c3-focus (Pattern); S45–S53/S91–S94 | I:C, Correction factor and whole-profile retained follow-up case coverage; past-14-day accumulation/unclear/unavailable matrix |
+| 6 Readiness | c3-trial/c3-focus plus c4-ic/c4-isf/c4-profile in S91 and c4-missing in S49 | Both-size rendered proof of each unit, past-14-day accumulation, criterion-met/unclear, unavailable with served reason, and c3 S92/S94 inconclusive ending |
 | 7 Focus | c3-focus/c3-pin/c3-preempted; S56–S59/S93/S95 | Rendered zero-opportunity, absent measurement and observed-zero distinctions |
 | 8 History | c3-history/c3-preempted; S54/S54b/S96 | Complete saved/retained/legacy/sequential inspection |
 | 9 Replacement | basal-lower and ic-lower; S97/S98 | Live pending/error/sliced and current I:C refresh checkpoints |
@@ -91,7 +97,7 @@ No limit is raised. A breach exits nonzero and leaves the showcase unchanged.
 /opt/homebrew/bin/python3.14 mockups/sweep/harmonic-v2-desktop/acceptance.py budget --out "$evidence/budget"
 ```
 
-After the inventory gap is repaired, run both complete app replays serially.
+Run both complete app replays serially.
 Port 8765 must be free: the existing per-story case server owns it. The wrapper
 owns a separate synthetic copy with the disposable token on 8766 for S87.
 Both servers use `--no-fetch`. `ONLY` and case overrides are removed by the
@@ -126,6 +132,42 @@ TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1280x720 ONLY=S100 CASE_STORE
 TARGET=app BASE_URL=http://127.0.0.1:8765 VIEWPORT=1440x900 ONLY=S100 CASE_STORE_DIR="$evidence/s100-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
 ```
 
+## Amendment render commands: R18, units, missing outcomes and named eyes
+
+With port 8765 free and the isolated Playwright environment exported, these
+focused runs need no auth server because they do not select S87. Each S91 run
+also executes its three c4 setting variants; S49 also executes c4-missing.
+Their `S91-c4-*` and `S49-c4-missing` captures name the exact source case.
+
+```sh
+TARGET=app VIEWPORT=1280x720 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1280" CAPTURE_DIR="$evidence/amendment-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=R18,S49,S91 CASE_STORE_DIR="$evidence/amendment-cases-1440" CAPTURE_DIR="$evidence/amendment-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app VIEWPORT=1280x720 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1280" CAPTURE_DIR="$evidence/eyes-1280" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+TARGET=app VIEWPORT=1440x900 ONLY=S9,S18,S37,S45,S57,S59,S60 CASE_STORE_DIR="$evidence/eye-cases-1440" CAPTURE_DIR="$evidence/eyes-1440" node frontend/harmonic-v2-desktop-behavior.replay.mjs
+```
+
+For HV2-06 the coordinator names their judgment of dense Diagnose, paired Trial
+and Focus, and the full-width empty Changes state. For HV2-08 they inspect Inter,
+font weights, numerals, contrast and flat surfaces at both sizes using each
+capture's computed styles, font inventory and screenshot. Record the judge and
+verdict separately for each term and size. The commands do not assign verdicts.
+
+The clinical-pair driver opens both shipped compositions against one fresh
+manufactured store per setting family. Its shared response cache serves the
+identical clinical response body to both consumers, records SHA-256 and the raw
+response, and fails if the expected endpoint is not consumed by both. It uses
+v1's shared clinical renderer as the source reference; the historical prototype
+captures below remain a separate material/geometry reference under ADR 397.
+
+```sh
+VIEWPORT=1280x720 CAPTURE_DIR="$evidence/clinical-pairs-1280" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs
+VIEWPORT=1440x900 CAPTURE_DIR="$evidence/clinical-pairs-1440" node mockups/sweep/harmonic-v2-desktop/clinical-pairs.mjs
+```
+
+These commands are prepared, not run. Same-byte transport is only one part of
+clinical fidelity; the coordinator must inspect each Basal, Correction factor
+and I:C pair and record whether the plotted data, axes and reading are faithful.
+
 ## Historical comparison renders
 
 The existing prototype captures remain untouched. For fresh prototype endpoint
@@ -151,8 +193,7 @@ TARGET=mock MOCK_BASE_URL=http://127.0.0.1:8080 FONT_ASSETS="$evidence/fonts.jso
 
 These use different clinical source populations from the generated app cases.
 They permit inspection of unchanged material, geometry and the ADR 397 adaptation
-ranges in fidelity.md. They are **not** same-byte clinical pairs. That requirement
-remains outstanding. Do not relabel a historical Overview as a proved Diagnose.
+ranges in fidelity.md. They are **not** same-byte clinical pairs. Use the separate shared-renderer clinical-pair commands above for that proof. Do not relabel a historical Overview as a proved Diagnose.
 
 ## Complete inherited browser inventory
 
@@ -189,7 +230,7 @@ env -u ONLY BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-w
 
 Stop only that server before returning to case-store or packaged-runtime runs.
 The coordinator's already-reported evidence is c2 57/57 at each size, seven
-app-only c2 stories at each size, Event 14/14, desk 13/13, inherited rail 160/160,
+app-only c2 stories at each size, Event 14/14, desk 13/13, inherited rail 160/160 before #342 (the current registry has 168 active entries),
 c3 25/25 at each size and follow-up suite 52/52. These are attributed prior runs;
 they do not replace the final whole-contract runs above.
 
@@ -208,12 +249,19 @@ that obsolete wording.
 
 The second builds a local image, runs the exact Node-absence shell command, starts
 one disposable authenticated synthetic container with `--no-fetch`, requests both
-shells and every HTML-referenced built asset, rejects external asset references,
+shells and every local HTML-referenced built asset, rejects external v2 asset references,
 checks immutable asset/no-cache shell headers, requests eight forbidden routes,
 and verifies absent/wrong/right token responses. It logs and removes only its
 own container. The image remains local. CI supplies its already-built image via
 `--image harmonic:pr-test`; no second image build is needed there. Surface-owned
 authentication remains the separate S87 browser proof.
+
+To reuse an image already built by CI, use this instead of the build-and-probe
+command above. The wrapper executes the same Node-absence and runtime legs.
+
+```sh
+/opt/homebrew/bin/python3.14 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$evidence/package-existing-image"
+```
 
 ## Presentation pass and atomic close
 

@@ -12,12 +12,12 @@ const setting = 'S14,S15,S16,S17,S31,S32,S33,S34,S35,S37,S37b,S38,S39,S40,S41,S4
 export const STORY_CASES = Object.freeze({
   ...Object.fromEntries(setting.split(',').map(id => [id, 'basal-lower'])),
   S7b: 'basal-no-change', S9: 'basal-lower', S18: 'basal-no-change', S80b: 'basal-no-change', S97: 'basal-lower', S98: 'ic-lower', S99: 'basal-insufficient-seven-night',
-  S100: 'showcase',
+  S100: 'showcase', R18: 'c4-history',
 });
 export function storyCase(id, overrides = '') {
   const mapping = { ...STORY_CASES, ...C3_CASES };
   for (const pair of overrides.split(',').filter(Boolean)) {
-    const match = /^(S\d+[a-z]?)=([a-z][a-z0-9-]*)$/.exec(pair);
+    const match = /^([SR]\d+[a-z]?)=([a-z][a-z0-9-]*)$/.exec(pair);
     if (!match) throw new Error(`Invalid STORY_CASES entry: ${pair}`);
     mapping[match[1]] = match[2];
   }

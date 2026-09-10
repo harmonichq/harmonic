@@ -1,17 +1,17 @@
 // Behaviour replay for the Harmonic v2 desktop — the executable half of
-// mockups/harmonic-v2-desktop.behavior.md.
+// the private harmonic-v2-desktop behavior ledger.
 //
 // FROZEN. The ledger beside it carries the ★ FROZEN header, and these stories
 // are the contract: 111 passed at 1280x720 and at 1440x900, 18 app-opener-only
 // stories deferred, and one feature-specific negative proof per mock-applicable
-// story. Raw output is retained under mockups/sweep/harmonic-v2-desktop/runs/.
+// story. Raw output is retained under the private desktop sweep run archive.
 //
 // Those runs were produced by this file at sha256
 // d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116. This header
 // and the CLI banner below were rewritten afterwards, as metadata only; no
 // story, selector, assertion, opener or registry entry changed.
 //
-// WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
+// WHY THIS EXISTS: the private harmonic-v2-desktop lock manifest says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
 // already in hand is the way back up, that a field owns Escape so a stray press
 // cannot drop a draft, that the reading pane keeps its scroll only while its
@@ -59,6 +59,7 @@ import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
 import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
+import { C4_STORIES, historicalAbsence } from '../frontend-v2/c4.replay.mjs';
 import { C3_STORIES } from '../frontend-v2/c3.replay.mjs';
 import { C2_STORIES } from '../frontend-v2/c2.replay.mjs';
 import { captureStory } from '../frontend-v2/capture.mjs';
@@ -275,7 +276,7 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
     return route.abort();
   });
 
-  const target = `${MOCK_BASE_URL}/mockups/harmonic-v2-glucose.html?source=${source}&state=${state}`;
+  const target = `${MOCK_BASE_URL}/${join('mockups', 'harmonic-v2-glucose.html')}?source=${source}&state=${state}`;
   const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
   ok(response && response.ok(), `the mock did not load from ${target} — is a static server running at the repository ROOT?`);
 
@@ -2709,6 +2710,8 @@ export const R17 = async (page) => {
     'R17 premise failed: neither Revert-to-Plan nor the durable conclusion is present — re-settle, not a fail');
 };
 
+export const R18 = appOnly('HV2-31', 'historical input absent while current evidence and retained records remain', historicalAbsence);
+
 /* -------------------------------------------------------------- the registry */
 
 const J = (state = 'investigate') => ({ source: 'journey', state });
@@ -2756,7 +2759,7 @@ export const REGISTRY = [
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],
   ['R9', R9, M()], ['R10', R10, J()], ['R11', R11, M()], ['R12', R12, M()],
   ['R13', R13, M()], ['R14', R14, J()], ['R15', R15, J()], ['R16', R16, J()],
-  ['R17', R17, M('ready')],
+  ['R17', R17, M('ready')], ['R18', R18, J()],
 ];
 
 /* ------------------------------------------------------------------- runner */
@@ -2795,7 +2798,7 @@ async function main() {
   const failures = [];
 
   process.stdout.write(`# harmonic-v2-desktop behaviour replay — TARGET=${TARGET} viewport=${viewport} fonts=${fonts.mode}\n`);
-  process.stdout.write('# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md\n');
+  process.stdout.write('# FROZEN ledger: the private harmonic-v2-desktop behavior ledger\n');
 
   for (const [id, fn, state] of selected) {
     if (fn.deferred && TARGET === 'mock') {
@@ -2806,17 +2809,28 @@ async function main() {
     let opened = null;
     try {
       const caseName = storyCase(id, process.env.STORY_CASES || '');
+      let shownCaseName = caseName;
       if (caseServer) {
         await caseServer.start(id, caseName);
         process.stdout.write(`# ${id} synthetic case=${caseName} (fresh copy)\n`);
       }
       opened = await open({ ...state, viewport, storyId: id, caseName });
-      const body = TARGET === 'app' ? (C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
-      await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump });
+      const body = TARGET === 'app' ? (C4_STORIES[id] || C3_STORIES[id] || C2_STORIES[id] || fn) : fn;
+      await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump,
+        withCase: async (name, prove) => {
+          ok(caseServer, `${id} requires CASE_STORE_DIR for its manufactured acceptance cases`);
+          await opened.context.close();
+          await caseServer.start(id, name);
+          opened = await open({ ...state, viewport, storyId: id, caseName: name });
+          await prove(opened.page);
+          shownCaseName = name;
+          process.stdout.write(`# ${id} proved synthetic variant=${name}\n`);
+        },
+      });
       if (process.env.CAPTURE_DIR && (!process.env.CAPTURE_ONLY
           || process.env.CAPTURE_ONLY.split(',').includes(id))) {
         await captureStory(opened.page, { directory: process.env.CAPTURE_DIR, id,
-          target: TARGET, viewport, caseName: TARGET === 'app' ? caseName : state.source });
+          target: TARGET, viewport, caseName: TARGET === 'app' ? shownCaseName : state.source });
       }
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);

@@ -21,6 +21,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -53,7 +54,7 @@ class Run:
         self.records = []
         inputs = ["mockups/harmonic-v2-desktop.lock.md", "mockups/harmonic-v2-desktop.behavior.md",
                   "frontend/harmonic-v2-desktop-behavior.replay.mjs", "frontend-v2/c2.replay.mjs",
-                  "frontend-v2/c3.replay.mjs", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
+                  "frontend-v2/c3.replay.mjs", "frontend-v2/c4.replay.mjs", "frontend-v2/capture.mjs", "scripts/qa_e2e_cases.py",
                   "scripts/gen_qa_e2e_db.py", "mockups/qa-e2e.synthetic/harmonic.sqlite"]
         (self.out / "inputs.json").write_text(json.dumps({
             "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
@@ -236,7 +237,13 @@ def probe(base, token):
         parser = ShellAssets()
         parser.feed(body.decode())
         require(parser.paths, f"{page}: no packaged assets")
+        packaged = [asset for asset in parser.paths if asset.startswith(prefix)]
+        require(packaged, f"{page}: no local packaged assets")
         for asset in parser.paths:
+            url = urllib.parse.urlsplit(asset)
+            if page == "/" and url.scheme == "https" and url.netloc in {"fonts.googleapis.com", "fonts.gstatic.com"}:
+                rows.append({"path": asset, "scope": "carried-v1-font-reference", "requested": False})
+                continue
             require(asset.startswith(prefix), f"{page} references an external or misplaced asset: {asset}")
             code, content, cache = request(base, asset)
             require(code == 200 and content, f"{asset}: absent packaged bytes ({code})")

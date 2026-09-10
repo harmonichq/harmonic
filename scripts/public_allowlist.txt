@@ -143,15 +143,5 @@ scripts/public_scan_config.txt
 ! frontend/queue-dock-735.shot.mjs
 ! frontend/verify-660-story-fidelity.shot.mjs
 
-# --- The v2 desktop's behaviour replay, denied WHILE it still drives the
-# private prototype (#389). frontend/** would otherwise clear it, and it names
-# four paths this tree excludes: the lock manifest, the frozen ledger, the
-# locked prototype it opens for TARGET=mock, and the retained sweep runs. That
-# made the materialised tree carry a file with four dead references
-# (tests/test_check_public_links.py), which is what this rule fixes.
-#
-# THIS RULE IS TRANSITIONAL, and the condition for removing it is exact: when
-# #389's closing chunk archives the prototype and retires the mock opener, this
-# file stops naming anything under mockups/ and should ship, so the published
-# repository can run the v2 behaviour gate against its own built app.
-! frontend/harmonic-v2-desktop-behavior.replay.mjs
+# The shipped v2 behavior replay and its tests publish like the workstation
+# and event-comparison replays; optional private prototype mode stays private.

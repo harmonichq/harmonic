@@ -76,3 +76,14 @@ populations are not asserted identical. Compare unchanged chrome/material only
 across these sources; do not call a different population a matched clinical
 pair. The coordinator must supply matching input evidence or return this pairing
 gap for an explicit resolution before final fidelity acceptance.
+
+## Coordinator amendment 1
+
+The merge brings #342 into the input. All 34 rows remain builder-owned `ported`;
+none becomes a fidelity pass from Node, Python or source inspection. The exact
+R18, setting-unit, missing-outcome, HV2-06/HV2-08 and clinical-pair render commands
+are in [ACCEPTANCE.md](ACCEPTANCE.md#amendment-render-commands-r18-units-missing-outcomes-and-named-eyes).
+The clinical pairs use identical response bodies in the shipped v1 renderer and
+v2 composition; they do not replace the historical prototype's material and
+geometry reference or erase ADR 397's adaptation ranges. Named eye judgments and
+all rendered verdicts remain unassigned pending coordinator execution.

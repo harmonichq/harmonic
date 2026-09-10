@@ -30,13 +30,20 @@ class RuntimeProofTest(unittest.TestCase):
         self.assertEqual(len(rows), 15)
         self.assertEqual([r["status"] for r in rows if r["path"] == "/api/status"], [401, 401, 200])
 
+    def test_carried_v1_google_fonts_are_recorded_without_network_requests(self):
+        code, body, headers = self.replies["/"]
+        self.replies["/"] = code, body + b'<link href="https://fonts.googleapis.com/css2?family=Inter">', headers
+        rows = self.probe()
+        self.assertEqual(rows[1]["scope"], "carried-v1-font-reference")
+        self.assertFalse(rows[1]["requested"])
+
     def test_missing_v2_asset_cannot_pass_on_v1_success(self):
         del self.replies["/v2/assets/app.js"]
         with self.assertRaisesRegex(RuntimeError, "absent packaged bytes"):
             self.probe()
 
     def test_cdn_reference_cannot_be_called_packaged(self):
-        self.replies["/v2/"] = (200, b'<script src="https://cdn.invalid/app.js"></script>', {"cache-control": "no-cache"})
+        self.replies["/v2/"] = (200, b'<script src="/v2/assets/app.js"></script><script src="https://cdn.invalid/app.js"></script>', {"cache-control": "no-cache"})
         with self.assertRaisesRegex(RuntimeError, "external or misplaced asset"):
             self.probe()
 

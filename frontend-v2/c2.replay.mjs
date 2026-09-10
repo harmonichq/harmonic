@@ -242,6 +242,10 @@ async function icReplacement(page) {
       series: chart?.getOption().series?.map(({ id, data }) => ({ id, data })) || null };
   }, id);
   check(coherent.series && coherent.values.length, 'the current I:C case and canvas are both populated');
+  const staging = () => page.locator('#level .stagebtn').evaluateAll(buttons => buttons.map(button => ({
+    text: button.textContent, staged: button.dataset.staged,
+  })));
+  const originalStaging = await staging();
   // Shipped S106 + withGeneratedCarbRatioRecovery: keep/drill the same tile,
   // then adopt an Afternoon preparation with a changed generation. A preset
   // alone reuses I:C evidence when its descriptor coordinates are unchanged.
@@ -266,7 +270,8 @@ async function icReplacement(page) {
     const response = await boundedWait(request.fetch({ timeout: 30000 }), 'S98 served Afternoon preparation');
     check(response.ok(), `S98 Afternoon preparation: ${response.status()}`);
     const preparation = await boundedWait(response.json(), 'S98 Afternoon preparation body');
-    check(preparation.rendered_rows.some(row => row.id === id), 'the served scope retains the same I:C identity');
+    const servedRow = preparation.rendered_rows.find(row => row.id === id);
+    check(servedRow, 'the served scope retains the same I:C identity');
     check(preparation.findings.window?.scoped && typeof preparation.findings.analysis_generation === 'string',
       'S106 generation perturbation requires a served scoped generation');
     // The S106 fixture adapter changes only this token. Keep all actual rows,
@@ -279,7 +284,6 @@ async function icReplacement(page) {
     await page.getByText('Evidence changed. Refresh findings.', { exact: true }).first().waitFor();
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1, 'stale state keeps the exact current I:C identity');
     await replacement.release(failure);
-    await page.locator('#level .stagebtn').waitFor({ state: 'hidden' });
     check((await page.locator('#level').innerText()).length > 0, 'failed replacement names its state');
     // ADR 397 / coordinator amendment 11: the shipped stale state retains the
     // subject but replaces its canvas, preventing evidence-generation mixing.
@@ -288,7 +292,11 @@ async function icReplacement(page) {
     assert.equal(await page.locator(tile).count(), 1, 'failed replacement retains the exact I:C tile identity');
     assert.equal(await page.locator('#crumb-trail .here').innerText(), subject,
       'failed replacement retains the selected subject rather than choosing another I:C block');
-    assert.equal(await page.locator('#level .stagebtn').count(), 0, 'failed replacement withholds staging');
+    // Amendment 12: _ic_rows publishes asserts_move as the row's register.
+    // A tile failure does not change that verdict; S89 proves stale-write 409.
+    assert.equal(await page.locator('#level .stagebtn').count(), servedRow.register === 'assert' ? 1 : 0,
+      'staging follows the backend verdict on the served I:C row');
+    assert.deepEqual(await staging(), originalStaging, 'failed tile replacement adds or substitutes no staging control');
     assert.equal(await page.locator(tile).getAttribute('data-state'), 'stale-generation');
     check((await page.locator(`${tile} .tile-state`).innerText()).includes('Evidence changed. Refresh findings.'),
       'the retained tile presents the served stale wording');

@@ -21,11 +21,12 @@ test('c2 app selection contains concrete story bodies and excludes the c3 Trial 
 });
 
 function icReplacementDriver({ requestRecovery = true, inspectionError = null,
-  staleSubject = '00:00 block', stageCount = 0, canvasCount = 0,
+  staleSubject = '00:00 block', register = 'assert', stageCount = register === 'assert' ? 1 : 0,
+  postStageCount = stageCount, postStageText = 'Stage change staged for Plan', canvasCount = 0,
   staleMessage = 'Evidence changed. Refresh findings.' } = {}) {
   const routes = new Map(); const responses = []; const order = [];
   const source = { findings: { analysis_generation: 'synthetic:before', window: { scoped: true } },
-    rendered_rows: [{ id: 'ic:0', parameter: 'carb_ratio', register: 'assert', span: { start_min: 0 } }] };
+    rendered_rows: [{ id: 'ic:0', parameter: 'carb_ratio', register, span: { start_min: 0 } }] };
   const node = {
     first() { return this; }, filter() { return this; },
     waitFor: async () => {}, click: async () => {},
@@ -33,7 +34,10 @@ function icReplacementDriver({ requestRecovery = true, inspectionError = null,
   };
   const page = {
     locator: selector => ({ ...node,
-      count: async () => selector === '#level .stagebtn' ? stageCount : selector.endsWith(' canvas') ? canvasCount : 1,
+      count: async () => selector === '#level .stagebtn' ? (responses.some(r => r.status === 409) ? postStageCount : stageCount)
+        : selector.endsWith(' canvas') ? canvasCount : 1,
+      evaluateAll: async () => Array.from({ length: responses.some(r => r.status === 409) ? postStageCount : stageCount },
+        () => ({ text: responses.some(r => r.status === 409) ? postStageText : 'Stage change staged for Plan', staged: 'false' })),
       innerText: async () => selector.endsWith(' .tile-state') ? staleMessage
         : selector === '#crumb-trail .here' ? (responses.some(r => r.status === 409) ? staleSubject : '00:00 block')
           : 'Current I:C evidence',
@@ -98,17 +102,27 @@ test('S98 copies the S106 pinned Afternoon trigger with a scoped generation befo
   assert.equal(routes.size, 0, 'the story removes both interceptions');
 });
 
-test('S98 rejects a substituted subject, staging, unnamed stale state or retained canvas', async () => {
+test('S98 rejects a substituted subject, an unserved staging control, unnamed stale state or retained canvas', async () => {
   const { C2_STORIES } = await import('./c2.replay.mjs');
   for (const [state, expected] of [
     [{ staleSubject: '12:00 block' }, /retains the selected subject/],
-    [{ stageCount: 1 }, /withholds staging/],
+    [{ postStageCount: 2 }, /served I:C row/],
+    [{ register: 'held', postStageCount: 1 }, /served I:C row/],
+    [{ postStageText: 'Stage a different change' }, /adds or substitutes no staging control/],
     [{ staleMessage: '' }, /served stale wording/],
     [{ canvasCount: 1 }, /named stale state replaces the old canvas/],
   ]) {
     const { page, routes } = icReplacementDriver(state);
     await assert.rejects(C2_STORIES.S98(page), expected);
     assert.equal(routes.size, 0, 'negative assertion still cleans up the story routes');
+  }
+});
+
+test('S98 retains only the staging control permitted by the served I:C register', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  for (const register of ['assert', 'held']) {
+    const { page } = icReplacementDriver({ register });
+    await C2_STORIES.S98(page);
   }
 });
 

@@ -1830,6 +1830,9 @@ S98 · The selected current-setting I:C coherent case/canvas pair survives a fai
 Amended S98 · 2026-09-10 · ADR 397 / coordinator amendment 11: After a failed replacement, the selected current-setting I:C case identity is retained: the same tile id and subject remain, and no other block is chosen. Staging is withheld. The tile shows the shipped named stale/failed state, including the served wording, in place of its canvas; the pre-failure series is not retained. A dated same-subject stale result remains a separate state.
 The preceding wording and results are the attributed pre-amendment record.
 
+Amended S98 · 2026-09-10 · ADR 397 / coordinator amendment 12: The selected current-setting I:C tile id and subject remain, with no other block chosen, and the tile's named stale/failed state replaces its canvas. Staging follows the backend's verdict on the served row and is not withheld by a failed tile replacement: any staging control is the served row's existing control, with no new control introduced. The backend's 409 on a stale write protects against acting on a stale generation (S89). A dated same-subject stale result remains a separate state. This supersedes amendment 11's staging-withheld clause; its other obligations remain.
+The preceding wording and results are the attributed pre-amendment record.
+
 ```
 S99 · Every limiting state exposes only backend-permitted actions, and an
       unavailable disposition carries its served reason.

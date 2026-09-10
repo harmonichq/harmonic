@@ -103,11 +103,25 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!view.focusAfterRender) view.focusAfterRender = '#crumb-trail';
   }
 
+  // S129/S131: a catalog pick drills its chart. The owner no-ops a pick
+  // already in the inspector; retaining/alignment controls do not pick it.
+  function selectTile(tile) {
+    if (tile.dataset.chartId === activeSubject) return;
+    activeSubject = tile.dataset.chartId;
+    caseContext.select(activeSubject);
+    showFocusAction();
+  }
+
   function ensureView(host) {
     if (root) return;
     root = host.ownerDocument.createElement('div');
     root.className = 'v2-diagnose main-content';
     root.dataset.v2Diagnose = '';
+    root.addEventListener('keydown', event => {
+      const tile = event.target.closest?.('.evidence-tile');
+      if (event.target === tile && tile.dataset.seat === 'grid'
+        && ['Enter', ' '].includes(event.key)) selectTile(tile);
+    }, true);
     // The v2 lane contract adds traversal through the owner's existing buttons.
     root.addEventListener('keydown', event => {
       if (event.metaKey || event.ctrlKey || event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -126,9 +140,12 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.addEventListener('click', event => {
       const row = event.target.closest?.('.qrow[data-id]');
       const member = event.target.closest?.('.case-occurrence');
+      const tile = event.target.closest?.('.evidence-tile');
+      const control = event.target.closest?.('button');
       readingScroll = member ? { event, top: root.querySelector('#level')?.scrollTop || 0 } : null;
       if (row) { activeSubject = row.dataset.id; caseContext.select(activeSubject); }
       else if (member && activeSubject) caseContext.select(activeSubject, member.dataset.occurrenceId);
+      else if (tile && (!control || control.classList.contains('tile-fullscreen'))) selectTile(tile);
       else if (event.target.closest?.('#crumb-trail button, #lane > button, #seg-window button, #seg-align button, #tab-strip button')) {
         activeSubject = null; caseContext.select(null);
       }

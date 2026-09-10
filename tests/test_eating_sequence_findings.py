@@ -352,3 +352,21 @@ class ReviewRegressionTest(unittest.TestCase):
         self.assertEqual(report.episodes, {})
         self.assertEqual(report.patterns, [])
         self.assertEqual(report.low_confidence, [])
+
+    def test_exposures_preserve_base_attribution_on_crossing_reach(self):
+        from unittest.mock import patch
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_outcomes_trend import _FakeStore, _snapshot_with_ic
+        b, c, config = _crossing_reach_stream()
+        store = _FakeStore(bolus=b, cgm=c, snaps=[_snapshot_with_ic(40)])
+        # Use the same shortened context as the tally and Scenario pins above;
+        # settings and all attribution still come from the real producers.
+        with patch("ciq_autotune.explore_exposures.ScenarioConfig", return_value=config):
+            payload = build_exposures(store)
+        meals = payload["exposures"]["meals"]
+        self.assertEqual((meals["n"], meals["attributed"], meals["uncaused"]), (1, 1, 0))
+        self.assertEqual(meals["levers"], ["carb_undercount"])
+        occurrence = meals["occurrences"][0]
+        self.assertEqual(occurrence["cause_lever"], "carb_undercount")
+        self.assertEqual(occurrence["attributed_levers"], ["carb_undercount"])
+        self.assertEqual(occurrence["state"], "fired")

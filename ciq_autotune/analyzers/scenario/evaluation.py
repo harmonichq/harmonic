@@ -208,9 +208,12 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
              bound_classifier_context=True):
     """Evaluate source-window events once, preserving the caller's context contract.
 
-    Scenario and its evidence bound classifier context at the next group before
-    padding. Legacy tally/recurrence callers inspect the raw group's padded end.
-    Both use this same walk; neither reclassifies the returned episodes.
+    ``assemble`` bounds classifier context at the next group before padding
+    (True). ``tally_attributions`` and ``build_exposures`` inspect the raw group's
+    padded end (False), preserving each caller's base reach. The legacy
+    attributed-occurrence/recurrence helpers also use False. Standalone model-view
+    uses the bounded default; exposure model-view consumes its supplied evaluation.
+    Every caller uses this same walk without reclassifying the returned episodes.
     """
     times = [e.t for e in (*bolus, *cgm, *basal)]
     end = window_end or max(times, default=datetime.min)

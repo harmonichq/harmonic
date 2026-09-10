@@ -105,7 +105,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
                          carb_entries=_slice(eligible_carb_entries(store.carb_entries(), now), start, now),
-                         window_start=start, window_end=now)
+                         window_start=start, window_end=now, bound_classifier_context=False)
     # A classifier's padded context can reach an opportunity in another episode.
     # Cross-family attribution is therefore opportunistic: stamp a target only when
     # this feed also emitted that opportunity, and otherwise preserve the feed.

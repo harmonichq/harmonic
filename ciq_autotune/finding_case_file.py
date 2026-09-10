@@ -204,7 +204,7 @@ class PreparedCases:
         claims_by_identity = {}
         for lever in rate_levers:
             for identity in _lever_identities(
-                self.exposures or {}, self.scenarios or {}, lever,
+                self.exposures or {}, family.value, lever,
             ):
                 claims_by_identity.setdefault(identity, lever)
         claimed_identities = set(claims_by_identity)

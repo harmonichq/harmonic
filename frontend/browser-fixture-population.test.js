@@ -338,37 +338,25 @@ test('buildCapture rejects a source row outside the inclusive window by name', (
     /meals source row 1 date 1999-12-31 outside inclusive window/);
 });
 
-test('buildCapture transcribes cross-family Pattern identities onto meals and lows', () => {
-  const exposures = structuredClone(payload.exposures);
-  for (const source of Object.values(exposures.exposures)) {
-    for (const row of source.occurrences) {
-      row.attributed = false;
-      row.cause_lever = null;
-    }
+test('buildCapture transcribes the target-family attribution feed', () => {
+  const patterns = findingsFixture.browser_outcome_patterns;
+  const generated = buildCapture(payload.exposures, patterns);
+  for (const pattern of patterns) {
+    const family = generated.outcome_patterns.find((row) => row.key === pattern.key)?.rate_family
+      || ({ highs_after_meals: 'meals', lows_after_meals: 'meals',
+        highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows' })[pattern.key];
+    if (!family) continue;
+    const source = payload.exposures.exposures[family].occurrences;
+    const population = generated.pattern_populations[family];
+    const expected = new Set(source.flatMap((row, index) => (
+      pattern.rate_levers.some((subject) => {
+        const lever = subject.replace('habit:', '');
+        return (row.attributed_levers || []).includes(lever)
+          || (row.attributed && row.cause_lever === lever);
+      }) ? [population[index].id] : []
+    )));
+    assert.deepEqual(
+      new Set(Object.keys(generated.pattern_attribution[pattern.key])), expected,
+    );
   }
-  const meal = exposures.exposures.meals.occurrences[0];
-  const low = exposures.exposures.lows.occurrences[1];
-  const short = exposures.exposures.highs.occurrences[0];
-  const stacked = exposures.exposures.correction_clusters.occurrences[0];
-  Object.assign(short, { attributed: true, cause_lever: 'meal_bolus_short' });
-  Object.assign(stacked, { attributed: true, cause_lever: 'correction_stacking' });
-  const generated = buildCapture(exposures, [{
-    key: 'highs_after_meals', rate_levers: ['habit:meal_bolus_short'],
-  }, {
-    key: 'lows_after_correcting_highs', rate_levers: ['habit:correction_stacking'],
-  }], { episodes: {
-    [short.ep_id]: { steps: [{ citation: { facts: { meal_at: meal.t } } }] },
-    [stacked.ep_id]: { steps: [{ citation: { facts: { nadir_at: low.t } } }] },
-  } });
-  const mealId = generated.pattern_populations.meals.find(
-    (row) => row.anchor_t === meal.t,
-  ).id;
-  const lowId = generated.pattern_populations.lows.find(
-    (row) => row.anchor_t === low.t,
-  ).id;
-
-  assert.equal(generated.pattern_attribution.highs_after_meals[mealId],
-    'habit:meal_bolus_short');
-  assert.equal(generated.pattern_attribution.lows_after_correcting_highs[lowId],
-    'habit:correction_stacking');
 });

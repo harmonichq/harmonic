@@ -13,6 +13,7 @@ import pathlib
 import random
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -512,6 +513,179 @@ class MealBolusShortPopulationProjectionTest(unittest.TestCase):
         case = prepared.case("finding:meal_bolus_short", "event", None)
         self.assertIsNotNone(case)
 
+    def test_public_producers_dedup_meal_bolus_short_against_carb_undercount(self):
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_meal_bolus_short_attribution import (
+            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(
+                    store,
+                    LATE_SECOND_MEAL_BOLUS + next_day(LATE_SECOND_MEAL_BOLUS),
+                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM),
+                )
+                with (
+                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
+                ):
+                    exposures = build_exposures(store)
+                    scenarios = build_scenarios(store).to_dict()
+
+        outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
+        pattern = next(item for item in outcome_patterns
+                       if item["key"] == "highs_after_meals")
+        meals = exposures["exposures"]["meals"]["occurrences"]
+        shared = [item for item in meals if {
+            "carb_undercount", "meal_bolus_short",
+        }.issubset(item["attributed_levers"])]
+        self.assertEqual(len(shared), 2)
+        self.assertEqual((pattern["k"], pattern["n"]), (4, 4))
+        self.assertNotIn("habit:meal_bolus_short",
+                         {member["subject"] for member in pattern["members"]})
+        self.assertNotEqual(pattern["action"], "habit:meal_bolus_short")
+        self.assertIsNone(next(item for item in scenarios["patterns"]
+                               if item["lever"] == "meal_bolus_short")
+                          ["guidance"]["action_id"])
+
+    def test_public_meal_bolus_short_row_is_claimed_by_its_pattern(self):
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_meal_bolus_short_attribution import (
+            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
+        )
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp
+
+        short_bolus = [
+            replace(LATE_SECOND_MEAL_BOLUS[0], carbs=100, carb_ratio=5),
+            LATE_SECOND_MEAL_BOLUS[1],
+            replace(LATE_SECOND_MEAL_BOLUS[2], carbs=100, carb_ratio=5),
+        ]
+        other_cgm = []
+        other_bolus = []
+        for day in (14, 15):
+            other_cgm.extend(
+                cgm_flat(day, 5, 40, 120, 30)
+                + cgm_ramp(day, 6, 10, 120, 2, 60)
+                + cgm_ramp(day, 7, 10, 360, -2, 60)
+                + cgm_flat(day, 20, 30, 120, 30)
+                + cgm_ramp(day, 21, 0, 120, 2, 60)
+                + cgm_ramp(day, 22, 0, 360, -2, 60)
+            )
+            other_bolus.extend([
+                BolusEvent(datetime(2026, 6, day, 6, 40), completion="Completed",
+                           insulin=20, carbs=100, carb_ratio=5),
+                BolusEvent(datetime(2026, 6, day, 21), completion="Completed",
+                           insulin=3, carbs=30, carb_ratio=10),
+            ])
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(
+                    store,
+                    short_bolus + next_day(short_bolus) + other_bolus,
+                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM) + other_cgm,
+                )
+                with (
+                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.finding_case_file._effective_isf", return_value=45.0),
+                ):
+                    exposures = build_exposures(store)
+                    scenarios = build_scenarios(store).to_dict()
+                    case = finding_case_file.prepare(
+                        store, query=WindowQuery.whole_day(), version=0,
+                        analysis={"window_days": 30}, exposures=exposures,
+                        scenarios=scenarios,
+                    ).case("pattern:highs_after_meals", "event", None)
+                outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
+                projection = FindingsProjection(
+                    _analysis={"window_days": 30}, _exposures=exposures,
+                    _scenarios=scenarios, _outcome_patterns=outcome_patterns,
+                ).project(WindowQuery.whole_day())
+
+        pattern = next(item for item in outcome_patterns
+                       if item["key"] == "highs_after_meals")
+        row = next(item for item in projection["rows"]
+                   if item.get("lever") == Lever.MEAL_BOLUS_SHORT.value)
+
+        self.assertEqual((pattern["k"], pattern["n"]), (6, 8))
+        self.assertEqual(row["claimed_by"], "pattern:highs_after_meals")
+        self.assertEqual(
+            sum("meal_bolus_short" in item["attributed_levers"]
+                for item in exposures["exposures"]["meals"]["occurrences"]),
+            2,
+        )
+        self.assertEqual(
+            [item["member"] for item in case["occurrences"]].count(
+                "habit:meal_bolus_short"
+            ),
+            2,
+        )
+        self.assertEqual(projection["counts"]["finding"], sum(
+            item["register"] == "finding" and not item.get("claimed_by")
+            for item in projection["rows"]
+        ))
+
+    def test_public_correction_stacking_producer_claims_the_lows_it_reaches(self):
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        case = next(item for item in QA_CASES
+                    if item.name == "behavioral-correction-stacking")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+                execution = execute_case(store, case)
+                exposures = execution.exposures
+                scenarios = execution.scenarios
+                outcome_patterns = build_outcome_patterns(
+                    execution.analysis, exposures, scenarios,
+                )
+                prepared = finding_case_file.prepare(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=exposures,
+                    scenarios=scenarios,
+                )
+                pattern_case = prepared.case(
+                    "pattern:lows_after_correcting_highs", "event", None,
+                )
+
+        lows = exposures["exposures"]["lows"]
+        clusters = exposures["exposures"]["correction_clusters"]
+        pattern = next(
+            item for item in outcome_patterns
+            if item["key"] == "lows_after_correcting_highs"
+        )
+
+        self.assertEqual((pattern["k"], pattern["n"]), (2, 2))
+        self.assertEqual(
+            sum("correction_stacking" in item["attributed_levers"]
+                for item in lows["occurrences"]),
+            2,
+        )
+        self.assertEqual(pattern_case["family"], pattern_case["population"])
+        self.assertEqual(pattern_case["summary"], {
+            "claimed": 2, "denominator": 2, "noun": "lows",
+        })
+        self.assertEqual(
+            {item["member"] for item in pattern_case["occurrences"]},
+            {"habit:correction_stacking"},
+        )
+        self.assertEqual(pattern_case["projection"]["window_min"], [-60, 120])
+        self.assertEqual((clusters["n"], clusters["attributed"]), (8, 2))
+        self.assertEqual(
+            sum(item["cause_lever"] == "correction_stacking"
+                for item in clusters["occurrences"]),
+            2,
+        )
+
     def test_settings_direction_mapping_is_published_through_each_row_builder(self):
         cases = (
             ("basal_rate", "raise", "highs"),
@@ -741,7 +915,7 @@ class PatternProjectionTest(unittest.TestCase):
                        if row["id"] == "pattern:highs_after_meals")
         self.assertIsNone(pattern["pattern_chart"])
 
-    def test_patterns_are_whole_day_only_and_claimed_members_follow_their_parent(self):
+    def test_patterns_are_whole_day_only_and_claimed_rate_levers_follow_their_parent(self):
         pattern = next(row for row in self.result["rows"]
                        if row["id"] == "pattern:highs_after_meals")
         index = self.result["rows"].index(pattern)
@@ -753,6 +927,22 @@ class PatternProjectionTest(unittest.TestCase):
             "key": "highs_after_meals", "window": WindowQuery.whole_day().to_dict(),
         })
         self.assertIsNone(pattern["event_chart"])
+
+        rows_by_id = {row["id"]: row for row in self.result["rows"]}
+        for pattern_row in (row for row in self.result["rows"]
+                            if row["kind"] == "pattern"):
+            claimed = []
+            for lever in pattern_row["pattern"]["rate_levers"]:
+                finding = rows_by_id.get(f"finding:{lever.removeprefix('habit:')}")
+                if finding is not None:
+                    self.assertEqual(finding["claimed_by"], pattern_row["id"])
+                    claimed.append(finding)
+            if claimed:
+                positions = sorted(self.result["rows"].index(row) for row in claimed)
+                self.assertEqual(positions, list(range(
+                    self.result["rows"].index(pattern_row) + 1,
+                    self.result["rows"].index(pattern_row) + 1 + len(claimed),
+                )))
 
         scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
         self.assertFalse(any(row["kind"] == "pattern" for row in scoped["rows"]))

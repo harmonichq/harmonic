@@ -245,10 +245,8 @@ class FindingsProjection:
             if pattern.get("collapse") != "remain_pattern":
                 continue
             subject = pattern["subject"]
-            claimed = [member["subject"] for member in pattern["members"]
-                       if member["kind"] == "habit" and member["admitted"]]
-            for member in claimed:
-                row = by_id.get(f"finding:{member.removeprefix('habit:')}")
+            for lever in pattern.get("rate_levers") or ():
+                row = by_id.get(f"finding:{lever.removeprefix('habit:')}")
                 if row is not None:
                     row["claimed_by"] = subject
             pattern_row = _row(

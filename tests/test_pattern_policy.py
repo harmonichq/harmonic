@@ -54,77 +54,6 @@ class OutcomePatternPolicyTest(unittest.TestCase):
              "reason": "no_habit_exposure_identity"},
         )
 
-    def test_highs_after_meals_unions_meal_bolus_short_by_the_cited_meal(self):
-        meal_at = "2026-08-01 12:00:00"
-        exposures = {"exposures": {
-            "meals": {"n": 2, "occurrences": [{
-                "attributed": True, "cause_lever": "carb_undercount",
-                "ep_id": "meal-driver", "t": meal_at,
-            }, {
-                "attributed": False, "cause_lever": None,
-                "ep_id": "other-meal", "t": "2026-08-02 12:00:00",
-            }]},
-            "highs": {"n": 1, "occurrences": [{
-                "attributed": True, "cause_lever": "meal_bolus_short",
-                "cause_occurrence_id": "meal-1", "ep_id": "short-high",
-                "t": "2026-08-01 14:00:00",
-            }]},
-        }}
-        scenarios = {
-            "patterns": [
-                _scenario("carb_undercount"),
-                _scenario("meal_bolus_short", price=99, action=False),
-            ],
-            "low_confidence": [],
-            "episodes": {"short-high": {"lever": "meal_bolus_short", "steps": [{
-                "citation": {"facts": {"meal_at": meal_at}},
-            }]}},
-        }
-
-        pattern = build_outcome_patterns({}, exposures, scenarios)[0]
-
-        self.assertEqual((pattern["k"], pattern["n"]), (1, 2))
-        self.assertNotIn(
-            "habit:meal_bolus_short",
-            {member["subject"] for member in pattern["members"]},
-        )
-        self.assertNotEqual(pattern["action"], "habit:meal_bolus_short")
-
-    def test_lows_after_correcting_highs_unions_both_levers_by_nadir(self):
-        stacked_low = "2026-08-01 13:00:00"
-        on_iob_low = "2026-08-02 13:00:00"
-        scenarios = {
-            "patterns": [
-                _scenario("correction_stacking", k=1, n=9),
-                _scenario("correction_on_iob", k=1, n=3),
-            ],
-            "low_confidence": [],
-            "episodes": {"stacked": {"lever": "correction_stacking", "steps": [{
-                "citation": {"facts": {"nadir_at": stacked_low}},
-            }]}},
-        }
-        exposures = {"exposures": {
-            "lows": {"n": 3, "occurrences": [
-                {"attributed": False, "cause_lever": None,
-                 "ep_id": "stacked-low", "t": stacked_low},
-                {"attributed": True, "cause_lever": "correction_on_iob",
-                 "ep_id": "on-iob", "t": on_iob_low},
-                {"attributed": False, "cause_lever": None,
-                 "ep_id": "clean", "t": "2026-08-03 13:00:00"},
-            ]},
-            "correction_clusters": {"n": 9, "occurrences": [{
-                "attributed": True, "cause_lever": "correction_stacking",
-                "ep_id": "stacked", "t": "2026-08-01 12:30:00",
-            }]},
-        }}
-
-        pattern = next(row for row in build_outcome_patterns({}, exposures, scenarios)
-                       if row["key"] == "lows_after_correcting_highs")
-
-        self.assertEqual((pattern["k"], pattern["n"]), (2, 3))
-        self.assertEqual(pattern["rate_producer"], "exposures")
-        self.assertEqual(scenarios["patterns"][0]["confidence"]["n"], 9)
-
     def test_staged_setting_wins_an_interval_near_tie(self):
         analysis = {
             "tuning_levers": [{
@@ -362,8 +291,10 @@ class OutcomePatternPolicyTest(unittest.TestCase):
 
     def test_inconsistent_source_counts_remain_a_published_pattern(self):
         exposures = {"exposures": {"lows": {"n": 1, "occurrences": [
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "a"},
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "b"},
+            {"attributed": True, "cause_lever": "over_treated_low",
+             "ep_id": "a", "t": "2026-08-01 12:00:00"},
+            {"attributed": True, "cause_lever": "over_treated_low",
+             "ep_id": "b", "t": "2026-08-02 12:00:00"},
         ]}}}
         pattern = next(item for item in build_outcome_patterns(
             {}, exposures, {"patterns": [_scenario("over_treated_low")], "low_confidence": []},

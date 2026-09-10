@@ -143,9 +143,9 @@ test('#302 · weights and captions walk the served rows without assigning a prio
       { id: 'basal:330-360', weight: 'priced', caption: null },
       { id: 'pattern:overnight_lows_no_iob', weight: 'priced', caption: 'Worth a look' },
       { id: 'finding:over_treated_low', weight: 'priced', caption: null },
-    { id: 'finding:correction_on_iob', weight: 'tail', caption: null },
-    { id: 'finding:correction_stacking', weight: 'tail', caption: null },
-    { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
+      { id: 'pattern:lows_after_correcting_highs', weight: 'tail', caption: null },
+      { id: 'finding:correction_on_iob', weight: 'tail', caption: null },
+      { id: 'finding:correction_stacking', weight: 'tail', caption: null },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
   assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
@@ -233,7 +233,7 @@ test('term 42 · the seam opens once, before the first UNPRICED ranked row', () 
   const rows = queueRows(W.global);
   const seams = rows.filter((r) => r.seam);
   assert.equal(seams.length, 1);
-  assert.equal(seams[0].title, 'Correction on active insulin');
+  assert.equal(seams[0].title, 'Lows after correcting highs');
   assert.equal(seams[0].raw.priority, null);
   // every row above it is priced; the seam is the boundary, not a heading
   const at = rows.indexOf(seams[0]);
@@ -245,7 +245,7 @@ test('term 42 · fixture windows never caption a held or blind row as the tail',
   // These are the fixture's server-owned queue positions. A held/blind row is
   // demoted, but it is not the unpriced ranked row the tail sentence describes.
   const expected = {
-    global: ['Correction on active insulin'],
+    global: ['Lows after correcting highs'],
     afternoon: ['Correction stacking'],
     low_block: [],
     morning: [],
@@ -406,7 +406,7 @@ test('a sift computes its priced seam over only visible rows', () => {
   // It is the only visible ranked row and is unpriced, so there is no priced
   // row before it. The unselected high rows cannot open a visible seam.
   assert.deepEqual(rows.filter((row) => row.seam).map((row) => row.id),
-    ['finding:correction_on_iob']);
+    ['pattern:lows_after_correcting_highs']);
   assert.ok(rows.filter((row) => row.hidden).every((row) => row.raw.priority != null));
 });
 

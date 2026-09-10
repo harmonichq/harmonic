@@ -5593,6 +5593,9 @@
     "occurrences": [
      {
       "attributed": true,
+      "attributed_levers": [
+       "correction_on_iob"
+      ],
       "bg": 70.5,
       "cause_lever": "correction_on_iob",
       "cause_title": "Correction on active insulin",
@@ -5623,6 +5626,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "correction_on_iob"
+      ],
       "bg": 65.5,
       "cause_lever": "correction_on_iob",
       "cause_title": "Correction on active insulin",
@@ -5667,6 +5673,9 @@
     "occurrences": [
      {
       "attributed": true,
+      "attributed_levers": [
+       "missed_meal"
+      ],
       "bg": 77.8,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
@@ -5697,6 +5706,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "missed_meal"
+      ],
       "bg": 70.0,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
@@ -5727,6 +5739,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "missed_meal"
+      ],
       "bg": 76.4,
       "cause_lever": "missed_meal",
       "cause_title": "Missed / unannounced meal",
@@ -5757,6 +5772,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 72.1,
       "cause_lever": null,
       "cause_title": null,
@@ -5803,6 +5819,9 @@
     "occurrences": [
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 64.3,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5833,6 +5852,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 65.2,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5863,6 +5885,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 65.8,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5893,6 +5918,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 69.3,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5923,6 +5951,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 77.1,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5953,6 +5984,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 71.9,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -5983,6 +6017,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 64.8,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6013,6 +6050,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 71.6,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6043,6 +6083,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 72.1,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6073,6 +6116,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 68.3,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6103,6 +6149,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "correction_on_iob"
+      ],
       "bg": 68.4,
       "cause_lever": "correction_on_iob",
       "cause_title": "Correction on active insulin",
@@ -6133,6 +6182,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "correction_on_iob"
+      ],
       "bg": 65.2,
       "cause_lever": "correction_on_iob",
       "cause_title": "Correction on active insulin",
@@ -6163,6 +6215,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "correction_on_iob"
+      ],
       "bg": 72.8,
       "cause_lever": "correction_on_iob",
       "cause_title": "Correction on active insulin",
@@ -6193,6 +6248,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 66.0,
       "cause_lever": null,
       "cause_title": null,
@@ -6223,6 +6279,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 60.2,
       "cause_lever": null,
       "cause_title": null,
@@ -6253,6 +6310,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 70.9,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6283,6 +6343,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 65.5,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6313,6 +6376,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 65.2,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6343,6 +6409,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 77.6,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6373,6 +6442,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "over_treated_low"
+      ],
       "bg": 72.6,
       "cause_lever": "over_treated_low",
       "cause_title": "Over-treated low",
@@ -6417,6 +6489,9 @@
     "occurrences": [
      {
       "attributed": true,
+      "attributed_levers": [
+       "late_bolus"
+      ],
       "bg": 62.1,
       "cause_lever": "late_bolus",
       "cause_title": "Late bolus",
@@ -6447,6 +6522,9 @@
      },
      {
       "attributed": true,
+      "attributed_levers": [
+       "late_bolus"
+      ],
       "bg": 65.3,
       "cause_lever": "late_bolus",
       "cause_title": "Late bolus",
@@ -6477,6 +6555,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 63.0,
       "cause_lever": null,
       "cause_title": null,
@@ -6507,6 +6586,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 68.0,
       "cause_lever": null,
       "cause_title": null,
@@ -6537,6 +6617,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 63.2,
       "cause_lever": null,
       "cause_title": null,
@@ -6567,6 +6648,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 76.9,
       "cause_lever": null,
       "cause_title": null,
@@ -6597,6 +6679,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 65.5,
       "cause_lever": null,
       "cause_title": null,
@@ -6627,6 +6710,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 67.1,
       "cause_lever": null,
       "cause_title": null,
@@ -6657,6 +6741,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 77.3,
       "cause_lever": null,
       "cause_title": null,
@@ -6687,6 +6772,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 66.9,
       "cause_lever": null,
       "cause_title": null,
@@ -6717,6 +6803,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 72.4,
       "cause_lever": null,
       "cause_title": null,
@@ -6747,6 +6834,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 59.1,
       "cause_lever": null,
       "cause_title": null,
@@ -6777,6 +6865,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 74.5,
       "cause_lever": null,
       "cause_title": null,
@@ -6807,6 +6896,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 77.9,
       "cause_lever": null,
       "cause_title": null,
@@ -6837,6 +6927,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 74.1,
       "cause_lever": null,
       "cause_title": null,
@@ -6867,6 +6958,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 71.1,
       "cause_lever": null,
       "cause_title": null,
@@ -6897,6 +6989,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 75.7,
       "cause_lever": null,
       "cause_title": null,
@@ -6927,6 +7020,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 66.8,
       "cause_lever": null,
       "cause_title": null,
@@ -6957,6 +7051,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 75.0,
       "cause_lever": null,
       "cause_title": null,
@@ -6987,6 +7082,7 @@
      },
      {
       "attributed": false,
+      "attributed_levers": [],
       "bg": 61.3,
       "cause_lever": null,
       "cause_title": null,

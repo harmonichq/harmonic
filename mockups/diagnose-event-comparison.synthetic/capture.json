@@ -423,6 +423,9 @@
         "kind": "low",
         "label": "Correction cluster",
         "attributed": true,
+        "attributed_levers": [
+          "correction_on_iob"
+        ],
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -455,6 +458,9 @@
         "kind": "low",
         "label": "Correction cluster",
         "attributed": true,
+        "attributed_levers": [
+          "correction_on_iob"
+        ],
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -489,6 +495,9 @@
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
+        "attributed_levers": [
+          "missed_meal"
+        ],
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -521,6 +530,9 @@
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
+        "attributed_levers": [
+          "missed_meal"
+        ],
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -553,6 +565,9 @@
         "kind": "low",
         "label": "High excursion",
         "attributed": true,
+        "attributed_levers": [
+          "missed_meal"
+        ],
         "cause_lever": "missed_meal",
         "verdicts": [
           {
@@ -585,6 +600,7 @@
         "kind": "low",
         "label": "High excursion",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -619,6 +635,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -822,6 +841,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -996,6 +1018,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1158,6 +1183,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1312,6 +1340,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1458,6 +1489,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1596,6 +1630,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1726,6 +1763,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -1888,6 +1928,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -2046,6 +2089,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -2204,6 +2250,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "correction_on_iob"
+        ],
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2370,6 +2419,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "correction_on_iob"
+        ],
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2552,6 +2604,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "correction_on_iob"
+        ],
         "cause_lever": "correction_on_iob",
         "verdicts": [
           {
@@ -2730,6 +2785,7 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -2900,6 +2956,7 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -3062,6 +3119,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3216,6 +3276,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3362,6 +3425,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3544,6 +3610,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3726,6 +3795,9 @@
         "kind": "low",
         "label": "Low excursion",
         "attributed": true,
+        "attributed_levers": [
+          "over_treated_low"
+        ],
         "cause_lever": "over_treated_low",
         "verdicts": [
           {
@@ -3910,6 +3982,9 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": true,
+        "attributed_levers": [
+          "late_bolus"
+        ],
         "cause_lever": "late_bolus",
         "verdicts": [
           {
@@ -4243,6 +4318,9 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": true,
+        "attributed_levers": [
+          "late_bolus"
+        ],
         "cause_lever": "late_bolus",
         "verdicts": [
           {
@@ -4568,6 +4646,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -4901,6 +4980,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -5206,6 +5286,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -5503,6 +5584,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -5792,6 +5874,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -6073,6 +6156,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -6362,6 +6446,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -6651,6 +6736,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -6940,6 +7026,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -7241,6 +7328,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -7574,6 +7662,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -7903,6 +7992,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -8224,6 +8314,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -8537,6 +8628,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -8842,6 +8934,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -9139,6 +9232,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -9472,6 +9566,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {
@@ -9805,6 +9900,7 @@
         "kind": "low",
         "label": "Completed carb bolus",
         "attributed": false,
+        "attributed_levers": [],
         "cause_lever": null,
         "verdicts": [
           {

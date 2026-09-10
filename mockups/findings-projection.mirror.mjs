@@ -783,12 +783,10 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of inputs.outcome_patterns) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      for (const member of pattern.members || []) {
-        if (member.kind === 'habit' && member.admitted) {
-          const claimed = byId.get(`finding:${member.subject.replace('habit:', '')}`);
-          if (claimed) {
-            claimed.claimed_by = pattern.subject;
-          }
+      for (const lever of pattern.rate_levers || []) {
+        const claimed = byId.get(`finding:${lever.replace('habit:', '')}`);
+        if (claimed) {
+          claimed.claimed_by = pattern.subject;
         }
       }
       const projected = stampedRow({

@@ -89112,7 +89112,7 @@
             "chips": [
               "lows"
             ],
-            "claimed_by": null,
+            "claimed_by": "pattern:lows_after_correcting_highs",
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -91521,124 +91521,6 @@
             },
             {
               "annotation": null,
-              "appearances": [
-                {
-                  "family": "lows",
-                  "m": 6,
-                  "n": 1,
-                  "noun": "lows"
-                }
-              ],
-              "asserts_move": null,
-              "chips": [
-                "lows"
-              ],
-              "claimed_by": null,
-              "current": null,
-              "direction": null,
-              "episodes": 1,
-              "estimate": null,
-              "event_chart": {
-                "lever": "correction_on_iob",
-                "window": {
-                  "end_min": null,
-                  "label": null,
-                  "scoped": false,
-                  "start_min": null
-                }
-              },
-              "evidence": [
-                {
-                  "date": "2024-06-22",
-                  "ep_id": "2024-06-22-ep0",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-22 13:55:00",
-                  "verdict": "outranked"
-                },
-                {
-                  "date": "2024-06-23",
-                  "ep_id": "2024-06-23-ep1",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-23 13:55:00",
-                  "verdict": "outranked"
-                },
-                {
-                  "date": "2024-06-24",
-                  "ep_id": "2024-06-24-ep2",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-24 12:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-06-25",
-                  "ep_id": "2024-06-25-ep3",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-25 12:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-06-26",
-                  "ep_id": "2024-06-26-ep4",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-26 16:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-06-27",
-                  "ep_id": "2024-06-28-ep5",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-06-27 22:00:00",
-                  "verdict": "fired"
-                }
-              ],
-              "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-              "id": "finding:correction_on_iob",
-              "kind": "habit",
-              "label": null,
-              "lean": null,
-              "lever": "correction_on_iob",
-              "members": null,
-              "parameter": null,
-              "past_setting": null,
-              "pattern": null,
-              "pattern_chart": null,
-              "priority": null,
-              "programmed_now": null,
-              "reason": null,
-              "recommended": null,
-              "regime_end": null,
-              "register": "finding",
-              "run_ids": null,
-              "span": null,
-              "support": null,
-              "tier": "noted",
-              "title": "Correction on active insulin",
-              "verdict_counts": {
-                "clean": 3,
-                "fired": 1,
-                "near_miss": 0,
-                "no_data": 0,
-                "outranked": 2
-              },
-              "verdict_counts_by_family": {
-                "lows": {
-                  "clean": 3,
-                  "fired": 1,
-                  "near_miss": 0,
-                  "no_data": 0,
-                  "outranked": 2
-                }
-              },
-              "window_scope": "window"
-            },
-            {
-              "annotation": null,
               "appearances": null,
               "asserts_move": null,
               "chips": [
@@ -91879,6 +91761,124 @@
               "verdict_counts": null,
               "verdict_counts_by_family": null,
               "window_scope": "whole_day"
+            },
+            {
+              "annotation": null,
+              "appearances": [
+                {
+                  "family": "lows",
+                  "m": 6,
+                  "n": 1,
+                  "noun": "lows"
+                }
+              ],
+              "asserts_move": null,
+              "chips": [
+                "lows"
+              ],
+              "claimed_by": "pattern:lows_after_correcting_highs",
+              "current": null,
+              "direction": null,
+              "episodes": 1,
+              "estimate": null,
+              "event_chart": {
+                "lever": "correction_on_iob",
+                "window": {
+                  "end_min": null,
+                  "label": null,
+                  "scoped": false,
+                  "start_min": null
+                }
+              },
+              "evidence": [
+                {
+                  "date": "2024-06-22",
+                  "ep_id": "2024-06-22-ep0",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-22 13:55:00",
+                  "verdict": "outranked"
+                },
+                {
+                  "date": "2024-06-23",
+                  "ep_id": "2024-06-23-ep1",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-23 13:55:00",
+                  "verdict": "outranked"
+                },
+                {
+                  "date": "2024-06-24",
+                  "ep_id": "2024-06-24-ep2",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-24 12:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-06-25",
+                  "ep_id": "2024-06-25-ep3",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-25 12:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-06-26",
+                  "ep_id": "2024-06-26-ep4",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-26 16:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-06-27",
+                  "ep_id": "2024-06-28-ep5",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-06-27 22:00:00",
+                  "verdict": "fired"
+                }
+              ],
+              "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+              "id": "finding:correction_on_iob",
+              "kind": "habit",
+              "label": null,
+              "lean": null,
+              "lever": "correction_on_iob",
+              "members": null,
+              "parameter": null,
+              "past_setting": null,
+              "pattern": null,
+              "pattern_chart": null,
+              "priority": null,
+              "programmed_now": null,
+              "reason": null,
+              "recommended": null,
+              "regime_end": null,
+              "register": "finding",
+              "run_ids": null,
+              "span": null,
+              "support": null,
+              "tier": "noted",
+              "title": "Correction on active insulin",
+              "verdict_counts": {
+                "clean": 3,
+                "fired": 1,
+                "near_miss": 0,
+                "no_data": 0,
+                "outranked": 2
+              },
+              "verdict_counts_by_family": {
+                "lows": {
+                  "clean": 3,
+                  "fired": 1,
+                  "near_miss": 0,
+                  "no_data": 0,
+                  "outranked": 2
+                }
+              },
+              "window_scope": "window"
             },
             {
               "annotation": null,
@@ -94419,124 +94419,6 @@
         },
         {
           "annotation": null,
-          "appearances": [
-            {
-              "family": "lows",
-              "m": 6,
-              "n": 1,
-              "noun": "lows"
-            }
-          ],
-          "asserts_move": null,
-          "chips": [
-            "lows"
-          ],
-          "claimed_by": null,
-          "current": null,
-          "direction": null,
-          "episodes": 1,
-          "estimate": null,
-          "event_chart": {
-            "lever": "correction_on_iob",
-            "window": {
-              "end_min": null,
-              "label": null,
-              "scoped": false,
-              "start_min": null
-            }
-          },
-          "evidence": [
-            {
-              "date": "2024-06-22",
-              "ep_id": "2024-06-22-ep0",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-22 13:55:00",
-              "verdict": "outranked"
-            },
-            {
-              "date": "2024-06-23",
-              "ep_id": "2024-06-23-ep1",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-23 13:55:00",
-              "verdict": "outranked"
-            },
-            {
-              "date": "2024-06-24",
-              "ep_id": "2024-06-24-ep2",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-24 12:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-06-25",
-              "ep_id": "2024-06-25-ep3",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-25 12:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-06-26",
-              "ep_id": "2024-06-26-ep4",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-26 16:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-06-27",
-              "ep_id": "2024-06-28-ep5",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-06-27 22:00:00",
-              "verdict": "fired"
-            }
-          ],
-          "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-          "id": "finding:correction_on_iob",
-          "kind": "habit",
-          "label": null,
-          "lean": null,
-          "lever": "correction_on_iob",
-          "members": null,
-          "parameter": null,
-          "past_setting": null,
-          "pattern": null,
-          "pattern_chart": null,
-          "priority": null,
-          "programmed_now": null,
-          "reason": null,
-          "recommended": null,
-          "regime_end": null,
-          "register": "finding",
-          "run_ids": null,
-          "span": null,
-          "support": null,
-          "tier": "noted",
-          "title": "Correction on active insulin",
-          "verdict_counts": {
-            "clean": 3,
-            "fired": 1,
-            "near_miss": 0,
-            "no_data": 0,
-            "outranked": 2
-          },
-          "verdict_counts_by_family": {
-            "lows": {
-              "clean": 3,
-              "fired": 1,
-              "near_miss": 0,
-              "no_data": 0,
-              "outranked": 2
-            }
-          },
-          "window_scope": "window"
-        },
-        {
-          "annotation": null,
           "appearances": null,
           "asserts_move": null,
           "chips": [
@@ -94777,6 +94659,124 @@
           "verdict_counts": null,
           "verdict_counts_by_family": null,
           "window_scope": "whole_day"
+        },
+        {
+          "annotation": null,
+          "appearances": [
+            {
+              "family": "lows",
+              "m": 6,
+              "n": 1,
+              "noun": "lows"
+            }
+          ],
+          "asserts_move": null,
+          "chips": [
+            "lows"
+          ],
+          "claimed_by": "pattern:lows_after_correcting_highs",
+          "current": null,
+          "direction": null,
+          "episodes": 1,
+          "estimate": null,
+          "event_chart": {
+            "lever": "correction_on_iob",
+            "window": {
+              "end_min": null,
+              "label": null,
+              "scoped": false,
+              "start_min": null
+            }
+          },
+          "evidence": [
+            {
+              "date": "2024-06-22",
+              "ep_id": "2024-06-22-ep0",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-22 13:55:00",
+              "verdict": "outranked"
+            },
+            {
+              "date": "2024-06-23",
+              "ep_id": "2024-06-23-ep1",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-23 13:55:00",
+              "verdict": "outranked"
+            },
+            {
+              "date": "2024-06-24",
+              "ep_id": "2024-06-24-ep2",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-24 12:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-06-25",
+              "ep_id": "2024-06-25-ep3",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-25 12:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-06-26",
+              "ep_id": "2024-06-26-ep4",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-26 16:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-06-27",
+              "ep_id": "2024-06-28-ep5",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-06-27 22:00:00",
+              "verdict": "fired"
+            }
+          ],
+          "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+          "id": "finding:correction_on_iob",
+          "kind": "habit",
+          "label": null,
+          "lean": null,
+          "lever": "correction_on_iob",
+          "members": null,
+          "parameter": null,
+          "past_setting": null,
+          "pattern": null,
+          "pattern_chart": null,
+          "priority": null,
+          "programmed_now": null,
+          "reason": null,
+          "recommended": null,
+          "regime_end": null,
+          "register": "finding",
+          "run_ids": null,
+          "span": null,
+          "support": null,
+          "tier": "noted",
+          "title": "Correction on active insulin",
+          "verdict_counts": {
+            "clean": 3,
+            "fired": 1,
+            "near_miss": 0,
+            "no_data": 0,
+            "outranked": 2
+          },
+          "verdict_counts_by_family": {
+            "lows": {
+              "clean": 3,
+              "fired": 1,
+              "near_miss": 0,
+              "no_data": 0,
+              "outranked": 2
+            }
+          },
+          "window_scope": "window"
         },
         {
           "annotation": null,
@@ -105355,7 +105355,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "78aa15e8c5f21c222737d1caf3ba2ce354e380f229fe0ca595c3ff46e15dcc56",
+              "code_version": "80c60a62b5bfa9455f95ce1bd0f755d8c2fcac5e7714f14eac1dd8d73cc1f61e",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105447,7 +105447,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "54b0735262131f8782b9288c28949360c0ab7c5ec03a609ecd27a55c5f44d164",
+              "id": "e079da7c2ba7dff7b441bc68e07baf0758038baebf348f4802084ad410ba24ae",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105535,7 +105535,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "78aa15e8c5f21c222737d1caf3ba2ce354e380f229fe0ca595c3ff46e15dcc56",
+                  "code_version": "80c60a62b5bfa9455f95ce1bd0f755d8c2fcac5e7714f14eac1dd8d73cc1f61e",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105627,7 +105627,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "54b0735262131f8782b9288c28949360c0ab7c5ec03a609ecd27a55c5f44d164",
+                  "id": "e079da7c2ba7dff7b441bc68e07baf0758038baebf348f4802084ad410ba24ae",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -116506,13 +116506,13 @@
         "chip_counts": {
           "corrections": 1,
           "highs": 2,
-          "lows": 5,
+          "lows": 4,
           "meals": 2
         },
         "counts": {
           "assert": 1,
           "blind": 0,
-          "finding": 6,
+          "finding": 5,
           "held": 0,
           "history": 0
         },
@@ -117188,124 +117188,6 @@
           },
           {
             "annotation": null,
-            "appearances": [
-              {
-                "family": "lows",
-                "m": 6,
-                "n": 1,
-                "noun": "lows"
-              }
-            ],
-            "asserts_move": null,
-            "chips": [
-              "lows"
-            ],
-            "claimed_by": null,
-            "current": null,
-            "direction": null,
-            "episodes": 1,
-            "estimate": null,
-            "event_chart": {
-              "lever": "correction_on_iob",
-              "window": {
-                "end_min": null,
-                "label": null,
-                "scoped": false,
-                "start_min": null
-              }
-            },
-            "evidence": [
-              {
-                "date": "2024-05-23",
-                "ep_id": "2024-05-23-ep0",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-23 13:55:00",
-                "verdict": "outranked"
-              },
-              {
-                "date": "2024-05-24",
-                "ep_id": "2024-05-24-ep1",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-24 13:55:00",
-                "verdict": "outranked"
-              },
-              {
-                "date": "2024-05-25",
-                "ep_id": "2024-05-25-ep2",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-25 12:10:00",
-                "verdict": "clean"
-              },
-              {
-                "date": "2024-05-26",
-                "ep_id": "2024-05-26-ep3",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-26 12:10:00",
-                "verdict": "clean"
-              },
-              {
-                "date": "2024-05-27",
-                "ep_id": "2024-05-27-ep4",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-27 16:10:00",
-                "verdict": "clean"
-              },
-              {
-                "date": "2024-05-28",
-                "ep_id": "2024-05-29-ep5",
-                "family": "lows",
-                "kind": "low",
-                "t": "2024-05-28 22:00:00",
-                "verdict": "fired"
-              }
-            ],
-            "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-            "id": "finding:correction_on_iob",
-            "kind": "habit",
-            "label": null,
-            "lean": null,
-            "lever": "correction_on_iob",
-            "members": null,
-            "parameter": null,
-            "past_setting": null,
-            "pattern": null,
-            "pattern_chart": null,
-            "priority": null,
-            "programmed_now": null,
-            "reason": null,
-            "recommended": null,
-            "regime_end": null,
-            "register": "finding",
-            "run_ids": null,
-            "span": null,
-            "support": null,
-            "tier": "noted",
-            "title": "Correction on active insulin",
-            "verdict_counts": {
-              "clean": 3,
-              "fired": 1,
-              "near_miss": 0,
-              "no_data": 0,
-              "outranked": 2
-            },
-            "verdict_counts_by_family": {
-              "lows": {
-                "clean": 3,
-                "fired": 1,
-                "near_miss": 0,
-                "no_data": 0,
-                "outranked": 2
-              }
-            },
-            "window_scope": "window"
-          },
-          {
-            "annotation": null,
             "appearances": null,
             "asserts_move": null,
             "chips": [
@@ -117546,6 +117428,124 @@
             "verdict_counts": null,
             "verdict_counts_by_family": null,
             "window_scope": "whole_day"
+          },
+          {
+            "annotation": null,
+            "appearances": [
+              {
+                "family": "lows",
+                "m": 6,
+                "n": 1,
+                "noun": "lows"
+              }
+            ],
+            "asserts_move": null,
+            "chips": [
+              "lows"
+            ],
+            "claimed_by": "pattern:lows_after_correcting_highs",
+            "current": null,
+            "direction": null,
+            "episodes": 1,
+            "estimate": null,
+            "event_chart": {
+              "lever": "correction_on_iob",
+              "window": {
+                "end_min": null,
+                "label": null,
+                "scoped": false,
+                "start_min": null
+              }
+            },
+            "evidence": [
+              {
+                "date": "2024-05-23",
+                "ep_id": "2024-05-23-ep0",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-23 13:55:00",
+                "verdict": "outranked"
+              },
+              {
+                "date": "2024-05-24",
+                "ep_id": "2024-05-24-ep1",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-24 13:55:00",
+                "verdict": "outranked"
+              },
+              {
+                "date": "2024-05-25",
+                "ep_id": "2024-05-25-ep2",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-25 12:10:00",
+                "verdict": "clean"
+              },
+              {
+                "date": "2024-05-26",
+                "ep_id": "2024-05-26-ep3",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-26 12:10:00",
+                "verdict": "clean"
+              },
+              {
+                "date": "2024-05-27",
+                "ep_id": "2024-05-27-ep4",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-27 16:10:00",
+                "verdict": "clean"
+              },
+              {
+                "date": "2024-05-28",
+                "ep_id": "2024-05-29-ep5",
+                "family": "lows",
+                "kind": "low",
+                "t": "2024-05-28 22:00:00",
+                "verdict": "fired"
+              }
+            ],
+            "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+            "id": "finding:correction_on_iob",
+            "kind": "habit",
+            "label": null,
+            "lean": null,
+            "lever": "correction_on_iob",
+            "members": null,
+            "parameter": null,
+            "past_setting": null,
+            "pattern": null,
+            "pattern_chart": null,
+            "priority": null,
+            "programmed_now": null,
+            "reason": null,
+            "recommended": null,
+            "regime_end": null,
+            "register": "finding",
+            "run_ids": null,
+            "span": null,
+            "support": null,
+            "tier": "noted",
+            "title": "Correction on active insulin",
+            "verdict_counts": {
+              "clean": 3,
+              "fired": 1,
+              "near_miss": 0,
+              "no_data": 0,
+              "outranked": 2
+            },
+            "verdict_counts_by_family": {
+              "lows": {
+                "clean": 3,
+                "fired": 1,
+                "near_miss": 0,
+                "no_data": 0,
+                "outranked": 2
+              }
+            },
+            "window_scope": "window"
           },
           {
             "annotation": null,
@@ -178334,124 +178334,6 @@
       },
       {
         "annotation": null,
-        "appearances": [
-          {
-            "family": "lows",
-            "m": 6,
-            "n": 1,
-            "noun": "lows"
-          }
-        ],
-        "asserts_move": null,
-        "chips": [
-          "lows"
-        ],
-        "claimed_by": null,
-        "current": null,
-        "direction": null,
-        "episodes": 1,
-        "estimate": null,
-        "event_chart": {
-          "lever": "correction_on_iob",
-          "window": {
-            "end_min": null,
-            "label": null,
-            "scoped": false,
-            "start_min": null
-          }
-        },
-        "evidence": [
-          {
-            "date": "2024-05-23",
-            "ep_id": "2024-05-23-ep0",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-23 13:55:00",
-            "verdict": "outranked"
-          },
-          {
-            "date": "2024-05-24",
-            "ep_id": "2024-05-24-ep1",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-24 13:55:00",
-            "verdict": "outranked"
-          },
-          {
-            "date": "2024-05-25",
-            "ep_id": "2024-05-25-ep2",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-25 12:10:00",
-            "verdict": "clean"
-          },
-          {
-            "date": "2024-05-26",
-            "ep_id": "2024-05-26-ep3",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-26 12:10:00",
-            "verdict": "clean"
-          },
-          {
-            "date": "2024-05-27",
-            "ep_id": "2024-05-27-ep4",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-27 16:10:00",
-            "verdict": "clean"
-          },
-          {
-            "date": "2024-05-28",
-            "ep_id": "2024-05-29-ep5",
-            "family": "lows",
-            "kind": "low",
-            "t": "2024-05-28 22:00:00",
-            "verdict": "fired"
-          }
-        ],
-        "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-        "id": "finding:correction_on_iob",
-        "kind": "habit",
-        "label": null,
-        "lean": null,
-        "lever": "correction_on_iob",
-        "members": null,
-        "parameter": null,
-        "past_setting": null,
-        "pattern": null,
-        "pattern_chart": null,
-        "priority": null,
-        "programmed_now": null,
-        "reason": null,
-        "recommended": null,
-        "regime_end": null,
-        "register": "finding",
-        "run_ids": null,
-        "span": null,
-        "support": null,
-        "tier": "noted",
-        "title": "Correction on active insulin",
-        "verdict_counts": {
-          "clean": 3,
-          "fired": 1,
-          "near_miss": 0,
-          "no_data": 0,
-          "outranked": 2
-        },
-        "verdict_counts_by_family": {
-          "lows": {
-            "clean": 3,
-            "fired": 1,
-            "near_miss": 0,
-            "no_data": 0,
-            "outranked": 2
-          }
-        },
-        "window_scope": "window"
-      },
-      {
-        "annotation": null,
         "appearances": null,
         "asserts_move": null,
         "chips": [
@@ -178692,6 +178574,124 @@
         "verdict_counts": null,
         "verdict_counts_by_family": null,
         "window_scope": "whole_day"
+      },
+      {
+        "annotation": null,
+        "appearances": [
+          {
+            "family": "lows",
+            "m": 6,
+            "n": 1,
+            "noun": "lows"
+          }
+        ],
+        "asserts_move": null,
+        "chips": [
+          "lows"
+        ],
+        "claimed_by": "pattern:lows_after_correcting_highs",
+        "current": null,
+        "direction": null,
+        "episodes": 1,
+        "estimate": null,
+        "event_chart": {
+          "lever": "correction_on_iob",
+          "window": {
+            "end_min": null,
+            "label": null,
+            "scoped": false,
+            "start_min": null
+          }
+        },
+        "evidence": [
+          {
+            "date": "2024-05-23",
+            "ep_id": "2024-05-23-ep0",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-23 13:55:00",
+            "verdict": "outranked"
+          },
+          {
+            "date": "2024-05-24",
+            "ep_id": "2024-05-24-ep1",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-24 13:55:00",
+            "verdict": "outranked"
+          },
+          {
+            "date": "2024-05-25",
+            "ep_id": "2024-05-25-ep2",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-25 12:10:00",
+            "verdict": "clean"
+          },
+          {
+            "date": "2024-05-26",
+            "ep_id": "2024-05-26-ep3",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-26 12:10:00",
+            "verdict": "clean"
+          },
+          {
+            "date": "2024-05-27",
+            "ep_id": "2024-05-27-ep4",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-27 16:10:00",
+            "verdict": "clean"
+          },
+          {
+            "date": "2024-05-28",
+            "ep_id": "2024-05-29-ep5",
+            "family": "lows",
+            "kind": "low",
+            "t": "2024-05-28 22:00:00",
+            "verdict": "fired"
+          }
+        ],
+        "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+        "id": "finding:correction_on_iob",
+        "kind": "habit",
+        "label": null,
+        "lean": null,
+        "lever": "correction_on_iob",
+        "members": null,
+        "parameter": null,
+        "past_setting": null,
+        "pattern": null,
+        "pattern_chart": null,
+        "priority": null,
+        "programmed_now": null,
+        "reason": null,
+        "recommended": null,
+        "regime_end": null,
+        "register": "finding",
+        "run_ids": null,
+        "span": null,
+        "support": null,
+        "tier": "noted",
+        "title": "Correction on active insulin",
+        "verdict_counts": {
+          "clean": 3,
+          "fired": 1,
+          "near_miss": 0,
+          "no_data": 0,
+          "outranked": 2
+        },
+        "verdict_counts_by_family": {
+          "lows": {
+            "clean": 3,
+            "fired": 1,
+            "near_miss": 0,
+            "no_data": 0,
+            "outranked": 2
+          }
+        },
+        "window_scope": "window"
       },
       {
         "annotation": null,
@@ -202517,7 +202517,7 @@
             "chips": [
               "lows"
             ],
-            "claimed_by": null,
+            "claimed_by": "pattern:lows_after_correcting_highs",
             "current": null,
             "direction": null,
             "episodes": 1,
@@ -204745,124 +204745,6 @@
             },
             {
               "annotation": null,
-              "appearances": [
-                {
-                  "family": "lows",
-                  "m": 6,
-                  "n": 1,
-                  "noun": "lows"
-                }
-              ],
-              "asserts_move": null,
-              "chips": [
-                "lows"
-              ],
-              "claimed_by": null,
-              "current": null,
-              "direction": null,
-              "episodes": 1,
-              "estimate": null,
-              "event_chart": {
-                "lever": "correction_on_iob",
-                "window": {
-                  "end_min": null,
-                  "label": null,
-                  "scoped": false,
-                  "start_min": null
-                }
-              },
-              "evidence": [
-                {
-                  "date": "2024-05-23",
-                  "ep_id": "2024-05-23-ep0",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-23 13:55:00",
-                  "verdict": "outranked"
-                },
-                {
-                  "date": "2024-05-24",
-                  "ep_id": "2024-05-24-ep1",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-24 13:55:00",
-                  "verdict": "outranked"
-                },
-                {
-                  "date": "2024-05-25",
-                  "ep_id": "2024-05-25-ep2",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-25 12:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-05-26",
-                  "ep_id": "2024-05-26-ep3",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-26 12:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-05-27",
-                  "ep_id": "2024-05-27-ep4",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-27 16:10:00",
-                  "verdict": "clean"
-                },
-                {
-                  "date": "2024-05-28",
-                  "ep_id": "2024-05-29-ep5",
-                  "family": "lows",
-                  "kind": "low",
-                  "t": "2024-05-28 22:00:00",
-                  "verdict": "fired"
-                }
-              ],
-              "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-              "id": "finding:correction_on_iob",
-              "kind": "habit",
-              "label": null,
-              "lean": null,
-              "lever": "correction_on_iob",
-              "members": null,
-              "parameter": null,
-              "past_setting": null,
-              "pattern": null,
-              "pattern_chart": null,
-              "priority": null,
-              "programmed_now": null,
-              "reason": null,
-              "recommended": null,
-              "regime_end": null,
-              "register": "finding",
-              "run_ids": null,
-              "span": null,
-              "support": null,
-              "tier": "noted",
-              "title": "Correction on active insulin",
-              "verdict_counts": {
-                "clean": 3,
-                "fired": 1,
-                "near_miss": 0,
-                "no_data": 0,
-                "outranked": 2
-              },
-              "verdict_counts_by_family": {
-                "lows": {
-                  "clean": 3,
-                  "fired": 1,
-                  "near_miss": 0,
-                  "no_data": 0,
-                  "outranked": 2
-                }
-              },
-              "window_scope": "window"
-            },
-            {
-              "annotation": null,
               "appearances": null,
               "asserts_move": null,
               "chips": [
@@ -205103,6 +204985,124 @@
               "verdict_counts": null,
               "verdict_counts_by_family": null,
               "window_scope": "whole_day"
+            },
+            {
+              "annotation": null,
+              "appearances": [
+                {
+                  "family": "lows",
+                  "m": 6,
+                  "n": 1,
+                  "noun": "lows"
+                }
+              ],
+              "asserts_move": null,
+              "chips": [
+                "lows"
+              ],
+              "claimed_by": "pattern:lows_after_correcting_highs",
+              "current": null,
+              "direction": null,
+              "episodes": 1,
+              "estimate": null,
+              "event_chart": {
+                "lever": "correction_on_iob",
+                "window": {
+                  "end_min": null,
+                  "label": null,
+                  "scoped": false,
+                  "start_min": null
+                }
+              },
+              "evidence": [
+                {
+                  "date": "2024-05-23",
+                  "ep_id": "2024-05-23-ep0",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-23 13:55:00",
+                  "verdict": "outranked"
+                },
+                {
+                  "date": "2024-05-24",
+                  "ep_id": "2024-05-24-ep1",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-24 13:55:00",
+                  "verdict": "outranked"
+                },
+                {
+                  "date": "2024-05-25",
+                  "ep_id": "2024-05-25-ep2",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-25 12:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-05-26",
+                  "ep_id": "2024-05-26-ep3",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-26 12:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-05-27",
+                  "ep_id": "2024-05-27-ep4",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-27 16:10:00",
+                  "verdict": "clean"
+                },
+                {
+                  "date": "2024-05-28",
+                  "ep_id": "2024-05-29-ep5",
+                  "family": "lows",
+                  "kind": "low",
+                  "t": "2024-05-28 22:00:00",
+                  "verdict": "fired"
+                }
+              ],
+              "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+              "id": "finding:correction_on_iob",
+              "kind": "habit",
+              "label": null,
+              "lean": null,
+              "lever": "correction_on_iob",
+              "members": null,
+              "parameter": null,
+              "past_setting": null,
+              "pattern": null,
+              "pattern_chart": null,
+              "priority": null,
+              "programmed_now": null,
+              "reason": null,
+              "recommended": null,
+              "regime_end": null,
+              "register": "finding",
+              "run_ids": null,
+              "span": null,
+              "support": null,
+              "tier": "noted",
+              "title": "Correction on active insulin",
+              "verdict_counts": {
+                "clean": 3,
+                "fired": 1,
+                "near_miss": 0,
+                "no_data": 0,
+                "outranked": 2
+              },
+              "verdict_counts_by_family": {
+                "lows": {
+                  "clean": 3,
+                  "fired": 1,
+                  "near_miss": 0,
+                  "no_data": 0,
+                  "outranked": 2
+                }
+              },
+              "window_scope": "window"
             },
             {
               "annotation": null,
@@ -207565,124 +207565,6 @@
         },
         {
           "annotation": null,
-          "appearances": [
-            {
-              "family": "lows",
-              "m": 6,
-              "n": 1,
-              "noun": "lows"
-            }
-          ],
-          "asserts_move": null,
-          "chips": [
-            "lows"
-          ],
-          "claimed_by": null,
-          "current": null,
-          "direction": null,
-          "episodes": 1,
-          "estimate": null,
-          "event_chart": {
-            "lever": "correction_on_iob",
-            "window": {
-              "end_min": null,
-              "label": null,
-              "scoped": false,
-              "start_min": null
-            }
-          },
-          "evidence": [
-            {
-              "date": "2024-05-23",
-              "ep_id": "2024-05-23-ep0",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-23 13:55:00",
-              "verdict": "outranked"
-            },
-            {
-              "date": "2024-05-24",
-              "ep_id": "2024-05-24-ep1",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-24 13:55:00",
-              "verdict": "outranked"
-            },
-            {
-              "date": "2024-05-25",
-              "ep_id": "2024-05-25-ep2",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-25 12:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-05-26",
-              "ep_id": "2024-05-26-ep3",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-26 12:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-05-27",
-              "ep_id": "2024-05-27-ep4",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-27 16:10:00",
-              "verdict": "clean"
-            },
-            {
-              "date": "2024-05-28",
-              "ep_id": "2024-05-29-ep5",
-              "family": "lows",
-              "kind": "low",
-              "t": "2024-05-28 22:00:00",
-              "verdict": "fired"
-            }
-          ],
-          "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
-          "id": "finding:correction_on_iob",
-          "kind": "habit",
-          "label": null,
-          "lean": null,
-          "lever": "correction_on_iob",
-          "members": null,
-          "parameter": null,
-          "past_setting": null,
-          "pattern": null,
-          "pattern_chart": null,
-          "priority": null,
-          "programmed_now": null,
-          "reason": null,
-          "recommended": null,
-          "regime_end": null,
-          "register": "finding",
-          "run_ids": null,
-          "span": null,
-          "support": null,
-          "tier": "noted",
-          "title": "Correction on active insulin",
-          "verdict_counts": {
-            "clean": 3,
-            "fired": 1,
-            "near_miss": 0,
-            "no_data": 0,
-            "outranked": 2
-          },
-          "verdict_counts_by_family": {
-            "lows": {
-              "clean": 3,
-              "fired": 1,
-              "near_miss": 0,
-              "no_data": 0,
-              "outranked": 2
-            }
-          },
-          "window_scope": "window"
-        },
-        {
-          "annotation": null,
           "appearances": null,
           "asserts_move": null,
           "chips": [
@@ -207923,6 +207805,124 @@
           "verdict_counts": null,
           "verdict_counts_by_family": null,
           "window_scope": "whole_day"
+        },
+        {
+          "annotation": null,
+          "appearances": [
+            {
+              "family": "lows",
+              "m": 6,
+              "n": 1,
+              "noun": "lows"
+            }
+          ],
+          "asserts_move": null,
+          "chips": [
+            "lows"
+          ],
+          "claimed_by": "pattern:lows_after_correcting_highs",
+          "current": null,
+          "direction": null,
+          "episodes": 1,
+          "estimate": null,
+          "event_chart": {
+            "lever": "correction_on_iob",
+            "window": {
+              "end_min": null,
+              "label": null,
+              "scoped": false,
+              "start_min": null
+            }
+          },
+          "evidence": [
+            {
+              "date": "2024-05-23",
+              "ep_id": "2024-05-23-ep0",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-23 13:55:00",
+              "verdict": "outranked"
+            },
+            {
+              "date": "2024-05-24",
+              "ep_id": "2024-05-24-ep1",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-24 13:55:00",
+              "verdict": "outranked"
+            },
+            {
+              "date": "2024-05-25",
+              "ep_id": "2024-05-25-ep2",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-25 12:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-05-26",
+              "ep_id": "2024-05-26-ep3",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-26 12:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-05-27",
+              "ep_id": "2024-05-27-ep4",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-27 16:10:00",
+              "verdict": "clean"
+            },
+            {
+              "date": "2024-05-28",
+              "ep_id": "2024-05-29-ep5",
+              "family": "lows",
+              "kind": "low",
+              "t": "2024-05-28 22:00:00",
+              "verdict": "fired"
+            }
+          ],
+          "headline": "Not ranked in this window yet. Showed up in 1 of 6 lows in this window.",
+          "id": "finding:correction_on_iob",
+          "kind": "habit",
+          "label": null,
+          "lean": null,
+          "lever": "correction_on_iob",
+          "members": null,
+          "parameter": null,
+          "past_setting": null,
+          "pattern": null,
+          "pattern_chart": null,
+          "priority": null,
+          "programmed_now": null,
+          "reason": null,
+          "recommended": null,
+          "regime_end": null,
+          "register": "finding",
+          "run_ids": null,
+          "span": null,
+          "support": null,
+          "tier": "noted",
+          "title": "Correction on active insulin",
+          "verdict_counts": {
+            "clean": 3,
+            "fired": 1,
+            "near_miss": 0,
+            "no_data": 0,
+            "outranked": 2
+          },
+          "verdict_counts_by_family": {
+            "lows": {
+              "clean": 3,
+              "fired": 1,
+              "near_miss": 0,
+              "no_data": 0,
+              "outranked": 2
+            }
+          },
+          "window_scope": "window"
         },
         {
           "annotation": null,

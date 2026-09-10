@@ -319,23 +319,6 @@ function sourceRows(workstationExposures, family) {
   return rows;
 }
 
-/** Build and validate the fixture-only capture from the canonical workstation input. */
-function citationFact(scenarios, row, fact) {
-  const episode = scenarios?.episodes?.[row.ep_id] || {};
-  for (const step of episode.steps || []) {
-    const value = step.citation?.facts?.[fact];
-    if (value != null) return value;
-  }
-  return null;
-}
-
-function leverIdentity(row, lever, scenarios) {
-  if (lever === 'meal_bolus_short') return citationFact(scenarios, row, 'meal_at');
-  if (lever === 'correction_stacking') return citationFact(scenarios, row, 'nadir_at');
-  if (['meals', 'lows'].includes(patternFamily[lever])) return row.t || row.ep_id;
-  return row.ep_id || row.cause_occurrence_id || row.t;
-}
-
 export function buildCapture(workstationExposures, outcomePatterns = [], scenarios = {}) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
@@ -365,6 +348,7 @@ export function buildCapture(workstationExposures, outcomePatterns = [], scenari
           ep_id: row.ep_id, date: row.date, anchor_t: row.t,
           anchor_bg: row.bg ?? null, kind: row.kind || kind, label,
           attributed: Boolean(row.attributed),
+          attributed_levers: structuredClone(row.attributed_levers || []),
           cause_lever: row.cause_lever ?? null,
           verdicts: structuredClone(row.verdicts || []),
           trace: structuredClone(rich?.trace || { cgm: [], boluses: [], suspends: [] }),
@@ -381,11 +365,11 @@ export function buildCapture(workstationExposures, outcomePatterns = [], scenari
     const claims = new Map();
     for (const subject of pattern.rate_levers) {
       const lever = subject.replace('habit:', '');
-      const source = workstationExposures.exposures?.[patternFamily[lever]]?.occurrences || [];
-      for (const row of source) {
-        if (!row.attributed || row.cause_lever !== lever) continue;
-        const identity = leverIdentity(row, lever, scenarios);
-        if (identity != null && !claims.has(identity)) claims.set(identity, subject);
+      for (const row of workstationExposures.exposures?.[family]?.occurrences || []) {
+        const named = (row.attributed_levers || []).includes(lever)
+          || (row.attributed && row.cause_lever === lever);
+        if (!named) continue;
+        if (row.t != null && !claims.has(row.t)) claims.set(row.t, subject);
       }
     }
     return [pattern.key, Object.fromEntries(population.flatMap((row) => (

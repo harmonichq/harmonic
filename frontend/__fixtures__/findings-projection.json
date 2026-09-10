@@ -9519,6 +9519,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "correction_stacking"
+       ],
        "bg": 214.0,
        "cause_lever": "correction_stacking",
        "cause_title": "Correction stacking",
@@ -9556,6 +9559,7 @@
      "occurrences": [
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 260.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9586,6 +9590,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 243.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -9609,6 +9616,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 201.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9624,6 +9632,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 210.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -9663,6 +9674,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "over_treated_low"
+       ],
        "bg": 48.0,
        "cause_lever": "over_treated_low",
        "cause_title": "Over-treated low",
@@ -9693,6 +9707,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9723,6 +9738,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9753,6 +9769,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9783,6 +9800,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "correction_on_iob"
+       ],
        "bg": 50.0,
        "cause_lever": "correction_on_iob",
        "cause_title": "Correction on active insulin",
@@ -9827,6 +9847,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 112.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -9850,6 +9873,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 118.0,
        "cause_lever": null,
        "cause_title": null,
@@ -9873,6 +9897,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 104.0,
        "cause_lever": null,
        "cause_title": null,
@@ -11154,15 +11179,15 @@
   "global": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 6,
+    "lows": 4,
     "meals": 2
    },
    "counts": {
     "assert": 4,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 1
    },
@@ -12365,195 +12390,6 @@
      "window_scope": "window"
     },
     {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
      "annotation": "fasting data agrees with the set factor, but recurring correction-linked lows call for weaker corrections",
      "appearances": null,
      "asserts_move": false,
@@ -12732,6 +12568,195 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
     },
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
@@ -23687,6 +23712,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "correction_stacking"
+       ],
        "bg": 214.0,
        "cause_lever": "correction_stacking",
        "cause_title": "Correction stacking",
@@ -23724,6 +23752,7 @@
      "occurrences": [
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 260.0,
        "cause_lever": null,
        "cause_title": null,
@@ -23754,6 +23783,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 243.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -23777,6 +23809,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 201.0,
        "cause_lever": null,
        "cause_title": null,
@@ -23792,6 +23825,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 210.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -23831,6 +23867,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "over_treated_low"
+       ],
        "bg": 48.0,
        "cause_lever": "over_treated_low",
        "cause_title": "Over-treated low",
@@ -23861,6 +23900,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -23891,6 +23931,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -23921,6 +23962,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 60.0,
        "cause_lever": null,
        "cause_title": null,
@@ -23951,6 +23993,9 @@
       },
       {
        "attributed": true,
+       "attributed_levers": [
+        "correction_on_iob"
+       ],
        "bg": 50.0,
        "cause_lever": "correction_on_iob",
        "cause_title": "Correction on active insulin",
@@ -23995,6 +24040,9 @@
      "occurrences": [
       {
        "attributed": true,
+       "attributed_levers": [
+        "carb_undercount"
+       ],
        "bg": 112.0,
        "cause_lever": "carb_undercount",
        "cause_title": "Carb undercount",
@@ -24018,6 +24066,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 118.0,
        "cause_lever": null,
        "cause_title": null,
@@ -24041,6 +24090,7 @@
       },
       {
        "attributed": false,
+       "attributed_levers": [],
        "bg": 104.0,
        "cause_lever": null,
        "cause_title": null,
@@ -26723,15 +26773,15 @@
   "aged_out": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 5,
+    "lows": 3,
     "meals": 2
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 0
    },
@@ -27929,195 +27979,6 @@
     },
     {
      "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -28236,6 +28097,195 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v2",
@@ -28964,15 +29014,15 @@
   "present": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 5,
+    "lows": 3,
     "meals": 2
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 1
    },
@@ -30170,195 +30220,6 @@
     },
     {
      "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -30479,6 +30340,195 @@
      "window_scope": "whole_day"
     },
     {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
+    },
+    {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
      "appearances": null,
      "asserts_move": null,
@@ -30554,15 +30604,15 @@
   "unavailable": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 5,
+    "lows": 3,
     "meals": 2
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 0
    },
@@ -31760,195 +31810,6 @@
     },
     {
      "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -32067,6 +31928,195 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
     }
    ],
    "schema": "diagnose-findings-v2",
@@ -62619,15 +62669,15 @@
   "carb_ratio_raise": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 6,
+    "lows": 4,
     "meals": 2
    },
    "counts": {
     "assert": 4,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 1
    },
@@ -63882,195 +63932,6 @@
     },
     {
      "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -64189,6 +64050,195 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
     },
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",
@@ -65037,15 +65087,15 @@
   "global": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {
-    "corrections": 2,
+    "corrections": 1,
     "highs": 5,
-    "lows": 5,
+    "lows": 3,
     "meals": 2
    },
    "counts": {
     "assert": 3,
     "blind": 0,
-    "finding": 7,
+    "finding": 5,
     "held": 0,
     "history": 1
    },
@@ -66243,195 +66293,6 @@
     },
     {
      "annotation": null,
-     "appearances": [
-      {
-       "family": "lows",
-       "m": 5,
-       "n": 1,
-       "noun": "lows"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_on_iob",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-13",
-       "ep_id": "2026-08-13-ep0",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-13 13:55:00",
-       "verdict": "outranked"
-      },
-      {
-       "date": "2026-08-14",
-       "ep_id": "2026-08-14-ep1",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-14 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep2",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 12:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-15",
-       "ep_id": "2026-08-15-ep3",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-15 16:10:00",
-       "verdict": "clean"
-      },
-      {
-       "date": "2026-08-16",
-       "ep_id": "2026-08-17-ep4",
-       "family": "lows",
-       "kind": "low",
-       "t": "2026-08-16 22:00:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
-     "id": "finding:correction_on_iob",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_on_iob",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction on active insulin",
-     "verdict_counts": {
-      "clean": 3,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 1
-     },
-     "verdict_counts_by_family": {
-      "lows": {
-       "clean": 3,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 1
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
-     "appearances": [
-      {
-       "family": "correction_clusters",
-       "m": 1,
-       "n": 1,
-       "noun": "correction clusters"
-      }
-     ],
-     "asserts_move": null,
-     "chips": [
-      "lows",
-      "corrections"
-     ],
-     "claimed_by": null,
-     "current": null,
-     "direction": null,
-     "episodes": 1,
-     "estimate": null,
-     "event_chart": {
-      "lever": "correction_stacking",
-      "window": {
-       "end_min": null,
-       "label": null,
-       "scoped": false,
-       "start_min": null
-      }
-     },
-     "evidence": [
-      {
-       "date": "2026-08-17",
-       "ep_id": "ep3",
-       "family": "correction_clusters",
-       "kind": "correction",
-       "t": "2026-08-17 15:10:00",
-       "verdict": "fired"
-      }
-     ],
-     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
-     "id": "finding:correction_stacking",
-     "kind": "habit",
-     "label": null,
-     "lean": null,
-     "lever": "correction_stacking",
-     "members": null,
-     "parameter": null,
-     "past_setting": null,
-     "pattern": null,
-     "pattern_chart": null,
-     "priority": null,
-     "programmed_now": null,
-     "reason": null,
-     "recommended": null,
-     "regime_end": null,
-     "register": "finding",
-     "run_ids": null,
-     "span": null,
-     "support": null,
-     "tier": "noted",
-     "title": "Correction stacking",
-     "verdict_counts": {
-      "clean": 0,
-      "fired": 1,
-      "near_miss": 0,
-      "no_data": 0,
-      "outranked": 0
-     },
-     "verdict_counts_by_family": {
-      "correction_clusters": {
-       "clean": 0,
-       "fired": 1,
-       "near_miss": 0,
-       "no_data": 0,
-       "outranked": 0
-      }
-     },
-     "window_scope": "window"
-    },
-    {
-     "annotation": null,
      "appearances": null,
      "asserts_move": null,
      "chips": [
@@ -66550,6 +66411,195 @@
      "verdict_counts": null,
      "verdict_counts_by_family": null,
      "window_scope": "whole_day"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 5,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_on_iob",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "outranked"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep3",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 16:10:00",
+       "verdict": "clean"
+      },
+      {
+       "date": "2026-08-16",
+       "ep_id": "2026-08-17-ep4",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-16 22:00:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 5 lows in this window.",
+     "id": "finding:correction_on_iob",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_on_iob",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction on active insulin",
+     "verdict_counts": {
+      "clean": 3,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 1
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 3,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 1
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "correction_clusters",
+       "m": 1,
+       "n": 1,
+       "noun": "correction clusters"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "lows",
+      "corrections"
+     ],
+     "claimed_by": "pattern:lows_after_correcting_highs",
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "correction_stacking",
+      "window": {
+       "end_min": null,
+       "label": null,
+       "scoped": false,
+       "start_min": null
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-17",
+       "ep_id": "ep3",
+       "family": "correction_clusters",
+       "kind": "correction",
+       "t": "2026-08-17 15:10:00",
+       "verdict": "fired"
+      }
+     ],
+     "headline": "Not ranked in this window yet. Showed up in 1 of 1 correction clusters in this window.",
+     "id": "finding:correction_stacking",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "correction_stacking",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "noted",
+     "title": "Correction stacking",
+     "verdict_counts": {
+      "clean": 0,
+      "fired": 1,
+      "near_miss": 0,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "correction_clusters": {
+       "clean": 0,
+       "fired": 1,
+       "near_miss": 0,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
     },
     {
      "annotation": "When Carb ratio was 6 g/U, 3 meal runs measured 6 g/U (CI 6–6). Past setting. No change suggested.",

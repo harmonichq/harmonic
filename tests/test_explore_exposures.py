@@ -102,7 +102,8 @@ class ExploreExposuresTest(unittest.TestCase):
             for occurrence in occurrences:
                 self.assertEqual(set(occurrence), {
                     "t", "date", "bg", "worst_bg", "kind", "label", "state",
-                    "attributed", "cause_lever", "cause_title", "text", "verdicts", "ep_id",
+                    "attributed", "attributed_levers", "cause_lever", "cause_title",
+                    "text", "verdicts", "ep_id",
                 })
                 self.assertEqual(occurrence["attributed"], occurrence["state"] == "fired")
                 for verdict in occurrence["verdicts"]:

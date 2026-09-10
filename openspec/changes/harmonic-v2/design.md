@@ -1847,6 +1847,82 @@ is independently shippable as backend policy plus a Diagnose revision before
 #389 resumes. #390's own children — #391, #342, and the backend, design and
 collapse children to come — are filed under #390, not #348.
 
+## ADR 395 — Two Patterns count what the reader sees
+
+**Decision.** Two roster rulings from the #395 design round on the operator's
+own data, which showed the same behaviour split across a Pattern and a member
+it could not count. (1) Highs after meals counts meal bolus fell short as a
+rate lever beside carb undercount and late bolus: it is the same under-dosed
+meal judged from the high it produced rather than from the meal, identified by
+the meal opportunity its episode covers, which the exposures feed stamps on the
+meals population itself, so a meal caught by both detectors counts once;
+it stays observation-only for actions and admission. (2) Lows after correcting
+highs counts over lows, not correction clusters: `k` lows preceded by a
+correction on active insulin, stacked or not, of `n` lows, with both correction
+stacking and correction on active insulin as rate levers identified by the low
+opportunity their episode reaches, stamped by the exposures feed on the lows
+population itself (a lever whose target lies outside its own episode stamps
+nothing), anchored on the low in its case file. Correction clusters (adjacent pairs of user corrections) remain the
+stacking detector's own evidence population and stop being a Pattern
+denominator. The #391 receipt carries no union-of-both-levers rate over lows, so
+the readiness gate for that Pattern is the lows-family floor of 12 by the
+ADR 391 rule rather than a derived bound, and HV2-24's criterion line drops
+"27 correction clusters".
+
+Sanction: Connor Griffin · 2026-09-09 · "Personally I feel like those are
+actually just the same finding in different clothes" (corrections), "It's the
+same shit as undercount just with slightly different criteria" (meal bolus fell
+short), "A" to both.
+
+**Must prevent.** Pooling: each lever's identities are unioned within one
+population, never summed across populations; missed meal stays outside every
+Pattern because an un-bolused rise is not a meal opportunity.
+
+## ADR 395 — The rail projects the roster
+
+**Decision.** The design child #395 serves the Pattern roster through the
+existing findings projection rather than beside it. On the unscoped whole-day
+query only, each `remain_pattern` roster entry becomes one served ranked row
+(`id` `pattern:<key>`, register `finding`, kind `pattern`, priority
+`settled_price` or null when unadmitted), the rows of every lever that feeds its rate,
+admitted or not, stay served and gain one additive `claimed_by` stamp, and the finding case file
+accepts the Pattern subject, returning the Pattern's own Exposure population
+read from the same exposures feed that prices the row (one occurrence list
+serves the row's n and k and the case file's denominator and claimed count, so
+the two cannot disagree), with each occurrence's existing per-member verdict
+and claiming member; one predicate, `pattern_chartable`, decides both whether
+the row carries a chart coordinate and whether the case file serves. A
+scoped window serves no Pattern row, because the roster's counts are
+whole-feed and every other row is window-local. No membership, rate,
+admission, collapse or readiness rule moves: the projection re-shapes what
+#393 already publishes.
+
+This corrects the paraphrase in "Why a fourth native child under #390" above:
+the lifecycle rule forbids one order mixing `build` with `revise`, and permits
+a `none` sub-order under a `revise` header. #395's server half is therefore a
+`none` chunk of the revision, not a second backend build, and the shipped rail
+is untouched until that revision lands. The issue intake's expectation that the
+projection shape would not be touched is superseded by the re-inventory
+finding that the roster carries no chart series and no position.
+
+**Must prevent.** A Pattern row printing counts from a different window than
+its neighbours; the browser deriving placement, chips, or a verdict.
+
+### Why a fourth native child under #390
+
+#390 carries four children: the spike #391 (rulings), the backend build #393
+(policy in producers, projection, guidance and persistence; surface lifecycle
+none), the eating-sequence members #342, and the design child (the per-pattern
+chart and the pattern row on the shipped rail; surface lifecycle revise under
+`/ui-craft`, with Connor holding the lock). The backend build and the design
+child cannot share a ticket: the lock rules forbid one order mixing `none` and
+`revise`, the design child needs a visual lock the backend build does not, and
+each is independently shippable — the backend policy already serves the roster
+through public interfaces with the shipped rail untouched, and the rail revision
+changes no policy. The Diagnose collapse (2.5.5) is a further lifecycle-gated
+revision amending the desktop lock's navigation terms and is filed when the
+design child is admitted.
+
 ### Effect on the desktop lock
 
 `HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus

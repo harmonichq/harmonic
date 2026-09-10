@@ -102,7 +102,8 @@ class ExploreExposuresTest(unittest.TestCase):
             for occurrence in occurrences:
                 self.assertEqual(set(occurrence), {
                     "t", "date", "bg", "worst_bg", "kind", "label", "state",
-                    "attributed", "cause_lever", "cause_title", "text", "verdicts", "ep_id",
+                    "attributed", "attributed_levers", "cause_lever", "cause_title",
+                    "text", "verdicts", "ep_id",
                 })
                 self.assertEqual(occurrence["attributed"], occurrence["state"] == "fired")
                 for verdict in occurrence["verdicts"]:
@@ -170,6 +171,46 @@ class ExploreExposuresTest(unittest.TestCase):
                          (False, "owned_by_announced_meal"))
         self.assertNotEqual(low["cause_lever"], "over_treated_low")
         self.assertEqual(payload["exposures"]["lows"]["n"], 1)
+
+    def test_stack_whose_low_is_in_a_later_episode_leaves_the_pattern_unclaimed(self):
+        from ciq_autotune.analyzers.scenario.outcome_patterns import (
+            build_outcome_patterns,
+        )
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_scenario_engine import ISF, cgm_flat, cgm_ramp, corr
+
+        cgm = (
+            cgm_ramp(20, 14, 0, 160, -0.8, 60)
+            + cgm_flat(20, 15, 5, 112, 150)
+            + cgm_ramp(20, 17, 40, 112, -1.6, 30)
+        )
+        bolus = [corr(20, 14, 10, units=3), corr(20, 14, 40, units=3)]
+        with tempfile.NamedTemporaryFile(suffix=".db") as db:
+            with Store.open(db.name) as store:
+                self._seed_scenario_events(store, bolus, cgm)
+                with patch(
+                    "ciq_autotune.explore_exposures._effective_isf", return_value=ISF,
+                ):
+                    exposures = build_exposures(store)
+
+        pattern = next(
+            item for item in build_outcome_patterns(
+                {}, exposures, {"patterns": [], "low_confidence": []},
+            )
+            if item["key"] == "lows_after_correcting_highs"
+        )
+        cluster = exposures["exposures"]["correction_clusters"]["occurrences"]
+        lows = exposures["exposures"]["lows"]["occurrences"]
+        self.assertEqual(
+            sum(
+                item["cause_lever"] == "correction_stacking"
+                for item in cluster
+            ),
+            1,
+        )
+        self.assertEqual(lows[0]["t"], "2026-06-20 18:10:00")
+        self.assertNotEqual(cluster[0]["ep_id"], lows[0]["ep_id"])
+        self.assertEqual((pattern["k"], pattern["n"]), (0, 1))
 
 
 @unittest.skipUnless(_HAS_FASTAPI, "api extra not installed")

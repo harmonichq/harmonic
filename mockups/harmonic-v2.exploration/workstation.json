@@ -20986,6 +20986,7 @@
           "highs",
           "meals"
         ],
+        "claimed_by": "pattern:highs_after_meals",
         "current": null,
         "direction": null,
         "episodes": 6,
@@ -21138,6 +21139,8 @@
         "members": null,
         "parameter": null,
         "past_setting": null,
+        "pattern": null,
+        "pattern_chart": null,
         "priority": 0,
         "programmed_now": null,
         "reason": null,
@@ -40849,6 +40852,7 @@
           "highs",
           "meals"
         ],
+        "claimed_by": "pattern:highs_after_meals",
         "current": null,
         "direction": null,
         "episodes": 2,
@@ -40921,6 +40925,8 @@
         "members": null,
         "parameter": null,
         "past_setting": null,
+        "pattern": null,
+        "pattern_chart": null,
         "priority": 0,
         "programmed_now": null,
         "reason": null,

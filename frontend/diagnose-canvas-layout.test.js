@@ -216,3 +216,4 @@ test('a starred focal chart keeps the focal seat whatever order it was retained 
     { chartId: 'first', seat: 'mini', pinned: true },
   ]);
 });
+

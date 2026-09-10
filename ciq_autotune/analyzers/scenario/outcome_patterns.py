@@ -15,27 +15,30 @@ from typing import Iterable
 
 from ...harm import HarmConfig
 from ...uncertainty import wilson
-from .levers import Lever, exposure
-
-
 _GATES = {
     "highs_after_meals": 12,
     "lows_after_meals": 12,
     "highs_after_treating_lows": 12,
-    "lows_after_correcting_highs": 27,
+    "lows_after_correcting_highs": 12,
     "overnight_lows_no_iob": 12,
 }
-"""Derived from the #391 receipt's 90-day rates by the Wilson positive-lower-bound rule, floored at 12, with 27 for lows after correcting highs."""
+"""Derived from the #391 receipt's 90-day rates by the Wilson positive-lower-bound
+rule, floored at 12. The receipt carries no union-of-correction-stacking-and-
+correction-on-IOB rate over lows, so ``lows_after_correcting_highs`` uses the ADR's
+lows-family floor of 12 rather than a derived bound.
+"""
 
 _ROSTER = (
-    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus"), ("carb_undercount", "late_bolus"), "carb_ratio", "meals"),
+    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus"), ("carb_undercount", "late_bolus", "meal_bolus_short"), "carb_ratio", "meals"),
     ("lows_after_meals", "Lows after meals", ("meal_over_delivery",), ("meal_over_delivery",), "carb_ratio", "meals"),
     ("highs_after_treating_lows", "Highs after treating lows", ("over_treated_low",), ("over_treated_low",), None, "lows"),
-    ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking",), "isf", "correction_clusters"),
+    ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking", "correction_on_iob"), "isf", "lows"),
     ("overnight_lows_no_iob", "Overnight lows with no insulin on board", (), (), "basal_rate", "nights"),
 )
 
-_LOW_IDENTITY_LEVERS = frozenset({"meal_over_delivery", "correction_on_iob"})
+_LOW_IDENTITY_LEVERS = frozenset({
+    "meal_over_delivery", "correction_stacking", "correction_on_iob",
+})
 _SETTING_ROWS = {"basal_rate": "basal", "carb_ratio": "ic_blocks", "isf": "isf"}
 _HARM_CONFIG = HarmConfig()
 
@@ -153,25 +156,22 @@ def _setting_member(
     }]
 
 
-def _identity(item: dict) -> str | None:
-    return item.get("ep_id") or item.get("cause_occurrence_id") or item.get("t")
-
-
-def _lever_identities(exposures: dict, lever: str) -> set[str]:
-    source = (exposures.get("exposures") or {}).get(exposure(Lever(lever)).value) or {}
+def _lever_identities(exposures: dict, family: str, lever: str) -> set[str]:
+    """Read a rate lever's claims from the Pattern's target-family population."""
+    source = (exposures.get("exposures") or {}).get(family) or {}
     return {
-        identity for item in source.get("occurrences") or ()
-        if item.get("attributed") and item.get("cause_lever") == lever
-        if (identity := _identity(item)) is not None
+        item["t"] for item in source.get("occurrences") or ()
+        if lever in (item.get("attributed_levers") or ())
+        and item.get("t") is not None
     }
 
 
-def _rate(exposures: dict, family: str, rate_levers: Iterable[str], *, overnight_k: int,
-          overnight_n: int) -> tuple[int, int, str]:
+def _rate(exposures: dict, family: str, rate_levers: Iterable[str], *,
+          overnight_k: int, overnight_n: int) -> tuple[int, int, str]:
     if family == "nights":
         return overnight_k, overnight_n, "harm_band_source_nights"
     source = (exposures.get("exposures") or {}).get(family) or {}
-    identities = set().union(*(_lever_identities(exposures, lever)
+    identities = set().union(*(_lever_identities(exposures, family, lever)
                                for lever in rate_levers)) if rate_levers else set()
     return len(identities), source.get("n", 0), "exposures"
 
@@ -187,12 +187,11 @@ def _not_comparable(reason: str) -> dict:
 def _cross_pattern_overlaps(exposures: dict) -> dict[str, dict]:
     identities = {}
     families = {}
-    for key, _title, habit_levers, _rate_levers, _setting, _family in _ROSTER:
-        families[key] = {exposure(Lever(lever)).value for lever in habit_levers}
+    for key, _title, habit_levers, _rate_levers, _setting, family in _ROSTER:
+        families[key] = set() if family == "nights" else {family}
         identities[key] = {
             family: set().union(*(
-                _lever_identities(exposures, lever) for lever in habit_levers
-                if exposure(Lever(lever)).value == family
+                _lever_identities(exposures, family, lever) for lever in habit_levers
             ))
             for family in families[key]
         }
@@ -265,8 +264,9 @@ def _harm_low_overlaps(
 def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> list[dict]:
     """Return the closed five-pattern roster from already-published source outputs.
 
-    Correction-on-IOB remains a member of lows after correcting highs, but only
-    correction stacking contributes to that Pattern's correction-cluster rate.
+    Meal-bolus-short remains observation-only, but the meal opportunity attributed
+    to it contributes to highs after meals. Both correction levers contribute the
+    low opportunity attributed to them.
     """
     from ...guidance import _source_candidates as guidance_candidates
 

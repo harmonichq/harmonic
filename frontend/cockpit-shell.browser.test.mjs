@@ -15,6 +15,7 @@ import { timeOfDay } from '../mockups/explore-investigation.fixture.js';
 // restating its grammar — a restatement would be the third page registry ADR 94
 // forbids, and would drift the moment a page gained state.
 import { TABS as ROUTER_TABS, parseRoute, serializeRoute } from './tab-routing.js';
+import { patternCaseResponse } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
   populateFindingCasePreparation,
@@ -60,6 +61,8 @@ const APP_ROOT = process.env.COCKPIT_APP_ROOT || ROOT;
 const FRONTEND = join(APP_ROOT, 'frontend');
 const DIAGNOSE_PAYLOAD = JSON.parse(await readFile(
   join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json'), 'utf8'));
+const PATTERN_CAPTURE = JSON.parse(await readFile(
+  join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json'), 'utf8'));
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(FRONTEND, '__fixtures__/findings-projection.json'), 'utf8'));
 const FINDING_CASE_FILES = JSON.parse(await readFile(
@@ -351,12 +354,14 @@ async function routeApp(page, options = {}) {
       const finding = FINDING_CASE_FILES.cases[url.searchParams.get('finding_id')];
       const alignment = url.searchParams.get('alignment') || 'clock';
       const occurrence = url.searchParams.get('occ');
-      const body = !finding
+      const pattern = patternCaseResponse(PATTERN_CAPTURE, url,
+        preparedWindows.get(url.searchParams.get('projection_id')));
+      const body = pattern || (!finding
         ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
         : occurrence
           ? (finding[`selected_${alignment}`][occurrence]
             || finding[`unavailable_${alignment}`])
-          : finding[alignment];
+          : finding[alignment]);
       const response = structuredClone(body);
       const projectionId = url.searchParams.get('projection_id');
       if (finding && preparedWindows.has(projectionId)) {
@@ -365,7 +370,7 @@ async function routeApp(page, options = {}) {
       }
       const served = options.caseFileResponse
         ? options.caseFileResponse(response, url) : response;
-      return route.fulfill({ status: finding ? 200 : 404, body: JSON.stringify(served),
+      return route.fulfill({ status: finding || pattern ? 200 : 404, body: JSON.stringify(served),
         contentType: 'application/json' });
     }
     if (url.pathname === '/api/diagnose/basal-night-evidence') {
@@ -1582,7 +1587,8 @@ test('event comparisons render the served case-file cohorts and retain no standa
   } finally { if (page) await page.close(); }
 });
 
-test('event comparisons fail closed when the served case file is malformed',
+for (const findingId of ['finding:over_treated_low', 'pattern:highs_after_meals']) {
+  test(`event comparisons fail closed when the served case file is malformed (${findingId})`,
   async () => {
   const browser = await launch();
   let page;
@@ -1595,17 +1601,26 @@ test('event comparisons fail closed when the served case file is malformed',
             ? { ...cohort, support: 'unknown' } : cohort) },
       } });
     await page.locator('#seg-window button', { hasText: '24 h' }).click();
-    await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
+    const row = page.locator(`#level .qrow[data-id="${findingId}"]`);
+    // Canonical identity reaches the served member regardless of nesting/order.
+    await row.waitFor();
+    if (findingId.startsWith('pattern:')) {
+      await page.waitForFunction((id) => document.querySelector(
+        `#level .qrow[data-id="${id}"] .mini.tile-state`)?.textContent === 'Evidence unavailable', findingId);
+      assert.equal(await row.locator('.mini canvas').count(), 0);
+    }
+    await row.click();
     const error = page.locator('.case-file-error');
     await error.waitFor();
     assert.match(await error.innerText(), /Finding case file did not match/);
     assert.equal(await page.locator(
-      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]',
+      `#tile-focal .evidence-tile[data-chart-id="${findingId}"][data-drilled]`,
     ).count(), 1, 'the malformed case remains visibly attached to its owning tile');
     assert.equal(await page.locator('[data-comparison-cohort]').count(), 0,
       'a malformed case renders no stale comparison cohort rows');
   } finally { if (page) await page.close(); }
 });
+}
 
 /* #358 — Diagnose stages optimistically: the stage control, the watched-change
    dock and the Plan step badge all repaint before `PUT /api/plan` has answered,

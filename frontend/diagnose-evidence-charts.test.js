@@ -1283,8 +1283,7 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       `${outcome} · ${data.summary.claimed}`, `TYPICAL · ${data.summary.denominator}`,
     ]);
     assert.deepEqual([option.xAxis.min, option.xAxis.max], data.projection.window_min);
-    assert.deepEqual([option.yAxis.min, option.yAxis.max], glucoseRange(data.projection.cohorts
-      .flatMap((cohort) => cohort.points.flatMap((point) => [point.median, point.p25, point.p75]))));
+    assert.deepEqual([option.yAxis.min, option.yAxis.max], [60, 260]);
     assert.ok(!option.series.some((series) => series.id.includes('matched:band:')));
     const median = option.series.find((series) => series.id === 'queue:event:matched:median');
     assert.equal(median.lineStyle.color, colors.misses);
@@ -1311,7 +1310,7 @@ test('#395 · an unknown Pattern coordinate is not mounted as a supported chart 
 });
 
 
-test('#395 · Pattern evidence cannot widen the shared field and malformed previews fail closed', () => {
+test('#395 · Pattern evidence joins the shared field and malformed previews fail closed', () => {
   const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
   const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
   const data = projectPatternCaseFile(capture, {
@@ -1320,9 +1319,17 @@ test('#395 · Pattern evidence cannot widen the shared field and malformed previ
   const lever = { kind: 'event-comparison', state: 'ok', data: eventCase() };
   const pattern = { kind: entry.kind, state: 'ok', data };
   assert.deepEqual(glucoseRange(entry.glucoseValues(data)), [40, 220]);
-  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange),
-    fieldRange([lever], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange));
-  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 200]);
+  assert.deepEqual(fieldRange([lever], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 200]);
+  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [40, 220]);
+  const range = fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
+  for (const descriptor of [lever, pattern]) {
+    const chart = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === descriptor.kind);
+    for (const mini of [true, false]) {
+      const option = chart.option(null, { data: descriptor.data, range, mini });
+      assert.deepEqual([option.yAxis.min, option.yAxis.max], range,
+        'every Pattern and Lever tile keeps the shared field extent');
+    }
+  }
   assert.equal(entry.validateData(data), true);
   const invalidSupport = structuredClone(data);
   invalidSupport.projection.cohorts[0].support = 'unknown';
@@ -1332,5 +1339,18 @@ test('#395 · Pattern evidence cannot widen the shared field and malformed previ
     assert.throws(() => entry.queuePreview({ ...pattern, data: malformed }, [60, 200], {}),
       { name: 'Error', message: 'Pattern evidence is unavailable.' },
       'the shared mini mount catches the named failure without dereferencing missing cohorts');
+  }
+});
+
+
+test('#341 · narrow I:C plots label interior ticks without changing the shared extent', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'carb-ratio');
+  const data = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
+  for (const width of [320, 480, 481, 960]) {
+    const option = entry.option(null, { data, range: [40, 220], surface: { clientWidth: width } });
+    assert.deepEqual([option.yAxis.min, option.yAxis.max], [40, 220]);
+    assert.equal(option.yAxis.interval, undefined, 'the scale keeps its shipped tick-density rule');
+    assert.equal(option.yAxis.axisLabel.showMinLabel, width <= 480 ? false : undefined);
+    assert.equal(option.yAxis.axisLabel.showMaxLabel, width <= 480 ? false : undefined);
   }
 });

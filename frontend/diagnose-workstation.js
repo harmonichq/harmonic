@@ -52,7 +52,7 @@ import {
 } from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
-  eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
+  caseFileAlignment, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 // #372: the Plan draft's own staging predicate, so this surface's staged
@@ -1960,12 +1960,12 @@ function boot(root, data, callbacks, signal) {
     ...(occ ? { occ } : {}),
   });
   const matchingPreparation = assertMatchingFindingCasePreparation;
-  const eventChartIn = (source, frame) => eventChartCoordinate(
+  const eventChartIn = (source, frame) => caseFileAlignment(
     source?.rendered_rows?.find((row) => row.id === frame.rowId),
-  );
+  ) === 'event';
   const caseAlignmentIn = (source, frame) => {
     const row = source?.rendered_rows?.find((row) => row.id === frame.rowId);
-    return eventChartCoordinate(row);
+    return caseFileAlignment(row) === 'event';
   };
   const availableAlignment = (source, frame, requested) =>
     requested === 'event'
@@ -2246,7 +2246,7 @@ function boot(root, data, callbacks, signal) {
       return;
     }
     if (row.register === 'finding') {
-      const entryAlignment = eventChartCoordinate(row) ? 'event' : 'clock';
+      const entryAlignment = caseFileAlignment(row);
       const frame = { k: 'factor', rowId: row.id, title: row.title,
         caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
         bandVerdict: null, loading: false,

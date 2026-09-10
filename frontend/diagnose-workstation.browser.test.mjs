@@ -676,15 +676,23 @@ test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async (
     const geometry = await page.locator('#tile-focal .tile-chart').evaluate((host) => {
       const chart = window.echarts.getInstanceByDom(host);
       const grid = chart.getModel().getComponent('grid').coordinateSystem.getRect();
-      const ticks = chart.getModel().getComponent('yAxis').axis.scale.getTicks()
-        .map(({ value }) => chart.convertToPixel({ yAxisIndex: 0 }, value))
-        .filter(Number.isFinite).sort((left, right) => left - right);
+      const axisView = chart.getViewOfComponentModel(chart.getModel().getComponent('yAxis'));
+      const ticks = [];
+      axisView.group.traverse((element) => {
+        // Scale ticks include clipped endpoints even when ECharts hides their
+        // labels. Measure the numeric labels the reader can actually see.
+        if (element.type !== 'text' || element.ignore || element.invisible
+          || !Number.isFinite(Number(element.style.text))) return;
+        ticks.push(element.transformCoordToGlobal(0, 0)[1]);
+      });
+      ticks.sort((left, right) => left - right);
       return { hostHeight: host.getBoundingClientRect().height, plotHeight: grid.height,
         canvasScrollTop: document.querySelector('.canvas-pane').scrollTop,
+        visibleTickCount: ticks.length,
         minimumTickGap: Math.min(...ticks.slice(1).map((value, index) => value - ticks[index])) };
     });
     assert.ok(geometry.hostHeight >= 170 && geometry.plotHeight >= 90
-      && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
+      && geometry.visibleTickCount >= 3 && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
     `the long-title I:C plot keeps readable height and separated y ticks: ${JSON.stringify(geometry)}`);
     const visibleContext = await page.evaluate(() => {
       const rect = (selector) => {

@@ -109,8 +109,6 @@ export function descriptorsFromFindings(findings, registry) {
 export function fieldRange(descriptors, registry, glucoseRange) {
   const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
   return glucoseRange(descriptors.flatMap((descriptor) => {
-    // Pattern responses own their range; they do not rescale the mixed field.
-    if (descriptor.kind === 'pattern-case-file') return [];
     const values = byKind.get(descriptor.kind)?.glucoseValues;
     return descriptor.state === 'ok' && values ? values(descriptor.data) : [];
   }));

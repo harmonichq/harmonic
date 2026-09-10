@@ -95,6 +95,11 @@ export function eventChartCoordinate(row) {
   return coordinate;
 }
 
+/** A published Pattern or Lever chart enters the same event case-file drill. */
+export function caseFileAlignment(row) {
+  return row?.pattern_chart || eventChartCoordinate(row) ? 'event' : 'clock';
+}
+
 /**
  * Term 45 — the queue's meta copy, and nothing else ever goes there.
  *

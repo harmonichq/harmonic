@@ -12,7 +12,7 @@ import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
   MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY,
   renderFindingsQueue,
-  queueMeta, queueRows,
+  caseFileAlignment, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -630,4 +630,15 @@ test('#395 · the two-family browser input publishes exactly seven mini hosts', 
     'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
     'pattern:highs_after_meals', 'finding:carb_undercount', 'pattern:lows_after_correcting_highs',
   ]);
+});
+
+
+test('#395 · Pattern and Lever drills request event cases; chartless rows retain clock entry', () => {
+  const pattern = W.global.rows.find((row) => row.pattern_chart);
+  const lever = W.global.rows.find((row) => row.event_chart);
+  assert.ok(pattern && lever, 'generated rows carry both kinds of case coordinate');
+  assert.equal(caseFileAlignment(pattern), 'event');
+  assert.equal(caseFileAlignment(lever), 'event');
+  assert.equal(caseFileAlignment({ ...pattern, pattern_chart: null }), 'clock');
+  assert.equal(caseFileAlignment(undefined), 'clock');
 });

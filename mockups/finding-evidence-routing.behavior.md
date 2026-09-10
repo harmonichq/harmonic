@@ -3731,3 +3731,36 @@ canonical-id drill remains, and the same malformed-case check additionally
 runs on Highs after meals, requiring a failed mini with no canvas and an
 owning drilled tile with no stale cohort rows. No story is skipped or retired.
 The coordinator owns the post-fix browser reruns and renders.
+
+
+## Amendment — 2026-09-09, shared range and Pattern error drill (issue #395)
+
+Authority: ORDER.md coordinator amendment 6. Failed-first evidence is under
+Scratch/coord-verify-6: S20 passed, but S102 reported three field ranges and
+the malformed Pattern drill never showed `.case-file-error`.
+
+**F15 supersedes F13's range isolation.** All Pattern and Lever values again
+join the one field range. Every tile and queue preview consumes that range;
+S102 remains unchanged. The #341 axis probe at the observed 185.25px host
+height showed the actual I:C issue: ECharts added clipped endpoint ticks at
+40 and 220 around its interior 30-unit ticks. The 220 label was already hidden,
+but the assertion counted its 6.5px interval; the visible 40 and 60 labels were
+only 13px apart. Narrow I:C glucose plots now omit endpoint labels without
+changing extent, interior tick density, or any other chart kind. The existing
+#341 probe measures visible numeric labels rather than hidden scale ticks,
+retains the 14px separation and plot-height checks, and additionally requires
+at least three visible ticks. A Node SVG-renderer probe at the same geometry
+reports six labels spaced 19.54px apart with the shared [40, 220] range intact.
+The fast tests pin shared Pattern/Lever ranges and the I:C-only width boundary.
+
+**F16 uses the shared event-case error path.** Pattern queue drills previously
+checked only `event_chart`, selecting clock alignment despite a published
+`pattern_chart`. The malformed-case gate corrupts event responses, so that
+clock request bypassed the malformed response entirely. The shared entry
+alignment helper now reads either published chart coordinate; chartless rows
+retain clock entry. Preparation recovery uses the same helper. Both kinds
+continue through `requestCase`, `matchingCase`, and the unchanged
+`.case-file-error` surface. The parameterized cockpit malformed-case test stays
+unchanged and node coverage pins both kinds' event entry. No validator is
+weakened, no error is hidden, and no story is retired. Coordinator browser
+confirmation remains required.

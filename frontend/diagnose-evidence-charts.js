@@ -157,13 +157,10 @@ const patternMiniLabel = (data) => {
 
 /* Pattern rail furniture wraps the shipped response preview. The case file
    still supplies every point; this changes only the sanctioned inks and labels. */
-function patternQueuePreview(descriptor, _range, colors) {
+function patternQueuePreview(descriptor, range, colors) {
   const data = descriptor.data;
   if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
-  const drawnValues = data.projection.cohorts.flatMap((cohort) => cohort.points
-    .filter((point) => point.support !== 'withheld')
-    .flatMap((point) => [point.median, point.p25, point.p75]));
-  const option = queuePreviewOption(descriptor, glucoseRange(drawnValues), {
+  const option = queuePreviewOption(descriptor, range, {
     ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
   });
   option.graphic = [
@@ -837,7 +834,7 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
+function carbRatioOption(mode, { data, range, mini = false, window, surface = null } = {}) {
   const colors = chartColors();
   const block = data?.block || {};
   const runs = data?.runs || [];
@@ -891,7 +888,12 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
       ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
-      ...axis(colors, 'vertical', mini) },
+      ...axis(colors, 'vertical', mini),
+      // Clipped endpoint intervals can be much shorter than the interior ticks.
+      // Keep the shared extent; a narrow I:C plot labels its interior ticks.
+      ...(surface?.clientWidth <= 480 ? { axisLabel: {
+        ...axis(colors, 'vertical', mini).axisLabel, showMinLabel: false, showMaxLabel: false,
+      } } : {}) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
         markLine: { symbol: 'none', silent: true,
@@ -1053,8 +1055,8 @@ const entries = [
       title: row.title || 'Pattern response',
       meta: `${row.pattern?.n ?? 0} opportunities aligned to each event`,
     }),
-    option: (_mode, { data, caseFile = data, surface = null, mini = false } = {}) =>
-      eventComparisonChartOption(caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface, mini),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
     thumbnail: (data) => thumbnail(patternMiniLabel(data),
       `TYPICAL · ${data?.summary?.denominator ?? 0}`,
       [{ type: 'line', symbol: 'none', connectNulls: true,

@@ -402,7 +402,6 @@ async function cleanup(page, ctx, pagehide = false) {
       const mounted = await page.locator('[data-v2-diagnose]').count();
       throw new Error(`S84 timed out waiting for pagehide teardown; saw ${mounted} mounted view(s)`, { cause: error });
     });
-    assert.equal(await page.locator('[data-v2-diagnose]').count(), 0, 'pagehide removes the mounted view');
   } else {
     for (let i = 0; i < 3; i += 1) {
       await go(page, 'changes'); assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
@@ -532,9 +531,12 @@ export const C2_STORIES = {
       try {
         await waitForDesk(page);
         await waitForCharts(page);
+        // The reading pane's pending line is a role=status element the pane
+        // removes once its read lands; the level flag is the shipped rail's
+        // own. No copied copy: a renamed noun cannot make this vacuous.
         await page.waitForFunction(() => {
           const level = document.getElementById('level');
-          return level && !level.textContent.includes('Loading nights');
+          return level && level.dataset.loading !== 'true' && !level.querySelector('[role="status"]');
         }, null, { timeout: 30000 });
         await waitForLevelAnimations(page);
       } catch (error) {
@@ -569,6 +571,10 @@ export const C2_STORIES = {
     await cells.first().press('ArrowLeft');
     await assertSelectedEdge('last');
     await waitForLaneRepaint('ArrowRight');
+    // The key goes to the selected cell; locator.press focuses it first, so a
+    // focus dropped by the evidence repaint is tolerated here — that loss is
+    // the product observation on #404, not this story's claim, which is the
+    // wrap (asserted below with focus on the moved-to cell).
     await page.locator('#lane > button[aria-pressed="true"]').press('ArrowRight');
     await assertSelectedEdge('first');
   },

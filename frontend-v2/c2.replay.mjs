@@ -531,14 +531,13 @@ export const C2_STORIES = {
       try {
         await waitForDesk(page);
         await waitForCharts(page);
-        // The rail's pending night evidence is its `.empty` line
-        // (diagnose-workstation.js, "Loading nights…"); the line leaves when
-        // the read lands. Waiting for no `.empty` in the level is the
-        // structural signal — an "unavailable" line would hold the wait and
-        // surface in the dump — with no copied copy a renamed noun could void.
+        // The rail marks its pending night evidence aria-busy
+        // (diagnose-workstation.js) and removes that line when the read lands;
+        // no settled line carries the attribute, so its absence is the read
+        // having landed, with no copied copy a renamed noun could void.
         await page.waitForFunction(() => {
           const level = document.getElementById('level');
-          return level && level.dataset.loading !== 'true' && !level.querySelector('.empty');
+          return level && level.dataset.loading !== 'true' && !level.querySelector('[aria-busy="true"]');
         }, null, { timeout: 30000 });
         await waitForLevelAnimations(page);
       } catch (error) {

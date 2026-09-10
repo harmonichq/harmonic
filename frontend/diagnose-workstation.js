@@ -877,7 +877,9 @@ export function renderSlotLevel(host, cell, staged, windowDays, supportFloor, on
   });
   const evidence = options.nightEvidence;
   if (evidence?.pending) {
-    host.insertAdjacentHTML('beforeend', '<div class="empty">Loading nights…</div>');
+    // The pending line says so to assistive tech as well as to the eye; it is
+    // the one line in this host that leaves when the read lands.
+    host.insertAdjacentHTML('beforeend', '<div class="empty" aria-busy="true">Loading nights…</div>');
     return;
   }
   if (!evidence || evidence.stale || evidence.failed) {

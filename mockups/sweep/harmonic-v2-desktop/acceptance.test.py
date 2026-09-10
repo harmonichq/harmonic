@@ -139,8 +139,9 @@ class ReplayWrapperTest(unittest.TestCase):
         testcase = self
         class Run:
             out = Path("/tmp/synthetic-wrapper-test")
-            def command(self, name, args, *, env):
+            def command(self, name, args, *, env, timeout):
                 testcase.assertEqual(name, "complete-replay")
+                testcase.assertEqual(timeout, 3000, "the complete replay needs headroom above the runner's roughly 35 minutes")
                 testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
                 testcase.assertNotIn("ONLY", env, "S100 must remain in the complete registry run")
                 testcase.assertNotIn("STORY_CASES", env)

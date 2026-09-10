@@ -4,10 +4,10 @@ import { C2_STORIES, waitForCharts } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
 
-const read = async (page, path, params = {}) => {
+const read = async (page, path, params = {}, timeout = 30000) => {
   const url = new URL(path, page.url());
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  const response = await page.request.get(url.href, { timeout: 30000 });
+  const response = await page.request.get(url.href, { timeout });
   assert.equal(response.status(), 200, `${path}: ${await response.text()}`);
   return response.json();
 };
@@ -23,18 +23,18 @@ async function capture(page, ctx, id, caseName) {
     directory: process.env.CAPTURE_DIR, id, target: 'app', viewport: ctx.viewport, caseName,
   });
 }
-async function retained(page) {
+async function retained(page, readTimeout = 30000) {
   const roster = await read(page, '/api/verify/trials');
   assert.ok(roster.trials.length, 'manufactured case must retain a Trial');
   const id = roster.admission.active_kind === 'trial' ? roster.admission.active_id : roster.trials[0].id;
-  const detail = (await read(page, '/api/verify/trials', { selected: id, assessment: 'retained' })).selected;
+  const detail = (await read(page, '/api/verify/trials', { selected: id, assessment: 'retained' }, readTimeout)).selected;
   await page.goto(new URL(`/v2/?to=changes&subject=history&occurrence=${encodeURIComponent(`record:trial:${id}`)}`, page.url()).href);
   await press(page, '[data-assessment="retained"]');
   await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   return detail.reassessment.comparison;
 }
-async function readiness(page, unit, required) {
-  const comparison = await retained(page);
+async function readiness(page, unit, required, readTimeout) {
+  const comparison = await retained(page, readTimeout);
   for (const side of ['before', 'after']) {
     const arm = comparison.readiness[side];
     assert.equal(arm.unit, unit); assert.equal(arm.required, required);
@@ -57,7 +57,11 @@ export const C4_STORIES = {
       ['c4-profile', 'coverage-qualified informative dates', 30],
     ]) {
       await ctx.withCase(name, async fresh => {
-        const comparison = await readiness(fresh, unit, required);
+        // S91's cold whole-profile retained reassessment exceeded 30 s in CI.
+        // review_trials -> compare_follow_up rebuilds both evidence periods and
+        // bootstraps outcomes, including profile mean glucose and variability.
+        // Bound that read at 120 s; all other reads keep their 30 s deadline.
+        const comparison = await readiness(fresh, unit, required, name === 'c4-profile' ? 120000 : 30000);
         assert.ok(comparison.readiness.after.elapsed_days > 14, 'actual accumulation continues past fourteen days');
         if (name !== 'c4-ic') {
           assert.ok(Object.values(comparison.readiness).every(arm => arm.criterion_met));

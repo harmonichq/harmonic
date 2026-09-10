@@ -3946,6 +3946,18 @@ export const S143 = async (page) => {
   ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
   const mini = row.locator('.mini[data-preview-kind]');
   await mini.locator('canvas').waitFor();
+  // A mounted canvas can precede its host's layout during the level transition.
+  await page.waitForFunction(() => {
+    const level = document.getElementById('level');
+    const host = level?.querySelector('.qrow.priced[data-id="finding:over_treated_low"] .mini[data-preview-kind]');
+    return level?.getAnimations().length === 0 && host?.getBoundingClientRect().width > 0;
+  }, null, { timeout: 5000 }).catch(async error => {
+    const seen = await page.evaluate(() => ({
+      animations: document.getElementById('level')?.getAnimations().map(animation => animation.playState),
+      width: document.querySelector('#level .qrow.priced[data-id="finding:over_treated_low"] .mini[data-preview-kind]')?.getBoundingClientRect().width,
+    }));
+    fail(`S143 timed out waiting for the mini host's layout width and finished level animation; saw ${JSON.stringify(seen)}; ${error.message}`);
+  });
   const width = await mini.evaluate((host) => host.getBoundingClientRect().width);
   ok(width >= MIN_ROW_MINI_WIDTH,
     `S143 the reflowed mini clears its ${MIN_ROW_MINI_WIDTH}px floor (${width}px)`);

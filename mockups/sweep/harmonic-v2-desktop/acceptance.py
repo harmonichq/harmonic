@@ -179,7 +179,9 @@ def replay(run, viewport):
     env.pop("ONLY", None)
     env.pop("STORY_CASES", None)
     with auth_server(run):
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env)
+        # CI needs about 35 minutes per size (about 13 on the coordinator's Mac).
+        # Leave replay headroom inside the matrix job's 60-minute ceiling.
+        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())

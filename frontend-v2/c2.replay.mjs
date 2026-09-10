@@ -154,6 +154,18 @@ async function failedCurrentRead(page) {
   assert.equal(await page.locator('#level .qrow').count(), 0, 'a failed current read does not expose a stale roster');
   await press(page, '[data-action="retry"]');
   await page.getByText('Current read failed', { exact: true }).waitFor();
+  // The failed frame can paint before its Retry control receives focus.
+  await page.waitForFunction(() => {
+    const retry = document.querySelector('[data-action="retry"]');
+    return retry && retry === document.activeElement
+      && document.body.textContent.includes('Current read failed');
+  }, null, { timeout: 30000 }).catch(async error => {
+    const seen = await page.evaluate(() => ({
+      focus: document.activeElement?.outerHTML,
+      text: document.querySelector('.gf-reading')?.textContent,
+    }));
+    throw new Error(`S20b timed out waiting for the failed-read text and focus on Retry; saw ${JSON.stringify(seen)}`, { cause: error });
+  });
   assert.equal(await page.locator('[data-action="retry"]').evaluate(n => n === document.activeElement), true);
   await page.unroute('**/api/analyze*');
   await press(page, '[data-action="retry"]'); await settled(page);
@@ -508,7 +520,32 @@ export const C2_STORIES = {
   },
   S30: async page => { await openBasalLane(page); await page.getByRole('button', { name: 'Findings', exact: true }).click(); check(await page.locator('#level .qrow').count()); },
   S31: async page => { await openBasalLane(page); assert.equal(await page.locator('#lane > button:not([disabled])').count(), 48); },
-  S32: async page => { await openBasalLane(page); const cells = page.locator('#lane > button'); await cells.first().click(); await cells.first().focus(); await page.keyboard.press('ArrowLeft'); assert.equal(await cells.last().getAttribute('aria-pressed'), 'true'); await page.keyboard.press('ArrowRight'); assert.equal(await cells.first().getAttribute('aria-pressed'), 'true'); },
+  S32: async page => {
+    await openBasalLane(page);
+    const cells = page.locator('#lane > button');
+    const selected = async edge => {
+      // Selection and focus land after the asynchronous lane repaint. Wait for
+      // both before sending the next key to the newly rendered control.
+      await page.waitForFunction(edge => {
+        const cells = [...document.querySelectorAll('#lane > button')];
+        const cell = edge === 'first' ? cells[0] : cells.at(-1);
+        return cell?.getAttribute('aria-pressed') === 'true' && cell === document.activeElement;
+      }, edge, { timeout: 30000 }).catch(async error => {
+        const seen = await cells.evaluateAll(nodes => nodes.map(node => ({
+          cell: node.dataset.cell, pressed: node.getAttribute('aria-pressed'), focused: node === document.activeElement,
+        })));
+        throw new Error(`S32 timed out waiting for ${edge} cell aria-pressed=true and focus; saw ${JSON.stringify(seen)}`, { cause: error });
+      });
+    };
+    await cells.first().click(); await cells.first().focus();
+    await selected('first');
+    await page.keyboard.press('ArrowLeft');
+    await selected('last');
+    assert.equal(await cells.last().getAttribute('aria-pressed'), 'true');
+    await page.keyboard.press('ArrowRight');
+    await selected('first');
+    assert.equal(await cells.first().getAttribute('aria-pressed'), 'true');
+  },
   S33: async page => { await openBasalLane(page); const rows = page.locator('#level .case-occurrence'); check(await rows.count() > 1); const id = await choose(page, rows.first()); await page.keyboard.press('ArrowDown'); await page.waitForFunction(id => document.querySelector('.case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId !== id, id); await page.keyboard.press('ArrowUp'); assert.equal(await held(page), id); },
   S34: async page => { await openBasalLane(page); const cells = page.locator('#lane > button'); await cells.nth(4).click(); await cells.nth(5).click(); assert.equal(await cells.nth(5).getAttribute('aria-pressed'), 'true'); await cells.nth(4).click(); assert.equal(await cells.nth(4).getAttribute('aria-pressed'), 'true'); },
   S35: async page => { await openBasalLane(page); assert.equal(await page.locator('.occ-foot').count(), 0, 'no night is selected on arrival'); await choose(page, page.locator('#level .case-occurrence').first()); check(await page.locator('.occ-foot button:last-child').isEnabled()); await press(page, '.occ-foot button:last-child'); await page.locator('.gf-stage-day').waitFor(); check(new URL(page.url()).searchParams.get('subject')?.startsWith('basal:')); },

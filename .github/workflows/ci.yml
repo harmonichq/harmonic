@@ -238,11 +238,11 @@ jobs:
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
           - gate: V2 complete frozen ledger 1280x720
             python: true
-            timeout: 40
+            timeout: 60
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$RUNNER_TEMP/v2-1280x720"
           - gate: V2 complete frozen ledger 1440x900
             python: true
-            timeout: 40
+            timeout: 60
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out "$RUNNER_TEMP/v2-1440x900"
           - gate: First-plan reconcile
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs

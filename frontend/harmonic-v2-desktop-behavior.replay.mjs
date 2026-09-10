@@ -2291,7 +2291,11 @@ export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authentica
     // requests rather than anything installed into the page.
     const reads = [];
     page.on('response', async (response) => {
-      const path = new URL(response.url()).pathname;
+      const url = new URL(response.url());
+      // Only the token server's answers count: a late read still settling from
+      // the previous story's token-less case server is not this boundary.
+      if (url.origin !== new URL(AUTH_BASE_URL).origin) return;
+      const path = url.pathname;
       if (!path.startsWith('/api/')) return;
       const entry = {
         path, status: response.status(),

@@ -350,7 +350,9 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             ).to_dict(),
         }
     comparison["readiness"] = dict(zip(("before", "after"), [p["readiness"] for p in populations]))
+    ready = all(r["criterion_met"] for r in comparison["readiness"].values())
     if kind == "focus":
+        behavior_ready = []
         pattern_key = record.get("pattern_key")
         if pattern_key is None and (record.get("subject") or "").startswith("pattern:"):
             pattern_key = record["subject"].split(":", 1)[1]
@@ -371,6 +373,16 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             n = sum(r["n"] for r in observed["rows"])
             measured = sum(r["n"] for r in observed["rows"] if r["measured"])
             elapsed = max(0., (hi-lo).total_seconds()/86400)
+            arm = {
+                "unit": observed["denominator"], "observed": n,
+                "measured": measured, "unmeasured": n-measured, "elapsed_days": elapsed,
+                "required_elapsed_days": 14, "criterion_met": elapsed>=14 and n>0 and measured==n,
+                "contributing_dates": sorted({r["t"].date().isoformat() for r in observed["rows"] if r["measured"]}),
+                "reason": observed["reason"] or ("zero_opportunities" if not n else "collecting" if elapsed<14 else None),
+            }
+            # Only mapped glucose direction consumes the Pattern opportunity
+            # verdict. Other outcomes and adherence retain this existing gate.
+            behavior_ready.append(arm["criterion_met"])
             if pattern_key:
                 sources = {}
                 for family, anchor_kind in (("meals", "meal"), ("lows", "low")):
@@ -378,19 +390,12 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                              if anchor.kind.value == anchor_kind and lo <= anchor.t < hi]
                     sources[family] = {"n": len(owned), "occurrences": owned}
                 criterion = opportunity_readiness(pattern_key, {}, {"exposures": sources})
-                comparison["readiness"][name] = {
+                arm.update({
                     **criterion, "observed": criterion["count"], "required": criterion["gate"],
-                    "criterion_met": criterion["verdict"] == "ready", "elapsed_days": elapsed,
-                }
-                continue
-            comparison["readiness"][name] = {
-                "unit": observed["denominator"], "observed": n,
-                "measured": measured, "unmeasured": n-measured, "elapsed_days": elapsed,
-                "required_elapsed_days": 14, "criterion_met": elapsed>=14 and n>0 and measured==n,
-                "contributing_dates": sorted({r["t"].date().isoformat() for r in observed["rows"] if r["measured"]}),
-                "reason": observed["reason"] or ("zero_opportunities" if not n else "collecting" if elapsed<14 else None),
-            }
-    ready = all(r["criterion_met"] for r in comparison["readiness"].values())
+                    "criterion_met": criterion["verdict"] == "ready", "required_elapsed_days": None,
+                })
+            comparison["readiness"][name] = arm
+        ready = all(behavior_ready)
     metrics = [compute_metrics(p["readings"]) for p in populations]
     specs = [("tir", "Time in range", "tir", "up"),
              ("tbr", "Time below range", "tbr_lvl1", "down"),

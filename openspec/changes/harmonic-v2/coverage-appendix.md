@@ -91,3 +91,44 @@ the published opportunity verdict replaces the fourteen-day floor entirely.
 The mapped-direction regression asserts withholding while that verdict is
 withheld and publication once it is ready, including before fourteen days.
 Setting Trial criteria remain unchanged.
+
+### #389 c2b Coordinator Amendment 1 — 2026-09-10
+
+F1 restores the shared Focus arm fields, including measured/unmeasured behavior
+counts and a null `required_elapsed_days` for Pattern arms; the dated Chunk 3
+contract records their relationship to the opportunity fields. F2 confines the
+opportunity verdict to mapped-glucose direction. Other outcome directions and
+adherence keep their existing elapsed-plus-measured criterion.
+
+Four regressions failed first: missing shared fields in comparison and selected
+API reads, missing measurement counts, and a four-day, twelve-low-per-arm
+comparison incorrectly publishing a non-target direction. All four then passed.
+The latter uses manufactured Store data with no measured correction-stacking
+behavior: the mapped TBR direction publishes while supported TIR/TAR differences
+remain unclear. The existing mapped-direction gate/coverage regression, setting
+criteria, legacy Focus and immutable selected/ending tests also pass.
+
+| Budget | Amendment 1 measurement | Delta from prior c2b run | Unchanged limit |
+| --- | ---: | ---: | ---: |
+| Committed showcase size | 1,417,216 bytes | 0 bytes | 25 MiB |
+| Showcase drift check | 0.181 s wall | +0.021 s | 30 s |
+| Focused QA suite | 22.058 s wall; 68 passed | +0.035 s | 90 s |
+| Slowest generated case | 2.82 s (`test_case_showcase`) | +0.19 s | 15 s |
+| Whole pytest over both built shells | 267.293 s wall; 2436 passed, 1 skipped | +8.700 s | 400 s |
+
+The six-file focused suite separately passed 129 tests in 175.436 s wall
+(+6.322 s). The catalog-generated `test_case_pattern_focus_meals` passed in
+0.07 s. Whole pytest is +107.293 s against the unchanged 160-second baseline.
+These deltas compare recorded runs, not isolated implementation costs. C4
+remains the QA budget of record; no limit, literal oracle or showcase changed.
+
+`npm ci && npm run build`, strict OpenSpec validation (74 items), the ADR-number,
+owned-identifier and public-allowlist guards, and showcase drift passed.
+Complete unedited outputs live under the declared `s389/c2b` Scratch directory
+in `review-1/`: `verification.json` (exact commands, exit codes and wall times),
+`build.txt`, `focused.txt`, `qa-budget.txt`, `full-pytest.txt`,
+`showcase-drift.txt`, `openspec.txt`, `adr.txt`, `identifiers.txt`,
+`public-allowlist.txt`, `fail-first.txt` and `regressions.txt`.
+`comparison-examples.json` and `api-receipt.jsonl` preserve complete synthetic
+comparison and selected/ending responses; `capture.txt` records their passing
+public-interface assertions, including read-only bytes and immutable records.

@@ -461,7 +461,11 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
                               readiness["verdict"]), (12, 12, "meals", "ready"))
             self.assertEqual(readiness["observed"], readiness["count"])
             self.assertEqual(readiness["required"], readiness["gate"])
-            self.assertNotIn("required_elapsed_days", readiness)
+            self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
+                "elapsed_days", "required_elapsed_days", "criterion_met",
+                "contributing_dates", "reason", "count", "gate", "verdict"}, readiness.keys())
+            self.assertIsNone(readiness["required_elapsed_days"])
+            self.assertEqual((readiness["measured"], readiness["unmeasured"]), (12, 0))
             self.assertEqual(len(readiness["contributing_dates"]), 4)
             self.assertEqual(result["adherence"][arm]["rate"], 0)
         self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
@@ -495,6 +499,8 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
         for arm in ("before", "after"):
             self.assertIsNone(result["adherence"][arm]["rate"])
             self.assertEqual(result["adherence"][arm]["measured_opportunities"], 0)
+            self.assertEqual(result["readiness"][arm]["measured"], 0)
+            self.assertEqual(result["readiness"][arm]["unmeasured"], 12)
         self.assertEqual(result["availability"]["state"], "unavailable")
         self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
 
@@ -552,6 +558,38 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
                     self.assertTrue(all(r["verdict"] == "withheld" for r in result["readiness"].values()))
                 elif limitation in ("ready", "duration_removed"):
                     self.assertTrue(all(r["verdict"] == "ready" for r in result["readiness"].values()))
+
+    def test_four_day_pattern_gate_only_publishes_mapped_glucose_direction(self):
+        path = self.materialize(meals_per_day=0)
+        start = datetime(2024, 5, 1)
+        # Three distinct low episodes per date; longer lows and fewer highs
+        # after pin produce supported glucose differences without any boluses
+        # from which correction-stacking behavior could be measured.
+        readings = []
+        for day in range(8):
+            for sample in range(288):
+                low_samples = (3 if day < 4 else 12) + day % 3
+                high_samples = (30 if day < 4 else 8) + day % 3
+                phase = sample % 96
+                bg = 60 if 12 <= phase < 12 + low_samples else 220 if 40 <= phase < 40 + high_samples else 120
+                readings.append({"EventDateTime": str(start + timedelta(days=day, minutes=sample * 5)),
+                                 "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV"})
+        with Store.open(path) as store:
+            store.upsert_cgm(readings)
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store, key="lows_after_correcting_highs", lever="correction_stacking")
+        for arm in ("before", "after"):
+            self.assertEqual(result["readiness"][arm]["count"], 12)
+            self.assertEqual(result["readiness"][arm]["verdict"], "ready")
+            self.assertEqual(result["readiness"][arm]["elapsed_days"], 4)
+            self.assertEqual(result["adherence"][arm]["measured_opportunities"], 0)
+        outcomes = {row["key"]: row for row in result["outcomes"]}
+        self.assertEqual(outcomes["tbr"]["assessment"]["state"], "concerning")
+        for key in ("tir", "tar"):
+            interval = outcomes[key]["assessment"]["interval"]
+            self.assertTrue(interval["low"] > 0 or interval["high"] < 0)
+            self.assertEqual(outcomes[key]["assessment"]["state"], "unclear")
+        self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
 
     def test_lows_and_collapsed_pattern_use_exposure_anchors_not_member_pairs(self):
         from ciq_autotune.explore_exposures import build_exposures

@@ -268,6 +268,12 @@ class DurableApiTest(unittest.TestCase):
         readiness = selected["reassessment"]["comparison"]["readiness"]
         self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [12, 12])
         self.assertTrue(all(r["criterion_met"] for r in readiness.values()))
+        for arm in readiness.values():
+            self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
+                "elapsed_days", "required_elapsed_days", "criterion_met",
+                "contributing_dates", "reason", "count", "gate", "verdict"}, arm.keys())
+            self.assertEqual((arm["measured"], arm["unmeasured"]), (12, 0))
+            self.assertIsNone(arm["required_elapsed_days"])
         self.assertEqual(Path(self.path).read_bytes(), before_bytes)
         with Store.open_readonly(self.path) as store:
             self.assertEqual(store.follow_up_record("focus", focus["id"]), record)

@@ -928,10 +928,23 @@ endings, preemption and the history record.
   `{state:"unavailable", reason:"not_recorded"}`, and `assessment=retained` is
   rejected with 422 unless `selected` is supplied.
 * The arms differ. Setting arms carry `{unit, required, observed,
-  contributing_dates, criterion_met, reason, available, elapsed_days}`. The Focus
-  override OMITS `available` and `required` and carries `{unit, observed,
+  contributing_dates, criterion_met, reason, available, elapsed_days}`. Legacy
+  non-Pattern Focus omits `available` and `required` and carries `{unit, observed,
   measured, unmeasured, elapsed_days, required_elapsed_days: 14, criterion_met,
   contributing_dates, reason}`.
+  **Amended 2026-09-10 — #389 c2b, Coordinator Amendment 1:** Pattern Focus
+  retains every named Focus field, with `required_elapsed_days: null`, and adds
+  `{count, gate, verdict, required}` from the backend opportunity owner over each
+  retained arm. `observed` aliases `count`, `required` aliases `gate`, and
+  `criterion_met` is the owner's `verdict == "ready"`; `unit`,
+  `contributing_dates` and `reason` describe those Pattern opportunities.
+  `measured` and `unmeasured` retain the captured lever's behavior-observation
+  counts, whose denominator is published in `adherence`; they need not sum to
+  the Pattern opportunity count. `elapsed_days` remains descriptive. Only the
+  mapped-glucose direction uses the Pattern verdict, preserving its glucose
+  measurement, coverage and uncertainty checks. Other outcome directions and
+  adherence retain the existing fourteen-day-plus-measured criterion. Setting
+  Trial criteria and legacy non-Pattern Focus behavior remain unchanged.
 * `comparison.assessment.state` is only `concerning`, `unclear` or `context`;
   favourable exists per outcome row only.
 * `admission.state: unavailable` has exactly one reason,

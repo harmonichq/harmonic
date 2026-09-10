@@ -1,7 +1,8 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { C2_STORIES, waitForCharts } from './c2.replay.mjs';
+import { xAtMinute } from '../frontend/diagnose-workstation-chart.js';
+import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
 
@@ -53,7 +54,143 @@ async function readiness(page, unit, required) {
   return comparison;
 }
 
+// #404 · 2026-09-10. These are prospective fail-first obligations; browser
+// verdicts belong to the coordinator. No app response is replaced by a fixture.
+async function drawnWindow404(page) {
+  const box = await page.locator('#chart').boundingBox();
+  assert.ok(box, 'S101 premise: the clock chart is mounted');
+  const width = await page.locator('#chart').evaluate(node => node.clientWidth);
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + xAtMinute({ clientWidth: width }, 930), y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + xAtMinute({ clientWidth: width }, 1290), y, { steps: 8 });
+  await page.mouse.up();
+  await settled(page);
+  await page.locator('#seg-window [data-follow]').waitFor();
+}
+async function slot404(page) {
+  // pattern-near-tie has a Pattern and a thin 12:00 slot. Select the Pattern through
+  // its chart control first; checking only aria-pressed missed this regression.
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.kind === 'pattern' && row.pattern_chart);
+  assert.ok(pattern, 'S102 premise: a chartable served Pattern exists');
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor();
+  const slot = page.getByRole('button', { name: /^12:00 basal slot,/ });
+  assert.match(await slot.getAttribute('data-verdict'), /insufficient|nodata/,
+    'S102 premise: 12:00 is a thin slot, not an asserting chart');
+  await slot.click();
+  await page.waitForFunction(() => document.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label')?.startsWith('12:00 basal slot,'));
+  return pattern.id;
+}
+
 export const C4_STORIES = {
+  async S101(page) {
+    await diagnose(page);
+    await drawnWindow404(page);
+    const label = (await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim();
+    assert.equal(label, '15:30–21:30', 'S101 custom Window chip contains only the span');
+  },
+  async S102(page) {
+    await diagnose(page);
+    const previous = await slot404(page);
+    const focal = page.locator('#tile-focal .evidence-tile');
+    assert.notEqual(await focal.getAttribute('data-chart-id'), previous,
+      'S102 thin basal slot click left the Pattern graph on stage');
+    assert.equal(await focal.getAttribute('data-chart-id'), 'basal:720',
+      'S102 the stage must open the selected 12:00 basal graph, including its thin state');
+  },
+  async S103(page) {
+    // Separate from S102: a graph failure must not mask the lost-window proof.
+    const failures = [];
+    for (const mode of ['24 h', 'Morning', 'drawn']) {
+      await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
+      await diagnose(page);
+      if (mode === 'drawn') await drawnWindow404(page);
+      else if (mode !== '24 h') {
+        await page.getByRole('button', { name: mode, exact: true }).click(); await settled(page);
+      }
+      const before = await clockWindow(page);
+      await page.getByRole('button', { name: /^12:00 basal slot,/ }).click();
+      await page.getByRole('button', { name: 'Findings', exact: true }).click();
+      await settled(page);
+      const after = await clockWindow(page);
+      if (JSON.stringify(after) !== JSON.stringify(before)) failures.push({ mode, before, after });
+    }
+    assert.deepEqual(failures, [], 'S103 backing out of a slot must restore each reader-selected window');
+  },
+  async S104(page) {
+    await press(page, 'nav.v2-nav [data-destination="day"]');
+    await waitForDesk(page);
+    await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
+    const pick = page.locator('.gf-nav-col[data-pick]:not([disabled]):not([aria-pressed="true"])').first();
+    const date = await pick.getAttribute('data-pick');
+    assert.ok(date, 'S104 premise: another recorded day is selectable');
+    const nodes = await page.evaluateHandle(() => ({ stage: document.querySelector('.gf-stage-day'),
+      reading: document.querySelector('.gf-reading'), nav: document.querySelector('#gf-nav') }));
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let arrive;
+    const arrived = new Promise(resolve => { arrive = resolve; });
+    const handler = async route => { arrive(); await gate; await route.continue(); };
+    await page.route('**/api/model-view*', handler);
+    const completion = page.waitForResponse(r => new URL(r.url()).pathname === '/api/model-view' && r.ok());
+    try {
+      await pick.click();
+      await boundedWait(arrived, 'S104 selected-day model read');
+      const retained = await nodes.evaluate(n => Object.fromEntries(Object.entries(n).map(([key, node]) => [key, node.isConnected])));
+      assert.deepEqual(retained, { stage: true, reading: true, nav: true },
+        'S104 day click detached the standing stage, reading pane or navigator while the read was pending');
+      release(); await completion; await waitForDesk(page);
+      assert.equal(await page.locator(`.gf-nav-col[data-pick="${date}"]`).getAttribute('aria-pressed'), 'true');
+      assert.equal(await nodes.evaluate(n => n.stage === document.querySelector('.gf-stage-day')
+        && n.reading === document.querySelector('.gf-reading')), true,
+      'S104 settled day must retain the same frame nodes');
+    } finally {
+      release(); await completion; await page.unroute('**/api/model-view*', handler); await nodes.dispose();
+    }
+  },
+  async S105(page, ctx) {
+    assert.ok(ctx.capturePump, 'S105 requires CASE_STORE_DIR for a synthetic on-pump capture');
+    await C3_STORIES.S52(page);
+    const roster = await read(page, '/api/verify/trials');
+    const ended = roster.trials.find(row => row.ending?.kind === 'user_finished');
+    assert.ok(ended, 'S105 premise: c3-trial retains a finished Trial');
+    assert.equal(roster.admission.active_kind, null, 'S105 premise: nothing is watched');
+    // Record the already-programmed basal value at an eligible served slot.
+    // The existing replay pump producer captures that same schedule. This
+    // creates an on-pump Plan without inventing another setting change.
+    const guidance = await read(page, '/api/guidance');
+    const candidate = guidance.candidates.find(row => row.parameter === 'basal_rate' && row.action?.length);
+    assert.ok(candidate, 'S105 premise: a served basal action admits the Plan slot');
+    const pump = await read(page, '/api/pump-settings');
+    const start = candidate.action[0].start_min;
+    const current = [...pump.profile.segments].reverse().find(row => row.start_min <= start).basal_rate;
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href,
+      { data: { items: [{ type: 'basal', start_min: start, value: current }] } });
+    assert.equal(saved.status(), 200, 'S105 synthetic Plan draft must save');
+    const applied = await page.request.post(new URL('/api/plan/apply', page.url()).href, { data: {} });
+    assert.equal(applied.status(), 200, `S105 synthetic Plan decision: ${await applied.text()}`);
+    // 'mismatch' captures the existing source profile without an IDP switch;
+    // it matches this deliberately unchanged draft and creates no new Trial.
+    await ctx.capturePump('mismatch');
+    await page.goto(new URL('/v2/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    assert.equal((await read(page, '/api/verify/trials')).admission.active_kind, null,
+      'S105 premise: confirmed Plan with no active watch');
+    assert.equal(await page.getByRole('button', { name: 'View change record', exact: true }).count(), 1,
+      'S105 on-pump Plan has no View change record door');
+    await page.getByRole('button', { name: 'View change record', exact: true }).click();
+    await press(page, `[data-record="trial:${ended.id}"]`);
+    await page.locator('[data-record-part="ending"]').waitFor();
+    const address = page.url();
+    assert.equal(new URL(address).searchParams.get('occurrence'), `record:trial:${ended.id}`);
+    await page.goto(address);
+    await page.locator('[data-ending-kind="user_finished"]').waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('occurrence'), `record:trial:${ended.id}`,
+      'S105 record address must reopen the exact saved subject');
+  },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

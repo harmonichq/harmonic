@@ -3278,6 +3278,17 @@ export const R17 = async (page) => {
 
 export const R18 = appOnly('HV2-31', 'historical input absent while current evidence and retained records remain', historicalAbsence);
 
+// STORY:harmonic-v2-desktop:S101
+export const S101 = appOnly('HV2-11', '#404 custom Window chip contains only the span', C4_STORIES.S101);
+// STORY:harmonic-v2-desktop:S102
+export const S102 = appOnly('HV2-17', '#404 thin slot opens its own graph', C4_STORIES.S102);
+// STORY:harmonic-v2-desktop:S103
+export const S103 = appOnly('HV2-11', '#404 slot return restores the clock window', C4_STORIES.S103);
+// STORY:harmonic-v2-desktop:S104
+export const S104 = appOnly('HV2-13', '#404 day replacement retains the standing frame', C4_STORIES.S104);
+// STORY:harmonic-v2-desktop:S105
+export const S105 = appOnly('HV2-12', '#404 on-pump Plan opens addressable history', C4_STORIES.S105);
+
 /* -------------------------------------------------------------- the registry */
 
 const J = (state = 'investigate') => ({ source: 'journey', state });
@@ -3320,6 +3331,8 @@ export const REGISTRY = [
   ['S90', S90, J()], ['S91', S91, J()], ['S92', S92, J()], ['S93', S93, J()],
   ['S94', S94, J()], ['S95', S95, J()], ['S96', S96, J()], ['S97', S97, J()],
   ['S98', S98, J()], ['S99', S99, J()], ['S100', S100, J()],
+  ['S101', S101, J()], ['S102', S102, J()], ['S103', S103, J()],
+  ['S104', S104, J()], ['S105', S105, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

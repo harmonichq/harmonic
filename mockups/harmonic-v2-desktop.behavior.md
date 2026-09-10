@@ -2334,3 +2334,85 @@ R18 · Historical past-setting tuning reads are absent everywhere in the app.
             historical identity, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## QA amendment — 2026-09-10, issue #404 (q1; no application fixes)
+
+Connor's #404 order adds these fail-first obligations. They retain the frozen
+stories and add coverage where the old assertions did not exercise the reported
+path. They are not passing browser evidence. Browser execution belongs to the
+coordinator at 1280x720 and 1440x900; the worker order prohibits build, serve and
+browser execution. The original freeze results above remain historical.
+
+Current inventory: **135 issued = 117 active + 18 retired**. S101–S105 are
+app-opener-only. No earlier ID or lock term is retired or re-settled by this QA
+pass. The design and expiry decisions in #404 remain unresolved.
+
+```
+S101 · A drawn Window chip carries only the span; the enclosing Window label
+       supplies the noun once.
+  element:  #seg-window [data-follow], .cap
+  source:   frontend/diagnose-workstation.js markWindowSegment / paintChart
+  lock:     nearest HV2-11; no frozen story specifies this exact chip copy
+  data:     showcase; draw 15:30–21:30 from 24 h using the clock chart
+  evidence: C4_STORIES.S101; registered app-only in the v2 replay
+  status:   browser fail-first pending coordinator; current source prefixes Window
+```
+
+```
+S102 · From a Pattern graph, clicking the thin 12:00 basal slot opens that
+       slot's own graph on the stage, including its thin-evidence state.
+  element:  #tile-row .evidence-tile, #lane > button, #tile-focal .evidence-tile
+  source:   frontend/diagnose-workstation.js pickCell / seatDrill
+  lock:     HV2-17, HV2-19; strengthens S43's stage-selection obligation
+  data:     pattern-near-tie; chartable Pattern and thin 12:00 basal slot
+  evidence: C4_STORIES.S102; checks stage identity after the slot selection
+  status:   browser fail-first pending coordinator; no current graph verdict claimed
+```
+
+```
+S103 · Backing out of a basal slot restores the reader's preceding 24 h,
+       named Morning, or drawn 15:30–21:30 window.
+  element:  #lane > button, Findings breadcrumb, #seg-window, #chart
+  source:   frontend/diagnose-workstation.js pickCell / releaseWindow / popTo
+  lock:     nearest HV2-11, HV2-33; S43 covers selection, not this exact return
+  data:     showcase; three independently entered window states
+  evidence: C4_STORIES.S103; collects all three before/after window comparisons
+  status:   browser fail-first pending coordinator; source clears explicit scope
+```
+
+```
+S104 · Picking another recorded day keeps the Day stage, reading pane and
+       navigator mounted while the selected day's read is pending; completion
+       changes the held date without replacing the stage and reading pane nodes.
+  element:  .gf-nav-col[data-pick], .gf-stage-day, .gf-reading, #gf-nav
+  source:   frontend-v2/day.js bind / mount; routes.js render
+  lock:     nearest HV2-13, HV2-34; S63 covers picking, not node retention
+  data:     showcase; hold and then continue the real /api/model-view request
+  evidence: C4_STORIES.S104; node identity and connectedness across the read
+  status:   browser fail-first pending coordinator; source installs loadingFrame
+```
+
+```
+S105 · A confirmed-on-pump Plan with no active watch offers View change record;
+       the selected finished Trial opens its immutable ending and reloads from
+       its exact record address.
+  element:  .gf-status[data-state="confirmed"], View change record,
+            [data-record], [data-record-part="ending"], record route occurrence
+  source:   frontend-v2/plan-view.js planFrame; changes.js; history.js openRecord
+  lock:     HV2-12, HV2-28; extends S54b to the on-pump Plan state
+  data:     c3-trial; finish through S52, then record its already-programmed value at an eligible basal
+            slot and capture the same schedule through the replay pump producer
+  evidence: C4_STORIES.S105; asserts finished history, on-pump state and empty
+            admission before checking the missing door, then record/reload
+  status:   browser fail-first pending coordinator; record routing already exists
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Clock drag and custom follow chip | frontend/diagnose-workstation.js | S101 |
+| Pattern tile then thin basal lane click | frontend/diagnose-workstation.js | S102 |
+| Basal lane click then Findings breadcrumb | frontend/diagnose-workstation.js | S103 |
+| Recorded-day click during model read | frontend-v2/day.js | S104 |
+| Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |

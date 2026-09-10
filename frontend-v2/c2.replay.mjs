@@ -347,7 +347,24 @@ export const C2_STORIES = {
   S21: async page => { const file = await comparisonFigure(page); const marks = await page.locator('.ec-key-item').evaluateAll(nodes => nodes.map(n => ({ key: n.dataset.cohort, support: n.dataset.support, text: n.textContent, mark: !!n.querySelector('.ec-key-mark') }))); for (const cohort of file.projection.cohorts) { const mark = marks.find(m => m.key === cohort.key); check(mark?.mark && mark.support === cohort.support && mark.text.includes(cohort.name), `served support and shared legend for ${cohort.key}`); } },
   S22: async page => { await openComparisonCase(page); const rows = page.locator('#level .case-occurrence'); const cohorts = await rows.evaluateAll(ns => [...new Set(ns.map(n => n.dataset.comparisonCohort))]); check(cohorts.length > 1); await choose(page, rows.first()); await choose(page, page.locator(`#level .case-occurrence[data-comparison-cohort="${cohorts[1]}"]`).first()); assert.equal(await page.locator('#level .case-occurrence[aria-pressed="true"]').count(), 1); },
   S23: async page => { const file = await openComparisonCase(page); assert.equal(await page.locator('#level .case-occurrence[aria-pressed="true"]').count(), file.selection.state === 'selected' ? 1 : 0, 'arrival renders the served selection'); if (file.selection.state === 'none') assert.equal(await page.locator('#level .occ-detail').count(), 0); const id = await choose(page, page.locator('#level .case-occurrence').first()); await page.locator('#level .occ-detail').waitFor(); assert.equal(await held(page), id); },
-  S24: async page => { const { id } = await selectedMember(page); await page.keyboard.press('ArrowDown'); await page.waitForFunction(id => document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId !== id, id); await page.keyboard.press('ArrowUp'); await page.waitForFunction(id => document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId === id, id); assert.equal(await page.locator('#level .case-occurrence[aria-pressed="true"]').evaluate(n => n === document.activeElement), true); await page.keyboard.press('ArrowUp'); assert.equal(await held(page), id, 'the shipped roster stops at its first member'); },
+  S24: async page => {
+    const file = await openComparisonCase(page);
+    const cohort = file.projection.cohorts.find(cohort => cohort.occurrence_ids.length > 1);
+    check(cohort, 'S24 requires two occurrences in one served cohort');
+    const [first, second] = cohort.occurrence_ids;
+    // Display order need not equal the source's traversal order. The shared
+    // handler steps within the selected cohort's served occurrence_ids.
+    const row = page.locator(`#level .case-occurrence[data-occurrence-id="${first}"]`);
+    if (!await row.count()) await page.locator('#level .more').first().click();
+    await choose(page, row);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(id => document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId === id, second);
+    await page.keyboard.press('ArrowUp');
+    await page.waitForFunction(id => document.querySelector('#level .case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId === id, first);
+    assert.equal(await page.locator('#level .case-occurrence[aria-pressed="true"]').evaluate(n => n === document.activeElement), true);
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await held(page), first, 'the shipped cohort traversal stops at its first member');
+  },
   S25: async page => {
     const { file, id } = await selectedMember(page);
     const params = new URLSearchParams({ projection_id: file.projection_id, finding_id: file.finding.id, alignment: 'event', occ: id });
@@ -412,12 +429,27 @@ export const C2_STORIES = {
   S77: async page => {
     await go(page, 'changes'); await press(page, '[data-action="pump"]');
     await page.locator('.gf-utility[data-utility="pump"]').waitFor();
-    check(/detected/i.test(await page.locator('.gf-utility[data-utility="pump"]').innerText()));
+    await page.locator('.gf-utility[data-utility="pump"]').getByRole('heading', { name: /Detected on the pump/ }).waitFor();
+    check(/detected/i.test(await page.locator('.gf-utility[data-utility="pump"]').innerText()), 'loaded Pump settings names its detected schedule');
     assert.equal(await page.locator('footer [data-utility="pump"]').count(), 0);
   },
   S78: async page => { await go(page, 'changes'); await press(page, '[data-utility="guide"]'); await page.keyboard.press('Escape'); assert.equal(await page.locator('.gf-utility').count(), 0); await press(page, '[data-action="aside"]'); await page.locator('#aside-reason').evaluate(n => n.blur()); await page.keyboard.press('Escape'); assert.equal(await page.locator('form[data-form="aside"]').count(), 0); },
   S79: async page => { await go(page, 'changes'); await press(page, '[data-action="aside"]'); await page.fill('#aside-reason', 'half-written'); await page.keyboard.press('Escape'); assert.equal(await page.inputValue('#aside-reason'), 'half-written'); },
-  S81: async page => { await openBasalLane(page); const more = page.locator('#level .more').first(); if (await more.count()) await more.click(); await page.locator('#level').evaluate(n => { assertOverflow(n); function assertOverflow(n) { if (n.scrollHeight <= n.clientHeight) throw new Error('dense roster does not overflow'); n.scrollTop = 40; } }); await choose(page, page.locator('#level .case-occurrence').first()); check(await page.locator('#level').evaluate(n => n.scrollTop) > 0); await go(page, 'changes'); await go(page, 'diagnose'); assert.equal(await page.locator('#level').evaluate(n => n.scrollTop), 0); },
+  S81: async page => {
+    await openBasalLane(page);
+    const more = page.locator('#level .more').first();
+    if (await more.count()) await more.click();
+    const rows = page.locator('#level .case-occurrence');
+    check(await rows.count() > 5, 'the generated night roster has a below-fold member');
+    const row = rows.last();
+    await row.scrollIntoViewIfNeeded();
+    const before = await page.locator('#level').evaluate(n => n.scrollTop);
+    check(before > 0, 'the selected night is reached by scrolling the reading pane');
+    await choose(page, row);
+    assert.equal(await page.locator('#level').evaluate(n => n.scrollTop), before, 'same-subject night selection retains reading scroll');
+    await go(page, 'changes'); await go(page, 'diagnose');
+    assert.equal(await page.locator('#level').evaluate(n => n.scrollTop), 0, 'a new subject arrives at its head');
+  },
   S82: async page => C2_STORIES.S21(page), S83: cleanup, S84: (page, ctx) => cleanup(page, ctx, true),
   S89: planPersistence, S97: projectionReplacement, S98: icReplacement, S99: permittedActions,
 };

@@ -106,15 +106,40 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root = host.ownerDocument.createElement('div');
     root.className = 'v2-diagnose main-content';
     root.dataset.v2Diagnose = '';
+    // The v2 lane contract adds traversal through the owner's existing buttons.
+    root.addEventListener('keydown', event => {
+      if (event.metaKey || event.ctrlKey || event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      const cell = event.target.closest?.('#lane > button.lane-cell');
+      if (!cell) return;
+      const cells = [...root.querySelectorAll('#lane > button.lane-cell')];
+      const at = cells.indexOf(cell);
+      if (at < 0) return;
+      event.preventDefault();
+      const next = (at + (event.key === 'ArrowLeft' ? -1 : 1) + cells.length) % cells.length;
+      cells[next].click();
+      // Picking rebuilds the lane; focus the new button at the same coordinate.
+      root.querySelectorAll('#lane > button.lane-cell')[next]?.focus({ preventScroll: true });
+    });
+    let readingScroll = null;
     root.addEventListener('click', event => {
       const row = event.target.closest?.('.qrow[data-id]');
       const member = event.target.closest?.('.case-occurrence');
+      readingScroll = member ? { event, top: root.querySelector('#level')?.scrollTop || 0 } : null;
       if (row) { activeSubject = row.dataset.id; caseContext.select(activeSubject); }
       else if (member && activeSubject) caseContext.select(activeSubject, member.dataset.occurrenceId);
       else if (event.target.closest?.('#crumb-trail button, #lane > button')) {
         activeSubject = null; caseContext.select(null);
       }
     }, true);
+    // A native night click rebuilds #level synchronously. Restore the same
+    // subject's scroll after that handler; selecting a different subject does
+    // not enter this path and keeps the shared owner's arrival-at-head behavior.
+    root.addEventListener('click', event => {
+      if (readingScroll?.event !== event) return;
+      const level = root.querySelector('#level');
+      if (level) level.scrollTop = readingScroll.top;
+      readingScroll = null;
+    });
     workstation = createView({ root, callbacks: {
       stage: (item, desired) => stageEvidence(item, desired, payload?.analyze),
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),

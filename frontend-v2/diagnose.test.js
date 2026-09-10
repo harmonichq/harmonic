@@ -91,3 +91,37 @@ test('return restoration requests its occurrence once while shared paints are pe
     selected = true; notify(); destination.leave();
   } finally { globalThis.MutationObserver = previous; }
 });
+
+test('the v2 adapter wraps lane keys through the carried buttons and retains night-click scroll', async () => {
+  const handlers = [];
+  const level = { scrollTop: 120 };
+  let selected = 0; let focused = null;
+  const cells = Array.from({ length: 48 }, (_, index) => ({
+    closest: selector => selector === '#lane > button.lane-cell' ? cells[index] : null,
+    click() { selected = index; }, focus() { focused = index; },
+  }));
+  const root = { dataset: {}, remove() {},
+    addEventListener(type, run, capture) { handlers.push({ type, run, capture: capture === true }); },
+    querySelectorAll: selector => selector === '#lane > button.lane-cell' ? cells : [],
+    querySelector: selector => selector === '#level' ? level : null,
+  };
+  const seat = host(); seat.ownerDocument.createElement = () => root;
+  const destination = createDiagnoseDestination({ api: source().api,
+    createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
+  await destination.read(); destination.mount(seat, { navigation: 0, hold() {} });
+  const key = event => { for (const h of handlers.filter(h => h.type === 'keydown')) h.run(event); };
+  let prevented = 0;
+  key({ key: 'ArrowLeft', target: cells[0], preventDefault() { prevented++; } });
+  assert.equal(selected, 47, 'left from the first cell picks the last carried cell');
+  assert.equal(focused, 47);
+  key({ key: 'ArrowRight', target: cells[47], preventDefault() { prevented++; } });
+  assert.equal(selected, 0); assert.equal(focused, 0); assert.equal(prevented, 2);
+
+  const member = { dataset: { occurrenceId: 'night' } };
+  const event = { target: { closest: selector => selector === '.case-occurrence' ? member : null } };
+  for (const h of handlers.filter(h => h.type === 'click' && h.capture)) h.run(event);
+  level.scrollTop = 0; // The native night selection rebuilds the same reading pane.
+  for (const h of handlers.filter(h => h.type === 'click' && !h.capture)) h.run(event);
+  assert.equal(level.scrollTop, 120, 'selection within the same reading preserves its viewport');
+  destination.leave();
+});

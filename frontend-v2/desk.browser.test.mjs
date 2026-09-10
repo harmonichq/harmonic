@@ -14,6 +14,7 @@
 // names what is absent; it never skips, because a green step that ran zero
 // browser assertions proves nothing.
 import test, { after } from 'node:test';
+import { boundedWait } from './c2.replay.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
@@ -195,7 +196,7 @@ const runner = createBrowserRunner(() => chromium.launch());
 after(() => runner.close());
 
 /** The built desk, served from disk with its API answered above. */
-async function openDesk({ viewport = '1280x720', address = '/v2/' } = {}) {
+async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate } = {}) {
   const browser = await runner.browser();
   const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
   const page = await context.newPage();
@@ -218,6 +219,7 @@ async function openDesk({ viewport = '1280x720', address = '/v2/' } = {}) {
     unstubbed.push(url.pathname);
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"not stubbed"}' });
   });
+  if (beforeNavigate) await beforeNavigate(page);
   await page.goto(`${BASE}${address}`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
   return {
@@ -496,7 +498,9 @@ for (const viewport of Object.keys(VIEWPORTS)) {
     const desk = await openDesk({ viewport });
     const { page } = desk;
     try {
-      await page.waitForSelector('[data-v2-diagnose] #level .qrow');
+      // Overnight has only held rows in this generated case. Open the global
+      // Findings scope before asking for its Pattern rows.
+      await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
       await page.getByRole('button', { name: '24 h', exact: true }).click();
       await page.locator('.qrow[data-id^="pattern:"]').first().waitFor();
       assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
@@ -508,10 +512,45 @@ for (const viewport of Object.keys(VIEWPORTS)) {
         await press(page, '[data-destination="changes"]');
         assert.equal(await countOf(page, '[data-event-view="glucose"]'), 0);
         await press(page, '[data-destination="diagnose"]');
-        await page.waitForSelector('[data-v2-diagnose] #level .qrow');
+        await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+        await page.getByRole('button', { name: '24 h', exact: true }).click();
+        await page.locator('[data-v2-diagnose] #level .qrow[data-id^="pattern:"]').first().waitFor();
         assert.equal(await countOf(page, '[data-event-view="glucose"]'), 1);
         assert.equal(await countOf(page, '#lane > button.lane-cell'), 48);
       }
+    } finally { await desk.close(); }
+  });
+}
+
+// Amendment 6: S28/S83 observed a late tile completion painting null hosts.
+// Hold actual evidence responses until the mounted Diagnose view has left.
+for (const outcome of ['resolved', 'rejected']) {
+  test(`shared tile ${outcome} after v2 teardown cannot repaint removed hosts`, async () => {
+    const held = [];
+    let arrive; const requested = new Promise(resolve => { arrive = resolve; });
+    const desk = await openDesk({ beforeNavigate: async page => {
+      await page.route('**/api/diagnose/basal-night-evidence*', route => { held.push(route); arrive(); });
+    } });
+    const { page } = desk;
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+      // The request can belong to an unseated descriptor, just as in S28/S83.
+      await boundedWait(requested, 'shared teardown regression basal request');
+      assert.ok(held.length > 0, 'the regression holds a real basal tile request');
+      await press(page, '[data-destination="changes"]');
+      assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
+      const finished = held.map(route => page.waitForResponse(response => response.request() === route.request(), { timeout: 30000 }));
+      await Promise.all(held.map(route => route.fulfill(outcome === 'resolved'
+        ? { status: 200, json: basalEvidence }
+        // Malformed JSON rejects the real client's read without producing an
+        // expected HTTP console error that could mask the teardown page error.
+        : { status: 200, contentType: 'application/json', body: '{' })));
+      await boundedWait(Promise.all((await Promise.all(finished)).map(response => response.finished())), 'shared teardown response bodies');
+      // Let request continuations and the queued brace paint run before close
+      // checks the collected page errors; frame turns are not timed sleeps.
+      await boundedWait(page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))), 'shared teardown continuation frames');
+      assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
     } finally { await desk.close(); }
   });
 }

@@ -531,12 +531,13 @@ export const C2_STORIES = {
       try {
         await waitForDesk(page);
         await waitForCharts(page);
-        // The reading pane's pending line is a role=status element the pane
-        // removes once its read lands; the level flag is the shipped rail's
-        // own. No copied copy: a renamed noun cannot make this vacuous.
+        // The slot's night evidence paints its served groups (`.ev-group`,
+        // diagnose-workstation.js) in place of the pending line once the read
+        // lands; waiting for the groups is the structural signal, with no
+        // copied copy that a renamed noun could make vacuous.
         await page.waitForFunction(() => {
           const level = document.getElementById('level');
-          return level && level.dataset.loading !== 'true' && !level.querySelector('[role="status"]');
+          return level && level.dataset.loading !== 'true' && level.querySelector('.ev-group');
         }, null, { timeout: 30000 });
         await waitForLevelAnimations(page);
       } catch (error) {

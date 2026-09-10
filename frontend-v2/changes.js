@@ -127,7 +127,6 @@ function membersTable(candidate) {
 
 function concernFrame(candidate) {
   const read = guidance();
-  const failed = guidanceError();
   const writeFailed = guidanceWriteError();
   const family = SETTING_NAME[candidate.parameter] || (candidate.kind === 'setting' ? 'Setting' : 'Findings');
   const end = candidate.preference?.set_aside
@@ -139,15 +138,12 @@ function concernFrame(candidate) {
     sub: `<b>${e(candidate.priority ?? '—')} priority</b> · ${e(disposition() || '')}${candidate.preference?.set_aside ? ' · Set aside' : ''}`,
     end: end + '<button class="gf-btn" data-action="pump">Pump settings</button>',
   });
-  const stale = failed
-    ? `<p class="gf-note" role="status">The current read failed. This is the last read that answered. <button class="gf-btn" data-action="retry">Retry</button></p>`
-    : '';
   const wrote = writeFailed
     ? `<p class="gf-error" role="alert">That did not save: ${e(writeFailed.message)}</p>`
     : '';
   const stage = `<section class="pane gf-stage gf-stage-table" aria-label="Evidence">${head}
     <div class="instruments"><div class="instrument"><span class="cap">Members in this read</span><span class="meta">${e(read?.reasons?.admission || '')}</span></div><div class="instrument gf-tools">${sheetToggle('Action', view.sheetOpen)}</div></div>
-    <div class="gf-scroll">${stale}${wrote}${membersTable(candidate)}</div></section>`;
+    <div class="gf-scroll">${wrote}${membersTable(candidate)}</div></section>`;
   return desk(stage, `<aside class="pane gf-reading" aria-label="${aside.open ? 'Set aside' : 'Action'}">${actionPane(candidate)}</aside>`);
 }
 
@@ -281,6 +277,7 @@ function bind(host) {
  */
 export function mount(host, deps = {}) {
   if ((planOpen && planUnderway()) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
+  if (guidanceError()) { host.innerHTML = failedFrame(); bind(host); return; }
   if (!guidanceSettled()) {
     loadGuidance();
     host.innerHTML = emptyFrame('Changes', 'Reading', 'Asking what needs attention.', '');

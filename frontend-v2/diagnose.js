@@ -7,6 +7,7 @@ import { currentDestination, hold, navigate, registerDestination, render, view }
 import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
+import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { formatStartMin } from '../frontend/plan.js';
 
 /** One mounted shared view and one coherent initial read. loadCase remains an
@@ -23,6 +24,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let arrival = null;
   let entry = {};
   const ages = {};
+  const caseContext = createCaseContext(loadCase);
+  let activeSubject = null;
+  let restoreObserver = null;
 
   async function read() {
     if (pending) return pending;
@@ -52,15 +56,45 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // Context names a served identity or an explicit slot. It never selects the
     // current first-ranked concern as a substitute for the retained subject.
     const subject = entry.subject;
-    const row = [...root.querySelectorAll('.qrow[data-id]')].find((node) => node.dataset.id === subject);
-    if (row) row.click();
-    else if (subject === 'setting:basal_rate' || /^basal:\d+(?:-\d+)?$/.test(subject || '')) {
-      const start = subject === 'setting:basal_rate' ? entry.window?.split('-')[0] : subject.split(':')[1].split('-')[0];
-      if (start !== undefined) {
-        const label = `${formatStartMin(Number(start))} basal slot,`;
-        [...root.querySelectorAll('#lane > button.lane-cell')]
-          .find(button => button.getAttribute('aria-label')?.startsWith(label))?.click();
+    let subjectOpened = false;
+    let occurrenceRequested = false;
+    restoreObserver?.disconnect();
+    const restore = () => {
+      if (!subjectOpened && subject) {
+        const row = [...root.querySelectorAll('.qrow[data-id]')].find(node => node.dataset.id === subject);
+        if (row) { subjectOpened = true; row.click(); }
+        else if (subject === 'setting:basal_rate' || /^basal:\d+(?:-\d+)?$/.test(subject)) {
+          const start = subject === 'setting:basal_rate' ? entry.window?.split('-')[0] : subject.split(':')[1].split('-')[0];
+          if (start !== undefined) {
+            const label = `${formatStartMin(Number(start))} basal slot,`;
+            const cell = [...root.querySelectorAll('#lane > button.lane-cell')]
+              .find(button => button.getAttribute('aria-label')?.startsWith(label));
+            if (cell) { subjectOpened = true; cell.click(); }
+          }
+        }
       }
+      if (!subjectOpened) return;
+      if (entry.occurrence) {
+        const node = [...root.querySelectorAll('.case-occurrence')]
+          .find(node => node.dataset.occurrenceId === entry.occurrence);
+        if (!node) return;
+        if (node.getAttribute('aria-pressed') !== 'true') {
+          if (!occurrenceRequested) { occurrenceRequested = true; node.click(); }
+          return;
+        }
+        (root.querySelector(entry.focus || '#crumb-trail') || node).focus({ preventScroll: true });
+      }
+      restoreObserver?.disconnect(); restoreObserver = null;
+    };
+    if (subject) {
+      restoreObserver = new MutationObserver(restore);
+      restoreObserver.observe(root, { childList: true, subtree: true });
+      // Whole-day cases must not accidentally inherit the default Overnight
+      // slice on return. The shipped Window control still owns the request.
+      if (subject.startsWith('pattern:') || (!entry.window && subject.startsWith('finding:'))) {
+        [...root.querySelectorAll('#seg-window button')].find(button => button.textContent === '24 h')?.click();
+      }
+      restore();
     }
     const heading = root.querySelector('#crumb-trail');
     if (heading) heading.tabIndex = -1;
@@ -70,20 +104,33 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function ensureView(host) {
     if (root) return;
     root = host.ownerDocument.createElement('div');
-    root.className = 'v2-diagnose';
+    root.className = 'v2-diagnose main-content';
     root.dataset.v2Diagnose = '';
+    root.addEventListener('click', event => {
+      const row = event.target.closest?.('.qrow[data-id]');
+      const member = event.target.closest?.('.case-occurrence');
+      if (row) { activeSubject = row.dataset.id; caseContext.select(activeSubject); }
+      else if (member && activeSubject) caseContext.select(activeSubject, member.dataset.occurrenceId);
+      else if (event.target.closest?.('#crumb-trail button, #lane > button')) {
+        activeSubject = null; caseContext.select(null);
+      }
+    }, true);
     workstation = createView({ root, callbacks: {
       stage: (item, desired) => stageEvidence(item, desired, payload?.analyze),
       isStaged: (item) => evidenceIsStaged(item, payload?.analyze),
       retry: read,
       settings: () => openUtility('settings'),
       day: (occurrence) => {
-        const at = occurrence.t || occurrence.anchor?.t;
-        navigate('day', { date: String(at || '').slice(0, 10),
-          subject: entry.subject || occurrence.text || occurrence.anchor?.label || '',
-          occurrence: at || '', lever: occurrence.cause_lever || '',
-          window: entry.window || '', from: 'diagnose',
-          focus: document.activeElement?.id ? `#${CSS.escape(document.activeElement.id)}` : '#crumb-trail' });
+        const label = root.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label');
+        const match = /^(\d{2}):(\d{2}) basal slot,/.exec(label || '');
+        const start = match ? Number(match[1]) * 60 + Number(match[2]) : null;
+        const selected = caseContext.current();
+        const context = evidenceDayContext({ occurrence, selected,
+          slot: !selected && start !== null ? { start, end: start + 30 } : null,
+          focus: '.occ-foot button:last-child' });
+        // A case callback alone never supplies a subject; a successful reader
+        // drill (or explicitly selected basal cell) must have established it.
+        if (context.subject) navigate('day', context);
       },
       loadDay: async (date) => {
         try {
@@ -98,7 +145,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       loadFindings: api.fetchDiagnoseFindings,
       loadPreparation: api.fetchDiagnoseFindingCasePreparation,
       loadHistoryEvents: api.fetchDiagnoseCarbRatioHistoryEvents,
-      loadCase,
+      loadCase: coordinates => caseContext.load(coordinates),
       go: (to) => to === 'settings' ? openUtility('settings')
         : navigate(to === 'day' ? 'day' : 'changes', to === 'plan' ? { subject: 'plan' } : {}),
     } });
@@ -107,6 +154,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function leave() {
     if (!seated) return;
     seated = false;
+    restoreObserver?.disconnect(); restoreObserver = null;
+    activeSubject = null; caseContext.select(null);
     workstation.leaveSurface();
     // setData(null) runs the shared owner's teardown and aborts its listeners
     // before its no-payload return. No private renderer cleanup is copied here.
@@ -116,15 +165,25 @@ export function createDiagnoseDestination({ api = client, createView = createDia
 
   function mount(host, deps = {}) {
     entry = deps.context || {};
+    if (payload && arrival !== null && deps.navigation !== arrival) {
+      arrival = deps.navigation;
+      leave();
+      host.innerHTML = loadingFrame('Diagnose');
+      read();
+      return;
+    }
     if (!payload && !error) {
       host.innerHTML = loadingFrame('Diagnose');
       read();
       return;
     }
-    if (error && !payload) {
-      host.innerHTML = emptyFrame('Diagnose', 'Evidence unavailable', 'The evidence read could not load.',
-        '<button class="gf-btn primary" data-action="retry">Retry</button>');
+    if (error) {
+      host.innerHTML = emptyFrame('Diagnose', payload ? 'Current read failed' : 'Evidence unavailable',
+        payload ? 'The current read failed. The last read that answered is not a new result.' : 'The evidence read could not load.',
+        '<button class="gf-btn primary" data-action="retry">Retry</button><button class="gf-btn" data-action="open-diagnose">Open Diagnose</button>');
       host.querySelector('[data-action="retry"]').onclick = read;
+      host.querySelector('[data-action="open-diagnose"]').onclick = read;
+      view.focusAfterRender = '[data-action="retry"]';
       return;
     }
     ensureView(host);

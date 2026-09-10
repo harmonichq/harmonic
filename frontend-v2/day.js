@@ -131,7 +131,7 @@ function adopt(context) {
   if (context.date) {
     memory.entry = { key, ...context };
     memory.date = context.date;
-    memory.focusT = null;
+    memory.focusT = context.moment || null;
   } else {
     memory.entry = { key };
   }
@@ -157,6 +157,12 @@ export function dayReturnTarget(entry = memory.entry) {
     focus: entry.focus || null,
     subject: entry.subject || '',
   };
+}
+
+/** Keep the evidence address, including the opaque occurrence, on return. */
+export function dayReturnContext(entry = memory.entry) {
+  const { key, ...context } = entry || {};
+  return context;
 }
 
 /** A contextual Day entry. The caller supplies the context; Day owns the rest. */
@@ -383,10 +389,11 @@ function bind(host) {
         // focuses its toggle. A utility origin reopens that utility over the
         // destination it was opened on.
         const back = dayReturnTarget();
+        const context = dayReturnContext();
         memory.entry = null;
         if (back.utility) reopenUtility(back.utility);
         view.focusAfterRender = narrow() ? '.gf-sheet-toggle' : [back.focus, '.gf-reading > header h2'].filter(Boolean);
-        navigate(back.destination);
+        navigate(back.destination, context);
         return;
       }
       view.focusAfterRender = action === 'month' ? '.gf-month-toggle' : `[data-day="${action}"]:not(:disabled), .gf-month-toggle`;

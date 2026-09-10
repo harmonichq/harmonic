@@ -102,7 +102,7 @@ const V2_DEFAULT_DESTINATION = 'diagnose';
 // (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
 // target within it — "restore the exact target" is what makes the return a
 // return rather than a second arrival.
-export const V2_CONTEXT_KEYS = ['date', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
+export const V2_CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
 
 export function resolveDestination(destination) {
   return V2_DESTINATIONS.includes(destination) ? destination : V2_DEFAULT_DESTINATION;

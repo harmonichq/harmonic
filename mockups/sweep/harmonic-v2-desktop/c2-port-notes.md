@@ -1,30 +1,50 @@
-# C2 port notes — execution lock v2 389 2
+# C2 port notes — execution lock v2 389 2, amendment 1
 
-This is an incomplete builder receipt, not behavior or fidelity acceptance.
-All data exercised by this worker was manufactured. No browser was launched;
-the coordinator owns escalated browser execution. Historical captures remain
-unchanged and do not prove amended navigation or copy.
+Builder port record only. No browser was launched in this workspace; the
+coordinator owns Chromium execution and the independent verifier owns behavior,
+fidelity and eye verdicts. Historical captures remain unchanged.
 
-| Adaptation | Source authority and implemented range | Evidence still required |
+| Adaptation range | Owner and concrete port | Remaining execution evidence |
 | --- | --- | --- |
-| Three destinations | ADR 397; shared v2 route defaults and closed destination set, shell buttons, Day returns and utility handoffs | Both viewport route/geometry replays |
-| Guidance in Changes | `changes.js` ports the prototype's guidance/set-aside framing; `guidance.js` reads the backend selection and re-reads after writes | Restore-to-eligible prerequisite; both viewport renders |
-| Plan | `plan-view.js` ports the prototype's setting frame through the shared Plan owner and durable client; retained pending decisions use the captured profile/items | Browser save/reload/reconciliation/withdrawal journey |
-| Diagnose | `diagnose.js` delegates to `createDiagnoseEventComparison`; no MARKUP, rail, chart painter, ranking or Pattern construction is copied | Shared lifecycle gap; exact Day-return context; complete case/selection proofs |
-| Shared capacity | `segmentCapacity` owns the count/capacity badge for v1 and v2 | S90 at both viewports |
-| Speech | `axisLabel` in the shared event renderer emits minute remainders; Event S8 and S100 use that renderer's public readout | Event replay and S100 at both viewports |
-| Historical story wording | The v2 ledger retains old obligations/results and appends dated ADR 397 obligations beside affected IDs | Remaining app replay bodies and final independent verdicts |
+| Navigation, S1–S13 | ADR 397 three destinations; Diagnose default; no Overview/Explore registration; contextual Changes origins preserved | Both viewport navigation, geometry and typography renders |
+| Guidance, S14–S20b, S37 | One authenticated guidance read and backend-selected subject in Changes; initial and current failed evidence frames in Diagnose; failed guidance exposes no former action | Browser ownership, failed read and set-aside flows; S16 after c2b |
+| Comparison, S21–S30 | Shared `createDiagnoseEventComparison` composition, `#level .qrow`, `.case-occurrence`, `#tile-focal #ec-chart`; served initial selection including none | Both viewport served case, support, trace and focus assertions |
+| Basal and setting evidence, S31–S35/S37b/S43/S44 | Shared 48-cell lane, supporting-night roster and trace; shared keys stop at occurrence ends and wrap across basal cells | Both viewport lane/night traversal and Day entry |
+| Plan, S38–S42/S89/S90 | Shared deliverable, capacity and reconciliation; durable draft/decision/failure/retry/withdrawal; fresh synthetic pump captures through Store | Browser save/reload, mismatch, match and withdrawal flows |
+| Day return, S26/S35/S61/S62 | Canonical subject, opaque occurrence, separate moment, affected window and focus travel through the shared router in both directions | Browser precise return, including scoped evidence |
+| Cleanup, S28/S81/S83/S84 | One composition object; shipped leaveSurface and setData teardown; utility overlay restores the original inspector | Coordinator executes repeated entry, scroll and pagehide assertions |
+| Failure and permissions, S97–S99 | Real scoped-read barriers and failures, typed stale evidence response, current I:C pair assertion, served permission/refusal rendering | Coordinator executes the strict assertions against the carried owner |
+| HV2-32/S100 | Shared fractional-hour formatter and coupled Event S8 expectation; S100 uses that Event S8 public readout assertion | Inherited Event replay and both S100 viewports |
 
-The shared-owner selectors replace prototype selectors only where explicitly
-adapted: app S3 uses `#level .qrow`, S100 uses `#tile-focal #ec-chart`, and
-app R15 asserts Diagnose/Changes successors and the shared Findings/Spotlight/
-All Charts surfaces. The mock target retains its historical destination
-addresses. No product destination alias is added.
+ADR 397 carries the rail itself. The v2 composition supplies the required
+`main-content` host class and the locked desk width through the shared owner's
+`--side` input. Prototype frame CSS is scoped to `.gf-desk` so its instrument,
+header and comparison rules do not restyle the carried Diagnose owner. No
+MARKUP, queue, Pattern construction or chart painter is copied. The historical
+prototype selectors and source bytes remain intact under TARGET=mock. App
+selector adaptations live in `frontend-v2/c2.replay.mjs`; old story IDs and
+attributed pre-amendment wording remain in the ledger.
 
-S88, S90 and S100 have app bodies but have not been executed. S89, S97, S98
-and S99 remain deferred. The complete c2 selection is not passing or complete.
-S36 and c3 follow-up bodies remain c3's work. No original story ID is removed.
+Coordinator amendment 1 accepts the existing shared teardown implementation:
+source inspection found that setData(null) aborts the boot listeners but does
+not explicitly invalidate every in-flight row/tile response or dispose every
+row mini before returning. No browser failure has been observed here. The
+proposed shared cleanup patch was deleted, no shared teardown code was changed,
+and S28/S83/S84 assert the shipped behavior as carried. An executed failure,
+if the coordinator observes one, belongs in a follow-up issue with that output.
 
-C2 has not supplied paired rendered artifacts or named eye judgments.
-The independent verifier must not copy an old capture's verdict onto these
-adaptations.
+The case-store runner opts in through CASE_STORE_DIR. It generates named QA
+cases with the existing generator, makes a fresh copy per story, invokes the
+existing ingestion reconciliation owner, and serves only that copy with
+`--no-fetch --token ''` on port 8765. An occupied port fails closed. S88/S90 use
+basal-lower, S98 uses ic-lower, S100 uses the showcase. STORY_CASES can name
+per-story overrides. S13 retains all four source obligations using four named
+manufactured cases. S42's later captures use the retained Plan's original or
+proposed schedule through the public Store snapshot producer; they do not
+modify the saved deliverable or implement readiness.
+
+S88/S89/S90/S97/S98/S99/S100 now have concrete app bodies. None depends on the
+Restore eligibility fix; S88 checks durable preference deletion, while S16
+retains the stronger eligible-subject expectation for execution after c2b.
+S36 and follow-up/history implementations remain c3-owned. No final status,
+paired render or named eye judgment is claimed by this builder.

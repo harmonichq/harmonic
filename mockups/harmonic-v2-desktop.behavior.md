@@ -621,6 +621,10 @@ S21 · The reading pane lists every served cohort with its own support line, and
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S21 · 2026-09-10 · ADR 397 / coordinator amendment 1: Diagnose lists the shared owner’s served comparison cohorts, support text and legend marks. Arrival renders the served initial selection without choosing a member locally.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S22 · Pressing a cohort row holds it, and if the held member does not belong to
       it, selects that cohort's last member.
@@ -631,6 +635,10 @@ S22 · Pressing a cohort row holds it, and if the held member does not belong to
   evidence: replay fn S22
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S22 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shipped comparison roster groups members by their served cohort. Selecting a member in another cohort holds that requested occurrence; no prototype-only cohort button or automatic last-member selection is added around the owner.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S23 · A member row selects its occurrence and the selection is always held —
@@ -643,6 +651,10 @@ S23 · A member row selects its occurrence and the selection is always held —
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S23 · 2026-09-10 · ADR 397 / coordinator amendment 1: On arrival Diagnose renders the shipped case file’s own initial selection state: selection.state=none renders the cohort without a selected reading. A member row selects its occurrence and that selection is then held. No automatic selection is added around the carried owner.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S24 · The Occurrence ↑ / ↓ controls step through the held cohort's members and
       wrap at its ends, scrolling the pressed row into view.
@@ -653,6 +665,10 @@ S24 · The Occurrence ↑ / ↓ controls step through the held cohort's members 
   evidence: replay fn S24
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S24 · 2026-09-10 · ADR 397 / coordinator amendment 1: After an explicit member selection, the shared occurrence roster owns vertical keyboard traversal and focus/scroll retention, stopping at the first and last member as shipped. Arrival itself does not select a member.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S25 · Model step rows select a served step and put the figure on Episode; the
@@ -665,6 +681,10 @@ S25 · Model step rows select a served step and put the figure on Episode; the
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S25 · 2026-09-10 · ADR 397 / coordinator amendment 1: Selected evidence is rendered through the shipped case file and chart owner, retaining its served facts and evidence tiers. The prototype’s separate model-step painter is not copied into the carried rail.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S26 · The Figure segment switches between Episode and Day, and Episode is
       disabled for a member the generator served no episode link for.
@@ -676,6 +696,10 @@ S26 · The Figure segment switches between Episode and Day, and Episode is
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S26 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shared selected trace and contextual Open in Day control carry the occurrence’s served evidence. No Episode link is invented for an occurrence whose source does not publish one. The initial selection may be none.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S27 · The Window segment moves only the comparison's visible x extent; cohort
       membership, medians and the y range are the adapter's and do not change.
@@ -686,6 +710,10 @@ S27 · The Window segment moves only the comparison's visible x extent; cohort
   evidence: replay fn S27
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S27 · 2026-09-10 · ADR 397 / coordinator amendment 1: The shared comparison renderer owns the visible comparison extent and its population, medians and y range. This is separate from the Diagnose clock window, which requests a new scoped population. An extent change does not automatically select a member.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S28 · The comparison mounts through the shipped renderer with its headline host
@@ -713,6 +741,10 @@ S29 · A roster row on the shared journey opens its subject and sends focus to
   evidence: replay fn S29
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S29 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped Findings row opens its case and focuses #level; the Findings crumb restores the exact originating row and its scroll. Re-pressing Diagnose returns to the Findings index. No second roster or focus handler is added to the shared owner.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S30 · The Findings crumb is the persistent parent in the basal lane's head and
@@ -760,6 +792,10 @@ S31 · All 48 basal slots are independently discoverable as lane cells, and the
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S31 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: All 48 shipped #lane > button.lane-cell controls remain independently reachable in Diagnose. There is no duplicate All basal slots painter.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S32 · A lane cell is keyboard-operable: ArrowLeft and ArrowRight move the held
       slot and wrap, and the moved-to cell takes focus.
@@ -770,6 +806,10 @@ S32 · A lane cell is keyboard-operable: ArrowLeft and ArrowRight move the held
   evidence: replay fn S32
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S32 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped lane owns left/right traversal, wrap and focus on the moved-to cell.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S33 · The slot's supporting nights traverse by keyboard on the occurrence list
@@ -789,6 +829,10 @@ S33 · The slot's supporting nights traverse by keyboard on the occurrence list
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S33 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shipped supporting-night roster uses an explicit selection followed by vertical arrow traversal and focus retention. It stops at its ends; prototype-only previous/next-night buttons are not added.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S34 · Previous/next-slot controls move the held slot alongside the lane itself.
   element:  [data-basal="previous-slot"], [data-basal="next-slot"]
@@ -798,6 +842,10 @@ S34 · Previous/next-slot controls move the held slot alongside the lane itself.
   evidence: replay fn S34
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S34 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: Adjacent independently reachable shipped lane cells and their left/right keys perform the previous/next-slot job. No second set of prototype slot controls is installed around the rail.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S35 · Basal is available on any held slot; Night and Day stay disabled until a
@@ -813,6 +861,10 @@ S35 · Basal is available on any held slot; Night and Day stay disabled until a
   evidence: replay fn S35
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S35 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The basal evidence is present before a night is selected. Selection adds the shipped night trace and Open in Day affordance; no invented initial night or prototype-only Figure segment is added.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S36 · A Trial's Inspect nights opens the evidence that Trial was decided from —
@@ -846,6 +898,10 @@ S37 · Changes with no change underway names the concern and offers one route
   evidence: replay fn S37
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S37 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: Changes retains the backend-selected concern, Stage change and the named evidence route. Its canonical subject and served affected window are passed to Diagnose.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 Amended S37 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job runs in Changes, with evidence opening Diagnose on the same subject. Changes owns the backend-selected decision and next action without duplicating the Findings roster.
 The preceding wording and results are the attributed pre-amendment record.
@@ -957,6 +1013,10 @@ S43 · A slot row and a night row select within the setting journey's own stage,
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S43 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The setting evidence uses the shared basal lane and supporting-night roster in Diagnose; slot and night changes retain their own selections and shared keyboard controls.
+The preceding wording and results are the attributed pre-amendment record.
+
+
 ```
 S44 · The setting journey's own figure and seat controls take its stage, and do
       not move another owner's figure on the shared desk.
@@ -967,6 +1027,10 @@ S44 · The setting journey's own figure and seat controls take its stage, and do
   evidence: replay fn S44
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S44 · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The shared setting evidence and selected-night trace lead to contextual Day through the carried owner. Prototype-only Figure segments are not copied.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Changes — Trial evidence, readiness and the conclusion
 
@@ -1097,6 +1161,10 @@ S37b · At the following read the concern's own roster row offers "All basal
   evidence: replay fn S37b
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S37b · 2026-09-10 · ADR 397 / lock v2 389 2 carried-owner adaptation: The concern’s own shipped Findings row drills its served basal span within the same independently reachable 48-slot lane. It never substitutes the current first-ranked concern for an addressed subject.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 Amended S37b · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
 The preceding wording and results are the attributed pre-amendment record.

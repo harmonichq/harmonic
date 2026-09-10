@@ -58,6 +58,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { S8 as sharedEventSpeech } from './diagnose-event-comparison-behavior.replay.mjs';
 import { buildDeliverable, segmentCapacity, PLAN_PARAM_FAMILY } from './plan.js';
+import { createCaseServer, storyCase } from '../frontend-v2/replay-cases.mjs';
+import { C2_STORIES } from '../frontend-v2/c2.replay.mjs';
 
 const require = createRequire(import.meta.url);
 const { createBrowserRunner } = require('./browser-runner.js');
@@ -329,7 +331,7 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
  * the build command; a desk still on its loading frame, with no pane, or on a
  * destination other than the requested one fails before any story runs.
  */
-export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'diagnose' } = {}) {
+export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'diagnose', storyId = null, caseName = null } = {}) {
   if (!VIEWPORTS[viewport]) fail(`unsupported viewport ${JSON.stringify(viewport)}`);
   // `source` and `state` are the MOCK's coordinates: four captured patients and
   // a scenario select. The app has one served database instead, so a story that
@@ -337,7 +339,7 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   // must actually carry — the QA generator's job, not something to satisfy by
   // quietly rendering the default. Refused rather than ignored, for exactly the
   // reason openMock refuses `?state=` on a non-meals source.
-  if (state !== 'investigate') {
+  if (state !== 'investigate' && !C2_STORIES[storyId]) {
     fail(`TARGET=app cannot honour state=${state}: the app has no scenario select. `
       + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
   }
@@ -519,6 +521,7 @@ export async function goto(page, destination) {
  * seven stories that asked for [data-journey="lane"] on the initial Overview.
  */
 async function openBasalLane(page) {
+  if (TARGET === 'app') return C2_STORIES.openBasalLane(page);
   await goto(page, 'explore');
   await activate(page, '.gf-roster-row[data-row="basal"]');
   const cells = await countOf(page, '.lane-cell[data-cell]');
@@ -528,6 +531,7 @@ async function openBasalLane(page) {
 /** Open a roster row that is not the setting branch, so the shared
     investigation frame and its event comparison render. */
 async function openComparisonCase(page) {
+  if (TARGET === 'app') return C2_STORIES.openComparisonCase(page);
   await goto(page, 'explore');
   const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-roster-row[data-row]')]
     .map((b) => b.dataset.row).filter((id) => id && id.startsWith('finding:')));
@@ -539,6 +543,7 @@ async function openComparisonCase(page) {
 
 /** Stage the setting branch and land in Changes, where Plan lives. */
 export async function stageIntoPlan(page) {
+  if (TARGET === 'app') return C2_STORIES.stageIntoPlan(page);
   await activate(page, '[data-set="stage"]');
   ok(await destinationOf(page) === 'changes', 'staging did not land in Changes');
   ok(await countOf(page, '[data-set="save-draft"], [data-set="record"], [data-set="retry-save"]') > 0,
@@ -2352,7 +2357,7 @@ export const S88 = appOnly('HV2-16', 'Set aside and Restore are durable Store wr
   ok(!read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
     'S88 Restore did not survive reload');
 });
-export const S89 = deferred('S89', 'HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist');
+export const S89 = appOnly('HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist', C2_STORIES.S89);
 export const S90 = appOnly('HV2-21', 'capacity copy is served by the Plan deliverable contract, not memorized', async (page) => {
   await goto(page, 'changes');
   const guidance = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
@@ -2375,9 +2380,9 @@ export const S93 = deferred('S93', 'HV2-24', 'each record renders its own criter
 export const S94 = deferred('S94', 'HV2-25', 'Trial finish is durable and survives reload');
 export const S95 = deferred('S95', 'HV2-27', 'trial_preempted stays history and never resumes');
 export const S96 = deferred('S96', 'HV2-28', 'original, saved ending and retained reassessment across a sequential change');
-export const S97 = deferred('S97', 'HV2-29', 'P19b pending, failed and sliced replacement withdraw the former projection');
-export const S98 = deferred('S98', 'HV2-30', 'the selected I:C coherent pair survives a failed replacement');
-export const S99 = deferred('S99', 'HV2-31', 'only backend-permitted actions are exposed; unavailable carries its reason');
+export const S97 = appOnly('HV2-29', 'P19b pending, failed and sliced replacement withdraw the former projection', C2_STORIES.S97);
+export const S98 = appOnly('HV2-30', 'the selected I:C coherent pair survives a failed replacement', C2_STORIES.S98);
+export const S99 = appOnly('HV2-31', 'only backend-permitted actions are exposed; unavailable carries its reason', C2_STORIES.S99);
 export const S100 = appOnly('HV2-32', 'fractional-hour speech repaired in the shared renderer', async (page) => {
   await goto(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -2771,7 +2776,14 @@ async function main() {
   ok(selected.length > 0, 'no applicable stories were selected — a run that executes nothing is a failure');
 
   const viewport = DEFAULT_VIEWPORT;
+  const caseServer = TARGET === 'app' && process.env.CASE_STORE_DIR
+    ? createCaseServer({ directory: process.env.CASE_STORE_DIR, repo: REPO, baseURL: APP_BASE_URL }) : null;
   const open = async (options) => {
+    if (TARGET === 'app' && options.nestedCase) {
+      ok(caseServer, 'A story selecting multiple generated stores requires CASE_STORE_DIR.');
+      await caseServer.start(`source-${options.source}`, options.caseName);
+      process.stdout.write(`# source=${options.source} synthetic case=${options.caseName}\n`);
+    }
     const browser = await runner.browser();
     return TARGET === 'app' ? openApp(browser, options) : openMock(browser, { ...options, fonts });
   };
@@ -2791,8 +2803,14 @@ async function main() {
     }
     let opened = null;
     try {
-      opened = await open({ ...state, viewport });
-      await fn(opened.page, { ...opened, viewport, open, target: TARGET });
+      const caseName = storyCase(id, process.env.STORY_CASES || '');
+      if (caseServer) {
+        await caseServer.start(id, caseName);
+        process.stdout.write(`# ${id} synthetic case=${caseName} (fresh copy)\n`);
+      }
+      opened = await open({ ...state, viewport, storyId: id, caseName });
+      const body = TARGET === 'app' ? (C2_STORIES[id] || fn) : fn;
+      await body(opened.page, { ...opened, viewport, open, target: TARGET, caseName, capturePump: caseServer?.capturePump });
       executed += 1;
       process.stdout.write(`PASS ${id}\n`);
     } catch (error) {
@@ -2800,6 +2818,7 @@ async function main() {
       process.stdout.write(`FAIL ${id} — ${error && error.message ? error.message : String(error)}\n`);
     } finally {
       if (opened && opened.context) await opened.context.close().catch(() => {});
+      if (caseServer) await caseServer.stop();
     }
   }
 

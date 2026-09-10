@@ -21,6 +21,10 @@ const labels = {
   correction_on_iob: 'Correction on active insulin',
   correction_stacking: 'Correction stacking',
 };
+const patternRateFamilies = {
+  highs_after_meals: 'meals', lows_after_meals: 'meals',
+  highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
+};
 const plan = [
   'fired', 'fired', 'fired', 'fired', 'fired', 'fired', 'fired',
   'near_rule', 'near_rule', 'near_rule', 'near_rule',
@@ -47,7 +51,7 @@ const cohortRank = (index) => plan.slice(0, index).filter((cohort) => cohort ===
 const patternFamily = {
   carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
   over_treated_low: 'lows', correction_on_iob: 'lows',
-  correction_stacking: 'correction_clusters',
+  correction_stacking: 'correction_clusters', meal_bolus_short: 'highs',
 };
 const patternLabels = {
   meals: ['meal', 'Completed carb bolus'], lows: ['low', 'Low excursion'],
@@ -315,8 +319,7 @@ function sourceRows(workstationExposures, family) {
   return rows;
 }
 
-/** Build and validate the fixture-only capture from the canonical workstation input. */
-export function buildCapture(workstationExposures, outcomePatterns = []) {
+export function buildCapture(workstationExposures, outcomePatterns = [], scenarios = {}) {
   const meals = sourceRows(workstationExposures, 'meals');
   const lows = sourceRows(workstationExposures, 'lows');
   const views = {
@@ -345,6 +348,7 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
           ep_id: row.ep_id, date: row.date, anchor_t: row.t,
           anchor_bg: row.bg ?? null, kind: row.kind || kind, label,
           attributed: Boolean(row.attributed),
+          attributed_levers: structuredClone(row.attributed_levers || []),
           cause_lever: row.cause_lever ?? null,
           verdicts: structuredClone(row.verdicts || []),
           trace: structuredClone(rich?.trace || { cgm: [], boluses: [], suspends: [] }),
@@ -356,14 +360,20 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
   // The projector consumes these tags; it never reconstructs attribution from
   // the Pattern's admitted rows.
   const patternAttribution = Object.fromEntries(outcomePatterns.map((pattern) => {
-    const rateLever = pattern.rate_levers.map((subject) => subject.replace('habit:', ''))
-      .find((lever) => patternFamily[lever]);
-    const family = rateLever ? patternFamily[rateLever] : null;
-    const rateLevers = new Set(pattern.rate_levers.map((subject) => subject.replace('habit:', '')));
+    const family = patternRateFamilies[pattern.key] || null;
     const population = patternPopulations[family] || [];
+    const claims = new Map();
+    for (const subject of pattern.rate_levers) {
+      const lever = subject.replace('habit:', '');
+      for (const row of workstationExposures.exposures?.[family]?.occurrences || []) {
+        const named = (row.attributed_levers || []).includes(lever)
+          || (row.attributed && row.cause_lever === lever);
+        if (!named) continue;
+        if (row.t != null && !claims.has(row.t)) claims.set(row.t, subject);
+      }
+    }
     return [pattern.key, Object.fromEntries(population.flatMap((row) => (
-      row.attributed && rateLevers.has(row.cause_lever)
-        ? [[row.id, `habit:${row.cause_lever}`]] : []
+      claims.has(row.anchor_t) ? [[row.id, claims.get(row.anchor_t)]] : []
     )))];
   }));
   return {
@@ -379,12 +389,13 @@ export function buildCapture(workstationExposures, outcomePatterns = []) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const workstationExposures = JSON.parse(readFileSync(
-    new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8')).exposures;
+  const workstationPayload = JSON.parse(readFileSync(
+    new URL('../diagnose-workstation.synthetic/payload.json', import.meta.url), 'utf8'));
+  const workstationExposures = workstationPayload.exposures;
   const outcomePatterns = JSON.parse(readFileSync(
     new URL('../../frontend/__fixtures__/findings-projection.json', import.meta.url), 'utf8'))
     .browser_outcome_patterns;
-  const capture = buildCapture(workstationExposures, outcomePatterns);
+  const capture = buildCapture(workstationExposures, outcomePatterns, workstationPayload.scenarios);
   const serialized = JSON.stringify(capture, null, 2) + '\n';
   const target = new URL('./capture.json', import.meta.url);
   if (process.argv.includes('--check')) {

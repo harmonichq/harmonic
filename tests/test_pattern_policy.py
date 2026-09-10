@@ -8,10 +8,11 @@ from ciq_autotune.safety import Status
 from ciq_autotune.uncertainty import Estimate
 
 
-def _scenario(lever, *, price=20, k=2, lo=.1, hi=.3):
+def _scenario(lever, *, price=20, k=2, n=12, lo=.1, hi=.3, action=True):
     return {"lever": lever, "priority": price,
-            "confidence": {"k": k, "lo": lo, "hi": hi},
-            "guidance": {"action_id": f"habit:{lever}", "seriousness": "high"}}
+            "confidence": {"k": k, "n": n, "lo": lo, "hi": hi},
+            "guidance": {"action_id": f"habit:{lever}" if action else None,
+                         "seriousness": "high"}}
 
 
 def _basal_slot(slot, start_min, status, *, duration_min=30, seriousness=None):
@@ -39,7 +40,13 @@ class OutcomePatternPolicyTest(unittest.TestCase):
             "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
             "lows_after_correcting_highs", "overnight_lows_no_iob",
         ])
-        self.assertNotIn("meal_bolus_short", str(roster))
+        self.assertEqual(roster[0]["rate_levers"], [
+            "habit:carb_undercount", "habit:late_bolus", "habit:meal_bolus_short",
+        ])
+        self.assertNotIn(
+            "habit:meal_bolus_short",
+            {member["subject"] for member in roster[0]["members"]},
+        )
         self.assertNotIn("missed_meal", str(roster))
         self.assertEqual(
             roster[0]["overlap_counts"]["overnight_lows_no_iob"],
@@ -60,7 +67,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"}]} }}
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"}]} }}
         roster = build_outcome_patterns(analysis, exposures, {"patterns": [_scenario("carb_undercount", price=20)], "low_confidence": []})
         high = roster[0]
         self.assertEqual(high["settled_price"], 10)
@@ -77,7 +85,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"},
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"},
         ]}}}
         high = build_outcome_patterns(
             analysis, exposures,
@@ -102,7 +111,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                            "guidance": None}],
         }
         exposures = {"exposures": {"meals": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "carb_undercount", "ep_id": "a"},
+            {"attributed": True, "attributed_levers": ["carb_undercount"],
+             "cause_lever": "carb_undercount", "ep_id": "a", "t": "a"},
         ]}}}
         high = build_outcome_patterns(
             analysis, exposures,
@@ -134,19 +144,24 @@ class OutcomePatternPolicyTest(unittest.TestCase):
         exposures = {"exposures": {
             "meals": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "carb_undercount",
-                 "ep_id": "shared-meal"},
+                 "attributed_levers": ["carb_undercount"],
+                 "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
                 {"attributed": True, "cause_lever": "meal_over_delivery",
-                 "ep_id": "shared-meal"},
+                 "attributed_levers": ["meal_over_delivery"],
+                 "ep_id": "shared-meal", "t": "2025-06-01 12:00:00"},
             ]},
             "lows": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "over_treated_low",
-                 "ep_id": "shared-low"},
+                 "attributed_levers": ["over_treated_low"],
+                 "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
                 {"attributed": True, "cause_lever": "correction_on_iob",
-                 "ep_id": "shared-low"},
+                 "attributed_levers": ["correction_on_iob", "correction_stacking"],
+                 "ep_id": "shared-low", "t": "2025-06-01 02:30:00"},
             ]},
             "correction_clusters": {"n": 12, "occurrences": [
                 {"attributed": True, "cause_lever": "correction_stacking",
-                 "ep_id": "correction"},
+                 "attributed_levers": ["correction_stacking"],
+                 "ep_id": "stacked", "t": "2025-06-01 02:00:00"},
             ]},
         }}
         scenarios = {
@@ -163,6 +178,11 @@ class OutcomePatternPolicyTest(unittest.TestCase):
                     }}},
                 ]},
                 "correction": {"lever": "correction_on_iob", "steps": [
+                    {"citation": {"facts": {
+                        "nadir_at": "2025-06-01 02:30:00",
+                    }}},
+                ]},
+                "stacked": {"lever": "correction_stacking", "steps": [
                     {"citation": {"facts": {
                         "nadir_at": "2025-06-01 02:30:00",
                     }}},
@@ -196,12 +216,14 @@ class OutcomePatternPolicyTest(unittest.TestCase):
             }],
         )
         correction = roster["lows_after_correcting_highs"]
-        self.assertEqual(correction["rate_levers"], ["habit:correction_stacking"])
+        self.assertEqual(correction["rate_levers"], [
+            "habit:correction_stacking", "habit:correction_on_iob",
+        ])
         self.assertEqual(correction["k"], 1)
         self.assertEqual(correction["harm_low_overlap"], [
             {"habit_subject": "habit:correction_stacking",
-             "setting_subject": "setting:isf", "status": "not_comparable",
-             "count": None, "reason": "different_identity_spaces"},
+             "setting_subject": "setting:isf", "status": "comparable",
+             "count": 1, "reason": "shared_low_episode_nadir"},
             {"habit_subject": "habit:correction_on_iob",
              "setting_subject": "setting:isf", "status": "comparable",
              "count": 1, "reason": "shared_low_episode_nadir"},
@@ -269,7 +291,8 @@ class OutcomePatternPolicyTest(unittest.TestCase):
 
     def test_single_admitted_habit_collapses_to_its_member(self):
         exposures = {"exposures": {"lows": {"n": 12, "occurrences": [
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "a"}]} }}
+            {"attributed": True, "attributed_levers": ["over_treated_low"],
+             "cause_lever": "over_treated_low", "ep_id": "a", "t": "a"}]} }}
         roster = build_outcome_patterns({}, exposures, {"patterns": [_scenario("over_treated_low")], "low_confidence": []})
         pattern = next(item for item in roster if item["key"] == "highs_after_treating_lows")
         self.assertEqual(pattern["collapse"], "collapse_to_member")
@@ -277,8 +300,12 @@ class OutcomePatternPolicyTest(unittest.TestCase):
 
     def test_inconsistent_source_counts_remain_a_published_pattern(self):
         exposures = {"exposures": {"lows": {"n": 1, "occurrences": [
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "a"},
-            {"attributed": True, "cause_lever": "over_treated_low", "ep_id": "b"},
+            {"attributed": True, "cause_lever": "over_treated_low",
+             "attributed_levers": ["over_treated_low"],
+             "ep_id": "a", "t": "2026-08-01 12:00:00"},
+            {"attributed": True, "cause_lever": "over_treated_low",
+             "attributed_levers": ["over_treated_low"],
+             "ep_id": "b", "t": "2026-08-02 12:00:00"},
         ]}}}
         pattern = next(item for item in build_outcome_patterns(
             {}, exposures, {"patterns": [_scenario("over_treated_low")], "low_confidence": []},

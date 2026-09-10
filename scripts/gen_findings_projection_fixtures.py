@@ -413,6 +413,7 @@ def _occurrence(ep_id, kind, at, *, lever=None, worst_bg=None, bg=None, text="",
         "t": stamp, "date": DAY.isoformat(), "bg": bg, "worst_bg": worst_bg,
         "kind": kind, "label": kind.title(), "state": state,
         "attributed": lever is not None,
+        "attributed_levers": [] if lever is None else [lever.value],
         "cause_lever": None if lever is None else lever.value,
         "cause_title": None if lever is None else title(lever),
         "text": text, "verdicts": verdicts, "ep_id": ep_id,
@@ -607,6 +608,12 @@ def exposures():
     # set over ALL families first, then roll each family up against it.
     driven = {item["ep_id"] for occurrences in families.values()
               for item in occurrences if item["cause_lever"] is not None}
+    for occurrences in families.values():
+        for item in occurrences:
+            item.setdefault(
+                "attributed_levers",
+                [item["cause_lever"]] if item["cause_lever"] is not None else [],
+            )
     return {
         "window": {"start": (DAY - timedelta(days=WINDOW_DAYS)).isoformat(),
                    "end": DAY.isoformat()},
@@ -770,7 +777,11 @@ def payload() -> dict:
         row for row in browser_exposures["exposures"]["meals"]["occurrences"]
         if not row.get("attributed")
     )
-    memberless_low.update(attributed=True, cause_lever=Lever.MEAL_OVER_DELIVERY.value)
+    memberless_low.update(
+        attributed=True,
+        attributed_levers=[Lever.MEAL_OVER_DELIVERY.value],
+        cause_lever=Lever.MEAL_OVER_DELIVERY.value,
+    )
     browser_scenarios = json.loads(json.dumps(prepared._scenarios))
     browser_scenarios["patterns"].extend([
         Pattern(lever=Lever.LATE_BOLUS,

@@ -13,7 +13,7 @@ from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
-from .analyzers.scenario.outcome_patterns import _identity as _pattern_identity
+from .analyzers.scenario.outcome_patterns import _lever_identities
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
@@ -87,6 +87,7 @@ class PreparedCases:
     source_window_days: int = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     pins: int = 0
     exposures: dict | None = None
+    scenarios: dict | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -188,30 +189,35 @@ class PreparedCases:
         family = findings_projection.pattern_rate_family(pattern)
         source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
         source_rows = tuple(source.get("occurrences") or ())
-        rate_levers = {
+        rate_levers = [
             subject.removeprefix("habit:") for subject in pattern["rate_levers"]
-        }
+        ]
         habits = [
             Lever(member["subject"].removeprefix("habit:"))
             for member in pattern["members"] if member["kind"] == "habit"
         ]
-        population_lever = Lever(pattern["rate_levers"][0].removeprefix("habit:"))
-        claimed_identities = {
-            identity for candidate in source_rows
-            if candidate.get("attributed") and candidate.get("cause_lever") in rate_levers
-            if (identity := _pattern_identity(candidate)) is not None
-        }
+        population_lever = next(
+            Lever(subject.removeprefix("habit:"))
+            for subject in pattern["rate_levers"]
+            if exposure(Lever(subject.removeprefix("habit:"))) is family
+        )
+        claims_by_identity = {}
+        for lever in rate_levers:
+            for identity in _lever_identities(
+                self.exposures or {}, family.value, lever,
+            ):
+                claims_by_identity.setdefault(identity, lever)
+        claimed_identities = set(claims_by_identity)
         claimed_by_id = {}
         precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
         pattern_roster = []
         remaining_claims = set(claimed_identities)
         for index, candidate in enumerate(source_rows):
-            identity = _pattern_identity(candidate)
+            identity = candidate.get("t")
             t = datetime.strptime(candidate["t"], FMT)
             occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
-            claimant = candidate.get("cause_lever")
-            if (candidate.get("attributed") and claimant in rate_levers
-                    and identity in remaining_claims):
+            claimant = claims_by_identity.get(identity)
+            if claimant is not None and identity in remaining_claims:
                 claimed_by_id[occurrence_id] = f"habit:{claimant}"
                 verdict = "fired"
                 remaining_claims.remove(identity)
@@ -283,7 +289,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
     return PreparedCases("fp_" + uuid.uuid4().hex, version, query, findings, recurrence,
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
-                         source_window_days=window_days, exposures=deepcopy(exposures))
+                         source_window_days=window_days, exposures=deepcopy(exposures),
+                         scenarios=deepcopy(scenarios))
 
 
 def _population(

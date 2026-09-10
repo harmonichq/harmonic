@@ -147,7 +147,7 @@ test('browser Pattern rows and case files share the public producer denominator'
   assert.doesNotThrow(() => assertMatchingFindingCasePreparation(preparation, null));
 });
 
-test('a claimed member outside its Pattern population tags no occurrence', () => {
+test('correction-on-IOB claims the lows in its Pattern population', () => {
   const inputs = populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
@@ -159,11 +159,15 @@ test('a claimed member outside its Pattern population tags no occurrence', () =>
   const caseFile = projectPatternCaseFile(capture, { patternChart: pattern.pattern_chart });
 
   assert.equal(member.claimed_by, 'pattern:lows_after_correcting_highs');
-  assert.equal(caseFile.summary.claimed, 0);
-  assert.ok(caseFile.occurrences.every((row) => row.member === 'clean'));
+  assert.equal(caseFile.family, 'lows');
+  assert.equal(caseFile.summary.denominator, payload.exposures.exposures.lows.n);
+  assert.equal(caseFile.summary.claimed, pattern.pattern.k);
+  assert.equal(caseFile.occurrences.filter(
+    (row) => row.member === 'habit:correction_on_iob',
+  ).length, pattern.pattern.k);
 });
 
-test('Pattern selected detail transcribes correction-cluster source doses', () => {
+test('correcting-highs Pattern selection uses the low-nadir comparison idiom', () => {
   const inputs = populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
@@ -172,11 +176,7 @@ test('Pattern selected detail transcribes correction-cluster source doses', () =
   const projection = projectFindings(inputs);
   const pattern = projection.rows.find(({ id }) => id === 'pattern:lows_after_correcting_highs');
   const enriched = structuredClone(capture);
-  const source = enriched.pattern_populations.correction_clusters[0];
-  source.trace.boluses = [
-    { minute: -15, seq_num: 991, insulin: 1.25, carbs: null },
-    { minute: 5, seq_num: 992, insulin: 0.75, carbs: null },
-  ];
+  const source = enriched.pattern_populations.lows[0];
 
   const caseFile = projectPatternCaseFile(enriched, {
     patternChart: pattern.pattern_chart,
@@ -186,8 +186,13 @@ test('Pattern selected detail transcribes correction-cluster source doses', () =
 
   assert.equal(caseFile.selection.state, 'selected');
   assert.equal('member' in caseFile.selection.detail, false);
-  assert.deepEqual(caseFile.selection.detail.source_corrections,
-    caseFile.selection.detail.markers.map(({ seq_num, t, insulin }) => ({ seq_num, t, insulin })));
+  assert.equal(caseFile.selection.detail.anchor.kind, 'low');
+  const eventCase = projectPatternCaseFile(enriched, {
+    patternChart: pattern.pattern_chart,
+  });
+  assert.equal(eventCase.projection.anchor.kind, 'excursion_nadir');
+  assert.deepEqual(eventCase.projection.window_min, [-60, 120]);
+  assert.deepEqual(caseFile.selection.detail.source_corrections, []);
 });
 
 test('Pattern misses prefer near misses over outranked member states', () => {
@@ -331,4 +336,27 @@ test('buildCapture rejects a source row outside the inclusive window by name', (
   input.exposures.meals.occurrences[0].date = '1999-12-31';
   assert.throws(() => buildCapture(input),
     /meals source row 1 date 1999-12-31 outside inclusive window/);
+});
+
+test('buildCapture transcribes the target-family attribution feed', () => {
+  const patterns = findingsFixture.browser_outcome_patterns;
+  const generated = buildCapture(payload.exposures, patterns);
+  for (const pattern of patterns) {
+    const family = generated.outcome_patterns.find((row) => row.key === pattern.key)?.rate_family
+      || ({ highs_after_meals: 'meals', lows_after_meals: 'meals',
+        highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows' })[pattern.key];
+    if (!family) continue;
+    const source = payload.exposures.exposures[family].occurrences;
+    const population = generated.pattern_populations[family];
+    const expected = new Set(source.flatMap((row, index) => (
+      pattern.rate_levers.some((subject) => {
+        const lever = subject.replace('habit:', '');
+        return (row.attributed_levers || []).includes(lever)
+          || (row.attributed && row.cause_lever === lever);
+      }) ? [population[index].id] : []
+    )));
+    assert.deepEqual(
+      new Set(Object.keys(generated.pattern_attribution[pattern.key])), expected,
+    );
+  }
 });

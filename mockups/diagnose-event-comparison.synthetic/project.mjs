@@ -9,6 +9,10 @@ const configs = {
   meals: { kind: 'meal', anchor: 'completed_carb_bolus', label: 'Completed carb bolus', window: [-60, 300] },
   lows: { kind: 'low', anchor: 'excursion_nadir', label: 'Low excursion', window: [-60, 120] },
 };
+const patternFamilies = {
+  highs_after_meals: 'meals', lows_after_meals: 'meals',
+  highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
+};
 const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
   meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
@@ -364,10 +368,8 @@ export function projectPatternCaseFile(capture, {
   }
   const habits = pattern.members.filter((member) => member.kind === 'habit')
     .map((member) => member.subject.replace('habit:', ''));
-  const rateLever = pattern.rate_levers.map((subject) => subject.replace('habit:', ''))
-    .find((lever) => capture.pattern_families[lever]);
-  if (!rateLever) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
-  const family = capture.pattern_families[rateLever];
+  const family = patternFamilies[key];
+  if (!family) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
   const source = capture.pattern_populations[family] || [];
   if (!source.length) throw new Error(`served Pattern coordinate has no population: ${key}`);
   const attribution = capture.pattern_attribution?.[key] || {};

@@ -53,12 +53,14 @@ const EXPOSURE_FAMILY = {
   over_treated_low: 'lows', correction_stacking: 'correction_clusters',
   correction_on_iob: 'lows', missed_meal: 'highs', meal_bolus_short: 'highs',
 };
+const PATTERN_RATE_FAMILY = {
+  highs_after_meals: 'meals', lows_after_meals: 'meals',
+  highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
+  overnight_lows_no_iob: null,
+};
 
 function patternRateFamily(pattern) {
-  const families = new Set((pattern.rate_levers || [])
-    .map((subject) => EXPOSURE_FAMILY[subject.replace('habit:', '')]));
-  families.delete(undefined);
-  return families.size === 1 ? [...families][0] : null;
+  return PATTERN_RATE_FAMILY[pattern.key] ?? null;
 }
 
 function patternChartable(pattern, exposures) {
@@ -696,10 +698,8 @@ function headlineFor(r) {
   if (r.kind === 'pattern') {
     if (r.pattern.count_status) return `${r.title}: counts under review`;
     if (r.pattern.admission_route === 'none') return r.title;
-    const rateLever = r.pattern.rate_levers[0]?.replace('habit:', '');
     const noun = r.pattern.rate_producer === 'harm_band_source_nights'
-      ? 'nights' : (RECURRENCE_GROUP_POLICY[rateLever]?.noun
-        || FAMILY_NOUN[EXPOSURE_FAMILY[rateLever]]);
+      ? 'nights' : FAMILY_NOUN[patternRateFamily(r.pattern)];
     return `${r.title} in ${r.pattern.k} of ${r.pattern.n} ${noun}`;
   }
   if (r.kind === 'habit') return findingHeadline(r);
@@ -783,12 +783,10 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of inputs.outcome_patterns) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      for (const member of pattern.members || []) {
-        if (member.kind === 'habit' && member.admitted) {
-          const claimed = byId.get(`finding:${member.subject.replace('habit:', '')}`);
-          if (claimed) {
-            claimed.claimed_by = pattern.subject;
-          }
+      for (const lever of pattern.rate_levers || []) {
+        const claimed = byId.get(`finding:${lever.replace('habit:', '')}`);
+        if (claimed) {
+          claimed.claimed_by = pattern.subject;
         }
       }
       const projected = stampedRow({

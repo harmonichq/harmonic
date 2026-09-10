@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { makeDeps } from './data.js';
 import { eventComparisonChartOption, renderEventSurface } from './diagnose-event-comparison.js';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 
 import {
@@ -92,16 +93,17 @@ test('I:C block evidence turns only a stale-generation 409 into a typed stale re
   assert.equal(calls, 1, 'the transport reports staleness without retrying');
 });
 
-test('the registry declares four stateless chart kinds and their request coordinates', () => {
+test('the registry declares five stateless chart kinds and their request coordinates', () => {
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ kind }) => kind), [
-    'basal', 'isf', 'carb-ratio', 'event-comparison',
+    'basal', 'isf', 'carb-ratio', 'event-comparison', 'pattern-case-file',
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    null, ['event', 'clock'], ['event', 'clock'], null,
+    null, ['event', 'clock'], ['event', 'clock'], null, null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -119,6 +121,9 @@ test('every entry produces exactly the coordinates it declares', () => {
     'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
       appearances: [{ family: 'highs', noun: 'highs' }],
       event_chart: { lever: 'missed_meal', window: { scoped: false } } },
+    'pattern-case-file': { id: 'pattern:highs_after_meals', title: 'Highs after meals',
+      pattern: { key: 'highs_after_meals', n: 3 },
+      pattern_chart: { key: 'highs_after_meals', window: { scoped: false } } },
   };
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     const row = rows[entry.kind];
@@ -1064,7 +1069,10 @@ test('glucose projections expose served values and thumbnails have no axis furni
       : entry.kind === 'isf' ? { counts: { detected_windows: 0, qualifying_windows: 0,
         qualifying_steps: 0 }, windows: [], steps: [] }
         : entry.kind === 'carb-ratio' ? { block: { examined_runs: 0, support: 0 }, runs: [], series: [] }
-          : event;
+          : entry.kind === 'pattern-case-file' ? projectPatternCaseFile(
+            fixture('../mockups/diagnose-event-comparison.synthetic/capture.json'), {
+              patternChart: { key: 'highs_after_meals' },
+            }) : event;
     const thumbnail = entry.thumbnail(thumbData);
     assert.equal(thumbnail.xAxis.show, false);
     assert.equal(thumbnail.yAxis.show, false);
@@ -1255,4 +1263,94 @@ test('glucose chart options fail closed without one injected field range', () =>
     /field glucose range/);
   assert.throws(() => byKind['event-comparison'].option(null, { data: event }),
     /field glucose range/);
+});
+
+test('#395 · the Pattern rail preview labels served cohorts and seats the event label inside the plot', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
+  const colors = { misses: '#d08150', body: '#c7bca8', muted: '#3d5848',
+    warn: '#e2be4c', text: '#141a15', line: '#c3bfb4' };
+  for (const [key, label, outcome] of [
+    ['highs_after_meals', 'MEAL', 'RAN HIGH'],
+    ['lows_after_correcting_highs', 'LOW', 'FOLLOWED A CORRECTION'],
+  ]) {
+    const data = projectPatternCaseFile(capture, {
+      patternChart: { key, window: { scoped: false, start_min: null, end_min: null } },
+      projectionId: 'fp_test',
+    });
+    const option = entry.queuePreview({ kind: entry.kind, data }, [60, 260], colors);
+    assert.deepEqual(option.graphic.map((item) => item.style.text), [
+      `${outcome} · ${data.summary.claimed}`, `TYPICAL · ${data.summary.denominator}`,
+    ]);
+    assert.deepEqual([option.xAxis.min, option.xAxis.max], data.projection.window_min);
+    assert.deepEqual([option.yAxis.min, option.yAxis.max], [60, 260]);
+    assert.ok(!option.series.some((series) => series.id.includes('matched:band:')));
+    const median = option.series.find((series) => series.id === 'queue:event:matched:median');
+    assert.equal(median.lineStyle.color, colors.misses);
+    assert.equal(median.showSymbol, false);
+    assert.equal(option.series.find((series) => series.id === 'queue:event:comparison:median')
+      .lineStyle.color, colors.body);
+    assert.equal(option.series.find((series) => series.id === 'queue:pattern:180')
+      .markLine.lineStyle.color, colors.warn);
+    const marker = option.series.find((series) => series.id === 'queue:event:event-anchor')
+      .renderItem({ coordSys: { y: 20, height: 62 } }, { coord: () => [48, 20] });
+    assert.equal(marker.children[1].style.text, label);
+    assert.equal(marker.children[1].y, option.grid.top + 3, 'label rides inside the existing plot');
+    assert.deepEqual(option.series.find((series) => series.id === 'queue:pattern:180')
+      .markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
+  }
+});
+
+
+test('#395 · an unknown Pattern coordinate is not mounted as a supported chart kind', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  for (const key of ['future_pattern', '__proto__']) {
+    assert.equal(entry.matches({ pattern_chart: { key } }), false);
+  }
+});
+
+
+test('#395 · Pattern evidence joins the shared field and malformed previews fail closed', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  const capture = fixture('../mockups/diagnose-event-comparison.synthetic/capture.json');
+  const data = projectPatternCaseFile(capture, {
+    patternChart: { key: 'lows_after_correcting_highs', window: caseFiles().preparation.coordinates.window },
+  });
+  const lever = { kind: 'event-comparison', state: 'ok', data: eventCase() };
+  const pattern = { kind: entry.kind, state: 'ok', data };
+  assert.deepEqual(glucoseRange(entry.glucoseValues(data)), [40, 220]);
+  assert.deepEqual(fieldRange([lever], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [60, 200]);
+  assert.deepEqual(fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange), [40, 220]);
+  const range = fieldRange([lever, pattern], DIAGNOSE_EVIDENCE_CHARTS, glucoseRange);
+  for (const descriptor of [lever, pattern]) {
+    const chart = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === descriptor.kind);
+    for (const mini of [true, false]) {
+      const option = chart.option(null, { data: descriptor.data, range, mini });
+      assert.deepEqual([option.yAxis.min, option.yAxis.max], range,
+        'every Pattern and Lever tile keeps the shared field extent');
+    }
+  }
+  assert.equal(entry.validateData(data), true);
+  const invalidSupport = structuredClone(data);
+  invalidSupport.projection.cohorts[0].support = 'unknown';
+  for (const malformed of [null, {}, { ...data, projection: undefined }, invalidSupport]) {
+    assert.equal(entry.validateData(malformed), false,
+      'the tile rejects malformed evidence before mounting a preview');
+    assert.throws(() => entry.queuePreview({ ...pattern, data: malformed }, [60, 200], {}),
+      { name: 'Error', message: 'Pattern evidence is unavailable.' },
+      'the shared mini mount catches the named failure without dereferencing missing cohorts');
+  }
+});
+
+
+test('#341 · narrow I:C plots label interior ticks without changing the shared extent', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'carb-ratio');
+  const data = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
+  for (const width of [320, 480, 481, 960]) {
+    const option = entry.option(null, { data, range: [40, 220], surface: { clientWidth: width } });
+    assert.deepEqual([option.yAxis.min, option.yAxis.max], [40, 220]);
+    assert.equal(option.yAxis.interval, undefined, 'the scale keeps its shipped tick-density rule');
+    assert.equal(option.yAxis.axisLabel.showMinLabel, width <= 480 ? false : undefined);
+    assert.equal(option.yAxis.axisLabel.showMaxLabel, width <= 480 ? false : undefined);
+  }
 });

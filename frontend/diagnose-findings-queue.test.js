@@ -4,12 +4,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { DIAGNOSE_EVIDENCE_CHARTS } from './diagnose-evidence-charts.js';
+import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { fileURLToPath } from 'node:url';
 import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
-  MIN_ROW_MINI_WIDTH, TIER,
+  MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY,
   renderFindingsQueue,
-  queueMeta, queueRows,
+  caseFileAlignment, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -30,17 +33,17 @@ class Node {
   }
   append(...nodes) { this.children.push(...nodes); }
   setAttribute(name, value) { this.attributes[name] = String(value); }
-  addEventListener() {}
+  addEventListener(name, callback) { (this.listeners ||= {})[name] = callback; }
 }
 
 /* Paint one projection through the module's own entry point and hand back the
    host beside what the render returned. */
-const paint = (projection, view = null) => {
+const paint = (projection, view = null, onDrill = () => {}) => {
   const previous = globalThis.document;
   globalThis.document = { createElement: (tag) => new Node(tag) };
   try {
     const host = new Node();
-    return { host, ...renderFindingsQueue(host, projection, () => {}, view) };
+    return { host, ...renderFindingsQueue(host, projection, onDrill, view) };
   } finally {
     globalThis.document = previous;
   }
@@ -57,7 +60,7 @@ test('the root filter has no retired Event charts view or state', () => {
 
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
-  assert.equal(queueMeta(W.global), '11 findings · 30 days');
+  assert.equal(queueMeta(W.global), '8 findings · 30 days');
   assert.equal(queueMeta(W.afternoon), '3 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
@@ -119,11 +122,11 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
   assert.equal(EMPTY_LINE, 'No pattern or setting asserts a direction in this window.');
 });
 
-test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
+test('#395 · settings, Causes, and Patterns interleave in server order', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'habit', 'habit', 'habit', 'setting', 'setting', 'habit', 'habit',
-      'habit', 'habit', 'habit', 'watching']);
+    ['setting', 'pattern', 'habit', 'pattern', 'setting', 'setting', 'pattern', 'habit',
+      'pattern', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -199,8 +202,8 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     'no row sits in the list itself, carrying a role of its own');
   const items = list.children.filter((child) => child.className.startsWith('qitem'));
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
-      'qitem tail', 'qitem tail', 'qitem tail'],
+    ['qitem', 'qitem', 'qitem claimed', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
+      'qitem tail', 'qitem tail claimed', 'qitem tail claimed'],
     'each shown row is enclosed, and a tail item is marked for the tail spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
@@ -413,7 +416,8 @@ test('a sift computes its priced seam over only visible rows', () => {
 test('slice 4 · the rank numeral spells visible position among priced ranked rows only', () => {
   const rows = queueRows(W.global);
   const priced = rows.filter((row) => !row.hidden && !row.collapsed
-    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null);
+    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null
+    && !row.claimedBy);
   assert.ok(priced.length > 1);
   assert.deepEqual(priced.map((row) => row.rank), priced.map((_, index) => index + 1),
     'numerals are 1..N in the server’s own order — no re-ranking');
@@ -479,7 +483,7 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
 });
 
 test('metadata and empty copy describe Sift, the only root filter', () => {
-  assert.equal(queueMeta(W.global, new Set(['meals'])), '3 findings · 30 days');
+  assert.equal(queueMeta(W.global, new Set(['meals'])), '2 findings · 30 days');
   assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '30 days');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
@@ -492,4 +496,149 @@ test('#63 · the sentence never enters the queue meta, which counts the window',
   for (const name of ['global', 'afternoon', 'quiet']) {
     assert.doesNotMatch(queueMeta(W[name]), /no cause/);
   }
+});
+
+// The default replay input differs from the history fixture above. Exercise its
+// actual preparation and painter so a claimed Lever cannot disappear in the join.
+test('#395 · the default replay keeps its claimed Late bolus reachable under every matching sift', () => {
+  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
+  const projection = projectFindings(populateFindingsProjectionInput({
+    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+    event_charts: fixture.inputs.event_charts,
+  }));
+  assert.ok(!projection.rows.some((row) => row.id === 'finding:carb_undercount'),
+    'Carb undercount is not a subject in this input');
+  const preparation = populateFindingCasePreparation(
+    read('../mockups/diagnose-workstation.synthetic/finding-case-files.json').preparation, projection);
+  const input = { ...preparation.findings, rows: preparation.rendered_rows };
+  const chips = ['highs', 'lows', 'meals', 'corrections'];
+  for (let mask = 1; mask < 16; mask += 1) {
+    const selected = new Set(chips.filter((_, index) => mask & (1 << index)));
+    if (!selected.has('highs') && !selected.has('meals')) continue;
+    const { host, rows } = paint(input, { selected });
+    const member = rows.find((row) => row.id === 'finding:late_bolus');
+    assert.equal(member.claimedBy, 'pattern:highs_after_meals');
+    assert.equal(member.hidden, false);
+    assert.equal(member.collapsed, false);
+    const list = host.children.find((node) => node.className === 'q');
+    const button = list.children.flatMap((node) => node.children || [])
+      .find((node) => node.dataset?.id === member.id);
+    assert.equal(button?.tag, 'button', `Late bolus remains a control under ${[...selected]}`);
+  }
+});
+
+
+test('#395 · Pattern recurrence reads one closed copy table and ignores headline wording', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  for (const [key, noun, outcome] of [
+    ['highs_after_meals', 'meals', 'ran high'],
+    ['lows_after_meals', 'meals', 'ran low'],
+    ['highs_after_treating_lows', 'lows', 'rebounded high'],
+    ['lows_after_correcting_highs', 'lows', 'followed a correction'],
+    ['overnight_lows_no_iob', 'nights', 'ran low overnight'],
+  ]) {
+    assert.deepEqual(PATTERN_COPY[key], { family: key === 'overnight_lows_no_iob' ? null : noun, noun, outcome });
+    const row = { ...base, headline: 'A headline with no recurrence to parse',
+      pattern: { ...base.pattern, key, k: 3, n: 20 } };
+    assert.equal(queueRows({ rows: [row] })[0].detail.text, `3 of 20 ${noun} ${outcome}`);
+  }
+});
+
+test('#395 · counts under review keeps its drill without a rate or chart host', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  const raw = { ...base, pattern: { ...base.pattern, k: 21, n: 20, count_status: 'under_review' } };
+  let drilled;
+  const { host, miniSlots } = paint({ rows: [raw] }, null, (row) => { drilled = row; });
+  const list = host.children.find((node) => node.className === 'q');
+  const button = list.children.find((node) => node.className.startsWith('qitem')).children[0];
+  assert.equal(button.children.find((node) => node.className === 'den pattern-status').textContent,
+    'counts under review');
+  assert.ok(!button.children.some((node) => ['mini', 'sum', 'tag pattern'].includes(node.className)));
+  assert.deepEqual(miniSlots, []);
+  button.listeners.click();
+  assert.equal(drilled, raw);
+});
+
+test('#395 · an unpriced claimed member precedes the tail seam and prints its parent-family count', () => {
+  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const payload = read('../mockups/diagnose-workstation.synthetic/payload.json');
+  const projection = projectFindings(populateFindingsProjectionInput({
+    analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+    event_charts: fixture.inputs.event_charts,
+  }));
+  const { host, rows } = paint(projection);
+  const member = rows.find((row) => row.id === 'finding:late_bolus');
+  assert.equal(member.raw.priority, null);
+  assert.equal(member.seam, false);
+  assert.equal(member.caption, null);
+  const appearance = member.raw.appearances.find((item) => item.family === 'meals');
+  assert.equal(member.memberCount, ` · ${appearance.n} of ${appearance.m} ${appearance.noun}`);
+  const children = host.children.find((node) => node.className === 'q').children;
+  const at = children.findIndex((node) => node.children?.[0]?.dataset.id === member.id);
+  assert.equal(children[at - 1].children[0].dataset.id, member.claimedBy,
+    'no seam or caption separates the adjacent served parent and member');
+});
+
+
+test('#395 · a member selects the Pattern family even when another appearance comes first', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  const parent = { ...base, id: 'pattern:lows_after_correcting_highs',
+    pattern: { ...base.pattern, key: 'lows_after_correcting_highs' } };
+  const member = { id: 'finding:correction_stacking', kind: 'habit', register: 'finding',
+    claimed_by: parent.id, appearances: [
+      { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 12 },
+      { family: 'lows', noun: 'low excursions', n: 6, m: 20 },
+    ] };
+  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 6 of 20 low excursions');
+  member.appearances.pop();
+  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 2 of 12 correction clusters');
+  assert.equal(PATTERN_COPY.overnight_lows_no_iob.family, null,
+    'source nights have no Exposure family to match');
+});
+
+test('#395 · unknown Pattern keys stay title-only and do not break adjacent members or findings', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  for (const key of ['future_pattern', '__proto__']) {
+    const parent = { ...base, id: `pattern:${key}`, pattern: { ...base.pattern, key } };
+    const member = { id: 'finding:future_member', kind: 'habit', register: 'finding',
+      claimed_by: parent.id, appearances: [{ family: 'meals', noun: 'meals', n: 2, m: 20 }] };
+    let drilled;
+    const { host, miniSlots, rows } = paint({ rows: [parent, member] }, null,
+      (row) => { drilled = row; });
+    const item = host.children.find((node) => node.className === 'q').children
+      .find((node) => node.children?.[0]?.dataset.id === parent.id);
+    const button = item.children[0];
+    assert.equal(button.children.find((node) => node.className === 'lab').textContent, parent.title);
+    assert.ok(!button.children.some((node) => /^(den|mini|tag)/.test(node.className)));
+    assert.ok(!miniSlots.some((slot) => slot.row.id === parent.id));
+    assert.equal(rows[1].memberCount, ' · 2 of 20 meals');
+    button.listeners.click();
+    assert.equal(drilled, parent);
+  }
+});
+
+
+test('#395 · the two-family browser input publishes exactly seven mini hosts', () => {
+  const cases = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+  const input = populateFindingsProjectionInput(fixture.inputs);
+  const prepared = populateFindingCasePreparation(cases.preparation, projectFindings(input));
+  const { miniSlots } = paint({ ...prepared.findings, rows: prepared.rendered_rows });
+  assert.deepEqual(miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
+    .map(({ row }) => row.id), [
+    'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
+    'pattern:highs_after_meals', 'finding:carb_undercount', 'pattern:lows_after_correcting_highs',
+  ]);
+});
+
+
+test('#395 · Pattern and Lever drills request event cases; chartless rows retain clock entry', () => {
+  const pattern = W.global.rows.find((row) => row.pattern_chart);
+  const lever = W.global.rows.find((row) => row.event_chart);
+  assert.ok(pattern && lever, 'generated rows carry both kinds of case coordinate');
+  assert.equal(caseFileAlignment(pattern), 'event');
+  assert.equal(caseFileAlignment(lever), 'event');
+  assert.equal(caseFileAlignment({ ...pattern, pattern_chart: null }), 'clock');
+  assert.equal(caseFileAlignment(undefined), 'clock');
 });

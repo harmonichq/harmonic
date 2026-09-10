@@ -676,15 +676,23 @@ test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async (
     const geometry = await page.locator('#tile-focal .tile-chart').evaluate((host) => {
       const chart = window.echarts.getInstanceByDom(host);
       const grid = chart.getModel().getComponent('grid').coordinateSystem.getRect();
-      const ticks = chart.getModel().getComponent('yAxis').axis.scale.getTicks()
-        .map(({ value }) => chart.convertToPixel({ yAxisIndex: 0 }, value))
-        .filter(Number.isFinite).sort((left, right) => left - right);
+      const axisView = chart.getViewOfComponentModel(chart.getModel().getComponent('yAxis'));
+      const ticks = [];
+      axisView.group.traverse((element) => {
+        // Scale ticks include clipped endpoints even when ECharts hides their
+        // labels. Measure the numeric labels the reader can actually see.
+        if (element.type !== 'text' || element.ignore || element.invisible
+          || !Number.isFinite(Number(element.style.text))) return;
+        ticks.push(element.transformCoordToGlobal(0, 0)[1]);
+      });
+      ticks.sort((left, right) => left - right);
       return { hostHeight: host.getBoundingClientRect().height, plotHeight: grid.height,
         canvasScrollTop: document.querySelector('.canvas-pane').scrollTop,
+        visibleTickCount: ticks.length,
         minimumTickGap: Math.min(...ticks.slice(1).map((value, index) => value - ticks[index])) };
     });
     assert.ok(geometry.hostHeight >= 170 && geometry.plotHeight >= 90
-      && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
+      && geometry.visibleTickCount >= 3 && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
     `the long-title I:C plot keeps readable height and separated y ticks: ${JSON.stringify(geometry)}`);
     const visibleContext = await page.evaluate(() => {
       const rect = (selector) => {
@@ -749,7 +757,7 @@ test('#341 · useful queue previews remain present and legible at narrow width',
     await page.waitForFunction(() => {
       const level = document.querySelector('#level');
       return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
-        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
         && !level.textContent.includes('Loading evidence');
     });
     const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
@@ -829,7 +837,7 @@ test('#341 · All charts dismissal preserves a genuinely scrolled phone reading 
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.waitForFunction(() => {
       const node = document.querySelector('#level');
-      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 5
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
         && !node.textContent.includes('Loading evidence')
         && document.querySelector('.cockpit-stage > .main-content').scrollHeight
           > document.querySelector('.cockpit-stage > .main-content').clientHeight;
@@ -2096,7 +2104,7 @@ test('the Filter menu renders each server-published Sift count', async () => {
       await settle(page, 450);
       await page.getByRole('button', { name: /Filter/ }).click();
       assert.deepEqual(await page.getByRole('menuitemcheckbox').allTextContents(), [
-        'Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1',
+        'Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1',
       ], 'the four Sift items spell the server-published global counts');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
@@ -2253,7 +2261,9 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
       await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
-        'finding:correction_on_iob', 'finding:late_bolus',
+        'pattern:highs_after_meals', 'finding:late_bolus',
+        'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+        'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob',
       ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],

@@ -44,6 +44,10 @@ def test_mutating_the_shared_builder_changes_both_consumers(monkeypatch):
 
     class StoreStub:
         @staticmethod
+        def carb_entries():
+            return []
+
+        @staticmethod
         def settings_snapshots():
             return []
 

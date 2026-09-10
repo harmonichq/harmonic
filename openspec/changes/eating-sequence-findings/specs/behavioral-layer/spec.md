@@ -4,7 +4,7 @@
 
 The system SHALL satisfy the following:
 
-Each behavioral classifier (late bolus, missed meal, carb undercount, etc.) is a pure function that inspects *one concrete occurrence* — "is this meal bolus late?" — and returns a judgment, a one-line reason, and an honesty tier. The scenario engine layers these instance verdicts into episodes, attributes each episode to its earliest actionable driver, and groups episodes by lever into patterns. A single dinner that trips multiple classifiers into three separate instance matches becomes one attributed episode, not three: co-occurring behaviors are narrated as consequences of the earliest cause, never as separate advice.
+Each behavioral classifier (late bolus, missed meal, carb undercount, etc.) is a pure function that inspects *one concrete occurrence* — "is this meal bolus late?" — and returns a judgment, a one-line reason, and an honesty tier. The scenario engine layers these instance verdicts into episodes and groups episodes by lever into lever patterns. Without an admitted sequence candidate it attributes each episode to its earliest actionable driver; sequence competition uses the observed-impact rule below. A single dinner that trips several classifiers becomes one attributed episode, with losing explanations retained as evidence rather than separate attributed counts.
 
 #### Scenario: Patterns are detected by instance classifiers that judge one behavior at a time.
 
@@ -51,7 +51,7 @@ observed burden, never expected benefit or an inferred dose.
 
 #### Scenario: Ownership does not change its own price
 - **GIVEN** several contested episodes and a multi-episode sequence
-- **WHEN** the public evaluation constructs its Patterns
+- **WHEN** the public evaluation constructs its lever patterns
 - **THEN** published contender impact equals its pre-ownership price
 - **AND** k does not exceed n, sequence identity is counted once, and bounded owned episodes do not double-charge outcome time
 
@@ -62,8 +62,13 @@ observed burden, never expected benefit or an inferred dose.
 
 ### Requirement: Sequence findings are served coherently through existing finding interfaces
 
-The two closed behavioral levers SHALL produce normal server-ranked Pattern rows
-and sequence case evidence through the existing findings and preparation interfaces.
+The two closed behavioral levers SHALL produce server-priced lever findings and
+sequence case evidence through the existing findings and preparation interfaces.
+They SHALL be habit members nested under Highs after meals, not new outcome
+Patterns and not members of its rate_levers. Their own producer floors and habit
+admission rules SHALL govern admission without pooling support. Each SHALL retain
+its sequence denominator and Priority. Highs after meals SHALL retain its meals
+denominator and the union of identities from its existing rate levers.
 Scenario, exposure, model-view, outcome counts and case files SHALL consume the same
 evaluation rather than recompute ownership. Full-source-window prices SHALL remain
 stable under a drawn clock window; scoped membership SHALL read the served outcome
@@ -103,3 +108,28 @@ Legacy levers SHALL retain their existing rollup mechanism using final winning c
 - **WHEN** clean-rate accounts and the Verify behavior-trend roster are produced
 - **THEN** sequence counts enter neither the legacy Exposure accounts nor a new trend tile
 - **AND** legacy winners keep their existing rollup mechanism without converting the noun sequences to an Exposure
+
+### Requirement: Habit associations preserve bounded episode ownership
+
+The exposures producer SHALL associate a sequence habit member only with emitted
+meal opportunities covered by its winning bounded episode. It SHALL NOT derive
+targets from sequence membership, citations, nearby boluses or a chart mark.
+Additive member_associations SHALL remain distinct from rate claims. Each episode
+SHALL have one owner. A supported winner with no covered meal SHALL remain an
+admissible habit finding without fabricating a Pattern occurrence or meal claim.
+Whole-day claimed_by SHALL include served habit members and rate-lever subjects
+without duplicates, preserving existing rate-only claims. Scoped queries SHALL
+omit the whole-feed Pattern and SHALL NOT invent orphan claimed_by relations.
+The existing nested painter, Pattern copy keys and highs/meals chips SHALL remain.
+
+#### Scenario: A supported episode covers no meal opportunity
+- **GIVEN** a supported sequence winner whose bounded episode covers no emitted meal opportunity
+- **WHEN** findings and Pattern case evidence are prepared
+- **THEN** the sequence cause remains nested under Highs after meals with its own sequence counts
+- **AND** no Pattern meal occurrence, member association or rate claim is fabricated
+
+#### Scenario: Covered meals are evidence without an added rate claim
+- **GIVEN** a winning sequence episode covering emitted meal opportunities
+- **WHEN** the parent case file is prepared
+- **THEN** member_associations identify only those covered opportunities
+- **AND** the parent rate and claiming-member tags retain only their existing rate-lever meaning

@@ -410,9 +410,19 @@ export const C2_STORIES = {
     check(await page.locator('#level').count(), 'the shipped reading pane owns scrolling');
   },
   S7: async page => {
-    await go(page, 'diagnose'); const reading = await page.locator('.inspector').boundingBox();
-    const stage = await page.locator('.canvas-pane').boundingBox();
-    assert.equal(Math.round(reading.width), 300); check(stage.width > reading.width);
+    await go(page, 'diagnose');
+    const inspector = await page.locator('.inspector').boundingBox();
+    const canvas = await page.locator('.canvas-pane').boundingBox();
+    assert.equal(Math.round(inspector.width), 430, 'Diagnose keeps the carried rail width');
+    check(canvas.width > inspector.width);
+    const roster = await read(page, '/api/verify/trials');
+    assert.equal(roster.admission?.active_kind, 'trial', 'S7 requires a change underway');
+    await go(page, 'changes');
+    await page.locator('.gf-desk > .gf-stage-trial').waitFor({ state: 'visible', timeout: 30000 });
+    const reading = await page.locator('.gf-desk > .gf-reading').boundingBox();
+    const stage = await page.locator('.gf-desk > .gf-stage').boundingBox();
+    assert.equal(Math.round(reading.width), 300, 'paired Changes keeps the desk reading-pane width');
+    check(stage.width > reading.width);
   },
   S9: async page => {
     await go(page, 'changes');
@@ -441,7 +451,7 @@ export const C2_STORIES = {
       try { await settled(opened.page); widths.push(Math.round((await opened.page.locator('.inspector').boundingBox()).width)); }
       finally { await opened.context.close(); }
     }
-    assert.equal(widths.length, 4); assert.deepEqual([...new Set(widths)], [300]);
+    assert.equal(widths.length, 4); assert.deepEqual([...new Set(widths)], [430]);
   },
   S14: async page => { await go(page, 'changes'); const g = await read(page, '/api/guidance'); check(g.selected); check((await page.locator('.gf-desk').innerText()).includes(g.selected.title)); check(await page.locator('[data-action="explore"]').count()); assert.equal(await page.locator('.gf-reading .qrow').count(), 0); },
   S15: async page => { await go(page, 'changes'); await press(page, '[data-action="aside"]'); assert.equal(await page.locator('#aside-reason').evaluate(n => n === document.activeElement), true); await page.fill('#aside-reason', 'Synthetic reason'); await press(page, 'form[data-form="aside"] [type="submit"]'); await page.locator('[data-restore]').first().waitFor(); check((await page.locator('.gf-desk').innerText()).includes('Synthetic reason')); },

@@ -37,6 +37,7 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
 });
 
 test('one invocation selects the generated case each story needs', () => {
+  assert.equal(storyCase('S7'), 'c3-trial');
   assert.equal(storyCase('S88'), 'basal-lower');
   assert.equal(storyCase('S90'), 'basal-lower');
   assert.equal(storyCase('S100'), 'showcase');
@@ -44,6 +45,42 @@ test('one invocation selects the generated case each story needs', () => {
   assert.equal(storyCase('S90', 'S90=basal-raise,S100=showcase'), 'basal-raise');
   assert.throws(() => storyCase('S88', 'S88=../../real'), /Invalid/);
   assert.throws(() => createCaseServer({ directory: '/tmp', baseURL: 'https://example.com' }), /8765/);
+});
+
+test('S7 distinguishes the carried Diagnose rail from the paired Changes reading pane', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const pageFor = (inspectorWidth, readingWidth) => ({
+    url: () => 'http://127.0.0.1:8765/v2/',
+    request: { get: async () => ({ ok: () => true, status: () => 200,
+      json: async () => ({ admission: { active_kind: 'trial' } }) }) },
+    waitForFunction: async () => {},
+    locator: selector => ({
+      filter() { return this; }, first() { return this; }, waitFor: async () => {}, click: async () => {},
+      boundingBox: async () => {
+        const widths = { '.inspector': inspectorWidth, '.canvas-pane': 700,
+          '.gf-desk > .gf-reading': readingWidth, '.gf-desk > .gf-stage': 830 };
+        assert.ok(Object.hasOwn(widths, selector), `measure the owning element: ${selector}`);
+        return { width: widths[selector] };
+      },
+    }),
+  });
+  await C2_STORIES.S7(pageFor(430, 300));
+  await assert.rejects(C2_STORIES.S7(pageFor(300, 300)), /carried rail width/);
+  await assert.rejects(C2_STORIES.S7(pageFor(430, 430)), /reading-pane width/);
+});
+
+test('S13 keeps the carried rail at 430px across all four sources', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const sources = []; let closed = 0;
+  await C2_STORIES.S13(null, { viewport: '1280x720', open: async options => {
+    sources.push(options.source);
+    return { page: { waitForFunction: async () => {}, locator: selector => {
+      assert.equal(selector, '.inspector');
+      return { boundingBox: async () => ({ width: 430 }) };
+    } }, context: { close: async () => { closed++; } } };
+  } });
+  assert.deepEqual(sources, ['meals', 'setting', 'focus', 'journey']);
+  assert.equal(closed, 4);
 });
 
 test('c2 app selection contains concrete story bodies and excludes the c3 Trial inspection', async () => {

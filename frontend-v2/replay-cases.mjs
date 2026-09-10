@@ -11,7 +11,7 @@ import { resolve, join } from 'node:path';
 const setting = 'S14,S15,S16,S17,S31,S32,S33,S34,S35,S37,S37b,S38,S39,S40,S41,S42,S43,S44,S77,S78,S79,S81,S88,S89,S90';
 export const STORY_CASES = Object.freeze({
   ...Object.fromEntries(setting.split(',').map(id => [id, 'basal-lower'])),
-  S7b: 'basal-no-change', S9: 'basal-lower', S18: 'basal-no-change', S80b: 'basal-no-change', S97: 'basal-lower', S98: 'ic-lower', S99: 'basal-insufficient-seven-night',
+  S7: 'c3-trial', S7b: 'basal-no-change', S9: 'basal-lower', S18: 'basal-no-change', S80b: 'basal-no-change', S97: 'basal-lower', S98: 'ic-lower', S99: 'basal-insufficient-seven-night',
   S100: 'showcase', R18: 'c4-history', R5: 'basal-lower', R8: 'behavioral-carb-undercount', R10: 'ic-lower', R17: 'c3-trial',
 });
 export function storyCase(id, overrides = '') {

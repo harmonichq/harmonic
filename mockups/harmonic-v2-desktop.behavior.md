@@ -357,6 +357,9 @@ S7 · A paired state is one flexible evidence stage beside a 300px reading pane
   evidence: replay fn S7
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+Amended S7 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector is the carried v1 Findings rail at its shipped 430px, with a wider evidence stage; the 300px reading pane belongs to the paired desk states (Changes, Day), measured on .gf-desk > .gf-reading. The app replay uses a Changes case with a Trial underway to prove that paired width.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ```
 S7b · The selected full-width empty Changes state is preserved as observed: with
@@ -476,6 +479,9 @@ S13 · Across data shape, containers sized for live values do not resize per
   evidence: replay fn S13
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+Amended S13 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector keeps the carried v1 rail’s shipped 430px across all four sources. The 300px reading pane belongs to paired desk states (Changes, Day), not the carried Diagnose column; the existing 256px paired-desk adaptation remains unchanged.
+The preceding wording and results are the attributed pre-amendment record.
+
 
 ### Overview, guidance, set aside
 

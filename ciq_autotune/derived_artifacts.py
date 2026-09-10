@@ -324,12 +324,15 @@ def dump_findings(value):
 
 
 def rebuild_findings(value):
-    from .findings_projection import FindingsProjection
+    from .findings_projection import prepare_findings_projection
     if (not isinstance(value, dict) or not isinstance(value.get("analysis"), dict)
             or not isinstance(value.get("exposures"), dict)
             or not isinstance(value.get("scenarios"), dict)):
         raise ValueError("invalid findings artifact")
-    return FindingsProjection(_analysis=value["analysis"], _exposures=value["exposures"], _scenarios=value["scenarios"])
+    return prepare_findings_projection(
+        analysis=value["analysis"], exposures=value["exposures"],
+        scenarios=value["scenarios"],
+    )
 
 
 def dump_ic_history(value):

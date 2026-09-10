@@ -13,7 +13,9 @@ import pathlib
 import random
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 try:
     from fastapi.testclient import TestClient
@@ -23,10 +25,15 @@ except ImportError:  # pragma: no cover
 
 from ciq_autotune.analyzers.isf import analyze_isf
 from ciq_autotune.analyzers.scenario.levers import Lever, outcome_kind
+from ciq_autotune.analyzers.scenario.outcome_patterns import _ROSTER
 from ciq_autotune.analyzers.tuning_priority import build_tuning_levers
 from ciq_autotune.findings_projection import (
     _EVENT_CHART_FAMILIES,
+    _PATTERN_CHIPS,
+    _chips_for,
+    _row as projection_row,
     FindingsProjection,
+    PATTERN_SUBJECTS,
     WindowQuery,
     prepare_findings_projection,
 )
@@ -117,7 +124,8 @@ def _with_history(projection, *, lifecycle="active", start_min=420,
     )
     analysis = dict(projection._analysis)
     analysis["ic_history"] = [*(analysis.get("ic_history") or []), history.to_dict()]
-    return FindingsProjection(analysis, projection._exposures, projection._scenarios), history
+    return FindingsProjection(analysis, projection._exposures, projection._scenarios,
+                              projection._outcome_patterns), history
 
 
 class HistoryRowsTest(unittest.TestCase):
@@ -305,6 +313,7 @@ class GroundedWindowTest(unittest.TestCase):
             _analysis=analysis,
             _exposures={"exposures": {}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         row = projection.project(WindowQuery.whole_day())["rows"][0]
 
@@ -317,7 +326,8 @@ class GroundedWindowTest(unittest.TestCase):
     def test_direction_only_isf_follows_every_actionable_or_priced_row(self):
         base = gen.projection()
         analysis, _segment, _lever = _direction_only_isf_analysis(base._analysis)
-        projection = FindingsProjection(analysis, base._exposures, base._scenarios)
+        projection = FindingsProjection(analysis, base._exposures, base._scenarios,
+                                        base._outcome_patterns)
 
         rows = projection.project(WindowQuery.whole_day())["rows"]
         isf_index = next(index for index, row in enumerate(rows)
@@ -371,6 +381,7 @@ class SpanMergingTest(unittest.TestCase):
         analysis["basal"] = [slots[index] for index in sorted(slots)]
         rows = FindingsProjection(
             _analysis=analysis, _exposures=gen.exposures(), _scenarios=gen.scenarios(),
+            _outcome_patterns=[],
         ).project(WindowQuery.clock(10 * 60, 11 * 60))["rows"]
         self.assertEqual(
             [row["lean"] for row in rows if row["title"].startswith("Basal")],
@@ -423,6 +434,7 @@ class ChipProjectionTest(unittest.TestCase):
             _analysis={"window_days": 30},
             _exposures={"exposures": {"highs": {"occurrences": occurrences}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         # The window is derived from the lever count, never a literal: each occurrence
         # sits at hour `index`, so a hard-coded span silently drops the newest lever
@@ -501,6 +513,179 @@ class MealBolusShortPopulationProjectionTest(unittest.TestCase):
         case = prepared.case("finding:meal_bolus_short", "event", None)
         self.assertIsNotNone(case)
 
+    def test_public_producers_dedup_meal_bolus_short_against_carb_undercount(self):
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_meal_bolus_short_attribution import (
+            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(
+                    store,
+                    LATE_SECOND_MEAL_BOLUS + next_day(LATE_SECOND_MEAL_BOLUS),
+                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM),
+                )
+                with (
+                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
+                ):
+                    exposures = build_exposures(store)
+                    scenarios = build_scenarios(store).to_dict()
+
+        outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
+        pattern = next(item for item in outcome_patterns
+                       if item["key"] == "highs_after_meals")
+        meals = exposures["exposures"]["meals"]["occurrences"]
+        shared = [item for item in meals if {
+            "carb_undercount", "meal_bolus_short",
+        }.issubset(item["attributed_levers"])]
+        self.assertEqual(len(shared), 2)
+        self.assertEqual((pattern["k"], pattern["n"]), (4, 4))
+        self.assertNotIn("habit:meal_bolus_short",
+                         {member["subject"] for member in pattern["members"]})
+        self.assertNotEqual(pattern["action"], "habit:meal_bolus_short")
+        self.assertIsNone(next(item for item in scenarios["patterns"]
+                               if item["lever"] == "meal_bolus_short")
+                          ["guidance"]["action_id"])
+
+    def test_public_meal_bolus_short_row_is_claimed_by_its_pattern(self):
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.analyzers.scenario import build_scenarios
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from ciq_autotune.explore_exposures import build_exposures
+        from tests.test_meal_bolus_short_attribution import (
+            LATE_SECOND_MEAL_BOLUS, LATE_SECOND_MEAL_CGM, _seed, next_day,
+        )
+        from tests.test_scenario_engine import cgm_flat, cgm_ramp
+
+        short_bolus = [
+            replace(LATE_SECOND_MEAL_BOLUS[0], carbs=100, carb_ratio=5),
+            LATE_SECOND_MEAL_BOLUS[1],
+            replace(LATE_SECOND_MEAL_BOLUS[2], carbs=100, carb_ratio=5),
+        ]
+        other_cgm = []
+        other_bolus = []
+        for day in (14, 15):
+            other_cgm.extend(
+                cgm_flat(day, 5, 40, 120, 30)
+                + cgm_ramp(day, 6, 10, 120, 2, 60)
+                + cgm_ramp(day, 7, 10, 360, -2, 60)
+                + cgm_flat(day, 20, 30, 120, 30)
+                + cgm_ramp(day, 21, 0, 120, 2, 60)
+                + cgm_ramp(day, 22, 0, 360, -2, 60)
+            )
+            other_bolus.extend([
+                BolusEvent(datetime(2026, 6, day, 6, 40), completion="Completed",
+                           insulin=20, carbs=100, carb_ratio=5),
+                BolusEvent(datetime(2026, 6, day, 21), completion="Completed",
+                           insulin=3, carbs=30, carb_ratio=10),
+            ])
+
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                _seed(
+                    store,
+                    short_bolus + next_day(short_bolus) + other_bolus,
+                    LATE_SECOND_MEAL_CGM + next_day(LATE_SECOND_MEAL_CGM) + other_cgm,
+                )
+                with (
+                    patch("ciq_autotune.explore_exposures._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.analyzers.scenario.engine._effective_isf", return_value=45.0),
+                    patch("ciq_autotune.finding_case_file._effective_isf", return_value=45.0),
+                ):
+                    exposures = build_exposures(store)
+                    scenarios = build_scenarios(store).to_dict()
+                    case = finding_case_file.prepare(
+                        store, query=WindowQuery.whole_day(), version=0,
+                        analysis={"window_days": 30}, exposures=exposures,
+                        scenarios=scenarios,
+                    ).case("pattern:highs_after_meals", "event", None)
+                outcome_patterns = build_outcome_patterns({}, exposures, scenarios)
+                projection = FindingsProjection(
+                    _analysis={"window_days": 30}, _exposures=exposures,
+                    _scenarios=scenarios, _outcome_patterns=outcome_patterns,
+                ).project(WindowQuery.whole_day())
+
+        pattern = next(item for item in outcome_patterns
+                       if item["key"] == "highs_after_meals")
+        row = next(item for item in projection["rows"]
+                   if item.get("lever") == Lever.MEAL_BOLUS_SHORT.value)
+
+        self.assertEqual((pattern["k"], pattern["n"]), (6, 8))
+        self.assertEqual(row["claimed_by"], "pattern:highs_after_meals")
+        self.assertEqual(
+            sum("meal_bolus_short" in item["attributed_levers"]
+                for item in exposures["exposures"]["meals"]["occurrences"]),
+            2,
+        )
+        self.assertEqual(
+            [item["member"] for item in case["occurrences"]].count(
+                "habit:meal_bolus_short"
+            ),
+            2,
+        )
+        self.assertEqual(projection["counts"]["finding"], sum(
+            item["register"] == "finding" and not item.get("claimed_by")
+            for item in projection["rows"]
+        ))
+
+    def test_public_correction_stacking_producer_claims_the_lows_it_reaches(self):
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.analyzers.scenario.outcome_patterns import build_outcome_patterns
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        case = next(item for item in QA_CASES
+                    if item.name == "behavioral-correction-stacking")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+                execution = execute_case(store, case)
+                exposures = execution.exposures
+                scenarios = execution.scenarios
+                outcome_patterns = build_outcome_patterns(
+                    execution.analysis, exposures, scenarios,
+                )
+                prepared = finding_case_file.prepare(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=exposures,
+                    scenarios=scenarios,
+                )
+                pattern_case = prepared.case(
+                    "pattern:lows_after_correcting_highs", "event", None,
+                )
+
+        lows = exposures["exposures"]["lows"]
+        clusters = exposures["exposures"]["correction_clusters"]
+        pattern = next(
+            item for item in outcome_patterns
+            if item["key"] == "lows_after_correcting_highs"
+        )
+
+        self.assertEqual((pattern["k"], pattern["n"]), (2, 2))
+        self.assertEqual(
+            sum("correction_stacking" in item["attributed_levers"]
+                for item in lows["occurrences"]),
+            2,
+        )
+        self.assertEqual(pattern_case["family"], pattern_case["population"])
+        self.assertEqual(pattern_case["summary"], {
+            "claimed": 2, "denominator": 2, "noun": "lows",
+        })
+        self.assertEqual(
+            {item["member"] for item in pattern_case["occurrences"]},
+            {"habit:correction_stacking"},
+        )
+        self.assertEqual(pattern_case["projection"]["window_min"], [-60, 120])
+        self.assertEqual((clusters["n"], clusters["attributed"]), (8, 2))
+        self.assertEqual(
+            sum(item["cause_lever"] == "correction_stacking"
+                for item in clusters["occurrences"]),
+            2,
+        )
+
     def test_settings_direction_mapping_is_published_through_each_row_builder(self):
         cases = (
             ("basal_rate", "raise", "highs"),
@@ -535,6 +720,7 @@ class MealBolusShortPopulationProjectionTest(unittest.TestCase):
                 projection = FindingsProjection(
                     _analysis=analysis, _exposures={"exposures": {}},
                     _scenarios={"patterns": [], "low_confidence": []},
+                    _outcome_patterns=[],
                 )
                 row = projection.project(WindowQuery.whole_day())["rows"][0]
                 self.assertEqual(row["chips"], [chip])
@@ -576,6 +762,7 @@ class EventChartProjectionTest(unittest.TestCase):
             _analysis={"window_days": 30},
             _exposures={"exposures": exposures},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         ).project(WindowQuery.whole_day())["rows"]
 
         self.assertEqual(
@@ -600,6 +787,7 @@ class EventChartProjectionTest(unittest.TestCase):
                 "verdicts": [],
             }]}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         ).project(WindowQuery.whole_day())["rows"][0]
 
         self.assertTrue(all("event_chart" in row for row in settings))
@@ -622,6 +810,7 @@ class EventChartProjectionTest(unittest.TestCase):
                 "verdicts": [],
             }]}}},
             _scenarios={"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
 
         row = projection.project(WindowQuery.whole_day())["rows"][0]
@@ -641,10 +830,11 @@ class QueueOrderTest(unittest.TestCase):
         self.assertEqual(quiet, [])
 
     def test_priced_rows_lead_in_server_priority_order_then_counted_rows(self):
-        priced = [row["priority"] for row in self.global_rows
+        ranked = [row for row in self.global_rows if not row.get("claimed_by")]
+        priced = [row["priority"] for row in ranked
                   if row["priority"] is not None]
         self.assertEqual(priced, sorted(priced, reverse=True))
-        tail = self.global_rows[len(priced):]
+        tail = [row for row in ranked if row["priority"] is None]
         self.assertTrue(all(row["priority"] is None for row in tail))
         counts = [row["episodes"] or 0 for row in tail]
         self.assertEqual(counts, sorted(counts, reverse=True))
@@ -660,11 +850,6 @@ class QueueOrderTest(unittest.TestCase):
         rows = self.global_rows + scoped_rows
         allowed = {"next_in_line", "worth_a_look", "noted"}
         self.assertEqual({row["tier"] for row in rows}, allowed)
-        self.assertEqual(
-            [row["tier"] for row in self.global_rows],
-            ["next_in_line", "next_in_line", "next_in_line",
-             "worth_a_look", "worth_a_look", "noted", "noted", "noted"],
-        )
         self.assertEqual(
             {row["tier"] for row in rows if row["register"] == "assert"},
             {"next_in_line"},
@@ -684,6 +869,10 @@ class QueueOrderTest(unittest.TestCase):
         for row in self.global_rows:
             if row["register"] == "assert":
                 self.assertEqual(row["priority"], levers[row["parameter"]])
+            elif row["kind"] == "pattern":
+                self.assertEqual(row["priority"],
+                                 row["pattern"]["settled_price"]
+                                 if row["pattern"]["admission_route"] != "none" else None)
             elif row["priority"] is not None:
                 self.assertEqual(row["priority"], patterns[row["lever"]])
 
@@ -692,6 +881,187 @@ class QueueOrderTest(unittest.TestCase):
         order = {"assert": 0, "finding": 0, "held": 1, "blind": 2}
         ranks = [order[row["register"]] for row in rows]
         self.assertEqual(ranks, sorted(ranks))
+
+
+class PatternProjectionTest(unittest.TestCase):
+    def test_public_pattern_subjects_match_the_closed_roster(self):
+        self.assertEqual(PATTERN_SUBJECTS, {f"pattern:{key}" for key, *_ in _ROSTER})
+
+    def setUp(self):
+        self.projection = gen.projection()
+        self.result = self.projection.project(WindowQuery.whole_day())
+
+    def test_chartability_reads_admitted_members_and_rate_family_not_claimed_rows(self):
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis,
+            _exposures=self.projection._exposures,
+            _scenarios={},
+            _outcome_patterns=self.projection._outcome_patterns,
+        )
+        result, _ = projection._pattern_rows([], WindowQuery.whole_day())
+        pattern = next(row for row in result
+                       if row["id"] == "pattern:highs_after_meals")
+
+        self.assertFalse(any(row.get("claimed_by") == pattern["id"] for row in result))
+        self.assertIsNotNone(pattern["pattern_chart"])
+
+        empty_exposures = json.loads(json.dumps(self.projection._exposures))
+        empty_exposures["exposures"]["meals"].update(n=0, occurrences=[])
+        empty, _ = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=empty_exposures,
+            _scenarios={}, _outcome_patterns=self.projection._outcome_patterns,
+        )._pattern_rows([], WindowQuery.whole_day())
+        pattern = next(row for row in empty
+                       if row["id"] == "pattern:highs_after_meals")
+        self.assertIsNone(pattern["pattern_chart"])
+
+    def test_patterns_are_whole_day_only_and_claimed_rate_levers_follow_their_parent(self):
+        pattern = next(row for row in self.result["rows"]
+                       if row["id"] == "pattern:highs_after_meals")
+        index = self.result["rows"].index(pattern)
+        member = self.result["rows"][index + 1]
+
+        self.assertEqual(member["id"], "finding:carb_undercount")
+        self.assertEqual(member["claimed_by"], pattern["id"])
+        self.assertEqual(pattern["pattern_chart"], {
+            "key": "highs_after_meals", "window": WindowQuery.whole_day().to_dict(),
+        })
+        self.assertIsNone(pattern["event_chart"])
+
+        rows_by_id = {row["id"]: row for row in self.result["rows"]}
+        for pattern_row in (row for row in self.result["rows"]
+                            if row["kind"] == "pattern"):
+            claimed = []
+            for lever in pattern_row["pattern"]["rate_levers"]:
+                finding = rows_by_id.get(f"finding:{lever.removeprefix('habit:')}")
+                if finding is not None:
+                    self.assertEqual(finding["claimed_by"], pattern_row["id"])
+                    claimed.append(finding)
+            if claimed:
+                positions = sorted(self.result["rows"].index(row) for row in claimed)
+                self.assertEqual(positions, list(range(
+                    self.result["rows"].index(pattern_row) + 1,
+                    self.result["rows"].index(pattern_row) + 1 + len(claimed),
+                )))
+
+        scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
+        self.assertFalse(any(row["kind"] == "pattern" for row in scoped["rows"]))
+        self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
+
+    def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
+        rows = [row for row in self.result["rows"] if not row.get("claimed_by")]
+        expected_counts = {name: 0 for name in self.result["counts"]}
+        expected_chips = {name: 0 for name in self.result["chip_counts"]}
+        for row in rows:
+            expected_counts[row["register"]] += 1
+            for chip in row["chips"]:
+                expected_chips[chip] += 1
+        self.assertEqual(self.result["counts"], expected_counts)
+        self.assertEqual(self.result["chip_counts"], expected_chips)
+
+    def test_collapse_member_passes_through_and_unadmitted_pattern_is_title_only(self):
+        ids = {row["id"] for row in self.result["rows"]}
+        self.assertNotIn("pattern:highs_after_treating_lows", ids)
+        collapsed_member = next(row for row in self.result["rows"]
+                                if row["id"] == "finding:over_treated_low")
+        self.assertIsNone(collapsed_member["claimed_by"])
+
+        unadmitted = next(row for row in self.result["rows"]
+                          if row["id"] == "pattern:lows_after_correcting_highs")
+        self.assertIsNone(unadmitted["priority"])
+        self.assertEqual(unadmitted["headline"], unadmitted["title"])
+        self.assertIsNone(unadmitted["pattern_chart"])
+
+    def test_memberless_patterns_keep_their_count_without_a_chart(self):
+        browser = json.loads((pathlib.Path(__file__).resolve().parents[1]
+                              / "frontend" / "__fixtures__"
+                              / "findings-projection.json").read_text())
+        pattern = next(row for row in browser["browser_outcome_patterns"]
+                       if row["key"] == "lows_after_meals")
+        self.assertGreater(pattern["k"], 0)
+        self.assertFalse(any(member["kind"] == "habit" for member in pattern["members"]))
+
+        overnight = next(row for row in self.result["rows"]
+                         if row["id"] == "pattern:overnight_lows_no_iob")
+        self.assertEqual(overnight["chips"], ["lows"])
+        self.assertIsNone(overnight["pattern_chart"])
+
+    def test_count_status_has_an_explicit_headline_and_no_blank_rate(self):
+        source = next(row for row in self.projection._outcome_patterns
+                      if row["key"] == "highs_after_meals")
+        inconsistent = json.loads(json.dumps(source))
+        inconsistent.update(k=4, n=3, rate=None, wilson=None,
+                            count_status={"status": "inconsistent_counts", "k": 4, "n": 3})
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=self.projection._exposures,
+            _scenarios=self.projection._scenarios, _outcome_patterns=[inconsistent],
+        )
+        row = next(row for row in projection.project(WindowQuery.whole_day())["rows"]
+                   if row["kind"] == "pattern")
+        self.assertEqual(row["headline"], "Highs after meals: counts under review")
+
+    def test_pattern_headlines_name_their_roster_owned_recurrence_population(self):
+        roster = json.loads(json.dumps(self.projection._outcome_patterns))
+        for pattern in roster:
+            pattern["collapse"] = "remain_pattern"
+            if pattern["admission_route"] == "none":
+                pattern["admission_route"] = "habit_threshold"
+        projection = FindingsProjection(
+            _analysis=self.projection._analysis, _exposures=self.projection._exposures,
+            _scenarios=self.projection._scenarios, _outcome_patterns=roster,
+        )
+        rows = {row["pattern"]["key"]: row
+                for row in projection.project(WindowQuery.whole_day())["rows"]
+                if row["kind"] == "pattern"}
+
+        nouns = {
+            "highs_after_meals": "meals",
+            "lows_after_meals": "meals",
+            "highs_after_treating_lows": "lows",
+            "lows_after_correcting_highs": "lows",
+            "overnight_lows_no_iob": "nights",
+        }
+        for key, noun in nouns.items():
+            pattern = rows[key]["pattern"]
+            self.assertEqual(
+                rows[key]["headline"],
+                f"{pattern['title']} in {pattern['k']} of {pattern['n']} {noun}",
+            )
+
+    def test_closed_pattern_chips_equal_the_union_of_their_member_chips(self):
+        member_rows = {
+            "carb_undercount": ["meals"], "late_bolus": ["meals"],
+            "meal_over_delivery": ["meals"], "over_treated_low": ["lows"],
+            "correction_on_iob": ["lows"],
+            "correction_stacking": ["correction_clusters"],
+        }
+        for key, _title, members, _rate_levers, _setting, _family in _ROSTER:
+            with self.subTest(key=key):
+                union = []
+                for lever in members:
+                    chips = _chips_for(projection_row(
+                        register="finding", kind="habit", lever=lever,
+                        appearances=[{"family": family} for family in member_rows[lever]],
+                    ))
+                    union.extend(chip for chip in chips if chip not in union)
+                if key == "overnight_lows_no_iob":
+                    union = ["lows"]
+                self.assertEqual(list(_PATTERN_CHIPS[key]), union)
+
+    def test_stacking_finding_keeps_its_correction_cluster_population(self):
+        row = next(row for row in self.result["rows"]
+                   if row["id"] == "finding:correction_stacking")
+
+        self.assertEqual(row["appearances"], [{
+            "family": "correction_clusters", "noun": "correction clusters",
+            "n": 1, "m": 1,
+        }])
+        self.assertEqual(row["verdict_counts_by_family"], {
+            "correction_clusters": {
+                "fired": 1, "outranked": 0, "near_miss": 0,
+                "no_data": 0, "clean": 0,
+            },
+        })
 
 
 class WindowQueryTest(unittest.TestCase):
@@ -712,12 +1082,47 @@ class WindowQueryTest(unittest.TestCase):
 
 
 class PreparedFromStoreTest(unittest.TestCase):
+    def test_preparation_builds_the_pattern_roster_once_and_publishes_it_verbatim(self):
+        roster = [{"key": "published-by-pattern-producer"}]
+        with patch("ciq_autotune.findings_projection.build_outcome_patterns",
+                   return_value=roster) as build:
+            projection = prepare_findings_projection(
+                analysis={"window_days": 30}, exposures={}, scenarios={},
+            )
+
+        build.assert_called_once_with({"window_days": 30}, {}, {})
+        result = projection.project(WindowQuery.whole_day())
+        self.assertEqual(result["outcome_patterns"], roster)
+        self.assertIsNot(result["outcome_patterns"], roster)
+        self.assertIsNot(result["outcome_patterns"],
+                         projection.project(WindowQuery.clock(0, 60))["outcome_patterns"])
+        self.assertEqual(result["rows"], [])
+
+    def test_prepared_projection_preserves_an_inconsistent_pattern_roster(self):
+        roster = [{"key": "highs_after_meals", "k": 4, "n": 3,
+                   "rate": None, "wilson": None,
+                   "count_status": {"status": "inconsistent_counts", "k": 4, "n": 3}}]
+        with patch("ciq_autotune.findings_projection.build_outcome_patterns",
+                   return_value=roster):
+            projection = prepare_findings_projection(
+                analysis={"window_days": 30}, exposures={}, scenarios={},
+            )
+
+        self.assertEqual(projection.project(WindowQuery.whole_day())["outcome_patterns"],
+                         roster)
+
     def test_an_empty_store_projects_an_empty_queue(self):
         projection = prepare_findings_projection(
             analysis={"window_days": 30}, exposures={}, scenarios={},
         )
         result = projection.project(WindowQuery.whole_day())
-        self.assertEqual(result["rows"], [])
+        self.assertEqual([row["kind"] for row in result["rows"]],
+                         ["pattern"] * 5)
+        self.assertEqual(
+            [pattern["key"] for pattern in result["outcome_patterns"]],
+            ["highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+             "lows_after_correcting_highs", "overnight_lows_no_iob"],
+        )
         self.assertEqual(result["window"]["scoped"], False)
         self.assertEqual(result["findings_window"]["days"], 30)
 
@@ -1194,6 +1599,7 @@ class HeadlineTest(unittest.TestCase):
             _analysis=analysis,
             _exposures=exposures or {"exposures": {}},
             _scenarios=scenarios or {"patterns": [], "low_confidence": []},
+            _outcome_patterns=[],
         )
         return projection.project(window or WindowQuery.clock(1, DAY_MINUTES))["rows"]
 
@@ -1465,7 +1871,7 @@ class HeadlineTest(unittest.TestCase):
         }
         projection, _history = _with_history(
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios()))
+                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
         rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
         pairs = set()
         for row in rows:
@@ -1523,7 +1929,7 @@ class HeadlineTest(unittest.TestCase):
         }
         projection, _history = _with_history(
             FindingsProjection(_analysis=analysis, _exposures=gen.exposures(),
-                               _scenarios=gen.scenarios()))
+                               _scenarios=gen.scenarios(), _outcome_patterns=[]))
         rows = projection.project(WindowQuery.clock(1, DAY_MINUTES))["rows"]
         isf_held_row = self._project(self._isf_analysis(register="held"))[0]
         finding_rows = gen.projection().project(WindowQuery.whole_day())["rows"]

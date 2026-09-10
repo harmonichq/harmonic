@@ -43,14 +43,19 @@ The original comparison and selected direction remain in
 ## Basal exploration clarification
 
 Connor confirmed that basal slots asserting a change must remain discoverable
-in Explore, with the same graphs available in the current app. The single
+in Explore, with the same graphs available in the current app. (Explore collapsed
+into Diagnose under ADR 397; the retention requirement is unchanged.) The single
 leading priority does not remove access to those slots, their supporting
 observations or contextual Day inspection. This is a retention requirement,
 not a request for a separate manufactured increase example. The backend's
 `asserts_move` verdict continues to own action eligibility.
 
 
-## Investigation name remains open
+## Historical investigation-name question — superseded by ADR 397
+
+ADR 397 closes this question: v2 uses Diagnose, Changes and Day; Diagnose is
+the default and retains the shipped Findings rail. The following account records
+the September 6 state and is not current navigation authority.
 
 The investigation job is established: findings, basal slots, comparisons and
 individual episodes remain reachable beyond the single leading priority.

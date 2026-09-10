@@ -13,6 +13,7 @@ from .analyzers.scenario.anchors import Anchor, AnchorKind, collect_anchors
 from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
+from .analyzers.scenario.outcome_patterns import _lever_identities
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view
 from .analyzers.scenario import opportunities
@@ -85,6 +86,8 @@ class PreparedCases:
     lease_until: float
     source_window_days: int = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
     pins: int = 0
+    exposures: dict | None = None
+    scenarios: dict | None = None
 
     def _roster(self, lever):
         return tuple(
@@ -101,6 +104,8 @@ class PreparedCases:
         Lever requests retain the same roster and event inputs, but do not borrow
         a Finding's attribution equation merely to make a case-shaped response.
         """
+        if finding_id and finding_id.startswith("pattern:"):
+            return self._pattern_case(finding_id, alignment, occ)
         finding_keyed = finding_id is not None
         if finding_keyed:
             lever = Lever(finding_id.removeprefix("finding:"))
@@ -136,33 +141,18 @@ class PreparedCases:
             else _event(lever, roster, claimed_ids, self.cgm, self.bolus,
                         self.source_window_days, self.basal)
         )
-        cohort_of = {
-            occurrence_id: cohort["key"]
-            for cohort in projection["cohorts"]
-            for occurrence_id in cohort["occurrence_ids"]
-        }
-        active_ids = cohort_of.keys() if alignment == "event" else {
-            member.id for member in roster
-        }
-        selection = {"state": "none", "requested_id": None, "detail": None}
-        if occ is not None:
-            selected = next((member for member in roster if member.id == occ), None)
-            selection = {"state": "unavailable", "requested_id": occ, "detail": None}
-            if selected is not None and selected.id in active_ids:
+        selection, cohort_of = _select_roster_occurrence(
+            occ, alignment, projection, roster, lever,
+            self.cgm, self.basal, self.bolus, self.carbs,
+        )
+        if (selection["state"] == "unavailable" and alignment == "event"
+                and occ in cohort_of):
+            announced = next((row for row in _completed_carb_boluses(
+                self.bolus, self.cgm, self.basal, self.source_window_days,
+            ) if _opaque("m_", row.seq_num) == occ), None)
+            if announced is not None:
                 selection = {"state": "selected", "requested_id": occ,
-                             "detail": (_missed_detail(selected, self.cgm, self.basal,
-                                                       self.bolus, self.carbs)
-                                        if lever is Lever.MISSED_MEAL and alignment == "event"
-                                        else _detail(selected, lever, self.cgm, self.basal,
-                                                     self.bolus, self.carbs))}
-            elif alignment == "event" and occ in active_ids:
-                announced = next((row for row in _completed_carb_boluses(
-                    self.bolus, self.cgm, self.basal, self.source_window_days,
-                ) if _opaque("m_", row.seq_num) == occ), None)
-                if announced is not None:
-                    selection = {"state": "selected", "requested_id": occ,
-                                 "detail": _announced_detail(announced, self.cgm, self.bolus)}
-            if alignment == "event" and selection["state"] == "selected":
+                             "detail": _announced_detail(announced, self.cgm, self.bolus)}
                 selection["detail"]["comparison_cohort"] = cohort_of[occ]
         occurrences = (
             [_missed_occurrence(member, member.id in claimed_ids, self.cgm)
@@ -179,6 +169,94 @@ class PreparedCases:
                         "noun": _population_noun(policy)},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": projection, "selection": selection,
+        }
+
+    def _pattern_case(self, finding_id, alignment, occ):
+        """Expose one Pattern's already-built Exposure population.
+
+        Pattern policy remains in ``outcome_patterns``.  This only aligns the
+        existing opportunity roster and member associations for the case-file
+        transport consumed by the evidence chart.
+        """
+        if self.query.scoped:
+            return None
+        row = self._authoritative_row(finding_id)
+        if row is None or row.get("kind") != "pattern":
+            return None
+        if not row.get("pattern_chart"):
+            return None
+        pattern = row["pattern"]
+        family = findings_projection.pattern_rate_family(pattern)
+        source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
+        source_rows = tuple(source.get("occurrences") or ())
+        rate_levers = [
+            subject.removeprefix("habit:") for subject in pattern["rate_levers"]
+        ]
+        habits = [
+            Lever(member["subject"].removeprefix("habit:"))
+            for member in pattern["members"] if member["kind"] == "habit"
+        ]
+        population_lever = next(
+            Lever(subject.removeprefix("habit:"))
+            for subject in pattern["rate_levers"]
+            if exposure(Lever(subject.removeprefix("habit:"))) is family
+        )
+        claims_by_identity = {}
+        for lever in rate_levers:
+            for identity in _lever_identities(
+                self.exposures or {}, family.value, lever,
+            ):
+                claims_by_identity.setdefault(identity, lever)
+        claimed_identities = set(claims_by_identity)
+        claimed_by_id = {}
+        precedence = {"fired": 4, "near_miss": 3, "outranked": 2, "no_data": 1, "clean": 0}
+        pattern_roster = []
+        remaining_claims = set(claimed_identities)
+        for index, candidate in enumerate(source_rows):
+            identity = candidate.get("t")
+            t = datetime.strptime(candidate["t"], FMT)
+            occurrence_id = _opaque("o_", family.value, identity, candidate["t"], index)
+            claimant = claims_by_identity.get(identity)
+            if claimant is not None and identity in remaining_claims:
+                claimed_by_id[occurrence_id] = f"habit:{claimant}"
+                verdict = "fired"
+                remaining_claims.remove(identity)
+            else:
+                states = [findings_projection._occurrence_verdict(candidate, lever.value)
+                          for lever in habits]
+                states = ["outranked" if state == "fired" else state for state in states]
+                verdict = max(states or ["clean"], key=lambda state: precedence[state])
+            opportunity = opportunities.Opportunity(
+                family=family, source_key=(identity, index), anchor_t=t,
+                anchor_kind=candidate.get("kind") or _event_anchor(family)[0],
+                anchor_bg=candidate.get("bg"),
+            )
+            pattern_roster.append(Member(opportunity, t, verdict, occurrence_id))
+        pattern_roster = tuple(pattern_roster)
+        claimed_ids = frozenset(claimed_by_id)
+        counts = {key: sum(member.verdict == key for member in pattern_roster)
+                  for key in findings_projection.FINDING_VERDICTS}
+        projection = (_clock(pattern_roster, claimed_ids) if alignment == "clock"
+                      else _event(population_lever, pattern_roster, claimed_ids, self.cgm,
+                                  self.bolus, self.source_window_days, self.basal))
+        selection, _ = _select_roster_occurrence(
+            occ, alignment, projection, pattern_roster, population_lever,
+            self.cgm, self.basal, self.bolus, self.carbs,
+        )
+        occurrences = [(_occurrence(member) | {"member": claimed_by_id.get(member.id, "clean")})
+                       for member in pattern_roster]
+        return {
+            "schema": CASE_SCHEMA, "projection_id": self.projection_id,
+            "finding": {"id": finding_id, "lever": pattern["key"],
+                        "subject": finding_id, "title": pattern["title"]},
+            "window": self.query.to_dict(), "family": policy_for(population_lever).recurrence_noun,
+            "population": policy_for(population_lever).recurrence_noun,
+            "cross_population": False,
+            "summary": {"claimed": len(claimed_ids), "denominator": len(pattern_roster),
+                        "noun": _population_noun(policy_for(population_lever))},
+            "verdict_counts": counts, "occurrences": occurrences,
+            "projection": projection,
+            "selection": selection,
         }
 
 
@@ -211,7 +289,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
     return PreparedCases("fp_" + uuid.uuid4().hex, version, query, findings, recurrence,
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
-                         source_window_days=window_days)
+                         source_window_days=window_days, exposures=deepcopy(exposures),
+                         scenarios=deepcopy(scenarios))
 
 
 def _population(
@@ -405,10 +484,13 @@ def wrap(prepared):
         finding_id = row["id"]
         case = prepared.case(finding_id, "clock", None)
         if case is None:
+            if row.get("kind") == "pattern":
+                rendered.append(deepcopy(row)); continue
             withheld.append({"finding_id": finding_id,
                              "code": "uninspectable_attribution",
                              "message": "Canonical association is unavailable."})
             continue
+        chart_key = "pattern_chart" if row.get("kind") == "pattern" else "event_chart"
         header = {"finding_id": finding_id, "lever": case["finding"]["lever"],
                   "title": case["finding"]["title"], "family": case["family"],
                   # A prepared case IS its own event-chart coordinate: the case
@@ -417,11 +499,18 @@ def wrap(prepared):
                   # `null` for a case the server serves — correction stacking is
                   # counted in correction clusters, not the lows that map names —
                   # leaving the reader no By-event path into it.
-                  "event_chart": {"lever": case["finding"]["lever"],
-                                  "window": prepared.query.to_dict()},
+                  chart_key: (deepcopy(row["pattern_chart"])
+                              if chart_key == "pattern_chart" else
+                              {"lever": case["finding"]["lever"],
+                               "window": prepared.query.to_dict()}),
                   "summary": case["summary"], "verdict_counts": case["verdict_counts"],
                   "inspectability": "ready"}
         changed = deepcopy(row)
+        if row.get("kind") == "pattern":
+            changed.update({"pattern_chart": header["pattern_chart"],
+                            "case_header": header})
+            rendered.append(changed); headers[finding_id] = header
+            continue
         anchored = {"family": case["family"], "noun": case["summary"]["noun"],
                     "n": case["summary"]["claimed"],
                     "m": case["summary"]["denominator"]}
@@ -704,3 +793,28 @@ def _detail(member, lever, cgm, basal, bolus, carbs):
     return _occurrence(member) | {"glucose": _trace(member, lever, cgm)["trace"]["cgm"],
                                   "markers": markers, "source_corrections": source,
                                   "day_target": {"date": anchor.date().isoformat()}}
+
+
+def _select_roster_occurrence(occ, alignment, projection, roster, lever,
+                              cgm, basal, bolus, carbs):
+    cohort_of = {
+        occurrence_id: cohort["key"]
+        for cohort in projection["cohorts"]
+        for occurrence_id in cohort["occurrence_ids"]
+    }
+    active_ids = cohort_of.keys() if alignment == "event" else {
+        member.id for member in roster
+    }
+    selection = {"state": "none", "requested_id": None, "detail": None}
+    if occ is None:
+        return selection, cohort_of
+    selected = next((member for member in roster if member.id == occ), None)
+    selection = {"state": "unavailable", "requested_id": occ, "detail": None}
+    if selected is None or selected.id not in active_ids:
+        return selection, cohort_of
+    detail = (_missed_detail(selected, cgm, basal, bolus, carbs)
+              if lever is Lever.MISSED_MEAL and alignment == "event"
+              else _detail(selected, lever, cgm, basal, bolus, carbs))
+    if alignment == "event":
+        detail["comparison_cohort"] = cohort_of[occ]
+    return {"state": "selected", "requested_id": occ, "detail": detail}, cohort_of

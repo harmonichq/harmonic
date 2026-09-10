@@ -158,9 +158,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     key_path = key_path or configuration.secret_key_path
     if enable_fetch_loop is None:
         enable_fetch_loop = not configuration.no_fetch
-    # Writable application startup owns migration; history connections never do.
-    with Store.open(db_path):
-        pass
+    # One in-process result cache for this app's lifetime (#267).  Construct it
+    # before the guarded data migration so a completed rewrite invalidates every
+    # subsequently served shape.
+    cache = ResultCache(incarnation=analysis_incarnation)
+    migrated_patterns = False
+    # Writable application startup owns analysis-backed migration; history and
+    # ordinary CLI connections only apply the schema stamp in Store.__init__.
+    with Store.open(db_path) as store:
+        if store.pattern_migration_pending():
+            try:
+                from .analyzers.scenario import build_scenarios
+                window_days = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
+                analysis = analyze(
+                    store, window_days=window_days, ignore_setting_changes=False,
+                    pool_agreeing_basal_regimes=True,
+                    carb_entries=store.carb_entries(),
+                    prompt_responses=store.prompt_responses(),
+                ).to_dict()
+                exposures = build_exposures(store, window_days=window_days)
+                scenarios = build_scenarios(store, window_days=window_days).to_dict()
+                migrated_patterns = store.migrate_pattern_subjects(
+                    analysis, exposures, scenarios,
+                )
+            except Exception:
+                logger.exception("Pattern subject migration remains pending")
+    if migrated_patterns:
+        cache.bump()
     frontend_built = _FRONTEND_INDEX.is_file()
     if not frontend_built:
         logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
@@ -214,7 +238,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # endpoints answer from it until a write bumps it; every mutating endpoint and
     # the hourly fetch loop clear it. A per-app instance (not a module singleton)
     # keeps two-DB tests isolated. See ADR 0035.
-    cache = ResultCache(incarnation=analysis_incarnation)
     app.state.result_cache = cache
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}
@@ -383,7 +406,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 pending = pending_plan(store)
                 draft = store.get_plan_draft()
                 preferences = store.guidance_preferences()
-            generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+            try:
+                generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+            except ResultCache.GenerationChanged:
+                continue
             with Store.open_queryonly(db_path) as store:
                 if store.input_data_revision() != revision:
                     continue
@@ -460,6 +486,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
+            valid_findings |= findings_projection_module.PATTERN_SUBJECTS
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or ((finding is None) == (lever is None))
                     or (finding is not None and finding not in valid_findings)
@@ -1481,8 +1508,13 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             if (receipt["operation"] != operation or receipt["kind"] != kind
                     or (identity is not None and receipt["id"] != identity)):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
-            if operation == "pin" and receipt["result"]["record"]["lever"] != payload.get("lever"):
-                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if operation == "pin":
+                expected = (f"pattern:{payload['pattern_key']}" if payload.get("pattern_key")
+                            else "habit:" + str(payload.get("lever")))
+                actual = (receipt["result"]["record"].get("subject")
+                          or "habit:" + receipt["result"]["record"]["lever"])
+                if actual != expected:
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
@@ -1552,14 +1584,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
 
     def source_context(source, candidate, recorded_at):
         from .guidance import COMPARISON_VERSION
+        actions = candidate["action"] if isinstance(candidate.get("action"), list) else []
         return {"version": "386:1", "state": "available",
                 "captured_at": recorded_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "input_revision": source["input_revision"], "analysis_generation": source["analysis_generation"],
                 "action": candidate["action"], "explanation": candidate["title"] or "Supported setting change",
                 "source_window": candidate["source_window"], "policy": COMPARISON_VERSION,
                 "subjects": [candidate["subject"]], "occurrences": candidate["occurrence_ids"],
-                "settings": [{"value": action["recommended"], "unit": candidate["units"]}
-                             for action in candidate["action"]] if candidate["kind"] == "setting" else [],
+                "settings": [{"value": action["recommended"], "unit": action["units"]}
+                             for action in actions],
                 "support": candidate["support"], "unknowns": candidate["unknowns"]}
 
     def selected_source(store, source, payload, subject, durable):
@@ -1655,12 +1688,29 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "reason": payload.get("reason")}})
         return lifecycle("withdraw", "plan", identity, payload, durable=True, mutate=withdraw)
 
+    def _pinnable_pattern_member(row):
+        from .watched_change import is_pinnable
+        if (row.get("kind") != "pattern"
+                or row["readiness"]["verdict"] != "ready"
+                or row.get("action") is None):
+            return None
+        return next((
+            member for member in row["members"]
+            if member["kind"] == "habit"
+            and is_pinnable(member["subject"].split(":", 1)[1], row["pattern_key"])
+        ), None)
+
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
         from .watched_change import pinnable_levers
+        guidance = guidance_or_unavailable()
+        patterns = [row for row in guidance["candidates"]
+                    if _pinnable_pattern_member(row) is not None]
         with Store.open_queryonly(db_path) as store:
             store.conn.execute("BEGIN")
             return {"focuses": store.follow_up_records("focus"), "pinnable": sorted(pinnable_levers()),
+                    "pinnable_patterns": [{"key": row["pattern_key"], "subject": row["subject"],
+                                           "readiness": row["readiness"]} for row in patterns],
                     **follow_up_read(store)}
 
     @app.post("/api/focus")
@@ -1669,17 +1719,41 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         from .watched_change import is_pinnable
         from .follow_up_comparison import capture_comparison_context
         durable = durable_request(payload, creation=True)
-        lever = payload.get("lever")
+        lever, pattern_key = payload.get("lever"), payload.get("pattern_key")
+        if pattern_key is not None:
+            if not isinstance(pattern_key, str):
+                raise HTTPException(status_code=422, detail="pattern_key must be a string")
+            current = guidance_or_unavailable()
+            pattern = next((row for row in current["candidates"]
+                            if row.get("subject") == f"pattern:{pattern_key}"), None)
+            if pattern is None:
+                raise HTTPException(status_code=400, detail="Pattern Focus is not ready")
+            member = _pinnable_pattern_member(pattern)
+            if member is None:
+                raise HTTPException(status_code=400, detail="Pattern Focus is not pinnable")
+            lever = member["subject"].split(":", 1)[1]
         if not isinstance(lever, str):
             raise HTTPException(status_code=422, detail="lever required")
-        if not is_pinnable(lever):
+        if not is_pinnable(lever, pattern_key):
             raise HTTPException(status_code=400, detail=f"{lever!r} is not a pinnable behavioral lever")
         def pin(store, admission, source, now, at):
             if not admission["focus_pin"]["available"]:
                 raise FollowUpConflict("occupied_admission", store.input_data_revision())
-            candidate = selected_source(store, source, payload, "habit:" + lever, durable)
-            focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"))
+            subject = f"pattern:{pattern_key}" if pattern_key else "habit:" + lever
+            if pattern_key is None:
+                candidate = next((row for row in source["candidates"]
+                                  if row.get("kind") == "pattern" and any(
+                                      member["subject"] == subject
+                                      for member in row["members"])), None)
+                if candidate is None:
+                    candidate = selected_source(store, source, payload, subject, durable)
+            else:
+                candidate = selected_source(store, source, payload, subject, durable)
+                if candidate["readiness"]["verdict"] != "ready":
+                    raise FollowUpConflict("ineligible_source", store.input_data_revision())
+            focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
             return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
+                **({"subject": subject} if pattern_key else {}),
                 "decision_context": source_context(source, candidate, at),
                 "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
         return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)

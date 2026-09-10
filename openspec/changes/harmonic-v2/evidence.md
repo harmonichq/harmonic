@@ -7,6 +7,254 @@ diff is recorded as an empty output block.
 The synthetic records exercise current producers and proposed prototype inputs;
 they do not establish a shipped v2 backend or an approved selection policy.
 
+## #393 calibration
+
+This implementation replay used only generator-owned synthetic `QaCase` stores.
+No patient records, snapshot rows, or per-day receipts enter the test or this
+evidence. The #391 aggregate-only 90-day receipt supplied these inputs: highs
+after meals 49/512 (0.095703), lows after meals 42/512 (0.082031), highs after
+treating lows 20/101 (0.198020), and lows after correcting highs 4/215
+(0.018605). Applying the receipt's Wilson positive-lower-bound calibration,
+with its 12-opportunity minimum, yields gates **12, 12, 12, and 27** in that
+order. Overnight has no aggregate rate: its denominator is the new
+`harm_band_source_nights` producer and uses the same 12-opportunity floor.
+
+The contention rule is exact: contention exists only when the admitted habit's
+Confidence interval `[lo, hi]` intersects the staged setting owner's
+recurrence-channel `[lo, hi]`. Inside that band the staged setting leads;
+outside it the greatest existing Priority leads; an exact Priority tie retains
+canonical-subject order; and withheld bounds mean no contention. The synthetic
+`pattern-near-tie` receipt exercises the non-contention branch (the staged
+overnight setting has withheld bounds), selecting
+`pattern:highs_after_meals`; the non-overlapping variant in
+`tests/test_pattern_policy.py` selects the greater-Priority habit. The overlap
+variant there selects the staged setting. These cases retain the owner-produced
+intervals and never derive an interval from a pattern rate.
+
+The 12-night overnight floor is therefore an evidence-readiness floor, not a
+basal classifier, staging, or support-floor change. The replay's synthetic thin
+outcomes are literal QA expectations: the 6-meal carb-undercount case is
+withheld; `pattern-near-tie` is withheld at 3 meals while preserving its
+admitted action; `pattern-collapse` is withheld at 6 lows while preserving the
+single admitted habit and backend collapse verdict; the 7-night basal case does
+not stage; and the 30-source-night overnight cases are ready. These prove that
+readiness neither erases readable evidence nor manufactures an action.
+
+`tests/test_pattern_replay.py` materializes each of the 45 catalog cases once,
+then reuses that store through `execute_case`, the prepared Findings projection,
+`build_guidance`, and `follow_up_admission`. Its literal roster comparison fails
+closed for a missing or changed member, rate/denominator, admission, action,
+seriousness, fingerprint, near-tie, collapse, pattern readiness, Focus admission
+shape, or Trial-XOR-Focus admission state. Migration is separately pinned through
+the API-startup path in `tests/test_guidance_preferences.py` and
+`tests/test_guidance_api.py`.
+
+### #393 terminology inventory
+
+At the c4 base, `git grep -i -n -P '\bpatterns?\b' -- ':!node_modules/**'
+':!dist/**'` returned **915** tracked-file hits. Their disposition is closed:
+
+| Hit class | Disposition |
+| --- | --- |
+| ADRs, OpenSpec, scope history, comments, labels, and glossary prose | terminology-only; retain historical or qualified lever-pattern sense |
+| Scenario producer/API `patterns` and `low_confidence`, findings projection, case files, guidance, Store migration, and watched-change identities | payload compatibility; the existing serialized lever-pattern family remains intact beside `outcome_patterns` |
+| Synthetic generators, fixtures, fixture-only mirror, frontend consumers, browser replays, and their tests | payload compatibility; ADR 735 mirror parity remains binding |
+| `pattern_sweep.py` and candidate-sweep references | terminology-only public wording; the internal module name remains compatible |
+
+No payload key was renamed by this inventory. The new cross-member unit is
+published only as `outcome_patterns`; existing `patterns` and `low_confidence`
+remain the serialized lever-pattern family.
+
+## #391 snapshot pass (aggregates only)
+
+The coordinator alone obtained each WAL-safe snapshot, opened it with
+`Store.open_readonly`, ran the uncommitted program at 30 and 90 days, and
+deleted the snapshot on both hosts. The worker received only the two aggregate
+JSON objects. The program remains uncommitted in the coordinator's session
+scratch and was returned verbatim in the worker handback.
+
+Each requested trailing window ends inclusively at the latest basal or CGM
+event. `analyze` supplies setting rows and the setting prices built from
+`_impact_factor`; `build_exposures` and `build_scenarios` supply the exposure and
+scenario inputs; `tally_attributions` supplies Exposure counts;
+`build_opportunities` supplies the identity-bearing populations;
+`compute_clean_rates` is a consistency check of a pure function over the tally
+and cannot fire independently; the `recurrence_count` comparison is the
+independent check that the ordinary `meal_over_delivery` recurrence population
+equals the `MEALS` attribution tally. `guidance.candidates` with
+`build_guidance` supplies Priority and admission.
+
+A pattern numerator counts distinct `(driver family, recurrence identity)`
+members drawn only from the pattern's `rate_levers` subset. It does not pool
+member populations, clamp a numerator, or mix currencies; `k > n` exits
+nonzero. `weighted` and `worst_member` use habit members only. Every setting
+keeps its own owner-produced price and staging admission. Lows after meals uses
+the ordinary `MEALS` recurrence population for `meal_over_delivery`, so its `n`
+equals the meals tally by construction in both windows.
+
+The closed schema has `additionalProperties: false` at every object level. Both
+coordinator-returned objects passed the schema and relational checks. The
+checker output was:
+
+```text
+valid sample: accepted
+missing rate_levers: rejected
+top-level ISO timestamp: rejected
+per-day array: rejected
+free-text note: rejected
+nested member field: rejected
+unknown source window: rejected
+extra overlap field: rejected
+free-text overlap reason: rejected
+forced k > n: rejected
+report CLI schema validation: accepted
+Wilson lower bound zero clamp: -0.0 absent
+rate_levers roster: accepted
+QA parity behavioral-correction-on-iob: literal expectation k=2; owner-produced price=38 (QaExpectation has no Priority field)
+90-day synthetic store window tally: 30d meals n=3; 90d meals n=4
+habit-only alternatives: setting price 99 excluded; weighted=10; worst_member=10
+```
+
+These sixteen lines are literal output from the current checker. The
+30-versus-90 tally comes from one manufactured Store.
+`behavioral-correction-on-iob` contributes literal `k = 2` from
+`QaExpectation`; its price 38 comes from the owner producer because
+`QaExpectation` carries no Priority field. The setting-exclusion proof injects
+a price of 99 and confirms that neither habit alternative consumes it.
+
+### 30-day receipt
+
+| Pattern | `rate_levers` | n / denominator / producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
+| --- | --- | --- | --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount`, `habit:late_bolus` | 181 / `meals` / `tally_attributions` | 0.099448 [0.074443, 0.131657] | 0 / 10 / 16 | `none` | `remain_pattern_by_rule` |
+| Lows after meals | `habit:meal_over_delivery` | 181 / `meals` / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.055249 [0.037217, 0.08128] | 0 / 8 / 8 | `none` | `remain_pattern_by_rule` |
+| Highs after treating lows | `habit:over_treated_low` | 27 / `lows` / `tally_attributions` | 0.185185 [0.108482, 0.297995] | 0 / 19 / 19 | `none` | `remain_pattern_observed` |
+| Lows after correcting highs | `habit:correction_stacking` | 66 / `correction_clusters` / `tally_attributions` | 0.0 [0.0, 0.024282] | 0 / 6 / 12 | `none` | `remain_pattern_by_rule` |
+| Overnight lows with no insulin on board | `setting:basal_rate` | 0 / `nights` / `basal_recurrence_channel` stand-in | null [null, null] | 0 / 0 / 0 | `none` | `remain_pattern_by_rule` |
+
+| Pattern | Member subject / kind | k / denominator / source window / k producer | Price / price producer / admission / admission producer |
+| --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount` / `habit` | 12 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 16 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `habit:late_bolus` / `habit` | 6 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 5 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Lows after meals | `habit:meal_over_delivery` / `habit` | 10 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 8 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Highs after treating lows | `habit:over_treated_low` / `habit` | 5 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 19 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_stacking` / `habit` | 0 / `correction_clusters` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 0 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_on_iob` / `habit` | 2 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 12 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `setting:isf` / `setting` | 5 / `days` / `analysis_request_window` / `analyze.tuning_levers.recurrence_channel` | 29 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Overnight lows with no insulin on board | `setting:basal_rate` / `setting` | 0 / `nights` / `analysis_request_window` / `BasalHarm.nights` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+
+### 90-day receipt
+
+| Pattern | `rate_levers` | n / denominator / producer | Rate [Wilson lo, hi] | Settled / weighted / worst-member | Admission route | Collapse |
+| --- | --- | --- | --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount`, `habit:late_bolus` | 512 / `meals` / `tally_attributions` | 0.095703 [0.08031, 0.113682] | 0 / 12 / 18 | `none` | `remain_pattern_by_rule` |
+| Lows after meals | `habit:meal_over_delivery` | 512 / `meals` / `tally_attributions_meals_via_meal_over_delivery_ordinary_policy` | 0.082031 [0.067793, 0.098943] | 0 / 13 / 13 | `none` | `remain_pattern_by_rule` |
+| Highs after treating lows | `habit:over_treated_low` | 101 / `lows` / `tally_attributions` | 0.19802 [0.15221, 0.253494] | 0 / 27 / 27 | `none` | `remain_pattern_observed` |
+| Lows after correcting highs | `habit:correction_stacking` | 215 / `correction_clusters` / `tally_attributions` | 0.018605 [0.009936, 0.034573] | 0 / 10 / 11 | `none` | `remain_pattern_by_rule` |
+| Overnight lows with no insulin on board | `setting:basal_rate` | 50 / `nights` / `basal_recurrence_channel` stand-in | null [null, null] | 37 / 0 / 0 | `setting_staging` | `remain_pattern_by_rule` |
+
+| Pattern | Member subject / kind | k / denominator / source window / k producer | Price / price producer / admission / admission producer |
+| --- | --- | --- | --- |
+| Highs after meals | `habit:carb_undercount` / `habit` | 38 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 18 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `habit:late_bolus` / `habit` | 11 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 5 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Highs after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Lows after meals | `habit:meal_over_delivery` / `habit` | 42 / `meals` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 13 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after meals | `setting:carb_ratio` / `setting` | 0 / `unavailable` / `fixed_90_day_block_window` / `analyze.tuning_levers.recurrence_channel` | 0 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Highs after treating lows | `habit:over_treated_low` / `habit` | 20 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 27 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_stacking` / `habit` | 4 / `correction_clusters` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 9 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `habit:correction_on_iob` / `habit` | 4 / `lows` / `scenario_request_window` / `tally_attributions.attributed_occurrences` | 11 / `guidance.candidates` / `not_admitted` / `build_guidance` |
+| Lows after correcting highs | `setting:isf` / `setting` | 16 / `days` / `analysis_request_window` / `analyze.tuning_levers.recurrence_channel` | 35 / `analyze.tuning_levers._impact_factor` / `not_admitted` / `build_guidance` |
+| Overnight lows with no insulin on board | `setting:basal_rate` / `setting` | 7 / `nights` / `analysis_request_window` / `BasalHarm.nights` | 37 / `analyze.tuning_levers._impact_factor` / `admitted` / `build_guidance` |
+
+### Identity overlap
+
+| Window | Comparable pattern pair | Count | Reason |
+| --- | --- | ---: | --- |
+| 30 | Highs after meals / lows after meals | 0 | `shared_meals_exposure` |
+| 30 | Highs after treating lows / lows after correcting highs | 0 | `shared_lows_exposure` |
+| 90 | Highs after meals / lows after meals | 0 | `shared_meals_exposure` |
+| 90 | Highs after treating lows / lows after correcting highs | 1 | `shared_lows_exposure` |
+
+Every other cross-pattern pair is `not_comparable`: pairs between populated
+families report `different_exposure_families`, and every pair with overnight
+reports `no_habit_exposure_identity`.
+
+| Window | Habit / setting harm-low pair | Count | Status / reason |
+| --- | --- | ---: | --- |
+| 30 | `habit:carb_undercount` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:late_bolus` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:meal_over_delivery` / `setting:carb_ratio` | 0 | `comparable` / `shared_low_episode_nadir` |
+| 30 | `habit:correction_stacking` / `setting:isf` | null | `not_comparable` / `different_identity_spaces` |
+| 30 | `habit:correction_on_iob` / `setting:isf` | 0 | `comparable` / `shared_low_episode_nadir` |
+| 90 | `habit:carb_undercount` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:late_bolus` / `setting:carb_ratio` | null | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:meal_over_delivery` / `setting:carb_ratio` | 0 | `comparable` / `shared_low_episode_nadir` |
+| 90 | `habit:correction_stacking` / `setting:isf` | null | `not_comparable` / `different_identity_spaces` |
+| 90 | `habit:correction_on_iob` / `setting:isf` | 0 | `comparable` / `shared_low_episode_nadir` |
+
+Highs after treating lows has no setting member, and overnight has no habit
+member, so neither emits a harm-low pair.
+
+The overnight JSON records `rate`, `lo`, and `hi` as null. Its `n` is the basal
+recurrence-window stand-in, not the ruled `harm_band_source_nights` population
+that 2.5.2 owes; the receipt records that stand-in `n` and the
+`BasalHarm.nights` `k` as counts only.
+
+### Assessment against ADR 391
+
+**ADR 391 — Membership roster and evidence boundaries.** The comparable meal
+pair shares zero identities in both windows. Highs after treating lows and lows
+after correcting highs share zero low identities at 30 days and one at 90 days.
+The membership record puts `over_treated_low` and `correction_on_iob` in the
+same low-episode identity space; the one shared occurrence is reported rather
+than pooled into support. Comparable habit/setting harm-low pairs report zero;
+the remaining pairs report `different_identity_spaces`.
+
+**ADR 391 — Rate and denominator ownership.** Highs after meals measures
+0.099448 over 181 at 30 days and 0.095703 over 512 at 90 days, against the
+September 8 ledger's rough 1-in-8 grouping. Its `rate_levers` subset is
+`habit:carb_undercount` and `habit:late_bolus`, and `tally_attributions` owns
+both denominators. Lows after meals measures 0.055249 over 181 and 0.082031
+over 512 against the ledger's rough 1 in 8. Its subset is
+`habit:meal_over_delivery`; its named producer records that the ordinary
+recurrence population coincides with the `MEALS` tally by construction, with
+`recurrence_count` providing the independent check. Highs after treating lows
+measures 0.185185 over 27 and 0.19802 over 101 against the ledger's rough 1 in
+5. Its subset is `habit:over_treated_low`, and `tally_attributions` owns its
+`lows` denominators. Lows after correcting highs measures 0.0 over 66 and
+0.018605 over 215 against the ledger's rough 1 in 30. Its subset is only
+`habit:correction_stacking`, and `tally_attributions` owns its
+`correction_clusters` denominators. That is why the 30-day rate 0.0 sits beside
+a `habit:correction_on_iob` member with `k = 2`: correction-on-IOB retains its
+own `lows` population and is not in the pattern-rate numerator. Overnight's
+subset is `setting:basal_rate`, but its rate and bounds are null because
+`basal_recurrence_channel` supplies only the stand-in `n` until 2.5.2 adds the
+ruled denominator. The receipts apply the ruled member and denominator
+ownership; the ledger records the pre-ruling grouping.
+
+**ADR 391 — Impact, admission and the staged-setting near-tie.** The threshold
+is 30. The greatest habit member is highs after treating lows: 19 at 30 days
+and 27 at 90 days, so no habit crosses the line. Carb ratio is 0 and not staged
+in both windows. ISF is 29 at 30 days and 35 at 90 days but is not staged.
+Basal is 0 and not staged at 30 days; it is 37 and staged at 90 days. The
+settled rule therefore has no admitted leader at 30 days and selects overnight
+at 37 at 90 days. Under both habit-only alternatives, highs after treating lows
+is greatest at 19 and 27 respectively; no habit pattern crosses 30, including
+under `worst_member`. The prior 27-versus-40 calibration is decided by the
+settled rule; this snapshot supplies no habit price of 40 and does not mix a
+setting price into either rejected alternative.
+
+**ADR 391 — Collapse and rail behavior.** Every setting-bearing pattern reports
+`remain_pattern_by_rule`, including overnight with zero habit members. Highs
+after treating lows reports `remain_pattern_observed`. No single habit is
+admitted in either window, so the single-admitted-member collapse branch is
+vacuous here and 2.5.2 must test it.
+
+No snapshot-testable titled ruling is contradicted. The existing 2.5.1 check
+now stands on the corrected aggregate pass.
+
 ## Source revision
 
 ```sh

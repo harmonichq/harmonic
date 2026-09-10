@@ -54,6 +54,7 @@
       "evidence": {
         "directional_support_count": 12,
         "excluded_night_count": 0,
+        "harm_band_source_nights": 12,
         "night_roster": [
           {
             "date": "2024-06-01",
@@ -719,6 +720,7 @@
       "evidence": {
         "directional_support_count": 12,
         "excluded_night_count": 0,
+        "harm_band_source_nights": 12,
         "night_roster": [
           {
             "date": "2024-06-01",
@@ -2719,6 +2721,7 @@
     "chips": [
       "lows"
     ],
+    "claimed_by": null,
     "current": null,
     "direction": "lower",
     "episodes": null,
@@ -2765,6 +2768,8 @@
     ],
     "parameter": "basal_rate",
     "past_setting": null,
+    "pattern": null,
+    "pattern_chart": null,
     "priority": 54,
     "programmed_now": null,
     "reason": null,

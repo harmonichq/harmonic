@@ -462,6 +462,7 @@ class IcHistoryFacadeTest(unittest.TestCase):
             result.to_dict(),
             {"window": {}, "exposures": {}},
             {"patterns": [], "low_confidence": []},
+            [],
         )
         public = projection.project(WindowQuery.whole_day(), history.history_id)
         self.assertEqual(public["counts"]["history"], 0)

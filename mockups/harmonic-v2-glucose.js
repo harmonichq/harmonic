@@ -1,3 +1,46 @@
+// RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
+//
+// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+//
+// Old (superseded): "the four destinations and their default (Overview)"
+// New: "the three destinations and their default (Diagnose)"
+//
+// Old (superseded): "utility journeys. The stage is deliberately the same object on Overview and Explore; what differs is the pane beside it — the decision on Overview, the roster and detail on Explore."
+// New: "utility journeys. Changes owns the backend-selected leading change and next action; Diagnose carries the shipped Findings rail and evidence. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08."
+//
+// Old (superseded): "Back to Overview"
+// New: "Back to Diagnose"
+//
+// Old (superseded): "Return to Overview"
+// New: "Return to Diagnose"
+//
+// Old (superseded): "The meals remain available in Explore."
+// New: "The meals remain available in Diagnose."
+//
+// Old (superseded): "Explore (destinationLabel fallback)"
+// New: "Diagnose (destinationLabel fallback)"
+//
+// Old (superseded): "Overview (leading-change, quiet, set-aside and ending summaries)"
+// New: "Changes (leading-change, quiet, set-aside and ending summaries)"
+//
+// Old (superseded): "emptyFrame('Overview', 'Evidence unavailable', ...)"
+// New: "emptyFrame('Diagnose', 'Evidence unavailable', ...)"
+//
+// Scope: selected v2 desktop only; supersedes prior destination/copy authority.
+// Historical prototype executable bytes, implementation comments, captures and
+// unselected variants remain unchanged. They do not depict the amended navigation.
+// Changes' leading-change ownership is the coordinator's explicit placement
+// instruction in #397's order, separate from the quoted September 8 sanction.
+// #389 owes executable substitutions and adaptation evidence. Contextual Day
+// return still follows HV2-14's source and precise target, including Changes.
+// The v2 behavior/fidelity ledgers and replay live on stopped #389 and are absent
+// here. #389 must amend affected frozen behavior entries, permanent retirement
+// records, LOCK assertions and fidelity rows before dependent implementation
+// resumes. No local executable LOCK assertion exists: HV2-nn is illustrative.
+// #389 must prove each amended assertion fails for the intended reason before
+// restoring green, and change fidelity rows from re-settle requested to met only
+// with new evidence. No ledger, executable proof or release acceptance is claimed.
+//
 // ★ LOCKED — harmonic-v2-desktop · 2026-09-08
 //
 // Direction selected by Connor Griffin on 2026-09-07 and recorded in "ADR 348 —
@@ -8,13 +51,12 @@
 // of which this module is the primary companion. Its 34 terms are HV2-01 through
 // HV2-34, and a replay function cites one as LOCK:harmonic-v2-desktop:HV2-nn.
 //
-// WHAT THIS MODULE OWNS UNDER THE LOCK. The desk itself: the four destinations
-// and their default (Overview), the stage-plus-reading-pane frame, the empty and
+// WHAT THIS MODULE OWNS UNDER THE LOCK. The desk itself: the three destinations
+// and their default (Diagnose), the stage-plus-reading-pane frame, the empty and
 // set-aside states, the shared Trial figure, the contextual Day entry and its
 // exact return, and the dispatch into the setting, habit, shared-history, Day and
-// utility journeys. The stage is deliberately the same object on Overview and
-// Explore; what differs is the pane beside it — the decision on Overview, the
-// roster and detail on Explore.
+// utility journeys. Changes owns the backend-selected leading change and next
+// action; Diagnose carries the shipped Findings rail and evidence. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08.
 //
 // THE HIERARCHY THE REPAIR PASS SETTLED, AND THIS FILE ENFORCES. An outcome is
 // acknowledged on its own subject, and the subject does not change under the

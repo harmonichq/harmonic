@@ -61,6 +61,9 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     ``clean`` and ``uncaused`` are **not** the same question (#63):
 
     * ``attributed`` — this occurrence is its episode's driver.
+    * ``attributed_levers`` — every lever this feed maps onto this opportunity, including
+      cross-family outcomes such as the meal behind a meal-bolus-short high or the
+      low reached by correction stacking. The primary driver fields stay unchanged.
     * ``clean`` = ``n - attributed`` — this occurrence is not the driver. It says
       nothing about the episode: a high in a meal-driven episode is "clean" while its
       episode carries a lever, because the meal anchor drove it.
@@ -114,6 +117,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         window_cgm, window_bolus, window_basal,
         isf=isf, scenario_config=scenario_config, low_answers=low_answers,
     )
+    # A classifier's padded context can reach an opportunity in another episode.
+    # Cross-family attribution is therefore opportunistic: stamp a target only when
+    # this feed also emitted that opportunity, and otherwise preserve the feed.
+    target_attributions = []
     for index, episode_anchors in enumerate(episodes):
         context_start = episode_anchors.start - timedelta(minutes=_CONTEXT_PAD_MIN)
         context_end = episode_anchors.end + timedelta(minutes=_CONTEXT_PAD_MIN)
@@ -129,6 +136,35 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             isf=isf, scenario_config=scenario_config,
             low_answers=low_answers,
         )
+        if attribution.lever is Lever.MEAL_BOLUS_SHORT:
+            policy = policy_for(attribution.lever)
+            occurrence_id = policy.occurrence_for_episode(
+                episode["id"], window_bolus, attribution.trigger_t,
+                scenario_config=scenario_config,
+            )
+            meal = None if occurrence_id is None else next((
+                item for item in window_bolus
+                if policy.occurrence_id(item) == occurrence_id
+            ), None)
+            if meal is not None:
+                target_attributions.append(
+                    ("meals", meal.t, attribution.lever.value)
+                )
+        elif attribution.lever is Lever.CORRECTION_STACKING:
+            reached_low = min(
+                (
+                    item for item in episode_anchors.anchors
+                    if item.kind.value == "low"
+                    and attribution.driver_anchor is not None
+                    and item.t >= attribution.driver_anchor.t
+                ),
+                key=lambda item: item.t,
+                default=None,
+            )
+            if reached_low is not None:
+                target_attributions.append(
+                    ("lows", reached_low.t, attribution.lever.value)
+                )
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
         ):
@@ -161,6 +197,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 "label": anchor["label"],
                 "state": anchor["state"],
                 "attributed": attributed,
+                "attributed_levers": [lever] if lever is not None else [],
                 "cause_lever": lever,
                 "cause_title": cause_title,
                 "text": episode["steps"][0]["text"] if attributed else "",
@@ -172,6 +209,17 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             if cause_occurrence_id is not None:
                 occurrence["cause_occurrence_id"] = cause_occurrence_id
             family["occurrences"].append(occurrence)
+
+    for family_name, target_t, lever in target_attributions:
+        target = next(
+            (
+                item for item in families[family_name]["occurrences"]
+                if datetime.fromisoformat(item["t"]) == target_t
+            ),
+            None,
+        )
+        if target is not None and lever not in target["attributed_levers"]:
+            target["attributed_levers"].append(lever)
 
     for name, family in families.items():
         occurrences = family["occurrences"]

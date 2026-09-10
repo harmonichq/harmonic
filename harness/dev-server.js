@@ -1,7 +1,11 @@
 import { readFile, realpath } from 'node:fs/promises';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import { projectFindings, projectIcHistoryEvents, windowQuery } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from '../frontend/browser-fixture-population.js';
 
 const MIME = {
   '.css': 'text/css',
@@ -27,7 +31,7 @@ async function requestBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 }
 
-function scopedPreparation(caseFiles, projection, bounds) {
+function scopedPreparation(caseFiles, projection, bounds, patternCapture) {
   const query = windowQuery(bounds);
   const key = bounds ? `${bounds.start_min}-${bounds.end_min}` : null;
   const prepared = clone(caseFiles.scoped?.[key]?.preparation || caseFiles.preparation);
@@ -38,7 +42,7 @@ function scopedPreparation(caseFiles, projection, bounds) {
     prepared.findings.window = clone(query.dict);
     prepared.rendered_rows.push(...clone(caseFiles.scoped['0-360'].preparation.rendered_rows));
   }
-  return populateFindingCasePreparation(prepared, projection);
+  return populateFindingCasePreparation(prepared, projection, patternCapture);
 }
 
 async function forwardLive(req, res, url) {
@@ -73,6 +77,7 @@ export function harnessDataPlugin({ repositoryRoot }) {
     json(join(fixtureRoot, 'ic-block-evidence.capture.json')),
     json(join(fixtureRoot, 'finding-case-files.json')),
     json(join(fixtureRoot, 'ic-history-events.capture.json')),
+    json(join(repositoryRoot, 'mockups/diagnose-event-comparison.synthetic/capture.json')),
   ]);
   let source = 'manufactured';
   const preparedWindows = new Map();
@@ -139,13 +144,14 @@ export function harnessDataPlugin({ repositoryRoot }) {
           return;
         }
 
-        const [payload, findingsFixture, basal, isf, carbRatio, caseFiles, history] = await load;
-        const findingsInputs = {
+        const [payload, findingsFixture, basal, isf, carbRatio, caseFiles, history,
+          patternCapture] = await load;
+        const findingsInputs = populateFindingsProjectionInput({
           analysis: payload.analyze,
           exposures: payload.exposures,
           scenarios: payload.scenarios,
           event_charts: findingsFixture.inputs.event_charts,
-        };
+        });
         const bounds = url.searchParams.has('start_min') ? {
           start_min: Number(url.searchParams.get('start_min')),
           end_min: Number(url.searchParams.get('end_min')),
@@ -153,7 +159,7 @@ export function harnessDataPlugin({ repositoryRoot }) {
 
         if (url.pathname === '/api/diagnose/findings') {
           const projection = projectFindings(findingsInputs, bounds, url.searchParams.get('selected_id'));
-          const prepared = scopedPreparation(caseFiles, projection, bounds);
+          const prepared = scopedPreparation(caseFiles, projection, bounds, patternCapture);
           send(res, 200, {
             ...projection,
             rows: [...projection.rows, ...prepared.rendered_rows],
@@ -162,23 +168,37 @@ export function harnessDataPlugin({ repositoryRoot }) {
         }
         if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
           const projection = projectFindings(findingsInputs, bounds, url.searchParams.get('selected_id'));
-          const prepared = scopedPreparation(caseFiles, projection, bounds);
-          preparedWindows.set(prepared.projection_id, clone(prepared.coordinates.window));
+          const prepared = scopedPreparation(caseFiles, projection, bounds, patternCapture);
+          preparedWindows.set(prepared.projection_id, {
+            window: clone(prepared.coordinates.window),
+            patternCharts: Object.fromEntries(prepared.rendered_rows
+              .filter((row) => row.pattern_chart)
+              .map((row) => [row.id, clone(row.pattern_chart)])),
+          });
           send(res, 200, prepared);
           return;
         }
         if (url.pathname === '/api/diagnose/finding-case-file') {
-          const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+          const findingId = url.searchParams.get('finding_id');
+          const retained = preparedWindows.get(url.searchParams.get('projection_id'));
+          const patternCase = findingId?.startsWith('pattern:')
+            ? projectPatternCaseFile(patternCapture, {
+              patternChart: retained?.patternCharts[findingId],
+              projectionId: url.searchParams.get('projection_id'),
+              alignment: url.searchParams.get('alignment'),
+              occurrenceId: url.searchParams.get('occ'),
+            }) : null;
+          const finding = caseFiles.cases[findingId];
           const alignment = url.searchParams.get('alignment');
           const occurrence = url.searchParams.get('occ');
-          if (!finding || !['clock', 'event'].includes(alignment)) {
+          if ((!finding && !patternCase) || !['clock', 'event'].includes(alignment)) {
             send(res, 404, { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } });
             return;
           }
-          const body = clone(occurrence
+          const body = clone(patternCase || (occurrence
             ? finding[`selected_${alignment}`][occurrence] || finding[`unavailable_${alignment}`]
-            : finding[alignment]);
-          const preparedWindow = preparedWindows.get(url.searchParams.get('projection_id'));
+            : finding[alignment]));
+          const preparedWindow = retained?.window;
           if (preparedWindow) {
             body.projection_id = url.searchParams.get('projection_id');
             body.window = clone(preparedWindow);

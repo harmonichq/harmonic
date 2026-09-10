@@ -11,13 +11,13 @@ expander; the factor bars on the card show you the three inputs at a glance.
 
 ## Setting vs. habit
 
-Every lever is chipped **⚙ Setting** or **◈ Habit**. That flavor is a chip, never
+Every lever is chipped **⚙ Setting** or **◈ Cause**. That flavor is a chip, never
 a lane — the rank stays honest across both. What differs is where "accept" sends
 you:
 
 - **⚙ Setting** findings (basal, ISF, or I:C) flow to
   [The Plan tab](#the-plan-tab) as a proposed settings change.
-- **◈ Habit** levers (late bolus, over-treated low) flow to Focus / Verify, because
+- **◈ Cause** levers (late bolus, over-treated low) flow to Focus / Verify, because
   no pump setting fixes them.
 
 ## "Why so few?"

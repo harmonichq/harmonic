@@ -1494,7 +1494,7 @@
 }
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
-   make a flavor read as a verdict. `--mk-accent` was tried for Habit and
+   make a flavor read as a verdict. `--mk-accent` was tried for Cause and
    REVERTED: it is the hue the chart spends on the Meal-boluses mark and it
    collided with the clinical `--high` token's data encoding, reading as
    clinical state at once. The ◈ / ⚙ glyph carries the differentiation; the hue
@@ -1514,6 +1514,7 @@
 .dw .qrow .tag .gly { margin-right: 3px; letter-spacing: 0; font-size: 1.1em; }
 .dw .qrow .tag.setting { color: var(--primary); }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
+.dw .qrow .tag.pattern { color: var(--mk-secondary); }
 .dw .qrow .tag.watching { color: var(--mk-muted); }
 .dw .qrow[data-state="history"] { --tag-col: 76px; }
 .dw .qrow .go { grid-column: 4; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
@@ -1644,9 +1645,20 @@
 .dw .tailnote + .qitem.tail { margin-top: -4px; }
 .dw .qitem.tail + .qitem.tail { margin-top: calc(4px - var(--q-gap)); }
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
-   the Setting/Habit read survives the demotion */
+   the Setting/Cause read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+.dw .qrow[data-tier="noted"] .tag.pattern { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+
+/* Claimed Cause rows keep their own button and drill, while the served adjacent
+   Pattern owns their rank and count. */
+.dw .qitem.claimed { margin-top: calc(2px - var(--q-gap)); }
+.dw .qitem.claimed .qrow { min-height: 30px; padding-block: 3px; }
+.dw .qitem.claimed .qrow .n { color: var(--mk-accent); }
+.dw .qitem.claimed .qrow .lab { font-size: var(--ck-data); font-weight: 500; }
+.dw .qitem.claimed .qrow .tag { display: none; }
+.dw .qitem.claimed .qrow .go { color: var(--mk-accent); }
+.dw .qitem.claimed .qrow .den { font-size: var(--ck-micro); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three
@@ -2067,6 +2079,10 @@
     overflow: hidden;
   }
 }
+
+.dw .qitem.claimed .member-title { grid-column: 2 / 4; grid-row: 1; text-align: left; }
+.dw .qitem.claimed .member-count { color: var(--mk-muted); font-size: var(--ck-micro); }
+.dw .qitem.claimed .member-title .lab { white-space: normal; }
 
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`

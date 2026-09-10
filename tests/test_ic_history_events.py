@@ -46,7 +46,7 @@ class IcHistoryEventsTest(unittest.TestCase):
         )
         findings = FindingsProjection(
             {"window_days": 30, "ic_history": [history.to_dict()]},
-            {"exposures": {}}, {"patterns": [], "low_confidence": []})
+            {"exposures": {}}, {"patterns": [], "low_confidence": []}, [])
         readings = [
             CgmReading(meal + timedelta(minutes=offset), bg, "synthetic")
             for offset, bg in ((-10, 101), (0, 105), (120, 142), (435, 111), (440, 99))
@@ -89,7 +89,7 @@ class IcHistoryEventsTest(unittest.TestCase):
         )
         findings = FindingsProjection(
             {"window_days": 30, "ic_history": [history.to_dict()]},
-            {"exposures": {}}, {"patterns": [], "low_confidence": []})
+            {"exposures": {}}, {"patterns": [], "low_confidence": []}, [])
         readings = [
             CgmReading(meal + timedelta(minutes=minute), bg, "synthetic")
             for meal, base in zip(meals, (100, 120))

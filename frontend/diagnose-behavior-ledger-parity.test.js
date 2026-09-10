@@ -85,7 +85,7 @@ function replayInventory(source) {
   return { registered, tags };
 }
 
-const initialIssued = parseList('S01–S144, C41–C62, and D1–D3');
+const initialIssued = parseList('S01–S150, C41–C62, and D1–D3');
 
 /* The mutation cases below edit the ledger's inventory lines. They read those
    lines out of the ledger rather than restating them: hard-coded copies went
@@ -159,8 +159,8 @@ test('Diagnose behavior ledger rejects a replay story removed without retirement
 
 test('Diagnose behavior ledger rejects an issued ID without a replay story', () => {
   const ledgerWithOrphan = ledger
-    .replace('**169 issued executable IDs:**', '**170 issued executable IDs:**')
-    .replace('S01–S144', 'S01–S145');
+    .replace('**175 issued executable IDs:**', '**176 issued executable IDs:**')
+    .replace('S01–S150', 'S01–S151');
   assert.throws(() => validate(ledgerWithOrphan, replay));
 });
 
@@ -179,8 +179,8 @@ test('Diagnose behavior ledger accepts a permanent retirement', () => {
 
 test('Diagnose behavior ledger rejects coordinated deletion of an issued ID', () => {
   const deletedS91 = ledger
-    .replace('**169 issued executable IDs:**', '**168 issued executable IDs:**')
-    .replace('S01–S144', 'S01–S90, S92–S144');
+    .replace('**175 issued executable IDs:**', '**174 issued executable IDs:**')
+    .replace('S01–S150', 'S01–S90, S92–S150');
   const withoutS91 = replay
     .replace("  ['S91', S91, 'drawn'],\n", '')
     .replaceAll('// STORY:finding-evidence-routing:S91', '// REMOVED:finding-evidence-routing:S91');
@@ -191,10 +191,10 @@ test('Diagnose behavior ledger rejects coordinated deletion of an issued ID', ()
 });
 
 test('Diagnose behavior ledger rejects coordinated renumbering of an issued ID', () => {
-  const renumberedS91 = ledger.replace('S01–S144', 'S01–S90, S92–S145');
+  const renumberedS91 = ledger.replace('S01–S150', 'S01–S90, S92–S151');
   const replayWithS145 = replay
-    .replace("  ['S91', S91,", "  ['S145', S145,")
-    .replaceAll('// STORY:finding-evidence-routing:S91', '// STORY:finding-evidence-routing:S145');
+    .replace("  ['S91', S91,", "  ['S151', S151,")
+    .replaceAll('// STORY:finding-evidence-routing:S91', '// STORY:finding-evidence-routing:S151');
   assert.throws(
     () => validate(renumberedS91, replayWithS145),
     /issued IDs cannot disappear or be renumbered/,
@@ -202,7 +202,7 @@ test('Diagnose behavior ledger rejects coordinated renumbering of an issued ID',
 });
 
 test('Diagnose behavior ledger rejects a malformed story range', () => {
-  const malformedRange = ledger.replace('S01–S144', 'S01–S144-S999');
+  const malformedRange = ledger.replace('S01–S150', 'S01–S150-S999');
   assert.throws(() => validate(malformedRange, replay));
 });
 

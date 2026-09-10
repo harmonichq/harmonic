@@ -26,8 +26,12 @@ import { readFile, access, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings, projectIcHistoryEvents } from '../mockups/findings-projection.mirror.mjs';
-import { populateFindingCasePreparation } from './browser-fixture-population.js';
-import { MIN_ROW_MINI_WIDTH, TIER } from './diagnose-findings-queue.js';
+import {
+  populateFindingCasePreparation,
+  populateFindingsProjectionInput,
+} from './browser-fixture-population.js';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import { MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY } from './diagnose-findings-queue.js';
 import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
 // the address the app canonicalized to (`/diagnose?...`), so the page set has to
@@ -214,6 +218,7 @@ export const state = (page) => page.evaluate(() => {
     queue: [...document.querySelectorAll('#level .qrow')].map((n) => ({
       title: n.querySelector('.lab')?.textContent.trim() ?? null,
       tag: n.querySelector('.tag')?.textContent.trim() ?? null,
+      claimed: n.parentElement.classList.contains('claimed'),
       register: n.dataset.state ?? null,
       tier: n.dataset.tier ?? null,
       tagX: Math.round(n.querySelector('.tag')?.getBoundingClientRect().right ?? -1),
@@ -431,6 +436,18 @@ export const withoutIsfProjectionVerdict = (projection) => ({
   }),
 });
 
+/** Both browser routes answer Pattern coordinates from the requested preparation. */
+export function patternCaseResponse(capture, url, window) {
+  const id = url.searchParams.get('finding_id');
+  if (!id?.startsWith('pattern:')) return null;
+  return projectPatternCaseFile(capture, {
+    patternChart: { key: id.slice('pattern:'.length), window },
+    projectionId: url.searchParams.get('projection_id'),
+    alignment: url.searchParams.get('alignment') || 'clock',
+    occurrenceId: url.searchParams.get('occ'),
+  });
+}
+
 /**
  * APP opener — boots the app page, answers deterministic API reads from the
  * committed synthetic replay payload, and drives it to the Diagnose tab.
@@ -498,10 +515,10 @@ export async function openApp(browser, {
   } : defaults;
   const findingsCandidate = typeof findingsInputs === 'function'
     ? await findingsInputs(historyDefaults) : (findingsInputs || historyDefaults);
-  const findingsFrom = {
+  const findingsFrom = populateFindingsProjectionInput({
     ...findingsCandidate,
     event_charts: findingsCandidate.event_charts || defaults.event_charts,
-  };
+  });
   const exposuresFrom = typeof exposuresInputs === 'function'
     ? await exposuresInputs(defaults) : (exposuresInputs || payload.exposures);
   const apiPattern = (path) => new RegExp(`^/api${path}`);
@@ -700,10 +717,14 @@ export async function openApp(browser, {
     }
     if (path === '/api/diagnose/finding-case-file') {
       caseRequests += 1;
-      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const findingId = url.searchParams.get('finding_id');
+      const finding = caseFiles.cases[findingId];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
-      const body = !finding
+      const pattern = patternCaseResponse(capture, url,
+        preparedWindows.get(url.searchParams.get('projection_id')));
+      const body = pattern ? independent(pattern)
+        : !finding
         ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
         : !occ ? independent(finding[alignment])
           : independent(finding[`selected_${alignment}`][occ]
@@ -717,7 +738,7 @@ export async function openApp(browser, {
         return route.fulfill({ status: response.status || 200, contentType: 'application/json',
           body: JSON.stringify(response.body) });
       }
-      return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
+      return route.fulfill({ status: finding || pattern ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
     }
     const evidenceBodies = {
@@ -1198,7 +1219,7 @@ export const S08 = async (page) => {
 export const S09 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 350);
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const s = await state(page);
   is(s.crumb.length, 2, 'S09 one level pushed');
@@ -1224,7 +1245,7 @@ export const S09 = async (page) => {
     this story now asserts the retirement itself. */
 // LOCK:diagnose-workstation:17 LOCK:diagnose-workstation:18
 export const S10 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   ok((await state(page)).evRows > 0, 'S10 the served case roster remains readable');
   is((await state(page)).evCounterGone, 0,
@@ -1237,7 +1258,7 @@ export const S10 = async (page) => {
     evidence, never viewport navigation (ADR 31 part 5). */
 // LOCK:diagnose-workstation:18 LOCK:diagnose-workstation:19 LOCK:diagnose-workstation:20
 export const S11 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const peak = await state(page);
   await page.click('#level .ev-row');
@@ -1257,7 +1278,7 @@ export const S11 = async (page) => {
 export const S12 = async (page) => {
   const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-23 · "the roster is drawn vertically; one key model per list."`;
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
@@ -1280,7 +1301,7 @@ export const S12 = async (page) => {
     occurrence (P35 retired) never adds a level for it to pop. */
 // LOCK:diagnose-workstation:21
 export const S13 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   is((await state(page)).crumb.length, 2, 'S13 at depth 2');
   await page.click('#level .ev-row');
@@ -1300,7 +1321,7 @@ export const S13 = async (page) => {
     occurrence in place (P35 retired) adds no ancestor of its own. */
 // LOCK:diagnose-workstation:4
 export const S14 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
@@ -1464,8 +1485,13 @@ export const S19 = async (page) => {
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
 // LOCK:diagnose-workstation:33
 export const S20 = async (page) => {
-  // `drill` opens ON a factor, so the coincidence line is already rendered
-  ok((await state(page)).linkBtns.length === 2, 'S20 precondition: opens at the factor level');
+  // The whole-day drill opener keeps its leading Pattern available. Coincidence
+  // links belong to that clock case, not the event-aligned queue entry.
+  await settle(page, 450);
+  // The clock case carries the coincidence line.
+  const opened = await state(page);
+  ok(opened.linkBtns.length === 2,
+    `S20 precondition: clock case exposes both coincidence links (${opened.crumb.join(' / ')}; ${opened.levelText})`);
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View slot').click());
   await settle(page, 450);
   const slot = await state(page);
@@ -1490,7 +1516,7 @@ export const S20 = async (page) => {
 export const S21 = async (page) => {
   const start = await state(page);
   ok(start.chip !== null, 'S21 precondition: a drawn window stands');
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click('#level .qrow[data-id="finding:over_treated_low"]');
   await settle(page, 450);
   const drilled = await state(page);
   is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
@@ -1597,7 +1623,7 @@ async function setupWorkspaceAtFactor(page) {
   // factor, THEN draw the window so drilling preserves it (never a lane click)
   await page.click('#crumb-trail button');   // the Findings ancestor
   await settle(page, 400);
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 400);
   const b = await plot(page);
   const y = b.y + b.h * 0.4;
@@ -1704,9 +1730,10 @@ export const S24 = async (page) => {
   is(headings.entries, 0, 'S24 no per-parameter tier rows (term 34)');
   is(open.queueRules, 0, 'S24 no hairline between queue rows — spacing separates (term 44)');
   // term 36: a fixed right-aligned tag column at ONE constant x on every row
-  is(new Set(open.queue.map((r) => r.tagX)).size, 1,
+  const tagged = open.queue.filter((row) => !row.claimed && row.tag);
+  is(new Set(tagged.map((r) => r.tagX)).size, 1,
     `S24 the tag column sits at one constant x (${JSON.stringify(open.queue.map((r) => r.tagX))})`);
-  ok(open.queue.every((r) => /^[⚙◈](Setting|Habit)$/.test(r.tag || '')),
+  ok(tagged.every((r) => /^(⚙Setting|◈Cause|◇Pattern)$/.test(r.tag)),
     `S24 every row wears a glyph+word flavor tag (${JSON.stringify(open.queue.map((r) => r.tag))})`);
 
   // term 37 — a PRESET re-scopes the queue in place; the crumb stays at its root
@@ -1818,7 +1845,7 @@ export const S25 = async (page) => {
 export const S26 = async (page) => {
   const author = 'Connor Griffin';
   const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   ok((await state(page)).evRows > 0, 'S26 precondition: evidence rows render');
   const shape = await page.evaluate(() => ({
@@ -1847,7 +1874,7 @@ export const S27 = async (page) => {
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
   const sift = await page.getByRole('menuitemcheckbox').allTextContents();
-  is(sift, ['Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1'],
+  is(sift, ['Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1'],
     'S27 the four Sift items spell the server-published global counts');
 };
 
@@ -1860,7 +1887,9 @@ export const S28 = async (page) => {
   await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
   await settle(page, 350);
   const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
-  is(ids, ['finding:correction_on_iob', 'finding:late_bolus'],
+  is(ids, ['pattern:highs_after_meals', 'finding:late_bolus',
+    'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+    'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob'],
     'S28 a deselected Highs choice hides high-only rows while preserving multi-Sift matches');
 };
 
@@ -2001,6 +2030,10 @@ const clickQueueRow = async (page, title) => {
   await page.locator('#level .qrow').nth(at).click();
   await settle(page, 500);
 };
+
+// The default payload publishes Late bolus; Carb undercount belongs to the
+// separate history fixture. Keep the generic Lever stories on their own input.
+const LEVER_FINDING = '#level .qrow[data-id="finding:late_bolus"]';
 
 /** Draw an exact clock window. The plot's minute→pixel map is linear
     (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
@@ -2350,7 +2383,7 @@ export const S77 = async (page) => {
     leave the Finding case file's standing navigation untouched. */
 // STORY:finding-evidence-routing:S78
 export const S78 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const rows = page.locator('#level .case-occurrence');
   ok(await rows.count() >= 2, 'S78 the vertical case roster exposes two keyboard targets');
@@ -2370,7 +2403,7 @@ export const S78 = async (page) => {
     selected roster row after the asynchronous case-file paint. */
 // STORY:finding-evidence-routing:S79
 export const S79 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const first = page.locator('#level .case-occurrence').first();
   await first.focus();
@@ -2398,7 +2431,7 @@ export const S80 = async (page) => {
 /** S81 · Choosing a rendered Occurrence keeps the reader's place on that row. */
 // STORY:finding-evidence-routing:S81
 export const S81 = async (page) => {
-  await page.click('#level .qrow[data-state="finding"]');
+  await page.click(LEVER_FINDING);
   await settle(page, 450);
   const rows = page.locator('#level .case-occurrence');
   ok(await rows.count() >= 2, 'S81 precondition: the case file renders at least two Occurrences');
@@ -2840,8 +2873,8 @@ export const issue81SlicedProjection = async (page) => {
   await settle(page, 150);                              // the level's 90 ms swap has landed
   await expandWatching(page);
   const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '7 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
-  is(wholeDay.queue.length, 8, 'S43 whole day renders all eight server rows');
+  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
+  is(wholeDay.queue.length, 12, 'S43 whole day renders the served rows including claimed members and Watching');
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
@@ -2903,7 +2936,8 @@ export const issue86FilteredRoot = async (page) => {
     await page.getByRole('menuitemcheckbox', { name: new RegExp(`^${label} `) }).click();
   }
   const lows = await state(page);
-  is(lows.queue.map((row) => row.title), ['Correction on active insulin'],
+  is(lows.queue.map((row) => row.title), ['Lows after correcting highs',
+    'Correction on active insulin', 'Lows after meals', 'Overnight lows with no insulin on board'],
     '#86 Sift contains only the server-published low Finding');
   const positions = lows.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
   ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
@@ -3065,7 +3099,7 @@ export const C41 = async (page) => {
 
 export const C42 = async (page) => {
   await openWholeDay(page);
-  const titles = await page.locator('#level .qrow[data-state="finding"] .lab').allTextContents();
+  const titles = await page.locator('#level .qrow[data-state="finding"][data-id^="finding:"] .lab').allTextContents();
   ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
   for (const title of titles) {
     await clickQueueRow(page, title);
@@ -3159,7 +3193,7 @@ export const C57 = async (page) => {
 export const C60 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  const [{ id, title }] = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => ({
+  const [{ id, title }] = await page.locator('#level .qrow[data-id^="finding:"]').evaluateAll((rows) => rows.map((row) => ({
     id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
   })));
   const control = page.locator('#level .q').getByRole('button', { name: title });
@@ -3877,12 +3911,100 @@ export const S144 = async (page) => {
   }
   await page.keyboard.press('Escape');
   await settle(page, 450);
-  const first = page.locator('#level .qrow.priced');
-  is(await first.count(), 1, 'S144 the meals-only sift paints one priced row');
-  is((await first.locator('.lab').innerText()).trim(), 'Carb undercount',
-    'S144 the promoted row keeps the served title');
-  is(await focalId(page), 'finding:carb_undercount',
-    'S144 the promoted row chart moves onto the stage');
+  const priced = page.locator('#level .qrow.priced');
+  is(await priced.count(), 2, 'S144 the meals-only sift retains both served priced rows');
+  is((await priced.first().locator('.lab').innerText()).trim(), 'Highs after meals',
+    'S144 the served Pattern remains ahead of its claimed member');
+  is(await focalId(page), 'pattern:highs_after_meals',
+    'S144 the served Pattern chart moves onto the stage');
+};
+
+// STORY:finding-evidence-routing:S145
+export const S145 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern');
+  ok(row, 'S145 the server publishes a Pattern row');
+  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+  is(await node.count(), 1, 'S145 the served Pattern has one rail row');
+  is((await node.locator('.lab').innerText()).trim(), row.title, 'S145 title is server-owned');
+  is((await node.locator('.tag').textContent()).trim(), '◇Pattern', 'S145 Pattern chip is identified');
+};
+
+// STORY:finding-evidence-routing:S146
+export const S146 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const pattern = rows.find((item) => item.kind === 'pattern' && item.claimed_by == null);
+  ok(pattern, 'S146 a non-collapsed Pattern is served');
+  const titles = await page.locator('#level .qrow .lab').allInnerTexts();
+  is(titles.indexOf(pattern.title), rows.map((item) => item.title).indexOf(pattern.title),
+    'S146 the rail retains server order');
+};
+
+// STORY:finding-evidence-routing:S147
+export const S147 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && item.pattern_chart);
+  ok(row, 'S147 a chartable Pattern is served');
+  is(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count(), 1,
+    'S147 the Pattern uses the shared mini host');
+  // Preparation and evidence arrival can replace the mini. Wait and read in
+  // one browser turn so a repaint cannot dispose the instance between them.
+  const legends = await (await page.waitForFunction((id) => {
+    const host = document.querySelector(`#level .qrow[data-id="${id}"] .mini`);
+    const chart = host && window.echarts.getInstanceByDom(host);
+    if (!host?.querySelector('canvas') || !chart) return false;
+    return chart.getOption().graphic.flatMap((group) =>
+      (group.elements || []).map((item) => item.style?.text).filter(Boolean));
+  }, row.id)).jsonValue();
+  ok(legends.some((label) => label.startsWith('RAN HIGH · ')),
+    'S147 the rail mini carries the sanctioned outcome legend');
+  ok(legends.some((label) => label.startsWith('TYPICAL · ')),
+    'S147 the rail mini labels its typical cohort');
+  await openAllCharts(page);
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${row.id}"]`).count(), 1,
+    'S147 the same Pattern reaches All charts');
+};
+
+// STORY:finding-evidence-routing:S148
+export const S148 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && item.pattern_chart);
+  ok(row, 'S148 a chartable Pattern is served');
+  await page.locator(`#level .qrow[data-id="${row.id}"]`).click();
+  await settle(page, 500);
+  is(await focalId(page), row.id, 'S148 drill retains the canonical Pattern subject');
+};
+
+// STORY:finding-evidence-routing:S149
+export const S149 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && !item.pattern_chart);
+  ok(row, 'S149 a chartless Pattern is served');
+  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+  is(await node.locator('.mini').count(), 0, 'S149 chartless Pattern has no empty chart well');
+  ok((await node.innerText()).includes(row.title), 'S149 chartless Pattern stays visible');
+};
+
+// STORY:finding-evidence-routing:S150
+export const S150 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const member = rows.find((item) => item.claimed_by);
+  ok(member, 'S150 a claimed member is served');
+  const node = page.locator(`#level .qrow[data-id="${member.id}"]`);
+  ok((await node.locator('xpath=..').getAttribute('class')).includes('claimed'),
+    'S150 claimed member is nested by the served flag');
+  is(await node.locator('.n').innerText(), '│', 'S150 nested member has the quiet non-rank tick');
+  const parent = rows.find((row) => row.id === member.claimed_by);
+  const family = PATTERN_COPY[parent.pattern.key].family;
+  const appearance = member.appearances.find((item) => item.family === family) || member.appearances[0];
+  is((await node.locator('.member-count').textContent()).trim(),
+    `· ${appearance.n} of ${appearance.m} ${appearance.noun}`,
+    'S150 the inline count names the member appearance in its Pattern family');
+  is(await node.evaluate((button) => button.parentElement.previousElementSibling
+    ?.querySelector('.qrow')?.dataset.id), parent.id,
+    'S150 no seam or tier caption separates the first claimed member from its Pattern');
 };
 
 /* ---- #353 · one denominator per rendered row --------------------------- */
@@ -4212,10 +4334,12 @@ export const S106 = async (page) => {
 // STORY:finding-evidence-routing:S107
 export const S107 = async (page) => {
   await openCanvas(page);
-  const held = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  await openAllCharts(page);
+  const held = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
   const heldFindingId = await held.getAttribute('data-chart-id');
   ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
   await held.locator('.tile-pin').click();
+  await page.keyboard.press('Escape');
   const preparations = [];
   const cases = [];
   const observe = (request) => {
@@ -4313,7 +4437,8 @@ export const S109 = retiredStory('S109');
 // STORY:finding-evidence-routing:S110
 export const S110 = async (page) => {
   await openCanvas(page);
-  const tile = page.locator('.evidence-tile[data-chart-id^="finding:"]').first();
+  await openAllCharts(page);
+  const tile = page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]');
   const id = await tile.getAttribute('data-chart-id');
   await tile.locator('.tile-body').click(); await settle(page, 500);
   /* RETIRED CLAUSE — S110's provenance-name half. The #drill-provenance
@@ -4335,7 +4460,8 @@ export const S110 = async (page) => {
 // STORY:finding-evidence-routing:S111
 export const S111 = async (page) => {
   await openCanvas(page);
-  await page.locator('.evidence-tile[data-chart-id^="finding:"]').first().locator('.tile-body').click();
+  await openAllCharts(page);
+  await page.locator('.evidence-tile[data-chart-id="finding:late_bolus"]').locator('.tile-body').click();
   await page.locator('#level .case-occurrence').first().click();
   await page.locator('#level .clear-trace').waitFor();
   const crumb = (await state(page)).crumb;
@@ -4458,8 +4584,11 @@ export const S118 = async (page) => {
     summary: node.querySelector('.sum')?.textContent.trim() || '',
     register: node.dataset.state || '',
     tier: node.dataset.tier || '',
+    claimed: node.parentElement.classList.contains('claimed'),
   })));
-  const ranks = rows.map((row) => row.rank).filter(Boolean).map(Number);
+  ok(rows.filter((row) => row.claimed).every((row) => row.rank === '│'),
+    'S118 claimed members carry the non-rank tick');
+  const ranks = rows.filter((row) => !row.claimed).map((row) => row.rank).filter(Boolean).map(Number);
   is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
     'S118 visible priced ranked rows carry consecutive numerals only');
   ok(rows.some((row) => row.summary),
@@ -4619,6 +4748,7 @@ export const S120 = async (page) => {
 // STORY:finding-evidence-routing:S121
 export const S121 = async (page) => {
   await openWholeDay(page);
+  await settle(page, 450);
   const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
   const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
     title: node.querySelector('.lab')?.textContent.trim() || '',
@@ -4875,7 +5005,7 @@ export const STORIES = [
   ['S10', S10, 'dense'], ['S11', S11, 'dense'], ['S12', S12, 'dense'],
   ['S13', S13, 'dense'], ['S14', S14, 'dense'], ['S15', S15, 'typical'],
   ['S16', S16, 'typical'], ['S17', S17, 'typical'], ['S18', S18, 'typical'],
-  ['S19', S19, 'drill'], ['S20', S20, 'drill'], ['S21', S21, 'drawn'],
+  ['S19', S19, 'drill'], ['S20', S20, 'drill-all'], ['S21', S21, 'drawn'],
   ['S22', S22, 'typical'], ['S23', S23, 'drawn'],
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
   ['S26', S26, 'dense'], ['S27', S27, 'typical'], ['S28', S28, 'typical'],
@@ -5044,6 +5174,9 @@ export const STORIES = [
   ['S142', S142, 'typical', { history: true }],
   ['S143', S143, 'typical', { history: true, viewport: { width: 760, height: 900 } }],
   ['S144', S144, 'typical', { history: true }],
+  ['S145', S145, 'typical', { history: true }], ['S146', S146, 'typical', { history: true }],
+  ['S147', S147, 'typical', { history: true }], ['S148', S148, 'typical', { history: true }],
+  ['S149', S149, 'typical', { history: true }], ['S150', S150, 'typical', { history: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

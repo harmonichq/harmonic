@@ -52,7 +52,7 @@ import {
 } from './finding-case-file-validation.js';
 // #735: level 1 is the server-owned findings queue, and the pane has a floor.
 import {
-  eventChartCoordinate, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
+  caseFileAlignment, MIN_ROW_MINI_WIDTH, renderFindingsQueue, queueMeta, queueRows,
 } from './diagnose-findings-queue.js';
 import { EVIDENCE_CAP, renderOccurrenceRoster } from './occurrence-roster.js';
 // #372: the Plan draft's own staging predicate, so this surface's staged
@@ -268,6 +268,8 @@ const winText = (w) => windowSpanText(w.range);
 const CFG_BY_STATE = {
   typical: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 1 },
   drill: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 2 },
+  // Whole-day clock case: the leading Pattern is unavailable in scoped queries.
+  'drill-all': { win: 'all', pool: 45, factorCap: 6, occCap: 40, level: 2 },
   occurrence: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 3 },
   // a custom window already drawn, so the whole re-scope is judgeable from a URL
   drawn: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 1, drawn: [135, 285] },
@@ -1440,9 +1442,13 @@ function boot(root, data, callbacks, signal) {
         host.textContent = '';
         const styles = getComputedStyle(host);
         const token = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
-        const option = queuePreviewOption(descriptor, sharedGlucoseRange, {
+        const preview = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === descriptor.kind)
+          ?.queuePreview || queuePreviewOption;
+        const option = preview(descriptor, sharedGlucoseRange, {
           text: token('--mk-text', '#f2ede2'), muted: token('--mk-muted', '#a49c90'),
           line: token('--wk-rule', '#3f3833'), signal: token('--in-range', '#86ad78'),
+          misses: token('--mk-accent', '#d08150'), body: token('--mk-body', '#c7bca8'),
+          warn: token('--mk-warn', '#e2be4c'),
           high: token('--high', '#e2be4c'), basal: token('--basal', '#a89a85'),
           excluded: token('--notindata', '#8d8579'),
           cohorts: {
@@ -1638,6 +1644,8 @@ function boot(root, data, callbacks, signal) {
         else markTileStale(descriptor.chartId, data.message);
         return;
       }
+      const validate = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === descriptor.kind)?.validateData;
+      if (validate && !validate(data)) throw new Error('Pattern evidence is unavailable.');
       descriptor.data = data;
       descriptor.state = descriptorHasData(descriptor) ? 'ok' : 'empty';
       runtimeNow().message = descriptor.state === 'empty' ? 'No evidence in this request.' : null;
@@ -1671,12 +1679,12 @@ function boot(root, data, callbacks, signal) {
     ...(occ ? { occ } : {}),
   });
   const matchingPreparation = assertMatchingFindingCasePreparation;
-  const eventChartIn = (source, frame) => eventChartCoordinate(
+  const eventChartIn = (source, frame) => caseFileAlignment(
     source?.rendered_rows?.find((row) => row.id === frame.rowId),
-  );
+  ) === 'event';
   const caseAlignmentIn = (source, frame) => {
     const row = source?.rendered_rows?.find((row) => row.id === frame.rowId);
-    return eventChartCoordinate(row);
+    return caseFileAlignment(row) === 'event';
   };
   const availableAlignment = (source, frame, requested) =>
     requested === 'event'
@@ -1941,7 +1949,7 @@ function boot(root, data, callbacks, signal) {
       chevron and simply does not move (the app always carries all three). */
   function drillFinding(row, { queueOrigin = false } = {}) {
     if (row.register === 'finding') {
-      const entryAlignment = eventChartCoordinate(row) ? 'event' : 'clock';
+      const entryAlignment = caseFileAlignment(row);
       const frame = { k: 'factor', rowId: row.id, title: row.title,
         caseFile: null, requestedAlignment: entryAlignment, selectedId: null,
         bandVerdict: null, loading: false,

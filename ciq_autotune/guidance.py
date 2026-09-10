@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from .analyzers.scenario.outcome_patterns import _GATES, build_outcome_patterns
 from .analyzers.scenario.levers import Lever
 from .watched_change import is_pinnable
 from .window_membership import _hhmm as _clock_label
@@ -31,11 +32,13 @@ _SETTING_SUBJECTS = frozenset({
 })
 _INVESTIGATION_SUBJECTS = frozenset({"investigation:uncaused_highs"})
 _HABIT_SUBJECTS = frozenset(f"habit:{lever.value}" for lever in Lever)
-_PREFERENCE_SUBJECTS = _SETTING_SUBJECTS | _HABIT_SUBJECTS | _INVESTIGATION_SUBJECTS
+_PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key in _GATES)
+_PREFERENCE_SUBJECTS = (_SETTING_SUBJECTS | _HABIT_SUBJECTS
+                        | _INVESTIGATION_SUBJECTS | _PATTERN_SUBJECTS)
 
 
 def is_preference_subject(subject):
-    """Whether ``subject`` belongs to ADR 383's closed stable identity set."""
+    """Whether ``subject`` is one of the closed setting, habit, or Pattern ids."""
     return subject in _PREFERENCE_SUBJECTS
 
 
@@ -183,7 +186,7 @@ def _citations(pattern, scenarios):
     return out, unavailable
 
 
-def candidates(analysis, exposures, scenarios):
+def _source_candidates(analysis, exposures, scenarios):
     out = []
     for subject, parameter, rows in (
             ("setting:basal_rate", "basal_rate", analysis.get("basal") or []),
@@ -231,10 +234,83 @@ def candidates(analysis, exposures, scenarios):
     return out
 
 
+def _pattern_candidate(pattern, sources):
+    """Adapt the outcome roster; its policy remains owned by its producer."""
+    chosen = next((member for member in pattern["members"]
+                   if member.get("admitted")
+                   and member.get("action") == pattern.get("action")), None)
+    action = ({"action_id": pattern["action"]} if pattern.get("action") else None)
+    readiness = pattern["readiness"]
+    habit_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
+                     if member["kind"] == "habit"]
+    setting_sources = [sources.get(member["subject"], {}) for member in pattern["members"]
+                       if member["kind"] == "setting"]
+    concerns = [*habit_sources, *setting_sources]
+    selected_source = sources.get(chosen["subject"]) if chosen is not None else None
+    if selected_source is not None:
+        if chosen["kind"] == "setting":
+            action = deepcopy(selected_source.get("action"))
+        elif chosen["kind"] == "habit":
+            # The roster's admission is authoritative.  A legacy source row may
+            # have applied the retired Priority threshold and withheld this action.
+            action = {"action_id": chosen["action"]}
+    unavailable = any(row.get("unavailable") for row in habit_sources)
+    return {
+        "subject": pattern["subject"], "kind": "pattern", "pattern_key": pattern["key"],
+        "title": pattern["title"], "units": None, "priority": pattern["settled_price"],
+        "action": action, "seriousness": pattern.get("seriousness"),
+        "members": deepcopy(pattern["members"]),
+        "evidence": deepcopy((selected_source or {}).get("evidence") or []),
+        "support": deepcopy((selected_source or {}).get("support") or {}),
+        "population": deepcopy((selected_source or {}).get("population") or []),
+        "occurrence_ids": list((selected_source or {}).get("occurrence_ids") or []),
+        "source_window": deepcopy((selected_source or {}).get("source_window")),
+        "priority_inputs": {"member_set_fingerprint": pattern["member_set_fingerprint"]},
+        "unavailable": unavailable,
+        "unknowns": (["Required owner-produced guidance inputs are unavailable."] if unavailable else
+                     [] if action else ["No supported action was admitted; the source evidence remains inspectable."]),
+        "readiness": {**readiness, "reason": (
+            "Focus is ready from the backend opportunity count."
+            if readiness["verdict"] == "ready" else
+            f"Focus is withheld: {readiness['count']} opportunities, gate {readiness['gate']}."
+        )},
+        "admission_route": pattern["admission_route"], "collapse": pattern["collapse"],
+        "chosen_member": chosen,
+        "has_concern": any(concerns),
+    }
+
+
+def candidates(analysis, exposures, scenarios):
+    """Return setting rows plus the one deterministic backend Pattern roster."""
+    source = _source_candidates(analysis, exposures, scenarios)
+    roster = build_outcome_patterns(analysis, exposures, scenarios)
+    # Settings remain inspectable and independently stageable. Only roster-owned
+    # habits move to Pattern subjects; other legacy behavioral rows retain their
+    # existing public identity until a Pattern owns them.
+    by_subject = {row["subject"]: row for row in source}
+    owned = {member["subject"] for pattern in roster for member in pattern["members"]
+             if member["kind"] == "habit"}
+    return [row for row in source if row["kind"] != "habit" or row["subject"] not in owned] + [
+        _pattern_candidate(pattern, by_subject) for pattern in roster
+    ]
+
+
 def _state(candidate):
     if candidate["kind"] == "setting":
         return {"kind": "setting", "action": _canonical_actions(candidate.get("action") or []),
                 "seriousness": candidate.get("seriousness") or []}
+    if candidate["kind"] == "pattern":
+        chosen = candidate.get("chosen_member") or {}
+        seriousness = candidate.get("seriousness")
+        if isinstance(seriousness, list):
+            seriousness = max(
+                (row.get("seriousness") for row in seriousness
+                 if isinstance(row, dict)),
+                key=lambda value: _SEVERITY.get(value, -1), default=None,
+            )
+        return {"kind": "pattern", "action": chosen.get("action"),
+                "seriousness": seriousness,
+                "member_set_fingerprint": candidate["priority_inputs"]["member_set_fingerprint"]}
     return {"kind": candidate["kind"], "action": candidate.get("action"), "seriousness": candidate.get("seriousness")}
 
 
@@ -303,9 +379,12 @@ def preference_status(candidate, preference):
     if current["kind"] == "setting":
         reason = _setting_change(saved.get("action") or [], current["action"]) or _new_harm(saved.get("seriousness") or [], current["seriousness"])
     else:
+        seriousness, saved_seriousness = current.get("seriousness"), saved.get("seriousness")
         reason = ("A recommended action is now available." if not saved.get("action") and current["action"]
                   else "The recommended action changed." if saved.get("action") and current["action"] and saved["action"] != current["action"]
-                  else "The owner-reported seriousness increased." if _SEVERITY.get(current.get("seriousness"), -1) > _SEVERITY.get(saved.get("seriousness"), -1) else None)
+                  else "The owner-reported seriousness increased." if isinstance(seriousness, str) and isinstance(saved_seriousness, str) and _SEVERITY.get(seriousness, -1) > _SEVERITY.get(saved_seriousness, -1) else None)
+        if current["kind"] == "pattern" and saved.get("member_set_fingerprint") != current.get("member_set_fingerprint"):
+            reason = "The Pattern member set changed."
     return {"set_aside": reason is None, "return_reason": reason}
 
 
@@ -356,11 +435,14 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
                                                 else None)},
                "decision": {key: row[key] for key in ("decided_at", "reason", "comparison_version", "state")}}
               for row in preferences if row["subject"] not in known]
-    available = sorted((row for row in all_candidates
+    selection_rows = [row for row in all_candidates if row["kind"] != "setting"
+                      and (row["kind"] != "pattern" or row.get("action") is not None
+                           or row.get("unavailable") or row.get("has_concern"))]
+    available = sorted((row for row in selection_rows
                         if row["admitted"] and isinstance(row.get("priority"), int)
                         and not row["preference"]["set_aside"]),
                        key=lambda row: (-row["priority"], row["subject"]))
-    evidenced = sorted((row for row in all_candidates if not row["unavailable"]
+    evidenced = sorted((row for row in selection_rows if not row["unavailable"]
                         and not row["preference"]["set_aside"]),
                        key=lambda row: (row.get("priority") is None,
                                         -(row.get("priority") or 0), row["subject"]))
@@ -387,7 +469,7 @@ def build_guidance(*, analysis, exposures, scenarios, preferences=(), active_wat
     else:
         selected, disposition = None, "quiet"
         admission_reason = ("All current concerns are set aside."
-                            if all_candidates else "No current concern.")
+                            if selection_rows else "No current concern.")
         ordering_reason = None
     return {"schema": SCHEMA, "analysis_generation": generation, "window": window, "active_watch": active_watch,
             "selected": selected, "disposition": disposition,

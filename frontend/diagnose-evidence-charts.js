@@ -5,7 +5,9 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
-import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
+import { validFindingCaseFile } from './finding-case-file-validation.js';
+import { PATTERN_COPY } from './diagnose-findings-queue.js';
+import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -141,6 +143,63 @@ function thumbnail(name, count, series = []) {
     ],
     series,
   };
+}
+
+const validPatternEvidence = (data) => validFindingCaseFile(data)
+  && data.projection.alignment === 'event'
+  && Object.hasOwn(PATTERN_COPY, data.finding.lever);
+
+const patternMiniLabel = (data) => {
+  const key = data?.finding?.lever;
+  const phrase = PATTERN_COPY[key].outcome.toUpperCase();
+  return `${phrase} · ${data?.summary?.claimed ?? 0}`;
+};
+
+/* Pattern rail furniture wraps the shipped response preview. The case file
+   still supplies every point; this changes only the sanctioned inks and labels. */
+function patternQueuePreview(descriptor, range, colors) {
+  const data = descriptor.data;
+  if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
+  const option = queuePreviewOption(descriptor, range, {
+    ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
+  });
+  option.graphic = [
+    { type: 'text', left: 8, top: 5, silent: true,
+      style: { text: patternMiniLabel(data), fill: colors.misses, font: `600 9px ${FONT}` } },
+    { type: 'text', right: 8, top: 5, silent: true,
+      style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
+        font: `600 9px ${FONT}`, align: 'right' } },
+  ];
+  // Only the typical cohort carries the interquartile band in this treatment.
+  option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
+  for (const series of option.series) {
+    if (series.id.startsWith('queue:event:comparison:band:')) {
+      const paint = series.renderItem;
+      series.renderItem = (params, api) => {
+        const mark = paint(params, api);
+        if (mark.style.fill) mark.style.fill = colors.muted;
+        if (mark.style.stroke) mark.style.stroke = colors.muted;
+        return mark;
+      };
+    }
+    if (!series.id.endsWith(':median')) continue;
+    series.symbol = 'none';
+    series.showSymbol = false;
+    series.lineStyle.type = 'solid';
+  }
+  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
+  const marker = anchor.renderItem;
+  const label = PATTERN_COPY[data.finding.lever].noun === 'meals' ? 'MEAL' : 'LOW';
+  anchor.renderItem = (params, api) => ({ type: 'group', children: [
+    marker(params, api),
+    { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
+      style: { text: label, fill: colors.text, font: `600 9px ${FONT}` } },
+  ] });
+  option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
+    markLine: { silent: true, symbol: 'none', label: { show: false },
+      lineStyle: { color: colors.warn, width: 1, type: 'dashed' },
+      data: [{ yAxis: 70 }, { yAxis: 180 }] } });
+  return option;
 }
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the
@@ -775,7 +834,7 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
+function carbRatioOption(mode, { data, range, mini = false, window, surface = null } = {}) {
   const colors = chartColors();
   const block = data?.block || {};
   const runs = data?.runs || [];
@@ -829,7 +888,12 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
       ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
-      ...axis(colors, 'vertical', mini) },
+      ...axis(colors, 'vertical', mini),
+      // Clipped endpoint intervals can be much shorter than the interior ticks.
+      // Keep the shared extent; a narrow I:C plot labels its interior ticks.
+      ...(surface?.clientWidth <= 480 ? { axisLabel: {
+        ...axis(colors, 'vertical', mini).axisLabel, showMinLabel: false, showMaxLabel: false,
+      } } : {}) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
         markLine: { symbol: 'none', silent: true,
@@ -977,6 +1041,36 @@ const entries = [
       alignment: 'event',
       factor: row.event_chart.lever,
       view: row.appearances?.[0]?.family ?? null,
+    }),
+    glucoseValues: eventComparisonGlucoseValues,
+  },
+  {
+    kind: 'pattern-case-file',
+    validateData: validPatternEvidence,
+    queuePreview: patternQueuePreview,
+    name: 'Pattern response',
+    modes: null,
+    meta: () => 'responses aligned to each event',
+    nameFor: (row) => ({
+      title: row.title || 'Pattern response',
+      meta: `${row.pattern?.n ?? 0} opportunities aligned to each event`,
+    }),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
+    thumbnail: (data) => thumbnail(patternMiniLabel(data),
+      `TYPICAL · ${data?.summary?.denominator ?? 0}`,
+      [{ type: 'line', symbol: 'none', connectNulls: true,
+        data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
+        lineStyle: { color: chartColors().signal, width: 1 } }]),
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    matches: (row) => Boolean(row?.pattern_chart)
+      && Object.hasOwn(PATTERN_COPY, row.pattern_chart.key),
+    coordinates: (row, findings) => ({
+      projection_id: findings.projection_id,
+      finding_id: row.id,
+      alignment: 'event',
+      factor: row.pattern_chart.key,
+      view: null,
     }),
     glucoseValues: eventComparisonGlucoseValues,
   },

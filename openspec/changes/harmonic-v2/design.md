@@ -1923,6 +1923,20 @@ changes no policy. The Diagnose collapse (2.5.5) is a further lifecycle-gated
 revision amending the desktop lock's navigation terms and is filed when the
 design child is admitted.
 
+### Why a fifth native child under #390
+
+The Diagnose collapse (task 2.5.5) is filed as its own child rather than folded
+into #395 or #389 because it is a different kind of change with a different
+lifecycle: it amends the v2 desktop lock's navigation terms (`HV2-09`,
+`HV2-10`, `HV2-11`), ADR 348's three-destination navigation and the frozen
+behavior ledger so that Overview and Explore collapse into Diagnose carrying the
+shipped rail as-is. #395 could not carry it (a `revise` order cannot amend a
+lock manifest; that is `resettle`), and #389 cannot carry it either: #389's
+remaining chunks implement the collapsed navigation and are gated on this
+ruling landing first, so the ruling must be a separate, earlier merge. It
+changes no served data and no shipped rail behaviour; it is the last
+planning-authority change before #389 resumes.
+
 ### Effect on the desktop lock
 
 `HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus

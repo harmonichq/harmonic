@@ -33,7 +33,8 @@ export const HELD_PREFIX = 'no direction asserted — ';
    never a hue a chart mark spends). */
 export const FLAVOR = {
   setting: { word: 'Setting', glyph: '⚙' },
-  habit: { word: 'Habit', glyph: '◈' },
+  habit: { word: 'Cause', glyph: '◈' },
+  pattern: { word: 'Pattern', glyph: '◇' },
   watching: { word: 'Watching', glyph: '◌' },
 };
 
@@ -111,6 +112,15 @@ function appearanceParts(row) {
   return (row.appearances || []).map((a) => ({ count: `${a.n} of ${a.m}`, noun: a.noun }));
 }
 
+/* The Pattern producer owns both the numerator and denominator.  Its headline
+   is the only supplied reader-facing recurrence sentence, so this trims only
+   the repeated title before seating it in the rail's denominator slot. */
+function patternPart(row) {
+  const headline = typeof row.headline === 'string' ? row.headline : '';
+  const prefix = `${row.title} in `;
+  return headline.startsWith(prefix) ? headline.slice(prefix.length) : headline;
+}
+
 /**
  * A parameter row's own support denominator, in its own noun and naming its own run
  * (term 16). `nights of steady data` belongs to basal alone — I:C names meal runs, ISF names
@@ -185,7 +195,7 @@ export function queueRows(projection, selected = null) {
     const shown = !hidden && !collapsed;
     const ranked = row.register === 'assert' || row.register === 'finding';
     const unpriced = ranked && row.priority == null;
-    const pricedRanked = shown && ranked && !unpriced;
+    const pricedRanked = shown && ranked && !unpriced && !row.claimed_by;
     const seam = shown && unpriced && pricedSeen && !seamOpened;
     if (seam) seamOpened = true;
     const weight = collapsed ? 'collapsed'
@@ -203,7 +213,7 @@ export function queueRows(projection, selected = null) {
        counter walks the server's own order over the rows a reader can see, so a
        sift renumbers exactly as it re-positions. Unpriced tail and Watching
        rows carry no numeral — they hold no rank to state. */
-    const rank = shown && ranked && !unpriced ? ++rankCounter : null;
+    const rank = shown && ranked && !unpriced && !row.claimed_by ? ++rankCounter : null;
     return {
       rank,
       /* Slice 4 — the two-line evidence summary is the projection's own
@@ -216,7 +226,10 @@ export function queueRows(projection, selected = null) {
       register: row.register,
       title: row.title,
       flavor: row.register === 'history' ? 'watching'
-        : row.kind === 'setting' ? 'setting' : 'habit',
+        : row.kind === 'pattern' ? 'pattern'
+          : row.kind === 'setting' ? 'setting' : 'habit',
+      pattern: row.kind === 'pattern',
+      claimedBy: row.claimed_by || null,
       tier: row.tier,
       weight,
       caption,
@@ -235,6 +248,10 @@ export function queueRows(projection, selected = null) {
 }
 
 function detailFor(row) {
+  if (row.kind === 'pattern') {
+    if (row.pattern?.count_status) return { kind: 'pattern-status', text: 'counts under review' };
+    return { kind: 'pattern', text: patternPart(row) };
+  }
   if (row.register === 'finding') return { kind: 'appearances', parts: appearanceParts(row) };
   if (row.register === 'assert') return assertDetail(row);
   if (row.register === 'history') {
@@ -268,6 +285,11 @@ function paintDetail(node, detail) {
   }
   if (detail.kind === 'reason') {
     return add(node, 'why', detail.text);
+  }
+  if (detail.kind === 'pattern' || detail.kind === 'pattern-status') {
+    const den = add(node, `den ${detail.kind}`);
+    den.textContent = detail.text;
+    return den;
   }
   if (detail.kind === 'history') {
     const den = add(node, 'den history-detail');
@@ -347,7 +369,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
        legitimately hidden — and the button keeps its own role. The item is also
        the flex child of `.q`, so the tail's spacing rules address it. */
     const item = document.createElement('div');
-    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}`;
+    item.className = `qitem${row.weight === 'tail' ? ' tail' : ''}${row.claimedBy ? ' claimed' : ''}`;
     item.setAttribute('role', 'listitem');
     const node = document.createElement('button');
     node.type = 'button';
@@ -363,7 +385,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
     // changes use the caption inserted immediately before their first row.
     if (row.rank === 1 && TIER[row.tier]) add(node, 'tier', TIER[row.tier]);
     add(node, 'lab', row.title);
-    if (row.weight === 'tail') {
+    if (row.weight === 'tail' && row.detail?.kind !== 'pattern-status') {
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));
       list.append(item);

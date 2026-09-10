@@ -92,16 +92,17 @@ test('I:C block evidence turns only a stale-generation 409 into a typed stale re
   assert.equal(calls, 1, 'the transport reports staleness without retrying');
 });
 
-test('the registry declares four stateless chart kinds and their request coordinates', () => {
+test('the registry declares five stateless chart kinds and their request coordinates', () => {
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ kind }) => kind), [
-    'basal', 'isf', 'carb-ratio', 'event-comparison',
+    'basal', 'isf', 'carb-ratio', 'event-comparison', 'pattern-case-file',
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ coordinateSchema }) => coordinateSchema), [
     ['slot'], [], ['block_id', 'analysis_generation'],
     ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
   ]);
   assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.map(({ modes }) => modes), [
-    null, ['event', 'clock'], ['event', 'clock'], null,
+    null, ['event', 'clock'], ['event', 'clock'], null, null,
   ]);
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.matches === 'function'));
   assert.ok(DIAGNOSE_EVIDENCE_CHARTS.every((entry) => typeof entry.coordinates === 'function'));
@@ -119,6 +120,9 @@ test('every entry produces exactly the coordinates it declares', () => {
     'event-comparison': { id: 'finding:missed_meal', title: 'Missed meal',
       appearances: [{ family: 'highs', noun: 'highs' }],
       event_chart: { lever: 'missed_meal', window: { scoped: false } } },
+    'pattern-case-file': { id: 'pattern:highs_after_meals', title: 'Highs after meals',
+      pattern: { key: 'highs_after_meals', n: 3 },
+      pattern_chart: { key: 'highs_after_meals', window: { scoped: false } } },
   };
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     const row = rows[entry.kind];

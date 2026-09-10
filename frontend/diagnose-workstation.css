@@ -1514,6 +1514,7 @@
 .dw .qrow .tag .gly { margin-right: 3px; letter-spacing: 0; font-size: 1.1em; }
 .dw .qrow .tag.setting { color: var(--primary); }
 .dw .qrow .tag.habit { color: var(--mk-secondary); }
+.dw .qrow .tag.pattern { color: var(--mk-secondary); }
 .dw .qrow .tag.watching { color: var(--mk-muted); }
 .dw .qrow[data-state="history"] { --tag-col: 76px; }
 .dw .qrow .go { grid-column: 4; grid-row: 1; color: var(--ck-accent); font-size: 12px; }
@@ -1647,6 +1648,17 @@
    the Setting/Habit read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+.dw .qrow[data-tier="noted"] .tag.pattern { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
+
+/* Claimed Cause rows keep their own button and drill, while the served adjacent
+   Pattern owns their rank and count. */
+.dw .qitem.claimed { margin-top: calc(2px - var(--q-gap)); }
+.dw .qitem.claimed .qrow { min-height: 30px; padding-block: 3px; }
+.dw .qitem.claimed .qrow .n { color: var(--high); }
+.dw .qitem.claimed .qrow .lab { font-size: var(--ck-data); font-weight: 500; }
+.dw .qitem.claimed .qrow .tag { display: none; }
+.dw .qitem.claimed .qrow .go { color: var(--high); }
+.dw .qitem.claimed .qrow .den { font-size: var(--ck-micro); }
 .dw .qrow[data-tier="noted"] .tag.watching { color: var(--mk-muted); }
 
 /* ONE DEMOTED REGISTER for the whole queue. A row is demoted for exactly three

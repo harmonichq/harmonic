@@ -980,6 +980,33 @@ const entries = [
     }),
     glucoseValues: eventComparisonGlucoseValues,
   },
+  {
+    kind: 'pattern-case-file',
+    name: 'Pattern response',
+    modes: null,
+    meta: () => 'responses aligned to each event',
+    nameFor: (row) => ({
+      title: row.title || 'Pattern response',
+      meta: `${row.pattern?.n ?? 0} opportunities aligned to each event`,
+    }),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
+    thumbnail: (data, title) => thumbnail((title || 'Pattern response').toUpperCase(),
+      data?.summary?.denominator ?? 0,
+      [{ type: 'line', symbol: 'none', connectNulls: true,
+        data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
+        lineStyle: { color: chartColors().signal, width: 1 } }]),
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    matches: (row) => Boolean(row?.pattern_chart),
+    coordinates: (row, findings) => ({
+      projection_id: findings.projection_id,
+      finding_id: row.id,
+      alignment: 'event',
+      factor: row.pattern_chart.key,
+      view: null,
+    }),
+    glucoseValues: eventComparisonGlucoseValues,
+  },
 ];
 
 export const DIAGNOSE_EVIDENCE_CHARTS = Object.freeze(entries.map((entry) => Object.freeze({

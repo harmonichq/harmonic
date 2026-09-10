@@ -30,6 +30,7 @@ import {
   populateFindingCasePreparation,
   populateFindingsProjectionInput,
 } from './browser-fixture-population.js';
+import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
 import { MIN_ROW_MINI_WIDTH, TIER } from './diagnose-findings-queue.js';
 import { GRID } from './diagnose-workstation-chart.js';
 // ADR 94: a router-owned page path IS the SPA document. Reload stories re-request
@@ -741,10 +742,15 @@ export async function openApp(browser, {
     }
     if (path === '/api/diagnose/finding-case-file') {
       caseRequests += 1;
-      const finding = caseFiles.cases[url.searchParams.get('finding_id')];
+      const findingId = url.searchParams.get('finding_id');
+      const finding = caseFiles.cases[findingId];
       const alignment = url.searchParams.get('alignment');
       const occ = url.searchParams.get('occ');
-      const body = !finding
+      const pattern = findingId?.startsWith('pattern:')
+        ? projectPatternCaseFile(capture, { patternChart: { key: findingId.slice('pattern:'.length) },
+          projectionId: url.searchParams.get('projection_id') }) : null;
+      const body = pattern ? independent(pattern)
+        : !finding
         ? { detail: { code: 'finding_unavailable', message: 'Finding unavailable.' } }
         : !occ ? independent(finding[alignment])
           : independent(finding[`selected_${alignment}`][occ]
@@ -758,7 +764,7 @@ export async function openApp(browser, {
         return route.fulfill({ status: response.status || 200, contentType: 'application/json',
           body: JSON.stringify(response.body) });
       }
-      return route.fulfill({ status: finding ? 200 : 404, contentType: 'application/json',
+      return route.fulfill({ status: finding || pattern ? 200 : 404, contentType: 'application/json',
         body: JSON.stringify(body) });
     }
     const evidenceBodies = {
@@ -1745,7 +1751,7 @@ export const S24 = async (page) => {
   // term 36: a fixed right-aligned tag column at ONE constant x on every row
   is(new Set(open.queue.map((r) => r.tagX)).size, 1,
     `S24 the tag column sits at one constant x (${JSON.stringify(open.queue.map((r) => r.tagX))})`);
-  ok(open.queue.every((r) => /^[⚙◈](Setting|Habit)$/.test(r.tag || '')),
+  ok(open.queue.every((r) => /^[⚙◈](Setting|Cause)$/.test(r.tag || '')),
     `S24 every row wears a glyph+word flavor tag (${JSON.stringify(open.queue.map((r) => r.tag))})`);
 
   // term 37 — a PRESET re-scopes the queue in place; the crumb stays at its root
@@ -4107,6 +4113,72 @@ export const S144 = async (page) => {
     'S144 the promoted row chart moves onto the stage');
 };
 
+// STORY:finding-evidence-routing:S145
+export const S145 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern');
+  ok(row, 'S145 the server publishes a Pattern row');
+  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+  is(await node.count(), 1, 'S145 the served Pattern has one rail row');
+  is((await node.locator('.lab').innerText()).trim(), row.title, 'S145 title is server-owned');
+  is((await node.locator('.tag').innerText()).trim(), '◇PATTERN', 'S145 Pattern chip is identified');
+};
+
+// STORY:finding-evidence-routing:S146
+export const S146 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const pattern = rows.find((item) => item.kind === 'pattern' && item.claimed_by == null);
+  ok(pattern, 'S146 a non-collapsed Pattern is served');
+  const titles = await page.locator('#level .qrow .lab').allInnerTexts();
+  is(titles.indexOf(pattern.title), rows.map((item) => item.title).indexOf(pattern.title),
+    'S146 the rail retains server order');
+};
+
+// STORY:finding-evidence-routing:S147
+export const S147 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && item.pattern_chart);
+  ok(row, 'S147 a chartable Pattern is served');
+  is(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count(), 1,
+    'S147 the Pattern uses the shared mini host');
+  await openAllCharts(page);
+  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${row.id}"]`).count(), 1,
+    'S147 the same Pattern reaches All charts');
+};
+
+// STORY:finding-evidence-routing:S148
+export const S148 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && item.pattern_chart);
+  ok(row, 'S148 a chartable Pattern is served');
+  await page.locator(`#level .qrow[data-id="${row.id}"]`).click();
+  await settle(page, 500);
+  is(await focalId(page), row.id, 'S148 drill retains the canonical Pattern subject');
+};
+
+// STORY:finding-evidence-routing:S149
+export const S149 = async (page) => {
+  await openWholeDay(page);
+  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && !item.pattern_chart);
+  ok(row, 'S149 a chartless Pattern is served');
+  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+  is(await node.locator('.mini').count(), 0, 'S149 chartless Pattern has no empty chart well');
+  ok((await node.innerText()).includes(row.title), 'S149 chartless Pattern stays visible');
+};
+
+// STORY:finding-evidence-routing:S150
+export const S150 = async (page) => {
+  await openWholeDay(page);
+  const rows = await servedRows(page, null);
+  const member = rows.find((item) => item.claimed_by);
+  ok(member, 'S150 a claimed member is served');
+  const node = page.locator(`#level .qrow[data-id="${member.id}"]`);
+  ok((await node.locator('xpath=..').getAttribute('class')).includes('claimed'),
+    'S150 claimed member is nested by the served flag');
+  is(await node.locator('.n').innerText(), '', 'S150 nested member has no ranked numeral');
+};
+
 /* ---- #353 · one denominator per rendered row --------------------------- */
 
 /* C62 · A finding claimed in two families keeps both on the row the rail and
@@ -5296,6 +5368,9 @@ export const STORIES = [
   ['S142', S142, 'typical', { history: true }],
   ['S143', S143, 'typical', { history: true, viewport: { width: 760, height: 900 } }],
   ['S144', S144, 'typical', { history: true }],
+  ['S145', S145, 'typical', { history: true }], ['S146', S146, 'typical', { history: true }],
+  ['S147', S147, 'typical', { history: true }], ['S148', S148, 'typical', { history: true }],
+  ['S149', S149, 'typical', { history: true }], ['S150', S150, 'typical', { history: true }],
   ['C41', C41, 'typical', { caseScenario: {
     preparation: generatedFindingPose('finding:meal_over_delivery'),
   } }], ['C42', C42, 'typical'],

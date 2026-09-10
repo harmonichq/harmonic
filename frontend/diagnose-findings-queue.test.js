@@ -119,11 +119,11 @@ test('term 41 · a scoped EMPTY window says only how much history it looked at',
   assert.equal(EMPTY_LINE, 'No pattern or setting asserts a direction in this window.');
 });
 
-test('term 34 · settings and habits interleave in one list, ordered by the server', () => {
+test('#395 · settings, Causes, and Patterns interleave in server order', () => {
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
-    ['setting', 'habit', 'habit', 'habit', 'setting', 'setting', 'habit', 'habit',
-      'habit', 'habit', 'habit', 'watching']);
+    ['setting', 'pattern', 'habit', 'pattern', 'setting', 'setting', 'pattern', 'habit',
+      'pattern', 'habit', 'habit', 'watching']);
   // the order is the projection's, untouched
   assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
 });
@@ -199,8 +199,8 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     'no row sits in the list itself, carrying a role of its own');
   const items = list.children.filter((child) => child.className.startsWith('qitem'));
   assert.deepEqual(items.map((item) => item.className),
-    ['qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
-      'qitem tail', 'qitem tail', 'qitem tail'],
+    ['qitem', 'qitem', 'qitem claimed', 'qitem', 'qitem', 'qitem', 'qitem', 'qitem',
+      'qitem tail', 'qitem tail claimed', 'qitem tail claimed'],
     'each shown row is enclosed, and a tail item is marked for the tail spacing');
   for (const item of items) {
     assert.equal(item.attributes.role, 'listitem');
@@ -413,7 +413,8 @@ test('a sift computes its priced seam over only visible rows', () => {
 test('slice 4 · the rank numeral spells visible position among priced ranked rows only', () => {
   const rows = queueRows(W.global);
   const priced = rows.filter((row) => !row.hidden && !row.collapsed
-    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null);
+    && ['assert', 'finding'].includes(row.register) && row.raw.priority != null
+    && !row.claimedBy);
   assert.ok(priced.length > 1);
   assert.deepEqual(priced.map((row) => row.rank), priced.map((_, index) => index + 1),
     'numerals are 1..N in the server’s own order — no re-ranking');

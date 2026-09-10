@@ -373,7 +373,7 @@ _Avoid_: cause, factor, root cause, knob.
 
 **Lever flavor**:
 Whether a lever's recommended fix is a **tuning** change (edit a pump-programmable
-value — basal rate, ISF, I:C, target) or a **behavioral** change (change a habit —
+value — basal rate, ISF, I:C, target) or a **behavioral** change (change a Cause —
 pre-bolus timing, stop chasing highs with manual corrections, stop over-treating
 lows). Flavor follows the *fix the evidence supports*, not the detector or the
 parameter a finding surfaced under: "meals start high" surfaces under I:C yet is a

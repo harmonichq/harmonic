@@ -11,8 +11,8 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
-**169 issued executable IDs:** S01–S144, C41–C62, and D1–D3
-**Active executable IDs:** S01–S116, S118–S144, C41–C62, and D1–D3
+**175 issued executable IDs:** S01–S150, C41–C62, and D1–D3
+**Active executable IDs:** S01–S116, S118–S150, C41–C62, and D1–D3
 **Retired executable IDs:** S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
@@ -66,15 +66,11 @@ them rather than rediscovering them:
   withheld ones. This is a gap, not a retirement: the rail behaves exactly as
   every active story says.
 
-Stories the #395 revision is expected to add, reserved as S145–S150 and issued
-only when the revision freezes them with replay functions: a served pattern
-renders as one identified row from server-owned fields (S145); pattern rows keep
-server order with no browser-side rank or tier (S146); a pattern row's mini and
-its All charts cell read one server-owned evidence payload through the shared
-chart registry (S147); activating a pattern row routes by `pattern:<key>`, never
-by title (S148); a withheld or chartless pattern renders an explicit state and
-never invents a chart (S149); pattern rows coexist with setting, finding, tail
-and Watching rows without a second queue geometry or drill mechanism (S150).
+The #395 revision issues S145–S150: a served Pattern renders as one identified
+row from server-owned fields; Pattern order remains server order; its mini and
+All charts cell use its case-file payload; drill retains `pattern:<key>`;
+chartless states make no empty well; and a served claimed member nests without a
+second rank. S150 also keeps nested members out of the rank numerals.
 
 ## Amendment — 2026-09-04, issue #341
 

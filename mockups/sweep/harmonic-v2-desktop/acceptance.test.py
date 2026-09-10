@@ -136,7 +136,7 @@ while True:
 class ReplayWrapperTest(unittest.TestCase):
     ids = [f"S{i}" for i in range(1, 113)] + [f"R{i}" for i in range(1, 19)]
 
-    def replay(self, shard=None, output=None):
+    def replay(self, shard=None, output=None, expected_timeout=None):
         from contextlib import nullcontext
         testcase = self
         with tempfile.TemporaryDirectory() as directory:
@@ -144,6 +144,9 @@ class ReplayWrapperTest(unittest.TestCase):
                 out = Path(directory)
                 def command(self, name, args, *, env, timeout):
                     testcase.assertEqual(name, "complete-replay")
+                    if expected_timeout is not None:
+                        testcase.assertEqual(timeout, expected_timeout,
+                            "the replay process ceiling stated in ACCEPTANCE.md")
                     testcase.assertEqual(args, ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"])
                     testcase.assertNotIn("STORY_CASES", env)
                     captures = env["CAPTURE_ONLY"].split(",")
@@ -168,6 +171,10 @@ class ReplayWrapperTest(unittest.TestCase):
 
     def test_complete_replay_ignores_inherited_selection(self):
         self.assertEqual(self.replay(), self.ids)
+
+    def test_wrapper_applies_both_ceilings_stated_in_acceptance(self):
+        self.replay(expected_timeout=3000)
+        self.replay((1, 1), expected_timeout=900)
 
     def test_shards_concatenate_to_the_complete_registry_without_overlap(self):
         # Read the CI shard inventory; this test does not own a second list.
@@ -231,11 +238,28 @@ class CaseCacheTest(unittest.TestCase):
             reconciles = [call for call in calls if any("reconcile_ingested_follow_up" in arg for arg in call)]
             cached = [call for call in reconciles if Path(call[-1]).name == "generated-basal-lower.sqlite"]
             self.assertEqual(len(cached), 1, "warm copies must never reconcile again")
-            self.assertEqual(len(reconciles), 4, "one cached preparation plus three old-path measurements")
+            self.assertEqual(len(reconciles), 1, "the check must not benchmark the removed path")
             self.assertFalse(any("serve" in call for call in calls))
-            rows = json.loads((run.out / "case-times.json").read_text())
-            self.assertEqual(len(rows), 3)
-            self.assertTrue(all(row["before_ms"] > 0 and row["after_ms"] > 0 for row in rows))
+            self.assertFalse((run.out / "case-times.json").exists())
+
+    def test_empty_explicit_cases_and_empty_default_registry_fail_closed(self):
+        for cases in [[], None]:
+            with self.subTest(cases=cases), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                run = acceptance.Run(root / "out")
+                # Import an empty registry through the same Node driver; no
+                # generator or server can turn zero checks into apparent success.
+                (root / "frontend").mkdir()
+                (root / "frontend/harmonic-v2-desktop-behavior.replay.mjs").write_text(
+                    "export const REGISTRY = [];\n")
+                (root / "frontend-v2").mkdir()
+                (root / "frontend-v2/replay-cases.mjs").write_text(
+                    "export const storyCase = id => id;\n"
+                    "export function createCaseServer() { throw new Error('server must not start'); }\n")
+                with patch.object(acceptance, "REPO", root), \
+                     self.assertRaisesRegex(RuntimeError, "case-cache failed"):
+                    acceptance.case_cache(run, check=True, cases=cases)
+                self.assertIn("no cases selected", (run.out / "case-cache.log").read_text())
 
 
 class InventoryProofTest(unittest.TestCase):

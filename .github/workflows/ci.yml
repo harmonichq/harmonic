@@ -35,7 +35,7 @@ jobs:
         run: uv run python -m pytest
       - name: Check the runtime acceptance probe rejects incomplete proofs
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
-      - name: Check generated case caching and measure copy cost
+      - name: Check generated case caching
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs

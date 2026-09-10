@@ -117,8 +117,7 @@ deferred entries and incomplete summaries fail. The wrapper discards inherited
 `ONLY` and `STORY_CASES` before applying its own selection.
 
 CI's matrix in [ci.yml](../../../.github/workflows/ci.yml) owns the shard list.
-Each size runs four shards, with 32 or 33 entries each. Every artifact has a
-unique size/shard name and retains `selection.json`, `inputs.json`, command
+Every artifact has a unique size/shard name and retains `selection.json`, `inputs.json`, command
 records, raw logs and captures. Concatenating `complete-replay.log` files in
 numeric shard order preserves the complete registry's story order. Keep all
 shard headers and summaries; require every shard and the same input hashes
@@ -224,7 +223,7 @@ or failed run is identified explicitly; it is not a successful timing proof.
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
 | V2 desk | 0m47s | 5 min | 4m13s |
 | V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
-| V2 frozen ledger, each shard at either size | Full 1280 job: 24m49s successful; earlier full jobs stopped at 30m33s / 30m31s | 20 min | Provisional: roughly 6–9 min per shard extrapolated from full runs, plus 11–14 min |
+| V2 frozen ledger, each shard at either size | Local shard: 195.91 s; derived runner time: 527.45 s (see calculation below) | 20 min | 672.55 s above the derived runner time |
 | First-plan reconcile | 0m38s | 5 min | 4m22s |
 | Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
 | Diagnose event comparisons | 1m28s | 5 min | 3m32s |
@@ -234,11 +233,19 @@ or failed run is identified explicitly; it is not a successful timing proof.
 The replay process ceiling is 900 seconds for a shard, leaving five minutes
 inside its CI job for setup, server teardown and retention. The unsharded local
 process keeps its 3000-second ceiling. Other acceptance commands keep their
-existing limits. Shard duration is an estimate from measured full jobs, not a
-measured sharded run. Contiguous partitions have equal counts, not proven equal
-cost. The coordinator must retain the first sharded PR's timings and full local
-run before claiming the CI latency improvement or starting chunk 3. No runner
-tier, workflow trigger, story body or assertion changes in this chunk.
+existing limits. On 2026-09-10 the coordinator measured shard 1/4 at 1280×720
+on 9652979a: 195.91 s wall time, build excluded, all selected stories passed.
+The reported full-ledger local/runner timings are approximately 13/35 minutes;
+the runner figure comes from the interrupted #405 CI runs. Applying that ratio
+gives `195.91 × 35 / 13 = 527.45 s` expected runner time. The process ceiling
+therefore leaves 372.55 s of headroom over that derived time; the job adds the
+setup/teardown/retention allowance stated above. These ceilings are derived
+from the measured local shard and the reported ratio, not an actual runner
+shard measurement. Contiguous partitions have equal counts, not proven equal
+cost. The coordinator must record the first sharded PR's actual timings in
+the receipt and retain the full local run before claiming the CI latency
+improvement or starting chunk 3. No runner tier, workflow trigger, story body
+or assertion changes in this chunk.
 
 The case transport already generated each raw case once per run. It now also
 reconciles that template once, then copies it for every story. Each copy clears
@@ -246,30 +253,37 @@ its old WAL, SHM and derived-store files. Stories never serve or mutate the
 template. Nested case changes and Trial/Focus use this same transport. No cache
 is shared across commands, shards or commits.
 
-`case-cache --check` regenerates every default registry case twice and compares
+`case-cache --check` delegates showcase validation to `gen_qa_e2e_db.check()`.
+For each non-showcase registry case it generates two stores and compares
 logical SQLite dumps using the existing generator's dump rule. `c3-history`
 generation stamps observation metadata with the wall clock; the comparison
 freezes `watched_change.datetime` for both generations instead of dropping
 fields. Normal replay generation uses its existing clock. The check also
 mutates each story copy and its derived file, then requires the next copy to
 match the prepared template byte-for-byte with no derived file. CI runs this
-browser-free check. `--case` can add a specific nested variant or limit a local
-measurement; it does not change the replay's case mapping.
+browser-free check without running the removed copy-then-reconcile benchmark.
+An empty registry or explicit case selection fails before preparation. `--case`
+selects a specific case (repeatable), including a nested variant; it does not
+change the replay's case mapping.
 
 ```sh
 uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$evidence/case-cache"
 uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$evidence/shard-1"
 ```
 
-The first command writes `case-times.json`: three warm measurements per case,
-each comparing the previous raw-copy-plus-reconcile path with prepared copying,
-and the first cold preparation cost. On this Mac, the twelve registry cases
-measured 87–190 ms before versus 0.6–1.2 ms after (per-case medians); cold
-preparation was 183–833 ms. The full check took 20.805 s. This isolates store
-preparation; it is not an end-to-end story or CI speedup. Full replay logs now
-include `# story-time <id> milliseconds=...` through story teardown and
-`# case-copy ... milliseconds=...` for each prepared copy. Retain both when
-measuring runner cost and nested case switches.
+Opt into a one-off preparation benchmark separately:
+
+```sh
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --benchmark --out "$evidence/case-benchmark"
+```
+
+Only `--benchmark` writes `case-times.json`: three warm measurements per case
+comparing the previous raw-copy-plus-reconcile path with prepared copying,
+and the first cold preparation cost. Keep measured numbers with that run's
+receipt. This isolates store preparation; it is not an end-to-end story or CI
+speedup. Full replay logs include `# story-time <id> milliseconds=...` through
+story teardown and `# case-copy ... milliseconds=...` for each prepared copy.
+Retain both when measuring runner cost and nested case switches.
 
 ## Historical comparison renders
 

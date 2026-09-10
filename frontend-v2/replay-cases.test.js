@@ -2,6 +2,40 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { storyCase, createCaseServer } from './replay-cases.mjs';
 
+test('S56 requires the saved Focus title after reload, rather than its raw subject', async () => {
+  const { C3_STORIES } = await import('./c3.replay.mjs');
+  const offered = { key: 'synthetic-pattern', subject: 'pattern:synthetic-pattern' };
+  const saved = { id: 7, pattern_key: offered.key, subject: offered.subject };
+  const title = 'Served Pattern title';
+  const pageFor = stageText => {
+    let reloaded = false;
+    return {
+      url: () => 'http://127.0.0.1:8765/v2/?to=changes',
+      goto: async () => {}, reload: async () => { reloaded = true; },
+      request: { get: async url => {
+        const path = new URL(url).pathname;
+        assert.ok(['/api/focus', '/api/verify/trials'].includes(path));
+        const payload = path === '/api/focus'
+          ? { admission: { state: 'available', active_id: saved.id, focus_pin: { available: true } },
+            pinnable_patterns: [offered], focuses: [saved] }
+          : { focuses: [{ id: 8, title: 'Another Focus' }, { ...saved, title }] };
+        return { status: () => 200, text: async () => JSON.stringify(payload), json: async () => payload };
+      } },
+      locator: selector => ({
+        filter() { return this; }, first() { return this; },
+        waitFor: async () => {}, click: async () => {}, count: async () => 0,
+        innerText: async () => {
+          assert.equal(selector, '.gf-stage-focus');
+          assert.ok(reloaded, 'the saved Focus title must survive reload');
+          return stageText;
+        },
+      }),
+    };
+  };
+  await assert.rejects(C3_STORIES.S56(pageFor(offered.subject)), /served Focus title/);
+  await C3_STORIES.S56(pageFor(title));
+});
+
 test('one invocation selects the generated case each story needs', () => {
   assert.equal(storyCase('S88'), 'basal-lower');
   assert.equal(storyCase('S90'), 'basal-lower');

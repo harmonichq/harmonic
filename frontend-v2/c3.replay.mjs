@@ -110,7 +110,10 @@ async function pin(page, drill = false) {
   assert.equal(new URL(page.url()).searchParams.get('to'), 'changes');
   assert.equal(await page.locator('[data-focus="retry-pin"]').count(), 0);
   await page.reload(); await page.locator('.gf-stage-focus').waitFor({ timeout: 30000 });
-  assert.ok((await page.locator('.gf-stage-focus').innerText()).includes(offered.subject));
+  const followed = await read(page, '/api/verify/trials');
+  const title = followed.focuses.find(row => row.id === saved.id)?.title;
+  assert.ok(typeof title === 'string' && title.trim(), 'the saved record must carry a served Focus title');
+  assert.ok((await page.locator('.gf-stage-focus').innerText()).includes(title), 'the stage must print the served Focus title');
 }
 async function preempted(page) {
   const roster = await read(page, '/api/verify/trials');

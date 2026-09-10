@@ -2,6 +2,7 @@
 // controls and production responses. The historical prototype bodies stay in
 // their original replay. No fixture projection or chart painter is duplicated.
 import assert from 'node:assert/strict';
+import { waitForLevelAnimations } from '../frontend/diagnose-workstation-behavior.replay.mjs';
 
 // Bare coordination promises do not inherit Playwright's action deadlines.
 export async function boundedWait(promise, description, timeout = 30000) {
@@ -397,6 +398,10 @@ async function cleanup(page, ctx, pagehide = false) {
   const before = await counts(); const errors = ctx.consoleErrors.length;
   if (pagehide) {
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await page.locator('[data-v2-diagnose]').waitFor({ state: 'detached', timeout: 30000 }).catch(async error => {
+      const mounted = await page.locator('[data-v2-diagnose]').count();
+      throw new Error(`S84 timed out waiting for pagehide teardown; saw ${mounted} mounted view(s)`, { cause: error });
+    });
     assert.equal(await page.locator('[data-v2-diagnose]').count(), 0, 'pagehide removes the mounted view');
   } else {
     for (let i = 0; i < 3; i += 1) {
@@ -521,6 +526,30 @@ export const C2_STORIES = {
   S32: async page => {
     await openBasalLane(page);
     const cells = page.locator('#lane > button');
+    const waitForLaneRepaint = async key => {
+      // Slot evidence and tile completion both repaint the lane, replacing its
+      // buttons after the key handler's immediate selection/focus has landed.
+      try {
+        await waitForDesk(page);
+        await waitForCharts(page);
+        await page.waitForFunction(() => {
+          const level = document.getElementById('level');
+          return level && !level.textContent.includes('Loading nights');
+        }, null, { timeout: 30000 });
+        await waitForLevelAnimations(page);
+      } catch (error) {
+        const seen = await page.evaluate(() => ({
+          loading: document.getElementById('level')?.dataset.loading,
+          text: document.getElementById('level')?.textContent,
+          animations: document.getElementById('level')?.getAnimations().map(animation => animation.playState),
+          tiles: [...document.querySelectorAll('#tile-field .tile-state')].map(node => node.textContent),
+          cells: [...document.querySelectorAll('#lane > button')].map(node => ({
+            label: node.getAttribute('aria-label'), pressed: node.getAttribute('aria-pressed'), focused: node === document.activeElement,
+          })),
+        }));
+        throw new Error(`S32 timed out waiting for lane repaint before ${key}; saw ${JSON.stringify(seen)}`, { cause: error });
+      }
+    };
     const assertSelectedEdge = async edge => {
       // The key handler selects and focuses the wrapped-to cell. This bounded
       // assertion proves both before the next key reaches that control.
@@ -535,10 +564,12 @@ export const C2_STORIES = {
         throw new Error(`S32 timed out waiting for ${edge} cell aria-pressed=true and focus; saw ${JSON.stringify(seen)}`, { cause: error });
       });
     };
-    await cells.first().click(); await cells.first().focus();
-    await page.keyboard.press('ArrowLeft');
+    await cells.first().click();
+    await waitForLaneRepaint('ArrowLeft');
+    await cells.first().press('ArrowLeft');
     await assertSelectedEdge('last');
-    await page.keyboard.press('ArrowRight');
+    await waitForLaneRepaint('ArrowRight');
+    await page.locator('#lane > button[aria-pressed="true"]').press('ArrowRight');
     await assertSelectedEdge('first');
   },
   S33: async page => { await openBasalLane(page); const rows = page.locator('#level .case-occurrence'); check(await rows.count() > 1); const id = await choose(page, rows.first()); await page.keyboard.press('ArrowDown'); await page.waitForFunction(id => document.querySelector('.case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId !== id, id); await page.keyboard.press('ArrowUp'); assert.equal(await held(page), id); },

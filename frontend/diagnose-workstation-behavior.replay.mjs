@@ -119,7 +119,7 @@ const assertGateContained = async (page, story) => {
 // A loading=false level may still be translating during its 90ms push/pop.
 // Geometry assertions wait for that presentation to finish, including re-renders
 // after Watching expands. Do not wait for data here: S41 measures loading copy.
-const waitForLevelAnimations = page => page.waitForFunction(() => {
+export const waitForLevelAnimations = page => page.waitForFunction(() => {
   const level = document.getElementById('level');
   return level && level.getAnimations().length === 0;
 }, undefined, { timeout: 5000 });

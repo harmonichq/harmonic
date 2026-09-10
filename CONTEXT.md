@@ -397,6 +397,15 @@ user should act on. The outcome-shaped advisory-selection unit is a **Pattern**;
 ADR 391 dated 2026-09-08 superseded this former bare use.
 _Avoid_: trend, theme, cluster.
 
+**Sequence habit**:
+High-carb sequence or Repeat eating, nested as a habit cause within Highs after
+meals. Each counts its own eligible sequences and keeps its own Priority and
+sequence evidence chart. Neither is a Pattern rate lever. Covered meal
+associations are evidence only; an episode covering no meal keeps its sequence
+finding without adding a meal to the Pattern rate or case file. Clock membership
+requires the served outcome witness, never a sequence's start or nearby bolus.
+_Avoid_: meal opportunity (for a sequence identity), new Pattern, setting lever.
+
 **Exposure population**:
 A lever's **entire** Exposure denominator, occurrence by occurrence — all the lows
 behind an over-treated-low lever, not just the ones it attributed (ADR 0037, #272).
@@ -492,7 +501,7 @@ baseline* (the rise was from an already-high start, not from-flat), and *horizon
 expired* (the outcome never arrived inside the classifier's window). The negative
 complement of a **Lever**: every episode gets either one Lever or one Silence
 reason. Distinct from being **outranked** — an episode whose behavior *did* match
-but lost to an earlier-driver Lever and is narrated as a consequence, decided at
+but lost episode ownership to another Lever and remains retained evidence, decided at
 attribution time across anchors, not a property of any one judgment.
 _Avoid_: gate reason (the "gate" is only the upstream-cause case, not the whole
 set), non-finding, null lever, miss.

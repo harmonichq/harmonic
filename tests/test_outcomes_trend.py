@@ -1438,3 +1438,13 @@ class ComparisonMeasurementTest(unittest.TestCase):
         self.assertEqual(sum(r['k'] for r in result['rows']),1)
         self.assertEqual(sum(r['measured'] for r in result['rows']),1)
         self.assertEqual(result['reason'],'missing_override_provenance')
+
+
+class SequenceTrendExclusionTest(unittest.TestCase):
+    def test_supported_sequences_add_no_verify_behavior(self):
+        from tests.eating_sequence_streams import sequence_episode_stream
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            b, c, log, basal = sequence_episode_stream(lever)
+            result = summarize_trend(_FakeStore(cgm=c, bolus=b, basal=basal, carbs=log), window_days=30)
+            self.assertNotIn("high_carb_sequence", {row.lever for row in result.behaviors})
+            self.assertNotIn("repeat_eating", {row.lever for row in result.behaviors})

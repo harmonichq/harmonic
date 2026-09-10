@@ -85,7 +85,7 @@ function replayInventory(source) {
   return { registered, tags };
 }
 
-const initialIssued = parseList('S01–S150, C41–C62, and D1–D3');
+const initialIssued = parseList('S01–S158, C41–C62, and D1–D3');
 
 /* The mutation cases below edit the ledger's inventory lines. They read those
    lines out of the ledger rather than restating them: hard-coded copies went
@@ -136,7 +136,7 @@ export function paritySummary() {
 }
 
 test('Diagnose behavior ledger inventory matches the replay registry', () => {
-  assert.doesNotThrow(() => paritySummary());
+  assert.deepEqual(paritySummary(), { active: 168, retired: 15, replay: 168, mutation_cases: 6 });
 });
 
 test('Diagnose behavior ledger requires a retirement inventory', () => {
@@ -159,9 +159,12 @@ test('Diagnose behavior ledger rejects a replay story removed without retirement
 
 test('Diagnose behavior ledger rejects an issued ID without a replay story', () => {
   const ledgerWithOrphan = ledger
-    .replace('**175 issued executable IDs:**', '**176 issued executable IDs:**')
-    .replace('S01–S150', 'S01–S151');
-  assert.throws(() => validate(ledgerWithOrphan, replay));
+    .replace('**183 issued executable IDs:**', '**184 issued executable IDs:**')
+    .replace('S01–S158', 'S01–S159');
+  assert.throws(
+    () => validate(ledgerWithOrphan, replay),
+    /issued IDs cannot disappear or be renumbered/,
+  );
 });
 
 test('Diagnose behavior ledger accepts a permanent retirement', () => {
@@ -179,8 +182,8 @@ test('Diagnose behavior ledger accepts a permanent retirement', () => {
 
 test('Diagnose behavior ledger rejects coordinated deletion of an issued ID', () => {
   const deletedS91 = ledger
-    .replace('**175 issued executable IDs:**', '**174 issued executable IDs:**')
-    .replace('S01–S150', 'S01–S90, S92–S150');
+    .replace('**183 issued executable IDs:**', '**182 issued executable IDs:**')
+    .replace('S01–S158', 'S01–S90, S92–S158');
   const withoutS91 = replay
     .replace("  ['S91', S91, 'drawn'],\n", '')
     .replaceAll('// STORY:finding-evidence-routing:S91', '// REMOVED:finding-evidence-routing:S91');
@@ -191,19 +194,19 @@ test('Diagnose behavior ledger rejects coordinated deletion of an issued ID', ()
 });
 
 test('Diagnose behavior ledger rejects coordinated renumbering of an issued ID', () => {
-  const renumberedS91 = ledger.replace('S01–S150', 'S01–S90, S92–S151');
-  const replayWithS145 = replay
-    .replace("  ['S91', S91,", "  ['S151', S151,")
-    .replaceAll('// STORY:finding-evidence-routing:S91', '// STORY:finding-evidence-routing:S151');
+  const renumberedS91 = ledger.replace('S01–S158', 'S01–S90, S92–S159');
+  const replayWithS159 = replay
+    .replace("  ['S91', S91,", "  ['S159', S159,")
+    .replaceAll('// STORY:finding-evidence-routing:S91', '// STORY:finding-evidence-routing:S159');
   assert.throws(
-    () => validate(renumberedS91, replayWithS145),
+    () => validate(renumberedS91, replayWithS159),
     /issued IDs cannot disappear or be renumbered/,
   );
 });
 
 test('Diagnose behavior ledger rejects a malformed story range', () => {
-  const malformedRange = ledger.replace('S01–S150', 'S01–S150-S999');
-  assert.throws(() => validate(malformedRange, replay));
+  const malformedRange = ledger.replace('S01–S158', 'S01–S158-S999');
+  assert.throws(() => validate(malformedRange, replay), /malformed story range/);
 });
 
 test('Diagnose behavior ledger rejects a malformed replay registration', () => {
@@ -211,7 +214,10 @@ test('Diagnose behavior ledger rejects a malformed replay registration', () => {
     'export const STORIES = [',
     "export const STORIES = [\n  ['S92', S91, 'typical'],",
   );
-  assert.throws(() => validate(ledger, malformedRegistration));
+  assert.throws(
+    () => validate(ledger, malformedRegistration),
+    /replay registration S92 must reference S92/,
+  );
 });
 
 test('Diagnose behavior ledger rejects an unquoted replay ID', () => {
@@ -219,5 +225,8 @@ test('Diagnose behavior ledger rejects an unquoted replay ID', () => {
     'export const STORIES = [',
     "export const STORIES = [\n  [S91, S91, 'drawn'],",
   );
-  assert.throws(() => validate(ledger, unquotedRegistration));
+  assert.throws(
+    () => validate(ledger, unquotedRegistration),
+    /replay registration IDs must be quoted/,
+  );
 });

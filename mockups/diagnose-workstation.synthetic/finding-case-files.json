@@ -251648,6 +251648,7 @@
     "start_min": null
    }
   },
+  "eating_sequence_report": null,
   "findings": {
    "chip_counts": {
     "corrections": 10,
@@ -252649,6 +252650,7 @@
       "start_min": 0
      }
     },
+    "eating_sequence_report": null,
     "findings": {
      "chip_counts": {
       "corrections": 10,

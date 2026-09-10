@@ -158,6 +158,7 @@ class Episode:
     steps: List[Step]
     window: Dict = field(default_factory=dict)
     worst_bg: Optional[float] = None
+    evidence: Dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -170,6 +171,7 @@ class Episode:
             "worst_bg": self.worst_bg,
             "steps": [s.to_dict() for s in self.steps],
             "window": self.window,
+            **self.evidence,
         }
 
 
@@ -314,6 +316,7 @@ class ScenarioReport:
     # The Diagnose active/tail split line (ADR 0032): a Lever with ``priority`` at/above
     # this is actionable now; below it collapses into the "why so few?" tail. Echoed so
     # the frontend splits behavioral + tuning Levers on one shared, config-owned line.
+    sequence_evidence: Dict = field(default_factory=dict)
     priority_active_threshold: int = _DEFAULT_ACTIVE_THRESHOLD
 
     def to_dict(self) -> dict:
@@ -325,4 +328,5 @@ class ScenarioReport:
             "episodes": {eid: ep.to_dict() for eid, ep in self.episodes.items()},
             "preempted_lows": self.preempted_lows.to_dict(),
             "priority_active_threshold": self.priority_active_threshold,
+            **({"sequence_evidence": self.sequence_evidence} if self.sequence_evidence else {}),
         }

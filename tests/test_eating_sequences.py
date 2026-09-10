@@ -692,3 +692,62 @@ class EatingSequenceDetectorTest(unittest.TestCase):
         self.assertEqual(report.window.end, end.isoformat())
         self.assertEqual(report.window.start, (end - timedelta(days=30)).isoformat())
         self.assertEqual(report.high_carb_sequence.pooled.rows[0].sequence_n, 1)
+
+
+class EligibleSequenceIdentityTest(unittest.TestCase):
+    def test_equal_time_event_order_and_membership_are_stable(self):
+        from dataclasses import replace
+        from ciq_autotune.events import BolusEvent
+        from ciq_autotune.analyzers.eating_sequences import build_sequences
+        t = datetime(2040, 2, 1, 12)
+        events = [BolusEvent(t, carbs=12, seq_num=12), BolusEvent(t, carbs=18, seq_num=11),
+                  BolusEvent(t + timedelta(minutes=31), carbs=20, seq_num=13)]
+        a = build_sequences(events, config=EatingSequenceConfig())[0]
+        b = build_sequences(list(reversed(events)), config=EatingSequenceConfig())[0]
+        self.assertEqual(a, b)
+        self.assertEqual(a.id, 'sequence-11')
+        self.assertEqual([e.seq_num for e in a.members], [11, 12, 13])
+        self.assertEqual((a.carbs, a.window_count), (50, 2))
+        fallback = build_sequences([replace(events[0], seq_num=None)], config=EatingSequenceConfig())[0]
+        self.assertEqual(fallback.id, 'sequence-' + t.isoformat())
+
+    def test_evaluation_preserves_report_shape_and_selected_population(self):
+        from ciq_autotune.analyzers.eating_sequences import evaluate_sequences, build_report
+        for factory in (high_carb_stream, repeat_eating_stream):
+            b, c, log, _ = factory()
+            args = dict(window_start=c[0].t, window_end=c[-1].t, config=EatingSequenceConfig())
+            result = evaluate_sequences(b, c, log, **args)
+            self.assertEqual(result.report.to_dict(), build_report(b, c, log, **args).to_dict())
+            for lever, rows in result.populations.items():
+                if not rows:
+                    continue
+                self.assertTrue(all(row.start < row.end for row in rows))
+                self.assertEqual(len({row.id for row in rows}), len(rows))
+                if lever == 'repeat_eating':
+                    self.assertTrue(all(row.sequence.window_count != 2 for row in rows))
+
+
+class SummaryPrecisionTest(unittest.TestCase):
+    def test_report_sentences_round_percentages_without_rounding_numeric_fields(self):
+        from ciq_autotune.analyzers.eating_sequences import build_report
+        from tests.eating_sequence_streams import sequence_episode_stream
+
+        for lever, key in (("high_carb_sequence", "high_carb_sequence"),
+                           ("repeat_eating", "repeat_eating_amplifier")):
+            with self.subTest(lever=lever):
+                bolus, cgm, log, _ = sequence_episode_stream(lever, covered=True)
+                payload = report_dict(build_report(
+                    bolus, cgm, log, window_start=cgm[0].t, window_end=cgm[-1].t,
+                    config=EatingSequenceConfig(),
+                ))
+                summary = payload[key]["finding"]["summary"]
+                self.assertIn("89.6%", summary)
+                self.assertIn("100.0%", summary)
+                self.assertNotRegex(summary, r"\d+\.\d{2,}%")
+                comparison = next(row for row in payload[key]["comparisons"]
+                                  if row["period"] == "post_4h"
+                                  and (row.get("scope") == "pooled"
+                                       or row.get("carb_quintile") == 5))
+                cohort = "high" if lever == "high_carb_sequence" else "repeat"
+                self.assertEqual(comparison[cohort]["tir_pct"], 89.583)
+                self.assertEqual(comparison["tir_difference_pct_points"], -10.417)

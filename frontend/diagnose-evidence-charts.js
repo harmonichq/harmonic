@@ -1,3 +1,4 @@
+import { isEatingSequence, eatingSequenceChartOption, validEatingSequenceCase } from './diagnose-eating-sequences.js';
 import {
   eventComparisonChartOption,
   eventComparisonGlucoseValues,
@@ -1005,6 +1006,24 @@ const entries = [
     glucoseValues: carbRatioGlucoseValues,
   },
   {
+    kind: 'eating-sequence',
+    name: 'Eating sequence',
+    modes: null,
+    validateData: validEatingSequenceCase,
+    queuePreview: (descriptor, _range, colors) =>
+      eatingSequenceChartOption(descriptor.data, { mini: true, palette: colors.cohorts }),
+    nameFor: (row) => ({ title: row.title, meta: 'sequence cohorts · served comparison' }),
+    meta: () => 'sequence cohorts · served comparison',
+    option: (_mode, { data, caseFile = data, surface = null, mini = false } = {}) =>
+      eatingSequenceChartOption(caseFile, { surface, mini }),
+    thumbnail: (data) => eatingSequenceChartOption(data, { mini: true }),
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    matches: (row) => isEatingSequence(row.lever) && Boolean(row.event_chart),
+    coordinates: (row, findings) => ({ projection_id: findings.projection_id,
+      finding_id: row.id, alignment: 'event', factor: row.lever, view: 'sequences' }),
+    glucoseValues: null,
+  },
+  {
     kind: 'event-comparison',
     /* ONE TILE PER BEHAVIOURAL ROW, AND EACH ONE SAYS WHOSE IT IS. This kind is
        the only one a window can publish several of at once, so a single static
@@ -1032,7 +1051,7 @@ const entries = [
        back from the row's own `event_chart`, so two behavioural tiles in one
        window can never share a request. */
     coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    matches: (row) => Boolean(row.event_chart),
+    matches: (row) => Boolean(row.event_chart) && !isEatingSequence(row.lever),
     /* The case-file coordinates are opaque transport values: the served
        projection, the row's own id, and the alignment this tile draws. */
     coordinates: (row, findings) => ({

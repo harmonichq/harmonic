@@ -2103,6 +2103,10 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
     """Every behavioral analyzer output preserves its served ``k <= n`` contract."""
 
     def _events(self, lever):
+        if lever in (Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING):
+            from tests.eating_sequence_streams import sequence_episode_stream
+            bolus, cgm, _, basal = sequence_episode_stream(lever.value)
+            return bolus, cgm, basal, None
         if lever is Lever.CARB_UNDERCOUNT:
             bolus, cgm = dose_stamped_ic_fixture()
             return bolus, cgm, [], ISF
@@ -2150,7 +2154,7 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
         )
 
     def test_every_behavioral_lever_serves_a_structural_count(self):
-        self.assertEqual(len(Lever), 8)
+        self.assertEqual(len(Lever), 10)
         for lever in Lever:
             with self.subTest(lever=lever.value):
                 report = self._report(lever)
@@ -2170,6 +2174,8 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
 
     def test_every_behavioral_lever_exposes_owner_facts_separate_from_advice(self):
         required_facts = {
+            Lever.HIGH_CARB_SEQUENCE: {"sequence_id", "period", "outcome_at"},
+            Lever.REPEAT_EATING: {"sequence_id", "period", "outcome_at"},
             Lever.CARB_UNDERCOUNT: {
                 "logged_carbs_g", "implied_carbs_g", "baseline_glucose_mgdl",
                 "peak_glucose_mgdl",
@@ -2215,7 +2221,7 @@ class EvidencePopulationStructuralCountTest(unittest.TestCase):
     def test_all_behavioral_levers_leave_staging_verdict_bytes_unchanged(self):
         """Behavioral patterns cannot stage; pin invariance at the basal seam.
 
-        The eight per-lever scenario fixtures below prove that every behavioral
+        The ten per-lever scenario fixtures below prove that every behavioral
         classifier runs, but scenario findings do not own an ``asserts_move``
         predicate. A separate synthetic basal analyzer fixture therefore supplies
         real staging verdicts without hand-setting them or touching the predicate.

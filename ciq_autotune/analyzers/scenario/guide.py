@@ -45,8 +45,9 @@ _ENGINE = {
     "is": [
         "A local, advisory read of your Control-IQ history. It explains your "
         "report; it does not drive your pump.",
-        "One actionable cause per episode: the earliest driver, with the other "
-        "co-occurring behaviors narrated as its consequences.",
+        "One actionable cause per episode. Supported sequence candidates compete on "
+        "observed impact; otherwise the earliest actionable driver wins. Other "
+        "matches remain evidence.",
         "Every claim is tagged Observed, Inferred, or Not-in-data, and any "
         "inference is hedged, never asserted as fact.",
     ],
@@ -89,10 +90,9 @@ _PIPELINE = {
             "step": "Lever",
             "color": "--accent",
             "one_liner": "The one actionable cause.",
-            "body": "Exactly one lever is attributed per episode: its earliest "
-                    "actionable driver (root-cause-by-time). Other behaviors that "
-                    "also tripped are narrated as consequences of that lever, not "
-                    "as separate causes.",
+            "body": "Exactly one lever is attributed per episode. Supported sequence "
+                    "candidates compete on observed impact; otherwise the earliest "
+                    "actionable driver wins. Other matches remain evidence.",
         },
         {
             "step": "Pattern",
@@ -107,11 +107,9 @@ _PIPELINE = {
         {
             "title": "One episode, one lever.",
             "body": "A single dinner can trip three detectors at once. The engine "
-                    "does not report three problems. It attributes the earliest "
-                    "actionable driver and folds the rest in as its downstream "
-                    "consequences. A behavior that genuinely happened can be "
-                    "outranked by an earlier cause and suppressed. Fewer, truer "
-                    "flags beat a longer list.",
+                    "does not report three problems. Supported sequence candidates "
+                    "compete on observed impact; otherwise the earliest driver wins. "
+                    "A matched behavior can be outranked while remaining inspectable.",
         },
         {
             "title": "Silence is a verdict, not a gap.",
@@ -131,7 +129,8 @@ _PIPELINE = {
 _EXPOSURE_META = {
     Exposure.MEALS: (
         "Meals",
-        "Scored against every meal in the window: how often a meal ran into this.",
+        "Meal levers count meal opportunities. Sequence habits use their own eligible "
+        "sequence populations and never add to the meals rate.",
     ),
     Exposure.LOWS: (
         "Lows",

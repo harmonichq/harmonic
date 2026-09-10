@@ -29,7 +29,7 @@ lows-family floor of 12 rather than a derived bound.
 """
 
 _ROSTER = (
-    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus"), ("carb_undercount", "late_bolus", "meal_bolus_short"), "carb_ratio", "meals"),
+    ("highs_after_meals", "Highs after meals", ("carb_undercount", "late_bolus", "high_carb_sequence", "repeat_eating"), ("carb_undercount", "late_bolus", "meal_bolus_short"), "carb_ratio", "meals"),
     ("lows_after_meals", "Lows after meals", ("meal_over_delivery",), ("meal_over_delivery",), "carb_ratio", "meals"),
     ("highs_after_treating_lows", "Highs after treating lows", ("over_treated_low",), ("over_treated_low",), None, "lows"),
     ("lows_after_correcting_highs", "Lows after correcting highs", ("correction_stacking", "correction_on_iob"), ("correction_stacking", "correction_on_iob"), "isf", "lows"),

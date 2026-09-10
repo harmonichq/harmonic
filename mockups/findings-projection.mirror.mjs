@@ -47,6 +47,7 @@ const OUTCOME_KIND = {
   carb_undercount: 'high', late_bolus: 'high', meal_over_delivery: 'low',
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
   missed_meal: 'high', meal_bolus_short: 'high',
+  high_carb_sequence: 'sequence', repeat_eating: 'sequence',
 };
 const EXPOSURE_FAMILY = {
   carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
@@ -105,7 +106,7 @@ const segments = (startMin, endMin) => (endMin > startMin
 
 const overlaps = (pieces, window) => pieces.some(([a, b]) =>
   window.some(([c, d]) => Math.max(a, c) < Math.min(b, d)));
-const contains = (minute, window) => window.some(([a, b]) => a <= minute && minute < b);
+const contains = (minute, window) => minute != null && window.some(([a, b]) => a <= minute && minute < b);
 const minuteOf = (stamp) => Number(stamp.slice(11, 13)) * 60 + Number(stamp.slice(14, 16));
 
 /** The clock window a projection answers for — the whole day, or one interval. */
@@ -153,6 +154,7 @@ function chipsFor(row) {
 
   const chips = [];
   const kind = OUTCOME_KIND[row.lever] ?? null;
+  if (kind === 'sequence') return ['highs', 'meals'];
   if (kind === 'high') chips.push('highs');
   else if (kind === 'low') chips.push('lows');
   const families = new Set(row.appearances.map((appearance) => appearance.family));
@@ -345,7 +347,9 @@ function episodeAnchors(families) {
     episode's LATEST anchor of the lever's declared outcome kind, else where it
     happened. */
 function outcomeMinute(occurrence, anchors) {
+  if (occurrence.outcome_minute != null) return occurrence.outcome_minute;
   const kind = OUTCOME_KIND[occurrence.cause_lever] ?? null;
+  if (kind === 'sequence') return null;
   if (kind != null) {
     const landings = (anchors.get(occurrence.ep_id) || [])
       .filter(([, anchorKind]) => anchorKind === kind).map(([minute]) => minute);
@@ -356,7 +360,7 @@ function outcomeMinute(occurrence, anchors) {
 
 // Silence reasons that keep an occurrence "calm" for a lever whose classifier
 // looked and had nothing to flag (mirrors `_CALM_SILENCE_REASONS`).
-const CALM_SILENCE_REASONS = new Set([null, undefined, 'no_trigger']);
+const CALM_SILENCE_REASONS = new Set([null, undefined, 'no_trigger', 'owned_by_announced_meal']);
 const NO_DATA_SILENCE_REASON = 'insufficient_data';
 
 /** This finding's own, ROW-RELATIVE verdict on one occurrence (ADR 41, item 2).
@@ -508,7 +512,52 @@ function findingRows(exposures, scenarios, query) {
       event_chart: eventChartCoordinate(lever, query, entry.families),
     }));
   }
+  for (const lever of Object.keys(exposures.sequence_evidence || {})) {
+    if (!Object.hasOwn(patterns, lever)) continue;
+    const population = sequencePopulation(exposures, lever, query, anchors);
+    const claimed = population.filter((item) => item.attributed);
+    if (!claimed.length) continue;
+    const counts = Object.fromEntries(VERDICT_CATEGORIES.map((state) =>
+      [state, population.filter((item) => item.verdict === state).length]));
+    rows.push(stampedRow({
+      id: `finding:${lever}`, register: 'finding', kind: 'habit', lever,
+      title: { high_carb_sequence: 'High-carb sequence', repeat_eating: 'Repeat eating' }[lever],
+      priority: priced.get(lever) ?? null,
+      appearances: [{ family: 'sequences', noun: 'sequences', n: claimed.length, m: population.length }],
+      episodes: claimed.length, evidence: population, verdict_counts: counts,
+      verdict_counts_by_family: { sequences: counts },
+      event_chart: { lever, window: { ...query.dict } },
+    }));
+  }
   return rows;
+}
+
+// findings_projection.sequence_population: retain the producer's identities and
+// witnessed matches. Losing matches remain row-relative fired evidence.
+function sequencePopulation(exposures, lever, query, anchors) {
+  const evidence = exposures.sequence_evidence?.[lever] || {};
+  const matches = new Map();
+  for (const occurrence of evidence.occurrences || []) {
+    const minute = outcomeMinute({ ...occurrence, cause_lever: lever }, anchors);
+    if (minute != null && (!query.scoped || contains(minute, query.pieces))) {
+      const episodes = matches.get(occurrence.id) || [];
+      episodes.push(occurrence);
+      matches.set(occurrence.id, episodes);
+    }
+  }
+  const result = [];
+  for (const record of evidence.population || []) {
+    const episodes = matches.get(record.id) || [];
+    if (query.scoped && !episodes.length) continue;
+    const winners = episodes.filter((episode) => episode.attributed);
+    result.push({
+      id: record.id, sequence: structuredClone(record), episodes: structuredClone(episodes),
+      attributed: winners.length > 0,
+      outcome_minute: episodes.length ? (winners.length ? winners : episodes)[0].outcome_minute : null,
+      verdict: episodes.length ? 'fired' : 'clean',
+    });
+  }
+  return result;
 }
 
 function historyRows(analysis, query) {
@@ -783,7 +832,10 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     const byId = new Map(rows.map((r) => [r.id, r]));
     for (const pattern of inputs.outcome_patterns) {
       if (pattern.collapse !== 'remain_pattern') continue;
-      for (const lever of pattern.rate_levers || []) {
+      const subjects = new Set([...(pattern.rate_levers || []),
+        ...(pattern.members || []).filter((member) => member.kind === 'habit')
+          .map((member) => member.subject)]);
+      for (const lever of subjects) {
         const claimed = byId.get(`finding:${lever.replace('habit:', '')}`);
         if (claimed) {
           claimed.claimed_by = pattern.subject;

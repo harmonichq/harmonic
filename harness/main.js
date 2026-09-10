@@ -75,11 +75,11 @@ function renderControls(stories, state) {
   return story;
 }
 
-async function setSource(source) {
+async function setSource(source, sequenceState = null) {
   const response = await fetch('/__harness/source', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ source }),
+    body: JSON.stringify({ source, sequenceState }),
   });
   if (!response.ok) throw new Error('The harness data source could not be selected.');
 }
@@ -105,7 +105,7 @@ async function render() {
   const story = renderControls(STORIES, state);
   writeUrl(state);
   status.textContent = 'Drawing…';
-  await setSource(state.source);
+  await setSource(state.source, story.sequenceState);
   try {
     const result = await renderStory(stage, story, state);
     status.textContent = result || `${story.label} · ${state.source}`;

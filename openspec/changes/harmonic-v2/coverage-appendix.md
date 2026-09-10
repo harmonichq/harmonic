@@ -132,3 +132,37 @@ in `review-1/`: `verification.json` (exact commands, exit codes and wall times),
 `comparison-examples.json` and `api-receipt.jsonl` preserve complete synthetic
 comparison and selected/ending responses; `capture.txt` records their passing
 public-interface assertions, including read-only bytes and immutable records.
+
+### #389 c2b Coordinator Amendment 2 — 2026-09-10
+
+The preference HTTP endpoints now call the existing ingestion reconciliation
+adapter after committing set-aside or Restore. On the manufactured `basal-lower`
+case, the HTTP regression failed first when set-aside stranded admission at
+`reconciliation_required`; after repair, set-aside remains readable and Restore
+publishes the same eligible subject. Revision advances and stale-generation 409
+responses remain covered. An active Focus also remains the active guidance
+after a preference write. ADR 389 records the adapter, and the dated manifest
+amendment aligns the Pattern readiness fields with the accepted backend contract.
+
+| Budget | Amendment 2 measurement | Delta from Amendment 1 | Unchanged limit |
+| --- | ---: | ---: | ---: |
+| Committed showcase size | 1,417,216 bytes | 0 bytes | 25 MiB |
+| Showcase drift check | 0.155 s wall | −0.026 s | 30 s |
+| Focused QA suite | 21.027 s wall; 68 passed | −1.031 s | 90 s |
+| Slowest generated case | 2.52 s (`test_case_showcase`) | −0.30 s | 15 s |
+| Whole pytest over both built shells | 254.212 s wall; 2437 passed, 1 skipped | −13.081 s | 400 s |
+
+The affected guidance API, preference and durable follow-up suite passed 41
+tests in 19.279 s wall; this selection differs from Amendment 1's six-file
+comparison suite, so their times are not a comparable delta. Both shells built
+after `npm ci`; strict OpenSpec and all three repository guards passed.
+Whole pytest is +94.212 s against the unchanged 160-second baseline. C4 remains
+the QA budget of record; these run-to-run deltas do not isolate code cost.
+
+Complete unedited evidence is in the declared `s389/c2b` Scratch directory under
+`amendment-2/`: `verification.json` records exact commands, exit codes and wall
+times; `build.txt`, `focused.txt`, `qa-budget.txt`, `full-pytest.txt`,
+`showcase-drift.txt`, `openspec.txt`, `adr.txt`, `identifiers.txt` and
+`public-allowlist.txt` contain their outputs. `fail-first.txt` records the two
+expected HTTP failures; `http-receipt.jsonl` and `capture.txt` retain the complete
+passing set-aside/Restore responses and regression result.

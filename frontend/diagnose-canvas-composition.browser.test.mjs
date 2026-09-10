@@ -29,9 +29,9 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import {
   S151, S152, S153, S154, S155, S156, S157, S158,
+  drawWindow,
   generatedFindingPose,
   generatedFindingProjection,
   openApp,
@@ -70,11 +70,6 @@ after(() => runner.close());
 const FINDINGS_FIXTURE = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 const FINDINGS_INPUTS = FINDINGS_FIXTURE.inputs;
-/* Project the exact preset bounds: the fixture's named morning/afternoon windows
-   are different slices. The mirror is checked against its frozen server answers
-   by findings-projection-mirror.test.js. */
-const windowRowIds = (start_min, end_min) =>
-  projectFindings(FINDINGS_INPUTS, { start_min, end_min }).rows.map((row) => row.id);
 
 /* #181/#135: the comparison tile has no endpoint of its own. Its evidence is
    the Finding case file the driver already serves from the committed synthetic
@@ -482,8 +477,8 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
       if (url.pathname !== '/api/diagnose/finding-case-file-preparation') return;
       const window = [url.searchParams.get('start_min'), url.searchParams.get('end_min')];
       requested.push(window);
-      if (window[0] === '720' && window[1] === '1080') markAfternoonRequested();
-      if (holdMorning && window[0] === '360' && window[1] === '720') {
+      if (window[0] === '840' && window[1] === '1260') markAfternoonRequested();
+      if (holdMorning && window[0] === '270' && window[1] === '480') {
         markMorningHeld();
         await morningReleased;
       }
@@ -492,36 +487,44 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   try {
-    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await page.getByRole('button', { name: 'Evening', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
     holdMorning = true;
-    await page.getByRole('button', { name: 'Morning', exact: true }).click();
+    await drawWindow(page, [270, 480], [1080, 1440]);
     await morningHeld;
-    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    await drawWindow(page, [840, 1260], [270, 480]);
     await afternoonRequested;
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
       && document.querySelector('.evidence-tile[data-chart-id="ic:720"]'));
     const morningResponse = page.waitForResponse(response => {
       const url = new URL(response.url());
       return url.pathname === '/api/diagnose/finding-case-file-preparation'
-        && url.searchParams.get('start_min') === '360' && url.searchParams.get('end_min') === '720';
+        && url.searchParams.get('start_min') === '270' && url.searchParams.get('end_min') === '480';
     }, { timeout: 30000 });
     releaseMorning();
     await (await morningResponse).finished();
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.ok(requested.some(([start, end]) => start === '720' && end === '1080'),
+    assert.ok(requested.some(([start, end]) => start === '840' && end === '1260'),
       'the current Afternoon preparation proceeds while the Morning answer is held');
     /* THE DEFECT, STATED AS EVIDENCE: the held Morning answer lands after the
-       reader has pressed Afternoon. If any adoption path takes it, the field
+       reader has drawn 14:00–21:00. If any adoption path takes it, the field
        draws Morning's rows while every instrument reads Afternoon. */
     const seated = await page.locator('.evidence-tile')
       .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.chartId));
-    const afternoon = windowRowIds(720, 1080);
-    const morningOnly = windowRowIds(360, 720).filter((id) => !afternoon.includes(id));
-    assert.ok(morningOnly.length > 0, 'the fixture distinguishes the two preset windows');
+    // findings-projection.json windows.morning (270–480) and windows.afternoon
+    // (840–1260) are frozen Python answers; findings-projection-mirror.test.js
+    // deep-compares the mirror against them. Expectations never run the mirror.
+    const afternoon = FINDINGS_FIXTURE.windows.afternoon.rows.map((row) => row.id);
+    const morningOnly = FINDINGS_FIXTURE.windows.morning.rows
+      .filter((row) => row.register !== 'history' && !afternoon.includes(row.id))
+      .map((row) => row.id);
+    assert.ok(morningOnly.length > 0, 'the frozen answers distinguish the two drawn windows');
     assert.ok(seated.length > 0, 'the field is drawn');
     assert.ok(seated.includes('ic:720'), 'the Afternoon carb-ratio chart remains seated after Morning arrives');
-    assert.equal(await page.getByRole('button', { name: 'Afternoon', exact: true }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
+      node.textContent.replace('×', '').trim()), 'Window 14:00–21:00',
+      'the current drawn window remains selected after the older response arrives');
+    assert.equal(await page.locator('#seg-window [data-follow]').getAttribute('aria-pressed'), 'true');
     assert.deepEqual(seated.filter((id) => morningOnly.includes(id)), [],
       `no chart from the window the reader left is seated (${JSON.stringify(seated)})`);
     assert.deepEqual(errors, [], 'the interleaved refresh throws no page error');

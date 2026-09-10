@@ -2074,7 +2074,7 @@ const LEVER_FINDING = '#level .qrow[data-id="finding:late_bolus"]';
     (`xAtMinute`, diagnose-workstation-chart.js), so the brace the canvas is
     already showing fixes it: two known edges, two known minutes. Solved rather
     than estimated, because the story's whole subject is one exact window. */
-const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) => {
+export const drawWindow = async (page, [fromMin, toMin], [standingFrom, standingTo]) => {
   const b = await plot(page);
   const before = await state(page);
   const perMinute = (before.gripB - before.gripA) / (standingTo - standingFrom);

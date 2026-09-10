@@ -3893,7 +3893,7 @@ hand-set.
   comparison labels retain their meaning.
 
 Revision evidence and chart-direction review remain pending with the coordinator.
-The issued inventory is 183, with 182 active IDs and the one inherited retirement.
+The issued inventory is 183, with 168 active IDs and 15 retired IDs.
 
 ## Amendment — 2026-09-10, issue #389 coordinator amendment 11
 
@@ -3932,3 +3932,15 @@ Inventory is unchanged: **183 issued, 168 active, 15 retired**. The ledger parit
 guard remains authoritative and is run with this amendment. No new browser pass
 is claimed here; the coordinator owns the workstation suite, composition suite
 and complete finding-evidence-routing replay on this change.
+
+
+## Amendment — 2026-09-10, issue #389 coordinator amendment 14
+
+The composition window-adoption probe now draws the frozen findings-projection
+fixture's `windows.morning` (04:30–08:00) and `windows.afternoon` (14:00–21:00)
+windows through the public clock brace. It reads expected IDs directly from those
+frozen Python answers, which `findings-projection-mirror.test.js` deep-compares;
+it never computes its expectation through the mirror. This supersedes amendment
+11's preset-bound and preset-button clauses: the selected-window assertion checks
+the 14:00–21:00 window chip. The held-response ordering, retained Afternoon chart,
+absence of Morning-only charts and no-page-error assertions remain.

@@ -3,6 +3,12 @@ import {
 } from '../frontend/diagnose-workstation.js';
 
 export const STORIES = [
+  { id: 'both_covered', label: 'Both eating-sequence causes', sequenceState: 'both_covered', modes: [], sizes: false, range: false },
+  ...['high_carb_sequence', 'repeat_eating'].flatMap((lever) =>
+    ['covered', 'empty', 'multiple', 'null_period', 'thin_candidate', 'thin_reference', 'losing'].map((state) => ({
+      id: `${lever}_${state}`, label: `${lever === 'repeat_eating' ? 'Repeat eating' : 'High-carb sequence'} · ${state}`,
+      sequenceState: `${lever}_${state}`, lever, modes: [], sizes: true, range: false,
+    }))),
   { id: 'basal', label: 'Basal evidence', modes: ['editorial'], sizes: true, range: false },
   { id: 'isf', label: 'Correction factor evidence', modes: ['event', 'clock'], sizes: true, range: false },
   { id: 'carb-ratio', label: 'Carb ratio evidence', modes: ['event', 'clock'], sizes: true, range: true },
@@ -29,6 +35,37 @@ function basalSlot(raw) {
   if (!/^\d+$/.test(raw || '')) return raw || null;
   const value = Number(raw);
   return value >= 48 && value % 30 === 0 ? value / 30 : value;
+}
+
+async function waitForStoryNode(find) {
+  const deadline = performance.now() + 8000;
+  while (performance.now() < deadline) {
+    const node = find();
+    if (node) return node;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return null;
+}
+
+/** Enter sequence evidence through the shipped nested row, retaining its mini in place. */
+export async function showSequenceStory(root, story, state, preparation) {
+  const id = `finding:${story.lever}`;
+  if (!preparation.rendered_rows.some((row) => row.id === id)) {
+    return `Diagnose workstation · no supported ${story.label} finding`;
+  }
+  const selector = `#level .qitem.claimed .qrow[data-id="${id}"]`;
+  const row = await waitForStoryNode(() => root.querySelector(selector));
+  if (!row) throw new Error(`The served ${story.label} row did not mount.`);
+  if (state.size === 'mini') {
+    const mini = await waitForStoryNode(() => root.querySelector(`${selector} .mini canvas, ${selector} .mini svg`));
+    if (!mini) throw new Error(`The served ${story.label} mini did not mount.`);
+    return `Diagnose workstation · ${story.label} mini`;
+  }
+  row.click();
+  const tile = await waitForStoryNode(() => root.querySelector(
+    `#tile-focal .evidence-tile[data-chart-id="${id}"][data-state="ok"]`));
+  if (!tile) throw new Error(`The served ${story.label} chart did not mount.`);
+  return `Diagnose workstation · drilled ${id}`;
 }
 
 async function drawWorkstation(host, state, story) {
@@ -107,6 +144,13 @@ async function drawWorkstation(host, state, story) {
     casePreparation: preparation,
     watched: outcomes.watched_change || null,
   });
+  if (story.sequenceState) {
+    const wholeDay = [...root.querySelectorAll('#seg-window button')].find((button) =>
+      button.textContent.trim() === '24 h');
+    if (!wholeDay) throw new Error('The shipped whole-day clock control is unavailable.');
+    wholeDay.click();
+    if (story.lever) return showSequenceStory(root, story, state, preparation);
+  }
   const findTile = () => [...root.querySelectorAll('.evidence-tile[data-chart-id]')]
     .find((candidate) => candidate.dataset.state === 'ok' && (
       state.chart ? candidate.dataset.chartId === state.chart
@@ -116,7 +160,7 @@ async function drawWorkstation(host, state, story) {
               : story.id === 'event-comparison' ? candidate.dataset.chartId.startsWith('finding:')
                 : story.id === 'pattern' ? candidate.dataset.chartId.startsWith('pattern:')
                 : false));
-  if (story.id === 'strip' || story.id === 'workstation') return 'Diagnose workstation · undrilled';
+  if (story.id === 'strip' || story.id === 'workstation' || story.id === 'both_covered') return 'Diagnose workstation · undrilled';
   const tile = await new Promise((resolve) => {
     const deadline = performance.now() + 8000;
     const poll = () => {
@@ -127,6 +171,7 @@ async function drawWorkstation(host, state, story) {
     poll();
   });
   if (!tile) return `Diagnose workstation · ${story.label} unavailable`;
+  if (state.size === 'mini') return `Diagnose workstation · ${story.label} mini`;
   tile.click();
   if (state.mode && state.mode !== story.modes?.[0]) {
     const mode = await new Promise((resolve) => {

@@ -22,7 +22,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-05 | Reading pane and empty Changes | ported | S6/S7/S7b/S13; S7b/S37 captures | 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose keeps the carried v1 rail at its shipped 430px; paired Changes and Day keep the 300px reading pane and existing 256px adaptation. Rebuild and both-viewport geometry/divider judgments are coordinator-owned and pending. |
 | HV2-06 | Fixed diagnostic desk | ported | app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S59-1280x720 / app-S59-1440x900 | Coordinator · 2026-09-10: geometry PASS at both sizes for dense Diagnose, paired Trial, paired Focus and full-width empty Changes. Stage/reading spines and table rows remain aligned, with no overflow or stale roster. S59 copy defects (raw Pattern subject and period reasons) fixed under amendments 7 and 8 with failing-first API and renderer tests; the coordinator rebuilds and replays the affected legs. Judgment is limited to these named states. |
 | HV2-07 | Shipped dark material | ported | S8; computed consuming-element styles | No new palette. Compare against shipped styles, not the historical theme scaffold. |
-| HV2-08 | Inter and clinical typography | ported | app-S9-1280x720 / app-S9-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900 | Coordinator · 2026-09-10: PASS at both sizes across these named states. Inter-only inventory, 700-weight headings within the 1.5rem ceiling, tabular clinical numerals, flat surfaces/hairlines and legible dark-ground contrast, including small captions. |
+| HV2-08 | Inter and clinical typography | ported | app-S9-1280x720 / app-S9-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; final4/clinical-pairs-1280 and final4/clinical-pairs-1440 (Scratch paths below) | Coordinator · 2026-09-10: PASS at both sizes across these named states. Inter-only inventory, 700-weight headings within the 1.5rem ceiling, tabular clinical numerals, flat surfaces/hairlines and legible dark-ground contrast, including small captions. Amendment 17 · coordinator (Fable) · 2026-09-10: all three same-byte clinical pairs PASS by eye at 1440×900; 1280×720 has driver byte proof with the eye judgment carried from 1440, not a separate pair inspection. The clinical figure, verdict, measured sentence, reading values and spines match. Carried-rail deviations (basal legend/orange paint, Stage change accent, Pump profile footer) remain #404 items outside this clinical proof; details below. |
 | HV2-09 | Three persistent destinations | ported | S1/S2/S3/S4/S11/S12; S1/S3 captures | 2026-09-10 · coordinator amendment 13: Scope removed from the topbar; identity, destinations, gap, Log carbs and footer retained. ADR 397 navigation adaptation remains; historical screenshots do not prove the amended chrome. Coordinator rebuild and both-viewport geometry verification pending. |
 | HV2-10 | Changes owns priority | ported | S14–S20b/S37; S14/S15/S18/S19/S37 captures | Updated guidance and failure placement must be viewed at both sizes. |
 | HV2-11 | Diagnose carries the shipped rail | ported | S21–S35/S37b/S97/S98; S21/S23/S31/S33 captures | Pattern, nested causes, scoped window and stable evidence stage require v2 execution. |
@@ -51,7 +51,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-34 | Cleanup and no mock controls | ported | S28/S83/S84/S85; desk browser suite | Coordinator reports inherited rail 160/160 after teardown fix. Complete v2 run pending. |
 
 The named HV2-06 and HV2-08 judgments above are the coordinator's, dated
-2026-09-10 and transcribed under amendments 6 and 7; this builder assigns no eye verdict.
+2026-09-10 and transcribed under amendments 6, 7 and 17; this builder assigns no eye verdict.
 Capture labels refer to the synthetic HTML wrappers and their paired PNGs. HV2-09/10/11 and contextual HV2-14 require updated navigation
 and copy evidence, even where older material and geometry still match.
 
@@ -72,12 +72,13 @@ manifest precedence. C2’s detailed port notes remain [here](c2-port-notes.md).
 | harmonic-v2-glucose-utilities.js:1–334 | frontend-v2/utilities.js:1–571 | Authenticated reads/writes, persistent drafts and precise focus; evidence-origin returns read Diagnose |
 | harmonic-v2-glucose-basal.js:1–231 | shipped workstation through frontend-v2/diagnose.js | Carried production lane/chart owns the painter; c2 adapter supplies its context and does not copy a basal renderer |
 
-Same-byte pairing has **not** been established. The old prototype reads retained
-JSON; the app cases read generated SQLite through the APIs. Their clinical
-populations are not asserted identical. Compare unchanged chrome/material only
+Same-byte pairing between the historical prototype and app cases has **not**
+been established. The old prototype reads retained JSON; the app cases read
+generated SQLite through the APIs. Their clinical populations are not asserted
+identical. Compare unchanged chrome/material only
 across these sources; do not call a different population a matched clinical
-pair. The coordinator must supply matching input evidence or return this pairing
-gap for an explicit resolution before final fidelity acceptance.
+pair. Amendment 17 below records the separately established same-byte clinical
+pairing between the shipped v1 renderer and v2 composition.
 
 ## Coordinator amendment 1
 
@@ -101,8 +102,9 @@ asserted endpoint, not a defect. The amendment 6 judgment did not include a
 separate Focus geometry inspection; amendment 7 supplies it below.
 HV2-08 covers S9, S18, S37 and S45 at both sizes. These named-state passes do
 not assign a full-ledger verdict. Full-ledger results of record remain
-coordinator-owned until posted; same-byte clinical pairs still await the
-corrected driver's captures and subsequent coordinator judgment.
+coordinator-owned until posted. The same-byte clinical pairs are now captured
+and judged under amendment 17 below: direct eye PASS at 1440×900, with that eye
+judgment carried to the byte-proved 1280×720 pairs.
 
 ## Coordinator amendment 7 — Focus pair
 
@@ -120,3 +122,34 @@ renderer regressions failed first and passed after the repair. This records
 the supplied geometry judgment and the copy repair; the coordinator owns the
 amendment 8 rebuild and affected replay legs. The builder did not rebuild while
 the coordinator's evidence chain was using the amendment 7 shell.
+
+
+## Coordinator amendment 17 — same-byte clinical pairs
+
+Judge: coordinator (Fable) · 2026-09-10. Driver `67404c63` completed the basal,
+Correction factor and I:C pairs at both sizes. Evidence directories:
+`scratchpad/s389/c4/final4/clinical-pairs-1280` and
+`scratchpad/s389/c4/final4/clinical-pairs-1440`. Each contains six PNGs and
+`basal-pairs.json`, `isf-pairs.json`, `ic-pairs.json`, with the shared clinical
+response bodies and their SHA-256 records. The cases are `basal-lower`,
+`isf-strengthen` and `ic-lower`.
+
+At 1440×900, the coordinator's eye judgment is **PASS** for all three pairs:
+the clinical figure, headline verdict, measured sentence, reading-pane values
+(current / estimate / recommended, CI and support counts), and their spines
+are identical between the shipped v1 renderer and the v2 composition.
+At 1280×720, all three pairs have driver byte proof; the coordinator carries
+the eye judgment from 1440×900 on the same renderer and bytes, with no wrap
+in the earlier S37/S45/S59 captures. This is an attributed carried judgment,
+not a separate eye inspection of the 1280×720 clinical pairs.
+
+The coordinator observed three carried-rail fidelity deviations outside the
+clinical proof. They are recorded for #404 and are not fixed here:
+
+- The basal lane's visible legend ("Basal slots · lower 1 · no data 47") and
+  orange verdict paint are present in v1 and absent in v2.
+- Stage change uses the accent colour in v1 and renders neutral in v2.
+- The v1 footer's "Pump profile · ISF … · I:C …" line is absent in v2.
+
+These judgments supplement HV2-08; they do not assign an overall acceptance
+verdict or erase the three #404 items.

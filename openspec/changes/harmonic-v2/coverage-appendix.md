@@ -40,3 +40,54 @@ remain manufactured.
 | Focused QA suite | 28.95 s wall (58 tests) | 90 s |
 | Slowest generated case | 3.81 s (`test_case_showcase`) | 15 s |
 | Whole pytest | 293.85 s (2420 passed, 1 skipped) | 400 s |
+
+## #389 c2b Pattern Focus readiness measurements
+
+These are the c2b worker's measurements, not the integrated acceptance receipt.
+C4 remains the QA budget of record. The operator's 160-second current-machine
+baseline and 400-second ceiling remain unchanged.
+
+The new `pattern-focus-meals` recipe manufactures 24 meals over eight days.
+Its complete `execute_case` output was captured before copying the analyzer,
+queue, support, Rest-window, history, behavioral, verdict-tally, finding-title,
+uncaused-high and complete Pattern expectations into literal `QaExpectation`
+values. `test_case_pattern_focus_meals` passed through the catalog runner.
+The committed showcase and its generator output remain unchanged.
+
+| Budget | c2b measurement | Unchanged limit |
+| --- | ---: | ---: |
+| Committed showcase size | 1,417,216 bytes; delta from starting commit: 0 bytes | 25 MiB (26,214,400 bytes) |
+| Showcase drift check | 0.160 s wall | 30 s |
+| Focused QA suite | 22.023 s wall; 68 passed | 90 s |
+| Slowest generated case | 2.63 s (`test_case_showcase`); new case 0.06 s | 15 s |
+| Whole pytest over both built shells | 258.593 s wall; 2435 passed, 1 skipped | 400 s |
+
+Relative to the previous c2c measurements recorded above, drift is −0.750 s,
+focused QA is −6.927 s, the slowest case is −1.18 s and whole pytest is
+−35.257 s. These are differences between recorded runs, not an isolated estimate
+of this change's runtime cost. Whole pytest is +98.593 s relative to the
+operator's 160-second baseline. The starting #389 showcase was already
+1,417,216 bytes; its difference from the older c2c receipt is not a c2b change.
+
+The six-file c2b focused command separately passed 128 tests in 169.114 s wall.
+Both shells built after `npm ci`. Strict OpenSpec validation, the ADR-number,
+owned-identifier and public-allowlist guards, and showcase drift all passed.
+Raw, unedited outputs and exact commands are retained in the worker's declared
+`s389/c2b` Scratch directory: `verification.json`, `build.txt`, `focused.txt`,
+`qa-budget.txt`, `full-pytest.txt`, `showcase-drift.txt`, `openspec.txt`, `adr.txt`,
+`identifiers.txt` and `public-allowlist.txt`. `qa-execution.json` and
+`qa-expectation.txt` retain the complete manufactured capture and literal oracle.
+
+`fail-first.txt` records the original twelve-meal/four-day hold.
+`mapped-gate-perturbation.txt` records the regression rejecting a bypassed
+opportunity gate. `readiness-examples.json` and `api-receipt.jsonl` retain the
+serialized per-arm and selected/ending responses. Public tests preserve readonly
+database bytes, source revision, original comparison context and saved endings.
+
+The implementation follows the lock's explicit removal of the Pattern-only
+elapsed floor from mapped direction, preserving measurement, coverage and
+uncertainty checks. Connor confirmed on 2026-09-10 that the lock governs:
+the published opportunity verdict replaces the fourteen-day floor entirely.
+The mapped-direction regression asserts withholding while that verdict is
+withheld and publication once it is ready, including before fourteen days.
+Setting Trial criteria remain unchanged.

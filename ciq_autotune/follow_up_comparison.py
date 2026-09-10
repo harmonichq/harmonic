@@ -17,7 +17,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from .analyzers.scenario import low_prompt_answers
-from .analyzers.scenario.anchors import _is_meal
+from .analyzers.scenario.anchors import _is_meal, collect_anchors
+from .analyzers.scenario.outcome_patterns import opportunity_readiness
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_spans
 from .outcomes import CGM_CADENCE_MIN, CONSENSUS_MIN_COVERAGE, _pct, compute_metrics
@@ -220,6 +221,18 @@ def _row(key, label, unit, values, counts, groups, statistic, polarity, noun, in
             "assessment": assessment}
 
 
+def _mapped_focus_direction_ready(readiness, *, pattern_key):
+    """Gate mapped direction independently of behavior measurement availability.
+
+    Pattern arms use the published opportunity verdict. Unmapped legacy Focus
+    retains its elapsed criterion. _row still owns glucose coverage and inference.
+    """
+    if pattern_key:
+        return all(arm["verdict"] == "ready" for arm in readiness.values())
+    return all(arm["elapsed_days"] >= arm["required_elapsed_days"]
+               for arm in readiness.values())
+
+
 def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mode="retained"):
     """Return ``{comparison_context, comparison}`` without changing Store or record."""
     if context_mode not in ("retained", "current"):
@@ -338,6 +351,15 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         }
     comparison["readiness"] = dict(zip(("before", "after"), [p["readiness"] for p in populations]))
     if kind == "focus":
+        pattern_key = record.get("pattern_key")
+        if pattern_key is None and (record.get("subject") or "").startswith("pattern:"):
+            pattern_key = record["subject"].split(":", 1)[1]
+        # The published exposure feed uses collect_anchors' near-low population,
+        # not build_opportunities' stricter gate-low population. Preserve full
+        # context through the read cutoff, then assign anchors to exact arms.
+        anchors = (collect_anchors(bolus, cgm, basal,
+                   scenario_config=ScenarioConfig(**context["configuration"]))
+                   if pattern_key else ())
         for name, lo, hi in (("before", start, changed), ("after", changed, end)):
             observed = behavior_observations(
                 bolus, cgm, basal, lever=record["lever"], start=lo, end=hi,
@@ -349,6 +371,18 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             n = sum(r["n"] for r in observed["rows"])
             measured = sum(r["n"] for r in observed["rows"] if r["measured"])
             elapsed = max(0., (hi-lo).total_seconds()/86400)
+            if pattern_key:
+                sources = {}
+                for family, anchor_kind in (("meals", "meal"), ("lows", "low")):
+                    owned = [{"t": anchor.t.strftime(_FMT)} for anchor in anchors
+                             if anchor.kind.value == anchor_kind and lo <= anchor.t < hi]
+                    sources[family] = {"n": len(owned), "occurrences": owned}
+                criterion = opportunity_readiness(pattern_key, {}, {"exposures": sources})
+                comparison["readiness"][name] = {
+                    **criterion, "observed": criterion["count"], "required": criterion["gate"],
+                    "criterion_met": criterion["verdict"] == "ready", "elapsed_days": elapsed,
+                }
+                continue
             comparison["readiness"][name] = {
                 "unit": observed["denominator"], "observed": n,
                 "measured": measured, "unmeasured": n-measured, "elapsed_days": elapsed,
@@ -376,8 +410,9 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         if kind == "focus" and key == target:
             # Mapped glucose retains its own measurement/coverage checks below;
             # missing habit measurements do not withhold its direction.
-            outcome_ready = all(r["elapsed_days"] >= r["required_elapsed_days"]
-                                for r in comparison["readiness"].values())
+            outcome_ready = _mapped_focus_direction_ready(
+                comparison["readiness"], pattern_key=pattern_key,
+            )
         comparison["outcomes"].append(_row(
             key, label, "mg/dL" if key == "mean" else "%", [getattr(m, attr) for m in metrics],
             [m.n_readings for m in metrics], rate_groups, statistic, polarity, "observed CGM readings in eligible windows",

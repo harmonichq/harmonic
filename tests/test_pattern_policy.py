@@ -34,6 +34,22 @@ def _basal_slot(slot, start_min, status, *, duration_min=30, seriousness=None):
 
 
 class OutcomePatternPolicyTest(unittest.TestCase):
+    def test_opportunity_owner_keeps_harm_band_nights_without_focus_admission(self):
+        import tempfile
+        from ciq_autotune.store import Store
+        from ciq_autotune.analyzers.scenario.outcome_patterns import opportunity_readiness
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case, execute_case
+        from ciq_autotune.watched_change import is_pinnable
+        case = next(c for c in QA_CASES if c.name == "pattern-focus-meals")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+                output = execute_case(store, case)
+        readiness = opportunity_readiness("overnight_lows_no_iob", output.analysis, output.exposures)
+        self.assertEqual(readiness, {"count": 8, "gate": 12, "unit": "nights",
+                                    "verdict": "withheld", "reason": "collecting"})
+        self.assertFalse(is_pinnable("late_bolus", "overnight_lows_no_iob"))
+
     def test_returns_the_closed_roster_and_owns_no_deferred_lever(self):
         roster = build_outcome_patterns({}, {"exposures": {}}, {"patterns": [], "low_confidence": []})
         self.assertEqual([item["key"] for item in roster], [

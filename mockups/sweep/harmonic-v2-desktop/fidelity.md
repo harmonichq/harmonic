@@ -13,7 +13,7 @@ story does not evidence its transient failure or in-progress gesture.
 
 | Term | Obligation | Builder status | Evidence to inspect | Outstanding evidence / boundary |
 | --- | --- | --- | --- | --- |
-| HV2-01 | Packaged surface | ported | S86; acceptance.py package | Packaged image run pending. Live v1 HTML references Google Fonts; strict package probe rejects it. |
+| HV2-01 | Packaged surface | ported | S86; acceptance.py package | Packaged image run pending. The probe records carried v1 Google Fonts links under amendment 1; strict no-CDN acceptance applies to v2. |
 | HV2-02 | Coexistence and authentication | ported | S87; acceptance.py package | Separate disposable-token server is owned by replay driver; coordinator must execute surface-owned reads. |
 | HV2-03 | Inner scrolling | ported | S4/S10/S10b; S14/S31/S45/S59/S60 captures | Both viewport renders and actual overflow judgments pending. |
 | HV2-04 | Shell tracks | ported | S5; computed capture facts | Both viewport grid tracks pending. |
@@ -34,8 +34,8 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-19 | Distinct setting authorities | ported | S13/S43/S44/S99; family QA recipes | Source-owned verdicts only. No new browser criterion. |
 | HV2-20 | Complete Plan lifecycle | ported | S38–S44/S89; S39 capture | Failure/retry, reconciliation/mismatch/withdrawal remain live assertions. |
 | HV2-21 | Plan capacity | ported | S39/S90 | Shared Plan owner supplies capacity; two source schedules remain required. |
-| HV2-22 | Served comparison readiness | ported | S91/S92/S93; S93 capture | Catalog currently supplies a basal Trial and Pattern Focus. Other setting-unit rendered records remain unproved. |
-| HV2-23 | Values before readiness | ported | S45/S46/S47/S49/S50/S92 | Missing and observed-zero cell assertions have Node coverage; c3 receipt disclaims rendered missing-outcome proof. |
+| HV2-22 | Served comparison readiness | ported | S91/S92/S93; S93 capture | Catalog supplies basal, Pattern Focus and c4 I:C/Correction factor/whole-profile records. Their rendered evidence remains coordinator-owned. |
+| HV2-23 | Values before readiness | ported | S45/S46/S47/S49/S50/S92 | S49 now includes the c4-missing producer case alongside observed-zero coverage; rendered proof is coordinator-owned. |
 | HV2-24 | Type-specific opportunity criteria | ported | S91/S93; c2b public producer tests | Pattern counts/gate/verdict stay backend-owned. Required setting-unit matrix remains unproved. |
 | HV2-25 | Durable Trial ending | ported | S51/S52/S53/S54b/S55/S94 | Coordinator reports c3 results; final complete run/reload pending. |
 | HV2-26 | Separate behavior and glucose tables | ported | S57/S59; S57/S59 captures | Zero-opportunity and nonzero missing-measurement rendered states remain unproved by the c3 recipe. |
@@ -43,7 +43,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-28 | Original, ending and reassessment | ported | S54/S54b/S96; S54 capture | Legacy unavailable facts and sequential change remain final assertions. |
 | HV2-29 | Replacement withdrawals | ported | S97 | Final pending/failed/sliced replay required; endpoint screenshot does not show a held request. |
 | HV2-30 | Current I:C failure states | ported | S98; dated coordinator amendments 11/12 in behavior ledger | Current coherent-pair and dated refresh obligations follow their recorded amendments; no new exception here. |
-| HV2-31 | Limiting states and historical absence | ported | S18/S19/S20b/S99; R18 | BLOCKING: frozen ledger has R18 but no executable function/registry entry. Input must include history row. |
+| HV2-31 | Limiting states and historical absence | ported | S18/S19/S20b/S99; R18 | R18 is registered with the c4-history input; browser execution and its verdict are coordinator-owned. |
 | HV2-32 | Keyboard, focus and shared speech | ported | S9/S23/S24/S32/S33/S73b/S80b/S100; Event S8 | Shared public-interface speech test passed in c4. C2 failed-first log records +0.08333333333333333 h versus +5 min. |
 | HV2-33 | Escape and utilities | ported | S68–S81; S68/S69/S74/S75/S77 captures | Final keyboard/focus/unsaved-state replay and intermediate live inspection pending. |
 | HV2-34 | Cleanup and no mock controls | ported | S28/S83/S84/S85; desk browser suite | Coordinator reports inherited rail 160/160 after teardown fix. Complete v2 run pending. |

@@ -165,7 +165,14 @@ def inventory(run):
         "console.log(JSON.stringify(REGISTRY.map(([id])=>id)))"])
     ids = json.loads(next(line for line in output.splitlines() if line.startswith('["')))
     ledger = (REPO / "mockups/harmonic-v2-desktop.behavior.md").read_text()
-    required = set(re.findall(r"^([SR]\d+[a-z]?) ·", ledger, re.M))
+    entries = re.findall(r"^([SR]\d+[a-z]?) ·", ledger, re.M)
+    required = set(entries)
+    counts = {"issued": len(entries),
+              "active": sum(identity.startswith("S") for identity in entries),
+              "retired": sum(identity.startswith("R") for identity in entries)}
+    print(f"ledger inventory: {counts}")
+    require(counts == {"issued": 130, "active": 112, "retired": 18}
+            and len(entries) == len(required), f"frozen ledger inventory changed: {counts}")
     missing, extra = sorted(required - set(ids)), sorted(set(ids) - required)
     print(f"ledger={len(required)} registry={len(ids)} missing={missing} extra={extra}")
     require(required and not missing and not extra and len(ids) == len(set(ids)),
@@ -324,7 +331,7 @@ def main():
         (run.out / "probe.json").write_text(json.dumps(rows, indent=2) + "\n")
         print(f"offline runtime: {len(rows)} requests passed")
     else:
-        {"checks": checks, "budget": budget, "package": package, "public-tree": public_tree, "inventory": inventory}[args.leg](run)
+        {"checks": checks, "budget": budget, "public-tree": public_tree, "inventory": inventory}[args.leg](run)
 
 
 if __name__ == "__main__":

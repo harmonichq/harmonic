@@ -143,5 +143,11 @@ scripts/public_scan_config.txt
 ! frontend/queue-dock-735.shot.mjs
 ! frontend/verify-660-story-fidelity.shot.mjs
 
-# The shipped v2 behavior replay and its tests publish like the workstation
-# and event-comparison replays; optional private prototype mode stays private.
+# The v2 desktop replay requires private design inputs, including six
+# exploration JSON files. Keep it and tests that import or launch it private
+# until those dependencies have a separately reviewed publication disposition.
+# These files remain tracked and runnable in this private checkout (#389).
+! frontend/harmonic-v2-desktop-behavior.replay.mjs
+! frontend-v2/c3.replay.test.js
+! frontend-v2/c4.replay.test.js
+! frontend-v2/follow-up.browser.test.mjs

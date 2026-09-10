@@ -1,17 +1,17 @@
 // Behaviour replay for the Harmonic v2 desktop — the executable half of
-// the private harmonic-v2-desktop behavior ledger.
+// mockups/harmonic-v2-desktop.behavior.md.
 //
 // FROZEN. The ledger beside it carries the ★ FROZEN header, and these stories
 // are the contract: 111 passed at 1280x720 and at 1440x900, 18 app-opener-only
 // stories deferred, and one feature-specific negative proof per mock-applicable
-// story. Raw output is retained under the private desktop sweep run archive.
+// story. Raw output is retained under mockups/sweep/harmonic-v2-desktop/runs/.
 //
 // Those runs were produced by this file at sha256
 // d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116. This header
 // and the CLI banner below were rewritten afterwards, as metadata only; no
 // story, selector, assertion, opener or registry entry changed.
 //
-// WHY THIS EXISTS: the private harmonic-v2-desktop lock manifest says what the surface
+// WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
 // already in hand is the way back up, that a field owns Escape so a stray press
 // cannot drop a draft, that the reading pane keeps its scroll only while its
@@ -276,7 +276,7 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
     return route.abort();
   });
 
-  const target = `${MOCK_BASE_URL}/${join('mockups', 'harmonic-v2-glucose.html')}?source=${source}&state=${state}`;
+  const target = `${MOCK_BASE_URL}/mockups/harmonic-v2-glucose.html?source=${source}&state=${state}`;
   const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
   ok(response && response.ok(), `the mock did not load from ${target} — is a static server running at the repository ROOT?`);
 
@@ -2798,7 +2798,7 @@ async function main() {
   const failures = [];
 
   process.stdout.write(`# harmonic-v2-desktop behaviour replay — TARGET=${TARGET} viewport=${viewport} fonts=${fonts.mode}\n`);
-  process.stdout.write('# FROZEN ledger: the private harmonic-v2-desktop behavior ledger\n');
+  process.stdout.write('# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md\n');
 
   for (const [id, fn, state] of selected) {
     if (fn.deferred && TARGET === 'mock') {

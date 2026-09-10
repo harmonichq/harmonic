@@ -5,7 +5,7 @@ and archive legs. Nothing in this file claims those legs have run. The builder
 index is [fidelity.md](fidelity.md). Keep all command output and captures in
 fresh scratch directories. Never point a command at a live wearer database.
 
-## Amendment 1 disposition and remaining acceptance
+## Amendment dispositions and remaining acceptance
 
 The ticket branch was merged before the amendment work, carrying #342's twelve
 sequence recipes and the rail's 183 issued / 168 active / 15 retired inventory.
@@ -19,11 +19,12 @@ issue; amendment 1 scopes no-CDN acceptance to v2 and the assets #389 packages.
 The runtime probe records those v1 links without requesting them, verifies both
 shells' local assets, and rejects external v2 references.
 
-The v2 replay and its tests now publish like the sibling shipped replays. Private
-prototype references are described without broken public links; optional mock
-execution still needs the private checkout. Exact-path provenance rules cover
-the replay's attributed sanction dates and c3's manufactured calendar label.
-No scan threshold or acknowledged dose/ratio baseline changed.
+Amendment 2 supersedes amendment 1's publication ruling: the v2 replay depends
+on six private exploration JSON files and stays private. Its c3/c4 importing
+tests and the follow-up browser test that launches it are also excluded from
+the public tree. Literal prototype paths and comments remain visible in source.
+The tracked files retain their exact-path synthetic-date provenance pins,
+including c3's calendar label. No scan threshold or dose/ratio baseline changed.
 
 Obligation 6 previously lacked I:C, Correction factor and whole-profile retained
 follow-up records, and a real missing-outcome rendering input. `c4-ic`, `c4-isf`,
@@ -59,8 +60,9 @@ This table inventories reachable sources and outstanding evidence, not passes.
 | 11 Day | showcase and c3 follow-up cases; S60–S67/S76, c2 contextual entries | Exact setting/event/Focus/question return and recorded week/month |
 | 12 Utilities | showcase; S68–S81 | Unsaved input, invalid entry, failed save, precise focus and Pump settings checkpoints |
 
-No c4 recipe or committed generated artifact was added. Extending the catalog
-without its closed-name test update would knowingly fail the existing gate.
+C4 added five recipes: c4-ic, c4-isf, c4-profile, c4-missing and c4-history,
+with literal producer expectations and matching EXPECTED_CASE_NAMES entries.
+Their generated stores stay in scratch; no generated store artifact was committed.
 
 ## Runnable legs
 
@@ -82,8 +84,9 @@ evidence="$(mktemp -d "${TMPDIR:-/tmp}/harmonic-389-c4-evidence.XXXXXX")"
 `checks` builds both shells, runs both Node roots plus a separate nonzero v2
 count, validates OpenSpec, runs the three guards, all fourteen Python drift
 commands and both Node drift commands. It does not run pytest or Chromium.
-No new fixture was committed by c4, so there is no new generated fixture whose
-`--check` perturbation can be claimed. Existing QA drift rejection is covered by
+C4's five new recipes emit scratch stores; no generated store artifact was
+committed, so there is no new committed generated fixture whose `--check`
+perturbation can be claimed. Existing QA drift rejection is covered by
 `tests/test_gen_qa_e2e_db.py::QaE2EDatabaseGeneratorTest`.
 
 Run the budget leg alone on the machine, after both shells are built. It records
@@ -111,7 +114,9 @@ wrapper; each applicable ledger entry must execute, with zero deferred.
 Each run records raw logs, command durations/exit codes, input hashes and selected
 story-endpoint screenshots with text, computed geometry/material and a labelled
 HTML wrapper. Inter must actually be loaded. The capture hook never changes page
-content, a story body, a selector or a verdict. `CAPTURE_ONLY` limits **captures**,
+content, story bodies or selectors. Its Inter check fails closed: an unloaded
+font throws into the runner's story catch and marks the story failed.
+`CAPTURE_ONLY` limits **captures**,
 not the executed story set. Treat screenshots as synthetic only while kept with
 their labelled wrapper/transcript. Captures remain scratch artifacts, not new
 committed fixtures. No screenshot is an independent eye verdict.

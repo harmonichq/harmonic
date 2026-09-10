@@ -1,5 +1,7 @@
 """Exercise acceptance through its route-probe interface, including rejected proofs."""
 import importlib.util
+import json
+import tempfile
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -57,6 +59,30 @@ class RuntimeProofTest(unittest.TestCase):
         self.request = lambda base, path, token=None: (200, b"{}", {}) if path == "/api/status" else original(base, path, token)
         with self.assertRaisesRegex(RuntimeError, "expected 401, got 200"):
             self.probe()
+
+
+class InventoryProofTest(unittest.TestCase):
+    def inventory(self, ids):
+        class Run:
+            def command(self, name, args):
+                return 0, json.dumps(ids)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "mockups").mkdir()
+            (root / "mockups/harmonic-v2-desktop.behavior.md").write_text(
+                "\n".join(f"{identity} · Synthetic inventory entry" for identity in ids))
+            with patch.object(acceptance, "REPO", root):
+                acceptance.inventory(Run())
+
+    def test_stated_active_and_retired_inventory(self):
+        self.inventory([f"S{i}" for i in range(1, 113)] + [f"R{i}" for i in range(1, 19)])
+
+    def test_same_total_cannot_hide_changed_active_retired_counts(self):
+        ids = [f"S{i}" for i in range(1, 112)] + [f"R{i}" for i in range(1, 20)]
+        self.assertEqual(len(ids), 130)
+        with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
+            self.inventory(ids)
 
 
 if __name__ == "__main__":

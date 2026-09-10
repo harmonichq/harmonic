@@ -1,4 +1,5 @@
-// Evidence recording only. It never changes a story's state or acceptance verdict.
+// Evidence recording leaves page state unchanged. It fails the story closed
+// when Inter has not loaded; the runner catches that error as a story failure.
 // Captures show the endpoint AFTER a passing story, not its intermediate gestures.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';

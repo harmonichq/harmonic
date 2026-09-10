@@ -2387,7 +2387,8 @@ S104 · Picking another recorded day keeps the Day stage, reading pane and
   element:  .gf-nav-col[data-pick], .gf-stage-day, .gf-reading, #gf-nav
   source:   frontend-v2/day.js bind / mount; routes.js render
   lock:     nearest HV2-13, HV2-34; S63 covers picking, not node retention
-  data:     showcase; hold and then continue the real /api/model-view request
+  data:     showcase; Previous recorded day enters the populated preceding week;
+            hold and then continue the real /api/model-view request on a ribbon pick
   evidence: C4_STORIES.S104; node identity and connectedness across the read
   status:   browser fail-first pending coordinator; source installs loadingFrame
 ```
@@ -2404,7 +2405,8 @@ S105 · A confirmed-on-pump Plan with no active watch offers View change record;
             slot and capture the same schedule through the replay pump producer
   evidence: C4_STORIES.S105; asserts finished history, on-pump state and empty
             admission before checking the missing door, then record/reload
-  status:   browser fail-first pending coordinator; record routing already exists
+  status:   coordinator confirmed the missing-door assertion at 1280x720 and
+            1440x900; no application fix or passing replay claimed
 ```
 
 Additional handler inventory for this amendment:
@@ -2416,3 +2418,18 @@ Additional handler inventory for this amendment:
 | Basal lane click then Findings breadcrumb | frontend/diagnose-workstation.js | S103 |
 | Recorded-day click during model read | frontend-v2/day.js | S104 |
 | Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |
+
+### Coordinator amendment 1 — 2026-09-10
+
+The coordinator's first isolated browser runs did not reach the feature assertions
+for S101–S104: S101–S103 raised `diagnose is not defined`; S104 timed out reading
+the other-day locator. S105 reached its missing-history-door assertion at both
+locked viewports and is unchanged.
+
+S101–S103 now use their siblings' existing `fullDayDiagnose` opener. S104 first
+presses S66's Previous recorded day control: showcase arrives on Sunday June 30,
+whose week has no other recorded day; Saturday June 29's ribbon offers June 23–28.
+Only after that setup settles does the story retain nodes and hold the selected
+day's read. Node regression tests call the four exported stories and distinguish
+their feature assertion from setup errors; those tests are not browser evidence.
+Corrected S101–S104 still require the coordinator's isolated two-viewport reproof.

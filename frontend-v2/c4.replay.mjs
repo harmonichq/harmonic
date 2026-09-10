@@ -87,13 +87,13 @@ async function slot404(page) {
 
 export const C4_STORIES = {
   async S101(page) {
-    await diagnose(page);
+    await fullDayDiagnose(page);
     await drawnWindow404(page);
     const label = (await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim();
     assert.equal(label, '15:30–21:30', 'S101 custom Window chip contains only the span');
   },
   async S102(page) {
-    await diagnose(page);
+    await fullDayDiagnose(page);
     const previous = await slot404(page);
     const focal = page.locator('#tile-focal .evidence-tile');
     assert.notEqual(await focal.getAttribute('data-chart-id'), previous,
@@ -106,7 +106,7 @@ export const C4_STORIES = {
     const failures = [];
     for (const mode of ['24 h', 'Morning', 'drawn']) {
       await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
-      await diagnose(page);
+      await fullDayDiagnose(page);
       if (mode === 'drawn') await drawnWindow404(page);
       else if (mode !== '24 h') {
         await page.getByRole('button', { name: mode, exact: true }).click(); await settled(page);
@@ -124,9 +124,19 @@ export const C4_STORIES = {
     await press(page, 'nav.v2-nav [data-destination="day"]');
     await waitForDesk(page);
     await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
-    const pick = page.locator('.gf-nav-col[data-pick]:not([disabled]):not([aria-pressed="true"])').first();
-    const date = await pick.getAttribute('data-pick');
-    assert.ok(date, 'S104 premise: another recorded day is selectable');
+    // Showcase ends on Sunday 2024-06-30: its arrival week contains only
+    // that recorded day. S66's Previous recorded day control reaches Saturday
+    // and the preceding populated week before we observe the click under test.
+    const previous = page.getByRole('button', { name: 'Previous recorded day', exact: true });
+    assert.equal(await previous.isEnabled(), true, 'S104 premise: an earlier recorded day exists');
+    await previous.click();
+    await waitForDesk(page);
+    await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
+    const dates = await page.locator('.gf-nav-col[data-pick]:not([disabled]):not([aria-pressed="true"])')
+      .evaluateAll(nodes => nodes.map(node => node.dataset.pick));
+    assert.ok(dates.length, 'S104 premise: the preceding week contains another recorded day');
+    const date = dates[0];
+    const pick = page.locator(`.gf-nav-col[data-pick="${date}"]`);
     const nodes = await page.evaluateHandle(() => ({ stage: document.querySelector('.gf-stage-day'),
       reading: document.querySelector('.gf-reading'), nav: document.querySelector('#gf-nav') }));
     let release;

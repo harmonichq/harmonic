@@ -14,7 +14,7 @@ guidance and preference increment. The table below remains the broader journey
 proposal; pending-Plan/draft precedence and context/endings are specified by ADR 386 below,
 not part of #384.
 
-Overview and Explore read one backend-owned selection. They do not independently
+Changes and Diagnose read one backend-owned selection under ADR 397. They do not independently
 sort findings, interpret scenario rank, or turn a chart's support stamp into
 permission to recommend a treatment.
 

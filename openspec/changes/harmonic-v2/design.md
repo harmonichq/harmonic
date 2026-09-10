@@ -80,6 +80,8 @@ desktop cockpit, original Trial evidence, saved conclusions, precise Day return,
 and the visible Set aside/Restore behavior. Continue using CONTEXT.md and the
 existing app's prose. No new concept or navigation debate is required.
 
+Navigation only in this historical ADR 348 record is superseded by ADR 397. All other requirements remain binding.
+
 This closes direction selection and the completed desktop walkthrough work.
 It does not turn page-memory prototype state into durable production behavior,
 prove a second sequential change, or supply a formal UI Craft build/fidelity
@@ -262,6 +264,8 @@ it must not promote an older historical Trial into the foreground and block the
 next choice. A genuinely new detected pump change still opens a Trial and
 preempts a Focus under the existing one-active-watch rule.
 
+The preceding historical destination naming is superseded by ADR 397: Changes is the leading-change consumer. The single backend finish/admission verdict invariant is unchanged.
+
 ### Why and consequences
 
 Today `detect_trial` selects an eligible non-reverted change within its watch
@@ -294,8 +298,8 @@ These are required journeys and questions to test, not approved screen layouts.
 | Arrival | Complete journey | Required distinction |
 | --- | --- | --- |
 | Recurring adverse outcome | See relevant findings and data freshness; examine support and alternatives; choose one justified change or deliberately hold; follow it; review its history | An unsupported finding remains explainable without becoming stageable |
-| Supported setting change | Explore evidence; stage one tuning variable; review the full pump-entry schedule; record the decision; enter it manually; reconcile the next detected profile; follow the detected Trial; revisit the decision | Saving, deciding, entering on the pump, detected confirmation, and observed outcomes are distinct events |
-| Behavioral change | Explore the behavioral finding; choose an eligible Focus; understand the concrete behavior; follow adherence and outcome independently; resolve or observe preemption; review the prior Focus | Starting a Focus proves intent, not adherence; no opportunities is unknown, not perfect adherence |
+| Supported setting change | Inspect evidence in Diagnose; stage one tuning variable; review the full pump-entry schedule; record the decision; enter it manually; reconcile the next detected profile; follow the detected Trial; revisit the decision | Saving, deciding, entering on the pump, detected confirmation, and observed outcomes are distinct events |
+| Behavioral change | Inspect the behavioral finding in Diagnose; choose an eligible Focus; understand the concrete behavior; follow adherence and outcome independently; resolve or observe preemption; review the prior Focus | Starting a Focus proves intent, not adherence; no opportunities is unknown, not perfect adherence |
 | Setting changed outside Harmonic | Detect the real pump change; show affected context and available before/after evidence; explain maturity and uncertainty; provide later review | A Trial can exist without an applied Harmonic Plan; do not invent a Plan link |
 | A particular event | Open Day directly or from an occurrence; inspect the episode and related evidence; return to the same selection, window, and navigation context | An episode is an investigation entry, not automatic proof of a finding or a new active change |
 | Routine return | See freshness, an existing draft, reconciliation, an active watch, or a quiet state; choose the next relevant action; reach settings and history | No new recommendation is a valid outcome; an active watch should not disappear behind new findings |
@@ -342,6 +346,8 @@ boundary, evidence/advice separation, and historical-period limits explicit.
 
 ## Navigation hypothesis
 
+Historical section — superseded by ADR 397 for navigation. The complete hypothesis below records the earlier investigation; it is no longer an instruction to test or choose destination names.
+
 Test four destinations without treating their names or boundaries as approved:
 
 - Overview: state-aware next useful action, data freshness, and concise context.
@@ -365,7 +371,7 @@ routes that the graph did not enumerate.
 | Capability | Existing source and interface | V2 question or gap |
 | --- | --- | --- |
 | Findings and evidence | `ciq_autotune/api.py:857` exposes `/api/diagnose/findings`; following routes expose carb-ratio block/history, basal-night, ISF-rest, eating-sequence, and case-file evidence | Map the selected journey onto existing server-owned verdicts, identities, memberships, and denominators before adding another projection |
-| Current context | `/api/status`, `/api/pump-settings`, `/api/outcomes`, `/api/outcomes/trend` in `api.py`; current freshness and chart consumers under `frontend/` | Establish which existing reads make a coherent Overview and how pending, stale, and failed states appear; do not infer quiet from an error |
+| Current context | `/api/status`, `/api/pump-settings`, `/api/outcomes`, `/api/outcomes/trend` in `api.py`; current freshness and chart consumers under `frontend/` | Establish which existing reads make coherent Changes guidance and how pending, stale, and failed states appear; do not infer quiet from an error |
 | Plan and decision history | `api.py:1501–1540` exposes draft read/save, apply, and history; `store.py:1068–1106` persists the draft and timestamped applied items | Reuse the existing decision record. Determine the minimum durable linkage or review fields the selected journey needs; apply remains a record, never a pump write |
 | Reconciliation | `frontend/plan.js:727–773`, `reconcileDeliverable`, compares proposed and detected schedules with parameter rounding and pending/mismatch/confirmed states | This behavior already has an implementation. Reuse it through a deliberate shared boundary, or explicitly choose one authoritative move when v2 needs it; do not duplicate its rules |
 | Trial review | `/api/verify/trials` calls `watched_change.review_trials` (`api.py:812–836`, `watched_change.py:631–701`) | The shipped roster uses a bounded horizon and at most three candidates. #340 proposes broader derived history and selected-detail loading; a durable user review decision is a separate concrete need |
@@ -899,6 +905,8 @@ verdict and chart identity. Overview and Explore consume this result verbatim.
 Existing Plan/Focus writes must recheck their authorities at action time; a
 previous guidance read grants no permanent permission.
 
+Navigation only in this historical record is superseded by ADR 397: Changes and Diagnose consume the result. The single-verdict and action-time authority remain unchanged.
+
 The build needs these additions; none exists merely because this ADR names it:
 
 * A guidance projection that includes held/thin analyzer evidence omitted from
@@ -986,6 +994,8 @@ populations, denominators and chart/episode identities. A stored preference whos
 subject is currently absent remains visible for Restore. It has no fabricated
 current evidence or action. The response must permit later Overview and Explore
 consumers to render it without independently deciding eligibility or rank.
+
+Navigation only in this historical record is superseded by ADR 397: Changes and Diagnose are the consumers. Backend eligibility and rank remain authoritative.
 
 Evidence is a separate structured field from recommendation text. Extend the
 scenario owners with factual/inferred fields and a closed semantic action ID;
@@ -1597,6 +1607,8 @@ accepted lifecycle metadata and are not reopened. This is a formal design
 contract; it is not fidelity evidence, built-app acceptance or release approval,
 and it authorizes no production edit on its own.
 
+Navigation and naming in the preceding record are superseded by ADR 397 — Three destinations: Overview and Explore collapse into Diagnose. Diagnose is the v2 default and retains the shipped v1 name and Findings rail.
+
 ## September 8 direction change — outcome shapes and three destinations
 
 The grounded September 8 interview, recorded in
@@ -1629,13 +1641,13 @@ backend authorities or data boundary.
   can finish a Trial and its active-change constraint.
 - v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore
   collapse into Diagnose carrying the shipped v1 rail as-is, amending `HV2-09`,
-  `HV2-10`, `HV2-11` and ADR 348's navigation.
+  `HV2-10`, `HV2-11` and ADR 348's navigation. Cleared by ADR 397 — Three destinations: Overview and Explore collapse into Diagnose.
 - Notifications and the endo 90-day snapshot come after the first release; no
   food diary, site-age finding or same-meal trials enters v2, retaining the
   settled product scope.
 - v1 retires after Connor accepts v2, retaining task 4.3's acceptance boundary.
 - #389 stays stopped: chunk c1 (desk, Day and utilities) integrates once #391
-  is admitted; c2 (Overview/Explore/Plan) and c3's Focus-subject part wait for
+  is admitted; c2 (Diagnose/Changes/Plan under ADR 397) and c3's Focus-subject part wait for
   #390 steps 2 and 4.
 - #342's eating-sequence levers are a child of #390, members of highs after
   meals, and sequence after #391.
@@ -1928,7 +1940,7 @@ design child is admitted.
 The Diagnose collapse (task 2.5.5) is filed as its own child rather than folded
 into #395 or #389 because it is a different kind of change with a different
 lifecycle: it amends the v2 desktop lock's navigation terms (`HV2-09`,
-`HV2-10`, `HV2-11`), ADR 348's three-destination navigation and the frozen
+`HV2-10`, `HV2-11`), ADR 348's four-destination navigation, superseded by the September 8 three-destination ruling and ADR 397, and the frozen
 behavior ledger so that Overview and Explore collapse into Diagnose carrying the
 shipped rail as-is. #395 could not carry it (a `revise` order cannot amend a
 lock manifest; that is `resettle`), and #389 cannot carry it either: #389's
@@ -1937,8 +1949,90 @@ ruling landing first, so the ruling must be a separate, earlier merge. It
 changes no served data and no shipped rail behaviour; it is the last
 planning-authority change before #389 resumes.
 
+The historical collapse description above is cleared by ADR 397; #389 retains every other admission gate and remains responsible for its ledger/assertion/fidelity amendments.
+
 ### Effect on the desktop lock
 
-`HV2-09`, `HV2-10` and `HV2-11` for navigation, and `HV2-24` for Focus
-readiness, are amended-pending. Their amendments land with #390 step 4 and step
-2 respectively, not in this planning record.
+`HV2-09`, `HV2-10` and `HV2-11` navigation amendments, with HV2-14's
+evidence-label amendment, are cleared by #397 / ADR 397. #389 owes the
+branch-local behavior, assertion and fidelity amendments before dependent work
+resumes. HV2-24 readiness is already resolved by ADR 391, #393 and ADR 395;
+this navigation amendment changes no readiness policy.
+
+## ADR 397 — Three destinations: Overview and Explore collapse into Diagnose
+
+Amended: 2026-09-10. Sanction date: 2026-09-08.
+
+Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+
+### Decision and ownership
+
+V2 ships Diagnose, Changes and Day. Diagnose is the default and carries the
+shipped v1 Findings rail as-is, including #395's backend-published Patterns.
+It owns clock-window exploration, detailed evidence, the selected case file,
+Spotlight and All Charts. Evidence-stage geometry remains stable as Findings,
+clock window and selected case change under HV2-03–HV2-08.
+
+Changes owns the backend-selected active change or leading available priority
+and its next action alongside every HV2-12 responsibility: Plan/Focus,
+Trial/Focus progress, endings, saved conclusions, original records, history,
+reassessments and Pump settings. This placement is the coordinator's explicit
+instruction in #397's order; it is not part of the quoted September 8 sanction.
+Empty Changes cannot suppress a backend-selected available priority and action.
+Day retains HV2-13. HV2-14 retains contextual source and exact-return focus.
+Both failed-evidence frames, `Evidence unavailable` and `Current read failed`,
+belong to Diagnose under HV2-11; the latter action reads `Open Diagnose`.
+
+### Amendment inventory and precedence
+
+The manifest's dated RE-SETTLED TERM record quotes the old and new terms and
+copy. Stable IDs HV2-09, HV2-10 and HV2-11 remain gates with amended ownership;
+HV2-14 changes its evidence label only. Dependent amendments cover default and
+persistent chrome, three destination buttons, rail preservation, dense and
+Changes-guidance fixtures, destination/return/set-aside/utility copy, naming
+consistency, Cockpit S2 and Diagnose S109/S112/S113 preservation, the sanction
+limitation, shell/guidance/window/Day/cleanup acceptance, replay story groups,
+and the enumerated exception to verbatim-first port and same-byte fidelity.
+
+The selected HTML and primary JS locked headers, journey, setting, focus, Day,
+utilities, basal and shared scaffold headers carry sanctioned old/new copy
+records. `mockups/INDEX.md` retains its locked row and file inventory. Active
+`proposal.md`, `contracts.md` and `journeys.md` agree on the three destinations;
+`predecessor.md` preserves the September 6 account with explicit supersession.
+Historical ADR 348 decisions and the Navigation hypothesis retain their original
+text with navigation-only pointers; unrelated boundaries and invariants hold.
+ADR 135's old canvas mode is a distinct historical concept. None of its retired
+mechanics is reinstated, and the v1 behavior ledgers remain frozen and unchanged.
+
+These enumerated amendments supersede the historical prototype and adopted
+repair records for navigation and affected copy. Executable mock bytes, route
+identifiers, handlers, attributes, runtime strings, CSS, captures and unselected
+variants remain unchanged. Existing captures support only unchanged material
+and geometry; they do not prove the amended navigation. #389 must document the
+adaptation ranges and supply updated fidelity evidence. No superseded navigation
+requirement survives the verbatim-first port instruction.
+
+### #389 handoff and evidence owed
+
+C2 and c3 build against Diagnose / Changes / Day. Before dependent implementation
+resumes, #389 must amend its existing frozen behavior ledger/replay entries,
+permanent retirement records, affected LOCK assertions and fidelity rows for all
+terms and dependent amendments above, including both failed-evidence frames.
+The v2 behavior and fidelity artifacts live on stopped #389 and are absent here;
+this child creates no substitutes and claims no update to those branch-local files.
+There is no executable `LOCK:harmonic-v2-desktop:*` assertion in this checkout;
+the primary mock's HV2-nn tag is illustrative. #389 proves each amended assertion
+fails for its intended reason before restoring green and marks fidelity rows
+`met` only with the required new evidence. All other admission gates remain.
+The governing commit and this ADR are the amendment handoff authority; posting
+that authority performs no chunk and claims no implementation or release acceptance.
+
+Strict OpenSpec validation, the ADR, identifier and public-allowlist guards,
+the dependency-free Node suite and pytest against the built shell are the
+selected verification. The post-change residue command is an inventory: its
+complete output and line-by-line classes belong in the execution receipt.
+Permitted classes are superseded quotation, new ADR or sanction text, runtime
+identifier (including unchanged prototype runtime copy), and historical pointer.
+No unruled live v2 navigation statement is permitted; a quotation-only raw output
+would conflict with retained history and executable bytes and is not claimed.
+Task 2.5.5 completion and Full review closure remain coordinator-owned.

@@ -231,6 +231,9 @@ jobs:
       # Python and no server.
           - gate: V2 desk
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
+          - gate: V2 Trial and Pattern Focus
+            python: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
           - gate: First-plan reconcile
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
@@ -275,12 +278,12 @@ jobs:
       - name: Build the delivered frontend shell
         run: npm ci && npm run build
       - name: Set up uv for the no-fetch app server
-        if: matrix.server
+        if: matrix.server || matrix.python
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - name: Install the API runtime for the no-fetch app server
-        if: matrix.server
+        if: matrix.server || matrix.python
         run: uv sync --frozen --extra api
       - name: Restore the isolated browser runner and Chromium
         id: browser-runner-cache

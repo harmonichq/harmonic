@@ -38,4 +38,5 @@ export {
   fetchDiagnoseCarbRatioHistoryEvents,
   applyPlan, loadPlan, loadPlanHistory, savePlanDraft, withdrawPlan,
   fetchGuidance, setGuidancePreference, restoreGuidancePreference,
+  fetchVerifyTrials, finishTrial, fetchFocuses, pinFocus, resolveFocus,
 } from '../frontend/data.js';

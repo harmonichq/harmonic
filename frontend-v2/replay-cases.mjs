@@ -1,6 +1,8 @@
 // Synthetic-only replay transport. Each story gets a fresh copy, served on the
 // declared QA port. The caller opts in with CASE_STORE_DIR; an existing server
 // is never stopped or reused under a different case name.
+import { boundedWait } from './c2.replay.mjs';
+import { C3_CASES } from './c3.replay.mjs';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { copyFile, mkdir, rm, open } from 'node:fs/promises';
@@ -13,7 +15,7 @@ export const STORY_CASES = Object.freeze({
   S100: 'showcase',
 });
 export function storyCase(id, overrides = '') {
-  const mapping = { ...STORY_CASES };
+  const mapping = { ...STORY_CASES, ...C3_CASES };
   for (const pair of overrides.split(',').filter(Boolean)) {
     const match = /^(S\d+[a-z]?)=([a-z][a-z0-9-]*)$/.exec(pair);
     if (!match) throw new Error(`Invalid STORY_CASES entry: ${pair}`);
@@ -32,12 +34,16 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
   const generated = new Map();
   async function command(args) {
     const process = spawn('uv', ['run', ...args], { cwd: repo, stdio: ['ignore', log.fd, log.fd] });
-    const [code] = await once(process, 'exit');
+    let code;
+    try { [code] = await boundedWait(once(process, 'exit'), `generated case command ${args[0]}`, 60000); }
+    catch (error) { process.kill('SIGKILL'); throw error; }
     if (code !== 0) throw new Error(`uv run ${args.join(' ')} exited ${code}; see ${scratch}`);
   }
   async function stop() {
     if (child && child.exitCode === null) {
-      const exited = once(child, 'exit'); process.kill(-child.pid, 'SIGTERM'); await exited;
+      const exited = once(child, 'exit'); process.kill(-child.pid, 'SIGTERM');
+      try { await boundedWait(exited, 'synthetic server shutdown', 10000); }
+      catch { process.kill(-child.pid, 'SIGKILL'); await boundedWait(exited, 'synthetic server forced shutdown', 5000); }
     }
     child = null;
     if (log) { await log.close(); log = null; }

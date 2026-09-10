@@ -57,6 +57,7 @@ EXPECTED_CASE_NAMES = (
     "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
     "pattern-near-tie", "pattern-collapse",
+    "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
 )
 
 

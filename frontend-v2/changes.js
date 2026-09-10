@@ -26,11 +26,16 @@ import {
 import { navigate, registerDestination, registerEscape, render, view } from './routes.js';
 import { SETTING_NAME, stage as stagePlan, unstage, phase, planUnderway, mount as mountPlan, installPlan } from './plan-view.js';
 import { openUtility } from './utilities.js';
+import { mount as mountFollowUp, configureFollowUp } from './follow-up.js';
+import { mount as mountHistory, openRecord } from './history.js';
+import { mount as mountFocusEntry, focusOffer, readFocusOptions } from './focus-entry.js';
+configureFollowUp({ openRecord });
 
 // The set-aside form is this destination's own layer, so its open state and the
 // half-typed reason live here rather than on the desk's shared view.
 const aside = { open: false, reason: '', subject: null };
 let planOpen = false;
+let focusArrival = null;
 
 function inspectSelected() {
   const candidate = candidateFor(aside.subject) || selectedConcern();
@@ -136,7 +141,7 @@ function concernFrame(candidate) {
     kicker: `${e(family)} · read ${e(read?.window?.end || '')}`,
     title: e(candidate.title || candidate.subject),
     sub: `<b>${e(candidate.priority ?? '—')} priority</b> · ${e(disposition() || '')}${candidate.preference?.set_aside ? ' · Set aside' : ''}`,
-    end: end + '<button class="gf-btn" data-action="pump">Pump settings</button>',
+    end: end + '<button class="gf-btn" data-action="history">View change record</button>' + (focusOffer(candidate.subject) ? '<button class="gf-btn primary" data-start-focus>Start Focus</button>' : '') + '<button class="gf-btn" data-action="pump">Pump settings</button>',
   });
   const wrote = writeFailed
     ? `<p class="gf-error" role="alert">That did not save: ${e(writeFailed.message)}</p>`
@@ -152,7 +157,7 @@ function quietFrame() {
   const set = asideRows().length;
   const copy = [set ? `${set} set aside` : '', `read ${guidance()?.window?.end || ''}`].filter(Boolean).join(' · ');
   return emptyFrame('Changes', 'No priority needs action', e(copy),
-    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="day">Open Day</button>' + setAsideList(true));
+    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="day">Open Day</button>' + setAsideList(true) + '<button class="gf-btn" data-action="history">View change record</button>');
 }
 
 /**
@@ -167,7 +172,7 @@ function unavailableFrame() {
   const reason = unavailableReason();
   return emptyFrame('Changes', 'No action from this read',
     e(reason?.said || 'The source served no reason.'),
-    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>' + setAsideList(true));
+    '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>' + setAsideList(true) + '<button class="gf-btn" data-action="history">View change record</button>');
 }
 
 /**
@@ -181,13 +186,6 @@ function unselectedFrame(state) {
   return emptyFrame('Changes', 'No concern is selected',
     e(guidance()?.reasons?.admission || `This read returned "${state || 'nothing'}" and selected no concern.`),
     '<button class="gf-btn primary" data-action="explore">Open Diagnose</button><button class="gf-btn" data-action="retry">Retry</button>');
-}
-
-/** The active change leads; a new concern cannot claim the seat beside it. */
-function activeChangeFrame() {
-  const read = guidance();
-  return emptyFrame('Changes', 'A change is underway', e(read?.reasons?.ordering || 'The active change precedes every new concern.'),
-    '<button class="gf-btn primary" data-destination-action="changes">Open Changes</button><button class="gf-btn" data-action="explore">Open Diagnose</button>');
 }
 
 /**
@@ -210,6 +208,10 @@ function cancelAside() {
 }
 
 function bind(host) {
+  const history = host.querySelector('[data-action="history"]');
+  if (history) history.onclick = () => navigate('changes', { subject: 'history' });
+  const focus = host.querySelector('[data-start-focus]');
+  if (focus) focus.onclick = () => navigate('changes', { subject: selectedConcern().subject });
   for (const button of host.querySelectorAll('[data-action]')) {
     const action = button.dataset.action;
     if (action === 'explore') button.onclick = () => inspectSelected();
@@ -277,6 +279,9 @@ function bind(host) {
  * unavailable, and an active change is neither (HV2-31, S18, S19).
  */
 export function mount(host, deps = {}) {
+  if (deps.context?.occurrence?.startsWith('record:') || deps.context?.subject === 'history') {
+    mountHistory(host, deps); return;
+  }
   if ((planOpen && planUnderway()) || ['draft', 'pending_plan'].includes(disposition()) || deps.context?.subject === 'plan') { mountPlan(host, deps); return; }
   if (guidanceError()) { host.innerHTML = failedFrame(); bind(host); return; }
   if (!guidanceSettled()) {
@@ -287,12 +292,14 @@ export function mount(host, deps = {}) {
   if (!guidance()) { host.innerHTML = failedFrame(); bind(host); return; }
 
   const state = disposition();
+  if (focusArrival !== deps.navigation && state !== 'active_change') { focusArrival = deps.navigation; readFocusOptions(); }
   // A concern the wearer set aside and is still looking at keeps the seat, so
   // the acknowledgment and its Restore are what they see (S15).
   const held = aside.subject ? candidateFor(aside.subject) : null;
   const candidate = (held?.preference?.set_aside ? held : null) || selectedConcern();
 
-  if (state === 'active_change') { host.innerHTML = activeChangeFrame(); bind(host); return; }
+  if (state === 'active_change') { mountFollowUp(host, deps); return; }
+  if (deps.context?.subject?.startsWith('pattern:')) { mountFocusEntry(host, deps); return; }
   // A Plan already recorded or drafted holds the seat too, and Changes carries
   // it — this is not a concern Changes can lead with (HV2-15).
   if (candidate) { host.innerHTML = concernFrame(candidate); bind(host); return; }

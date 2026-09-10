@@ -8,6 +8,7 @@ import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
+import { focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { formatStartMin } from '../frontend/plan.js';
 
 /** One mounted shared view and one coherent initial read. loadCase remains an
@@ -31,6 +32,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   async function read() {
     if (pending) return pending;
     error = null;
+    readFocusOptions().then(() => { if (seated) showFocusAction(); });
     loadPlanState().then(() => { if (seated) workstation.refresh(); }).catch(() => {});
     pending = Promise.all([
       api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
@@ -43,7 +45,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       payload = { analyze: values[0], scenarios: values[1], evidence: values[2], exposures: values[3],
         casePreparation: preparation, findings: { ...preparation.findings, rows: preparation.rendered_rows },
         watched: values[4]?.watched_change || null };
-      if (seated) { workstation.setData(payload); restoreEntry(); }
+      if (seated) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
     }).catch((cause) => {
       error = cause;
       if (seated) workstation.setError(cause);
@@ -101,11 +103,25 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!view.focusAfterRender) view.focusAfterRender = '#crumb-trail';
   }
 
+  // S129/S131: a catalog pick drills its chart. The owner no-ops a pick
+  // already in the inspector; retaining/alignment controls do not pick it.
+  function selectTile(tile) {
+    if (tile.dataset.chartId === activeSubject) return;
+    activeSubject = tile.dataset.chartId;
+    caseContext.select(activeSubject);
+    showFocusAction();
+  }
+
   function ensureView(host) {
     if (root) return;
     root = host.ownerDocument.createElement('div');
     root.className = 'v2-diagnose main-content';
     root.dataset.v2Diagnose = '';
+    root.addEventListener('keydown', event => {
+      const tile = event.target.closest?.('.evidence-tile');
+      if (event.target === tile && tile.dataset.seat === 'grid'
+        && ['Enter', ' '].includes(event.key)) selectTile(tile);
+    }, true);
     // The v2 lane contract adds traversal through the owner's existing buttons.
     root.addEventListener('keydown', event => {
       if (event.metaKey || event.ctrlKey || event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -124,12 +140,16 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.addEventListener('click', event => {
       const row = event.target.closest?.('.qrow[data-id]');
       const member = event.target.closest?.('.case-occurrence');
+      const tile = event.target.closest?.('.evidence-tile');
+      const control = event.target.closest?.('button');
       readingScroll = member ? { event, top: root.querySelector('#level')?.scrollTop || 0 } : null;
       if (row) { activeSubject = row.dataset.id; caseContext.select(activeSubject); }
       else if (member && activeSubject) caseContext.select(activeSubject, member.dataset.occurrenceId);
-      else if (event.target.closest?.('#crumb-trail button, #lane > button')) {
+      else if (tile && (!control || control.classList.contains('tile-fullscreen'))) selectTile(tile);
+      else if (event.target.closest?.('#crumb-trail button, #lane > button, #seg-window button, #seg-align button, #tab-strip button')) {
         activeSubject = null; caseContext.select(null);
       }
+      showFocusAction();
     }, true);
     // A native night click rebuilds #level synchronously. Restore the same
     // subject's scroll after that handler; selecting a different subject does
@@ -170,10 +190,36 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       loadFindings: api.fetchDiagnoseFindings,
       loadPreparation: api.fetchDiagnoseFindingCasePreparation,
       loadHistoryEvents: api.fetchDiagnoseCarbRatioHistoryEvents,
-      loadCase: coordinates => caseContext.load(coordinates),
+      loadCase: async coordinates => {
+        try { return await caseContext.load(coordinates); }
+        finally { showFocusAction(); }
+      },
       go: (to) => to === 'settings' ? openUtility('settings')
         : navigate(to === 'day' ? 'day' : 'changes', to === 'plan' ? { subject: 'plan' } : {}),
     } });
+  }
+
+  function showFocusAction() {
+    root?.querySelector('[data-start-focus]')?.remove();
+    root?.querySelector('[data-action="watch"]')?.remove();
+    if (!seated) return;
+    if (entry.from === 'changes' && payload?.watched) {
+      const back = root.ownerDocument.createElement('button');
+      back.className = 'gf-btn'; back.dataset.action = 'watch'; back.textContent = 'Return to Trial';
+      back.onclick = () => navigate('changes');
+      root.querySelector('header.crumb')?.append(back);
+    }
+    const selected = caseContext.current();
+    const offered = focusOfferForCase(selected);
+    if (!offered) return;
+    const button = root.ownerDocument.createElement('button');
+    button.className = 'gf-btn'; button.dataset.startFocus = offered.subject;
+    button.textContent = 'Start Focus';
+    button.onclick = () => {
+      if (focusOfferForCase(caseContext.current())?.subject === offered.subject)
+        navigate('changes', { subject: offered.subject, from: 'diagnose' });
+    };
+    root.querySelector('header.crumb')?.append(button);
   }
 
   function leave() {
@@ -217,7 +263,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     }
     ensureView(host);
     host.replaceChildren(root);
-    if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); }
+    if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
     else if (deps.navigation !== arrival) { workstation.leaveSurface(); workstation.refresh(); restoreEntry(); }
     arrival = deps.navigation;
     (deps.hold || hold)((pagehide) => { if (pagehide || currentDestination() !== 'diagnose' || !host.isConnected) leave(); });

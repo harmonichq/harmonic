@@ -210,11 +210,21 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * The Trial's maturing window is a backend fact — no window knob exists here.
    * @param {{ selected?: string }} [opts]
    */
-  function fetchVerifyTrials({ selected } = {}) {
+  function fetchVerifyTrials({ selected, kind, assessment } = {}) {
     const params = new URLSearchParams();
     if (selected) params.set('selected', selected);
+    if (kind) params.set('kind', kind);
+    if (assessment) params.set('assessment', assessment);
     const qs = params.toString();
     return api('/api/verify/trials' + (qs ? '?' + qs : ''));
+  }
+
+  /** Record a Trial ending with the durable retry identity and read revision. */
+  function finishTrial(id, durable) {
+    return api('/api/verify/trials/' + encodeURIComponent(id) + '/finish', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(durable),
+    });
   }
 
   /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
@@ -412,8 +422,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * POST /api/focus/{id}/resolve — unpin (retire) the active Focus by id.
    * @param {number} id
    */
-  function resolveFocus(id) {
-    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', { method: 'POST' });
+  function resolveFocus(id, durable) {
+    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', durable ? {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(durable),
+    } : { method: 'POST' });
   }
 
   /**
@@ -423,11 +435,11 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * surfaces the message. Returns the pinned Focus row (with its id, for undo).
    * @param {string} lever
    */
-  function pinFocus(lever) {
+  function pinFocus(lever, durable) {
     return api('/api/focus', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lever }),
+      body: JSON.stringify(durable ? { ...(lever ? { lever } : {}), ...durable } : { lever }),
     });
   }
 
@@ -543,6 +555,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDayNavigator,
     fetchOutcomesTrend,
     fetchVerifyTrials,
+    finishTrial,
     fetchExploreTimeOfDay,
     fetchEatingSequences,
     fetchExploreExposures,
@@ -597,6 +610,7 @@ export const fetchModelView    = _defaults.fetchModelView;
 export const fetchDayNavigator = _defaults.fetchDayNavigator;
 export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
+export const finishTrial = _defaults.finishTrial;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchEatingSequences = _defaults.fetchEatingSequences;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;

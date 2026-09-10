@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-globalThis.fetch = async () => ({ ok: true, json: async () => ({ items: [], history: [] }) });
+let fetchReply = async () => ({ ok: true, json: async () => ({ items: [], history: [] }) });
+globalThis.fetch = (...args) => fetchReply(...args);
 const { createDiagnoseDestination } = await import('./diagnose.js');
 
 function host() {
@@ -124,4 +125,61 @@ test('the v2 adapter wraps lane keys through the carried buttons and retains nig
   for (const h of handlers.filter(h => h.type === 'click' && !h.capture)) h.run(event);
   assert.equal(level.scrollTop, 120, 'selection within the same reading preserves its viewport');
   destination.leave();
+});
+
+test('S129/S131 tile activation replaces the Focus drill, while same-chart picks and retention controls keep it', async () => {
+  const previousFetch = fetchReply;
+  const { readFocusOptions } = await import('./focus-entry.js');
+  const subjects = ['pattern:served-a', 'pattern:served-b'];
+  fetchReply = async path => ({ ok: true, json: async () => path === '/api/focus'
+    ? { input_revision: 7, admission: { focus_pin: { available: true } },
+      pinnable_patterns: subjects.map(subject => ({ subject, key: subject.slice(8) })) }
+    : { input_revision: 7, candidates: [], items: [], history: [] } });
+  const handlers = []; const pending = []; let callbacks; let button = null;
+  const header = { append(node) { button = node; } };
+  const document = { createElement() { return { dataset: {}, remove() { if (button === this) button = null; } }; } };
+  const root = { dataset: {}, ownerDocument: document, remove() {}, querySelectorAll: () => [],
+    addEventListener(type, run, capture) { handlers.push({ type, run, capture }); },
+    querySelector: selector => selector === 'header.crumb' ? header : selector === '[data-start-focus]' ? button : null };
+  const seat = host(); seat.ownerDocument.createElement = () => root;
+  const destination = createDiagnoseDestination({ api: source().api,
+    loadCase: coordinates => new Promise(resolve => pending.push(() => resolve({
+      finding: { id: coordinates.finding_id }, projection_id: coordinates.projection_id,
+      selection: { requested_id: null }, window: { start_min: 0, end_min: 1440 },
+    }))),
+    createView(options) { callbacks = options.callbacks; return { setData() {}, leaveSurface() {}, refresh() {}, setError() {} }; },
+  });
+  const click = target => handlers.filter(h => h.type === 'click' && h.capture).forEach(h => h.run({ target }));
+  const row = subject => ({ closest: selector => selector === '.qrow[data-id]' ? { dataset: { id: subject } } : null });
+  const tile = (subject, control = null) => {
+    const node = { dataset: { chartId: subject, seat: 'grid' } };
+    node.closest = selector => selector === '.evidence-tile' ? node : selector === 'button' ? control : null;
+    return node;
+  };
+  const request = subject => callbacks.loadCase({ finding_id: subject, projection_id: 'served-generation' });
+  const answer = async promise => { pending.shift()(); await promise; };
+  const offered = () => button?.dataset.startFocus || null;
+  try {
+    await destination.read(); await readFocusOptions();
+    destination.mount(seat, { navigation: 0, hold() {} });
+    for (const activation of ['click', 'Enter', ' ']) {
+      click(row(subjects[0]));
+      await answer(request(subjects[0]));
+      assert.equal(offered(), subjects[0]);
+      click(tile(subjects[0]));
+      assert.equal(offered(), subjects[0], 'the owner no-ops a repeated current-chart pick');
+      click(tile(subjects[1], { classList: { contains: () => false } }));
+      assert.equal(offered(), subjects[0], 'a tile retention/alignment button is not a drill');
+      const late = request(subjects[0]);
+      const picked = tile(subjects[1]);
+      if (activation === 'click') click(picked);
+      else handlers.filter(h => h.type === 'keydown').forEach(h => h.run({ key: activation, target: picked }));
+      assert.equal(offered(), null, `${JSON.stringify(activation)} invalidates the former drill before a response`);
+      await answer(late);
+      assert.equal(offered(), null, 'late evidence from the previous drill cannot restore its action');
+      await answer(request(subjects[1]));
+      assert.equal(offered(), subjects[1], 'only the successfully loaded picked Pattern becomes actionable');
+    }
+    destination.leave();
+  } finally { fetchReply = previousFetch; }
 });

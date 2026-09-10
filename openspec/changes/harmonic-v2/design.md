@@ -1611,6 +1611,8 @@ and it authorizes no production edit on its own.
 
 Amended 2026-09-10 under Coordinator Amendment 2: committed set-aside and Restore preference writes reconcile through the existing ingestion completion adapter, `reconcile_ingested_follow_up`, before their HTTP endpoints return success.
 
+Amended 2026-09-10 under #389 c3 Coordinator Amendment 2: inherited stories S129/S131 require an All Charts pick to select its chart's drill, so v2 observes tile click/Enter/Space before the shipped handler and invalidates the previous case request, while preserving the owner's same-chart no-op and treating pin/alignment controls as non-drill actions.
+
 This records the original #389 freeze and slicing. The later ADR 391, ADR 395
 and ADR 397 records below supersede its affected readiness, rail, navigation
 and copy requirements; the current chunk ownership is in `tasks.md`. Statements

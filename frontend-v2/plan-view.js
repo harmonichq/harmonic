@@ -522,3 +522,14 @@ export function installPlan() {
     return true;
   });
 }
+
+/** The Trial supplies the complete prior draft; the existing Plan owns its save. */
+export async function stagePrior(route) {
+  try {
+    if (!route?.draft) return true; // the backend's manual-entry route
+    const saved = await savePlanDraft(route.draft);
+    memory.plan = saved; memory.staged = null; memory.saveError = null;
+    await loadPlanState();
+    return true;
+  } catch (error) { memory.saveError = { kind: 'draft', error }; return false; }
+}

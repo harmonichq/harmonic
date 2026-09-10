@@ -178,8 +178,9 @@ def _build_episode(
     over-treated lows.
     """
     start = ep_anchors.start
+    narration_end = min(ep_anchors.end, next_start) if next_start is not None else ep_anchors.end
     ctx_start = start - timedelta(minutes=scenario_config.engine_context_pad_min)
-    ctx_end = ep_anchors.end + timedelta(minutes=scenario_config.engine_context_pad_min)
+    ctx_end = narration_end + timedelta(minutes=scenario_config.engine_context_pad_min)
     ctx_cgm = _slice(cgm, ctx_start, ctx_end)
     ctx_bolus = _slice(bolus, ctx_start, ctx_end)
     ctx_basal = _slice(basal, ctx_start, ctx_end)
@@ -349,6 +350,8 @@ def assemble(
     for idx, item in enumerate(evaluated.episodes):
         built = _build_episode(idx, item.anchors, cgm_readings, bolus_events, basal_events,
                                isf=isf, window_builder=window_builder,
+                               next_start=(evaluated.episodes[idx + 1].start
+                                           if idx + 1 < len(evaluated.episodes) else None),
                                scenario_config=scenario_config, low_answers=low_answers,
                                evaluated=item)
         if built is None:
@@ -376,7 +379,7 @@ def assemble(
         if lever is not Lever.OVER_TREATED_LOW and len(occurrence_eps) < scenario_config.engine_min_occurrences:
             continue
         conf = _score_pattern(lever, occurrence_eps, recurrence_counts, scenario_config=scenario_config)
-        if lever in evaluated.competing_levers:
+        if lever in SEQUENCE_LEVERS:
             conf = replace(conf, effect=evaluated.candidate_impacts[lever])
         scored.append((conf, lever, occurrence_eps))
 

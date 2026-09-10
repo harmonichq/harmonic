@@ -216,10 +216,11 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
                                    window_end=end, config=EatingSequenceConfig())
     groups, families = _context(bolus, cgm, basal, isf, scenario_config, low_answers)
     attrs = []
-    for index, group in enumerate(groups):
+    for group in groups:
         lo = group.start - timedelta(minutes=scenario_config.engine_context_pad_min)
-        bounded_end = min(group.end, groups[index + 1].start) if index + 1 < len(groups) else group.end
-        hi = bounded_end + timedelta(minutes=scenario_config.engine_context_pad_min)
+        # Preserve the tally's classifier reach. The next group bounds burden,
+        # not the evidence each classifier is allowed to inspect.
+        hi = group.end + timedelta(minutes=scenario_config.engine_context_pad_min)
         attrs.append(attribute(group, _slice(cgm, lo, hi), _slice(bolus, lo, hi),
                                _slice(basal, lo, hi), isf=isf,
                                scenario_config=scenario_config, low_answers=low_answers))
@@ -246,7 +247,7 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
         seq_candidates = _sequence_candidates(ep, sequences)
         candidates.extend(seq_candidates)
         if seq_candidates:
-            competing.update(c.lever for c in candidates)
+            competing.update(c.lever for c in seq_candidates)
         for candidate in candidates:
             population = impacts.setdefault(candidate.lever, {})
             population[candidate.occurrence_id] = max(population.get(candidate.occurrence_id, 0), ep.severity)

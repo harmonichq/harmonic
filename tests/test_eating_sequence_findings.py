@@ -11,8 +11,6 @@ from ciq_autotune.events import CgmReading
 from tests.eating_sequence_streams import sequence_episode_stream
 
 
-
-
 class EatingSequenceFindingsTest(unittest.TestCase):
     def test_supported_empty_meal_episode_retains_sequence_finding(self):
         for lever, expected_n in (("high_carb_sequence", 40), ("repeat_eating", 16)):
@@ -216,3 +214,125 @@ class SharedSequenceEvaluationTest(unittest.TestCase):
         episode = next(e for e in view['episodes'] if e.get('evaluation_id') == owned.id)
         self.assertEqual(episode['lever'], 'high_carb_sequence')
         self.assertTrue(episode['anchors'][0]['verdicts'])
+
+
+def _ordinary_competition_stream():
+    """Three undercount owners, three late owners, and one sequence contest."""
+    from ciq_autotune.events import BolusEvent
+    bolus, cgm, _, basal = sequence_episode_stream(
+        "high_carb_sequence", covered=True, competitor=None,
+    )
+    t = bolus[-1].t
+    bolus[-1] = replace(bolus[-1], carbs=80)
+    # Two distinct same-time doses: the first matches late bolus, the stamped
+    # second also matches undercount. Both stay inside the same bounded episode.
+    bolus.append(BolusEvent(t, carbs=20, insulin=.5, carb_ratio=200,
+                            completion="Completed", seq_num=999))
+    for index, reading in enumerate(cgm):
+        minute = (reading.t - t).total_seconds() / 60
+        if -15 <= minute <= 0:
+            cgm[index] = replace(reading, bg=110 + 4 * (minute + 15))
+        elif 0 < minute < 60:
+            cgm[index] = replace(reading, bg=185)
+    for index in range(6):
+        t = bolus[0].t - timedelta(hours=12 * (index + 1))
+        late = index >= 3
+        bolus.append(BolusEvent(t, carbs=20, insulin=.5,
+                                carb_ratio=None if late else 40,
+                                completion="Completed", seq_num=1000 + index * 2))
+        if late:
+            bolus.append(BolusEvent(t, carbs=10, insulin=.5, carb_ratio=40,
+                                    completion="Completed", seq_num=1001 + index * 2))
+        for minute in range(-30, 365, 5):
+            glucose = 210 if 60 <= minute < 70 else 110
+            if late and -15 <= minute <= 0:
+                glucose = 110 + 4 * (minute + 15)
+            elif late and 0 < minute < 60:
+                glucose = 185
+            cgm.append(CgmReading(t + timedelta(minutes=minute), glucose))
+    return sorted(bolus, key=lambda b: b.t), sorted(cgm, key=lambda r: r.t), basal
+
+
+class ReviewRegressionTest(unittest.TestCase):
+    def test_sequence_winner_is_excluded_from_clean_rates_and_trends(self):
+        from ciq_autotune.analyzers.scenario import tally_attributions
+        from ciq_autotune.outcomes import summarize_outcomes
+        from ciq_autotune.outcomes_trend import summarize_trend
+        from tests.test_outcomes_trend import _FakeStore
+        for lever, meals in (("high_carb_sequence", 40), ("repeat_eating", 100)):
+            with self.subTest(lever=lever):
+                b, c, log, basal = sequence_episode_stream(lever)
+                _, attributed = tally_attributions(b, c, basal)
+                self.assertEqual(attributed[lever], 8)
+                store = _FakeStore(bolus=b, cgm=c, basal=basal, carbs=log)
+                summary = summarize_outcomes(store, window_days=40)
+                self.assertEqual([(r.exposure, r.n, r.attributed) for r in summary.clean_rates],
+                                 [("meals", meals, 0), ("lows", 0, 0),
+                                  ("correction_clusters", 0, 0), ("highs", 9, 1)])
+                trend = summarize_trend(store, window_days=40)
+                self.assertEqual([r.lever for r in trend.behaviors],
+                                 ["late_bolus", "carb_undercount", "meal_over_delivery",
+                                  "over_treated_low", "correction_on_iob", "correction_stacking",
+                                  "missed_meal", "meal_bolus_short"])
+
+    def test_ordinary_effect_uses_only_owned_episodes_when_sequences_compete(self):
+        from ciq_autotune.analyzers.scenario.evaluation import evaluate
+        from ciq_autotune.events import CarbEntry
+        b, c, basal = _ordinary_competition_stream()
+        effects = []
+        owners = []
+        for enabled in (False, True):
+            # Exclude sequence comparisons only; leave every ordinary event intact.
+            log = [] if enabled else [CarbEntry(x.t + timedelta(minutes=1), 17.3,
+                                                "exact", "manual") for x in b]
+            evaluated = evaluate(b, c, basal, isf=40, carb_entries=log)
+            matched = [e for e in evaluated.episodes
+                       if any(x.lever == "carb_undercount" for x in e.candidates)]
+            self.assertEqual(len(matched), 7)
+            self.assertEqual(sum(e.attribution.lever == "late_bolus" for e in matched),
+                             3 if enabled else 4)
+            if enabled:
+                self.assertEqual(matched[-1].attribution.lever, "high_carb_sequence")
+            owners.append([(e.start, e.end, e.severity) for e in matched
+                           if e.attribution.lever == "carb_undercount"])
+            report = assemble(b, c, basal, isf=40, carb_entries=log)
+            pattern = next(p for p in report.patterns + report.low_confidence
+                           if p.lever == "carb_undercount")
+            self.assertEqual(pattern.confidence.k, 3)
+            effects.append((pattern.confidence.effect, pattern.confidence.score))
+        self.assertEqual(*owners)
+        self.assertEqual(*effects)
+
+    def test_sequence_population_keys_match_closed_levers_and_policy(self):
+        from ciq_autotune.analyzers.scenario.evaluation import evaluate
+        from ciq_autotune.analyzers.scenario.levers import Lever
+        from ciq_autotune.analyzers.scenario.evidence_population import policy_for
+        expected = {Lever.HIGH_CARB_SEQUENCE.value, Lever.REPEAT_EATING.value}
+        for lever in expected:
+            b, c, log, basal = sequence_episode_stream(lever)
+            result = evaluate(b, c, basal, carb_entries=log)
+            self.assertEqual(set(result.sequences.populations), expected)
+            self.assertEqual(policy_for(lever).sequence_lever, lever)
+            self.assertTrue(result.sequences.populations[lever])
+
+    def test_tally_preserves_classifier_reach_beyond_next_group(self):
+        from datetime import datetime
+        from ciq_autotune.analyzers.scenario import tally_attributions, attributed_occurrences
+        from ciq_autotune.analyzers.scenario.evaluation import evaluate
+        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+        from ciq_autotune.events import BolusEvent
+        start = datetime(2040, 2, 1, 12)
+        b = [BolusEvent(start, carbs=20, insulin=.5, carb_ratio=40, completion="Completed")]
+        c = [CgmReading(start + timedelta(minutes=m),
+                        350 if 180 <= m < 200 else 250 if 130 <= m < 180 else 110)
+             for m in range(-5, 365, 5)]
+        config = ScenarioConfig(segment_max_duration_min=120, engine_context_pad_min=5,
+                                carb_undercount_runaway_peak_mgdl=260)
+        result = evaluate(b, c, isf=40, scenario_config=config)
+        self.assertLess(result.episodes[1].start + timedelta(minutes=5),
+                        start + timedelta(minutes=180))
+        self.assertGreater(result.episodes[0].anchors.end, result.episodes[1].start)
+        _, tally = tally_attributions(b, c, isf=40, scenario_config=config)
+        self.assertEqual(tally.get("carb_undercount", 0), 1)
+        occurrences = attributed_occurrences(b, c, isf=40, scenario_config=config)
+        self.assertEqual(sum(r.lever == "carb_undercount" for r in occurrences), 1)

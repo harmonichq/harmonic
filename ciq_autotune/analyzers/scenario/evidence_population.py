@@ -50,6 +50,17 @@ class EvidencePopulationPolicy:
     occurrence_id: Callable
     sequence_lever: str | None = None
 
+    @property
+    def rate_family(self) -> Exposure | None:
+        """Closed recurrence account for clean rates and Verify, if one exists.
+
+        Custom meal recurrence still belongs to meals. Sequence recurrence has
+        no Exposure account, regardless of its Meals display affinity.
+        """
+        return self.recurrence_family or next(
+            (family for family in Exposure if family.value == self.recurrence_noun), None,
+        )
+
     def recurrence_population(
         self,
         families: dict,

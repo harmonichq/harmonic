@@ -831,8 +831,9 @@ def summarize_trend(
     answers = low_prompt_answers(store, earliest, now) if earliest else []
 
     windows: List[WindowMeta] = []
+    behavior_order = [lv for lv in _BEHAVIOR_ORDER if policy_for(lv).rate_family is not None]
     # Per-lever series accumulators, and per-metric-key series accumulators.
-    behavior_series: Dict[Lever, List[BehaviorPoint]] = {lv: [] for lv in _BEHAVIOR_ORDER}
+    behavior_series: Dict[Lever, List[BehaviorPoint]] = {lv: [] for lv in behavior_order}
     metric_series: Dict[str, List[Optional[float]]] = {s.key: [] for s in _METRIC_SPECS}
     # The override-rate tile (#161) — its own series, denominated on every bolus in the
     # window, appended as a non-Lever BehaviorTrend after the loop iff it clears the
@@ -972,7 +973,7 @@ def summarize_trend(
         cs_behavior, cs_harm = count_correction_stacks(
             w_bolus, ctx_bolus, ctx_cgm, ctx_basal
         )
-        for lever in _BEHAVIOR_ORDER:
+        for lever in behavior_order:
             policy = policy_for(lever)
             exp = LEVER_EXPOSURE[lever]
             n = exposure_counts.get(exp, 0)
@@ -1030,7 +1031,7 @@ def summarize_trend(
             recommendation=recommendation(lever),
             series=behavior_series[lever],
         )
-        for lever in _BEHAVIOR_ORDER
+        for lever in behavior_order
     ]
     # Append the override-rate tile iff it clears the thin-data gate (ADR 0015 §2): a
     # real handful of overrides across the tracked history, else stay silent — no n=2

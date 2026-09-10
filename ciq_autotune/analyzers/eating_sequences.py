@@ -382,7 +382,7 @@ class EatingSequence:
     end: datetime
     carbs: float
     window_count: int
-    members: tuple[BolusEvent, ...] = ()
+    members: tuple[BolusEvent, ...]
 
     @property
     def id(self) -> str:
@@ -505,7 +505,6 @@ def evaluate_sequences(
     return SequenceEvaluation(report, populations)
 
 
-
 def build_report(
     boluses: Sequence[BolusEvent], cgm: Sequence[CgmReading], carb_log: Sequence[CarbEntry], *,
     window_start: datetime, window_end: datetime, config: EatingSequenceConfig,
@@ -513,7 +512,6 @@ def build_report(
     """Compatible aggregate-only view of the shared sequence evaluation."""
     return evaluate_sequences(boluses, cgm, carb_log, window_start=window_start,
                               window_end=window_end, config=config).report
-
 
 
 def build_eating_sequence_report(store, *, window_days: int = 30,

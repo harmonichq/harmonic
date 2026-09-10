@@ -16,7 +16,7 @@ records Connor's selection and the exact artifacts.
 
 ## What changes
 
-Deliver the selected Overview / Explore / Changes / Day journeys:
+Deliver the selected Diagnose / Changes / Day journeys under ADR 397:
 
 - One backend-selected supported priority, or a guided investigation when no
   action is supported, with the cited glucose evidence and alternatives.

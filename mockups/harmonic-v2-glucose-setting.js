@@ -1,3 +1,31 @@
+// RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
+//
+// Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+//
+// Old (superseded): "Return to Overview"
+// New: "Return to Diagnose"
+//
+// Old (superseded): "The nights remain available in Explore."
+// New: "The nights remain available in Diagnose."
+//
+// Old (superseded): "Overview (leading-change and set-aside summaries)"
+// New: "Changes (leading-change and set-aside summaries)"
+//
+// Scope: selected v2 desktop only; supersedes prior destination/copy authority.
+// Historical prototype executable bytes, implementation comments, captures and
+// unselected variants remain unchanged. They do not depict the amended navigation.
+// Changes' leading-change ownership is the coordinator's explicit placement
+// instruction in #397's order, separate from the quoted September 8 sanction.
+// #389 owes executable substitutions and adaptation evidence. Contextual Day
+// return still follows HV2-14's source and precise target, including Changes.
+// The v2 behavior/fidelity ledgers and replay live on stopped #389 and are absent
+// here. #389 must amend affected frozen behavior entries, permanent retirement
+// records, LOCK assertions and fidelity rows before dependent implementation
+// resumes. No local executable LOCK assertion exists: HV2-nn is illustrative.
+// #389 must prove each amended assertion fails for the intended reason before
+// restoring green, and change fidelity rows from re-settle requested to met only
+// with new evidence. No ledger, executable proof or release acceptance is claimed.
+//
 // Glucose first, round 3c (#348). Unlocked design exploration: the supported
 // setting journey, on the same desk as the meals investigation. The shipped Plan
 // module builds the schedule and reconciles it against a captured pump profile;

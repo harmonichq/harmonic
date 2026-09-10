@@ -23,6 +23,220 @@ registered in `mockups/finding-evidence-routing.behavior.md`, replayed by
 `mockups/INDEX.md` stay `shipped`; the complete carried-job inventory is
 `openspec/changes/harmonic-v2/predecessor.md`.
 
+## RE-SETTLED TERM — 2026-09-10 — ADR 397 — HV2-09, HV2-10, HV2-11; HV2-14 evidence label and dependent copy
+
+Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is".
+
+Old (superseded): "Overview is the default destination. Overview, Explore, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
+New: "Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
+
+Old (superseded): "Overview owns the backend-selected active change or leading available priority and its next action. It does not duplicate Explore's full findings roster."
+New: "Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster."
+
+Old (superseded): "Explore owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. Its evidence stage remains geometrically stable relative to Overview."
+New: "Diagnose owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. It carries the shipped v1 Findings rail as-is, including #395's Patterns. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08."
+
+Old (superseded): "`Overview` · `Explore` · `Changes` · `Day` (nav label `Main`)"
+New: "`Diagnose` · `Changes` · `Day` (nav label `Main`)"
+
+Old (superseded): "`Set aside` · `Restore` · `Return to Overview`"
+New: "`Set aside` · `Restore` · `Return to Diagnose`"
+
+Old (superseded): "The nights remain available in Explore."
+New: "The nights remain available in Diagnose."
+
+Old (superseded): "The lows remain available in Explore."
+New: "The lows remain available in Diagnose."
+
+Old (superseded): "The meals remain available in Explore."
+New: "The meals remain available in Diagnose."
+
+Old (superseded): "Keep through the adopted Overview/Explore/Changes/Day routes"
+New: "Keep through the adopted Diagnose/Changes/Day routes"
+
+Old (superseded): "Keep the retired old mode/layout/duplicate-tile mechanics retired. This does not retire ADR 348's Explore destination."
+New: "Keep the retired old mode/layout/duplicate-tile mechanics retired. ADR 397 changes destination naming without reinstating those retired canvas mechanics."
+
+Old (superseded): "navigate all four v2 destinations"
+New: "navigate all three v2 destinations: Diagnose, Changes and Day"
+
+Old (superseded): "Overview/guidance"
+New: "Changes/guidance"
+
+Old (superseded): "Explore/window"
+New: "Diagnose/window"
+
+Old (superseded): "full Day is not clipped to the Explore glucose window"
+New: "full Day is not clipped to the Diagnose glucose window"
+
+Old (superseded): "Repeatedly enter and leave Explore, Day, full-screen charts and utilities while requests are pending."
+New: "Repeatedly enter and leave Diagnose, Day, full-screen charts and utilities while requests are pending."
+
+Old (superseded): "Explore workflow and paired render"
+New: "Diagnose workflow and paired render"
+
+Old (superseded): "Explore/Changes/utility → Day → exact-return replays"
+New: "Diagnose/Changes/utility → Day → exact-return replays"
+
+Old (superseded): "extra terms: Overview is the default destination"
+New: "extra terms: Diagnose is the default destination"
+
+Old (superseded): "`Overview` / `Explore` / `Changes` / `Day`"
+New: "`Diagnose` / `Changes` / `Day`"
+
+Old (superseded): "**Per-destination chrome, so no term reads as \"mounts an existing surface unchanged\":** all four destinations keep the same topbar (identity, the four destination buttons"
+New: "**Per-destination chrome:** all three destinations keep the same topbar (identity, the three destination buttons"
+
+Old (superseded): "(HV2-33). ### Backend binding notes"
+New: "(HV2-33). Diagnose carries the shipped Findings rail as-is within this chrome; this paragraph authorizes no rail redesign. ### Backend binding notes"
+
+Old (superseded): "One dense populated state per destination whose"
+New: "One dense populated state per destination: Diagnose, Changes and Day, whose"
+
+Old (superseded): "**Guidance (HV2-10, HV2-15, HV2-16, HV2-31).**"
+New: "**Changes guidance (HV2-10, HV2-15, HV2-16, HV2-31).**"
+
+Old (superseded): "provable as intended rather than as a missing pane."
+New: "provable as intended rather than as a missing pane. Empty Changes must not suppress a backend-selected available priority and next action owned by HV2-10."
+
+Old (superseded): "the adopted Explore destination"
+New: "Diagnose's Findings/evidence responsibilities"
+
+Old (superseded): "default Overview and all destination transitions"
+New: "default Diagnose and all three destination transitions"
+
+Old (superseded): "The behavior ledger and its replay are **frozen before any production UI edit**, following `behavior-sweep`. The build then adds these finite story groups:"
+New: "The existing frozen v2 behavior ledger and replay live on stopped #389 and are absent here. #389 must amend their affected entries before dependent production implementation resumes, retaining these finite story groups:"
+
+Old (superseded): "remain frozen v1 ledgers.** Nothing in this lock edits them. The v2 behavior ledger is a new, separate `★ FROZEN` artifact owed before production implementation."
+New: "remain frozen v1 ledgers.** Nothing in this lock edits them. The v2 behavior and fidelity artifacts live on stopped #389 and are absent here. #389 must amend its affected entries before dependent implementation resumes; this change creates no substitutes and claims no branch-local ledger update."
+
+Old (superseded): "than redesigning it. This is prototype evidence."
+New: "than redesigning it. Navigation and affected copy in these historical captures are superseded by ADR 397. Unchanged material/geometry evidence remains usable; these captures do not prove the amended build. This is prototype evidence."
+
+Old (superseded): "Three authorities, in this order, over three different questions."
+New: "ADR 397 and the dated amendment above supersede the selected prototype and repair records only for the enumerated destination and copy amendments. Historical executable bytes and captures remain unchanged; #389 owes their executable realization and updated fidelity evidence. Three authorities otherwise apply, in this order, over three different questions."
+
+Old (superseded): "Copied from the selected mock, so text drift is a diff rather than a judgment call."
+New: "Copied from the selected mock, with ADR 397's enumerated destination/copy amendments below. #389 owes the executable substitutions; historical prototype runtime strings are not current destination authority."
+
+Old (superseded): "- `Open Day`"
+New: "- `Open Day` - `Back to Diagnose` · `Open Diagnose` - `Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes.`"
+
+Old (superseded): "verbatim-first port of the prototype's CSS/JS with every adapted line range documented"; "same-byte prototype/built-app pairs for every eye term and required state".
+New: "acceptance of the complete first usable release follows, under tasks 3.4 and 3.5. The verbatim-first port and same-byte pairing obligations have an exception for ADR 397's enumerated destination/copy amendments. #389 documents every adapted range and supplies updated evidence; no superseded navigation requirement survives through the port instruction."
+
+Old (superseded): "1. **\"Explore\" as a destination name.** `predecessor.md`'s *Investigation name remains open* records that on 2026-09-06 no rename of v1's **Diagnose** was agreed. ADR 348 — Adopt the reviewed desktop direction then instructed: \"Keep the selected Overview / Explore / Changes / Day destinations.\" Both hold, because they answer different questions. **`/v2/` names its destination `Explore` under ADR 348; v1's `Diagnose` is not renamed, and this lock proposes no rename.** No new naming round is opened."
+New: "1. **Diagnose survives as the destination name.** ADR 348's four-destination adoption is historical and superseded for navigation by the September 8 sanction and ADR 397. V1 and v2 use Diagnose for the Findings/evidence destination. No new naming round opens."
+
+Old (superseded): "- Theme chooser/storage:"
+New: "- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: \"v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is\". ADR 397 records the amendment. - Theme chooser/storage:"
+
+Old (superseded): "harmonic-v2-glucose.js: Back to Overview"
+New: "harmonic-v2-glucose.js: Back to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose.js: Return to Overview"
+New: "harmonic-v2-glucose.js: Return to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose.js: The meals remain available in Explore."
+New: "harmonic-v2-glucose.js: The meals remain available in Diagnose."
+
+Old (superseded): "harmonic-v2-glucose.js: Explore (destinationLabel fallback)"
+New: "harmonic-v2-glucose.js: Diagnose (destinationLabel fallback)"
+
+Old (superseded): "harmonic-v2-glucose.js: Overview (leading-change, quiet, set-aside and ending summaries)"
+New: "harmonic-v2-glucose.js: Changes (leading-change, quiet, set-aside and ending summaries)"
+
+Old (superseded): "harmonic-v2-glucose.js: emptyFrame('Overview', 'Evidence unavailable', ...)"
+New: "harmonic-v2-glucose.js: emptyFrame('Diagnose', 'Evidence unavailable', ...)"
+
+Old (superseded): "harmonic-v2-glucose-journey.js: Open Explore"
+New: "harmonic-v2-glucose-journey.js: Open Diagnose"
+
+Old (superseded): "harmonic-v2-glucose-journey.js: Overview (leading-change and quiet summaries)"
+New: "harmonic-v2-glucose-journey.js: Changes (leading-change and quiet summaries)"
+
+Old (superseded): "harmonic-v2-glucose-journey.js: emptyFrame('Overview', 'Current read failed', ...)"
+New: "harmonic-v2-glucose-journey.js: emptyFrame('Diagnose', 'Current read failed', ...)"
+
+Old (superseded): "harmonic-v2-glucose-setting.js: Return to Overview"
+New: "harmonic-v2-glucose-setting.js: Return to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose-setting.js: The nights remain available in Explore."
+New: "harmonic-v2-glucose-setting.js: The nights remain available in Diagnose."
+
+Old (superseded): "harmonic-v2-glucose-setting.js: Overview (leading-change and set-aside summaries)"
+New: "harmonic-v2-glucose-setting.js: Changes (leading-change and set-aside summaries)"
+
+Old (superseded): "harmonic-v2-glucose-focus.js: Back to Overview"
+New: "harmonic-v2-glucose-focus.js: Back to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose-focus.js: Return to Overview"
+New: "harmonic-v2-glucose-focus.js: Return to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose-focus.js: The lows remain available in Explore."
+New: "harmonic-v2-glucose-focus.js: The lows remain available in Diagnose."
+
+Old (superseded): "harmonic-v2-glucose-focus.js: Overview (leading-change, set-aside and ending summaries)"
+New: "harmonic-v2-glucose-focus.js: Changes (leading-change, set-aside and ending summaries)"
+
+Old (superseded): "harmonic-v2-glucose-day.js: Return to Overview"
+New: "harmonic-v2-glucose-day.js: Return to Diagnose"
+
+Old (superseded): "harmonic-v2-glucose-utilities.js: Explore (destination label)"
+New: "harmonic-v2-glucose-utilities.js: Diagnose (destination label)"
+
+Old (superseded): "harmonic-v2-glucose-utilities.js: Written for the v1 tabs: Diagnose reads as Explore here, Plan as Changes."
+New: "harmonic-v2-glucose-utilities.js: Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes."
+
+Old (superseded): "harmonic-v2-glucose-basal.js: Explore (destinationLabel)"
+New: "harmonic-v2-glucose-basal.js: Diagnose (destinationLabel)"
+
+Old (superseded): "_shell.js: Overview / Explore / Changes / Day"
+New: "_shell.js: Diagnose / Changes / Day"
+
+Old (superseded): "mockups/harmonic-v2-glucose.html: data. Four destinations — Overview, Explore, Changes, Day — behind one"
+New: "mockups/harmonic-v2-glucose.html: data. Three destinations — Diagnose, Changes, Day — behind one"
+
+Old (superseded): "mockups/harmonic-v2-glucose.html: changes. Overview is the default and owns the decision: the active change and its progress, or the leading available priority, with one named route to its evidence. Explore owns the findings roster, clock window, detailed evidence, the case file, Spotlight and All Charts."
+New: "mockups/harmonic-v2-glucose.html: changes. Diagnose is the default; Changes owns the backend-selected active change or leading available priority and its next action. Diagnose carries the shipped v1 Findings rail as-is, including #395's Patterns, and owns clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts."
+
+Old (superseded): "mockups/harmonic-v2-glucose.html: month, statistics and the Episode Log. The stage is the same object on Overview and Explore by intent; the pane beside it is what differs."
+New: "mockups/harmonic-v2-glucose.html: month, statistics and the Episode Log. Diagnose's evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08."
+
+Old (superseded): "mockups/harmonic-v2-glucose.html: the global Explore control"
+New: "mockups/harmonic-v2-glucose.html: the global Diagnose control"
+
+Old (superseded): "mockups/harmonic-v2-glucose.html: STILL OWED BEFORE PRODUCTION IMPLEMENTATION. The v2 behavior ledger and its fail-closed replay are frozen first, following behavior-sweep. The"
+New: "mockups/harmonic-v2-glucose.html: STILL OWED BEFORE DEPENDENT IMPLEMENTATION RESUMES. #389 amends its existing frozen behavior ledger and fail-closed replay, absent here. The"
+
+Old (superseded): "mockups/harmonic-v2-glucose.js: the four destinations and their default (Overview)"
+New: "mockups/harmonic-v2-glucose.js: the three destinations and their default (Diagnose)"
+
+Old (superseded): "mockups/harmonic-v2-glucose.js: utility journeys. The stage is deliberately the same object on Overview and Explore; what differs is the pane beside it — the decision on Overview, the roster and detail on Explore."
+New: "mockups/harmonic-v2-glucose.js: utility journeys. Changes owns the backend-selected leading change and next action; Diagnose carries the shipped Findings rail and evidence. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08."
+
+Scope: selected v2 desktop only; supersedes prior destination/copy authority.
+Historical prototype executable bytes, implementation comments, captures and
+unselected variants remain unchanged. They do not depict the amended navigation.
+Changes' leading-change ownership is the coordinator's explicit placement
+instruction in #397's order, separate from the quoted September 8 sanction.
+#389 owes executable substitutions and adaptation evidence. Contextual Day
+return still follows HV2-14's source and precise target, including Changes.
+The v2 behavior/fidelity ledgers and replay live on stopped #389 and are absent
+here. #389 must amend affected frozen behavior entries, permanent retirement
+records, LOCK assertions and fidelity rows before dependent implementation
+resumes. No local executable LOCK assertion exists: HV2-nn is illustrative.
+#389 must prove each amended assertion fails for the intended reason before
+restoring green, and change fidelity rows from re-settle requested to met only
+with new evidence. No ledger, executable proof or release acceptance is claimed.
+
+ADR 135's historical Explore canvas mode is distinct from the v2 destination.
+S109/S112/S113 retain their old mode/layout/duplicate-tile retirements; this
+ruling reinstates none of those mechanics. V1 ledgers and unrelated INDEX
+history remain unchanged. Both Evidence unavailable and Current read failed
+frames belong to Diagnose under HV2-11.
+
 ## Classification and pinned authority
 
 - Surface: `harmonic-v2-desktop`
@@ -91,14 +305,21 @@ Root's 1440×900 follow-up (`viewport-1440/verification.json`,
 Changes, Day and staged Plan on unchanged selected bytes: reading pane 300px,
 shell rows 42/832/26px, no page overflow, empty console. Empty Changes has no
 reading pane by intent, and HV2-05/HV2-06 preserve that observed state rather
-than redesigning it.
+than redesigning it. Navigation and affected copy in these historical captures
+are superseded by ADR 397. Unchanged material/geometry evidence remains usable;
+these captures do not prove the amended build.
 
 This is prototype evidence. Built-app fidelity pairs, the fidelity ledger and
 human release acceptance belong to the build and to task 3.4/3.5.
 
 ## Precedence
 
-Three authorities, in this order, over three different questions.
+ADR 397 and the dated amendment above supersede the selected prototype and
+repair records only for the enumerated destination and copy amendments.
+Historical executable bytes and captures remain unchanged; #389 owes their
+executable realization and updated fidelity evidence.
+
+Three authorities otherwise apply, in this order, over three different questions.
 
 1. **The selected prototype and the adopted repair records govern `/v2/`
    arrangement, hierarchy, destination behavior, acknowledgment and return
@@ -130,12 +351,12 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-06 | Preserve the premium fixed cockpit: dark diagnostic desk, paired stage/reading panes where the selected state uses them, the selected full-width empty states, and flat role-based surfaces. No page banner, hero-metric template, repeated card grid, or bottom action bar. | eye | Named eye judgment at both target sizes |
 | HV2-07 | Material uses the shipped dark role ladder: desk `#0F0D0B`, chart well `#14120F`, field `#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, edge `#453D35`, and inks `#F2EDE2`, `#CFC8BD`, `#A49C90` with nav `#C6BFB3`. Theme controls and theme storage remain absent; their retirement does not retire dark material. | gate | Computed styles on consuming elements |
 | HV2-08 | Inter remains the single UI family. Stage titles use the selected `1.14rem`, weight `700`, line-height `1.3`, tracking `-.01em`; clinical numbers use tabular figures. No heading exceeds the design-system `1.5rem` ceiling. | gate/eye | Computed type assertions plus eye judgment |
-| HV2-09 | Overview is the default destination. Overview, Explore, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes. | gate | Route/default and cross-view geometry replay |
-| HV2-10 | Overview owns the backend-selected active change or leading available priority and its next action. It does not duplicate Explore's full findings roster. | gate | Guidance-state replay |
-| HV2-11 | Explore owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. Its evidence stage remains geometrically stable relative to Overview. | gate | Explore workflow and paired render |
+| HV2-09 | Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes. | gate | Route/default and cross-view geometry replay |
+| HV2-10 | Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster. | gate | Guidance-state replay |
+| HV2-11 | Diagnose owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. It carries the shipped v1 Findings rail as-is, including #395's Patterns. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08. | gate | Diagnose workflow and paired render |
 | HV2-12 | Changes owns current Plan or Focus, Trial/Focus progress, endings, saved conclusions, original records, history, reassessments and Pump settings. | gate | Setting and habit history workflows |
 | HV2-13 | Day owns the five-track chronology, week ribbon, month access, statistics and Episode Log. Direct Day entry invents no prior subject or return target. | gate | Direct-Day workflow |
-| HV2-14 | Contextual Day entry carries date, moment, canonical subject, occurrence/night, affected window, applicable lever, source destination and precise return-focus target. Returning restores that context rather than merely reopening a destination. | gate | Explore/Changes/utility → Day → exact-return replays |
+| HV2-14 | Contextual Day entry carries date, moment, canonical subject, occurrence/night, affected window, applicable lever, source destination and precise return-focus target. Returning restores that context rather than merely reopening a destination. | gate | Diagnose/Changes/utility → Day → exact-return replays |
 | HV2-15 | One active change leads. Setting and habit work cannot simultaneously claim the active-change seat; the UI renders backend admission and action permissions verbatim. | gate | Conflicting-action negative cases |
 | HV2-16 | Set aside retains the same subject, optional reason, roster group and visible Restore, while naming the next backend-selected priority. Restore returns the eligible subject. | gate | Durable set-aside/reload/restore replay |
 | HV2-17 | All 48 basal slots remain independently discoverable. Slot selection retains its supporting nights, original evidence, current/suggested values, interval, support, hold/stageability and Basal/Night/Day figures. | gate | Dense 48-slot fixture and keyboard/Day replay |
@@ -158,18 +379,18 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-34 | Rebinding, chart replacement, `ResizeObserver`, pagehide/unmount and late-response paths clean up fully. Mock source/clock/failure controls, scenario switchers and Review notes never enter production. | gate | Repeated mount/unmount, stale-response and DOM-absence assertions |
 
 **Default view and persistent chrome** are stated in HV2-09 rather than in two
-extra terms: Overview is the default destination, and the destination switcher
-itself (`Overview` / `Explore` / `Changes` / `Day`) is named as persistent
+extra terms: Diagnose is the default destination, and the destination switcher
+itself (`Diagnose` / `Changes` / `Day`) is named as persistent
 chrome alongside scope, Log carbs, the advisory line and the utility strip.
 
-**Per-destination chrome, so no term reads as "mounts an existing surface
-unchanged":** all four destinations keep the same topbar (identity, the four
+**Per-destination chrome:** all three destinations keep the same topbar (identity, the three
 destination buttons, scope, Log carbs) and the same footer (advisory line, Carb
 questions with its open count, Guide, Settings, Glossary). What differs is only
 the pane content each destination owns, per HV2-10 through HV2-14. Pump settings
 is reached from Changes (HV2-12), not from the footer strip. An open utility
 takes the reading pane's seat and leaves the destination underneath standing
-(HV2-33).
+(HV2-33). Diagnose carries the shipped Findings rail as-is within this chrome;
+this paragraph authorizes no rail redesign.
 
 ### Backend binding notes
 
@@ -235,12 +456,13 @@ A fixture that cannot show a term cannot prove it. Every fixture is
 generator-owned and synthetic; none is hand-written and none carries real data.
 Implementing this matrix belongs to the build; defining it belongs here.
 
-1. **Geometry (HV2-03–HV2-08).** One dense populated state per destination whose
+1. **Geometry (HV2-03–HV2-08).** One dense populated state per destination: Diagnose, Changes and Day, whose
    stage and reading content both overflow their own panes, so inner scrolling
    is observable while root scroll stays absent at both target sizes. One empty
    Changes state with no change underway, so the full-width empty case is
-   provable as intended rather than as a missing pane.
-2. **Guidance (HV2-10, HV2-15, HV2-16, HV2-31).** A leading available priority;
+   provable as intended rather than as a missing pane. Empty Changes must not
+   suppress a backend-selected available priority and next action owned by HV2-10.
+2. **Changes guidance (HV2-10, HV2-15, HV2-16, HV2-31).** A leading available priority;
    an active change occupying the seat; a quiet disposition; a set-aside subject
    that survives reload with its reason and roster group and a next named
    priority; an unavailable disposition carrying its served reason; and a failed
@@ -289,14 +511,15 @@ Implementing this matrix belongs to the build; defining it belongs here.
 
 ## Verbatim strings
 
-Copied from the selected mock, so text drift is a diff rather than a judgment
-call.
+Copied from the selected mock, with ADR 397's enumerated destination/copy
+amendments below. #389 owes the executable substitutions; historical prototype
+runtime strings are not current destination authority.
 
 **Persistent chrome** (`mockups/_shell.js:15–16`, plus the utilities module's
 footer injection):
 
 - Identity: `Harmonic` with `advisory` as its small mark
-- Destinations: `Overview` · `Explore` · `Changes` · `Day` (nav label `Main`)
+- Destinations: `Diagnose` · `Changes` · `Day` (nav label `Main`)
 - Scope: `Scope` · `30 d`
 - `＋Log carbs` (the mark is U+FF0B, fullwidth plus)
 - Advisory line: `Advisory only — review with your clinician before changing pump settings.`
@@ -310,20 +533,22 @@ footer injection):
 - `Inspect nights` (setting) · `Inspect lows` (habit) · `Inspect meals`
   (investigation)
 - `Revisit nights` · `Revisit lows` · `Revisit meals`
-- `Set aside` · `Restore` · `Return to Overview`
+- `Set aside` · `Restore` · `Return to Diagnose`
 - `Findings` — the persistent parent crumb in the basal lane's head
 - `Stage change` · `Start Focus`
 - `View change record` · `View Focus record`
 - `Open Day`
+- `Back to Diagnose` · `Open Diagnose`
+- `Written for the v1 tabs: Diagnose keeps its name here, Plan reads as Changes.`
 
 **Empty and set-aside states:**
 
 - `No change underway`
 - `No priority needs action`
 - `Set aside` heading, with the served reason, or
-  `The nights remain available in Explore.` /
-  `The lows remain available in Explore.` /
-  `The meals remain available in Explore.`
+  `The nights remain available in Diagnose.` /
+  `The lows remain available in Diagnose.` /
+  `The meals remain available in Diagnose.`
 - `Trial finished` · `Focus resolved`
 - `Day remains available.` · `Day and the change record remain available.`
 
@@ -359,13 +584,10 @@ build.
 Every artifact this lock touches was read. Two apparent contradictions were
 found; both are resolved here rather than left to the implementer.
 
-1. **"Explore" as a destination name.** `predecessor.md`'s *Investigation name
-   remains open* records that on 2026-09-06 no rename of v1's **Diagnose** was
-   agreed. ADR 348 — Adopt the reviewed desktop direction then instructed:
-   "Keep the selected Overview / Explore / Changes / Day destinations." Both
-   hold, because they answer different questions. **`/v2/` names its
-   destination `Explore` under ADR 348; v1's `Diagnose` is not renamed, and this
-   lock proposes no rename.** No new naming round is opened.
+1. **Diagnose survives as the destination name.** ADR 348's four-destination
+   adoption is historical and superseded for navigation by the September 8
+   sanction and ADR 397. V1 and v2 use Diagnose for the Findings/evidence
+   destination. No new naming round opens.
 2. **Watch maturity copy versus evidence readiness.** The prototype renders one
    `readiness.label` over a days-elapsed figure. The backend has two separate
    facts behind that. Resolved in *Backend binding notes*: the arrangement is
@@ -392,8 +614,9 @@ Also reconciled, without contradiction:
   preserved evidence, not cleanup.
 - **`cockpit-shell.behavior.md` and `finding-evidence-routing.behavior.md`
   remain frozen v1 ledgers.** Nothing in this lock edits them. The v2 behavior
-  ledger is a new, separate `★ FROZEN` artifact owed before production
-  implementation.
+  and fidelity artifacts live on stopped #389 and are absent here. #389 must
+  amend its affected entries before dependent implementation resumes; this
+  change creates no substitutes and claims no branch-local ledger update.
 
 ## Predecessor preservation
 
@@ -412,7 +635,7 @@ this manifest — a lock may not sanction the omissions it is itself freezing.
 | IDs | Disposition | Destination terms |
 |---|---|---|
 | S1, S6, S8, S9 | Keep | HV2-03–HV2-09 |
-| S2 | Keep through the adopted Overview/Explore/Changes/Day routes | HV2-02, HV2-09 |
+| S2 | Keep through the adopted Diagnose/Changes/Day routes | HV2-02, HV2-09 |
 | S3, S10 | Retire the chooser/storage behavior only | HV2-07 |
 | S4 | Keep | HV2-12, HV2-33 |
 | S5 | Keep | HV2-12, HV2-33 |
@@ -469,7 +692,7 @@ intentionally absent.
 | S72–S91 | Keep current window/selection/history successors; do not revive global Align. |
 | S92–S101 | Keep the retired old fixed-seat mechanics retired; preserve the successor Spotlight/All Charts behavior. |
 | S102–S108 | Keep chart state, scale, retry and full-screen behavior. |
-| S109, S112, S113 | Keep the retired old mode/layout/duplicate-tile mechanics retired. This does not retire ADR 348's Explore destination. |
+| S109, S112, S113 | Keep the retired old mode/layout/duplicate-tile mechanics retired. ADR 397 changes destination naming without reinstating those retired canvas mechanics. |
 | S110 | Keep the owning-chart mark; retire only the duplicate provenance word chip. |
 | S111, S114–S116 | Keep catalog/full-screen/selection behavior. |
 | S118–S120 | Keep catalog and chart retention. S120's chart Keep is unrelated to Trial Keep. |
@@ -504,6 +727,7 @@ intentionally absent.
 Each line is the operator ruling that sanctions its retirement. None of them
 originates in this manifest.
 
+- Navigation: Connor Griffin, 2026-09-08, the September 8 direction change recorded in openspec/changes/harmonic-v2/design.md: "v2 ships three destinations: Diagnose, Changes and Day. Overview and Explore collapse into Diagnose carrying the shipped v1 rail as-is". ADR 397 records the amendment.
 - Theme chooser/storage: Connor Griffin · 2026-09-01 · **"light theme retired by operator decision."**
 - Occurrence modal/hash route: Connor Griffin · 2026-08-18 · **"the dead occurrenceModal hash machinery goes with them."**
 - P20: Connor Griffin · 2026-08-25 · **"it just keeps my selector. The selection is a slicing method that lets me then dig into findings. Those findings will show up as dots on the chart anyway that I can then trace into."**
@@ -524,7 +748,7 @@ originates in this manifest.
 - Pattern correction-cluster readiness: ADR 395 — Two Patterns count what the reader sees · 2026-09-09. This amends HV2-24 so every event Pattern is gated by 12 qualifying meals or lows; correction clusters remain evidence for the Correction stacking finding, not a Pattern Focus readiness unit.
 
 **No sanction retires dark material, clock boundary drawing, chart retention,
-the adopted Explore destination, Revert-to-Plan, durable conclusions, or precise
+Diagnose's Findings/evidence responsibilities, Revert-to-Plan, durable conclusions, or precise
 Day return.** A build that drops one of those is violating this lock, not
 honoring a ruling.
 
@@ -536,10 +760,10 @@ whole-profile or Focus threshold.
 
 | Acceptance case | Positive workflow | Required negative cases | Dependency |
 |---|---|---|---|
-| Shell/package | Start the installed Python package; authenticate; open `/` and `/v2/`; navigate all four v2 destinations. | Missing asset fails loudly; invalid auth exposes no protected content; v1 routes/assets remain intact; no Node/CDN dependency. | Final asset/route protocol |
+| Shell/package | Start the installed Python package; authenticate; open `/` and `/v2/`; navigate all three v2 destinations: Diagnose, Changes and Day. | Missing asset fails loudly; invalid auth exposes no protected content; v1 routes/assets remain intact; no Node/CDN dependency. | Final asset/route protocol |
 | Desktop fidelity | Render the same labeled synthetic bytes in the selected prototype and the built app at 1280×720 and 1440×900. | No root scroll/overflow; exact shell tracks, reading-pane width, divider, role colors and type; every eye term receives a named judgment. | This lock and its comparator |
-| Overview/guidance | Load priority, active Plan/Trial/Focus and quiet guidance states. | Failed/unavailable cannot become quiet; the frontend cannot choose a competing action or infer admission. | #387 admission envelope |
-| Explore/window | Draw, resize, slide, cross midnight, clear, restore route, select roster/case and open All Charts. | Click without movement does nothing; occurrence selection does not change the window; global Align and Event-charts controls stay absent. | Existing APIs/renderers |
+| Changes/guidance | Load priority, active Plan/Trial/Focus and quiet guidance states. | Failed/unavailable cannot become quiet; the frontend cannot choose a competing action or infer admission. | #387 admission envelope |
+| Diagnose/window | Draw, resize, slide, cross midnight, clear, restore route, select roster/case and open All Charts. | Click without movement does nothing; occurrence selection does not change the window; global Align and Event-charts controls stay absent. | Existing APIs/renderers |
 | P19b replacement | Select a new window, hold its request pending, fail it, retry, then settle it. | No former projection counts, rows, recommendation, support or staging masquerades as the new result. | Existing findings protocol |
 | Selected I:C replacement | Open a coherent selected I:C historical case, request a replacement, fail and retry. | Preserve only the coherent case/canvas pair; never mix generations or expose staging. | Existing findings protocol |
 | Setting evidence | Open Basal, Correction factor and Carb ratio; inspect evidence and all 48 basal slots; open a night in Day and return. | Held/thin/missing rows keep values but cannot stage unless the backend permits; no frontend support/readiness derivation. | Existing producers |
@@ -549,18 +773,19 @@ whole-profile or Focus threshold.
 | Focus | Start an eligible Focus; inspect opportunities, adherence and outcomes; end manually; reload. | Zero opportunities ≠ perfect adherence; missing measurement ≠ observed zero; a favorable outcome is not required to end; an unavailable pin gives no action. | #387 readiness/admission |
 | Focus preemption | Start a Focus, introduce a genuine later Trial and reconcile. | Focus becomes `trial_preempted`, remains history, never resumes; a future attempt receives a new identity. | #387 sequential-change support |
 | Sequential settings | Finish the latest Trial, retain history, ingest/reconcile a genuinely later change. | An older peer/candidate is not promoted; the same change observed later does not create another Trial; a conflicting/racing write yields a winner or an explicit conflict. | #387 lifecycle |
-| Day | Open directly; navigate a recorded week/month; select the Episode Log; enter from a setting, an event, a Focus and a question utility; return. | Direct entry invents no subject; a rapid obsolete read cannot win; full Day is not clipped to the Explore glucose window; the exact focus target restores. | Existing Day plus v2 route state |
+| Day | Open directly; navigate a recorded week/month; select the Episode Log; enter from a setting, an event, a Focus and a question utility; return. | Direct entry invents no subject; a rapid obsolete read cannot win; full Day is not clipped to the Diagnose glucose window; the exact focus target restores. | Existing Day plus v2 route state |
 | Utilities | Open Guide/Glossary, Log carbs, Carb questions, app settings and Pump settings; save/retry and return. | Invalid/save failure stays explicit; Undo/remove work; password reveal/clear follows the existing contract; Escape retains the established draft and restores the launcher. | Existing authenticated APIs |
 | Loading/failure | Exercise first load, same-subject refresh, new-window replacement, stale dated result, write failure and retry. | No blank success, false saved state, mixed generations or quiet inference; each state owns the correct retained/withdrawn content. | Final revision/error envelope |
 | Accessibility | Traverse every destination, roster, cohort, slot, night, chart cursor, Day and utility by keyboard. | Visible focus, correct pressed/expanded state, focus restoration, reduced-motion path, color redundancy, formatted fractional-hour speech. | Shared-renderer repair |
-| Cleanup | Repeatedly enter and leave Explore, Day, full-screen charts and utilities while requests are pending. | No duplicate handler, observer, chart instance, stale callback, hidden focus target or pagehide leak. | Final mount architecture |
+| Cleanup | Repeatedly enter and leave Diagnose, Day, full-screen charts and utilities while requests are pending. | No duplicate handler, observer, chart instance, stale callback, hidden focus target or pagehide leak. | Final mount architecture |
 
 ## Owed before production implementation
 
-The behavior ledger and its replay are **frozen before any production UI edit**,
-following `behavior-sweep`. The build then adds these finite story groups:
+The existing frozen v2 behavior ledger and replay live on stopped #389 and are
+absent here. #389 must amend their affected entries before dependent production
+implementation resumes, retaining these finite story groups:
 
-1. `/v2/` boot, auth, persistent chrome, default Overview and all destination transitions.
+1. `/v2/` boot, auth, persistent chrome, default Diagnose and all three destination transitions.
 2. Desktop geometry and cross-destination no-reflow at both target sizes.
 3. Clock draw/resize/slide/wrap, case selection and All Charts without the retired global controls.
 4. Guidance, Set aside/Restore and eligible meaningful return through the durable APIs.
@@ -587,6 +812,10 @@ same-byte prototype/built-app pairs for every eye term and required state at
 both target sizes; a fidelity ledger with exactly one status/evidence row per
 `HV2-*` term; and proof that each gate can fail for its intended reason. Human
 acceptance of the complete first usable release follows, under tasks 3.4 and 3.5.
+The verbatim-first port and same-byte pairing obligations have an exception for ADR 397's
+enumerated destination/copy amendments. #389 documents every adapted range
+and supplies updated evidence; no superseded navigation requirement survives
+through the port instruction.
 
 ## What this lock does not do
 

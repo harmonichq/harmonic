@@ -15,13 +15,12 @@ During follow-up, the current change and its progress lead. When that work is
 finished, the next supported priority can take its place. The same loop must
 serve settings and habits; their action and evidence semantics remain distinct.
 
-## Proposed destinations
+## Settled destinations — ADR 397
 
 | Destination | The user's question | Content and onward path |
 | --- | --- | --- |
-| Overview | What is most worth my attention now? | One lead concern or the active change, current progress and freshness, a concise reason, and a clear next action. Evidence starts here; detailed investigation opens the same subject in Explore |
-| Explore | Where does this show up, and what supports changing it? | The connected glucose problem, representative episode, recurring occurrences, supporting settings or behavioral evidence, and explicit uncertainty. Other concerns remain reachable without competing as parallel advice |
-| Changes | What am I trying, how is it going, and how did it end? | The current Plan or Focus; manual-entry and reconciliation where relevant; Trial or Focus follow-up; a recorded conclusion; past decisions with original and ending snapshots |
+| Diagnose | Where does this show up, and what supports changing it? | The default destination carries the shipped Findings rail as-is, including #395's Patterns, and owns clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. Other concerns remain reachable without competing as parallel advice |
+| Changes | What needs action, what am I trying, how is it going, and how did it end? | The backend-selected active change or leading available priority and its next action; the current Plan or Focus; manual-entry and reconciliation where relevant; Trial or Focus follow-up; a recorded conclusion; past decisions with original and ending snapshots. Detailed investigation opens the same subject in Diagnose |
 | Day | What happened around this particular moment? | The existing chronological glucose and treatment evidence, selected occurrence and reasoning, plus an explicit route back to the same concern and selection |
 
 App settings remain a utility accessible from every destination. Detected pump
@@ -30,10 +29,10 @@ in Plan. They do not need another top-level destination. Log carbs remains
 reachable at the point an existing prompt asks for that information and through
 a global utility.
 
-These names remain a hypothesis until the walkthrough is reviewed. V2 Explore
-would be a different destination from the current glossary's Diagnose/Explore
-mode; its name must be recorded as an explicit terminology change on approval,
-without rewriting v1's still-shipped navigation as if it had changed.
+ADR 397 settles Diagnose, Changes and Day, with Diagnose as the default.
+V1's Diagnose name survives in v2. The historical canvas mode recorded by ADR
+135 is a different concept; this destination ruling reinstates none of its
+retired mechanics.
 
 ## 1. A supported setting change
 
@@ -42,9 +41,9 @@ existing Plan reconciliation tests. Later walks include the other setting
 families and captured block-I:C path, whose active/review split is documented
 in `design.md`.
 
-1. Overview identifies the recurring concern and the eligible setting change.
+1. Changes identifies the backend-selected recurring concern and eligible setting change.
    The explanation names why the concern leads, using the backend's evidence.
-2. Explore opens that same subject. Show its current setting, eligible action,
+2. Diagnose opens that same subject. Show its current setting, eligible action,
    reason and uncertainty together. Representative episodes lead to Day;
    aggregated observations do not masquerade as one event.
 3. Choosing the change opens Changes with one tuning variable in Plan. Review
@@ -54,7 +53,7 @@ in `design.md`.
    what was known then. The wearer enters the setting on the pump manually.
 5. Pending pump data is shown as pending. A mismatch shows what differs. A
    detected match is reported only by the existing reconciliation logic.
-6. Follow the actual detected Trial. Its current progress leads Overview;
+6. Follow the actual detected Trial. Its current progress leads Changes;
    Changes shows before/after evidence, available days, gaps and limits.
 7. Once the backend says it is ready to judge, record a conclusion and finish.
    Reverting still requires Plan and a real pump change. The final record keeps
@@ -72,9 +71,9 @@ Manufactured starting material: behavioral QA cases and existing Focus API,
 adherence and preemption tests. Their separate coverage does not yet prove this
 continuous journey.
 
-1. Overview identifies the recurring problem and one eligible behavioral action.
+1. Changes identifies the backend-selected recurring problem and eligible behavioral action.
    Different detectors that illuminate the same problem remain distinct claims.
-2. Explore shows the relevant sequence and occurrences. An inferred over-treated
+2. Diagnose shows the relevant sequence and occurrences. An inferred over-treated
    low is not described as an observed treatment; a user's contrary answer stays
    a refutation. Observation-only advice does not acquire a dose recommendation.
 3. Choosing the behavior opens Changes and starts a Focus through the existing
@@ -146,7 +145,7 @@ visual similarity must never become a shared claim that nothing needs attention.
   evidence, active-change state and recorded choices. It includes the subject,
   action or investigation disposition, reason, evidence window/revision, cited
   occurrences and available onward actions. Selection belongs here, not in
-  separate Overview and Explore ranking implementations.
+  separate Changes and Diagnose ranking implementations.
 - **Evidence detail:** reuse existing source-owned evidence and chart producers.
   The caller supplies the selected subject/window; the result keeps membership,
   denominators, comparison bounds and availability together. Rendering does not
@@ -156,7 +155,7 @@ visual similarity must never become a shared claim that nothing needs attention.
   one backend authority for admission and history. Persist the bounded summary
   and existing identities, not a parallel clinical datastore.
 - **Journey navigation:** one route-state owner retains the selected concern,
-  window and occurrence across Explore, Changes and Day. Detail fetching follows
+  window and occurrence across Diagnose, Changes and Day. Detail fetching follows
   that selection; late responses cannot move the user to a different subject.
 
 These are capability interfaces for the selected journeys. Exact endpoint and

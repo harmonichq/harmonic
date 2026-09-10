@@ -54,3 +54,40 @@ is published or drawn, and no readiness or agreement rule is added to gate a
 trace. Members appear only as the nested rows beneath the Pattern row, each with
 its own count. The idiom is the shipped EVENT · RESPONSE mini's, applied to the
 Pattern's own population.
+
+## Round 3 — the whole rail, on the operator's own data (2026-09-09)
+
+The rail was rendered as c3 would paint the operator's real 30-day window
+(local snapshot, read-only, deleted after; renders stayed local) with every
+ruling so far applied, and reviewed row by row in conversation. Rulings given
+during the round, each with the operator's words:
+
+- No summary line on a Pattern row ("we don't need the 'carb undercount and
+  xyz explain the misses', isn't that carried by the drills beneath?"). The row
+  is numeral, title, `◇ Pattern` chip, one denominator line "k of n <noun>
+  <outcome>", the mini, and the nested member rows.
+- No readiness note on the row ("drop the 'enough meals to focus'. That should
+  be obvious based on where in the UI this gets shown"). Readiness renders
+  where Focus is entered, not on the rail.
+- Nested member rows carry one tick in the misses hue, the same orange as the
+  Pattern's trace ("grey individual drill icons makes it look like they are
+  part of the 'typical' band"), the member's title, and the member's own count
+  in the Pattern's family.
+- The mini uses the shipped glucose range rule (the 60–200 envelope widened in
+  20 mg/dL steps to what is drawn), the MEAL/LOW marker label rides the marker
+  inside the plot under the legend row with no gutter ("getting its own gutter
+  is a waste of space"), and the x-axis is the served window of the case file.
+- Two roster rulings moved to the backend (ADR 395 — Two Patterns count what
+  the reader sees): meal bolus fell short counts in Highs after meals and nests
+  under it; Lows after correcting highs counts over lows and its chart anchors
+  on the low ("It should anchor on the low, right?").
+- The flavor chip word changes from Habit to Cause on the rail ("nah do it now
+  while we're still building this shit"); the glyph and the `habit:` identifiers
+  stay. The glossary's lever-flavor entry names the new word.
+
+Coordinator defaults not yet ruled on, applied by c3 unless the operator says
+otherwise: a Pattern with zero misses in its window draws no chart well (its
+denominator line already says it); a `count_status` Pattern renders its title
+and "counts under review" with no rate and no chart; the chartless overnight
+Pattern and every unadmitted Pattern render as title-only rows in the unranked
+tail, as the shipped tail idiom already does.

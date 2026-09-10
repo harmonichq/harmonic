@@ -37,7 +37,7 @@ PRs are read from GitHub.
   - [x] 2.5.2 [#393](https://github.com/harmonichq/harmonic/issues/393) backend build: patterns in scenario report / findings projection / guidance selection, Focus pin on a pattern, opportunity-gated readiness; existing verdicts, floors, classifiers and scores unchanged as inputs. Begins with the synthetic replay of the ADR 391 rulings over the generator-owned QA catalog through public producers, pinned by tests (re-sliced from 2.5.1 on 2026-09-08).
   - [ ] 2.5.3 [#342](https://github.com/harmonichq/harmonic/issues/342) eating-sequence levers as members of "highs after meals", after 2.5.1.
   - [x] 2.5.4 [#395](https://github.com/harmonichq/harmonic/issues/395) design child: per-pattern chart and pattern row on the shipped rail; `/ui-craft` revise of the shipped Diagnose surface; Connor holds the lock.
-  - [ ] 2.5.5 Diagnose collapse (unfiled): amend the v2 lock and behavior ledger; Overview + Explore → Diagnose carrying the shipped rail.
+  - [ ] 2.5.5 [#397](https://github.com/harmonichq/harmonic/issues/397) Diagnose collapse: amend the v2 lock and behavior ledger; Overview + Explore → Diagnose carrying the shipped rail; #389 resumes against it.
 
 ### #386 verified completion
 

@@ -1,9 +1,8 @@
 """The closed lever taxonomy (#70 §2) — the ~7-set of actionable root causes.
 
-The scenario engine attributes exactly **one** lever per episode: its earliest
-*actionable* driver (root-cause-by-time). Co-occurring behaviors are narrated as
-consequences of that lever, never as separate flags — this is what dedups a single
-dinner that trips three instance classifiers into one attributed episode.
+The shared evaluator attributes one lever per episode. Supported sequence
+competition uses observed impact; otherwise the earliest actionable driver wins.
+Losing matches remain evidence.
 
 Each lever owns:
 
@@ -54,12 +53,26 @@ class Lever(str, Enum):
     CORRECTION_ON_IOB = "correction_on_iob"
     MISSED_MEAL = "missed_meal"
     MEAL_BOLUS_SHORT = "meal_bolus_short"
+    HIGH_CARB_SEQUENCE = "high_carb_sequence"
+    REPEAT_EATING = "repeat_eating"
 
 
 # Per-lever metadata: title, the outcome Exposure it belongs to, the
 # single recommendation the closed set promises, and the plain-language meaning
 # (#157). Keep these in lock-step with the taxonomy table in #70 §2.
 _META = {
+    Lever.HIGH_CARB_SEQUENCE: (
+        "High-carb sequence", Exposure.MEALS,
+        "Watch how your largest eating sequences compare with smaller ones.",
+        "Your highest-carb eating sequences were associated with less time in range "
+        "or more glucose variability than the rest.",
+    ),
+    Lever.REPEAT_EATING: (
+        "Repeat eating", Exposure.MEALS,
+        "Watch how repeated eating windows compare with a single window at similar total carbs.",
+        "Sequences with three or more eating windows were associated with less time in range "
+        "or more glucose variability than single-window sequences at similar total carbs.",
+    ),
     Lever.CARB_UNDERCOUNT: (
         "Carb undercount",
         Exposure.MEALS,
@@ -151,6 +164,8 @@ LEVER_EXPOSURE = {lever: meta[1] for lever, meta in _META.items()}
 # ``correction``). A lever whose consequence *is* its own anchor still declares one,
 # so the set stays closed and a new lever has to answer the question.
 _OUTCOME_KIND = {
+    Lever.HIGH_CARB_SEQUENCE: "sequence",
+    Lever.REPEAT_EATING: "sequence",
     Lever.CARB_UNDERCOUNT: "high",       # the run-away high after the meal
     Lever.LATE_BOLUS: "high",            # the peak the late dose never caught
     Lever.MEAL_OVER_DELIVERY: "low",     # the drop the strong meal dose left behind

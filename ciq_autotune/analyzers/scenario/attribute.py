@@ -1,7 +1,8 @@
 """Lever attribution — one lever per episode, root-cause-by-time (#70 §2).
 
-This is the dedup that turns *three* honest-but-local classifier flags on one
-dinner into *one* attributed episode. The rule:
+This is the chronological classifier walk. It retains every matched candidate
+for the shared evaluator, which compares observed impact when a supported
+sequence competes. Without sequence competition it keeps the legacy driver. The rule:
 
     **The episode's lever is its earliest _actionable_ driver.** Co-occurring
     behaviors at later anchors are narrated as _consequences_ of that lever, not
@@ -334,6 +335,49 @@ def _over_treated_text(nadir: Optional[float], peak: float) -> str:
 
 
 @dataclass(frozen=True)
+class AnchorVerdict:
+    """One classifier's judgment of one anchor, retained regardless of firing (ADR 0019).
+
+    The debug counterpart to a coaching :class:`~...classifiers.evidence.Verdict`: it
+    additionally names *which* classifier produced it, so the view can list every
+    detector that looked at an anchor, not just the one the coaching layer surfaced.
+    """
+
+    classifier: str
+    matched: bool
+    detail: str
+    evidence_tier: EvidenceTier
+    silence_reason: Optional[SilenceReason]
+    suspend_start: Optional[datetime] = None
+    suspend_end: Optional[datetime] = None
+
+    def to_dict(self) -> dict:
+        payload = {
+            "classifier": self.classifier,
+            "matched": self.matched,
+            "detail": self.detail,
+            "evidence_tier": self.evidence_tier.value,
+            "silence_reason": self.silence_reason.value if self.silence_reason else None,
+        }
+        if self.suspend_start is not None:
+            payload["suspend_start"] = event_ref(self.suspend_start)
+        if self.suspend_end is not None:
+            payload["suspend_end"] = event_ref(self.suspend_end)
+        return payload
+
+
+def _mv(classifier: str, verdict) -> AnchorVerdict:
+    """Wrap a classifier :class:`Verdict` as an :class:`AnchorVerdict` under ``classifier``."""
+    return AnchorVerdict(
+        classifier=classifier,
+        matched=verdict.matched,
+        detail=verdict.detail,
+        evidence_tier=verdict.evidence_tier,
+        silence_reason=None if verdict.matched else verdict.silence_reason,
+    )
+
+
+@dataclass(frozen=True)
 class Attribution:
     """The result of attributing a lever to one episode.
 
@@ -365,6 +409,8 @@ class Attribution:
     rebound_end: Optional[datetime] = None
     correction_pair: Optional[tuple[int, int]] = None
     driver_anchor: Optional[Anchor] = None
+    matches: tuple[Attribution, ...] = ()
+    anchor_verdicts: tuple[tuple[AnchorVerdict, ...], ...] = ()
 
 
 # Each ``_*_lever`` helper returns ``(lever_result, silence)``: the ``(lever, step)``
@@ -382,6 +428,8 @@ def _meal_lever(
     *,
     isf: Optional[float],
     scenario_config: ScenarioConfig = ScenarioConfig(),
+    matches: Optional[list] = None,
+    verdicts: Optional[list] = None,
 ) -> tuple[Optional[tuple], Optional[Verdict]]:
     """Attribute a meal anchor to a lever by shape precedence.
 
@@ -398,24 +446,25 @@ def _meal_lever(
     meal = anchor.bolus
     assert meal is not None
 
+    results = []
     cu = classify_carb_undercount(
         meal, cgm, basal, bolus, isf=isf,
         scenario_config=scenario_config,
     )
     if cu.matched:
-        return (Lever.CARB_UNDERCOUNT, _step(meal.t, cu, facts={
+        results.append((Lever.CARB_UNDERCOUNT, _step(meal.t, cu, facts={
             "logged_carbs_g": cu.logged_carbs,
             "implied_carbs_g": cu.implied_carbs,
             "baseline_glucose_mgdl": cu.baseline_bg,
             "peak_glucose_mgdl": cu.peak_bg,
-        })), None
+        })))
 
     lb = classify_late_bolus(meal, cgm, basal, bolus, scenario_config=scenario_config)
     if lb.matched:
-        return (Lever.LATE_BOLUS, _step(meal.t, lb, facts={
+        results.append((Lever.LATE_BOLUS, _step(meal.t, lb, facts={
             "pre_bolus_slope_mgdl_min": lb.pre_bolus_slope,
             "pre_bolus_glucose_mgdl": lb.pre_bolus_bg,
-        })), None
+        })))
 
     # Meal over-delivery: ADR 681 assigns later suspend episodes to one Meal, then
     # judges each candidate at its own suspend start through the unchanged classifier.
@@ -423,15 +472,22 @@ def _meal_lever(
         meal, bolus, cgm, basal, scenario_config=scenario_config
     )
     if sv.matched:
-        return (Lever.MEAL_OVER_DELIVERY, _step(meal.t, sv, facts={
+        results.append((Lever.MEAL_OVER_DELIVERY, _step(meal.t, sv, facts={
             "suspend_start": _event_ref_or_none(sv.suspend_start),
             "suspend_end": _event_ref_or_none(sv.suspend_end),
             "suspend_duration_min": sv.suspend_duration_min,
             "nadir_glucose_mgdl": sv.nadir_bg,
             "nadir_at": _event_ref_or_none(sv.nadir_t),
-        })), None
+        })))
 
-    return None, cu
+    if verdicts is not None:
+        verdicts.extend((_mv("carb_undercount", cu), _mv("late_bolus", lb),
+                         AnchorVerdict("meal_over_delivery", sv.matched, sv.detail, sv.evidence_tier,
+                                       None if sv.matched else (sv.silence_reason or SilenceReason.NO_TRIGGER),
+                                       sv.suspend_start, sv.suspend_end)))
+    if matches is not None:
+        matches.extend(results)
+    return (results[0], None) if results else (None, cu)
 
 
 def _low_lever(
@@ -442,6 +498,8 @@ def _low_lever(
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
+    matches: Optional[list] = None,
+    verdicts: Optional[list] = None,
 ) -> tuple[Optional[tuple], Optional[Verdict]]:
     """Attribute a low anchor: over-treated low or correction-on-IOB.
 
@@ -475,6 +533,7 @@ def _low_lever(
     # Skipped when the over-treatment has been split into its own high-moment (#155):
     # the low keeps only its *own* cause (correction-on-IOB below) and
     # the rebound is scored on the high-moment, so this must not also claim it here.
+    results = []
     nadir = anchor.bg if anchor.bg is not None else _nadir_at(cgm, anchor.t)
     # The low-prompt answer for this nadir (#129): 'no' rejects the over-treated-low
     # finding outright (the user says they didn't eat — who are we to call it an
@@ -484,25 +543,28 @@ def _low_lever(
     answer = match_low_answer(low_answers, anchor.t)
     refuted = answer is not None and answer.answer == "no"
     if not anchor.over_treatment_split_off and not refuted:
-        rebound = over_treated_rebound(
+        judgment = over_treated_rebound_judgment(
             cgm, anchor.t, nadir, bolus, scenario_config=scenario_config,
         )
+        rebound = judgment.rebound if judgment.verdict.matched else None
+        if verdicts is not None:
+            verdicts.append(_mv("over_treated_low", judgment.verdict))
         if rebound is not None:
-            return (
+            results.append((
                 Lever.OVER_TREATED_LOW,
                 _over_treated_step(anchor.t, nadir, rebound.peak, answer),
                 rebound.terminal,
-            ), None
+            ))
 
-    # Correction-on-IOB (#150): fires only after over-treated-low has passed. Back-scans
-    # from this nadir for the single
+    # Correction-on-IOB (#150) follows over-treated-low in chronological precedence.
+    # Retain its match too for sequence competition. Back-scans for the single
     # user correction that landed on live IOB. ``nadir`` is the sub-70 outcome the
     # classifier gates on (near-lows are rejected inside it).
     coi = classify_correction_on_iob(
         anchor.t, nadir, cgm, bolus, basal, scenario_config=scenario_config
     )
     if coi.matched:
-        return (Lever.CORRECTION_ON_IOB, _step(anchor.t, coi, facts={
+        results.append((Lever.CORRECTION_ON_IOB, _step(anchor.t, coi, facts={
             "correction_at": _event_ref_or_none(coi.correction_t),
             "iob_at_correction_u": coi.iob_at_correction,
             "pre_correction_slope_mgdl_min": coi.pre_slope,
@@ -510,9 +572,13 @@ def _low_lever(
             "nadir_glucose_mgdl": coi.nadir_bg,
             "nadir_at": _event_ref_or_none(coi.nadir_t),
             "minutes_to_low": coi.mins_to_low,
-        })), None
+        })))
 
-    return None, coi
+    if verdicts is not None:
+        verdicts.append(_mv("correction_on_iob", coi))
+    if matches is not None:
+        matches.extend(results)
+    return (results[0], None) if results else (None, coi)
 
 
 def _correction_lever(
@@ -562,6 +628,7 @@ def _high_lever(
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
+    verdicts: Optional[list] = None,
 ) -> tuple[Optional[tuple], Optional[Verdict]]:
     """Attribute a high anchor to missed / unannounced meal.
 
@@ -592,6 +659,9 @@ def _high_lever(
     (``reach_end``) the engine scores the climb over (#124).
     """
     if anchor.rebound_nadir_bg is not None:
+        if verdicts is not None:
+            verdicts.append(AnchorVerdict("over_treated_low", True,
+                _over_treated_text(anchor.rebound_nadir_bg, anchor.bg), EvidenceTier.INFERRED, None))
         # The split high-moment (#129): re-match the crash nadir's low-prompt answer so
         # the over-correction beat upgrades / cites exactly as an unsplit over-treated
         # low would. The split gate already dropped a refuted ('no') low, so any answer
@@ -606,6 +676,11 @@ def _high_lever(
 
     onset = anchor.reach_start
     mm = classify_missed_meal(onset, cgm, bolus, basal, scenario_config=scenario_config)
+    mbs = classify_meal_bolus_short(
+        onset, cgm, bolus, basal, scenario_config=scenario_config
+    )
+    if verdicts is not None:
+        verdicts.extend((_mv("missed_meal", mm), _mv("meal_bolus_short", mbs)))
     if mm.matched:
         cited_window = (
             window_ref(mm.digestion_window_start, onset)
@@ -621,9 +696,6 @@ def _high_lever(
             }},
         )), None
 
-    mbs = classify_meal_bolus_short(
-        onset, cgm, bolus, basal, scenario_config=scenario_config
-    )
     if mbs.matched:
         cited_window = (
             window_ref(mbs.digestion_window_start, onset)
@@ -675,6 +747,23 @@ def _trigger_label(kind: AnchorKind, lever: Lever) -> str:
     return kind.value
 
 
+def _cited_step(lever, a, step):
+    source_facts = dict((step.citation or {}).get("facts") or {})
+    step = replace(step, citation={
+        "operation": f"scenario.attribution.{lever.value}",
+        "tier": step.evidence_tier.value,
+        "facts": {
+            "lever": lever.value,
+            "anchor_kind": a.kind.value,
+            "anchor_at": event_ref(step.t),
+            "event_refs": list(step.cited_event_refs),
+            "window": dict(step.cited_window) if step.cited_window else None,
+            **source_facts,
+        },
+    })
+    return step
+
+
 def attribute(
     episode: EpisodeAnchors,
     cgm: Sequence[CgmReading],
@@ -707,6 +796,8 @@ def attribute(
     rebound_end: Optional[datetime] = None
     correction_pair: Optional[tuple[int, int]] = None
     consequences: List[Step] = []
+    matches = []
+    retained_verdicts = []
     # When nothing fires, the episode still owes a reason. Retain the first anchor's
     # most-specific non-firing verdict (anchors are in time order, mirroring the
     # earliest-driver rule) so a ``lever=None`` episode can report why it stayed
@@ -719,8 +810,12 @@ def attribute(
         episode.anchors, cgm, basal, scenario_config=scenario_config
     )
 
+    correction_times = [a.t for a in episode.anchors if a.kind is AnchorKind.CORRECTION]
+    last_correction_t = correction_times[-1] if correction_times else None
     for a in episode.anchors:
         result: Optional[tuple] = None
+        anchor_matches = []
+        verdicts = []
         sil: Optional[Verdict] = None
         # The guarded rebound terminal this anchor's result carries (over-treated low
         # only); read into ``rebound_end`` iff this anchor becomes the driver.
@@ -733,7 +828,7 @@ def attribute(
         if a.kind is AnchorKind.MEAL:
             r, sil = _meal_lever(
                 a, cgm, basal, bolus,
-                isf=isf, scenario_config=scenario_config,
+                isf=isf, scenario_config=scenario_config, matches=anchor_matches, verdicts=verdicts,
             )
             if r is not None:
                 result = (r[0], r[1])
@@ -741,7 +836,7 @@ def attribute(
             r, sil = _low_lever(
                 a, cgm, bolus, basal,
                 scenario_config=scenario_config,
-                low_answers=low_answers,
+                low_answers=low_answers, matches=anchor_matches, verdicts=verdicts,
             )
             if r is not None:
                 result = (r[0], r[1])
@@ -751,7 +846,7 @@ def attribute(
             r, sil = _high_lever(
                 a, cgm, bolus, basal,
                 scenario_config=scenario_config,
-                low_answers=low_answers,
+                low_answers=low_answers, verdicts=verdicts,
             )
             if r is not None:
                 result = (r[0], r[1])
@@ -772,35 +867,41 @@ def attribute(
             else:
                 sil = correction_silence
 
+        if a.kind is AnchorKind.CORRECTION:
+            if (correction_result is not None and a.bolus is not None
+                    and correction_result[3][1] == a.bolus.seq_num):
+                step = correction_result[1]
+                verdicts.append(AnchorVerdict("correction_stacking", True, step.text, step.evidence_tier, None))
+            elif correction_silence is not None and a.t == last_correction_t:
+                verdicts.append(_mv("correction_stacking", correction_silence))
+        retained_verdicts.append(tuple(verdicts))
         if result is None:
             if silence is None and sil is not None:
                 silence = sil
             continue
         lever, step = result
-        source_facts = dict((step.citation or {}).get("facts") or {})
-        step = replace(step, citation={
-            "operation": f"scenario.attribution.{lever.value}",
-            "tier": step.evidence_tier.value,
-            "facts": {
-                "lever": lever.value,
-                "anchor_kind": a.kind.value,
-                "anchor_at": event_ref(step.t),
-                "event_refs": list(step.cited_event_refs),
-                "window": dict(step.cited_window) if step.cited_window else None,
-                **source_facts,
-            },
-        })
+        step = _cited_step(lever, a, step)
+        driver_anchor = a
+        if lever is Lever.CORRECTION_STACKING and correction_pair is not None:
+            driver_anchor = next((candidate for candidate in episode.anchors
+                                  if candidate.kind is AnchorKind.CORRECTION
+                                  and candidate.bolus is not None
+                                  and candidate.bolus.seq_num == correction_pair[1]), a)
+            trig_t = driver_anchor.t
+        matches.append(Attribution(
+            lever, _trigger_label(driver_anchor.kind, lever), trig_t, [step],
+            rebound_end=this_rebound_end,
+            correction_pair=correction_pair if lever is Lever.CORRECTION_STACKING else None,
+            driver_anchor=driver_anchor,
+        ))
+        for other in anchor_matches[1:]:
+            other_lever, other_step = other[:2]
+            matches.append(Attribution(
+                other_lever, _trigger_label(a.kind, other_lever), a.t,
+                [_cited_step(other_lever, a, other_step)], driver_anchor=a,
+                rebound_end=other[2] if len(other) > 2 else None,
+            ))
         if driver is None:
-            driver_anchor = a
-            if lever is Lever.CORRECTION_STACKING and correction_pair is not None:
-                driver_anchor = next(
-                    (candidate for candidate in episode.anchors
-                     if candidate.kind is AnchorKind.CORRECTION
-                     and candidate.bolus is not None
-                     and candidate.bolus.seq_num == correction_pair[1]),
-                    a,
-                )
-                trig_t = driver_anchor.t
             driver = (lever, driver_anchor.kind, trig_t, step, driver_anchor)
             rebound_end = this_rebound_end
         else:
@@ -809,7 +910,8 @@ def attribute(
 
     if driver is None:
         return Attribution(
-            lever=None, trigger="", trigger_t=episode.start, steps=[], silence=silence
+            lever=None, trigger="", trigger_t=episode.start, steps=[], silence=silence,
+            anchor_verdicts=tuple(retained_verdicts)
         )
 
     lever, kind, trigger_t, driver_step, driver_anchor = driver
@@ -822,6 +924,8 @@ def attribute(
         rebound_end=rebound_end,
         correction_pair=(correction_pair if lever is Lever.CORRECTION_STACKING else None),
         driver_anchor=driver_anchor,
+        matches=tuple(matches),
+        anchor_verdicts=tuple(retained_verdicts),
     )
 
 

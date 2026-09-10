@@ -1,7 +1,7 @@
 """The separately versioned aggregate eating-sequence report contract (#274).
 
-This module records only aggregate evidence for later detectors.  It neither
-constructs sequences from events nor participates in tuning, Plan, or safety.
+One evaluation owns construction, cohorts and eligible sequence identities.
+The report-only view remains compatible; neither view participates in tuning, Plan or safety.
 """
 
 from __future__ import annotations
@@ -382,6 +382,12 @@ class EatingSequence:
     end: datetime
     carbs: float
     window_count: int
+    members: tuple[BolusEvent, ...] = ()
+
+    @property
+    def id(self) -> str:
+        first = self.members[0]
+        return f"sequence-{first.seq_num if first.seq_num is not None else first.t.isoformat()}"
 
 
 @dataclass(frozen=True)
@@ -398,17 +404,49 @@ class _ComparedRepeatCohorts:
     repeat: IntervalAggregate
 
 
-def build_report(
+@dataclass(frozen=True)
+class EligibleSequence:
+    sequence: EatingSequence
+    quintile: int
+    period: str
+    start: datetime
+    end: datetime
+    candidate: bool
+
+    @property
+    def id(self) -> str:
+        return self.sequence.id
+
+    @property
+    def t(self) -> datetime:
+        return self.sequence.start
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "start": self.start.isoformat(), "end": self.end.isoformat(),
+                "sequence_start": self.t.isoformat(), "sequence_end": self.sequence.end.isoformat(),
+                "member_event_ids": [str(b.seq_num) if b.seq_num is not None else b.t.isoformat()
+                                     for b in self.sequence.members],
+                "carbs": self.sequence.carbs, "window_count": self.sequence.window_count,
+                "quintile": self.quintile, "period": self.period, "candidate": self.candidate}
+
+
+@dataclass(frozen=True)
+class SequenceEvaluation:
+    report: EatingSequenceReport
+    populations: Mapping[str, tuple[EligibleSequence, ...]]
+
+
+def evaluate_sequences(
     boluses: Sequence[BolusEvent], cgm: Sequence[CgmReading], carb_log: Sequence[CarbEntry], *,
     window_start: datetime, window_end: datetime, config: EatingSequenceConfig,
-) -> EatingSequenceReport:
-    """Build the aggregate-only detector report from complete window-local streams."""
+) -> SequenceEvaluation:
+    """Build the report and identity-bearing eligible populations in one pass."""
     window = SourceWindow(window_start.isoformat(), window_end.isoformat(),
                           (window_end - window_start).days)
     sequences = build_sequences(
         [event for event in boluses if window_start <= event.t <= window_end], config=config)
     if not sequences:
-        return empty_report(window, config=config)
+        return SequenceEvaluation(empty_report(window, config=config), {})
     assignment = assign_quintiles(
         [SequenceItem(sequence.carbs, sequence.start) for sequence in sequences], config=config)
     quintiles = {row.item.sequence_start: row.quintile for row in assignment.rows}
@@ -443,7 +481,39 @@ def build_report(
         "supported" if repeat_finding is not None else "insufficient", repeat_finding, matrix,
         tuple(item.row for item in repeat_compared), exclusions,
     )
-    return EatingSequenceReport(window, config, high, repeat)
+    report = EatingSequenceReport(window, config, high, repeat)
+    populations = {}
+    for lever, selected in (("high_carb_sequence", finding), ("repeat_eating", repeat_finding)):
+        rows = []
+        if selected is not None:
+            for sequence in sequences:
+                quintile = quintiles[sequence.start]
+                if (sequence.start, selected.period) not in metrics:
+                    continue
+                if lever == "high_carb_sequence":
+                    if selected.scope == "evening" and sequence not in scopes["evening"]:
+                        continue
+                    candidate = quintile == config.quintile_count
+                else:
+                    if quintile != selected.carb_quintile or sequence.window_count == 2:
+                        continue
+                    candidate = sequence.window_count >= 3
+                _, start, end = next(row for row in _intervals(sequence, config)
+                                     if row[0] == selected.period)
+                rows.append(EligibleSequence(sequence, quintile, selected.period, start, end, candidate))
+        populations[lever] = tuple(rows)
+    return SequenceEvaluation(report, populations)
+
+
+
+def build_report(
+    boluses: Sequence[BolusEvent], cgm: Sequence[CgmReading], carb_log: Sequence[CarbEntry], *,
+    window_start: datetime, window_end: datetime, config: EatingSequenceConfig,
+) -> EatingSequenceReport:
+    """Compatible aggregate-only view of the shared sequence evaluation."""
+    return evaluate_sequences(boluses, cgm, carb_log, window_start=window_start,
+                              window_end=window_end, config=config).report
+
 
 
 def build_eating_sequence_report(store, *, window_days: int = 30,
@@ -471,19 +541,22 @@ def build_sequences(
 ) -> tuple[EatingSequence, ...]:
     """Construct eating sequences for this report and the repeat-eating amplifier (#276)."""
     meals = sorted((event for event in boluses if event.carbs is not None and event.carbs > 0),
-                   key=lambda event: event.t)
+                   key=lambda event: (event.t, event.seq_num is None,
+                                      event.seq_num if event.seq_num is not None else event.t.isoformat()))
     windows = []
     for event in meals:
         if not windows or event.t - windows[-1][1] > timedelta(minutes=config.window_merge_minutes):
-            windows.append([event.t, event.t, event.carbs])
+            windows.append([event.t, event.t, event.carbs, [event]])
         else:
             windows[-1][1], windows[-1][2] = event.t, windows[-1][2] + event.carbs
+            windows[-1][3].append(event)
     built = []
-    for first, last, carbs in windows:
+    for first, last, carbs, members in windows:
         if not built or first - built[-1][1] > timedelta(hours=config.sequence_gap_hours):
-            built.append([first, last, carbs, 1])
+            built.append([first, last, carbs, 1, tuple(members)])
         else:
             built[-1][1], built[-1][2], built[-1][3] = last, built[-1][2] + carbs, built[-1][3] + 1
+            built[-1][4] += tuple(members)
     return tuple(EatingSequence(*item) for item in built)
 
 

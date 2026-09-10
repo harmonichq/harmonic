@@ -48,6 +48,7 @@ class EvidencePopulationPolicy:
     comparison_window: tuple[int, int]
     cross_population: bool
     occurrence_id: Callable
+    sequence_lever: str | None = None
 
     def recurrence_population(
         self,
@@ -55,7 +56,10 @@ class EvidencePopulationPolicy:
         bolus: Sequence,
         *,
         scenario_config: ScenarioConfig = ScenarioConfig(),
+        sequence_populations: dict | None = None,
     ) -> tuple:
+        if self.sequence_lever is not None:
+            return tuple((sequence_populations or {}).get(self.sequence_lever, ()))
         if self.recurrence_family is None:
             return tuple(
                 item for item in bolus
@@ -75,6 +79,8 @@ class EvidencePopulationPolicy:
         scenario_config: ScenarioConfig = ScenarioConfig(),
     ) -> str:
         """Return the policy's stable occurrence id for an attributed episode."""
+        if self.sequence_lever is not None:
+            raise ValueError("sequence occurrence identity must come from the shared evaluation")
         if self.recurrence_family is not None:
             return episode_id
         members = [item for item in bolus
@@ -91,8 +97,12 @@ class EvidencePopulationPolicy:
         bolus: Sequence,
         *,
         scenario_config: ScenarioConfig = ScenarioConfig(),
+        sequence_populations: dict | None = None,
     ) -> tuple:
         """Return the candidates eligible for this lever's comparison cohort."""
+        if self.sequence_lever is not None:
+            return tuple(row for row in (sequence_populations or {}).get(self.sequence_lever, ())
+                         if not row.candidate)
         if self.cross_population:
             return tuple(
                 item for item in bolus
@@ -122,6 +132,9 @@ class EvidencePopulationPolicy:
         """Project a custom recurrence population from serialized evidence."""
         if self.recurrence_family is not None:
             return None
+        if self.sequence_lever is not None:
+            return (frozenset(group["id"] for group in pattern.get("occurrence_groups") or ()),
+                    (pattern.get("confidence") or {}).get("n", 0))
         occurrence_ids = frozenset(
             occurrence_id
             for occurrences in attributed_families.values()
@@ -176,6 +189,14 @@ _POLICIES[Lever.MEAL_BOLUS_SHORT] = EvidencePopulationPolicy(
     "Other completed carb-bolus meals",
     "completed_carb_bolus", (-60, 300), False, _event_identity,
 )
+
+
+for _lever in (Lever.HIGH_CARB_SEQUENCE, Lever.REPEAT_EATING):
+    _POLICIES[_lever] = EvidencePopulationPolicy(
+        None, "sequences", lambda item, **_: True, None, lambda item, **_: True,
+        "Q1–Q4 sequences" if _lever is Lever.HIGH_CARB_SEQUENCE else "Single-window sequences at matched carb quintile",
+        "sequence", (0, 360), False, _episode_identity, _lever.value,
+    )
 
 
 def policy_for(lever: Lever | str) -> EvidencePopulationPolicy:

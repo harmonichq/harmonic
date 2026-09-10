@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from .analyzers.scenario.attribute import attribute, split_caused_over_treatments
+from .analyzers.scenario.evaluation import evaluate, SEQUENCE_LEVERS
+from .rescue_evidence import eligible_carb_entries
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Lever, title
 from .analyzers.scenario.evidence_population import policy_for
-from .analyzers.scenario.model_view import _CONTEXT_PAD_MIN, _build_episode_view, _is_driver
-from .analyzers.scenario.anchors import collect_anchors
-from .analyzers.scenario.segment import segment, split_double_humps, split_low_rebounds
+from .analyzers.scenario.model_view import _build_episode_view, _is_driver
 from .analyzers.scenario_config import ScenarioConfig
 from .false_low import drop_readings, false_low_span_records, spans_from_records
 
@@ -73,7 +72,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
       ``clean``. Measured on the 30-day calibration snapshot the two differ by seven:
       27 highs are not drivers, but only 20 sit in an episode with nothing attributed.
 
-    An occurrence outranked by an earlier driver is therefore neither ``attributed``
+    An occurrence outranked by another driver is therefore neither ``attributed``
     nor ``uncaused``: its match stayed diagnostic evidence, but its episode does have
     a cause.
     """
@@ -103,45 +102,28 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     isf = _effective_isf(bolus, basal, cgm, store.settings_snapshots(), start, now)
     scenario_config = ScenarioConfig()
 
-    anchors = collect_anchors(
-        window_bolus, window_cgm, window_basal, scenario_config=scenario_config,
-    )
-    episodes = split_caused_over_treatments(
-        split_low_rebounds(
-            split_double_humps(
-                segment(anchors, scenario_config=scenario_config), window_cgm,
-                scenario_config=scenario_config,
-            ),
-            window_cgm, window_bolus, scenario_config=scenario_config,
-        ),
-        window_cgm, window_bolus, window_basal,
-        isf=isf, scenario_config=scenario_config, low_answers=low_answers,
-    )
+    evaluated = evaluate(window_bolus, window_cgm, window_basal, isf=isf,
+                         scenario_config=scenario_config, low_answers=low_answers,
+                         carb_entries=_slice(eligible_carb_entries(store.carb_entries(), now), start, now),
+                         window_start=start, window_end=now)
     # A classifier's padded context can reach an opportunity in another episode.
     # Cross-family attribution is therefore opportunistic: stamp a target only when
     # this feed also emitted that opportunity, and otherwise preserve the feed.
     target_attributions = []
-    for index, episode_anchors in enumerate(episodes):
-        context_start = episode_anchors.start - timedelta(minutes=_CONTEXT_PAD_MIN)
-        context_end = episode_anchors.end + timedelta(minutes=_CONTEXT_PAD_MIN)
-        attribution = attribute(
-            episode_anchors,
-            _slice(window_cgm, context_start, context_end),
-            _slice(window_bolus, context_start, context_end),
-            _slice(window_basal, context_start, context_end),
-            isf=isf, scenario_config=scenario_config, low_answers=low_answers,
-        )
+    sequence_associations = []
+    for index, evaluated_episode in enumerate(evaluated.episodes):
+        episode_anchors = evaluated_episode.anchors
+        attribution = evaluated_episode.attribution
         episode = _build_episode_view(
             index, episode_anchors, window_cgm, window_bolus, window_basal,
             isf=isf, scenario_config=scenario_config,
-            low_answers=low_answers,
+            low_answers=low_answers, evaluated=evaluated_episode,
         )
+        if attribution.lever in SEQUENCE_LEVERS:
+            sequence_associations.append(evaluated_episode)
         if attribution.lever is Lever.MEAL_BOLUS_SHORT:
             policy = policy_for(attribution.lever)
-            occurrence_id = policy.occurrence_for_episode(
-                episode["id"], window_bolus, attribution.trigger_t,
-                scenario_config=scenario_config,
-            )
+            occurrence_id = evaluated_episode.occurrence_id
             meal = None if occurrence_id is None else next((
                 item for item in window_bolus
                 if policy.occurrence_id(item) == occurrence_id
@@ -183,10 +165,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 # sits at. A second eligible meal can land between the two, and keying
                 # on the anchor then names a meal the classifier's digestion window had
                 # excluded — a different occurrence from the one the engine grouped.
-                cause_occurrence_id = policy.occurrence_for_episode(
-                    episode["id"], window_bolus, attribution.trigger_t,
-                    scenario_config=scenario_config,
-                )
+                cause_occurrence_id = evaluated_episode.occurrence_id
             cause_title = title(Lever(lever)) if lever is not None else None
             occurrence = {
                 "t": anchor["t"],
@@ -221,6 +200,14 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         if target is not None and lever not in target["attributed_levers"]:
             target["attributed_levers"].append(lever)
 
+    for owned in sequence_associations:
+        for meal in families["meals"]["occurrences"]:
+            if owned.start <= datetime.fromisoformat(meal["t"]) < owned.end:
+                associations = meal.setdefault("member_associations", [])
+                subject = f"habit:{owned.attribution.lever.value}"
+                if subject not in associations:
+                    associations.append(subject)
+
     for name, family in families.items():
         occurrences = family["occurrences"]
         family["n"] = len(occurrences)
@@ -238,4 +225,16 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     return {
         "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
         "exposures": families,
+        **({"sequence_evidence": {
+            lever: {"population": [row.to_dict() for row in rows],
+                    "occurrences": [{"id": candidate.occurrence_id, "ep_id": ep.id,
+                                     "lever": lever, "owner": ep.attribution.lever.value,
+                                     "attributed": ep.attribution.lever == lever,
+                                     "start": ep.start.isoformat(), "end": ep.end.isoformat(),
+                                     "outcome_minute": ep.outcome_t.hour * 60 + ep.outcome_t.minute,
+                                     "candidates": [c.to_dict() for c in ep.candidates]}
+                                    for ep in evaluated.episodes for candidate in ep.candidates
+                                    if candidate.lever == lever]}
+            for lever, rows in evaluated.sequences.populations.items() if rows}}
+           if any(evaluated.sequences.populations.values()) else {}),
     }

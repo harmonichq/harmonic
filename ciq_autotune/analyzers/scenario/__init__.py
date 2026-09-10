@@ -2,8 +2,8 @@
 
 Consumes the layer-2 instance classifiers
 (:mod:`ciq_autotune.analyzers.classifiers`) and the raw timeline to assemble
-**episodes**, attribute a single **lever** per episode (root-cause-by-time, the
-dedup), group episodes into **patterns**, score them with #58 ``Confidence`` at
+**episodes**, attribute a single **lever** per episode through shared observed-impact
+evaluation, group episodes into **patterns**, score them with #58 ``Confidence`` at
 episode level, and emit the ranked payload #64 renders.
 
 Public API:
@@ -22,6 +22,7 @@ from .engine import (
     AttributedOccurrence, assemble, attributed_occurrences, build_scenarios,
     low_prompt_answers, tally_attributions, recurrence_observations,
 )
+from .evaluation import evaluate
 from .attribute import LowPromptAnswer
 from .guide import build_catalog
 from .model_view import assemble_model_view, build_model_view
@@ -37,6 +38,7 @@ from .payload import (
 from .preempted import compute_preempted_lows
 
 __all__ = [
+    "evaluate",
     "AttributedOccurrence",
     "attributed_occurrences",
     "recurrence_observations",

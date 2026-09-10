@@ -4,8 +4,8 @@ The public face of epic #70's layer 3. It:
 
 1. **segments** the raw timeline into episodes (:mod:`.segment` over
    :mod:`.anchors`);
-2. **attributes** a single lever per episode, root-cause-by-time
-   (:mod:`.attribute`) — the dedup that collapses co-occurring flags;
+2. **attributes** a single lever per episode through :mod:`.evaluation`, using
+   observed impact for sequence competition and chronological order otherwise;
 3. **groups** episodes into policy-owned occurrences and patterns by lever;
 4. **scores** each pattern with #58 :class:`~ciq_autotune.uncertainty.Confidence`
    — ``n`` = recurrence population, ``k`` = unique occurrences that went bad this
@@ -32,7 +32,7 @@ Public entry points:
 from __future__ import annotations
 
 import statistics
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -47,13 +47,11 @@ from ...rescue_evidence import (
 )
 from ...uncertainty import Confidence
 from ..scenario_config import ScenarioConfig
-from .anchors import (
-    AnchorKind,
-    collect_anchors,
-)
-from .attribute import LowPromptAnswer, attribute, split_caused_over_treatments
-from .levers import Exposure, Lever, exposure, recommendation
-from .evidence_population import policy_for, recurrence_count
+from .anchors import AnchorKind
+from .attribute import LowPromptAnswer, attribute
+from .evaluation import (AttributedOccurrence, evaluate, bounded_episode, _resolve_end, SEQUENCE_LEVERS)
+from .levers import Exposure, Lever, recommendation
+from .evidence_population import policy_for
 from . import opportunities
 from .narrate import narrate
 from .preempted import compute_preempted_lows
@@ -63,12 +61,7 @@ from .payload import (
     Pattern,
     ScenarioReport,
 )
-from .segment import (
-    segment,
-    split_double_humps,
-    split_low_rebounds,
-)
-from .severity import normalized_severity, severity_score, worst_bg
+from .severity import normalized_severity
 
 # The engine's aggregation knobs now live on ``ScenarioConfig`` (the ``engine_*``
 # fields): the classifier context pad, the display window pad, the cut-off-at-peak
@@ -110,136 +103,12 @@ def _exposure_counts(
     return {family: len(items) for family, items in families.items()}
 
 
-def _recurrence_counts(bolus, cgm, basal, *, scenario_config=ScenarioConfig()):
-    """The policy-owned recurrence denominator for every lever.
-
-    Exposure counts remain available for outcome-family reporting; a lever's
-    finding confidence must instead read its own evidence population.
-    """
-    families = opportunities.build_opportunities(
-        bolus, cgm, basal, scenario_config=scenario_config,
-    )
-    return {
-        lever: recurrence_count(
-            lever, families, bolus, scenario_config=scenario_config,
-        )
-        for lever in Lever
-    }
-
-
-@dataclass(frozen=True)
-class AttributedOccurrence:
-    """An attributed episode and its policy-owned recurrence anchor (#387).
-
-    Episode ids belong to this input walk, not to durable history. Unassociated
-    drivers remain in the legacy tally but cannot establish comparison ownership.
-    """
-
-    lever: Lever
-    episode_id: str
-    recurrence_id: str
-    driver_family: Optional[Exposure]
-    driver_source_key: Optional[tuple]
-    anchor_t: Optional[datetime]
-    unavailable_reason: Optional[str] = None
-
-
-def attributed_occurrences(
-    bolus_events: Sequence[BolusEvent],
-    cgm_readings: Sequence[CgmReading],
-    basal_events: Sequence[BasalEvent] = (),
-    *,
-    isf: Optional[float] = None,
-    scenario_config: ScenarioConfig = ScenarioConfig(),
-    low_answers: Sequence[LowPromptAnswer] = (),
-) -> Tuple[AttributedOccurrence, ...]:
-    """Attribute contextual inputs before a consumer filters owned anchors.
-
-    This is the tally's unchanged classifier walk, without narration or scoring.
-    Context-only opportunities remain available to classification. Consumers apply
-    their half-open periods to ``anchor_t``, then deduplicate recurrence ids.
-    """
-    groups, families = _recurrence_context(bolus_events, cgm_readings, basal_events,
-                                           isf, scenario_config, low_answers)
-    return _attributed_recurrences(bolus_events, cgm_readings, basal_events, isf,
-                                  scenario_config, low_answers, groups, families)
-
-
-def _recurrence_context(bolus_events, cgm_readings, basal_events, isf, scenario_config, low_answers):
-    anchors = collect_anchors(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
-    )
-    ep_anchor_groups = split_caused_over_treatments(
-        split_low_rebounds(
-            split_double_humps(
-                segment(anchors, scenario_config=scenario_config),
-                cgm_readings, scenario_config=scenario_config,
-            ),
-            cgm_readings, bolus_events, scenario_config=scenario_config,
-        ),
-        cgm_readings, bolus_events, basal_events,
-        isf=isf,
-        scenario_config=scenario_config,
-        low_answers=low_answers,
-    )
-    families = opportunities.build_opportunities(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
-    )
-    return ep_anchor_groups, families
-
-
-def _attributed_recurrences(bolus_events, cgm_readings, basal_events, isf,
-                            scenario_config, low_answers, ep_anchor_groups, families):
-    rows = []
-    for index, ep_anchors in enumerate(ep_anchor_groups):
-        start = ep_anchors.start
-        end = ep_anchors.end
-        ctx_start = start - timedelta(minutes=scenario_config.engine_context_pad_min)
-        ctx_end = end + timedelta(minutes=scenario_config.engine_context_pad_min)
-        attr = attribute(
-            ep_anchors,
-            _slice(cgm_readings, ctx_start, ctx_end),
-            _slice(bolus_events, ctx_start, ctx_end),
-            _slice(basal_events, ctx_start, ctx_end),
-            isf=isf,
-            scenario_config=scenario_config,
-            low_answers=low_answers,
-        )
-        if attr.lever is None:
-            continue
-        episode_id = f"ep-{index:03d}"
-        policy = policy_for(attr.lever)
-        recurrence_id = policy.occurrence_for_episode(
-            episode_id, bolus_events, attr.trigger_t,
-            scenario_config=scenario_config,
-        )
-        driver = attr.driver_anchor
-        family, key = (opportunities.canonical_anchor_key(driver)
-                       if driver is not None else (None, None))
-        if attr.correction_pair is not None:
-            family, key = Exposure.CORRECTION_CLUSTERS, attr.correction_pair
-        elif (attr.lever is Lever.OVER_TREATED_LOW and driver is not None
-              and driver.rebound_nadir_t is not None):
-            matches = [item for item in families[Exposure.LOWS]
-                       if item.anchor_t == driver.rebound_nadir_t]
-            family = Exposure.LOWS
-            key = matches[0].source_key if len(matches) == 1 else None
-        driver_matches = [item for item in families.get(family, ())
-                          if item.source_key == key]
-        owned = None
-        if policy.recurrence_family is None:
-            matches = [item for item in policy.recurrence_population(
-                families, bolus_events, scenario_config=scenario_config,
-            ) if policy.occurrence_id(item) == recurrence_id]
-            if len(matches) == 1:
-                owned = matches[0].t
-        elif family is policy.recurrence_family and len(driver_matches) == 1:
-            owned = driver_matches[0].anchor_t
-        rows.append(AttributedOccurrence(
-            attr.lever, episode_id, recurrence_id, family, key, owned,
-            None if owned is not None else "unassociated_recurrence_anchor",
-        ))
-    return tuple(rows)
+def attributed_occurrences(bolus_events, cgm_readings, basal_events=(), *, isf=None,
+                           scenario_config=ScenarioConfig(), low_answers=(), carb_entries=()):
+    """Read unique occurrence ownership from the shared event evaluation."""
+    return evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
+                    scenario_config=scenario_config, low_answers=low_answers,
+                    carb_entries=carb_entries).attributed
 
 
 def tally_attributions(
@@ -250,77 +119,26 @@ def tally_attributions(
     isf: Optional[float] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
+    carb_entries=(),
 ) -> Tuple[Dict[Exposure, int], Dict[Lever, int]]:
     """Exposure counts and unique attributed recurrence counts, without narration.
 
     The legacy all-input aggregation keeps unavailable ownership rows: an absent
     comparison anchor does not erase an existing attribution.
     """
-    exposure_counts = _exposure_counts(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config,
-    )
+    evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
+                         scenario_config=scenario_config, low_answers=low_answers,
+                         carb_entries=carb_entries)
+    exposure_counts = {family: len(rows) for family, rows in evaluated.families.items()}
     attributed: Dict[Lever, int] = {}
     seen = set()
-    for row in attributed_occurrences(
-        bolus_events, cgm_readings, basal_events, isf=isf,
-        scenario_config=scenario_config, low_answers=low_answers,
-    ):
+    for row in evaluated.attributed:
         key = (row.lever, row.recurrence_id)
         if key in seen:
             continue
         seen.add(key)
         attributed[row.lever] = attributed.get(row.lever, 0) + 1
     return exposure_counts, attributed
-
-
-def _lever_bearing_flags(
-    ep_anchor_groups: Sequence,
-    cgm: Sequence[CgmReading],
-    bolus: Sequence[BolusEvent],
-    basal: Sequence[BasalEvent],
-    *,
-    isf: Optional[float],
-    scenario_config: ScenarioConfig = ScenarioConfig(),
-    low_answers: Sequence[LowPromptAnswer] = (),
-) -> List[bool]:
-    """Which groups will attribute a lever — the authoritative non-overlap pre-pass (#124).
-
-    The non-overlap invariant binds only *lever-bearing* episodes (ADR 0010): a group
-    that attributes no lever is dropped and owns no danger-time, so it must not clamp a
-    neighbour's forward reach. Determining the clamp therefore needs to know which
-    groups are lever-bearing *before* the main build runs — so attribute each group once
-    here, on its own padded context.
-
-    This is not a fixpoint: attribution's lever/no-lever verdict is stable — widening a
-    dropped group's context never resurrects a lever, nor strips one from a group that
-    had it — so a single pass classifies every group. The main pass re-attributes under
-    the relaxed bound (attribution runs twice per group; it is not the bottleneck).
-    """
-    flags: List[bool] = []
-    for ep_anchors in ep_anchor_groups:
-        ctx_start = ep_anchors.start - timedelta(minutes=scenario_config.engine_context_pad_min)
-        ctx_end = ep_anchors.end + timedelta(minutes=scenario_config.engine_context_pad_min)
-        attr = attribute(
-            ep_anchors,
-            _slice(cgm, ctx_start, ctx_end),
-            _slice(bolus, ctx_start, ctx_end),
-            _slice(basal, ctx_start, ctx_end),
-            isf=isf,
-            scenario_config=scenario_config,
-            low_answers=low_answers,
-        )
-        flags.append(attr.lever is not None)
-    return flags
-
-
-def _next_lever_bearing_start(
-    ep_anchor_groups: Sequence, lever_bearing: Sequence[bool], idx: int
-) -> Optional[datetime]:
-    """The start of the first lever-bearing group after ``idx`` (the non-overlap clamp)."""
-    for j in range(idx + 1, len(ep_anchor_groups)):
-        if lever_bearing[j]:
-            return ep_anchor_groups[j].start
-    return None
 
 
 def _build_episode(
@@ -336,6 +154,7 @@ def _build_episode(
     next_lever_start: Optional[datetime] = None,
     scenario_config: ScenarioConfig = ScenarioConfig(),
     low_answers: Sequence[LowPromptAnswer] = (),
+    evaluated=None,
 ) -> Optional[Tuple[Episode, Lever]]:
     """Attribute + assemble one episode, or ``None`` if it has no actionable lever.
 
@@ -359,53 +178,20 @@ def _build_episode(
     over-treated lows.
     """
     start = ep_anchors.start
-    end = ep_anchors.end
-    # A meal's forward reach (t+180, #78) can push the raw cluster end past the next
-    # episode's start; cap it there first so severity never straddles the divider.
-    if next_start is not None:
-        end = min(end, next_start)
     ctx_start = start - timedelta(minutes=scenario_config.engine_context_pad_min)
-    ctx_end = end + timedelta(minutes=scenario_config.engine_context_pad_min)
+    ctx_end = ep_anchors.end + timedelta(minutes=scenario_config.engine_context_pad_min)
     ctx_cgm = _slice(cgm, ctx_start, ctx_end)
     ctx_bolus = _slice(bolus, ctx_start, ctx_end)
     ctx_basal = _slice(basal, ctx_start, ctx_end)
-
-    attr = attribute(
-        ep_anchors, ctx_cgm, ctx_bolus, ctx_basal,
-        isf=isf,
-        scenario_config=scenario_config,
-        low_answers=low_answers,
-    )
+    if evaluated is None:
+        attr = attribute(ep_anchors, ctx_cgm, ctx_bolus, ctx_basal, isf=isf,
+                         scenario_config=scenario_config, low_answers=low_answers)
+        evaluated = bounded_episode(idx, ep_anchors, attr, cgm, next_start=next_start,
+                                    next_lever_start=next_lever_start, scenario_config=scenario_config)
+    attr = evaluated.attribution
     if attr.lever is None:
         return None
-
-    # Resolve the episode's true end so severity/worst_bg/window cover the whole
-    # excursion, not a truncated slice.
-    if attr.lever is Lever.OVER_TREATED_LOW and attr.rebound_end is not None:
-        # An over-treated low's span runs nadir → guarded-rebound-scan terminal (the
-        # excursion's resolution: the climb past range and the multi-hour decline back
-        # down), not the anchor-bounded near-low run that scores ~0 (#124 / ADR 0010).
-        # The terminal comes from the same scan the label fired on. It reaches *through*
-        # any dropped, lever-less anchor between the nadir and the rebound, clamped only
-        # at the next lever-bearing neighbour (so two lever-bearing episodes never
-        # overlap); the scan horizon is already baked into ``rebound_end``.
-        extended = attr.rebound_end
-        if next_lever_start is not None:
-            extended = min(extended, next_lever_start)
-        end = max(end, extended)
-    else:
-        # Extend when the episode was cut off at its peak (#80: the arc ended still out
-        # of range) so the whole excursion is scored. A degenerate window (start == end,
-        # e.g. a zero-duration meal anchor whose CGM gap left no reach) is likewise
-        # widened to the arc it was judged on so severity/worst_bg are never computed
-        # over an empty span (#78). end never shrinks, and never reaches into the next
-        # episode: the forward walk stops at return-to-range OR ``next_start``, whichever
-        # comes first (the non-overlap invariant).
-        end = _resolve_end(
-            start, end, ctx_cgm, limit=next_start, scenario_config=scenario_config
-        )
-    sev_raw = severity_score(cgm, start, end, scenario_config=scenario_config)
-    wb = worst_bg(cgm, start, end, scenario_config=scenario_config)
+    end, sev_raw, wb = evaluated.end, evaluated.severity, evaluated.worst_bg
     # Severity / worst_bg / attribution are all fixed above over [start, end]; the
     # window below is a *display* slice only. Widen it to cover the narrated arc so
     # every beat (#79) and the extended low-rebound (#81) fall on the canvas the
@@ -425,6 +211,12 @@ def _build_episode(
         steps=steps,
         window=window_builder(win_start, win_end),
         worst_bg=wb,
+        evidence=({"occurrence_id": evaluated.occurrence_id,
+                   "outcome_minute": evaluated.outcome_t.hour * 60 + evaluated.outcome_t.minute
+                                     if evaluated.outcome_t is not None else None,
+                   "outcome_at": _fmt(evaluated.outcome_t) if evaluated.outcome_t else None,
+                   "candidates": [c.to_dict() for c in evaluated.candidates]}
+                  if any(c.sequence is not None for c in evaluated.candidates) else {}),
     )
     return episode, attr.lever
 
@@ -482,60 +274,6 @@ def _parse(ts: str) -> datetime:
     return datetime.strptime(ts, _FMT)
 
 
-def _resolve_end(
-    start: datetime,
-    end: datetime,
-    ctx_cgm: Sequence[CgmReading],
-    *,
-    limit: Optional[datetime] = None,
-    scenario_config: ScenarioConfig = ScenarioConfig(),
-) -> datetime:
-    """The episode's effective end — extended to the excursion's resolution (#78/#80).
-
-    If the CGM at ``end`` is still out of range (the episode was cut off at its peak
-    by the 5 h cap / the last anchor's reach) OR the window is degenerate (``start ==
-    end`` with no in-window CGM), walk forward from ``end`` to the first return-to-
-    range reading, up to :data:`_RESOLVE_HORIZON_MIN`. This keeps severity/worst_bg
-    from being computed over a truncated or empty span. Never returns earlier than
-    ``end``.
-
-    ``limit`` (the next episode's start) hard-bounds the forward walk so a cut-off-at-
-    peak extension can never run into its neighbour — the extension stops at return-to-
-    range OR ``limit``, whichever comes first (the non-overlap invariant, #80).
-    """
-    rows = sorted(
-        (r for r in ctx_cgm if r.bg is not None and start <= r.t), key=lambda r: r.t
-    )
-    if not rows:
-        return end
-
-    range_low = scenario_config.segment_range_low_mgdl
-    range_high = scenario_config.segment_range_high_mgdl
-    in_window = [r for r in rows if r.t <= end]
-    degenerate = not in_window                     # empty span (zero-duration anchor)
-    cut_off = bool(in_window) and not (
-        range_low <= in_window[-1].bg <= range_high
-    )
-    if not (degenerate or cut_off):
-        return end
-
-    horizon = end + timedelta(minutes=scenario_config.engine_resolve_horizon_min)
-    if limit is not None:
-        horizon = min(horizon, limit)              # never extend into the neighbour
-    resolved: Optional[datetime] = None
-    for r in rows:
-        if r.t <= end:
-            continue
-        if r.t > horizon:
-            break
-        resolved = r.t                             # keep extending across the arc
-        if range_low <= r.bg <= range_high:
-            break                                  # came home to range — stop here
-    if resolved is None:
-        return end
-    return max(end, resolved)
-
-
 def _score_pattern(
     lever: Lever,
     episodes: List[Episode],
@@ -552,7 +290,7 @@ def _score_pattern(
     """
     k = len(episodes)
     n = recurrence_counts[lever]
-    if lever is Lever.MEAL_BOLUS_SHORT:
+    if lever is Lever.MEAL_BOLUS_SHORT or lever in SEQUENCE_LEVERS:
         if k > n:
             raise ValueError(
                 f"{lever.value} attribution exceeds its evidence population"
@@ -599,75 +337,26 @@ def assemble(
     if window_builder is None:
         window_builder = lambda _s, _e: {}  # noqa: E731
 
-    anchors = collect_anchors(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
-    )
-    # Cluster, then split over-merged double-hump clusters at a return-to-range trough
-    # between two humps (#80) so each excursion is attributed independently, then split
-    # any rebounding low into its own episode so an upstream lever can't absorb an
-    # over-treated low (#104), then split an over-treated low that has its *own* cause
-    # into a crash moment + an over-correction moment so both surface (#155). All passes
-    # preserve start order (segment sorts by reach_start; the splits keep it), so each
-    # group's neighbour bound is simply the next group's start.
-    ep_anchor_groups = split_caused_over_treatments(
-        split_low_rebounds(
-            split_double_humps(
-                segment(anchors, scenario_config=scenario_config),
-                cgm_readings, scenario_config=scenario_config,
-            ),
-            cgm_readings, bolus_events, scenario_config=scenario_config,
-        ),
-        cgm_readings, bolus_events, basal_events,
-        isf=isf,
-        scenario_config=scenario_config,
-        low_answers=low_answers,
-    )
-    recurrence_counts = _recurrence_counts(
-        bolus_events, cgm_readings, basal_events, scenario_config=scenario_config
-    )
-
-    # Authoritative pre-pass: which groups will attribute a lever. The non-overlap clamp
-    # binds only lever-bearing episodes (#124 / ADR 0010), so a dropped, lever-less group
-    # never truncates a neighbour.
-    lever_bearing = _lever_bearing_flags(
-        ep_anchor_groups, cgm_readings, bolus_events, basal_events,
-        isf=isf,
-        scenario_config=scenario_config,
-        low_answers=low_answers,
-    )
-
-    episodes: Dict[str, Episode] = {}
-    by_lever: Dict[Lever, List[Episode]] = {}
-    occurrence_ids: Dict[str, str] = {}
-    for idx, ep_anchors in enumerate(ep_anchor_groups):
-        # Every episode's forward reach is bounded by the next group's start, so no two
-        # episodes overlap in time (the non-overlap invariant, #80) — unchanged.
-        next_start = (
-            ep_anchor_groups[idx + 1].start
-            if idx + 1 < len(ep_anchor_groups)
-            else None
-        )
-        # An over-treated low's rebound extension is bounded instead by the next
-        # *lever-bearing* group's start, so a dropped, lever-less anchor between the
-        # nadir and the rebound no longer truncates the excursion, while two lever-bearing
-        # episodes still never overlap (#124 / ADR 0010).
-        next_lever_start = _next_lever_bearing_start(ep_anchor_groups, lever_bearing, idx)
-        built = _build_episode(
-            idx, ep_anchors, cgm_readings, bolus_events, basal_events,
-            isf=isf, window_builder=window_builder,
-            next_start=next_start, next_lever_start=next_lever_start,
-            scenario_config=scenario_config,
-            low_answers=low_answers,
-        )
+    evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
+                         scenario_config=scenario_config, low_answers=low_answers,
+                         carb_entries=carb_entries,
+                         window_start=parse_t(window["start"]) if window and window.get("start") else None,
+                         window_end=parse_t(window["end"]) if window and window.get("end") else None)
+    recurrence_counts = evaluated.recurrence_counts
+    episodes = {}
+    by_lever = {}
+    occurrence_ids = {}
+    for idx, item in enumerate(evaluated.episodes):
+        built = _build_episode(idx, item.anchors, cgm_readings, bolus_events, basal_events,
+                               isf=isf, window_builder=window_builder,
+                               scenario_config=scenario_config, low_answers=low_answers,
+                               evaluated=item)
         if built is None:
             continue
         episode, lever = built
         episodes[episode.id] = episode
         by_lever.setdefault(lever, []).append(episode)
-        occurrence_ids[episode.id] = policy_for(lever).occurrence_for_episode(
-            episode.id, bolus_events, episode.steps[0].t,
-            scenario_config=scenario_config,
-        )
+        occurrence_ids[episode.id] = item.occurrence_id
 
     # Build a scored pattern per lever with >= _MIN_OCCURRENCES episodes. Over-treated
     # lows are exempt from the one-off gate (#104): each is a discrete, dangerous event
@@ -687,6 +376,8 @@ def assemble(
         if lever is not Lever.OVER_TREATED_LOW and len(occurrence_eps) < scenario_config.engine_min_occurrences:
             continue
         conf = _score_pattern(lever, occurrence_eps, recurrence_counts, scenario_config=scenario_config)
+        if lever in evaluated.competing_levers:
+            conf = replace(conf, effect=evaluated.candidate_impacts[lever])
         scored.append((conf, lever, occurrence_eps))
 
     # Split into surfaced vs low-confidence by a rate-signal gate. `wide` does NOT
@@ -729,7 +420,11 @@ def assemble(
                            if occurrence_ids.get(episode.id) == occurrence_id]
                 representative = max(members, key=lambda episode: episode.severity)
                 groups.append({"id": occurrence_id, "member_episode_ids": [episode.id for episode in members],
-                               "severity": representative.severity, "hero_episode": representative.id})
+                               "severity": representative.severity, "hero_episode": representative.id,
+                               **({"outcome_minute": representative.evidence.get("outcome_minute"),
+                                   "sequence": next(c["sequence"] for c in representative.evidence["candidates"]
+                                                    if c["lever"] == lever.value)}
+                                  if lever in SEQUENCE_LEVERS else {})})
             out.append(
                 Pattern(
                     lever=lever,
@@ -765,6 +460,9 @@ def assemble(
         episodes=episodes,
         preempted_lows=preempted_lows,
         priority_active_threshold=scenario_config.priority_active_threshold,
+        sequence_evidence={lever: {"population": [row.to_dict() for row in rows],
+                                  "candidate_impact": evaluated.candidate_impacts.get(Lever(lever))}
+                           for lever, rows in evaluated.sequences.populations.items() if rows},
     )
 
 
@@ -946,7 +644,7 @@ def observation_span_readable(cgm, start, end, *, scenario_config=ScenarioConfig
 
 
 def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
-                            scenario_config=ScenarioConfig(), low_answers=(), harm_cutoff=None):
+                            scenario_config=ScenarioConfig(), low_answers=(), harm_cutoff=None, carb_entries=()):
     """Policy-owned recurrence facts and independent behavior/harm availability.
 
     Classify with full context before selecting periods. The optional harm cutoff
@@ -978,8 +676,12 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
 
     lv = Lever(lever)
     policy = policy_for(lv)
-    groups, families = _recurrence_context(bolus, cgm, basal, isf, scenario_config, low_answers)
-    owned = policy.recurrence_population(families, bolus, scenario_config=scenario_config)
+    evaluated = evaluate(bolus, cgm, basal, isf=isf, scenario_config=scenario_config,
+                         low_answers=low_answers, carb_entries=carb_entries)
+    groups = [ep.anchors for ep in evaluated.episodes]
+    families = evaluated.families
+    owned = policy.recurrence_population(families, bolus, scenario_config=scenario_config,
+                                         sequence_populations=evaluated.sequences.populations)
     rows = [{"t": item.t if policy.recurrence_family is None else item.anchor_t,
              "anchor_t": item.t if policy.recurrence_family is None else item.anchor_t,
              "recurrence_id": policy.occurrence_id(item) if policy.recurrence_family is None else str(item.source_key),
@@ -1025,9 +727,7 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
         if verdict is not None:
             row["measured"] = verdict.silence_reason is not SilenceReason.INSUFFICIENT_DATA
 
-    occurrences = [r for r in _attributed_recurrences(
-        bolus, cgm, basal, isf, scenario_config, low_answers, groups, families,
-    ) if r.lever is lv]
+    occurrences = [r for r in evaluated.attributed if r.lever is lv]
     seen = set()
     association_reason = None
     for occurrence in occurrences:

@@ -2353,7 +2353,7 @@ S101 · A drawn Window chip carries only the span; the enclosing Window label
   element:  #seg-window [data-follow], .cap
   source:   frontend/diagnose-workstation.js markWindowSegment / paintChart
   lock:     nearest HV2-11; no frozen story specifies this exact chip copy
-  data:     showcase; draw 15:30–21:30 from 24 h using the clock chart
+  data:     showcase; resize Afternoon's measured brace to 15:30–21:30
   evidence: C4_STORIES.S101; registered app-only in the v2 replay
   status:   browser fail-first pending coordinator; current source prefixes Window
 ```
@@ -2366,7 +2366,7 @@ S102 · From a Pattern graph, clicking the thin 12:00 basal slot opens that
   lock:     HV2-17, HV2-19; strengthens S43's stage-selection obligation
   data:     pattern-near-tie; chartable Pattern and thin 12:00 basal slot
   evidence: C4_STORIES.S102; checks stage identity after the slot selection
-  status:   browser fail-first pending coordinator; no current graph verdict claimed
+  status:   coordinator confirmed the retained-Pattern assertion at both locked sizes
 ```
 
 ```
@@ -2377,7 +2377,8 @@ S103 · Backing out of a basal slot restores the reader's preceding 24 h,
   lock:     nearest HV2-11, HV2-33; S43 covers selection, not this exact return
   data:     showcase; three independently entered window states
   evidence: C4_STORIES.S103; collects all three before/after window comparisons
-  status:   browser fail-first pending coordinator; source clears explicit scope
+  status:   coordinator confirmed return-window assertion at 1280x720;
+            1440x900 drawn-window setup reproof pending
 ```
 
 ```
@@ -2390,7 +2391,7 @@ S104 · Picking another recorded day keeps the Day stage, reading pane and
   data:     showcase; Previous recorded day enters the populated preceding week;
             hold and then continue the real /api/model-view request on a ribbon pick
   evidence: C4_STORIES.S104; node identity and connectedness across the read
-  status:   browser fail-first pending coordinator; source installs loadingFrame
+  status:   coordinator confirmed the teardown assertion at both locked sizes
 ```
 
 ```
@@ -2433,3 +2434,19 @@ Only after that setup settles does the story retain nodes and hold the selected
 day's read. Node regression tests call the four exported stories and distinguish
 their feature assertion from setup errors; those tests are not browser evidence.
 Corrected S101–S104 still require the coordinator's isolated two-viewport reproof.
+
+### Coordinator amendment 2 — 2026-09-10
+
+The second run reached the intended S102 and S104 assertions at both locked sizes
+and S103's return-window assertion at 1280x720. Those proofs and S105's original
+proof remain accepted. S101 at both sizes and S103 at 1440x900 instead timed out
+waiting for the drawn chip; those are still setup failures.
+
+Their shared drawing setup now seeds Afternoon's interior brace, waits for fonts,
+finite animations and stable plot/grip boxes, then measures its two known edges.
+It resizes the end to 21:30 and the start to 15:30 through the public grips and
+the app's snap path. Each snapped chip must appear before pointer release, which
+otherwise cancels a queued drag repaint. Each chip wait is bounded to seven
+seconds and reports the text seen or its absence. The feature assertions and
+all other stories are unchanged. Node checks cover two manufactured chart widths
+and failed-chip diagnostics; the coordinator still owns browser reproof.

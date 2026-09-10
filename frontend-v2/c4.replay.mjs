@@ -1,7 +1,6 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { xAtMinute } from '../frontend/diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -57,16 +56,63 @@ async function readiness(page, unit, required) {
 // #404 · 2026-09-10. These are prospective fail-first obligations; browser
 // verdicts belong to the coordinator. No app response is replaced by a fixture.
 async function drawnWindow404(page) {
-  const box = await page.locator('#chart').boundingBox();
-  assert.ok(box, 'S101 premise: the clock chart is mounted');
-  const width = await page.locator('#chart').evaluate(node => node.clientWidth);
-  const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + xAtMinute({ clientWidth: width }, 930), y);
-  await page.mouse.down();
-  await page.mouse.move(box.x + xAtMinute({ clientWidth: width }, 1290), y, { steps: 8 });
-  await page.mouse.up();
-  await settled(page);
-  await page.locator('#seg-window [data-follow]').waitFor();
+  // Seed two interior edges with known minutes. Like drawWindow /
+  // resizeWindowStart in the workstation replay, solve pixels from the standing
+  // brace. Afternoon avoids the 24 h edge clamped to the last 23:45 category.
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+  for (const [edge, from, to, target, span] of [
+    ['b', 720, 1080, 1290, '12:00–21:30'],
+    ['a', 720, 1290, 930, '15:30–21:30'],
+  ]) {
+    await settled(page);
+    // Local until the c4 workstation animation helper lands on this branch.
+    await page.waitForFunction(async () => {
+      await document.fonts.ready;
+      const plot = document.querySelector('#chart');
+      const grips = ['#grip-a', '#grip-b'].map(selector => document.querySelector(selector));
+      const chart = plot && globalThis.echarts.getInstanceByDom(plot);
+      if (!chart || grips.some(grip => !grip) || document.querySelector('#brace')?.hidden) return false;
+      const idle = () => chart.getZr().animation.isFinished() && !document.getAnimations().some(animation =>
+        (animation.playState === 'running' || animation.pending)
+        && animation.effect?.getComputedTiming().iterations !== Infinity);
+      const boxes = () => [plot, ...grips].flatMap(node => {
+        const box = node.getBoundingClientRect();
+        return [box.x, box.y, box.width, box.height];
+      });
+      if (!idle() || plot.clientWidth <= 0 || plot.clientHeight <= 0) return false;
+      const before = boxes();
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return idle() && boxes().every((value, i) => Math.abs(value - before[i]) < 0.25);
+    }, null, { timeout: 10000 });
+    const grips = await page.locator('#chart').evaluate(() => Object.fromEntries(['a', 'b'].map(edge => {
+      const box = document.querySelector(`#grip-${edge}`).getBoundingClientRect();
+      return [edge, { x: box.x + box.width / 2, y: box.y + box.height / 2 }];
+    })));
+    const perMinute = (grips.b.x - grips.a.x) / (to - from);
+    assert.ok(perMinute > 0, '#404 drawn-window premise: laid-out brace edges must be ordered');
+    await page.mouse.move(grips[edge].x, grips[edge].y);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(grips.a.x + (target - from) * perMinute, grips[edge].y, { steps: 8 });
+      // Pointerup cancels a queued drag repaint. Observe the snapped live chip
+      // BEFORE release, so the final pointer move has actually been applied.
+      await drawnChip404(page, span);
+    } finally { await page.mouse.up(); }
+    await settled(page);
+    await drawnChip404(page, span);
+  }
+}
+async function drawnChip404(page, span) {
+  try {
+    await page.waitForFunction(expected => {
+      const text = document.querySelector('#seg-window [data-follow]')?.textContent;
+      return text?.replace(/^Window\s+/, '').replace('×', '').trim() === expected;
+    }, span, { timeout: 7000 });
+  } catch {
+    const seen = await page.locator('#seg-window').evaluate(node =>
+      node.querySelector('[data-follow]')?.textContent.trim() ?? '(absent)');
+    assert.fail(`#404 drawn-window premise: expected ${span}; chip seen: ${seen}`);
+  }
 }
 async function slot404(page) {
   // pattern-near-tie has a Pattern and a thin 12:00 slot. Select the Pattern through

@@ -242,3 +242,46 @@ test('S9 loads the measured Inter face even when document fonts ready already re
     assert.ok(loaded, 'the title waits for its own font rather than the earlier ready snapshot');
   } finally { globalThis.document = previousDocument; globalThis.getComputedStyle = previousStyle; }
 });
+
+
+test('desk readiness waits past immediate navigation and utility loading, without sleeps', async () => {
+  const { waitForDesk } = await import('./c2.replay.mjs');
+  const original = globalThis.document;
+  let loading = true;
+  globalThis.document = {
+    querySelector: selector => selector === '#level' ? { dataset: { loading: String(loading) } }
+      : selector.includes('.gf-loading') && loading ? {} : null,
+    querySelectorAll: () => loading ? [{ textContent: 'Loading settings…' }] : [],
+  };
+  try {
+    await waitForDesk({ waitForFunction: async (ready, _arg, options) => {
+      assert.equal(options.timeout, 30000);
+      assert.equal(ready(), false, 'aria-current can change while Day or settings still loads');
+      loading = false;
+      assert.equal(ready(), true, 'the same predicate accepts the completed read');
+    } });
+  } finally { globalThis.document = original; }
+});
+
+test('chart readiness does not count a cold overview before its evidence tiles mount', async () => {
+  const { waitForCharts } = await import('./c2.replay.mjs');
+  const original = globalThis.document;
+  let tiles = [];
+  globalThis.document = { querySelectorAll: () => tiles };
+  try {
+    await waitForCharts({
+      locator: () => ({ first() { return this; }, waitFor: async () => {} }),
+      waitForFunction: async (ready, _arg, options) => {
+        assert.equal(options.timeout, 30000);
+        assert.equal(ready(), false, 'the overview canvas alone cannot settle the composition');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: selector => selector === '.tile-state'
+          ? { textContent: 'Loading evidence…' } : null }];
+        assert.equal(ready(), false, 'a served tile still loading cannot be counted');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: () => null }];
+        assert.equal(ready(), false, 'an ok tile with no canvas cannot be counted');
+        tiles = [{ dataset: { state: 'ok' }, querySelector: selector => selector === 'canvas' ? {} : null }];
+        assert.equal(ready(), true, 'completed evidence is ready for the unchanged count assertion');
+      },
+    });
+  } finally { globalThis.document = original; }
+});

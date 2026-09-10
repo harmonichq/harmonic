@@ -1981,6 +1981,10 @@ R3 · A factor drill does not rewrite the clock window to its peak.
   status:   retired (permanent) · absence and premise replayed-pass · negative proof: proved
 ```
 
+Amended R3 · 2026-09-10 · Coordinator amendment 4, transcribed by Codex for Connor Griffin under ADR 397 (Connor Griffin · 2026-09-08): The app's factor drill is a shipped Findings row opening its case file. Its served cohorts are member groups, not prototype cohort buttons. Selecting that Finding leaves the independently chosen Diagnose clock window unchanged and exposes its occurrence roster. The retirement and its original sanction remain permanent.
+The preceding wording and results are the attributed pre-amendment record; integrated replay verification is pending.
+
+
 ```
 R4 · Occurrence selection does not rewrite the clock window.
   predecessor: finding-evidence-routing.behavior.md P21 (:678)
@@ -2147,6 +2151,10 @@ R17 · The Trial's session-only Keep action is gone. Revert-to-Plan remains the
             durable finish, and prints this sanction line
   status:   retired (permanent) · absence and premise replayed-pass · negative proof: proved
 ```
+
+Amended R17 · 2026-09-10 · Coordinator amendment 4, transcribed by Codex for Connor Griffin under ADR 397 (Connor Griffin · 2026-09-08): The app's data premise is a manufactured active Trial whose served admission permits finishing, not the prototype's ready scenario selector. The session-only Keep remains absent; the served Revert-to-Plan entry remains, and submitting a conclusion creates a durable ending that survives reload. The retirement and ADR 340 sanction are unchanged.
+The preceding wording and results are the attributed pre-amendment record; integrated replay verification is pending.
+
 
 ### The P55 pair, recorded so it is not re-ruled
 

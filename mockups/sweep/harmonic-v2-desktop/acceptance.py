@@ -99,7 +99,38 @@ def request(base, path, token=None):
 
 def free_port(port):
     with socket.socket() as listener:
-        listener.bind(("127.0.0.1", port))
+        # TIME_WAIT from our previous leg is not a listener. A live server still
+        # prevents this bind, including one serving an unrelated application.
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            listener.bind(("127.0.0.1", port))
+        except OSError as error:
+            raise RuntimeError(f"Port {port} is occupied; refusing to start or reuse a server") from error
+
+
+def stop_server(child, *, grace=10):
+    """Reap the launcher AND stop its owned session, even if uv exited first."""
+    def signal_group(sig):
+        try:
+            os.killpg(child.pid, sig)
+            return True
+        except ProcessLookupError:
+            return False
+
+    signal_group(signal.SIGTERM)
+    deadline = time.monotonic() + grace
+    while time.monotonic() < deadline:
+        child.poll()  # Reap uv; its exit alone says nothing about its server.
+        if not signal_group(0):
+            break
+        time.sleep(.05)
+    # A launcher can exit on TERM while its child keeps the port bound. Always
+    # address the original process group; never discover/kill a process by port.
+    signal_group(signal.SIGKILL)
+    child.wait(timeout=5)
+    deadline = time.monotonic() + 5
+    while signal_group(0) and time.monotonic() < deadline:
+        time.sleep(.05)
 
 
 def wait_ready(base, process=None):
@@ -128,13 +159,8 @@ def auth_server(run):
             wait_ready("http://127.0.0.1:8766", child)
             yield
         finally:
-            if child.poll() is None:
-                os.killpg(child.pid, signal.SIGTERM)
-                try:
-                    child.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    os.killpg(child.pid, signal.SIGKILL)
-                    child.wait()
+            stop_server(child)
+            free_port(8766)
 
 
 def replay(run, viewport):

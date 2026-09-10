@@ -291,3 +291,36 @@ app acceptance. Historical TARGET=mock is a pre-archive evidence path.
 
 Keep archive, INDEX and any prototype-CI removal in one commit. No v1 retirement,
 root cutover, human release acceptance, PR or merge is performed by this worker.
+
+
+## Coordinator amendment 4 — acceptance still open
+
+On 2026-09-10 the coordinator reported the complete 1280×720 replay against
+94761f41's built sources: 100 passed, 30 failed, zero deferred, 130 selected.
+The 1440×900 leg did not execute: the preceding wrapper's authenticated server
+still held port 8766. The wrapper now checks that port before launch and after
+tearing down its entire owned process group, including a server outliving `uv`.
+It refuses an occupied port and never kills a process discovered by port.
+Any prior orphan must be stopped by its owning coordinator before rerunning;
+the wrapper will not adopt it.
+
+The replay corrections await rendered verification. Day and utility reads now
+wait for their public loading state to finish; canvas counts wait for all
+mounted evidence tiles; exact focus assertions remain bounded, with no fallback
+target. Retirement checks use the carried rail's controls and real generated
+cases. R3 and R17 carry dated, attributed premise amendments in the ledger;
+all eighteen retirements and their original sanctions remain. S100's body is
+unchanged after the reported browser-closed cascade. No app source or built
+shell changed in this amendment.
+
+Docker is absent on this Mac (coordinator report, 2026-09-10). The packaged
+runtime proof therefore rests on CI's `build + smoke-test image` job, which
+builds the image and runs the two-shell/assets/authentication/closed-route
+probe. No local Docker pass or CI result is claimed. Budget acceptance also
+remains the coordinator's isolated rerun after amendment 3's pytest fixes.
+
+Rerun the two complete replay commands above serially, with fresh output
+folders and no ONLY/STORY_CASES restriction. Reuse the current built shells.
+The focused 30-story diagnostic selection is
+`S28,S29,S60,S63,S64,S65,S66,S67,S68,S72,S72b,S74,S75,S75b,S76,S83,S100,R2,R3,R4,R5,R7,R8,R9,R10,R11,R12,R13,R15,R17`;
+it cannot substitute for either complete 130-entry acceptance run.

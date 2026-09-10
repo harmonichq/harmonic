@@ -13,6 +13,26 @@ export async function boundedWait(promise, description, timeout = 30000) {
   } finally { clearTimeout(timer); }
 }
 
+// Navigation marks aria-current before its served desk exists. Utilities and
+// month navigation also publish explicit loading copy while their reads run.
+export const waitForDesk = page => page.waitForFunction(() =>
+  !document.querySelector('.gf-loading, .gf-nav-loading')
+  && document.querySelector('#level')?.dataset.loading !== 'true'
+  && ![...document.querySelectorAll('.gf-utility [role="status"]')]
+    .some(node => /^Loading\b/.test(node.textContent.trim())), null, { timeout: 30000 });
+
+// #chart mounts before the lazy evidence tiles. Count the complete composition
+// on both sides of a teardown, not a cold first canvas against warm tiles.
+export async function waitForCharts(page) {
+  await page.locator('#chart canvas').first().waitFor({ timeout: 30000 });
+  await page.waitForFunction(() => {
+    const tiles = [...document.querySelectorAll('#tile-field .evidence-tile')];
+    return tiles.length > 0 && tiles.every(tile =>
+      !/Loading evidence/.test(tile.querySelector('.tile-state')?.textContent || '')
+      && (tile.dataset.state !== 'ok' || tile.querySelector('canvas')));
+  }, null, { timeout: 30000 });
+}
+
 const check = (condition, message) => assert.ok(condition, message);
 const settled = page => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
 const read = async (page, path) => {
@@ -57,10 +77,10 @@ const choose = async (page, row) => {
   await page.waitForFunction(id => document.querySelector(`.case-occurrence[data-occurrence-id="${CSS.escape(id)}"]`)?.getAttribute('aria-pressed') === 'true', id);
   return id;
 };
-async function openComparisonCase(page) {
+async function openComparisonCase(page, id = 'finding:over_treated_low') {
   await go(page, 'diagnose');
   await page.getByRole('button', { name: '24 h', exact: true }).click(); await settled(page);
-  const id = 'finding:over_treated_low';
+  await waitForCharts(page);
   const row = page.locator(`#level .qrow[data-id="${id}"]`);
   await row.waitFor();
   const response = responseFor(page, casePath, r => new URL(r.url()).searchParams.get('finding_id') === id && r.ok());
@@ -122,8 +142,8 @@ async function selectedMember(page) {
   await page.locator('#level .occ-detail').waitFor();
   return { file, id };
 }
-async function comparisonFigure(page) {
-  const file = await openComparisonCase(page);
+async function comparisonFigure(page, id) {
+  const file = await openComparisonCase(page, id);
   const tile = page.locator(`#tile-field .evidence-tile[data-chart-id="${file.finding.id}"]`);
   if (!await tile.locator('.tile-fullscreen').isVisible()) {
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
@@ -338,7 +358,7 @@ async function permittedActions(page) {
 
 async function cleanup(page, ctx, pagehide = false) {
   await go(page, 'diagnose');
-  await page.locator('#chart canvas').first().waitFor();
+  await waitForCharts(page);
   const counts = () => page.locator('[data-v2-diagnose] canvas').count();
   const before = await counts(); const errors = ctx.consoleErrors.length;
   if (pagehide) {
@@ -348,8 +368,9 @@ async function cleanup(page, ctx, pagehide = false) {
     for (let i = 0; i < 3; i += 1) {
       await go(page, 'changes'); assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
       await go(page, 'diagnose');
-      await page.locator('#chart canvas').first().waitFor();
-      await press(page, '[data-utility="guide"]'); await press(page, '[data-utility-close]');
+      await waitForCharts(page);
+      await press(page, '[data-utility="guide"]'); await waitForDesk(page);
+      await press(page, '[data-utility-close]'); await waitForCharts(page);
       assert.equal(await page.locator('[data-v2-diagnose]').count(), 1);
       assert.equal(await page.locator('.gf-utility').count(), 0);
     }
@@ -359,7 +380,7 @@ async function cleanup(page, ctx, pagehide = false) {
 }
 
 export const C2_STORIES = {
-  openBasalLane, openComparisonCase, stageIntoPlan,
+  openBasalLane, openComparisonCase, comparisonFigure, stageIntoPlan,
   S6: async page => {
     const overflow = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
     check(overflow.x <= 1 && overflow.y <= 1, `root overflow ${JSON.stringify(overflow)}`);
@@ -440,9 +461,11 @@ export const C2_STORIES = {
   S28: cleanup,
   S29: async page => {
     const file = await openComparisonCase(page);
-    assert.equal(await page.locator('#level').evaluate(n => n === document.activeElement), true);
+    await page.waitForFunction(() => document.activeElement?.id === 'level', null, { timeout: 30000 });
+    assert.equal(await page.locator('#level').evaluate(n => n === document.activeElement), true, 'S29 opening a case focuses the reading pane');
     await page.getByRole('button', { name: 'Findings', exact: true }).click();
-    assert.equal(await page.locator(`#level .qrow[data-id="${file.finding.id}"]`).evaluate(n => n === document.activeElement), true);
+    await page.waitForFunction(id => document.activeElement?.matches('#level .qrow') && document.activeElement.dataset.id === id, file.finding.id, { timeout: 30000 });
+    assert.equal(await page.locator(`#level .qrow[data-id="${file.finding.id}"]`).evaluate(n => n === document.activeElement), true, 'S29 Findings restores the originating row');
     await go(page, 'diagnose'); check(await page.locator('#level .qrow').count());
   },
   S30: async page => { await openBasalLane(page); await page.getByRole('button', { name: 'Findings', exact: true }).click(); check(await page.locator('#level .qrow').count()); },

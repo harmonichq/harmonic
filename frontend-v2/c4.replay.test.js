@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { historicalAbsence } from './c4.replay.mjs';
+import { historicalAbsence, C4_RETIREMENTS } from './c4.replay.mjs';
 import { REGISTRY } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -29,4 +29,13 @@ test('R18 refuses to prove absence by also removing current evidence or records'
   await assert.rejects(historicalAbsence(inputPage([history])), /current-setting evidence/);
   await assert.rejects(historicalAbsence(inputPage([history, { kind: 'setting', register: 'assert' }],
     { trials: [{}], focuses: [] })), /both Trial and Focus/);
+});
+
+
+test('R17 requires the generated finishable Trial, never a mock ready selector', async () => {
+  assert.equal(storyCase('R17'), 'c3-trial');
+  const page = admission => ({ url: () => 'http://synthetic.invalid/v2/',
+    request: { get: async () => ({ status: () => 200, text: async () => '', json: async () => ({ admission }) }) } });
+  await assert.rejects(C4_RETIREMENTS.R17(page({ active_kind: 'focus', can_finish_trial: true })), /served active Trial/);
+  await assert.rejects(C4_RETIREMENTS.R17(page({ active_kind: 'trial', can_finish_trial: false })), /finishable Trial/);
 });

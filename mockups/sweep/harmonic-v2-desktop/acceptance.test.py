@@ -1,6 +1,12 @@
 """Exercise acceptance through its route-probe interface, including rejected proofs."""
 import importlib.util
 import json
+import os
+import signal
+import socket
+import subprocess
+import sys
+import time
 import tempfile
 from pathlib import Path
 import unittest
@@ -59,6 +65,72 @@ class RuntimeProofTest(unittest.TestCase):
         self.request = lambda base, path, token=None: (200, b"{}", {}) if path == "/api/status" else original(base, path, token)
         with self.assertRaisesRegex(RuntimeError, "expected 401, got 200"):
             self.probe()
+
+
+class ServerLifecycleTest(unittest.TestCase):
+    def test_taken_port_is_rejected_without_touching_its_listener(self):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            port = listener.getsockname()[1]
+            with self.assertRaisesRegex(RuntimeError, f"Port {port} is occupied"):
+                acceptance.free_port(port)
+            self.assertEqual(listener.getsockname()[1], port)
+
+    def test_teardown_stops_descendant_after_launcher_exits(self):
+        # A launcher like uv can finish before a TERM-resistant descendant.
+        # Fork only our manufactured child; no Harmonic or external port.
+        code = """
+import os, signal, socket, time
+if os.fork():
+    os._exit(0)
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+listener = socket.socket()
+listener.bind(('127.0.0.1', 0))
+listener.listen()
+print(listener.getsockname()[1], flush=True)
+while True:
+    time.sleep(1)
+"""
+        child = subprocess.Popen([sys.executable, "-u", "-c", code],
+                                 stdout=subprocess.PIPE, text=True, start_new_session=True)
+        try:
+            port = int(child.stdout.readline())
+            child.wait(timeout=5)
+            with self.assertRaisesRegex(RuntimeError, "occupied"):
+                acceptance.free_port(port)
+            acceptance.stop_server(child, grace=.1)
+            deadline = time.monotonic() + 5
+            while True:
+                try:
+                    acceptance.free_port(port)
+                    break
+                except RuntimeError:
+                    if time.monotonic() >= deadline:
+                        raise
+                    time.sleep(.05)
+        finally:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            child.stdout.close()
+
+    def test_auth_context_cleans_up_after_a_failed_replay(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            run = SimpleNamespace(out=Path(directory))
+            with patch.object(acceptance, "free_port") as free, \
+                 patch.object(acceptance.shutil, "copyfile"), \
+                 patch.object(acceptance.subprocess, "Popen") as spawn, \
+                 patch.object(acceptance, "wait_ready"), \
+                 patch.object(acceptance, "stop_server") as stop:
+                with self.assertRaisesRegex(RuntimeError, "synthetic replay failure"):
+                    with acceptance.auth_server(run):
+                        raise RuntimeError("synthetic replay failure")
+                stop.assert_called_once_with(spawn.return_value)
+                self.assertEqual(free.call_count, 2, "port is checked before start and after teardown")
+                self.assertTrue(spawn.call_args.kwargs["start_new_session"])
 
 
 class InventoryProofTest(unittest.TestCase):

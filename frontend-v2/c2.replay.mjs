@@ -3,6 +3,16 @@
 // their original replay. No fixture projection or chart painter is duplicated.
 import assert from 'node:assert/strict';
 
+// Bare coordination promises do not inherit Playwright's action deadlines.
+export async function boundedWait(promise, description, timeout = 30000) {
+  let timer;
+  try {
+    return await Promise.race([promise, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Timed out after ${timeout} ms: ${description}`)), timeout);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
 const check = (condition, message) => assert.ok(condition, message);
 const settled = page => page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
 const read = async (page, path) => {
@@ -22,7 +32,7 @@ const go = async (page, destination) => {
 };
 const held = page => page.locator('#level .case-occurrence[aria-pressed="true"]').getAttribute('data-occurrence-id');
 const responseFor = (page, path, predicate = () => true) => page.waitForResponse(response =>
-  new URL(response.url()).pathname === path && predicate(response));
+  new URL(response.url()).pathname === path && predicate(response), { timeout: 30000 });
 const casePath = '/api/diagnose/finding-case-file';
 const prepPath = '/api/diagnose/finding-case-file-preparation';
 const choose = async (page, row) => {
@@ -168,9 +178,9 @@ async function projectionReplacement(page) {
   let release; const barrier = new Promise(resolve => { release = resolve; });
   let arrived; const pending = new Promise(resolve => { arrived = resolve; });
   const pattern = '**/api/diagnose/finding-case-file-preparation*';
-  await page.route(pattern, async route => { arrived(); await barrier; await route.fulfill({ status: 503, json: { detail: 'Synthetic scoped failure' } }); });
+  await page.route(pattern, async route => { arrived(); await boundedWait(barrier, 'S97 release scoped preparation response'); await route.fulfill({ status: 503, json: { detail: 'Synthetic scoped failure' } }); });
   try {
-    await page.getByRole('button', { name: 'Evening', exact: true }).click(); await pending;
+    await page.getByRole('button', { name: 'Evening', exact: true }).click(); await boundedWait(pending, 'S97 scoped preparation request');
     assert.equal(await page.locator('#level').getAttribute('data-loading'), 'true');
     assert.equal(await page.locator('#level .qrow, #level .stagebtn, #level .numrow, #level .case-occurrence').count(), 0);
     check(/Loading findings/.test(await page.locator('#level').innerText()));
@@ -213,9 +223,9 @@ async function icReplacement(page) {
   await page.route('**/api/diagnose/carb-ratio-block-evidence*', route => route.fulfill({
     status: 409, json: { detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
   }));
-  await page.route('**/api/diagnose/findings*', async route => { entered(); await barrier; await route.fulfill({ status: 503, json: { detail: 'Synthetic replacement failed' } }); });
+  await page.route('**/api/diagnose/finding-case-file-preparation*', async route => { entered(); await boundedWait(barrier, 'S98 release replacement preparation response'); await route.fulfill({ status: 503, json: { detail: 'Synthetic replacement failed' } }); });
   try {
-    await page.getByRole('button', { name: 'Morning', exact: true }).click(); await enteredPromise;
+    await page.getByRole('button', { name: 'Morning', exact: true }).click(); await boundedWait(enteredPromise, 'S98 Morning preparation request');
     await page.getByText('Evidence changed. Refresh findings.', { exact: true }).first().waitFor();
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1, 'stale state keeps the exact current I:C identity');
     release();
@@ -226,7 +236,7 @@ async function icReplacement(page) {
     check(before.includes('Current'), 'the source was a current-setting case');
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1,
       'failed replacement must retain the selected subject rather than choose another I:C block');
-  } finally { release(); await page.unroute('**/api/diagnose/carb-ratio-block-evidence*'); await page.unroute('**/api/diagnose/findings*'); }
+  } finally { release(); await page.unroute('**/api/diagnose/carb-ratio-block-evidence*'); await page.unroute('**/api/diagnose/finding-case-file-preparation*'); }
 }
 
 async function permittedActions(page) {
@@ -293,11 +303,11 @@ export const C2_STORIES = {
   },
   S9: async page => {
     await go(page, 'changes');
-    const type = await page.locator('.gf-title').first().evaluate(async node => {
+    const type = await boundedWait(page.locator('.gf-title').first().evaluate(async node => {
       await document.fonts.ready; const css = getComputedStyle(node);
       return { family: css.fontFamily, size: parseFloat(css.fontSize), weight: css.fontWeight,
         loaded: [...document.fonts].some(face => face.family.replace(/['"]/g, '') === 'Inter' && face.status === 'loaded') };
-    });
+    }), 'S9 document fonts ready');
     check(type.family.includes('Inter') && type.loaded); check(Math.abs(type.size - 18.24) < .75); assert.equal(type.weight, '700');
   },
   S10b: async page => {
@@ -401,3 +411,9 @@ export const C2_STORIES = {
   S82: async page => C2_STORIES.S21(page), S83: cleanup, S84: (page, ctx) => cleanup(page, ctx, true),
   S89: planPersistence, S97: projectionReplacement, S98: icReplacement, S99: permittedActions,
 };
+
+// Bound the full exported execution too: page evaluations and caller-owned
+// setup/cleanup promises have no Playwright locator timeout of their own.
+for (const [id, run] of Object.entries(C2_STORIES)) {
+  C2_STORIES[id] = (...args) => boundedWait(run(...args), `${id} story completion`, 180000);
+}

@@ -19,3 +19,42 @@ test('c2 app selection contains concrete story bodies and excludes the c3 Trial 
   }
   assert.equal(C2_STORIES.S36, undefined);
 });
+
+test('S98 intercepts the clock-window preparation request and keeps the I:C 409', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const routes = new Map(); const responses = []; const pending = [];
+  const node = {
+    first() { return this; }, filter() { return this; },
+    waitFor: async () => {}, click: async () => {},
+    getAttribute: async () => 'ic:current', innerText: async () => 'Current I:C evidence', count: async () => 1,
+  };
+  const page = {
+    locator: () => node, waitForFunction: async () => {},
+    evaluate: async () => ({ values: ['10'], series: [{ id: 'current', data: [120] }] }),
+    route: async (pattern, handler) => routes.set(pattern, handler),
+    unroute: async pattern => routes.delete(pattern), getByText: () => node,
+    getByRole: (_role, { name }) => ({ ...node, click: async () => {
+      if (name !== 'Morning') return;
+      const preparation = routes.get('**/api/diagnose/finding-case-file-preparation*');
+      assert.equal(typeof preparation, 'function', 'Morning loads preparation, not /api/diagnose/findings');
+      for (const handler of [routes.get('**/api/diagnose/carb-ratio-block-evidence*'), preparation]) {
+        pending.push(Promise.resolve(handler({ fulfill: async response => responses.push(response) })));
+      }
+    } }),
+  };
+  await C2_STORIES.S98(page);
+  await Promise.all(pending);
+  assert.deepEqual(responses.map(r => r.status).sort(), [409, 503]);
+  assert.equal(responses.find(r => r.status === 409).json.detail.code, 'analysis_generation_mismatch');
+  assert.equal(routes.size, 0, 'the story removes both interceptions');
+});
+
+test('replay deadlines fail with the wait name and preserve resolved values/errors', async () => {
+  const { boundedWait } = await import('./c2.replay.mjs');
+  await assert.rejects(boundedWait(new Promise(() => {}), 'S98 Morning preparation request', 5),
+    /Timed out after 5 ms: S98 Morning preparation request/);
+  const value = {};
+  assert.equal(await boundedWait(Promise.resolve(value), 'successful wait', 5), value);
+  const error = new Error('original failure');
+  await assert.rejects(boundedWait(Promise.reject(error), 'failed wait', 5), candidate => candidate === error);
+});

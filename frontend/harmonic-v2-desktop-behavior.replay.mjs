@@ -335,12 +335,10 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
 export async function openApp(browser, { source = null, state = 'investigate', viewport = DEFAULT_VIEWPORT, destination = 'diagnose', storyId = null, caseName = null } = {}) {
   if (!VIEWPORTS[viewport]) fail(`unsupported viewport ${JSON.stringify(viewport)}`);
   // `source` and `state` are the MOCK's coordinates: four captured patients and
-  // a scenario select. The app has one served database instead, so a story that
-  // asks the app for a non-default scenario is asking for a state the database
-  // must actually carry — the QA generator's job, not something to satisfy by
-  // quietly rendering the default. Refused rather than ignored, for exactly the
-  // reason openMock refuses `?state=` on a non-meals source.
-  if (state !== 'investigate' && !C2_STORIES[storyId]) {
+  // a scenario select. Ported app bodies read and assert the state of their
+  // registered case store instead. A prototype-only body still cannot request
+  // a non-default scenario from the app.
+  if (state !== 'investigate' && !C2_STORIES[storyId] && !C3_STORIES[storyId]) {
     fail(`TARGET=app cannot honour state=${state}: the app has no scenario select. `
       + 'Extend scripts/qa_e2e_cases.py so the served database carries that state, then address it here.');
   }

@@ -25,9 +25,13 @@ const changes = async page => {
 };
 async function active(page, kind = 'trial') {
   const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', 'case must publish available follow-up admission');
   assert.equal(roster.admission.active_kind, kind, 'case must publish the required active watch');
   const id = roster.admission.active_id;
+  assert.ok(id != null, 'case must publish the active watch identity');
   const response = await read(page, '/api/verify/trials', { kind, selected: id, assessment: 'retained' });
+  assert.equal(response.selected?.id, id, 'selected record must be the admitted watch');
+  assert.equal(response.selected?.kind, kind, 'selected record must have the admitted kind');
   await changes(page);
   await page.locator(`.gf-stage-${kind}`).waitFor({ state: 'visible', timeout: 30000 });
   return { id, roster, detail: response.selected, comparison: response.selected.reassessment.comparison };
@@ -37,13 +41,22 @@ async function record(page, kind, id) {
   await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
 }
 async function ending(page) {
-  const { id } = await active(page);
+  const { id, roster } = await active(page);
+  assert.equal(roster.admission.can_finish_trial, true, 'case must permit finishing the Trial');
   await page.fill('#conclusion', 'Synthetic observation: no clear answer.');
   await press(page, '[data-form="finish"] [type="submit"]');
   await page.locator('[data-ending-kind="user_finished"]').waitFor({ timeout: 30000 });
   const saved = await read(page, '/api/verify/trials', { selected: id });
   assert.equal(saved.selected.original.ending.conclusion, 'Synthetic observation: no clear answer.');
   return { id, saved: saved.selected.original.ending };
+}
+async function endedTrial(page) {
+  const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', 'case must publish available follow-up admission');
+  const ended = roster.trials.find(row => row.ending?.kind === 'user_finished');
+  assert.ok(ended?.id, 'case must publish a saved Trial ending');
+  assert.notEqual(roster.admission.active_id, ended.id, 'the ended Trial cannot occupy the active seat');
+  return ended;
 }
 async function readiness(page, kind = 'trial') {
   const context = await active(page, kind);
@@ -64,7 +77,10 @@ async function readiness(page, kind = 'trial') {
   return context;
 }
 async function startForm(page, drill = false) {
-  const offered = (await read(page, '/api/focus')).pinnable_patterns[0];
+  const roster = await read(page, '/api/focus');
+  assert.equal(roster.admission?.state, 'available', 'case must publish available follow-up admission');
+  assert.equal(roster.admission.focus_pin.available, true, 'case must permit starting a Focus');
+  const offered = roster.pinnable_patterns[0];
   assert.ok(offered, 'case must publish a pinnable Pattern');
   if (drill) {
     await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
@@ -98,6 +114,8 @@ async function pin(page, drill = false) {
 }
 async function preempted(page) {
   const roster = await read(page, '/api/verify/trials');
+  assert.equal(roster.admission?.state, 'available', 'case must publish available follow-up admission');
+  assert.equal(roster.admission.active_kind, 'trial', 'the preempting Trial must occupy the active seat');
   const dropped = roster.focuses.find(row => row.ending?.kind === 'trial_preempted');
   assert.ok(dropped?.pattern_key, 'the manufactured preempted record retains Pattern identity');
   await record(page, 'focus', dropped.id);
@@ -164,13 +182,34 @@ export const C3_STORIES = {
     assert.match(await page.locator('.gf-day-read').innerText(), /not necessarily a complete day/);
   },
   async S49(page) {
-    await active(page); await press(page, '[data-mode="daily"]');
+    const { detail, comparison } = await active(page);
+    await press(page, '[data-mode="daily"]');
+    const period = await page.locator('[data-select="evidence-period"]').inputValue();
+    const index = Number(await page.locator('[data-select="evidence-day"]').inputValue());
+    const day = detail.day_rows[period][index];
+    assert.ok(day, 'selected day must belong to the served period');
     const copy = await page.locator('.gf-day-read').innerText();
-    assert.match(copy, /no meals|unavailable|no readings/i);
+    assert.equal(await page.locator('.gf-day-read tbody tr:last-child .v').innerText(), String(day.meals));
     assert.doesNotMatch(copy, /\bnull\b|\bundefined\b|\bNaN\b/);
     await press(page, '[data-mode="summary"]');
-    const table = await page.locator('.gf-stage-trial table').first().innerText();
+    const table = await page.locator('[data-table="outcomes"]').innerText();
     assert.match(table, /before/i); assert.match(table, /trial/i);
+    assert.doesNotMatch(table, /\bnull\b|\bundefined\b|\bNaN\b/);
+    assert.ok(comparison.outcomes.length, 'case must publish outcome rows');
+    for (const row of comparison.outcomes) {
+      for (const [side, column] of [['before', 2], ['after', 3]]) {
+        const cell = await page.locator(`[data-outcome="${row.key}"] td:nth-child(${column})`).innerText();
+        if (row[side] == null) {
+          const missing = row.denominators?.[side] ? /^unavailable\b/i
+            : /meal/i.test(row.denominator) ? /^no meals\b/i
+              : /reading/i.test(row.denominator) ? /^no readings\b/i : /^no /i;
+          assert.match(cell, missing, `${row.key} ${side} must name its missing population or measurement`);
+        } else {
+          assert.doesNotMatch(cell, /unavailable|\bno /i);
+          if (row[side] === 0) assert.match(cell, /^0(?:%|\s)/, 'an observed zero stays zero');
+        }
+      }
+    }
   },
   async S50(page) {
     await active(page);
@@ -178,7 +217,8 @@ export const C3_STORIES = {
     assert.equal(/Trial above Before/i.test(copy) !== /no Trial readings to compare yet/i.test(copy), true);
   },
   async S51(page) {
-    await active(page);
+    const { roster } = await active(page);
+    assert.equal(roster.admission.can_finish_trial, true, 'case must permit finishing the Trial');
     const submit = page.locator('[data-form="finish"] [type="submit"]');
     assert.equal(await submit.isDisabled(), true);
     await page.fill('#conclusion', '   '); assert.equal(await submit.isDisabled(), true);
@@ -204,17 +244,15 @@ export const C3_STORIES = {
     await page.locator('[data-ending-kind="user_finished"]').waitFor();
   },
   async S54(page) {
-    const roster = await read(page, '/api/verify/trials');
-    const saved = roster.trials.find(row => row.ending?.kind === 'user_finished'); assert.ok(saved);
+    const saved = await endedTrial(page);
     await record(page, 'trial', saved.id);
     const copy = await page.locator('.gf-reading').innerText();
     for (const text of ['Earlier decision', 'Conclusion', 'Finished', 'Not recorded']) assert.ok(copy.includes(text));
     assert.match(copy, /before/i); assert.match(copy, /trial/i);
   },
   async S54b(page) {
+    const ended = await endedTrial(page);
     await changes(page); await press(page, '[data-action="history"]');
-    const roster = await read(page, '/api/verify/trials');
-    const ended = roster.trials.find(row => row.ending?.kind === 'user_finished'); assert.ok(ended);
     await press(page, `[data-record="trial:${ended.id}"]`);
     await page.locator('[data-record-part="ending"]').waitFor();
     await press(page, '[data-action="overview"]');
@@ -313,9 +351,7 @@ export const C3_STORIES = {
   },
   // LOCK:harmonic-v2-desktop:28 — the saved ending survives a real later switch.
   async S96(page) {
-    const roster = await read(page, '/api/verify/trials');
-    const old = roster.trials.find(row => row.ending?.kind === 'user_finished'); assert.ok(old);
-    assert.notEqual(roster.admission.active_id, old.id);
+    const old = await endedTrial(page);
     const original = await read(page, '/api/verify/trials', { selected: old.id });
     await record(page, 'trial', old.id);
     for (const mode of ['retained', 'current']) {

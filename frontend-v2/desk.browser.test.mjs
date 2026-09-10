@@ -132,6 +132,9 @@ const patternCapture = generated('../mockups/diagnose-event-comparison.synthetic
 const basalEvidence = generated('../frontend/__fixtures__/basal-night-evidence.json').expected;
 const isfEvidence = generated('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
 const icEvidence = generated('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json').cases.cross_midnight;
+// The generated roster has no Focus and withholds pin admission. Keep those
+// served facts; the quiet guidance stub offers no pinnable Pattern either.
+const followUp = generated('../mockups/verify-660-story.synthetic/payload.json').roster;
 const fixtureInputs = populateFindingsProjectionInput({ analysis: evidence.analyze,
   scenarios: evidence.scenarios, exposures: evidence.exposures });
 const preparations = new Map();
@@ -172,7 +175,9 @@ const JSON_STUBS = [
   [/^\/api\/diagnose\/basal-night-evidence$/, () => basalEvidence],
   [/^\/api\/diagnose\/isf-rest-window-evidence$/, () => isfEvidence],
   [/^\/api\/diagnose\/carb-ratio-block-evidence$/, () => icEvidence],
-  [/^\/api\/guidance$/, () => ({ disposition: 'quiet', selected: null, candidates: [] })],
+  [/^\/api\/guidance$/, () => ({ disposition: 'quiet', selected: null, candidates: [], input_revision: followUp.input_revision })],
+  [/^\/api\/focus$/, () => ({ focuses: followUp.focuses, pinnable: [], pinnable_patterns: [],
+    input_revision: followUp.input_revision, admission: followUp.admission })],
   [/^\/api\/plan\/history$/, () => ({ history: [] })],
   [/^\/api\/plan$/, () => ({ items: [], updated_at: null })],
   [/^\/api\/status/, () => STATUS],

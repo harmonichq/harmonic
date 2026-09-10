@@ -497,19 +497,30 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
     await waitForPreparationWindow(morningHeld, ['270', '480'], requested);
     expectAfternoon = true;
     await drawWindow(page, [840, 1260]);
-    await waitForPreparationWindow(afternoonRequested, ['840', '1260'], requested);
-    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
-      && document.querySelector('.evidence-tile[data-chart-id="ic:720"]'));
-    const morningResponse = page.waitForResponse(response => {
+    assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
+      node.textContent.replace('×', '').trim()), 'Window 14:00–21:00',
+      'the reader selects Afternoon while the Morning answer is held');
+    assert.equal(await page.locator('#seg-window [data-follow]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.locator('#level').getAttribute('data-loading'), 'true');
+    assert.equal((await page.locator('#level').textContent()).trim(),
+      'Loading findings for 14:00–21:00…', 'the loading state belongs to the selected Afternoon window');
+    // Preparation reads are serialised: the UI changes immediately, but the
+    // queued Afternoon read reaches the server only after Morning is released.
+    const afternoonResponse = page.waitForResponse(response => {
       const url = new URL(response.url());
       return url.pathname === '/api/diagnose/finding-case-file-preparation'
-        && url.searchParams.get('start_min') === '270' && url.searchParams.get('end_min') === '480';
+        && url.searchParams.get('start_min') === '840' && url.searchParams.get('end_min') === '1260';
     }, { timeout: 30000 });
     releaseMorning();
-    await (await morningResponse).finished();
+    await Promise.all([
+      waitForPreparationWindow(afternoonRequested, ['840', '1260'], requested),
+      afternoonResponse,
+    ]);
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false'
+      && document.querySelector('.evidence-tile[data-chart-id="ic:720"]'));
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.ok(requested.some(([start, end]) => start === '840' && end === '1260'),
-      'the current Afternoon preparation proceeds while the Morning answer is held');
+      'the queued Afternoon preparation proceeds after the Morning answer is released');
     /* THE DEFECT, STATED AS EVIDENCE: the held Morning answer lands after the
        reader has drawn 14:00–21:00. If any adoption path takes it, the field
        draws Morning's rows while every instrument reads Afternoon. */
@@ -524,6 +535,8 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
       .map((row) => row.id);
     assert.ok(morningOnly.length > 0, 'the frozen answers distinguish the two drawn windows');
     assert.ok(seated.length > 0, 'the field is drawn');
+    assert.ok(seated.every(id => afternoon.includes(id)),
+      `every seated chart belongs to the frozen Afternoon rows (${JSON.stringify(seated)})`);
     assert.ok(seated.includes('ic:720'), 'the Afternoon carb-ratio chart remains seated after Morning arrives');
     assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
       node.textContent.replace('×', '').trim()), 'Window 14:00–21:00',

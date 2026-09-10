@@ -20,7 +20,9 @@ test('c2 app selection contains concrete story bodies and excludes the c3 Trial 
   assert.equal(C2_STORIES.S36, undefined);
 });
 
-function icReplacementDriver({ requestRecovery = true, inspectionError = null } = {}) {
+function icReplacementDriver({ requestRecovery = true, inspectionError = null,
+  staleSubject = '00:00 block', stageCount = 0, canvasCount = 0,
+  staleMessage = 'Evidence changed. Refresh findings.' } = {}) {
   const routes = new Map(); const responses = []; const order = [];
   const source = { findings: { analysis_generation: 'synthetic:before', window: { scoped: true } },
     rendered_rows: [{ id: 'ic:0', parameter: 'carb_ratio', register: 'assert', span: { start_min: 0 } }] };
@@ -30,12 +32,19 @@ function icReplacementDriver({ requestRecovery = true, inspectionError = null } 
     getAttribute: async () => 'ic:0', innerText: async () => 'Current I:C evidence', count: async () => 1,
   };
   const page = {
-    locator: selector => ({ ...node, click: async () => {
+    locator: selector => ({ ...node,
+      count: async () => selector === '#level .stagebtn' ? stageCount : selector.endsWith(' canvas') ? canvasCount : 1,
+      innerText: async () => selector.endsWith(' .tile-state') ? staleMessage
+        : selector === '#crumb-trail .here' ? (responses.some(r => r.status === 409) ? staleSubject : '00:00 block')
+          : 'Current I:C evidence',
+      getAttribute: async name => name === 'data-state' ? 'stale-generation' : 'ic:0',
+      click: async () => {
       if (selector.endsWith('.tile-pin')) order.push('pin');
       if (selector.endsWith('.tile-body')) order.push('body');
     } }),
     waitForFunction: async () => {},
-    evaluate: async () => ({ values: ['10'], series: [{ id: 'current', data: [120] }] }),
+    evaluate: async () => ({ values: ['10'], series: responses.some(r => r.status === 409)
+      ? null : [{ id: 'current', data: [120] }] }),
     route: async (pattern, handler) => routes.set(pattern, handler),
     unroute: async pattern => routes.delete(pattern),
     getByText: () => ({ ...node, waitFor: async () => {
@@ -87,6 +96,20 @@ test('S98 copies the S106 pinned Afternoon trigger with a scoped generation befo
   assert.deepEqual(responses.map(r => r.status), [409, 503]);
   assert.equal(responses[0].json.detail.code, 'analysis_generation_mismatch');
   assert.equal(routes.size, 0, 'the story removes both interceptions');
+});
+
+test('S98 rejects a substituted subject, staging, unnamed stale state or retained canvas', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  for (const [state, expected] of [
+    [{ staleSubject: '12:00 block' }, /retains the selected subject/],
+    [{ stageCount: 1 }, /withholds staging/],
+    [{ staleMessage: '' }, /served stale wording/],
+    [{ canvasCount: 1 }, /named stale state replaces the old canvas/],
+  ]) {
+    const { page, routes } = icReplacementDriver(state);
+    await assert.rejects(C2_STORIES.S98(page), expected);
+    assert.equal(routes.size, 0, 'negative assertion still cleans up the story routes');
+  }
 });
 
 test('S98 missing recovery rejects into the story chain, clears deadlines and permits the next story', async () => {

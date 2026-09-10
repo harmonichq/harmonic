@@ -1827,6 +1827,9 @@ S98 · The selected current-setting I:C coherent case/canvas pair survives a fai
   data:     current ic-lower; historical past-setting reads were retired by Connor Griffin on 2026-09-08
   status:   app opener only — owed by the build, never passed
 ```
+Amended S98 · 2026-09-10 · ADR 397 / coordinator amendment 11: After a failed replacement, the selected current-setting I:C case identity is retained: the same tile id and subject remain, and no other block is chosen. Staging is withheld. The tile shows the shipped named stale/failed state, including the served wording, in place of its canvas; the pre-failure series is not retained. A dated same-subject stale result remains a separate state.
+The preceding wording and results are the attributed pre-amendment record.
+
 ```
 S99 · Every limiting state exposes only backend-permitted actions, and an
       unavailable disposition carries its served reason.

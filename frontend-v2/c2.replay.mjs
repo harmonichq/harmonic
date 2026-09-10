@@ -233,14 +233,14 @@ async function icReplacement(page) {
   await row.waitFor(); const id = await row.getAttribute('data-id'); await row.click();
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] canvas`).first().waitFor();
   const before = await page.locator('#level').innerText();
-  const pair = () => page.evaluate(id => {
+  const subject = await page.locator('#crumb-trail .here').innerText();
+  const coherent = await page.evaluate(id => {
     const tile = document.querySelector(`.evidence-tile[data-chart-id="${CSS.escape(id)}"]`);
     const host = tile?.querySelector('.tile-chart');
     const chart = host && window.echarts.getInstanceByDom(host);
     return { values: [...document.querySelectorAll('#level .numrow b')].map(n => n.textContent),
       series: chart?.getOption().series?.map(({ id, data }) => ({ id, data })) || null };
   }, id);
-  const coherent = await pair();
   check(coherent.series && coherent.values.length, 'the current I:C case and canvas are both populated');
   // Shipped S106 + withGeneratedCarbRatioRecovery: keep/drill the same tile,
   // then adopt an Afternoon preparation with a changed generation. A preset
@@ -281,11 +281,19 @@ async function icReplacement(page) {
     await replacement.release(failure);
     await page.locator('#level .stagebtn').waitFor({ state: 'hidden' });
     check((await page.locator('#level').innerText()).length > 0, 'failed replacement names its state');
-    assert.deepEqual(await pair(), coherent, 'a failed current I:C replacement retains the coherent case/canvas pair');
-    // The retained pair is checked as evidence, never as current permission.
+    // ADR 397 / coordinator amendment 11: the shipped stale state retains the
+    // subject but replaces its canvas, preventing evidence-generation mixing.
     check(before.includes('Current'), 'the source was a current-setting case');
-    check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1,
-      'failed replacement must retain the selected subject rather than choose another I:C block');
+    const tile = `#tile-field .evidence-tile[data-chart-id="${id}"]`;
+    assert.equal(await page.locator(tile).count(), 1, 'failed replacement retains the exact I:C tile identity');
+    assert.equal(await page.locator('#crumb-trail .here').innerText(), subject,
+      'failed replacement retains the selected subject rather than choosing another I:C block');
+    assert.equal(await page.locator('#level .stagebtn').count(), 0, 'failed replacement withholds staging');
+    assert.equal(await page.locator(tile).getAttribute('data-state'), 'stale-generation');
+    check((await page.locator(`${tile} .tile-state`).innerText()).includes('Evidence changed. Refresh findings.'),
+      'the retained tile presents the served stale wording');
+    assert.equal(await page.locator(`${tile} canvas`).count(), 0,
+      'the named stale state replaces the old canvas');
   } finally {
     await page.unroute('**/api/diagnose/carb-ratio-block-evidence*');
     await scoped.close(failure); await replacement.close(failure);

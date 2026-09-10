@@ -153,7 +153,6 @@ async function failedCurrentRead(page) {
   await page.getByText('Current read failed', { exact: true }).waitFor();
   assert.equal(await page.locator('#level .qrow').count(), 0, 'a failed current read does not expose a stale roster');
   await press(page, '[data-action="retry"]');
-  await page.getByText('Current read failed', { exact: true }).waitFor();
   // The failed frame can paint before its Retry control receives focus.
   await page.waitForFunction(() => {
     const retry = document.querySelector('[data-action="retry"]');
@@ -166,7 +165,6 @@ async function failedCurrentRead(page) {
     }));
     throw new Error(`S20b timed out waiting for the failed-read text and focus on Retry; saw ${JSON.stringify(seen)}`, { cause: error });
   });
-  assert.equal(await page.locator('[data-action="retry"]').evaluate(n => n === document.activeElement), true);
   await page.unroute('**/api/analyze*');
   await press(page, '[data-action="retry"]'); await settled(page);
   await page.locator('#level .qrow').first().waitFor({ timeout: 30000 }); // the retried read paints its rows before the count is judged
@@ -523,9 +521,9 @@ export const C2_STORIES = {
   S32: async page => {
     await openBasalLane(page);
     const cells = page.locator('#lane > button');
-    const selected = async edge => {
-      // Selection and focus land after the asynchronous lane repaint. Wait for
-      // both before sending the next key to the newly rendered control.
+    const assertSelectedEdge = async edge => {
+      // The key handler selects and focuses the wrapped-to cell. This bounded
+      // assertion proves both before the next key reaches that control.
       await page.waitForFunction(edge => {
         const cells = [...document.querySelectorAll('#lane > button')];
         const cell = edge === 'first' ? cells[0] : cells.at(-1);
@@ -538,13 +536,10 @@ export const C2_STORIES = {
       });
     };
     await cells.first().click(); await cells.first().focus();
-    await selected('first');
     await page.keyboard.press('ArrowLeft');
-    await selected('last');
-    assert.equal(await cells.last().getAttribute('aria-pressed'), 'true');
+    await assertSelectedEdge('last');
     await page.keyboard.press('ArrowRight');
-    await selected('first');
-    assert.equal(await cells.first().getAttribute('aria-pressed'), 'true');
+    await assertSelectedEdge('first');
   },
   S33: async page => { await openBasalLane(page); const rows = page.locator('#level .case-occurrence'); check(await rows.count() > 1); const id = await choose(page, rows.first()); await page.keyboard.press('ArrowDown'); await page.waitForFunction(id => document.querySelector('.case-occurrence[aria-pressed="true"]')?.dataset.occurrenceId !== id, id); await page.keyboard.press('ArrowUp'); assert.equal(await held(page), id); },
   S34: async page => { await openBasalLane(page); const cells = page.locator('#lane > button'); await cells.nth(4).click(); await cells.nth(5).click(); assert.equal(await cells.nth(5).getAttribute('aria-pressed'), 'true'); await cells.nth(4).click(); assert.equal(await cells.nth(4).getAttribute('aria-pressed'), 'true'); },

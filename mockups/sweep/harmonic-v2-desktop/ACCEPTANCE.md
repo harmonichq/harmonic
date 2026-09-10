@@ -115,8 +115,11 @@ The coordinator reports about 13 minutes per size on this Mac. In CI run
 after 123 passes at 1280×720 and 122 at 1440×900, reaching R13 and R15.
 The coordinator estimates about 35 minutes per size on that runner; this is
 an estimate from the interrupted runs, not a completed CI timing. The complete
-replay now has a 50-minute wrapper ceiling and each v2 matrix job has 60 minutes
-for setup, replay and teardown. Other wrapper commands keep their existing limit.
+replay's `acceptance.py` wrapper ceiling is 3000 seconds (50 minutes), inside
+the `timeout: 60` on both "V2 complete frozen ledger" entries in
+[ci.yml](../../../.github/workflows/ci.yml). That job limit leaves ten minutes
+outside the replay for setup and teardown. Other wrapper commands keep their
+existing limit.
 
 ```sh
 /opt/homebrew/bin/python3.14 mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$evidence/app-1280x720"

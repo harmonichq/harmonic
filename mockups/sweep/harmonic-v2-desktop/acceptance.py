@@ -179,8 +179,7 @@ def replay(run, viewport):
     env.pop("ONLY", None)
     env.pop("STORY_CASES", None)
     with auth_server(run):
-        # CI needs about 35 minutes per size (about 13 on the coordinator's Mac).
-        # Leave replay headroom inside the matrix job's 60-minute ceiling.
+        # See ACCEPTANCE.md's Runnable legs for timing evidence and the CI ceiling relationship.
         _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")

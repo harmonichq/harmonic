@@ -20,9 +20,8 @@ test('c2 app selection contains concrete story bodies and excludes the c3 Trial 
   assert.equal(C2_STORIES.S36, undefined);
 });
 
-test('S98 intercepts the clock-window preparation request and keeps the I:C 409', async () => {
-  const { C2_STORIES } = await import('./c2.replay.mjs');
-  const routes = new Map(); const responses = []; const pending = [];
+function icReplacementDriver({ requestRecovery = true, inspectionError = null } = {}) {
+  const routes = new Map(); const responses = []; const order = [];
   const node = {
     first() { return this; }, filter() { return this; },
     waitFor: async () => {}, click: async () => {},
@@ -32,21 +31,69 @@ test('S98 intercepts the clock-window preparation request and keeps the I:C 409'
     locator: () => node, waitForFunction: async () => {},
     evaluate: async () => ({ values: ['10'], series: [{ id: 'current', data: [120] }] }),
     route: async (pattern, handler) => routes.set(pattern, handler),
-    unroute: async pattern => routes.delete(pattern), getByText: () => node,
+    unroute: async pattern => routes.delete(pattern),
+    getByText: () => ({ ...node, waitFor: async () => {
+      if (inspectionError) throw inspectionError;
+      assert.deepEqual(order, ['Morning preparation', 'I:C 409', 'findings recovery']);
+      assert.equal(responses.length, 1, 'recovery remains paused while stale evidence is inspected');
+    } }),
     getByRole: (_role, { name }) => ({ ...node, click: async () => {
       if (name !== 'Morning') return;
-      const preparation = routes.get('**/api/diagnose/finding-case-file-preparation*');
-      assert.equal(typeof preparation, 'function', 'Morning loads preparation, not /api/diagnose/findings');
-      for (const handler of [routes.get('**/api/diagnose/carb-ratio-block-evidence*'), preparation]) {
-        pending.push(Promise.resolve(handler({ fulfill: async response => responses.push(response) })));
-      }
+      assert.equal(routes.has('**/api/diagnose/finding-case-file-preparation*'), false,
+        'holding Morning preparation prevents the I:C request and its stale recovery');
+      order.push('Morning preparation');
+      await routes.get('**/api/diagnose/carb-ratio-block-evidence*')({ fulfill: async response => {
+        responses.push(response); order.push('I:C 409');
+      } });
+      if (!requestRecovery) return;
+      const recovery = routes.get('**/api/diagnose/findings*');
+      assert.equal(typeof recovery, 'function', 'the I:C stale response recovers through findings');
+      const detached = recovery({ fulfill: async response => responses.push(response) });
+      assert.equal(detached, undefined, 'the route callback owns no detached promise or rejection timer');
+      order.push('findings recovery');
     } }),
   };
+  return { page, responses, routes };
+}
+
+test('S98 lets Morning preparation finish before the I:C 409 and holds only findings recovery', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const { page, responses, routes } = icReplacementDriver();
   await C2_STORIES.S98(page);
-  await Promise.all(pending);
-  assert.deepEqual(responses.map(r => r.status).sort(), [409, 503]);
-  assert.equal(responses.find(r => r.status === 409).json.detail.code, 'analysis_generation_mismatch');
+  assert.deepEqual(responses.map(r => r.status), [409, 503]);
+  assert.equal(responses[0].json.detail.code, 'analysis_generation_mismatch');
   assert.equal(routes.size, 0, 'the story removes both interceptions');
+});
+
+test('S98 missing recovery rejects into the story chain, clears deadlines and permits the next story', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const set = globalThis.setTimeout; const clear = globalThis.clearTimeout;
+  const timers = new Set();
+  globalThis.setTimeout = (run, ms, ...args) => {
+    // Exercise the production thirty-second deadline without a thirty-second test.
+    const timer = set(run, ms === 30000 ? 5 : ms, ...args); timers.add(timer); return timer;
+  };
+  globalThis.clearTimeout = timer => { timers.delete(timer); clear(timer); };
+  try {
+    const missing = icReplacementDriver({ requestRecovery: false });
+    await assert.rejects(C2_STORIES.S98(missing.page),
+      /Timed out after 30000 ms: S98 findings recovery after Morning preparation and I:C 409/);
+    assert.equal(missing.routes.size, 0, 'timed-out story removes its interceptions');
+    await C2_STORIES.S98(icReplacementDriver().page);
+    assert.equal(timers.size, 0, 'both failed and successful story chains clear their deadlines');
+  } finally {
+    for (const timer of timers) clear(timer);
+    globalThis.setTimeout = set; globalThis.clearTimeout = clear;
+  }
+});
+
+test('S98 releases held recovery in finally when an inspection assertion fails', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const error = new Error('synthetic stale-state assertion failed');
+  const { page, responses, routes } = icReplacementDriver({ inspectionError: error });
+  await assert.rejects(C2_STORIES.S98(page), candidate => candidate === error);
+  assert.deepEqual(responses.map(r => r.status), [409, 503]);
+  assert.equal(routes.size, 0);
 });
 
 test('replay deadlines fail with the wait name and preserve resolved values/errors', async () => {

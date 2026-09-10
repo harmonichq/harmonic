@@ -33,6 +33,22 @@ const go = async (page, destination) => {
 const held = page => page.locator('#level .case-occurrence[aria-pressed="true"]').getAttribute('data-occurrence-id');
 const responseFor = (page, path, predicate = () => true) => page.waitForResponse(response =>
   new URL(response.url()).pathname === path && predicate(response), { timeout: 30000 });
+// Route callbacks only capture requests. Their waits and fulfill failures must
+// belong to the story's await chain, not Playwright's detached route dispatch.
+async function holdResponses(page, pattern) {
+  const held = new Set();
+  let arrive; const arrived = new Promise(resolve => { arrive = resolve; });
+  const handler = route => { held.add(route); arrive(); };
+  await page.route(pattern, handler);
+  const release = response => boundedWait(Promise.all([...held].map(async route => {
+    await route.fulfill(response); held.delete(route);
+  })), `release held response ${pattern}`);
+  return {
+    wait: description => boundedWait(arrived, description),
+    release,
+    close: async response => { await page.unroute(pattern, handler); await release(response); },
+  };
+}
 const casePath = '/api/diagnose/finding-case-file';
 const prepPath = '/api/diagnose/finding-case-file-preparation';
 const choose = async (page, row) => {
@@ -185,20 +201,18 @@ async function planPersistence(page, ctx) {
 async function projectionReplacement(page) {
   await openBasalLane(page);
   check(await page.locator('#level .stagebtn').count() > 0, 'old projection has an advisory control to withdraw');
-  let release; const barrier = new Promise(resolve => { release = resolve; });
-  let arrived; const pending = new Promise(resolve => { arrived = resolve; });
-  const pattern = '**/api/diagnose/finding-case-file-preparation*';
-  await page.route(pattern, async route => { arrived(); await boundedWait(barrier, 'S97 release scoped preparation response'); await route.fulfill({ status: 503, json: { detail: 'Synthetic scoped failure' } }); });
+  const pending = await holdResponses(page, '**/api/diagnose/finding-case-file-preparation*');
+  const failure = { status: 503, json: { detail: 'Synthetic scoped failure' } };
   try {
-    await page.getByRole('button', { name: 'Evening', exact: true }).click(); await boundedWait(pending, 'S97 scoped preparation request');
+    await page.getByRole('button', { name: 'Evening', exact: true }).click(); await pending.wait('S97 scoped preparation request');
     assert.equal(await page.locator('#level').getAttribute('data-loading'), 'true');
     assert.equal(await page.locator('#level .qrow, #level .stagebtn, #level .numrow, #level .case-occurrence').count(), 0);
     check(/Loading findings/.test(await page.locator('#level').innerText()));
     check(!/\d+ (findings|nights|meals)/.test(await page.locator('#crumb-meta').innerText()), 'pending meta is count-free');
-    release();
+    await pending.release(failure);
     await page.getByText(/Findings unavailable for/).waitFor();
     assert.equal(await page.locator('#level .qrow, #level .stagebtn, #level .numrow, #level .case-occurrence').count(), 0);
-  } finally { release(); await page.unroute(pattern); }
+  } finally { await pending.close(failure); }
   const response = responseFor(page, prepPath, r => r.ok());
   await page.getByRole('button', { name: 'Overnight', exact: true }).click();
   const served = await (await response).json(); await settled(page);
@@ -228,17 +242,19 @@ async function icReplacement(page) {
   }, id);
   const coherent = await pair();
   check(coherent.series && coherent.values.length, 'the current I:C case and canvas are both populated');
-  let release; const barrier = new Promise(resolve => { release = resolve; });
-  let entered; const enteredPromise = new Promise(resolve => { entered = resolve; });
+  // Morning first loads preparation. Only after it is adopted can the I:C
+  // evidence return 409 and fetchTile recover via loadFindings. Blocking the
+  // preparation here deadlocks before that recovery can even be requested.
+  const replacement = await holdResponses(page, '**/api/diagnose/findings*');
+  const failure = { status: 503, json: { detail: 'Synthetic replacement failed' } };
   await page.route('**/api/diagnose/carb-ratio-block-evidence*', route => route.fulfill({
     status: 409, json: { detail: { code: 'analysis_generation_mismatch', message: 'Evidence changed. Refresh findings.' } },
   }));
-  await page.route('**/api/diagnose/finding-case-file-preparation*', async route => { entered(); await boundedWait(barrier, 'S98 release replacement preparation response'); await route.fulfill({ status: 503, json: { detail: 'Synthetic replacement failed' } }); });
   try {
-    await page.getByRole('button', { name: 'Morning', exact: true }).click(); await boundedWait(enteredPromise, 'S98 Morning preparation request');
+    await page.getByRole('button', { name: 'Morning', exact: true }).click(); await replacement.wait('S98 findings recovery after Morning preparation and I:C 409');
     await page.getByText('Evidence changed. Refresh findings.', { exact: true }).first().waitFor();
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1, 'stale state keeps the exact current I:C identity');
-    release();
+    await replacement.release(failure);
     await page.locator('#level .stagebtn').waitFor({ state: 'hidden' });
     check((await page.locator('#level').innerText()).length > 0, 'failed replacement names its state');
     assert.deepEqual(await pair(), coherent, 'a failed current I:C replacement retains the coherent case/canvas pair');
@@ -246,7 +262,7 @@ async function icReplacement(page) {
     check(before.includes('Current'), 'the source was a current-setting case');
     check(await page.locator(`#tile-field .evidence-tile[data-chart-id="${id}"]`).count() === 1,
       'failed replacement must retain the selected subject rather than choose another I:C block');
-  } finally { release(); await page.unroute('**/api/diagnose/carb-ratio-block-evidence*'); await page.unroute('**/api/diagnose/finding-case-file-preparation*'); }
+  } finally { await page.unroute('**/api/diagnose/carb-ratio-block-evidence*'); await replacement.close(failure); }
 }
 
 async function permittedActions(page) {

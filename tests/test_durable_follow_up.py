@@ -243,6 +243,60 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(assessment["adherence"]["before"]["rate"], 1)
         self.assertEqual(assessment["adherence"]["after"]["rate"], 1)
 
+    def test_pattern_selected_retained_and_ending_keep_opportunity_readiness_immutable(self):
+        from datetime import datetime
+        from pathlib import Path
+        from unittest.mock import patch
+        from scripts.qa_e2e_cases import _materialize_pattern_focus_meals
+        from ciq_autotune.follow_up_comparison import capture_comparison_context
+        pin = datetime(2024, 5, 5)
+        with Store.open(self.path) as store:
+            _materialize_pattern_focus_meals(store)
+            with store.follow_up_transaction():
+                focus = store.pin_focus("late_bolus", str(pin), pattern_key="highs_after_meals")
+                record = {"kind": "focus", "version": "386:1", **focus,
+                    "comparison_context": capture_comparison_context(store, at=pin,
+                        input_revision=store.input_data_revision())}
+                store.save_follow_up_record(record)
+            record = store.follow_up_record("focus", focus["id"])
+            revision = store.input_data_revision()
+        params = {"kind": "focus", "selected": focus["id"], "assessment": "retained"}
+        before_bytes = Path(self.path).read_bytes()
+        response = self.client.get("/api/verify/trials", headers=self.headers, params=params)
+        self.assertEqual(response.status_code, 200, response.text)
+        selected = response.json()["selected"]
+        readiness = selected["reassessment"]["comparison"]["readiness"]
+        self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [12, 12])
+        self.assertTrue(all(r["criterion_met"] for r in readiness.values()))
+        for arm in readiness.values():
+            self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
+                "elapsed_days", "required_elapsed_days", "criterion_met",
+                "contributing_dates", "reason", "count", "gate", "verdict"}, arm.keys())
+            self.assertEqual((arm["measured"], arm["unmeasured"]), (12, 0))
+            self.assertIsNone(arm["required_elapsed_days"])
+        self.assertEqual(Path(self.path).read_bytes(), before_bytes)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("focus", focus["id"]), record)
+            self.assertEqual(store.input_data_revision(), revision)
+        with patch("ciq_autotune.api.datetime") as clock:
+            clock.now.return_value = datetime(2024, 5, 9)
+            ended = self.client.post(f'/api/focus/{focus["id"]}/resolve', headers=self.headers,
+                json={"request_id": "pattern-end", "input_revision": revision,
+                      "conclusion": "Synthetic observation"})
+        self.assertEqual(ended.status_code, 200, ended.text)
+        ending = ended.json()["record"]["ending"]
+        self.assertEqual(ending["assessment"]["readiness"], readiness)
+        self.assertEqual(ending["assessment"]["assessment"]["state"], "unclear")
+        restarted = TestClient(create_app(db_path=self.path, token="synthetic-token", enable_fetch_loop=False))
+        for mode in ("original", "retained", "current"):
+            read = restarted.get("/api/verify/trials", headers=self.headers,
+                                  params={**params, "assessment": mode})
+            self.assertEqual(read.status_code, 200, read.text)
+            self.assertEqual(read.json()["selected"]["original"]["ending"], ending)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("focus", focus["id"])["comparison_context"],
+                             record["comparison_context"])
+
     def test_unique_captured_block_plan_matches_actual_schedule(self):
         from dataclasses import asdict
         from tests.test_trial_evidence import _seed_block_ic_switch

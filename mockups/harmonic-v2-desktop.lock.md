@@ -427,11 +427,23 @@ arrangement and binds it to the serialized field, per precedence rule 3.
   request, not to a roster field.
 - **Setting and Focus readiness have different shapes.** Setting arms carry
   `{unit, required, observed, contributing_dates, criterion_met, reason,
-  available, elapsed_days}`. The Focus override omits `available` and `required`
+  available, elapsed_days}`.
+  **Amended 2026-09-10 — #389 Coordinator Amendment 2, under ADR 391/395.**
+  Old (superseded): The Focus override omits `available` and `required`
   and carries `{unit, observed, measured, unmeasured, elapsed_days,
   required_elapsed_days: 14, criterion_met, contributing_dates, reason}`. A
   Focus surface renders the actual positive/measured population and elapsed
   days, never an "X of Y required" meter.
+  New: Legacy non-Pattern Focus retains that shape; Pattern Focus retains all
+  those fields with `required_elapsed_days: null` and adds
+  `{count, gate, verdict, required}`. The backend opportunity owner supplies
+  `count`, `gate`, `verdict`, `unit`, `contributing_dates` and `reason` for each
+  retained arm; `observed` aliases `count`, `required` aliases `gate`, and
+  `criterion_met` reflects the served verdict. `measured` and `unmeasured`
+  retain the lever's behavior-observation counts, with their denominator in
+  `adherence`; they need not sum to the Pattern count. A Pattern Focus surface
+  renders the served opportunity count, gate and verdict alongside separate
+  behavior measurements, with elapsed days descriptive and no client criterion.
 - **No unresolved criterion exists.** Every `_comparison_readiness` branch sets
   a concrete `required` and a boolean `criterion_met`. The unavailable-evidence
   cases stay; an unresolved-criterion state has no producer (HV2-31).

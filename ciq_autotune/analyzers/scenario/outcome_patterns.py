@@ -43,6 +43,30 @@ _SETTING_ROWS = {"basal_rate": "basal", "carb_ratio": "ic_blocks", "isf": "isf"}
 _HARM_CONFIG = HarmConfig()
 
 
+def opportunity_readiness(key: str, analysis: dict, exposures: dict) -> dict:
+    """Read one Pattern's opportunity criterion from its published source family.
+
+    Both the roster and exact-period follow-up use this gate, unit and count
+    authority. Occurrence dates are supplied by the exposure producer; the basal
+    source-night count does not currently publish its contributing dates.
+    """
+    family = next(family for pattern, *_rest, family in _ROSTER if pattern == key)
+    if family == "nights":
+        count = max((row.get("evidence", {}).get("harm_band_source_nights", 0)
+                     for row in analysis.get("basal") or ()), default=0)
+        dates = None
+    else:
+        source = (exposures.get("exposures") or {}).get(family) or {}
+        count = source.get("n", 0)
+        dates = sorted({item["t"][:10] for item in source.get("occurrences") or ()
+                        if item.get("t") is not None})
+    gate = _GATES[key]
+    return {"count": count, "gate": gate, "unit": family,
+            "verdict": "ready" if count >= gate else "withheld",
+            "reason": "zero_opportunities" if not count else "collecting" if count < gate else None,
+            **({"contributing_dates": dates} if dates is not None else {})}
+
+
 def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
     by_lever = {
         row.get("lever"): row
@@ -317,7 +341,10 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
             "rate": round(k / n, 4) if n and k <= n else None,
             "wilson": ({"lo": round(bounds[1], 4), "hi": round(bounds[2], 4)} if bounds else None),
             **({"count_status": count_status} if count_status else {}),
-            "rate_producer": producer, "readiness": {"count": n, "gate": _GATES[key], "verdict": "ready" if n >= _GATES[key] else "withheld"},
+            "rate_producer": producer, "readiness": {
+                field: value for field, value in opportunity_readiness(key, analysis, exposures).items()
+                if field in ("count", "gate", "verdict")
+            },
             "settled_price": chosen["price"] if chosen else 0,
             "admission_route": ("setting_staging" if chosen and chosen["kind"] == "setting" else "habit_threshold" if chosen else "none"),
             "collapse": collapse, "action": chosen["action"] if chosen else None,

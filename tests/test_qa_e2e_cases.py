@@ -30,6 +30,7 @@ from scripts.qa_e2e_cases import (
 
 
 EXPECTED_CASE_NAMES = (
+    "pattern-focus-meals",
     "showcase", "setting-recommendation", "behavioral-precedence",
     "basal-raise", "basal-lower", "basal-capped-raise",
     "basal-capped-lower", "basal-insufficient-seven-night",

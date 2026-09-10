@@ -832,6 +832,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     @app.put("/api/guidance/preferences/{subject:path}")
     def set_guidance_preference_endpoint(subject: str, payload: dict = Body(...),
                                          _: None = Depends(require_token)) -> dict:
+        from .watched_change import reconcile_ingested_follow_up
         generation, reason = payload.get("generation"), payload.get("reason")
         if not isinstance(generation, str):
             raise HTTPException(status_code=400, detail="generation is required")
@@ -851,12 +852,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     reason=reason, expected_revision=current["input_revision"], **baseline)
             except ValueError as error:
                 raise HTTPException(status_code=409, detail=str(error)) from error
+            reconcile_ingested_follow_up(store)
         cache.bump()
         return {"subject": subject, "set_aside": True}
 
     @app.delete("/api/guidance/preferences/{subject:path}")
     def restore_guidance_preference_endpoint(subject: str,
                                              _: None = Depends(require_token)) -> dict:
+        from .watched_change import reconcile_ingested_follow_up
         with Store.open(db_path) as store:
             stored = any(row["subject"] == subject
                          for row in store.guidance_preferences())
@@ -864,6 +867,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise HTTPException(status_code=404,
                                     detail="unknown guidance subject")
             restored = store.restore_guidance_preference(subject)
+            if restored:
+                reconcile_ingested_follow_up(store)
         if restored:
             cache.bump()
         return {"subject": subject, "set_aside": False}

@@ -1549,7 +1549,8 @@ def _reconcile_plan(store, record, recorded_at):
 
 
 def reconcile_ingested_follow_up(store):
-    """Completion adapter shared by standalone ingestion and the fetch loop."""
+    """Completion adapter shared by standalone ingestion, the fetch loop and the
+    guidance preference writes, which advance the input revision the same way."""
     times = ([row.t for row in store.cgm_readings()] + [row.t for row in store.basal_events()]
              + [row.t for row in store.bolus_events()] + [row.captured_at for row in store.settings_snapshots()])
     now = max(times) if times else datetime.now()

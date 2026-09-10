@@ -27,4 +27,4 @@
 .v2-nav { display:flex; align-items:center; gap:4px; }
 .v2-nav button { color:var(--ck-meta); font:inherit; background:transparent; padding:6px 10px; border:1px solid transparent; border-radius:var(--wk-radius); cursor:pointer; }
 .v2-nav button[aria-current=page] { color:var(--ck-text); border-color:var(--ck-accent); }
-@media(max-width:700px) { .v2-content { padding:16px 16px 32px; } .v2-nav { gap:0; } .v2-nav button { padding:7px 6px; font-size:12px; } .v2-chart { height:330px; } .cockpit-identity small, .v2-shell .cockpit-scope, .v2-shell .cockpit-log-carbs { display:none; } .v2-shell .cockpit-topbar { gap:12px; flex-wrap:wrap; height:auto; min-height:64px; align-content:center; } .v2-shell { grid-template-rows:72px minmax(0,1fr) 24px; } }
+@media(max-width:700px) { .v2-content { padding:16px 16px 32px; } .v2-nav { gap:0; } .v2-nav button { padding:7px 6px; font-size:12px; } .v2-chart { height:330px; } .cockpit-identity small, .v2-shell .cockpit-log-carbs { display:none; } .v2-shell .cockpit-topbar { gap:12px; flex-wrap:wrap; height:auto; min-height:64px; align-content:center; } .v2-shell { grid-template-rows:72px minmax(0,1fr) 24px; } }

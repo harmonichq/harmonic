@@ -33,7 +33,7 @@ export function shellMarkup() {
   const utilities = FOOTER_UTILITIES
     .map(([kind, label, className]) => `<button class="${className}" data-utility="${kind}">${label}${kind === 'questions' ? ' <span class="cockpit-count">0</span>' : ''}</button>`)
     .join('');
-  return `<header class="cockpit-topbar"><div class="cockpit-identity"><span class="cockpit-mark" aria-hidden="true"></span>Harmonic <small>advisory</small></div>${nav}<span class="cockpit-gap"></span><div class="cockpit-scope"><span class="cockpit-scope-label">Scope</span><span class="cockpit-scope-dot"></span><span>30 d</span></div><button class="cockpit-log-carbs"><span class="plus">＋</span>Log carbs</button></header><main class="v2-content gf-main" id="v2-content"></main><footer class="cockpit-footer status"><span class="cockpit-advisory advisory">${e(ADVISORY)}</span><nav class="cockpit-utilities" aria-label="Utilities">${utilities}</nav></footer>`;
+  return `<header class="cockpit-topbar"><div class="cockpit-identity"><span class="cockpit-mark" aria-hidden="true"></span>Harmonic <small>advisory</small></div>${nav}<span class="cockpit-gap"></span><button class="cockpit-log-carbs"><span class="plus">＋</span>Log carbs</button></header><main class="v2-content gf-main" id="v2-content"></main><footer class="cockpit-footer status"><span class="cockpit-advisory advisory">${e(ADVISORY)}</span><nav class="cockpit-utilities" aria-label="Utilities">${utilities}</nav></footer>`;
 }
 
 /**

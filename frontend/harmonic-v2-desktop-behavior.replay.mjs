@@ -608,14 +608,12 @@ export const S3 = async (page) => {
 export const S4 = async (page) => {
   const chrome = await page.evaluate(() => ({
     identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    scope: document.querySelector('.cockpit-scope')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
     carbs: document.querySelector('.cockpit-log-carbs')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
     advisory: document.querySelector('.cockpit-advisory')?.textContent.trim() ?? null,
     utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
   }));
   ok(/Harmonic/.test(chrome.identity || '') && /advisory/i.test(chrome.identity || ''),
     `the identity mark is not the locked one: ${chrome.identity}`);
-  ok(/Scope/i.test(chrome.scope || '') && /30 d/.test(chrome.scope || ''), `scope reads ${chrome.scope}`);
   ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
     `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
   ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',

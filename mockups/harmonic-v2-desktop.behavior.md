@@ -324,6 +324,9 @@ S4 · Persistent chrome renders its locked strings and does not move across
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
 
+Amended S4 · 2026-09-10 · coordinator amendment 13: Connor Griffin instructed, "kill that scope thing unless we're going to include some kind of modal or something to go with it, it serves nothing." Remove Scope · 30 d from the persistent-chrome strings and elements; identity, destinations, Log carbs, advisory and utilities retain their existing assertions. This also amends the product-chrome overview above. S4 remains active; no story was solely about the chip.
+The preceding wording and results are the attributed pre-amendment record.
+
 ```
 S5 · Shell rows are 38px / minmax(0,1fr) / 24px below 860px viewport height,
      including 1280×720, and 42px / minmax(0,1fr) / 26px at 1440×900.

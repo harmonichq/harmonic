@@ -658,8 +658,7 @@ function focusFrame(state) {
   const context = (detail.original || {}).context || {};
   const stage = `<section class="pane gf-stage gf-stage-focus" aria-label="Focus evidence">${nameplate({
     kicker: 'Focus · <b>Active</b>',
-    // The retained decision context stores the served Pattern title as explanation.
-    title: e(context.title || (detail.pattern_key ? context.explanation : null) || LEVER_NAME[detail.lever] || 'Focus'),
+    title: e(detail.title || 'Focus'),
     sub: `Pinned ${e(stamp(detail.pinned_at))}`,
     end: '<button class="gf-btn" data-follow-up-inspect>Inspect evidence</button><button class="gf-btn" data-action="history">View change record</button>',
   })}
@@ -669,7 +668,7 @@ function focusFrame(state) {
     <div class="gf-scroll">${comparisonTables(comparison, 'focus')}</div></section>`;
   const reading = `<aside class="pane gf-reading" aria-label="This Focus">${readingHeader('This Focus', 'Active')}<div class="gf-pane-body">
     <section class="gf-section" data-part="intent"><h3>What this Focus watches</h3>
-      <p>${e(context.explanation || LEVER_NAME[detail.lever] || detail.lever)}</p>
+      ${context.explanation === detail.title ? '' : `<p>${e(context.explanation || LEVER_NAME[detail.lever] || detail.lever)}</p>`}
       <p class="gf-meta">Pinned ${e(stamp(detail.pinned_at))}. No pump setting changed.</p></section>
     ${readinessSection(comparison, { kind: 'focus' })}
     ${periodsSection(comparison, 'focus')}

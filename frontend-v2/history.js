@@ -174,7 +174,7 @@ export function recordRoster({ trials, focuses }) {
     })),
     ...focuses.map((row) => ({
       kind: 'focus', id: row.id, at: row.pinned_at,
-      title: row.subject || (row.pattern_key ? `pattern:${row.pattern_key}` : row.lever),
+      title: row.title || 'Focus',
       detail: `pinned ${stamp(row.pinned_at)}`,
       ending: endingOf(row), status: row.status || null,
     })),
@@ -312,7 +312,7 @@ function recordFrame(state) {
   const ended = Boolean(ending.kind);
   const label = ended ? (ENDING_WORD[ending.kind] || ending.kind) : 'Still open';
   const title = kind === 'focus'
-    ? (detail.subject || (detail.pattern_key ? `pattern:${detail.pattern_key}` : detail.lever))
+    ? (detail.title || 'Focus')
     : recordTitle(detail);
   const shown = shownComparison(detail);
   const stage = `<section class="pane gf-stage gf-stage-trial" aria-label="Record evidence">${nameplate({

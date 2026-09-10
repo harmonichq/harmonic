@@ -20,7 +20,7 @@ story does not evidence its transient failure or in-progress gesture.
 | HV2-03 | Inner scrolling | ported | S4/S10/S10b; S14/S31/S45/S59/S60 captures | Both viewport renders and actual overflow judgments pending. |
 | HV2-04 | Shell tracks | ported | S5; computed capture facts | Both viewport grid tracks pending. |
 | HV2-05 | Reading pane and empty Changes | ported | S6/S7/S7b; S7b/S37 captures | Paired pane/divider and full-width empty state pending. |
-| HV2-06 | Fixed diagnostic desk | ported | app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S59-1280x720 / app-S59-1440x900 | Coordinator · 2026-09-10: geometry PASS at both sizes for dense Diagnose, paired Trial, paired Focus and full-width empty Changes. Stage/reading spines and table rows remain aligned, with no overflow or stale roster. S59 copy defects (raw Pattern subject and period reasons) fixed under amendment 7 with failing-first renderer tests; the final replay uses the rebuilt shells. Judgment is limited to these named states. |
+| HV2-06 | Fixed diagnostic desk | ported | app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S59-1280x720 / app-S59-1440x900 | Coordinator · 2026-09-10: geometry PASS at both sizes for dense Diagnose, paired Trial, paired Focus and full-width empty Changes. Stage/reading spines and table rows remain aligned, with no overflow or stale roster. S59 copy defects (raw Pattern subject and period reasons) fixed under amendments 7 and 8 with failing-first API and renderer tests; the coordinator rebuilds and replays the affected legs. Judgment is limited to these named states. |
 | HV2-07 | Shipped dark material | ported | S8; computed consuming-element styles | No new palette. Compare against shipped styles, not the historical theme scaffold. |
 | HV2-08 | Inter and clinical typography | ported | app-S9-1280x720 / app-S9-1440x900; app-S18-1280x720 / app-S18-1440x900; app-S37-1280x720 / app-S37-1440x900; app-S45-1280x720 / app-S45-1440x900 | Coordinator · 2026-09-10: PASS at both sizes across these named states. Inter-only inventory, 700-weight headings within the 1.5rem ceiling, tabular clinical numerals, flat surfaces/hairlines and legible dark-ground contrast, including small captions. |
 | HV2-09 | Three persistent destinations | ported | S1/S2/S3/S11/S12; S1/S3 captures | ADR 397 navigation adaptation; historical four-button screenshots are not new evidence. |
@@ -111,9 +111,12 @@ and 1440×900 (`app-S59-1280x720`, `app-S59-1440x900`). The Before → After cha
 observed behaviour and glucose outcomes tables retain the Trial pair's spines.
 The evidence column remains intact without wrapping, including the served
 opportunity readiness of “12 of 12 meals · 4 days elapsed · ready · Criterion met”.
-The coordinator identified two copy defects in these captures. The follow-up
-now uses the Pattern title retained in its served decision context and renders
-known period reasons as spaced desk copy, omitting unmapped reasons. Both fixes
-have failing-first Node renderer tests. This records the supplied geometry
-judgment and the copy repair; the final full-ledger run is coordinator-owned
-and must use the amendment 7 build.
+The coordinator identified two copy defects in these captures. Amendment 7
+rendered known period reasons as spaced desk copy, omitting unmapped reasons.
+Amendment 8 supersedes its explanation-based title: the backend now projects
+the Pattern roster's title onto the follow-up record. Follow-up and history
+print that title, while distinct explanation text remains in the body. API and
+renderer regressions failed first and passed after the repair. This records
+the supplied geometry judgment and the copy repair; the coordinator owns the
+amendment 8 rebuild and affected replay legs. The builder did not rebuild while
+the coordinator's evidence chain was using the amendment 7 shell.

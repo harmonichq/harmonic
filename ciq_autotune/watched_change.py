@@ -693,6 +693,7 @@ def _reviewable_trials(store, now, *, horizon_start=None):
 
 def review_trials(store, *, now: datetime, selected=None, kind="trial", assessment="original"):
     """Read retained history and optional reassessment without resolving a watch."""
+    from .analyzers.scenario.outcome_patterns import _ROSTER
     from .follow_up_comparison import compare_follow_up
     trials = _reviewable_trials(store, now)
     by_id = {_review_id(t.view, t.block): t for t in trials}
@@ -710,7 +711,10 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
                    watch_disposition=("active" if admission["active_kind"] == "trial"
                                       and admission["active_id"] == row["id"] else "not_selected_for_watch"))
         roster.append(row)
-    result = {"trials": roster, "focuses": store.follow_up_records("focus"), "selected": None,
+    pattern_titles = {key: title for key, title, *_ in _ROSTER}
+    focuses = [{**record, "title": pattern_titles.get(record.get("pattern_key")) or focus_view(record).title}
+               for record in store.follow_up_records("focus")]
+    result = {"trials": roster, "focuses": focuses, "selected": None,
               "input_revision": store.input_data_revision(), "admission": admission}
     if selected is None:
         return result
@@ -724,7 +728,8 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
     else:
         if record is None:
             raise KeyError(identity)
-        detail = {"id": identity, "lever": record["lever"], "status": record["status"]}
+        detail = {"id": identity, "lever": record["lever"], "status": record["status"],
+                  "title": next(row["title"] for row in focuses if row["id"] == identity)}
     detail.update(kind=kind, admission=admission,
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),

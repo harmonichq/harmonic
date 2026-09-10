@@ -91,3 +91,8 @@ denominator line already says it); a `count_status` Pattern renders its title
 and "counts under review" with no rate and no chart; the chartless overnight
 Pattern and every unadmitted Pattern render as title-only rows in the unranked
 tail, as the shipped tail idiom already does.
+
+Round 3 sanction: Connor Griffin · 2026-09-09 · shown the whole real rail with
+every ruling applied (and told the chip word would read Cause in the build):
+"Yeah, this looks great. Let's ship it." The coordinator defaults above stand
+unless amended. This closes the design round; c3 builds to this record.

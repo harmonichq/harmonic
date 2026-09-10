@@ -82,6 +82,8 @@ tests/test_api.py | 8 invented round test dates (§3.1 [R6])
 frontend/diagnose-workstation-behavior.replay.mjs | 9 in-span dates, operator sanction and revision dates quoted in story comments (§3.1 [R6])
 mockups/diagnose-event-comparison.synthetic/capture.json | dates a synthetic projection carries in its own source_window field; carries no value, dose or ratio; ships by ruling (§3.1 [R3])
 
+scripts/qa_e2e_cases.py | 27 invented 2040 dates from tests/eating_sequence_streams.py; literal QA expectations frozen through execute_case for the twelve sequence recipes (#342)
+
 # --- Narrow ruled prose exemptions (§3.1 [R5]) ----------------------------
 # This config is itself a shipping file, and the generated block below
 # RECORDS 136 matched dose texts — so without this line the record of the

@@ -1,3 +1,4 @@
+import { expandSequenceFixture } from './eating-sequence-fixture.js';
 /* The findings queue's copy and row grammar (lock terms 34–45), against the real
  * projection's own frozen output — never a hand-written row.
  */
@@ -666,4 +667,26 @@ test('#395 · Pattern and Lever drills request event cases; chartless rows retai
   assert.equal(caseFileAlignment(lever), 'event');
   assert.equal(caseFileAlignment({ ...pattern, pattern_chart: null }), 'clock');
   assert.equal(caseFileAlignment(undefined), 'clock');
+});
+
+test('#342 · sequence habits reuse the inherited member grammar and count exclusions', () => {
+  const generated = expandSequenceFixture(JSON.parse(readFileSync(new URL(
+    '../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8')));
+  for (const name of ['high_carb_sequence_empty', 'repeat_eating_empty', 'both_covered']) {
+    const prepared = generated.states[name].windows.global.preparation;
+    const projection = { ...prepared.findings, rows: prepared.rendered_rows };
+    const painted = queueRows(projection);
+    const members = painted.filter((row) => row.raw.claimed_by === 'pattern:highs_after_meals');
+    assert.equal(members.length, name === 'both_covered' ? 2 : 1);
+    for (const row of members) {
+      assert.equal(row.rank, null);
+      assert.equal(row.caption, null);
+      assert.equal(row.seam, false);
+      assert.equal(row.stageable, false);
+      assert.equal(row.memberCount,
+        ` · ${row.raw.appearances[0].n} of ${row.raw.appearances[0].m} sequences`);
+      assert.equal(caseFileAlignment(row.raw), 'event');
+    }
+    assert.equal(queueMeta(projection), `${projection.counts.finding} findings · 30 days`);
+  }
 });

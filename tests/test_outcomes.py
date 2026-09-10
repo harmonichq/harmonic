@@ -370,3 +370,17 @@ class ApiRendererTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SequenceCleanRateExclusionTest(unittest.TestCase):
+    def test_sequence_winners_do_not_charge_exposure_accounts(self):
+        from tests.eating_sequence_streams import sequence_episode_stream
+        for lever in ("high_carb_sequence", "repeat_eating"):
+            b, c, log, basal = sequence_episode_stream(lever)
+            exposures, winners = tally_attributions(b, c, basal, carb_entries=log)
+            self.assertEqual(winners[Lever(lever)], 8)
+            rates = compute_clean_rates(exposures, winners)
+            legacy = compute_clean_rates(exposures, {key: value for key, value in winners.items()
+                                         if key.value not in ("high_carb_sequence", "repeat_eating")})
+            self.assertEqual(rates, legacy)
+            self.assertNotIn("sequences", {r.exposure for r in rates})

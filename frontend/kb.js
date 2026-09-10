@@ -73,6 +73,8 @@ export const NEXT_STEPS = [
    facsimile weights for the mini-render (not modeling output); flavor follows
    the authored copy. */
 export const LEVER_META = {
+  high_carb_sequence:                 { flavor: 'habit',   sev: .55, rec: .30, conf: .55 },
+  repeat_eating:                      { flavor: 'habit',   sev: .55, rec: .30, conf: .55 },
   carb_undercount:                    { flavor: 'setting', sev: .82, rec: .74, conf: .70 },
   late_bolus:                         { flavor: 'habit',   sev: .55, rec: .61, conf: .80 },
   meal_over_delivery:                 { flavor: 'setting', sev: .46, rec: .45, conf: .68 },

@@ -147,7 +147,8 @@ def _analyzer_prepared_meal_bolus_short():
     return prepared
 
 
-@pytest.mark.parametrize("lever", list(Lever))
+@pytest.mark.parametrize("lever", [lever for lever in Lever
+                                   if policy_for(lever).recurrence_noun != "sequences"])
 def test_all_eight_levers_publish_one_exact_case_file_population(lever):
     prepared = _prepared(lever)
     case = prepared.case(f"finding:{lever.value}", "event", None)
@@ -401,6 +402,8 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
 
 def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
     for lever in Lever:
+        if policy_for(lever).recurrence_noun == "sequences":
+            continue
         prepared = _prepared(lever)
         member = prepared.members[lever][0]
         case = prepared.case(f"finding:{lever.value}", "event", member.id)
@@ -781,3 +784,116 @@ def test_missed_meal_comparison_explicitly_serves_an_empty_attributed_cohort():
 
     assert case["projection"]["cohorts"][0]["routed_count"] == 0
     assert case["projection"]["counts"]["not_comparable"] == 1
+
+
+def test_pattern_member_associations_are_evidence_only():
+    lever = Lever.CARB_UNDERCOUNT
+    findings = _pattern_findings("highs_after_meals", [lever], k=0, n=1,
+                                 rate_levers=[lever])
+    source = {"t": "2026-08-01 12:30:00", "kind": "meal", "bg": 120,
+              "cause_lever": None, "attributed_levers": [], "verdicts": [],
+              "member_associations": ["habit:carb_undercount"]}
+    prepared = _prepared(lever, findings=findings,
+                         exposures={"exposures": {"meals": {"occurrences": [source]}}})
+    case = prepared.case("pattern:highs_after_meals", "clock", None)
+    assert case["summary"] == {"claimed": 0, "denominator": 1, "noun": "meals"}
+    assert case["occurrences"][0]["member"] == "clean"
+    assert case["occurrences"][0]["member_associations"] == ["habit:carb_undercount"]
+
+
+@pytest.mark.parametrize("lever", ["high_carb_sequence", "repeat_eating"])
+@pytest.mark.parametrize("covered", [False, True])
+def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, covered):
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    from ciq_autotune.analyzers.eating_sequences import build_eating_sequence_report, report_dict
+    projection, (bolus, cgm, _, _) = sequence_products(lever, covered=covered)
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        scenarios = build_scenarios(store, window_days=30).to_dict()
+        exposures = build_exposures(store, window_days=30)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=exposures, scenarios=scenarios, analysis_generation="sequence:0",
+        )
+        report = report_dict(build_eating_sequence_report(store, window_days=30))
+    body = wrap(prepared)
+    assert not any(r["finding_id"] == f"finding:{lever}" for r in body["withheld_findings"])
+    cause = prepared.case(f"finding:{lever}", "event", None)
+    assert cause["summary"]["claimed"] == 8
+    assert cause["summary"]["denominator"] == (40 if lever == "high_carb_sequence" else 16)
+    assert cause["analysis_generation"] == body["findings"]["analysis_generation"] == "sequence:0"
+    assert cause["projection"]["report"] == body["eating_sequence_report"] == report
+    assert cause["projection"]["kind"] == "eating-sequence"
+    selected_id = next(r["id"] for r in cause["occurrences"] if r["attributed"])
+    selected = prepared.case(f"finding:{lever}", "event", selected_id)
+    assert selected["selection"]["state"] == "selected"
+    assert selected["selection"]["detail"]["sequence"]["member_event_ids"]
+    assert selected["selection"]["detail"]["episodes"]
+    parent_row = next(r for r in body["rendered_rows"] if r["id"] == "pattern:highs_after_meals")
+    parent = prepared.case(parent_row["id"], "clock", None)
+    assert parent["summary"]["claimed"] == parent_row["pattern"]["k"]
+    assert parent["summary"]["denominator"] == parent_row["pattern"]["n"]
+    assert parent["population"] == "meals"
+    associated = [r for r in parent["occurrences"] if f"habit:{lever}" in r.get("member_associations", [])]
+    assert bool(associated) == covered
+    assert all(r["member"] != f"habit:{lever}" for r in parent["occurrences"])
+    assert len(parent["occurrences"]) == len(exposures["exposures"]["meals"]["occurrences"])
+
+
+def test_case_file_preserves_exposure_classifier_reach():
+    from unittest.mock import patch
+    from tests.test_eating_sequence_findings import _crossing_reach_stream
+    from tests.test_meal_bolus_short_attribution import _seed
+    from tests.test_outcomes_trend import _snapshot_with_ic
+    from ciq_autotune.explore_exposures import build_exposures
+    bolus, cgm, config = _crossing_reach_stream()
+    with Store.open(":memory:") as store:
+        _seed(store, bolus, cgm)
+        store.upsert_settings_snapshot(bolus[0].t.strftime("%Y-%m-%d %H:%M:%S"),
+                                       _snapshot_with_ic(40).settings)
+        with patch("ciq_autotune.explore_exposures.ScenarioConfig", return_value=config):
+            exposures = build_exposures(store)
+        with patch("ciq_autotune.finding_case_file.ScenarioConfig", return_value=config):
+            prepared = finding_case_file.prepare(
+                store, query=WindowQuery.whole_day(), version=0, analysis={},
+                exposures=exposures, scenarios={},
+            )
+    case = prepared.case("finding:carb_undercount", "event", None)
+    assert case["summary"]["claimed"] == 1
+    assert case["summary"]["denominator"] == 1
+    assert case["occurrences"][0]["verdict"] == "fired"
+
+
+@pytest.mark.parametrize("lever,meal_count", [("high_carb_sequence", 40), ("repeat_eating", 100)])
+def test_sequence_habit_preserves_clean_pattern_meal_verdicts(lever, meal_count):
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    projection, (bolus, cgm, _, _) = sequence_products(lever)
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0,
+            analysis=projection._analysis, exposures=projection._exposures,
+            scenarios=projection._scenarios,
+        )
+    cause = prepared.case(f"finding:{lever}", "event", None)
+    assert cause["summary"]["claimed"] == 8
+    case = prepared.case("pattern:highs_after_meals", "clock", None)
+
+    # Retain the same produced meal population, removing only the new habit
+    # from the transport roster to pin the pre-sequence Pattern verdicts.
+    baseline = deepcopy(prepared)
+    parent = next(row for row in baseline.findings["rows"]
+                  if row["id"] == "pattern:highs_after_meals")
+    parent["pattern"]["members"] = [member for member in parent["pattern"]["members"]
+                                     if member["subject"] != f"habit:{lever}"]
+    before = baseline.case("pattern:highs_after_meals", "clock", None)
+    assert before["verdict_counts"] == {
+        "fired": 0, "outranked": 0, "near_miss": 0, "no_data": 0, "clean": meal_count,
+    }
+    assert case["occurrences"][0]["verdict"] == "clean"
+    assert case["verdict_counts"] == before["verdict_counts"]
+    assert case["summary"] == before["summary"] == {
+        "claimed": 0, "denominator": meal_count, "noun": "meals",
+    }

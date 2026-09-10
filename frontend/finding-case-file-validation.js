@@ -69,6 +69,13 @@ export function validFindingCaseFile(caseFile) {
     || !occurrences.every((row) => recurrenceIdentity.test(row?.id || '')
       && typeof row.date === 'string' && FINDING_VERDICTS.includes(row.verdict)
       && validAnchor(row.anchor))) return false;
+  const patternId = caseFile.finding.id.startsWith('pattern:');
+  const patternCase = typeof caseFile.finding.subject === 'string';
+  if (patternId !== patternCase
+    || (patternCase && (caseFile.finding.subject !== caseFile.finding.id
+    || !caseFile.finding.subject.startsWith('pattern:')
+    || !occurrences.every((row) => row.member === 'clean'
+      || /^habit:[a-z0-9_]+$/.test(row.member))))) return false;
 
   const roster = new Map(occurrences.map((row) => [row.id, row]));
   if (roster.size !== occurrences.length) return false;
@@ -225,12 +232,23 @@ export function assertMatchingFindingCasePreparation(next, requested) {
   const validEventChart = (eventChart, lever, window) => eventChart === null
     || (typeof eventChart === 'object' && !Array.isArray(eventChart)
       && eventChart.lever === lever && sameWindow(eventChart.window, window));
-  const validHeader = (header, findingId, window) => header?.finding_id === findingId
-    && header.inspectability === 'ready'
-    && typeof header.lever === 'string' && typeof header.title === 'string'
-    && typeof header.family === 'string' && validSummary(header.summary)
-    && validCounts(header.verdict_counts, header.summary.denominator)
-    && validEventChart(header.event_chart, header.lever, window);
+  const validPatternChart = (chart, lever, window) => chart === null
+    || (typeof chart === 'object' && !Array.isArray(chart)
+      && chart.key === lever && sameWindow(chart.window, window));
+  const validHeader = (header, findingId, window) => {
+    const pattern = findingId.startsWith('pattern:');
+    return header?.finding_id === findingId
+      && header.inspectability === 'ready'
+      && typeof header.lever === 'string' && typeof header.title === 'string'
+      && typeof header.family === 'string' && validSummary(header.summary)
+      && validCounts(header.verdict_counts, header.summary.denominator)
+      && (pattern
+        ? header.event_chart == null
+          && Boolean(header.pattern_chart)
+          && validPatternChart(header.pattern_chart, header.lever, window)
+        : header.pattern_chart == null
+          && validEventChart(header.event_chart, header.lever, window));
+  };
   const sameHeader = (left, right) => left.finding_id === right.finding_id
     && left.inspectability === right.inspectability && left.lever === right.lever
     && left.title === right.title && left.family === right.family
@@ -238,12 +256,15 @@ export function assertMatchingFindingCasePreparation(next, requested) {
     && left.summary.denominator === right.summary.denominator
     && left.summary.noun === right.summary.noun
     && left.event_chart?.lever === right.event_chart?.lever
-    && sameWindow(left.event_chart?.window, right.event_chart?.window)
+    && left.pattern_chart?.key === right.pattern_chart?.key
+    && sameWindow((left.event_chart || left.pattern_chart)?.window,
+      (right.event_chart || right.pattern_chart)?.window)
     && FINDING_VERDICTS.every((key) => left.verdict_counts[key] === right.verdict_counts[key]);
   const renderedRows = next?.rendered_rows;
   const headers = next?.behavioral_case_headers;
   const readyFindingRows = Array.isArray(renderedRows)
-    && renderedRows.filter((row) => row?.register === 'finding');
+    && renderedRows.filter((row) => row?.register === 'finding'
+      && (row?.kind !== 'pattern' || row?.pattern_chart));
   const readyFindingIds = Array.isArray(readyFindingRows)
     ? new Set(readyFindingRows.map((row) => row.id)) : new Set();
   const validReadyRows = Array.isArray(readyFindingRows)
@@ -255,8 +276,11 @@ export function assertMatchingFindingCasePreparation(next, requested) {
       return validHeader(header, row.id, next.coordinates?.window)
         && validHeader(mapped, row.id, next.coordinates?.window)
         && sameHeader(header, mapped)
-        && row.event_chart?.lever === header.event_chart?.lever
-        && sameWindow(row.event_chart?.window, header.event_chart?.window);
+        && (header.pattern_chart
+          ? row.pattern_chart?.key === header.pattern_chart.key
+            && sameWindow(row.pattern_chart?.window, header.pattern_chart.window)
+          : row.event_chart?.lever === header.event_chart?.lever
+            && sameWindow(row.event_chart?.window, header.event_chart?.window));
   });
   if (next?.schema !== 'diagnose-finding-case-file-preparation-v1'
     || (next?.findings?.schema !== 'diagnose-findings-v1'

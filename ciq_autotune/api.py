@@ -473,6 +473,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
+            valid_findings |= findings_projection_module.PATTERN_SUBJECTS
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or ((finding is None) == (lever is None))
                     or (finding is not None and finding not in valid_findings)

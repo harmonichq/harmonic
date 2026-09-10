@@ -118,7 +118,10 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(payload["schema"], "diagnose-finding-case-file-preparation-v1")
         self.assertRegex(payload["projection_id"], r"^fp_[0-9a-f]{32}$")
         self.assertEqual(payload["coordinates"]["source_window_days"], 30)
-        self.assertEqual(payload["rendered_rows"], [])
+        self.assertEqual([row["kind"] for row in payload["rendered_rows"]],
+                         ["pattern"] * 5)
+        self.assertTrue(all(row["pattern_chart"] is None
+                            for row in payload["rendered_rows"]))
         self.assertEqual(set(payload), {"schema", "projection_id", "coordinates",
                                        "findings", "rendered_rows",
                                        "behavioral_case_headers", "withheld_findings"})
@@ -129,6 +132,50 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         })
         self.assertEqual(payload["findings"]["analysis_generation"], "case-http:0")
         self.assertIsNone(payload["findings"]["selection"])
+
+    def test_chartable_pattern_clock_case_reaches_the_public_route(self):
+        from ciq_autotune.finding_case_file import prepare as prepare_case_files
+        from ciq_autotune.window_membership import WindowQuery
+        from scripts.qa_e2e_cases import (
+            QA_CASES, execute_case, materialize_case,
+        )
+
+        qa_case = next(case for case in QA_CASES if case.name == "pattern-near-tie")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, qa_case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, qa_case)
+                prepared = prepare_case_files(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios, analysis_generation="qa-http:0",
+                )
+
+        retained, reason = self.app.state.result_cache.get_or_build_preparation(
+            ("pattern-clock",), lambda version: prepared,
+        )
+        self.assertIs(retained, prepared)
+        self.assertIsNone(reason)
+        chartable = next(row for row in prepared.findings["rows"]
+                         if row.get("kind") == "pattern" and row.get("pattern_chart"))
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id,
+            "finding_id": chartable["id"],
+            "alignment": "clock",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["projection"]["alignment"], "clock")
+
+        chartless = next(row for row in prepared.findings["rows"]
+                         if row.get("kind") == "pattern" and not row.get("pattern_chart"))
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id,
+            "finding_id": chartless["id"],
+            "alignment": "clock",
+        })
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"]["code"], "finding_unavailable")
 
     def test_preparation_forwards_history_selection_and_generation(self):
         sentinel = {

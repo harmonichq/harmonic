@@ -2721,6 +2721,7 @@
     "chips": [
       "lows"
     ],
+    "claimed_by": null,
     "current": null,
     "direction": "lower",
     "episodes": null,
@@ -2767,6 +2768,8 @@
     ],
     "parameter": "basal_rate",
     "past_setting": null,
+    "pattern": null,
+    "pattern_chart": null,
     "priority": 54,
     "programmed_now": null,
     "reason": null,

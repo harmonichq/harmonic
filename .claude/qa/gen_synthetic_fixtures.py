@@ -120,7 +120,9 @@ def occurrence(i, minute, lever, rng, matched=True):
     return {
         't': f'{date} {hhmm(minute)}:00', 'date': date, 'bg': entry, 'worst_bg': worst,
         'kind': 'low', 'label': 'Low', 'state': 'fired' if matched else 'no_data',
-        'attributed': matched, 'cause_lever': Lever(lever).value if matched else None,
+        'attributed': matched,
+        'attributed_levers': [Lever(lever).value] if matched else [],
+        'cause_lever': Lever(lever).value if matched else None,
         'cause_title': lever_title(Lever(lever)) if matched else None,
         'text': (f'Treated a low at {hhmm(minute)} and the glucose kept falling to {worst:.0f} '
                  'before it turned — the treatment was larger than the fall needed.')

@@ -375,8 +375,8 @@ _Avoid_: cause, factor, root cause, knob.
 Whether a lever's recommended fix is a **tuning** change (edit a pump-programmable
 value — basal rate, ISF, I:C, target) or a **behavioral** change (change a habit —
 pre-bolus timing, stop chasing highs with manual corrections, stop over-treating
-lows). Flavor follows the *fix the evidence supports*, not the detector or the
-parameter a finding surfaced under: "meals start high" surfaces under I:C yet is a
+lows; the rail's flavor chip reads **Cause**). Flavor follows the *fix the evidence
+supports*, not the detector or the parameter a finding surfaced under: "meals start high" surfaces under I:C yet is a
 behavioral lever (pre-bolus earlier), never a ratio edit. A tuning fix materialises
 in the Consolidated profile (a pump-ready number, backtestable); a behavioral fix
 has no pump artifact and is tracked over time by Clean rate.

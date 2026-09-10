@@ -8,6 +8,9 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from ciq_autotune.store import Store
+from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
+from ciq_autotune.findings_projection import prepare_findings_projection
+from ciq_autotune.window_membership import WindowQuery
 
 from scripts.qa_e2e_cases import (
     BASAL_SOURCE_SPAN_DAYS,
@@ -80,6 +83,55 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
+    def test_generator_owned_pattern_case_matches_the_served_roster_counts(self):
+        case = next(case for case in QA_CASES
+                    if case.name == "pattern-near-tie")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, case)
+                projection = prepare_findings_projection(
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios,
+                ).project(WindowQuery.whole_day(), analysis_generation="qa:0")
+                prepared = prepare_case_files(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios, analysis_generation="qa:0",
+                )
+
+            patterns = {row["key"]: row for row in projection["outcome_patterns"]}
+            self.assertEqual(set(patterns), {
+                "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+                "lows_after_correcting_highs", "overnight_lows_no_iob",
+            })
+            rendered_by_id = {row["id"]: row for row in wrap(prepared)["rendered_rows"]}
+            rows_by_id = {row["id"]: row for row in projection["rows"]}
+            for key, pattern in patterns.items():
+                with self.subTest(key=key):
+                    row = rows_by_id.get(pattern["subject"])
+                    if row is None or not row["pattern_chart"]:
+                        self.assertIsNone(prepared.case(pattern["subject"], "event", None))
+                        self.assertIsNone(prepared.case(pattern["subject"], "clock", None))
+                        continue
+                    case_file = prepared.case(pattern["subject"], "event", None)
+                    clock_case = prepared.case(pattern["subject"], "clock", None)
+                    self.assertEqual(
+                        (case_file["summary"]["denominator"],
+                         case_file["summary"]["claimed"],
+                         case_file["verdict_counts"]["fired"]),
+                        (pattern["n"], pattern["k"], pattern["k"]),
+                    )
+                    self.assertEqual(clock_case["projection"]["alignment"], "clock")
+                    self.assertEqual(clock_case["projection"]["clock"]["total"], pattern["k"])
+                    for field in ("finding", "family", "summary", "verdict_counts",
+                                  "occurrences"):
+                        self.assertEqual(clock_case[field], case_file[field])
+                    rendered = rendered_by_id[pattern["subject"]]
+                    self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
+                    self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
+
     def test_outcome_pattern_expectation_is_required(self):
         with self.assertRaises(TypeError):
             QaExpectation(

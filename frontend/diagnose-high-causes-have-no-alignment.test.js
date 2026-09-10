@@ -39,7 +39,7 @@ test('#83 · settings publish null and a High-family Missed meal publishes its c
       ep_id: 'missed-meal', verdicts: [],
     }] } } },
     scenarios: { patterns: [], low_confidence: [] },
-  }), null).rows[0];
+  }), null).rows.find((row) => row.id === 'finding:missed_meal');
   assert.deepEqual(missedMeal.event_chart, {
     lever: 'missed_meal',
     window: { scoped: false, start_min: null, end_min: null, label: null },
@@ -80,7 +80,7 @@ test('ADR 79 · roster controls consume the published cohort count', () => {
 });
 
 test('ADR 79 · every visible behavioral row requests its opaque case id', () => {
-  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = eventChartCoordinate\(row\) \? 'event' : 'clock'[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
+  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = caseFileAlignment\(row\)[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
     'the row identity and its server-published chart coordinate open the server case');
   assert.match(source, /function findingRowFor\(frame\) \{\s*if \(frame\.k !== 'factor'\) return null;\s*return \(findings\?\.rows \|\| \[\]\)\.find\(\(row\) => row\.id === frame\.rowId\) \|\| null;\s*\}/,
     'a standing case resolves its active Finding from the current projection');

@@ -1,0 +1,10 @@
+{"checkout":"/private/tmp/harmonic-341-base","source":"projection","size":"1440x900","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"projection","size":"2084x742","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"projection","size":"1024x768","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"projection","size":"760x900","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"projection","size":"390x844","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"qa-showcase","size":"1440x900","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"qa-showcase","size":"2084x742","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"qa-showcase","size":"1024x768","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"qa-showcase","size":"760x900","documentOverflowX":0}
+{"checkout":"/private/tmp/harmonic-341-base","source":"qa-showcase","size":"390x844","documentOverflowX":0}

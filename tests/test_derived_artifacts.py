@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import ciq_autotune.derived_artifacts as artifacts
 from ciq_autotune.derived_artifacts import load_latest_prior, load_or_compute, sidecar_path
+from ciq_autotune.findings_projection import WindowQuery, prepare_findings_projection
 from ciq_autotune.store import Store
 
 
@@ -32,6 +33,20 @@ class DerivedArtifactsTest(unittest.TestCase):
             store.upsert_cgm([{"EventDateTime": "2020-01-01 00:00:00", "Readings (CGM / BGM)": 100}])
         self.assertEqual(self.load(lambda store: calls.append(3) or {"value": 3}), {"value": 3})
         self.assertEqual(calls, [1, 3])
+
+    def test_findings_rebuild_recomputes_the_prepared_pattern_roster(self):
+        inputs = {
+            "analysis": {"window_days": 30},
+            "exposures": {"exposures": {}},
+            "scenarios": {"patterns": [], "low_confidence": []},
+        }
+        fresh = prepare_findings_projection(**inputs)
+        rebuilt = artifacts.rebuild_findings(artifacts.dump_findings(fresh))
+
+        self.assertEqual(
+            rebuilt.project(WindowQuery.whole_day())["outcome_patterns"],
+            fresh.project(WindowQuery.whole_day())["outcome_patterns"],
+        )
 
     def test_persists_snapshot_data_horizon_with_the_artifact(self):
         with Store.open(self.tmp.name) as store:
@@ -254,7 +269,7 @@ class DerivedArtifactsTest(unittest.TestCase):
 
     def test_layout_marker_change_misses(self):
         self.load(lambda store: {"first": True}, ("layout",))
-        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 4):
+        with patch.object(artifacts, "DERIVED_ARTIFACT_STORE_SCHEMA_VERSION", 5):
             self.assertEqual(self.load(lambda store: {"second": True}, ("layout",)),
                              {"second": True})
 

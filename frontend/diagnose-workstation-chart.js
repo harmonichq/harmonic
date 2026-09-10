@@ -70,6 +70,209 @@ export const hhmm = (mins) => {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 };
 
+/* Queue previews are evidence summaries, not scaled-down copies of the full
+   charts. Each family keeps only the marks that answer its first question:
+   departures from the programmed basal rate, dose against glucose response,
+   meal traces around their shared start, or cohort response around an event.
+   Every mark below is a served point or a reference rule; no fit, smoothing or
+   replacement value is derived here. */
+const previewBase = (description) => ({
+  animation: false,
+  backgroundColor: 'transparent',
+  aria: { enabled: true, decal: { show: false }, description },
+  tooltip: { show: false },
+  grid: { left: 8, right: 8, top: 20, bottom: 10, containLabel: false },
+});
+const previewAxis = (type, extra = {}) => ({
+  type, show: false, axisLine: { show: false }, axisTick: { show: false },
+  axisLabel: { show: false }, splitLine: { show: false }, ...extra,
+});
+const previewText = (text, left, color, extra = {}) => ({
+  type: 'text', left, top: 5, silent: true,
+  style: { text, fill: color, font: '600 9px Inter, system-ui, sans-serif', ...extra },
+});
+const previewRange = (range, values) => {
+  if (Array.isArray(range) && range.length === 2 && range.every(Number.isFinite)
+      && range[0] < range[1]) return range;
+  const finite = values.filter(Number.isFinite);
+  if (!finite.length) return [0, 1];
+  const lo = Math.min(...finite); const hi = Math.max(...finite);
+  return lo === hi ? [lo - 1, hi + 1] : [lo, hi];
+};
+const previewBands = (points) => {
+  const bands = [];
+  let band = [];
+  for (const point of points) {
+    if (point.support !== 'withheld'
+        && [point.minute, point.p25, point.p75].every(Number.isFinite)) {
+      band.push(point);
+    } else if (band.length) {
+      bands.push(band);
+      band = [];
+    }
+  }
+  if (band.length) bands.push(band);
+  return bands;
+};
+
+export function queuePreviewOption(descriptor, range, colors) {
+  const data = descriptor?.data || {};
+  const ink = colors || {};
+  const text = ink.text || '#f2ede2';
+  const muted = ink.muted || '#a49c90';
+  const line = ink.line || '#3f3833';
+  const signal = ink.signal || '#86ad78';
+  const high = ink.high || '#e2be4c';
+  const basal = ink.basal || '#a89a85';
+  const excluded = ink.excluded || '#8d8579';
+
+  if (descriptor.kind === 'basal') {
+    const nights = (data.nights || []).filter((night) =>
+      Number.isFinite(night.delivered_rate) && Number.isFinite(night.programmed_rate));
+    const delta = (night) => night.delivered_rate - night.programmed_rate;
+    const extent = Math.max(.05, ...nights.map((night) => Math.abs(delta(night))));
+    return {
+      ...previewBase(`${nights.length} served nights shown as departures from each night's programmed basal rate.`),
+      grid: { left: 8, right: 8, top: 22, bottom: 8 },
+      xAxis: previewAxis('value', { min: -extent, max: extent }),
+      yAxis: previewAxis('value', { min: 0, max: Math.max(1, nights.length), inverse: true }),
+      graphic: [previewText('LESS', 8, muted), previewText('PROGRAMMED', 'center', text,
+        { align: 'center' }), previewText('MORE', 'right', high, { align: 'right' })],
+      series: [
+        { id: 'queue:basal:departures', type: 'custom', animation: false,
+          data: nights.map((night, index) => [delta(night), index + .5]),
+          renderItem: (params, api) => {
+            const night = nights[params.dataIndex];
+            const zero = api.coord([0, api.value(1)]); const end = api.coord([api.value(0), api.value(1)]);
+            const height = Math.max(2, Math.min(5, params.coordSys.height / Math.max(nights.length, 1) - 1));
+            const served = night.sign === 1 ? high : night.sign === -1 ? basal : text;
+            return { type: 'rect', shape: { x: Math.min(zero[0], end[0]), y: zero[1] - height / 2,
+              width: Math.max(2, Math.abs(end[0] - zero[0])), height },
+            style: { fill: served, opacity: night.sign == null ? .72 : .88 } };
+          } },
+        { id: 'queue:basal:programmed', type: 'custom', animation: false, silent: true,
+          data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect',
+            shape: { x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+              width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .72 } }) },
+      ],
+    };
+  }
+
+  if (descriptor.kind === 'isf') {
+    const steps = (data.steps || []).filter((step) =>
+      Number.isFinite(step.insulin_acted) && Number.isFinite(step.dbg));
+    const xs = previewRange(null, steps.map((step) => step.insulin_acted));
+    const ys = previewRange(null, [...steps.map((step) => step.dbg), 0]);
+    return {
+      ...previewBase(`${steps.length} served correction steps plotted as insulin acted against glucose change.`),
+      xAxis: previewAxis('value', { min: Math.min(0, xs[0]), max: xs[1] }),
+      yAxis: previewAxis('value', { min: ys[0], max: ys[1] }),
+      graphic: [previewText('GLUCOSE CHANGE', 8, muted), previewText('DOSE ACTED →', 'right', text,
+        { align: 'right' })],
+      series: [
+        { id: 'queue:isf:steps', type: 'scatter', symbol: 'circle', symbolSize: 5,
+          data: steps.map((step) => [step.insulin_acted, step.dbg]),
+          itemStyle: { color: signal, opacity: .68 }, emphasis: { disabled: true } },
+        { id: 'queue:isf:zero', type: 'custom', animation: false, silent: true, data: [[0, 0]],
+          renderItem: (params, api) => ({ type: 'rect', shape: {
+            x: params.coordSys.x, y: api.coord([0, 0])[1] - .5,
+            width: params.coordSys.width, height: 1 }, style: { fill: line, opacity: .9 } }) },
+      ],
+    };
+  }
+
+  if (descriptor.kind === 'carb-ratio') {
+    const runs = new Map((data.runs || []).map((run) => [run.run_id, run]));
+    const traces = (data.series || []).map((series) => ({ ...series,
+      points: series.points || [] }));
+    const x = previewRange(null, traces.flatMap((trace) => trace.points
+      .map((point) => point.minute)));
+    const y = previewRange(range, traces.flatMap((trace) => trace.points
+      .map((point) => point.bg)));
+    return {
+      ...previewBase(`${traces.length} served meal traces shown around the first meal.`),
+      xAxis: previewAxis('value', { min: x[0], max: x[1] }),
+      yAxis: previewAxis('value', { min: y[0], max: y[1] }),
+      graphic: [previewText('MEAL · RESPONSE', 'center', text, { align: 'center' })],
+      series: [
+        { id: 'queue:ic:target', type: 'line', data: [], silent: true,
+          markArea: { silent: true, itemStyle: { color: signal, opacity: .055 },
+            data: [[{ yAxis: 70 }, { yAxis: 180 }]] } },
+        ...traces.map((trace) => {
+          const supported = Boolean(runs.get(trace.run_id)?.in_pool);
+          return { id: `queue:ic:run:${trace.run_id}`, type: 'line', symbol: 'circle',
+            symbolSize: 3.5, showSymbol: true, connectNulls: false, animation: false,
+            data: trace.points.map((point) => [
+              Number.isFinite(point.minute) ? point.minute : null,
+              Number.isFinite(point.minute) && Number.isFinite(point.bg) ? point.bg : null,
+            ]),
+            lineStyle: { color: supported ? signal : excluded, width: supported ? 1.6 : 1,
+              opacity: supported ? .64 : .34, type: supported ? 'solid' : 'dashed' },
+            itemStyle: { color: supported ? signal : excluded,
+              opacity: supported ? .8 : .5 } };
+        }),
+        { id: 'queue:ic:meal-anchor', type: 'custom', animation: false, silent: true,
+          data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
+            x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+            width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .65 } }) },
+      ],
+    };
+  }
+
+  const projection = data.projection || {};
+  const cohorts = (projection.cohorts || []).map((cohort) => ({ ...cohort,
+    points: cohort.points || [] }))
+    .filter((cohort) => cohort.points.some((point) => point.support !== 'withheld'
+      && Number.isFinite(point.minute) && Number.isFinite(point.median)));
+  const y = previewRange(range, cohorts.flatMap((cohort) =>
+    cohort.points.filter((point) => point.support !== 'withheld')
+      .flatMap((point) => [point.p25, point.median, point.p75])));
+  const styles = ['solid', 'dashed', 'dotted'];
+  const series = [];
+  cohorts.forEach((cohort, index) => {
+    const color = ink.cohorts?.[cohort.key] || [signal, high, excluded][index % 3];
+    previewBands(cohort.points).forEach((band, bandIndex) => {
+      const quantiles = band.map((point) => [point.minute, point.p25, point.p75]);
+      series.push({ id: `queue:event:${cohort.key}:band:${bandIndex}`, type: 'custom',
+        animation: false, silent: true, data: [[bandIndex]], quantiles,
+        renderItem: (_params, api) => {
+          const upper = quantiles.map(([minute, , p75]) => api.coord([minute, p75]));
+          const lower = quantiles.toReversed()
+            .map(([minute, p25]) => api.coord([minute, p25]));
+          if (quantiles.length === 1) {
+            return { type: 'line', shape: { x1: upper[0][0], y1: upper[0][1],
+              x2: lower[0][0], y2: lower[0][1] },
+            style: { stroke: color, lineWidth: 3, opacity: .22 } };
+          }
+          return { type: 'polygon', shape: { points: [...upper, ...lower] },
+            style: { fill: color, opacity: .16 } };
+        } });
+    });
+    series.push({ id: `queue:event:${cohort.key}:median`, type: 'line', symbol: 'circle',
+      symbolSize: index === 0 ? 4 : 3.5, showSymbol: true,
+      connectNulls: false, data: cohort.points.map((point) => [
+        Number.isFinite(point.minute) ? point.minute : null,
+        point.support !== 'withheld' && Number.isFinite(point.minute)
+          && Number.isFinite(point.median) ? point.median : null,
+      ]),
+      lineStyle: { color, width: index === 0 ? 2.4 : 1.8, opacity: index === 0 ? .92 : .78,
+        type: styles[index % styles.length] },
+      itemStyle: { color, opacity: index === 0 ? .95 : .82 } });
+  });
+  return {
+    ...previewBase(`${cohorts.length} served response cohorts compared around the event.`),
+    xAxis: previewAxis('value', { min: projection.window_min?.[0] ?? -60,
+      max: projection.window_min?.[1] ?? 180 }),
+    yAxis: previewAxis('value', { min: y[0], max: y[1] }),
+    graphic: [previewText('EVENT · RESPONSE', 'center', text, { align: 'center' })],
+    series: [...series,
+      { id: 'queue:event:event-anchor', type: 'custom', animation: false, silent: true,
+        data: [[0, 0]], renderItem: (params, api) => ({ type: 'rect', shape: {
+          x: api.coord([0, 0])[0] - .5, y: params.coordSys.y,
+          width: 1, height: params.coordSys.height }, style: { fill: text, opacity: .55 } }) }],
+  };
+}
+
 /**
  * Name a committed circular window, start to end. A window that ENDS on the day
  * boundary names that instant 24:00, matching the preset grammar
@@ -232,9 +435,6 @@ export function plotBox(el) {
 }
 
 const CAT_MAX = BIN_COUNT - 1; // 95 — the last category, 23:45
-
-/* The window label owns a reserved band at the top of the plot. */
-const LABEL_Y = 296;
 
 /**
  * Rough px width of a label. There is no measuring context here (the label is
@@ -669,6 +869,34 @@ export function renderCanvas(el, echarts, opts) {
     sp: { color: colors.muted, fontSize: 9.5, fontWeight: 500, letterSpacing: 0 },
     th: { color: colors.warn || colors.danger, fontSize: 9.5, fontWeight: 700, letterSpacing: 0 },
   };
+
+  /* ---- target caption: fit it above, or drop it below the gates ------------
+     Same fit-or-move act as the window label, for the third thing that crosses
+     the target caption: the drawn window's own gates (#370). Where a gate
+     lands is asked of `xAtMinute` against the window the brace itself draws
+     from, so the two cannot disagree; the caption is anchored to the plot's
+     left edge, so only a gate INSIDE its glyph run hides a character — a gate
+     on the plot's edge merely sits on the pad. The escape is DOWNWARD, never
+     sideways: on an ordinary daytime window at the narrow widths the gates
+     leave no horizontal slot wide enough for the caption, while the grips are
+     pinned to a band at the plot's ceiling at every width, so the band's floor
+     always clears them. */
+  const captionText = `TARGET ${target[0]}–${target[1]} mg/dL`;
+  const CAPTION_PAD_X = 5;   // the caption's own padding, [2, 5]
+  const GRIP_HALF = 4;       // .brace .grip is 7px wide, pulled left by 4
+  const glyphLeft = labelBox.left + CAPTION_PAD_X;
+  const glyphRight = glyphLeft + estimateTextPx(captionText, 10);
+  const captionStruck = hasWindow
+    && (opts.displayWindow || [winStart, winEnd])
+      .map((minute) => xAtMinute(el, minute, displayOffset))
+      .some((x) => x + GRIP_HALF > glyphLeft && x - GRIP_HALF < glyphRight);
+  /* Anchored to the band's FLOOR rather than its ceiling, which lands the box
+     below the grip band without reading a plot height this module has never
+     read. Distance 0 keeps it flush to the plot's left edge, exactly as the
+     shipped placement is flush to the band's ceiling. */
+  const captionPlacement = captionStruck
+    ? { position: 'insideBottomLeft', distance: 0 }
+    : { position: 'insideStartTop', distance: 10 };
   const windowAreas = binSpans.map(([start, end], index) => [
     {
       xAxis: panning ? String(start) : envelope.labels[start],
@@ -820,17 +1048,23 @@ export function renderCanvas(el, echarts, opts) {
             [
               {
                 yAxis: target[0], itemStyle: { color: colors.targetFill },
-                /* A label must never be struck by linework. Two things crossed
-                   this one: the dashed 180 rule it was sitting on, and the
-                   3-hourly vertical gridlines. It now clears the rule (distance
-                   10 drops it into the band's own clear space) AND carries an
-                   opaque pad in the panel's ground colour, so gridlines and
-                   dashes visibly break behind the text. The pad reads the
-                   ground token, so it follows the panel wherever it moves. */
+                /* A label must never be struck by linework. THREE things cross
+                   this one, and the pad answers only two of them: the dashed
+                   180 rule it sits on and the 3-hourly vertical gridlines are
+                   drawn into this canvas, so an opaque pad in the panel's
+                   ground colour visibly breaks them behind the text (and it
+                   reads the ground token, so it follows the panel wherever it
+                   moves). The third is the drawn window's brace — a DOM
+                   overlay painted ABOVE the canvas, which no `z` in this
+                   option can reach (#370). So the caption clears that one by
+                   moving instead: down to the band's floor, below the grip
+                   band, whenever a gate lands in its glyph run. Downward, not
+                   sideways, because the grips are height-pinned at every width
+                   while the horizontal slot between two gates can vanish. */
                 label: {
-                  show: true, position: 'insideStartTop', distance: 10,
+                  show: true, ...captionPlacement,
                   color: colors.targetText, fontSize: 10, fontWeight: 600,
-                  formatter: `TARGET ${target[0]}–${target[1]} mg/dL`,
+                  formatter: captionText,
                   backgroundColor: colors.rail, padding: [2, 5], borderRadius: 2,
                 },
               },
@@ -839,23 +1073,32 @@ export function renderCanvas(el, echarts, opts) {
             ...windowAreas,
           ],
         },
-        // the label, when it did not fit inside: parked in the margin beside the
-        // window, on the same band, clear of both dashed edges
+        /* the label, when it did not fit inside: parked in the margin beside
+           the window, on the same band, clear of both dashed edges. Its
+           reserved band is the ruler's OWN CEILING (#366) — `range[1]`, the
+           axis maximum set just above — because the strip's field range is
+           derived from the pooled envelope and moves with the data, so a
+           reserved band stated as a glucose constant lands off the plot on
+           every ruler shorter than it and ECharts paints nothing. The parked
+           label's `position` centres its text on that anchor, so it also takes
+           the inside placement's own distance downward to hang under the
+           ceiling rather than straddle it. */
         markPoint: hasWindow && (!labelInside || wrapped) ? {
           silent: true, symbol: 'circle', symbolSize: 0, z: 10,
           data: [
             ...(!labelInside ? [{
               coord: [panning ? String(labelSide === 'right' ? endIndex : startIndex)
-                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], LABEL_Y],
+                : envelope.labels[labelSide === 'right' ? endIndex : startIndex], range[1]],
               label: {
                 show: true, position: labelSide, distance: 6,
+                verticalAlign: 'top', offset: [0, 5],
                 formatter: labelText, rich: labelRich,
                 align: labelSide === 'right' ? 'left' : 'right',
                 color: colors.windowEdge, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
               },
             }] : []),
             ...(wrapped ? [{
-              coord: [envelope.labels[binSpans[1][1]], LABEL_Y],
+              coord: [envelope.labels[binSpans[1][1]], range[1]],
               label: {
                 show: true, position: 'insideTop', distance: 5,
                 formatter: 'CONTINUES', color: colors.muted, fontSize: 9, fontWeight: 600,

@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 
 const fixture = JSON.parse(readFileSync(
   fileURLToPath(new URL('./__fixtures__/findings-projection.json', import.meta.url)), 'utf8'));
@@ -30,7 +31,7 @@ test('#83 · settings publish null and a High-family Missed meal publishes its c
   assert.ok(settings.every((row) => Object.hasOwn(row, 'event_chart')));
   assert.ok(settings.every((row) => row.event_chart === null));
 
-  const missedMeal = projectFindings({
+  const missedMeal = projectFindings(populateFindingsProjectionInput({
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { exposures: { highs: { occurrences: [{
       t: '2026-08-17 09:00:00', date: '2026-08-17', kind: 'high',
@@ -38,7 +39,7 @@ test('#83 · settings publish null and a High-family Missed meal publishes its c
       ep_id: 'missed-meal', verdicts: [],
     }] } } },
     scenarios: { patterns: [], low_confidence: [] },
-  }, null).rows[0];
+  }), null).rows.find((row) => row.id === 'finding:missed_meal');
   assert.deepEqual(missedMeal.event_chart, {
     lever: 'missed_meal',
     window: { scoped: false, start_min: null, end_min: null, label: null },
@@ -46,7 +47,7 @@ test('#83 · settings publish null and a High-family Missed meal publishes its c
 });
 
 test('#83 · compatibility without the canonical family publishes null', () => {
-  const highOnly = projectFindings({
+  const highOnly = projectFindings(populateFindingsProjectionInput({
     analysis: { window_days: 30, basal: [], isf: [], ic_blocks: [] },
     exposures: { exposures: { highs: { occurrences: [{
       t: '2026-08-17 09:00:00', date: '2026-08-17', kind: 'high',
@@ -54,7 +55,7 @@ test('#83 · compatibility without the canonical family publishes null', () => {
       ep_id: 'late-bolus-high-only', verdicts: [],
     }] } } },
     scenarios: { patterns: [], low_confidence: [] },
-  }, null).rows[0];
+  }), null).rows[0];
   assert.equal(highOnly.event_chart, null);
 });
 
@@ -79,7 +80,7 @@ test('ADR 79 · roster controls consume the published cohort count', () => {
 });
 
 test('ADR 79 · every visible behavioral row requests its opaque case id', () => {
-  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = eventChartCoordinate\(row\) \? 'event' : 'clock'[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
+  assert.match(source, /if \(row\.register === 'finding'\)[\s\S]*entryAlignment = caseFileAlignment\(row\)[\s\S]*rowId: row\.id[\s\S]*requestCase\(frame, entryAlignment\)/,
     'the row identity and its server-published chart coordinate open the server case');
   assert.match(source, /function findingRowFor\(frame\) \{\s*if \(frame\.k !== 'factor'\) return null;\s*return \(findings\?\.rows \|\| \[\]\)\.find\(\(row\) => row\.id === frame\.rowId\) \|\| null;\s*\}/,
     'a standing case resolves its active Finding from the current projection');

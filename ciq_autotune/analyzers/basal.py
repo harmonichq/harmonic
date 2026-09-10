@@ -33,6 +33,7 @@ from ..result import (
     ProfileSegment,
     SegmentEstimate,
     SlotEstimate,
+    plan_value,
 )
 from ..safety import (
     _MIN_DIRECTIONAL_DAYS,
@@ -532,6 +533,11 @@ def analyze_basal(
             # midnight) so the unified drill-down (#20) can jump straight to the
             # moment in the Daily report, same as basal/ISF/I:C now all support.
             for (d, _), r in zip(days_sorted, per_day)]}
+        if harm_config is not None:
+            # The overnight Pattern denominator is an observed population, so it
+            # remains published even where this slot printed no low and therefore
+            # has no row-level harm verdict.
+            evidence["harm_band_source_nights"] = harm.harm_band_source_nights
         roster = []
         for (d, _), rate in zip(days_sorted, per_day):
             roster.append({
@@ -576,6 +582,27 @@ def analyze_basal(
             evidence["onesided"] = verdict
         if harm_verdict is not None:
             evidence["harm"] = harm_verdict
+        direction = None
+        if status.actionable:
+            direction = "raise" if recommended > current else "lower"
+        guidance = {
+            "action": (
+                {
+                    "kind": "setting_instruction",
+                    "parameter": "basal_rate",
+                    "start_min": s * cfg.slot_minutes,
+                    "end_min": (s + 1) * cfg.slot_minutes,
+                    "direction": direction,
+                    "units": "U/h",
+                    "recommended": plan_value(recommended, "basal_rate"),
+                }
+                if direction is not None and recommended is not None else None
+            ),
+            "seriousness": (
+                "recurring_low"
+                if harm_verdict is not None and harm_verdict["nudged"] else None
+            ),
+        }
         out.append(SlotEstimate(
             slot=s,
             label=_slot_label(s, cfg.slot_minutes),
@@ -586,6 +613,7 @@ def analyze_basal(
             days=len(per_day),
             evidence=evidence,
             status=status,
+            guidance=guidance,
         ))
     return out
 

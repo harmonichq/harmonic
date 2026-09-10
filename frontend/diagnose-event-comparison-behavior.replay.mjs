@@ -8,18 +8,16 @@
 // a stale capture stamp.
 import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
-import { extname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const SYNTHETIC = join(ROOT, 'mockups/diagnose-event-comparison.synthetic/capture.json');
 const BASE_PAYLOAD = join(ROOT, 'mockups/diagnose-workstation.synthetic/payload.json');
-const MIME = {
-  '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
-  '.html': 'text/html', '.json': 'application/json', '.svg': 'image/svg+xml',
-};
 /* #181/#135 — the standalone lens route and global ALIGN control are retired.
    Every event comparison in this ledger is now reached the way a reader reaches
    it: open the unscoped queue, drill a Finding, then open its row-derived
@@ -44,12 +42,8 @@ function playwright() {
   return require(process.env.PLAYWRIGHT_MODULE
     ?? fail('PLAYWRIGHT_MODULE is required — this replay never skips'));
 }
-async function vendored(name) {
-  const dir = process.env.VENDOR_DIR
-    ?? fail('VENDOR_DIR is required (echarts.min.js, vue.esm-browser.js)');
-  return readFile(join(dir, name));
-}
 export async function openApp(browser, options = {}) {
+  const shell = createBuiltShell();
   const viewport = options.viewport || { width: 1280, height: 720 };
   const page = await browser.newPage({ viewport });
   const servedByFinding = new Map();
@@ -85,7 +79,9 @@ export async function openApp(browser, options = {}) {
        takes the whole loader into `setError` and this surface never mounts — so it
        is answered from the same fixture-only mirror the workstation gates use. */
     [apiPattern('/diagnose/findings'), (url) => projectFindings(
-      { analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios },
+      populateFindingsProjectionInput({
+        analysis: payload.analyze, exposures: payload.exposures, scenarios: payload.scenarios,
+      }),
       url.searchParams.get('start_min') === null ? null : {
         start_min: Number(url.searchParams.get('start_min')),
         end_min: Number(url.searchParams.get('end_min')),
@@ -118,23 +114,8 @@ export async function openApp(browser, options = {}) {
     const url = new URL(route.request().url());
     const path = url.pathname;
     if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-    if (url.href.includes('echarts')) {
-      return route.fulfill({ body: await vendored('echarts.min.js'), contentType: 'text/javascript' });
-    }
-    if (url.href.includes('vue')) {
-      return route.fulfill({ body: await vendored('vue.esm-browser.js'), contentType: 'text/javascript' });
-    }
-    if (path === '/' || path === '/diagnose') {
-      return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-    }
-    if (/\.(js|css|svg|html)$/.test(path)) {
-      try {
-        return route.fulfill({
-          body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))),
-          contentType: MIME[extname(path)] || 'text/plain',
-        });
-      } catch { /* named API stubs below */ }
-    }
+    const response = shell.serve(path);
+    if (response) return route.fulfill(response);
     for (const [pattern, body] of stubs) {
       if (pattern.test(path)) {
         return route.fulfill({ body: JSON.stringify(body(url)), contentType: 'application/json' });
@@ -174,27 +155,27 @@ export async function openApp(browser, options = {}) {
     `${findingTileSelector(findingId)}[data-state="ok"]:visible`,
     { timeout: 15000 },
   );
-  /* Mini-owned proofs restore the dock explicitly. Readiness above cannot ask
-     the dock: the Finding may already own the spotlight while the dock is away. */
-  const dockMini = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
-  if (!(await dockMini.isVisible())) {
-    await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
-    await page.waitForSelector('#tile-field[data-dock="docked"]', { timeout: 15000 });
+  /* Catalog-owned proofs open All charts explicitly. Readiness above cannot
+     ask the catalog: the Finding may already own the spotlight while it is closed. */
+  const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${findingId}"]`);
+  if (!(await catalogChart.isVisible())) {
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.waitForSelector('#tile-field[data-explorer]', { timeout: 15000 });
   }
   try {
-    await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
-    /* A freshly raised strip mounts its minis' charts a paint after the
+    await catalogChart.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
+    /* A freshly opened catalog mounts its charts a paint after the
        canvas appears; read the option only once the instance exists. */
     await page.waitForFunction((id) => {
       const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
       return Boolean(host && window.echarts.getInstanceByDom(host));
     }, findingId, { timeout: 15000 });
-    /* The raise repaints the strip once more after the instance first appears;
+    /* Opening repaints the catalog once more after the instance first appears;
        settle so the snapshot below reads the surviving instance, not one the
        repaint disposed. */
     await settle(page, 700);
   } catch {
-    const boxes = await dockMini.evaluate((element) => Object.fromEntries(
+    const boxes = await catalogChart.evaluate((element) => Object.fromEntries(
       [['tile', element], ['body', element.querySelector('.tile-body')],
         ['host', element.querySelector('.tile-chart')],
         ['canvas', element.querySelector('.tile-chart canvas')]]
@@ -205,39 +186,33 @@ export async function openApp(browser, options = {}) {
     ));
     fail(`${findingId} did not visibly render its successor tile canvas: ${JSON.stringify(boxes)}`);
   }
-  page.__dockMiniComparison = await dockMiniRendered(page, findingId);
+  page.__catalogChartComparison = await catalogChartRendered(page, findingId);
+  /* The standalone support audit is a consumer of this opener and retains its
+     historical property name. Feed it the same successor catalog snapshot;
+     this is an adapter alias, not a resurrected dock surface. */
+  page.__dockMiniComparison = page.__catalogChartComparison;
   /* Promote the cell, then expand from the stage — a cell's only verb is
      "become the spotlight" (ADR 215 amendment). */
-  await dockMini.click();
-  /* Opening the explorer can leave the dock raised over the spotlight. Settle
-     it through the reader's own dock control before asking the stage to act. */
-  if (await page.locator('#tile-field[data-raised]').count()) {
-    await page.locator('#dock-handle button[aria-label="Put the charts away"]').click();
-    await page.waitForSelector('#tile-field[data-dock="hidden"]', { timeout: 15000 });
+  await catalogChart.click();
+  await page.waitForSelector('#tile-field:not([data-explorer])', { timeout: 15000 });
+  if (options.selectCohort) {
+    /* Selection belongs to the visible case roster. Fullscreen deliberately
+       hides the inspector, so make the reader's selection before expanding
+       the already-promoted Spotlight. */
+    await page.locator(`#level [data-comparison-cohort="${options.selectCohort}"]:visible`).first().click();
+    await page.waitForSelector('#level .case-facts', { timeout: 15000 });
+    await settle(page, 500);
+    page.__selectedComparison = servedByFinding.get(findingId);
   }
   await page.locator('#tile-focal .tile-fullscreen').click();
   await page.waitForSelector('#tile-focal #ec-chart', { state: 'attached', timeout: 15000 });
   await settle(page, 700);
   if (options.selectCohort) {
-    await page.locator(`#tile-focal .evidence-tile[data-chart-id="${findingId}"] .tile-body`).click();
-    await page.locator(`[data-comparison-cohort="${options.selectCohort}"]`).first().click();
-    await page.waitForSelector('#level .case-facts', { timeout: 15000 });
-    await settle(page, 500);
-    page.__selectedComparison = servedByFinding.get(findingId);
     page.__spotlightComparison = await spotlightRendered(page, findingId);
-    await page.locator('#dock-headacts button[aria-label="Back to the dock"]').click();
-    /* The cell pick put the drawer away (ADR 306); Back lands on that state,
-       so the mini is read after bringing the strip up again. */
-    if (!(await dockMini.isVisible())) {
-      await page.locator('#dock-handle button[aria-label="Bring the charts up"]').click();
-    }
-    await dockMini.locator('.tile-chart canvas').waitFor({ state: 'visible', timeout: 15000 });
-    await page.waitForFunction((id) => {
-      const host = document.querySelector(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
-      return Boolean(host && window.echarts.getInstanceByDom(host));
-    }, findingId, { timeout: 15000 });
-    await settle(page, 700);
-    page.__dockMiniComparison = await dockMiniRendered(page, findingId);
+    await page.locator('#chart-headacts button[aria-label="Close"]').click();
+    /* Close restores the selected Spotlight. The catalog snapshot was taken
+       before selection and is intentionally static, so reopening All charts
+       here would only hide the live drilled provenance this story also reads. */
   }
   return page;
 }
@@ -247,10 +222,10 @@ async function use(open, browser, options, fn) {
   try { await fn(page); } finally { await page.close(); }
 }
 
-/* The dock mini is the successor's front door. Read its own ECharts instance
+/* The catalog chart is the successor's front door. Read its own ECharts instance
    before fullscreen replaces it; fullscreen remains an additional view for
    its title, accessible legend and keyboard semantics. */
-const dockMiniRendered = (page, findingId) => page.locator(
+const catalogChartRendered = (page, findingId) => page.locator(
   `#tile-row .evidence-tile[data-chart-id="${findingId}"]`,
 ).evaluate((tile) => {
   const host = tile.querySelector('.tile-chart');
@@ -297,25 +272,25 @@ const spotlightRendered = (page, findingId) => page.evaluate((id) => {
 }, findingId);
 
 /* Membership, counts and grades are server-owned, so compare the served case
-   file with what the dock mini drew. Selection is spotlight-only, so read its
+   file with what the catalog chart drew. Selection is spotlight-only, so read its
    trace from the spotlight rather than pretending the mini owns it. */
 const rendered = async (page) => {
-  const dockMini = page.__dockMiniComparison;
+  const catalogChart = page.__catalogChartComparison;
   const served = page.__selectedComparison
     || page.__comparisonServedByFinding.get(page.__comparisonFindingId);
-  ok(dockMini?.visible && dockMini.chartId === page.__comparisonFindingId,
-    `the dock mini did not expose its own ECharts option: ${JSON.stringify(dockMini)}`);
-  const ids = dockMini.ids;
+  ok(catalogChart?.visible && catalogChart.chartId === page.__comparisonFindingId,
+    `the catalog chart did not expose its own ECharts option: ${JSON.stringify(catalogChart)}`);
+  const ids = catalogChart.ids;
   const { projection } = served;
   const spotlight = page.__spotlightComparison || await spotlightRendered(page, page.__comparisonFindingId);
   return {
-    dockMini,
+    catalogChart,
     spotlight,
     schema: served.schema,
     alignment: projection.alignment,
     anchor: projection.anchor,
     window: projection.window_min,
-    axis: dockMini.axis,
+    axis: catalogChart.axis,
     comparison: projection.comparison,
     counts: projection.counts,
     cohorts: projection.cohorts.map((cohort) => ({
@@ -544,7 +519,7 @@ export const S9 = async (open, browser) => {
       const state = await rendered(statePage);
       ok(await visibleFindingTile(statePage, finding).isVisible(),
         `${finding} did not keep its comparison tile visible`);
-      ok(state.dockMini.visible && state.dockMini.ids.length > 0,
+      ok(state.catalogChart.visible && state.catalogChart.ids.length > 0,
         `${finding} mounted no populated dock-mini comparison canvas`);
       ok(await statePage.locator('#tile-focal #ec-chart canvas').count() > 0,
         `${finding} mounted no additional fullscreen comparison canvas`);
@@ -605,8 +580,8 @@ export const S11 = async (open, browser) => use(open, browser, {
     && !series.id.startsWith('matched:'));
   ok(otherLines.length > 0 && otherLines.every((series) => selected.opacity > series.opacity),
     `the selected trace is not stronger than the other spotlight lines: selected=${selected.opacity}, others=${otherLines.map((series) => series.opacity)}`);
-  ok(!state.dockMini.ids.includes('selected:trace'),
-    `the static dock mini drew a selected trace: ids=${state.dockMini.ids}`);
+  ok(!state.catalogChart.ids.includes('selected:trace'),
+    `the static catalog chart drew a selected trace: ids=${state.catalogChart.ids}`);
   ok(marker?.selected === 'true' && /selected cohort/.test(marker.detail),
     `the additional fullscreen legend did not mark the selected cohort: ${JSON.stringify(marker)}`);
   ok(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"][data-drilled]').count() === 1,
@@ -633,9 +608,9 @@ export const S12 = async (open, browser) => {
   };
   await use(open, browser, { caseFile: posed }, async (page) => {
     const state = await rendered(page);
-    const line = state.dockMini.series.find((series) => series.id === 'matched:line:limited');
-    const spread = state.dockMini.series.find((series) => series.id === 'matched:spread:limited');
-    const drawn = { ids: state.dockMini.ids,
+    const line = state.catalogChart.series.find((series) => series.id === 'matched:line:limited');
+    const spread = state.catalogChart.series.find((series) => series.id === 'matched:spread:limited');
+    const drawn = { ids: state.catalogChart.ids,
       medians: line.data.filter(([, value]) => value != null), spread: spread.data };
     ok(JSON.stringify(drawn.medians) === JSON.stringify([[0, 105]]),
       `the canvas did not draw exactly the served median: ${JSON.stringify(drawn.medians)}`);
@@ -710,8 +685,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (target !== 'app') fail(`TARGET must be app, got ${target || '(unset)'} — the mock this ledger once ran against is archived (#722); the app is now the sole contract`);
   const open = openApp;
   await access(SYNTHETIC);
-  await vendored('echarts.min.js');
-  await vendored('vue.esm-browser.js');
+  const missing = [];
+  if (!process.env.PLAYWRIGHT_MODULE) missing.push('PLAYWRIGHT_MODULE is required');
+  try { createBuiltShell(); } catch (error) { missing.push(error.message); }
+  if (missing.length) fail(`missing prerequisites:\n  - ${missing.join('\n  - ')}`);
   const only = process.env.ONLY
     ? process.env.ONLY.split(',').map((value) => value.trim()).filter(Boolean)
     : Object.keys(STORIES);

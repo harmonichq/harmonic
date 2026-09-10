@@ -120,6 +120,12 @@ components:
 
 ## 1. Overview
 
+Diagnose puts the selected evidence chart ahead of the glucose overview. The
+overview remains the real clock control surface below it. **All charts** opens
+the full catalog directly, rather than a docked chart strip. At phone widths,
+Spotlight, the overview, Findings and Watching form one vertical reading flow;
+temporary chart catalog and fullscreen states still own the viewport.
+
 **Creative North Star: "The Diagnostic Instrument"**
 
 Harmonic reads like a piece of clinical equipment a technically literate patient trusts, not a consumer wellness app trying to be liked. There is no hero typography, no marketing voice, no gamification — the largest text on the page is a numeric stat (1.4–1.5rem), never a headline. The Diagnose stage card's served headline sentence is a card title under that cap, not a page headline. Every visual decision serves one goal: let a single self-hosted user read their own glucose/insulin data and trust a specific number enough to bring it to their clinician. The system is calm, precise, and evidence-first — color and shape encode meaning (glucose state, evidence tier, bolus kind), never decoration for its own sake.

@@ -30,6 +30,7 @@ from ciq_autotune.analyzers.tuning_priority import (
     price_ic_blocks,
 )
 from ciq_autotune.events import BasalEvent, BolusEvent, CgmReading
+from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow
 from ciq_autotune.model import ModelConfig
 from ciq_autotune.result import IcBlock, SegmentEstimate, SlotEstimate
 from ciq_autotune.safety import Status, cap, SafetyConfig
@@ -303,6 +304,7 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertEqual(s.status, Status.INSUFFICIENT)
         self.assertFalse(s.asserts_move)             # held everywhere that keys on it
         self.assertEqual(_deliverable_rate(s), s.current)  # no move into the schedule
+        self.assertIsNone(s.guidance["action"])
 
     def test_eight_informative_nights_meet_support_but_not_multiplicity(self):
         # Eight non-tie nights meet the support floor, but the exact tail does not
@@ -325,6 +327,9 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertTrue(s.asserts_move)
         self.assertIs(s.to_dict()["asserts_move"], True)  # Plan staging reads this
         self.assertEqual(_deliverable_rate(s), s.recommended)
+        self.assertEqual(s.guidance["action"]["parameter"], "basal_rate")
+        self.assertEqual(s.guidance["action"]["start_min"], s.slot * 30)
+        self.assertEqual(s.guidance["action"]["end_min"], (s.slot + 1) * 30)
         lever = build_tuning_levers(
             analyze_basal(basal, cgm, [], []), [], [], slot_minutes=30
         )[0]
@@ -390,6 +395,25 @@ class AnalyzeBasalTest(unittest.TestCase):
         self.assertIsNotNone(s.estimate.value)
         self.assertEqual(s.status, Status.INSUFFICIENT)
         self.assertFalse(s.asserts_move)
+
+    def test_recurring_harm_without_a_current_baseline_keeps_owner_seriousness(self):
+        basal, cgm = combine(*(
+            night(d, rate=0.8, programmed=None) for d in range(1, 13)
+        ))
+        lows = [
+            PrintedLow(datetime(2022, 6, d, 3, 0), 55.0, 0.0, HarmArm.BASAL)
+            for d in (20, 21)
+        ]
+
+        s = slot_at(analyze_basal(
+            basal, cgm, [], [], harm_config=HarmConfig(), harm_lows=lows,
+        ), "03:00")
+
+        self.assertEqual(s.status, Status.NO_BASELINE)
+        self.assertFalse(s.asserts_move)
+        self.assertTrue(s.evidence["harm"]["nudged"])
+        self.assertIsNone(s.guidance["action"])
+        self.assertEqual(s.guidance["seriousness"], "recurring_low")
 
 
 SLOT_0300 = 6  # 03:00 at 30-min slots (180 min // 30)

@@ -9,6 +9,10 @@ const configs = {
   meals: { kind: 'meal', anchor: 'completed_carb_bolus', label: 'Completed carb bolus', window: [-60, 300] },
   lows: { kind: 'low', anchor: 'excursion_nadir', label: 'Low excursion', window: [-60, 120] },
 };
+const patternFamilies = {
+  highs_after_meals: 'meals', lows_after_meals: 'meals',
+  highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
+};
 const labels = {
   carb_undercount: 'Carb undercount', late_bolus: 'Late bolus',
   meal_over_delivery: 'Meal over-delivery', over_treated_low: 'Over-treated low',
@@ -269,5 +273,178 @@ export function projectSyntheticCapture(capture, {
       alignment_window_min: config.window, factor_options: source.factors.map((key) => ({ key, label: labels[key] })) },
     population: { denominator: Object.values(counts).reduce((sum, count) => sum + count, 0), counts },
     cohorts, occurrences: selectable.map((occurrence) => summary(occurrence, config, chosenFactor)), selection,
+  };
+}
+
+const patternVerdicts = ['fired', 'outranked', 'near_miss', 'no_data', 'clean'];
+const patternPrecedence = new Map([
+  ['fired', 4], ['near_miss', 3], ['outranked', 2], ['no_data', 1], ['clean', 0],
+]);
+
+export function patternVerdict(states, claimed = false) {
+  return claimed ? 'fired'
+    : states.reduce((best, state) => patternPrecedence.get(state) > patternPrecedence.get(best)
+      ? state : best, 'clean');
+}
+
+function patternState(occurrence, lever) {
+  const fact = occurrence.verdicts.find((item) => item.classifier === lever);
+  if (!fact) return occurrence.cause_lever ? 'outranked' : 'no_data';
+  if (fact.matched) return 'fired';
+  if (fact.silence_reason === 'insufficient_data') return 'no_data';
+  if (![null, undefined, 'no_trigger', 'owned_by_announced_meal'].includes(fact.silence_reason)) {
+    return 'near_miss';
+  }
+  return occurrence.cause_lever ? 'outranked' : 'clean';
+}
+
+function patternOccurrence(row, habits, attributedMember) {
+  const claimant = attributedMember?.startsWith('habit:')
+    ? attributedMember.replace('habit:', '') : null;
+  const states = habits.map((lever) => patternState(row, lever))
+    .map((state) => !claimant && state === 'fired' ? 'outranked' : state);
+  const verdict = patternVerdict(states, Boolean(claimant));
+  return {
+    id: row.id, date: row.date, verdict,
+    member: claimant ? `habit:${claimant}` : 'clean',
+    anchor: { kind: row.kind, label: row.label, t: row.anchor_t, bg: row.anchor_bg },
+    trace: row.trace,
+  };
+}
+
+function patternCohort(key, name, rows, window) {
+  const usable = rows.filter((row) => row.trace.cgm.some((point) => finiteNumber(point.bg)));
+  const tier = support(usable.length, usable.length);
+  const cohort = {
+    key, name, routed_count: rows.length, usable_count: usable.length, support: tier,
+    occurrence_ids: rows.map((row) => row.id),
+    points: pointRows(rows, window, usable.length),
+  };
+  if (tier === 'withheld') cohort.episodes = usable.map((row) => ({
+    identity: { id: row.id, kind: row.anchor.kind, ep_id: row.id, t: row.anchor.t },
+    glucose: row.trace.cgm.filter((point) => finiteNumber(point.bg) && finiteNumber(point.minute)),
+  }));
+  return cohort;
+}
+
+function patternDetail(row, family) {
+  const { member: _member, trace, ...occurrence } = row;
+  const boluses = trace.boluses || [];
+  return {
+    ...occurrence,
+    glucose: trace.cgm.map((point) => ({
+      t: localTimestamp(row.anchor.t, point.minute), ...point,
+    })),
+    markers: [
+      ...boluses.map((dose) => ({
+        kind: 'bolus', t: localTimestamp(row.anchor.t, dose.minute),
+        minute: dose.minute, seq_num: dose.seq_num, insulin: dose.insulin,
+        carbs: dose.carbs ?? null,
+      })),
+      ...(trace.rescue_carbs || []).map((carb) => ({
+        kind: 'rescue_carb', t: localTimestamp(row.anchor.t, carb.minute), ...carb,
+      })),
+      ...(trace.suspends || []).map((suspend) => ({
+        kind: 'suspend', t: localTimestamp(row.anchor.t, suspend.minute), ...suspend,
+      })),
+    ],
+    source_corrections: family === 'correction_clusters' ? boluses.map((dose) => ({
+      seq_num: dose.seq_num, t: localTimestamp(row.anchor.t, dose.minute),
+      insulin: dose.insulin,
+    })) : [],
+    day_target: { date: row.date },
+  };
+}
+
+/** Fixture-only server answer for the canonical Pattern case-file coordinate. */
+export function projectPatternCaseFile(capture, {
+  patternChart, projectionId = `fp_${'2'.repeat(32)}`, alignment = 'event', occurrenceId,
+} = {}) {
+  if (!patternChart) return null;
+  const { key } = patternChart;
+  const pattern = capture.outcome_patterns.find((row) => row.key === key);
+  if (!pattern || pattern.collapse !== 'remain_pattern') {
+    throw new Error(`served Pattern coordinate has no roster entry: ${key}`);
+  }
+  const habits = pattern.members.filter((member) => member.kind === 'habit')
+    .map((member) => member.subject.replace('habit:', ''));
+  const family = patternFamilies[key];
+  if (!family) throw new Error(`served Pattern coordinate has no rate family: ${key}`);
+  const source = capture.pattern_populations[family] || [];
+  if (!source.length) throw new Error(`served Pattern coordinate has no population: ${key}`);
+  const attribution = capture.pattern_attribution?.[key] || {};
+  const occurrences = source.map((row) => patternOccurrence(row, habits, attribution[row.id]));
+  const claimed = occurrences.filter((row) => row.member !== 'clean');
+  const counts = Object.fromEntries(patternVerdicts.map((verdict) => [
+    verdict, occurrences.filter((row) => row.verdict === verdict).length,
+  ]));
+  if (occurrences.length !== pattern.n || claimed.length !== pattern.k
+      || counts.fired !== pattern.k) {
+    throw new Error(`Pattern exposure counts diverged for ${key}`);
+  }
+  let projection;
+  if (alignment === 'clock') {
+    const buckets = Array.from({ length: 12 }, (_, index) => ({
+      start_min: index * 120, end_min: (index + 1) * 120, n: 0, occurrence_ids: [],
+    }));
+    for (const row of claimed) {
+      const minute = Number(row.anchor.t.slice(11, 13)) * 60 + Number(row.anchor.t.slice(14, 16));
+      const bucket = buckets[Math.floor(minute / 120)];
+      bucket.n += 1; bucket.occurrence_ids.push(row.id);
+    }
+    const peak = Math.max(...buckets.map((bucket) => bucket.n));
+    projection = {
+      alignment: 'clock', anchor: null, window_min: null, cohorts: [],
+      clock: { bucket_hours: 2, total: claimed.length,
+        peak_bucket_index: buckets.findIndex((bucket) => bucket.n === peak), buckets },
+    };
+  } else {
+    const config = configs[family] || {
+      anchor: family, label: source[0].label, window: [-60, 120],
+    };
+    const matched = occurrences.filter((row) => row.verdict === 'fired');
+    const near = occurrences.filter((row) => row.verdict === 'near_miss');
+    const comparison = occurrences.filter((row) => !['fired', 'near_miss'].includes(row.verdict));
+    const cohorts = [
+      patternCohort('matched', 'Matched', matched, config.window),
+      patternCohort('nearly_matched', 'Nearly matched', near, config.window),
+      patternCohort('comparison', `Other ${family.replace('_', ' ')}`, comparison,
+        config.window),
+    ];
+    projection = {
+      alignment: 'event', anchor: { kind: config.anchor, label: config.label },
+      window_min: config.window, clock: null, cohorts,
+      comparison: { name: cohorts[2].name,
+        state: cohorts[2].support === 'withheld' ? 'unavailable' : 'available' },
+      counts: { matched: matched.length, nearly_matched: near.length,
+        comparison: comparison.length, not_comparable: comparison.length },
+    };
+  }
+  const cleanOccurrences = occurrences.map(({ trace, ...row }) => row);
+  const activeIds = new Set(alignment === 'event'
+    ? projection.cohorts.flatMap((cohort) => cohort.occurrence_ids)
+    : occurrences.map((row) => row.id));
+  const selected = occurrences.find((row) => row.id === occurrenceId && activeIds.has(row.id));
+  let selection = { state: 'none', requested_id: null, detail: null };
+  if (occurrenceId && !selected) {
+    selection = { state: 'unavailable', requested_id: occurrenceId, detail: null };
+  } else if (selected) {
+    const detail = patternDetail(selected, family);
+    if (alignment === 'event') {
+      detail.comparison_cohort = projection.cohorts.find((cohort) =>
+        cohort.occurrence_ids.includes(selected.id)).key;
+    }
+    selection = { state: 'selected', requested_id: occurrenceId, detail };
+  }
+  return {
+    schema: 'diagnose-finding-case-file-v1', projection_id: projectionId,
+    finding: { id: pattern.subject, lever: pattern.key, subject: pattern.subject,
+      title: pattern.title },
+    window: structuredClone(patternChart.window), family: family.replace('_', ' '),
+    population: family.replace('_', ' '), cross_population: false,
+    summary: { claimed: claimed.length, denominator: occurrences.length,
+      noun: family.replace('_', ' ') },
+    verdict_counts: counts, occurrences: cleanOccurrences, projection,
+    selection,
   };
 }

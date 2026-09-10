@@ -5,7 +5,9 @@ import {
   GLUCOSE_STEP,
   glucoseRange,
 } from './diagnose-event-comparison.js';
-import { mealMemberMarkers, GRID } from './diagnose-workstation-chart.js';
+import { validFindingCaseFile } from './finding-case-file-validation.js';
+import { PATTERN_COPY } from './diagnose-findings-queue.js';
+import { mealMemberMarkers, GRID, queuePreviewOption } from './diagnose-workstation-chart.js';
 
 export { eventComparisonGlucoseValues, GLUCOSE_ENVELOPE, GLUCOSE_STEP, glucoseRange };
 
@@ -53,9 +55,23 @@ const grid = (mini) => ({ ...(mini ? MINI_GRID : FULL_GRID) });
    with a 15px gap — so it drew a rank the canvas does not have, and at that gap
    it sat above the grid's own top and was cut off by the tile ("U/h" losing its
    head, "mg/dL" floating clear of its plot). It comes down to the caps rank the
-   rest of the metadata uses, and close enough to the axis to belong to it. */
-const axis = (colors, mini = false) => ({
-  axisLine: { show: false },
+   rest of the metadata uses, and close enough to the axis to belong to it.
+
+   AND IT IS ANCHORED TO THE AXIS IT NAMES, because nothing here reserves room
+   for it: the grid runs `containLabel: false` behind a 34px inset, while
+   ECharts' own `nameLocation: 'end'` CENTRES a vertical name on the axis end
+   and HANGS a horizontal one past it. So the correction factor read
+   "ose change (mg/dL)" — 18px of the name painted left of the chart — and
+   "insulin acted (U)" was sheared 43px off the right. A vertical name now
+   starts at its axis and a horizontal one ends at its own, and the horizontal
+   axis comes off any zero rule so its name sits with its own labels at the foot
+   of the plot rather than mid-air. The orientation is passed, never defaulted:
+   a default would hand an un-updated call site the other alignment silently.
+   The `middle` idiom the basal chart uses is a different geometry rather than a
+   shared one this declined — rotated, it still clipped against the spine; flat,
+   it landed under the legend (ADR 360). */
+const axis = (colors, orientation, mini = false) => ({
+  axisLine: orientation === 'horizontal' ? { show: false, onZero: false } : { show: false },
   axisTick: { show: false },
   /* AT MINI RANK THERE IS NO AXIS AT ALL — no labels, no split lines and no
      name. Ruled on the built strip: at 8px the tick labels ran together into a
@@ -69,7 +85,8 @@ const axis = (colors, mini = false) => ({
      only made an unreadable thing that still overhung. Every axis object here
      spreads this last, so what a caller set is dropped rather than restyled. */
   axisLabel: { show: !mini, color: colors.muted, fontFamily: MONO, fontSize: 10 },
-  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9 },
+  nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 9,
+    align: orientation === 'horizontal' ? 'right' : 'left' },
   nameGap: 8,
   splitLine: { show: !mini, lineStyle: { color: colors.line, width: 1 } },
   ...(mini ? { name: undefined } : {}),
@@ -126,6 +143,63 @@ function thumbnail(name, count, series = []) {
     ],
     series,
   };
+}
+
+const validPatternEvidence = (data) => validFindingCaseFile(data)
+  && data.projection.alignment === 'event'
+  && Object.hasOwn(PATTERN_COPY, data.finding.lever);
+
+const patternMiniLabel = (data) => {
+  const key = data?.finding?.lever;
+  const phrase = PATTERN_COPY[key].outcome.toUpperCase();
+  return `${phrase} · ${data?.summary?.claimed ?? 0}`;
+};
+
+/* Pattern rail furniture wraps the shipped response preview. The case file
+   still supplies every point; this changes only the sanctioned inks and labels. */
+function patternQueuePreview(descriptor, range, colors) {
+  const data = descriptor.data;
+  if (!validPatternEvidence(data)) throw new Error('Pattern evidence is unavailable.');
+  const option = queuePreviewOption(descriptor, range, {
+    ...colors, cohorts: { matched: colors.misses, comparison: colors.body },
+  });
+  option.graphic = [
+    { type: 'text', left: 8, top: 5, silent: true,
+      style: { text: patternMiniLabel(data), fill: colors.misses, font: `600 9px ${FONT}` } },
+    { type: 'text', right: 8, top: 5, silent: true,
+      style: { text: `TYPICAL · ${data.summary.denominator}`, fill: colors.muted,
+        font: `600 9px ${FONT}`, align: 'right' } },
+  ];
+  // Only the typical cohort carries the interquartile band in this treatment.
+  option.series = option.series.filter((series) => !series.id.startsWith('queue:event:matched:band:'));
+  for (const series of option.series) {
+    if (series.id.startsWith('queue:event:comparison:band:')) {
+      const paint = series.renderItem;
+      series.renderItem = (params, api) => {
+        const mark = paint(params, api);
+        if (mark.style.fill) mark.style.fill = colors.muted;
+        if (mark.style.stroke) mark.style.stroke = colors.muted;
+        return mark;
+      };
+    }
+    if (!series.id.endsWith(':median')) continue;
+    series.symbol = 'none';
+    series.showSymbol = false;
+    series.lineStyle.type = 'solid';
+  }
+  const anchor = option.series.find((series) => series.id === 'queue:event:event-anchor');
+  const marker = anchor.renderItem;
+  const label = PATTERN_COPY[data.finding.lever].noun === 'meals' ? 'MEAL' : 'LOW';
+  anchor.renderItem = (params, api) => ({ type: 'group', children: [
+    marker(params, api),
+    { type: 'text', x: api.coord([0, 0])[0] + 4, y: params.coordSys.y + 3,
+      style: { text: label, fill: colors.text, font: `600 9px ${FONT}` } },
+  ] });
+  option.series.push({ id: 'queue:pattern:180', type: 'line', data: [], silent: true,
+    markLine: { silent: true, symbol: 'none', label: { show: false },
+      lineStyle: { color: colors.warn, width: 1, type: 'dashed' },
+      data: [{ yAxis: 70 }, { yAxis: 180 }] } });
+  return option;
 }
 
 /* The analyzer's verdict, said in the reader's words. `safety_status` is the
@@ -561,7 +635,7 @@ function basalEditorialOption(data, mini, colors, surface) {
        so the step doubles when the ticks would crowd. */
     xAxis: { type: 'value', min: xMin, max: xMax, interval: tickStep,
       name: 'basal rate, U/h', nameLocation: 'middle',
-      ...axis(colors), splitLine: { show: false }, nameGap: 26,
+      ...axis(colors, 'horizontal'), splitLine: { show: false }, nameGap: 26,
       nameTextStyle: { color: colors.muted, fontFamily: FONT, fontSize: 10, fontWeight: 500 },
       axisTick: { show: true, length: 4, lineStyle: { color: hair } },
       axisLabel: { margin: 6, color: colors.muted, fontFamily: MONO, fontSize: 10,
@@ -735,9 +809,10 @@ function isfOption(mode, { data, mini = false } = {}) {
       ...chartBase(description, mini, colors),
       legend: chartLegend(['Qualifying fasting steps'], colors, mini),
       xAxis: { type: 'category', data: windows.map((window) => window.date),
-        ...axis(colors, mini),
+        ...axis(colors, 'horizontal', mini),
         splitLine: { show: false } },
-      yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
+      yAxis: { type: 'value', name: 'glucose change (mg/dL)',
+        ...axis(colors, 'vertical', mini) },
       series: [{ name: 'Qualifying fasting steps', type: 'scatter',
         symbolSize: mini ? 2.5 : 5,
         data: steps.map((step) => [windowIndex.get(step.window_id), step.dbg]),
@@ -747,9 +822,11 @@ function isfOption(mode, { data, mini = false } = {}) {
   return {
     ...chartBase(description, mini, colors),
     legend: chartLegend(['Qualifying fasting steps'], colors, mini),
-    xAxis: { type: 'value', min: 0, name: 'insulin acted (U)', ...axis(colors, mini),
+    xAxis: { type: 'value', min: 0, name: 'insulin acted (U)',
+      ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
-    yAxis: { type: 'value', name: 'glucose change (mg/dL)', ...axis(colors, mini) },
+    yAxis: { type: 'value', name: 'glucose change (mg/dL)',
+      ...axis(colors, 'vertical', mini) },
     series: [{ name: 'Qualifying fasting steps', type: 'scatter',
       symbolSize: mini ? 2.5 : 5,
       data: steps.map((step) => [step.insulin_acted, step.dbg]),
@@ -757,7 +834,7 @@ function isfOption(mode, { data, mini = false } = {}) {
   };
 }
 
-function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
+function carbRatioOption(mode, { data, range, mini = false, window, surface = null } = {}) {
   const colors = chartColors();
   const block = data?.block || {};
   const runs = data?.runs || [];
@@ -773,10 +850,11 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
         { name: 'Directional-only run', icon: 'emptyCircle' },
       ], colors, mini),
       xAxis: { type: 'value', min: 0, max: frame.span, name: 'meal start',
-        ...axis(colors, mini),
-        axisLabel: { ...axis(colors, mini).axisLabel, formatter: frame.label },
+        ...axis(colors, 'horizontal', mini),
+        axisLabel: { ...axis(colors, 'horizontal', mini).axisLabel, formatter: frame.label },
         splitLine: { show: false } },
-      yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)', ...axis(colors, mini) },
+      yAxis: { type: 'value', min: 0, name: 'Carb ratio (g/U)',
+        ...axis(colors, 'vertical', mini) },
       series: [
         { name: 'Directional-only run', type: 'scatter', symbol: 'emptyCircle',
           symbolSize: mini ? 3 : 6, data: points(false),
@@ -806,10 +884,16 @@ function carbRatioOption(mode, { data, range, mini = false, window } = {}) {
       { name: 'Support run', icon: 'diamond' },
       { name: 'Directional-only run', icon: 'emptyDiamond' },
     ], colors, mini),
-    xAxis: { type: 'value', name: 'minutes from first meal', ...axis(colors, mini),
+    xAxis: { type: 'value', name: 'minutes from first meal',
+      ...axis(colors, 'horizontal', mini),
       splitLine: { show: false } },
     yAxis: { type: 'value', min: range[0], max: range[1], name: 'mg/dL',
-      ...axis(colors, mini) },
+      ...axis(colors, 'vertical', mini),
+      // Clipped endpoint intervals can be much shorter than the interior ticks.
+      // Keep the shared extent; a narrow I:C plot labels its interior ticks.
+      ...(surface?.clientWidth <= 480 ? { axisLabel: {
+        ...axis(colors, 'vertical', mini).axisLabel, showMinLabel: false, showMaxLabel: false,
+      } } : {}) },
     series: [
       { name: 'Target range', type: 'line', data: [], silent: true,
         markLine: { symbol: 'none', silent: true,
@@ -957,6 +1041,36 @@ const entries = [
       alignment: 'event',
       factor: row.event_chart.lever,
       view: row.appearances?.[0]?.family ?? null,
+    }),
+    glucoseValues: eventComparisonGlucoseValues,
+  },
+  {
+    kind: 'pattern-case-file',
+    validateData: validPatternEvidence,
+    queuePreview: patternQueuePreview,
+    name: 'Pattern response',
+    modes: null,
+    meta: () => 'responses aligned to each event',
+    nameFor: (row) => ({
+      title: row.title || 'Pattern response',
+      meta: `${row.pattern?.n ?? 0} opportunities aligned to each event`,
+    }),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      eventComparisonChartOption(caseFile, range, surface, mini),
+    thumbnail: (data) => thumbnail(patternMiniLabel(data),
+      `TYPICAL · ${data?.summary?.denominator ?? 0}`,
+      [{ type: 'line', symbol: 'none', connectNulls: true,
+        data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
+        lineStyle: { color: chartColors().signal, width: 1 } }]),
+    coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
+    matches: (row) => Boolean(row?.pattern_chart)
+      && Object.hasOwn(PATTERN_COPY, row.pattern_chart.key),
+    coordinates: (row, findings) => ({
+      projection_id: findings.projection_id,
+      finding_id: row.id,
+      alignment: 'event',
+      factor: row.pattern_chart.key,
+      view: null,
     }),
     glucoseValues: eventComparisonGlucoseValues,
   },

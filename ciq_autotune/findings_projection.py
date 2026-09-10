@@ -52,6 +52,7 @@ same public interface the API serves.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -61,8 +62,9 @@ from .ic_history import decode_history_id
 # `_chips_for` (#61) asks each lever what kind of anchor its consequence lands
 # on. `window_membership` asks the same question for the same reason, so this is
 # one definition read twice, never a second copy of the mapping.
-from .analyzers.scenario.levers import outcome_kind
+from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind
 from .analyzers.scenario.evidence_population import policy_for
+from .analyzers.scenario.outcome_patterns import _ROSTER, build_outcome_patterns
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -136,6 +138,24 @@ _REGISTER_RANK = {"assert": 0, "finding": 0, "held": 1, "blind": 2, "history": 3
 # (ADR 41). The frontend only labels these; it never derives membership or counts.
 FINDING_VERDICTS = ("fired", "outranked", "near_miss", "no_data", "clean")
 DIAGNOSE_SOURCE_WINDOW_DAYS = 30
+PATTERN_SUBJECTS = frozenset(f"pattern:{key}" for key, *_ in _ROSTER)
+
+
+def pattern_rate_family(pattern: dict) -> Exposure | None:
+    """Return the one Exposure family the Pattern producer prices against."""
+    family = next((row[5] for row in _ROSTER if row[0] == pattern.get("key")), None)
+    return Exposure(family) if family in {item.value for item in Exposure} else None
+
+
+def pattern_chartable(pattern: dict, exposures: dict) -> bool:
+    """One server predicate for whether a Pattern owns inspectable evidence."""
+    family = pattern_rate_family(pattern)
+    has_admitted_habit = any(
+        member.get("kind") == "habit" and member.get("admitted")
+        for member in pattern.get("members") or ()
+    )
+    source = ((exposures.get("exposures") or {}).get(family.value) or {}) if family else {}
+    return has_admitted_habit and (source.get("n") or 0) > 0
 
 
 def _hhmm(minute: int) -> str:
@@ -164,6 +184,7 @@ class FindingsProjection:
     _analysis: dict
     _exposures: dict
     _scenarios: dict
+    _outcome_patterns: list[dict]
 
     @property
     def history_catalog(self) -> Tuple[dict, ...]:
@@ -177,13 +198,19 @@ class FindingsProjection:
         rows = self._parameter_rows(query, scoped=query.scoped)
         rows += self._finding_rows(query)
         rows += self._history_rows(query)
-        rows.sort(key=_sort_key)
+        pattern_by_subject = {}
+        if not query.scoped:
+            pattern_rows, pattern_by_subject = self._pattern_rows(rows, query)
+            rows += pattern_rows
+        rows.sort(key=lambda row: _sort_key(row, pattern_by_subject))
         _assign_tiers(rows)
         for row in rows:
             row["headline"] = _headline_for(row)
         counts = {name: 0 for name in ("assert", "held", "blind", "finding", "history")}
         chip_counts = {name: 0 for name in ("highs", "lows", "meals", "corrections")}
         for row in rows:
+            if row.get("claimed_by"):
+                continue
             counts[row["register"]] += 1
             for chip in row["chips"]:
                 chip_counts[chip] += 1
@@ -196,6 +223,10 @@ class FindingsProjection:
                 **(self._exposures.get("window") or {}),
             },
             "rows": rows,
+            # The prepared roster is the Pattern producer's output, not a second
+            # Findings-policy pass.  Keep it additive while the shipped queue
+            # continues to render its existing setting and Lever rows.
+            "outcome_patterns": deepcopy(self._outcome_patterns),
             "selection": self._selection(query, selected_id),
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
@@ -203,6 +234,32 @@ class FindingsProjection:
             "chip_counts": chip_counts,
             "uncaused_highs": self._uncaused_highs(),
         }
+
+    def _pattern_rows(self, rows: List[dict], query: WindowQuery):
+        """Place the prepared roster in the queue without re-deciding its policy."""
+        by_id = {row["id"]: row for row in rows}
+        pattern_rows, pattern_by_subject = [], {}
+        for pattern in self._outcome_patterns:
+            # Partial rosters occur in the producer-isolation tests; they remain
+            # additive evidence, but are not renderable Pattern contracts.
+            if pattern.get("collapse") != "remain_pattern":
+                continue
+            subject = pattern["subject"]
+            for lever in pattern.get("rate_levers") or ():
+                row = by_id.get(f"finding:{lever.removeprefix('habit:')}")
+                if row is not None:
+                    row["claimed_by"] = subject
+            pattern_row = _row(
+                id=subject, register="finding", kind="pattern", title=pattern["title"],
+                priority=(pattern["settled_price"]
+                          if pattern["admission_route"] != "none" else None),
+                episodes=None, pattern=deepcopy(pattern), window_scope="whole_day",
+                pattern_chart=({"key": pattern["key"], "window": query.to_dict()}
+                               if pattern_chartable(pattern, self._exposures) else None),
+            )
+            pattern_rows.append(pattern_row)
+            pattern_by_subject[subject] = pattern_row
+        return pattern_rows, pattern_by_subject
 
     def _selection(self, query: WindowQuery, selected_id: Optional[str]) -> Optional[dict]:
         if selected_id is None:
@@ -232,6 +289,18 @@ class FindingsProjection:
             disposition = lifecycle
             message = messages[lifecycle]
         return {"id": selected_id, "disposition": disposition, "message": message}
+
+    def guidance(self, *, active_watch=None, preferences=(),
+                 analysis_generation: str = "standalone:0") -> dict:
+        """Build unfiltered guidance from this projection's coherent owner inputs."""
+        from .guidance import build_guidance
+        return build_guidance(
+            analysis=self._analysis, exposures=self._exposures, scenarios=self._scenarios,
+            preferences=preferences, active_watch=active_watch,
+            generation=analysis_generation,
+            window={"days": self._analysis.get("window_days"),
+                    **(self._exposures.get("window") or {})},
+        )
 
     def _history_rows(self, query: WindowQuery) -> List[dict]:
         """Active analyzer-published past-setting measurements in this clock scope."""
@@ -825,6 +894,18 @@ def _history_headline(row: dict) -> str:
 
 def _headline_for(row: dict) -> str:
     """The one served sentence for this row's own family and register."""
+    if row["kind"] == "pattern":
+        pattern = row["pattern"]
+        if pattern.get("count_status"):
+            return f"{row['title']}: counts under review"
+        if pattern["admission_route"] == "none":
+            return row["title"]
+        if pattern["rate_producer"] == "harm_band_source_nights":
+            noun = "nights"
+        else:
+            family = pattern_rate_family(pattern)
+            noun = _FAMILY_NOUN[family.value]
+        return f"{row['title']} in {pattern['k']} of {pattern['n']} {noun}"
     if row["kind"] == "habit":
         return _finding_headline(row)
     if row["register"] == "history":
@@ -849,6 +930,14 @@ _SETTINGS_CHIPS = {
     ("isf", "weaken"): ("lows",),
 }
 
+_PATTERN_CHIPS = {
+    "highs_after_meals": ("highs", "meals"),
+    "lows_after_meals": ("lows", "meals"),
+    "highs_after_treating_lows": ("highs",),
+    "lows_after_correcting_highs": ("lows", "corrections"),
+    "overnight_lows_no_iob": ("lows",),
+}
+
 
 def _chips_for(row: dict) -> List[str]:
     """The filter chips a serialized queue row belongs under."""
@@ -856,6 +945,8 @@ def _chips_for(row: dict) -> List[str]:
         return []
     if row["register"] == "assert":
         return list(_SETTINGS_CHIPS[(row["parameter"], row["direction"])])
+    if row["kind"] == "pattern":
+        return list(_PATTERN_CHIPS[row["pattern"]["key"]])
 
     chips = []
     kind = outcome_kind(row["lever"])
@@ -885,10 +976,12 @@ def _row(**fields) -> dict:
         "chips": None, "window_scope": None,
         "past_setting": None, "programmed_now": None, "regime_end": None,
         "run_ids": None, "event_chart": None,
+        "pattern": None, "pattern_chart": None, "claimed_by": None,
     }
     row.update(fields)
     row["chips"] = _chips_for(row)
-    row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
+    if row["window_scope"] is None:
+        row["window_scope"] = "whole_day" if row["parameter"] == "isf" else "window"
     return row
 
 
@@ -908,7 +1001,7 @@ def _assign_tiers(rows: Sequence[dict]) -> None:
             row["tier"] = "worth_a_look"
 
 
-def _sort_key(row: dict):
+def _sort_key(row: dict, patterns: Optional[Dict[str, dict]] = None):
     """The queue's one order: priced rows by priority desc, then unpriced rows by
     count desc, then the demoted held and blind registers in clock order (terms
     22 / 38). Every tie falls through to a stable, data-derived key so two runs of
@@ -920,7 +1013,7 @@ def _sort_key(row: dict):
             history_recency = datetime.fromisoformat(row["regime_end"]).timestamp()
         except ValueError:
             pass
-    return (
+    key = (
         _REGISTER_RANK[row["register"]],
         0 if row["priority"] is not None else 1,
         -(row["priority"] or 0),
@@ -929,6 +1022,10 @@ def _sort_key(row: dict):
         -history_recency,
         row["title"] or "",
     )
+    if row.get("claimed_by") and patterns and row["claimed_by"] in patterns:
+        parent = patterns[row["claimed_by"]]
+        return _sort_key(parent) + (1, *key)
+    return key + (0,)
 
 
 def _pattern_priorities(scenarios: dict) -> Dict[str, int]:
@@ -952,5 +1049,7 @@ def prepare_findings_projection(*, analysis: dict, exposures: dict,
     This seam keeps queue policy here while letting each guarded consumer share one
     canonical analysis, exposure feed, and scenario report per cache generation.
     """
+    outcome_patterns = build_outcome_patterns(analysis, exposures, scenarios)
     return FindingsProjection(_analysis=analysis, _exposures=exposures,
-                              _scenarios=scenarios)
+                              _scenarios=scenarios,
+                              _outcome_patterns=outcome_patterns)

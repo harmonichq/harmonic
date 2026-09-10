@@ -1,0 +1,405 @@
+{
+  "head": "e4a49d8d0c5025b41c23f533a226fd79f52e2faf",
+  "results": [
+    {
+      "name": "sync",
+      "command": [
+        "uv",
+        "sync",
+        "--frozen",
+        "--extra",
+        "api",
+        "--extra",
+        "sync"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-day",
+      "command": [
+        "node",
+        "frontend/day-surface.browser.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "pytest",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "pytest"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "frontend",
+      "command": [
+        "node",
+        "--test",
+        "frontend/**/*.test.js"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "openspec",
+      "command": [
+        "npx",
+        "--yes",
+        "@fission-ai/openspec@1",
+        "validate",
+        "--all",
+        "--strict"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "check_adr_numbers",
+      "command": [
+        "python3",
+        "scripts/check_adr_numbers.py"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "check_owned_identifiers",
+      "command": [
+        "python3",
+        "scripts/check_owned_identifiers.py"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "check_public_allowlist",
+      "command": [
+        "python3",
+        "scripts/check_public_allowlist.py"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_ic_block_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_ic_block_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_annotation_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_annotation_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_chart_builder_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_chart_builder_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "check_demo_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_demo_fixtures.py"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_qa_e2e_db",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_qa_e2e_db.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_findings_projection_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_findings_projection_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_ic_history_event_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_ic_history_event_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_ic_block_evidence_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_ic_block_evidence_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_basal_night_evidence_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_basal_night_evidence_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_isf_rest_window_evidence_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_isf_rest_window_evidence_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_missed_meal_comparison_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_missed_meal_comparison_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "gen_eating_sequence_fixtures",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_eating_sequence_fixtures.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "evidence-canvas-drift",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "mockups/diagnose-evidence-canvas.exploration/generate.py",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "event-capture-drift",
+      "command": [
+        "node",
+        "mockups/diagnose-event-comparison.synthetic/generate.mjs",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "screenshot-wrapper",
+      "command": [
+        "node",
+        "--test",
+        "scripts/screenshots.local.test.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "finding-extract-drift",
+      "command": [
+        "node",
+        "mockups/finding-evidence-routing.exploration/build.mjs",
+        "--check"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "public-tree",
+      "command": [
+        "python3",
+        "scripts/build_public_tree.py",
+        "/var/folders/gt/90sngsj52js71wmfhqhrr0mw0000gn/T/harmonic-341-public-t37zf7xw/public-tree"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "public-links",
+      "command": [
+        "python3",
+        "scripts/check_public_links.py",
+        "/var/folders/gt/90sngsj52js71wmfhqhrr0mw0000gn/T/harmonic-341-public-t37zf7xw/public-tree"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "public-scan",
+      "command": [
+        "python3",
+        "scripts/scan_public_tree.py",
+        "/var/folders/gt/90sngsj52js71wmfhqhrr0mw0000gn/T/harmonic-341-public-t37zf7xw/public-tree"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-workstation",
+      "command": [
+        "node",
+        "--test",
+        "frontend/diagnose-workstation.browser.test.mjs"
+      ],
+      "environment": {
+        "PAYLOAD": "mockups/diagnose-workstation.synthetic/payload.json"
+      },
+      "exit": 0
+    },
+    {
+      "name": "browser-composition",
+      "command": [
+        "node",
+        "--test",
+        "frontend/diagnose-canvas-composition.browser.test.mjs"
+      ],
+      "environment": {
+        "PAYLOAD": "mockups/diagnose-workstation.synthetic/payload.json"
+      },
+      "exit": 0
+    },
+    {
+      "name": "browser-shell",
+      "command": [
+        "node",
+        "--test",
+        "frontend/cockpit-shell.browser.test.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-runner",
+      "command": [
+        "node",
+        "--test",
+        "frontend/browser-runner.browser.test.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-plan",
+      "command": [
+        "node",
+        "frontend/plan-first-match.browser.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-diagnose-replay",
+      "command": [
+        "node",
+        "frontend/diagnose-workstation-behavior.replay.mjs"
+      ],
+      "environment": {
+        "PAYLOAD": "mockups/diagnose-workstation.synthetic/payload.json",
+        "TARGET": "app",
+        "BASE_URL": "http://127.0.0.1:49672"
+      },
+      "exit": 0
+    },
+    {
+      "name": "browser-event-replay",
+      "command": [
+        "node",
+        "frontend/diagnose-event-comparison-behavior.replay.mjs"
+      ],
+      "environment": {
+        "TARGET": "app"
+      },
+      "exit": 0
+    },
+    {
+      "name": "browser-support-audit",
+      "command": [
+        "node",
+        "mockups/diagnose-event-comparison-support-audit.mjs"
+      ],
+      "environment": {
+        "TARGET": "app"
+      },
+      "exit": 0
+    },
+    {
+      "name": "browser-verify-replay",
+      "command": [
+        "node",
+        "frontend/verify-660-story-behavior.replay.mjs"
+      ],
+      "environment": {
+        "PAYLOAD": "mockups/verify-660-story.synthetic/payload.json",
+        "TARGET": "app"
+      },
+      "exit": 0
+    }
+  ]
+}

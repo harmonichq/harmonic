@@ -661,16 +661,9 @@ def post_meal_arc(meals: Sequence, cgm: Sequence, *, ctx_meals: Optional[Sequenc
     next bolus — which may sit just past the window edge; it defaults to ``meals``. Pure
     function of its inputs, so it is unit-testable on a synthetic series.
     """
-    times = sorted(m.t for m in (ctx_meals if ctx_meals is not None else meals))
-    peaks: List[float] = []
-    nadirs: List[float] = []
-    for m in meals:
-        nxt = next((t for t in times if t > m.t), None)
-        arc = _meal_arc(m.t, nxt, cgm)
-        if arc.peak is not None:
-            peaks.append(arc.peak)
-        if arc.nadir_qualifies and arc.nadir is not None:
-            nadirs.append(arc.nadir)
+    measurements = meal_measurements(meals, cgm, ctx_meals=ctx_meals)
+    peaks = [row["peak"] for row in measurements if row["peak"] is not None]
+    nadirs = [row["nadir"] for row in measurements if row["nadir"] is not None]
     peak_med = round(statistics.median(peaks), 1) if len(peaks) >= ARC_MIN_MEALS else None
     nadir_med = round(statistics.median(nadirs), 1) if len(nadirs) >= ARC_MIN_MEALS else None
     return peak_med, nadir_med, len(peaks), len(nadirs)
@@ -1356,3 +1349,53 @@ def markdown_trend(trend: OutcomesTrend) -> str:
         out.append(f"| `{cells}` | {current} | {_delta(ol.series, lambda v: v)}pt |")
         out.append("")
     return "\n".join(out)
+
+
+def meal_measurements(meals, cgm, *, ctx_meals=None):
+    """Readable per-meal measurements before any display or comparison support gate.
+
+    Context meals truncate peak/nadir using the existing arc policy. The caller
+    owns the CGM period, so context never supplies an out-of-period measurement.
+    """
+    times = sorted(m.t for m in (ctx_meals if ctx_meals is not None else meals))
+    series = CgmSeries(cgm, timedelta(minutes=IcConfig().bg0_max_gap_min))
+    rows = []
+    for meal in meals:
+        nxt = next((t for t in times if t > meal.t), None)
+        arc = _meal_arc(meal.t, nxt, cgm)
+        rows.append({"t": meal.t, "peak": arc.peak,
+                     "nadir": arc.nadir if arc.nadir_qualifies else None,
+                     "bg0": meal_start_bg(meal, series)})
+    return rows
+
+
+def behavior_observations(bolus, cgm, basal, *, lever, start, end, isf,
+                          scenario_config=ScenarioConfig(), low_answers=()):
+    """Select exact owned recurrence rows after the provider's contextual read."""
+    from .analyzers.scenario import recurrence_observations
+    rows = [row for row in recurrence_observations(
+        bolus, cgm, basal, lever=lever, isf=isf, scenario_config=scenario_config,
+        low_answers=low_answers, harm_cutoff=end,
+    ) if start <= row["anchor_t"] < end]
+    return {"rows": rows,
+            "denominator": OVERRIDE_EXPOSURE if lever == OVERRIDE_LEVER else policy_for(lever).recurrence_noun,
+            "reason": next((row["measurement_reason"] for row in rows if not row["measured"]), None)}
+
+
+def glycemic_rate_counts(readings, attribute):
+    """Sufficient counts for a day-resampled rate, using compute_metrics policy.
+
+    Singleton classifications are exactly zero or 100; aggregating their counts
+    preserves the pooled statistic without reimplementing glucose thresholds or
+    running the full mean/dispersion calculation on every bootstrap resample.
+    """
+    classifications = {}
+    numerator = denominator = 0
+    for reading in readings:
+        if reading.bg is None:
+            continue
+        if reading.bg not in classifications:
+            classifications[reading.bg] = getattr(compute_metrics([reading]), attribute) / 100
+        numerator += classifications[reading.bg]
+        denominator += 1
+    return numerator, denominator

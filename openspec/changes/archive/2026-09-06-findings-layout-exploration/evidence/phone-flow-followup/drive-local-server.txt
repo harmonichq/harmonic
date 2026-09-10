@@ -1,0 +1,13 @@
+Serving Harmonic API on http://127.0.0.1:8873 (db: /private/tmp/harmonic-341-phone-smoke.XXXXXX.sqlite)
+Traceback (most recent call last):
+  File "/Users/connor/worktrees/harmonic/341-c2/.venv/bin/harmonic", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/connor/worktrees/harmonic/341-c2/ciq_autotune/cli.py", line 157, in main
+    return _cmd_serve(args)
+           ^^^^^^^^^^^^^^^^
+  File "/Users/connor/worktrees/harmonic/341-c2/ciq_autotune/cli.py", line 209, in _cmd_serve
+    serve(host=args.host, port=args.port, db_path=args.db, token=args.token,
+  File "/Users/connor/worktrees/harmonic/341-c2/ciq_autotune/api.py", line 1679, in serve
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'

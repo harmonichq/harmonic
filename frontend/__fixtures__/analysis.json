@@ -20,6 +20,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -3214,6 +3215,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "00:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -3237,6 +3242,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -6461,6 +6467,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "00:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -6484,6 +6494,7 @@
    "evidence": {
     "directional_support_count": 23,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -9738,6 +9749,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "01:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -9761,6 +9776,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -13127,6 +13143,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "01:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -13150,6 +13170,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -16516,6 +16537,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "02:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -16539,6 +16564,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -19905,6 +19931,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "02:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -19928,6 +19958,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -23294,6 +23325,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "03:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -23317,6 +23352,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -26683,6 +26719,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "03:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -26706,6 +26746,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -30072,6 +30113,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "04:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -30095,6 +30140,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -33461,6 +33507,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "04:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -33484,6 +33534,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -36850,6 +36901,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "05:00",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -36873,6 +36928,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -40239,6 +40295,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "05:30",
    "recommended": 0.6,
    "safety_status": "no change",
@@ -40262,6 +40322,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -43628,6 +43689,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "06:00",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -43651,6 +43716,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -47017,6 +47083,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "06:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -47040,6 +47110,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -50406,6 +50477,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "07:00",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -50429,6 +50504,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -53795,6 +53871,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "07:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -53818,9 +53898,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "08:00",
    "recommended": null,
@@ -53845,9 +53930,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "08:30",
    "recommended": null,
@@ -53872,9 +53962,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "09:00",
    "recommended": null,
@@ -53899,9 +53994,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "09:30",
    "recommended": null,
@@ -53926,9 +54026,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "10:00",
    "recommended": null,
@@ -53953,6 +54058,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -57319,6 +57425,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "10:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -57342,6 +57452,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -60708,6 +60819,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "11:00",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -60731,6 +60846,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -64097,6 +64213,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "11:30",
    "recommended": 0.75,
    "safety_status": "no change",
@@ -64120,6 +64240,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -67486,6 +67607,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "12:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -67509,9 +67634,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "12:30",
    "recommended": null,
@@ -67536,9 +67666,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "13:00",
    "recommended": null,
@@ -67563,9 +67698,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "13:30",
    "recommended": null,
@@ -67590,9 +67730,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "14:00",
    "recommended": null,
@@ -67617,9 +67762,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "14:30",
    "recommended": null,
@@ -67644,6 +67794,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -71010,6 +71161,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "15:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -71033,6 +71188,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -74399,6 +74555,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "15:30",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -74422,6 +74582,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -77788,6 +77949,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "16:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -77811,6 +77976,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -81177,6 +81343,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "16:30",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -81200,6 +81370,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -84566,6 +84737,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "17:00",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -84589,6 +84764,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -87955,6 +88131,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "17:30",
    "recommended": 0.65,
    "safety_status": "no change",
@@ -87978,6 +88158,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -91344,6 +91525,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "18:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -91367,9 +91552,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "18:30",
    "recommended": null,
@@ -91394,9 +91584,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "19:00",
    "recommended": null,
@@ -91421,9 +91616,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "19:30",
    "recommended": null,
@@ -91448,9 +91648,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "20:00",
    "recommended": null,
@@ -91475,9 +91680,14 @@
    "evidence": {
     "directional_support_count": 0,
     "excluded_night_count": 30,
+    "harm_band_source_nights": 30,
     "night_roster": [],
     "points": [],
     "roster_glucose_mean": null
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "20:30",
    "recommended": null,
@@ -91502,6 +91712,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -94868,6 +95079,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "21:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -94891,6 +95106,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -98257,6 +98473,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "21:30",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -98280,6 +98500,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 0,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -101646,6 +101867,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "22:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -101669,6 +101894,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -104923,6 +105149,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "22:30",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -104946,6 +105176,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -108200,6 +108431,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "23:00",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -108223,6 +108458,7 @@
    "evidence": {
     "directional_support_count": 24,
     "excluded_night_count": 1,
+    "harm_band_source_nights": 30,
     "night_roster": [
      {
       "date": "2024-03-05",
@@ -111472,6 +111708,10 @@
     ],
     "roster_glucose_mean": 120.0
    },
+   "guidance": {
+    "action": null,
+    "seriousness": null
+   },
    "label": "23:30",
    "recommended": 0.7,
    "safety_status": "no change",
@@ -111517,6 +111757,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "00:00",
    "parameter": "carb_ratio",
    "recommended": null,
@@ -111560,6 +111801,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "06:00",
    "parameter": "carb_ratio",
    "recommended": null,
@@ -112084,6 +112326,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "12:00",
    "parameter": "carb_ratio",
    "recommended": 5.5,
@@ -112608,6 +112851,7 @@
      "unknown_meals": 0
     }
    },
+   "guidance": null,
    "label": "18:00",
    "parameter": "carb_ratio",
    "recommended": 5.0,
@@ -113736,6 +113980,10 @@
     ],
     "slope": 0.0,
     "strengthen_signal": false
+   },
+   "guidance": {
+    "action": null,
+    "seriousness": null
    },
    "label": "Fasting",
    "parameter": "isf",

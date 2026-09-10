@@ -1,0 +1,90 @@
+check-adr: 119 ADRs in 66 design.md files, all identities unique and issue-keyed.
+check-owned-identifiers: 30 owned-identifier rules passed.
+check-public-allowlist: 398 tracked file(s) cleared to ship, 1330 excluded. Every tracked path dispositioned.
+- Validating...
+✓ change/adopt-frontend-build-tooling
+✓ change/announced-meal-low-ownership
+✓ spec/backtest
+✓ change/basal-night-drill
+✓ change/basal-slot-head-state
+✓ spec/basal-suggestion
+✓ spec/behavioral-layer
+✓ change/by-event-window-membership
+✓ change/canvas-anchor-depth
+✓ change/canvas-tile-controls
+✓ change/chrome-bar-signal
+✓ change/chrome-bar-surface-states
+✓ change/clean-browser-paths
+✓ change/clock-window-crosses-midnight
+✓ spec/credentials
+✓ spec/data-ingest
+✓ change/decision-record-home
+✓ change/diagnose-align-hidden-render
+✓ change/diagnose-align-inspector-edge
+✓ change/diagnose-behavior-ledger-parity
+✓ change/diagnose-evidence-canvas
+✓ change/diagnose-finding-case-files
+✓ change/diagnose-history-event-internals
+✓ change/diagnose-occurrence-roster-keys
+✓ change/diagnose-occurrence-selection-focus
+✓ change/dose-stamped-information-findings
+✓ change/durable-diagnose-artifact-store
+✓ spec/eating-sequences
+✓ change/estimator-admission-bars
+✓ change/event-chart-baseline-populations
+✓ change/event-chart-discovery
+✓ change/explore-history-range
+✓ change/fast-gate-scratch-race
+✓ change/fetch-invalidates-on-committed-write
+✓ change/filter-unrelated-basal-findings
+✓ change/finding-chip-sift
+✓ change/finding-evidence-routing
+✓ change/findings-layout-exploration
+✓ change/fullscreen-chart-containment
+✓ change/fuzzy-cross-block-credit
+✓ change/highs-attribution-account
+✓ change/hoist-meal-suspend-ownership
+✓ spec/http-api
+✓ change/ic-dose-stamped-anchor
+✓ change/ic-trial-acceptance
+✓ spec/insulin-reconstruction
+✓ change/isf-detail-verdict
+✓ change/isf-direction-only-ranking
+✓ change/isf-staging-predicate
+✓ change/light-ground-bone
+✓ change/meal-bolus-denominator
+✓ change/missed-meal-comparison
+✓ spec/outcomes
+✓ change/over-treated-low-verdict-band
+✓ change/pane-header-single-seam
+✓ spec/parameter-analysis
+✓ change/persist-diagnose-derivations
+✓ spec/plan
+✓ change/preserve-diagnose-theme-context
+✓ spec/qa-e2e-database
+✓ change/retire-legacy-basal-ribbon
+✓ change/retire-legacy-occurrences-popup
+✓ change/retire-staging-entry-rule
+✓ spec/safety
+✓ change/scoped-finding-occurrence-membership
+✓ change/simplify-event-comparison-support-copy
+✓ change/stabilize-pending-root-probe
+✓ change/steady-data-case-file-wording
+✓ spec/surfaces
+✓ change/unified-browser-exposure-population
+✓ change/url-state-contract
+✓ change/verify-attribution-uncertainty
+✓ change/watching-chart-seating-regression
+Totals: 73 passed, 0 failed (73 items)
+event-comparison synthetic capture current
+✔ wrapper serves a stripPrefix fixture and fixture-backed stubs, and applies no theme (128.783917ms)
+✔ the wrapper defines no theme-application hook (0.15725ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 177.185166
+finding-evidence-routing artifacts current (data.json, evidence-table.extracted.js, app-base.extracted.css, chrome.extracted.html)

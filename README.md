@@ -71,6 +71,7 @@ the `api` extra.
 
 ```sh
 uv sync --extra sync --extra api
+npm ci && npm run build
 ```
 
 ## Configure
@@ -148,8 +149,8 @@ stored.
 
 Run the server (API + web UI on one port) as a container, for single-user
 self-hosting. The image is a pinned `python:3.12-slim-bookworm` (not Alpine —
-musl makes `cryptography` painful to build) and carries no Node, because the SPA
-has no build step. One volume at `/app/tconnect-data/` holds the SQLite database
+musl makes `cryptography` painful to build) and carries no Node: a Node 22 build
+stage compiles the SPA, then the runtime copies only `frontend/dist`. One volume at `/app/tconnect-data/` holds the SQLite database
 and the Fernet key together, and the entrypoint refuses to start without
 `TIMEZONE_NAME`.
 

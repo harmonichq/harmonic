@@ -52,8 +52,44 @@ def _findings(lever, episodes=1, extra_rows=()):
             "chip_counts": {}, "uncaused_highs": {"count": 0, "text": None}}
 
 
+def _pattern_row(key, members, *, k, n, rate_levers, chart=True):
+    subject = f"pattern:{key}"
+    return {
+        "id": subject, "register": "finding", "kind": "pattern",
+        "title": key.replace("_", " ").title(),
+        "appearances": None, "episodes": None,
+        "pattern_chart": ({"key": key, "window": WindowQuery.whole_day().to_dict()}
+                          if chart else None),
+        "pattern": {
+            "key": key, "subject": subject,
+            "title": key.replace("_", " ").title(),
+            "members": [
+                {"subject": f"habit:{lever.value}", "kind": "habit",
+                 "admitted": True}
+                for lever in members
+            ],
+            "rate_levers": [f"habit:{lever.value}" for lever in rate_levers],
+            "k": k, "n": n,
+        },
+    }
+
+
+def _pattern_findings(key, members, *, k, n, rate_levers, chart=True):
+    subject = f"pattern:{key}"
+    rows = [_pattern_row(key, members, k=k, n=n, rate_levers=rate_levers, chart=chart)]
+    for lever in members:
+        row = _findings(lever)["rows"][0]
+        row["claimed_by"] = subject
+        rows.append(row)
+    return {
+        "schema": "diagnose-findings-v1", "window": WindowQuery().to_dict(),
+        "findings_window": {}, "rows": rows, "counts": {}, "chip_counts": {},
+        "uncaused_highs": {"count": 0, "text": None},
+    }
+
+
 def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
-              withheld=frozenset()):
+              withheld=frozenset(), exposures=None, scenarios=None):
     opportunity = _opportunity(lever)
     members = tuple(members or (Member(opportunity, opportunity.anchor_t, "fired"),))
     claimed = frozenset({members[0].id}) if claimed is None else claimed
@@ -75,6 +111,7 @@ def _prepared(lever, members=None, claimed=None, *, query=None, findings=None,
         {item: claimed if item is lever else frozenset() for item in Lever},
         {item: () for item in Lever},
         withheld, cgm, (), bolus, (), time.monotonic() + 60,
+        exposures=exposures, scenarios=scenarios,
     )
 
 
@@ -354,12 +391,25 @@ def test_factor_specific_event_horizons_and_far_pair_selected_evidence():
         detail = case["selection"]["detail"]
         assert set(detail) == {"id", "date", "anchor", "verdict", "glucose",
                                "markers", "source_corrections", "day_target",
-                               *( {"comparison_cohort"} if lever is Lever.MISSED_MEAL else set())}
+                               "comparison_cohort"}
         if lever is Lever.CORRECTION_STACKING:
             assert [row["seq_num"] for row in detail["source_corrections"]] == [21, 22]
             assert detail["source_corrections"][0]["t"] == "2026-08-01 09:30:00"
         else:
             assert detail["source_corrections"] == []
+
+
+def test_event_selection_names_its_own_cohort_and_clock_selection_names_none():
+    for lever in Lever:
+        prepared = _prepared(lever)
+        member = prepared.members[lever][0]
+        case = prepared.case(f"finding:{lever.value}", "event", member.id)
+        detail = case["selection"]["detail"]
+        assert [cohort["key"] for cohort in case["projection"]["cohorts"]
+                if detail["id"] in cohort["occurrence_ids"]] == [detail["comparison_cohort"]]
+        clock = prepared.case(f"finding:{lever.value}", "clock", member.id)
+        assert clock["selection"]["state"] == "selected"
+        assert "comparison_cohort" not in clock["selection"]["detail"]
 
 
 def test_claimed_can_be_strictly_less_than_fired_and_clock_counts_only_claims():
@@ -415,7 +465,7 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
     }
     allowed_changes = {
         "appearances", "episodes", "evidence", "verdict_counts",
-        "verdict_counts_by_family", "event_chart", "case_header",
+        "verdict_counts_by_family", "event_chart", "case_header", "headline",
     }
     assert changed_fields <= allowed_changes
     assert allowed_changes - {"episodes"} <= changed_fields
@@ -427,6 +477,35 @@ def test_named_field_wrapper_preserves_unknown_row_and_top_level_selection():
         original["selection"]
     ).encode()
     assert findings == original
+
+
+def test_two_family_rendered_row_leads_with_the_case_file_and_says_so():
+    lever = Lever.LATE_BOLUS
+    findings = _findings(lever)
+    row = findings["rows"][0]
+    row["tier"] = "worth_a_look"
+    # The projection sorts appearances by family name, so the case file's own
+    # family arrives second on any finding claimed in two families.
+    row["appearances"] = [
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+        {"family": "meals", "noun": "meals", "n": 3, "m": 20},
+    ]
+    row["headline"] = findings_projection._finding_headline(row)
+    prepared = _prepared(lever, findings=findings)
+    summary = prepared.case(row["id"], "clock", None)["summary"]
+    projected = deepcopy(row["appearances"])
+    payload = wrap(prepared)
+    rendered = payload["rendered_rows"][0]
+    assert rendered["appearances"] == [
+        {"family": "meals", "noun": summary["noun"],
+         "n": summary["claimed"], "m": summary["denominator"]},
+        {"family": "correction_clusters", "noun": "correction clusters", "n": 2, "m": 2},
+    ]
+    assert rendered["headline"] == (
+        f"Ranks among this window's findings. Showed up in {summary['claimed']} of "
+        f"{summary['denominator']} {summary['noun']} in this window."
+    )
+    assert payload["findings"]["rows"][0]["appearances"] == projected
 
 
 def test_noncanonical_attribution_is_withheld_instead_of_rendered():
@@ -454,6 +533,148 @@ def test_whole_day_pattern_recurrence_mismatch_fails_closed():
     prepared.recurrence[Lever.LATE_BOLUS] = (1, 2)
     with pytest.raises(InconsistentProjection):
         prepared.case("finding:late_bolus", "event", None)
+
+
+def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
+    first = _opportunity(Lever.CARB_UNDERCOUNT)
+    second = _opportunity(
+        Lever.CARB_UNDERCOUNT, anchor=first.anchor_t + timedelta(hours=2),
+    )
+    third = _opportunity(
+        Lever.CARB_UNDERCOUNT, anchor=first.anchor_t + timedelta(hours=4),
+    )
+    ids = tuple(f"o_{index:032x}" for index in range(1, 4))
+    carb = tuple(Member(opportunity, opportunity.anchor_t, verdict, occurrence_id)
+                 for opportunity, verdict, occurrence_id in zip(
+                     (first, second, third), ("fired", "outranked", "near_miss"), ids,
+                 ))
+    late = tuple(Member(opportunity, opportunity.anchor_t, verdict, occurrence_id)
+                 for opportunity, verdict, occurrence_id in zip(
+                     (first, second, third), ("outranked", "fired", "clean"), ids,
+                 ))
+    findings = _pattern_findings(
+        "highs_after_meals", (Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS),
+        k=2, n=3, rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS),
+    )
+    prepared = _prepared(
+        Lever.CARB_UNDERCOUNT, carb, frozenset({carb[0].id}), findings=findings,
+        exposures={"exposures": {"meals": {"n": 3, "occurrences": [
+            {"ep_id": f"ep-{index}", "t": member.outcome_t.strftime("%Y-%m-%d %H:%M:%S"),
+             "date": member.outcome_t.date().isoformat(), "kind": "meal", "bg": 120,
+             "attributed": index < 2,
+             "attributed_levers": (["carb_undercount", "late_bolus"][index:index + 1]
+                                     if index < 2 else []),
+             "cause_lever": ("carb_undercount", "late_bolus", None)[index],
+             "verdicts": ([{"classifier": "carb_undercount", "matched": False,
+                             "silence_reason": "under_threshold"}]
+                          if index == 2 else [])}
+            for index, member in enumerate(carb)
+        ]}}},
+    )
+    prepared.members[Lever.LATE_BOLUS] = late
+    prepared.associations[Lever.LATE_BOLUS] = frozenset({late[1].id})
+
+    case = prepared.case("pattern:highs_after_meals", "event", None)
+    clock = prepared.case("pattern:highs_after_meals", "clock", None)
+
+    assert case["finding"] == {
+        "id": "pattern:highs_after_meals", "lever": "highs_after_meals",
+        "subject": "pattern:highs_after_meals", "title": "Highs After Meals",
+    }
+    assert case["family"] == case["population"] == case["summary"]["noun"] == "meals"
+    assert case["summary"] == {"claimed": 2, "denominator": 3, "noun": "meals"}
+    assert [(row["member"], row["verdict"]) for row in case["occurrences"]] == [
+        ("habit:carb_undercount", "fired"),
+        ("habit:late_bolus", "fired"),
+        ("clean", "near_miss"),
+    ]
+    assert sum(case["verdict_counts"].values()) == 3
+    assert clock["projection"]["alignment"] == "clock"
+    assert clock["projection"]["clock"]["total"] == 2
+    for key in ("finding", "family", "summary", "verdict_counts", "occurrences"):
+        assert clock[key] == case[key]
+    selected = prepared.case("pattern:highs_after_meals", "clock", clock["occurrences"][0]["id"])
+    assert selected["selection"]["state"] == "selected"
+    assert selected["selection"]["detail"]["id"] == clock["occurrences"][0]["id"]
+    assert "comparison_cohort" not in selected["selection"]["detail"]
+    assert prepared.case("finding:carb_undercount", "event", None) is not None
+    assert prepared.case("finding:late_bolus", "event", None) is not None
+
+
+def test_pattern_case_is_chartless_without_a_served_habit_or_population():
+    setting_only = _pattern_findings(
+        "overnight_lows_no_iob", (), k=1, n=8, rate_levers=(),
+        chart=False,
+    )
+    prepared = _prepared(Lever.CARB_UNDERCOUNT, findings=setting_only)
+    assert prepared.case("pattern:overnight_lows_no_iob", "event", None) is None
+    assert prepared.case("pattern:overnight_lows_no_iob", "clock", None) is None
+
+    memberless = _pattern_findings(
+        "highs_after_meals", (), k=1, n=1,
+        rate_levers=(Lever.CARB_UNDERCOUNT, Lever.LATE_BOLUS), chart=False,
+    )
+    prepared.findings = memberless
+    assert prepared.case("pattern:highs_after_meals", "event", None) is None
+
+    empty = _pattern_findings(
+        "highs_after_meals", (Lever.CARB_UNDERCOUNT,), k=0, n=0,
+        rate_levers=(Lever.CARB_UNDERCOUNT,), chart=False,
+    )
+    prepared.findings = empty
+    assert prepared.case("pattern:highs_after_meals", "event", None) is None
+
+
+def test_wrap_keeps_pattern_headline_and_drops_only_uninspectable_claimed_member():
+    lever = Lever.CARB_UNDERCOUNT
+    findings = _pattern_findings(
+        "highs_after_meals", (lever,), k=1, n=1, rate_levers=(lever,),
+    )
+    findings["rows"][0]["headline"] = "Highs After Meals in 1 of 1 meals"
+    member = _opportunity(lever)
+    prepared = _prepared(
+        lever, findings=findings, withheld=frozenset({lever}),
+        exposures={"exposures": {"meals": {"n": 1, "occurrences": [{
+            "ep_id": "ep-1", "t": member.anchor_t.strftime("%Y-%m-%d %H:%M:%S"),
+            "date": member.anchor_t.date().isoformat(), "kind": "meal", "bg": 120,
+            "attributed": True, "attributed_levers": [lever.value],
+            "cause_lever": lever.value, "verdicts": [],
+        }]}}},
+    )
+
+    payload = wrap(prepared)
+
+    pattern = payload["rendered_rows"][0]
+    assert [row["id"] for row in payload["rendered_rows"]] == [
+        "pattern:highs_after_meals",
+    ]
+    assert pattern["headline"] == "Highs After Meals in 1 of 1 meals"
+    assert pattern["appearances"] is None and pattern["episodes"] is None
+    assert pattern["pattern_chart"]["key"] == "highs_after_meals"
+    assert "event_chart" not in pattern["case_header"]
+    assert payload["withheld_findings"][0]["finding_id"] == "finding:carb_undercount"
+
+
+def test_wrap_passes_through_a_chartless_pattern_unchanged():
+    member_lever = Lever.CORRECTION_ON_IOB
+    rate_lever = Lever.CORRECTION_STACKING
+    findings = _pattern_findings(
+        "lows_after_correcting_highs", (member_lever,), k=1, n=1,
+        rate_levers=(rate_lever,),
+    )
+    findings["rows"][0]["pattern_chart"] = None
+    prepared = _prepared(member_lever, findings=findings)
+
+    payload = wrap(prepared)
+
+    pattern = payload["rendered_rows"][0]
+    assert pattern == findings["rows"][0]
+    assert "case_header" not in pattern
+    assert pattern["id"] not in payload["behavioral_case_headers"]
+    assert payload["rendered_rows"][1]["id"] == "finding:correction_on_iob"
+    assert payload["rendered_rows"][1]["case_header"]["finding_id"] == (
+        "finding:correction_on_iob"
+    )
 
 
 def test_selected_high_retains_upstream_suspend_evidence():

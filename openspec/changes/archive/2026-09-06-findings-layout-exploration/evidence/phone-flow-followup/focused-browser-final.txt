@@ -1,0 +1,11 @@
+✔ #341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable (5464.872917ms)
+✔ #341 · phone Diagnose is one complete vertical reading flow (3693.823459ms)
+✔ #83 · Filter and every menu item stay reachable at 390×844 (1685.025ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11004.355625

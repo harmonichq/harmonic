@@ -18,7 +18,13 @@
      "days_elapsed": 7,
      "days_required": 14,
      "gap_count": 1
-    }
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
+    },
+    "watch_disposition": "not_selected_for_watch"
    },
    {
     "id": "carb_ratio-12-00-20260609233000-900",
@@ -35,7 +41,13 @@
      "days_elapsed": 14,
      "days_required": 14,
      "gap_count": 1
-    }
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
+    },
+    "watch_disposition": "not_selected_for_watch"
    },
    {
     "id": "carb_ratio-all-20260607081500",
@@ -52,10 +64,35 @@
      "days_elapsed": 15,
      "days_required": 14,
      "gap_count": 0
-    }
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
+    },
+    "watch_disposition": "not_selected_for_watch"
    }
   ],
-  "selected": null
+  "focuses": [],
+  "selected": null,
+  "input_revision": 35,
+  "admission": {
+   "state": "unavailable",
+   "reason": "reconciliation_required",
+   "active_kind": null,
+   "active_id": null,
+   "maturity": null,
+   "can_finish_trial": false,
+   "focus_pin": {
+    "available": false,
+    "reason": "reconciliation_required"
+   },
+   "ending": {
+    "version": "386:1",
+    "state": "unavailable",
+    "reason": "not_recorded"
+   }
+  }
  },
  "details": {
   "profile-all-20260623233000": {
@@ -76,7 +113,13 @@
       "days_elapsed": 7,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-12-00-20260609233000-900",
@@ -93,7 +136,13 @@
       "days_elapsed": 14,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-all-20260607081500",
@@ -110,9 +159,16 @@
       "days_elapsed": 15,
       "days_required": 14,
       "gap_count": 0
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     }
    ],
+   "focuses": [],
    "selected": {
     "id": "profile-all-20260623233000",
     "parameter": "profile",
@@ -140,7 +196,8 @@
     },
     "focus": {
      "available": false,
-     "message": "Focus is unavailable while a Trial is live. It will not queue behind this change."
+     "reason": "reconciliation_required",
+     "message": "Focus is unavailable until follow-up admission is reconciled."
     },
     "readiness": {
      "label": "Maturing",
@@ -1138,6 +1195,60 @@
        }
       ]
      }
+    },
+    "kind": "trial",
+    "admission": {
+     "state": "unavailable",
+     "reason": "reconciliation_required",
+     "active_kind": null,
+     "active_id": null,
+     "maturity": null,
+     "can_finish_trial": false,
+     "focus_pin": {
+      "available": false,
+      "reason": "reconciliation_required"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "original": {
+     "context": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "assessment": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "reassessment": null
+   },
+   "input_revision": 35,
+   "admission": {
+    "state": "unavailable",
+    "reason": "reconciliation_required",
+    "active_kind": null,
+    "active_id": null,
+    "maturity": null,
+    "can_finish_trial": false,
+    "focus_pin": {
+     "available": false,
+     "reason": "reconciliation_required"
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
     }
    }
   },
@@ -1159,7 +1270,13 @@
       "days_elapsed": 7,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-12-00-20260609233000-900",
@@ -1176,7 +1293,13 @@
       "days_elapsed": 14,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-all-20260607081500",
@@ -1193,9 +1316,16 @@
       "days_elapsed": 15,
       "days_required": 14,
       "gap_count": 0
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     }
    ],
+   "focuses": [],
    "selected": {
     "id": "carb_ratio-12-00-20260609233000-900",
     "parameter": "carb_ratio",
@@ -1221,7 +1351,9 @@
      "end": "2026-06-23 23:30:00"
     },
     "focus": {
-     "available": true
+     "available": false,
+     "reason": "reconciliation_required",
+     "message": "Focus is unavailable until follow-up admission is reconciled."
     },
     "readiness": {
      "label": "Ready to judge",
@@ -2276,6 +2408,60 @@
        }
       ]
      }
+    },
+    "kind": "trial",
+    "admission": {
+     "state": "unavailable",
+     "reason": "reconciliation_required",
+     "active_kind": null,
+     "active_id": null,
+     "maturity": null,
+     "can_finish_trial": false,
+     "focus_pin": {
+      "available": false,
+      "reason": "reconciliation_required"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "original": {
+     "context": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "assessment": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "reassessment": null
+   },
+   "input_revision": 35,
+   "admission": {
+    "state": "unavailable",
+    "reason": "reconciliation_required",
+    "active_kind": null,
+    "active_id": null,
+    "maturity": null,
+    "can_finish_trial": false,
+    "focus_pin": {
+     "available": false,
+     "reason": "reconciliation_required"
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
     }
    }
   },
@@ -2297,7 +2483,13 @@
       "days_elapsed": 7,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-12-00-20260609233000-900",
@@ -2314,7 +2506,13 @@
       "days_elapsed": 14,
       "days_required": 14,
       "gap_count": 1
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     },
     {
      "id": "carb_ratio-all-20260607081500",
@@ -2331,9 +2529,16 @@
       "days_elapsed": 15,
       "days_required": 14,
       "gap_count": 0
-     }
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "watch_disposition": "not_selected_for_watch"
     }
    ],
+   "focuses": [],
    "selected": {
     "id": "carb_ratio-all-20260607081500",
     "parameter": "carb_ratio",
@@ -2359,7 +2564,9 @@
      "end": "2026-06-21 08:15:00"
     },
     "focus": {
-     "available": true
+     "available": false,
+     "reason": "reconciliation_required",
+     "message": "Focus is unavailable until follow-up admission is reconciled."
     },
     "readiness": {
      "label": "Ready to judge",
@@ -3401,6 +3608,60 @@
        }
       ]
      }
+    },
+    "kind": "trial",
+    "admission": {
+     "state": "unavailable",
+     "reason": "reconciliation_required",
+     "active_kind": null,
+     "active_id": null,
+     "maturity": null,
+     "can_finish_trial": false,
+     "focus_pin": {
+      "available": false,
+      "reason": "reconciliation_required"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "original": {
+     "context": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "assessment": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     }
+    },
+    "reassessment": null
+   },
+   "input_revision": 35,
+   "admission": {
+    "state": "unavailable",
+    "reason": "reconciliation_required",
+    "active_kind": null,
+    "active_id": null,
+    "maturity": null,
+    "can_finish_trial": false,
+    "focus_pin": {
+     "available": false,
+     "reason": "reconciliation_required"
+    },
+    "ending": {
+     "version": "386:1",
+     "state": "unavailable",
+     "reason": "not_recorded"
     }
    }
   }

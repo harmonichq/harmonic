@@ -1759,6 +1759,11 @@ class DoseStampedIcHistoryTest(unittest.TestCase):
         current_block = next(block for block in blocks if block.start_min == 0)
         self.assertEqual(current_block.estimate.n, 8)
         self.assertTrue(current_block.asserts_move)
+        self.assertEqual(current_block.guidance["action"]["parameter"], "carb_ratio")
+        self.assertEqual(
+            current_block.guidance["action"]["member_start_mins"],
+            current_block.member_start_mins,
+        )
         self.assertFalse(any(hasattr(row, "asserts_move") for row in catalog))
 
     def test_whole_day_run_total_counts_cross_block_run_once(self):

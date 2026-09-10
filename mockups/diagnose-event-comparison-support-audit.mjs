@@ -23,8 +23,16 @@ import {
 } from '../frontend/diagnose-event-comparison-behavior.replay.mjs';
 
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE
-  || (() => { throw new Error('PLAYWRIGHT_MODULE is required'); })());
+const { createBuiltShell } = require('../frontend/built-shell.js');
+const missing = [];
+let chromium;
+if (!process.env.PLAYWRIGHT_MODULE) missing.push('PLAYWRIGHT_MODULE is required');
+else {
+  try { chromium = require(process.env.PLAYWRIGHT_MODULE).chromium; }
+  catch (error) { missing.push(`PLAYWRIGHT_MODULE=${process.env.PLAYWRIGHT_MODULE} could not be required (${error.message})`); }
+}
+try { createBuiltShell(); } catch (error) { missing.push(error.message); }
+if (missing.length) throw new Error(`diagnose-event-comparison-support-audit.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 const out = process.env.AUDIT_SCREENSHOT_DIR;
 const target = process.env.TARGET;
 if (target !== 'app') throw new Error(`TARGET must be app, got ${target || '(unset)'} — the mock this audit once ran against is archived (#722); the app is now the sole contract`);

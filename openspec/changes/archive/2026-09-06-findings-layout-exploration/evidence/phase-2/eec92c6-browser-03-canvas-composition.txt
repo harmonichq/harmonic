@@ -1,0 +1,27 @@
+✔ five stars remain available without reordering the direct All charts catalog (5495.200708ms)
+✔ a ranked chart star uses keep copy and changes no catalog position (4142.677333ms)
+✔ selecting any visible All charts cell changes only the spotlight mark (12621.904958ms)
+sanction: live-judging ruling · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."
+sanction: ADR 215 amendment · 2026-08-27 · "The hover well plate over a tile's plot is retired."
+✔ drilling a behavioural finding seats that finding's own comparison, marked (4492.668583ms)
+sanction: live-judging ruling · 2026-08-28 · "A picked occurrence belongs to the spotlight; the catalog chart stays static."
+✔ an occurrence selection stays in the spotlight while the catalog chart stays static (3624.794917ms)
+✔ the fixed field exposes no retired arrangement or pin-cap schematic (3340.31725ms)
+✔ a pinned tile visibly names a stale generation before the real pipeline recovers (5392.550208ms)
+✔ an in-flight history refresh cannot adopt findings for a window the reader left (2000.198625ms)
+✔ a wrapping slicer drag coalesces pinned-chart re-reads before mouse-up (7010.27675ms)
+RETIRED — sanction: ConnorGriffin · 2026-08-26 · "Diagnose does NOT need to host an explore mode. we're building a better version of it right now."
+✔ reconcileTileDescriptors keeps an unranked star in the All charts catalog (5703.519666ms)
+RETIRED — ConnorGriffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."
+✔ Explore mode stays retired — RETIRED (3364.198792ms)
+✔ glucose-strip meal markers stay retired — RETIRED (3361.999125ms)
+✔ Dark canvas gives the shared hero/basal body one vessel edge and role-owned chart actions (3418.672042ms)
+✔ Backspace return restores provenance to the chart owning the finding frame (3483.513042ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67616.260042

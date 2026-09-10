@@ -5,7 +5,7 @@ import {
   BIN_MINUTES, buildSlotLane, slotAssertsMove, snapWindow,
   renderCanvas, renderHistoryEvents, validateHistoryEvents, windowStats, windowSupport,
   commitSlide, commitWindow, minuteAtX, windowSpans, xAtMinute, windowSpanText, GRID,
-  stripGlucoseRange,
+  stripGlucoseRange, queuePreviewOption,
 } from './diagnose-workstation-chart.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,108 @@ import { fileURLToPath } from 'node:url';
 const historyCapture = JSON.parse(readFileSync(fileURLToPath(new URL(
   '../mockups/diagnose-workstation.synthetic/ic-history-events.capture.json', import.meta.url,
 )), 'utf8'));
+const fixture = (path) => JSON.parse(readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8'));
+const previewColors = {
+  text: '#f2ede2', muted: '#a49c90', line: '#3f3833', signal: '#86ad78',
+  high: '#e2be4c', basal: '#a89a85', excluded: '#8d8579',
+  cohorts: { matched: '#86ad78', nearly_matched: '#e2be4c', comparison: '#d08150' },
+};
+
+test('#341 · queue previews carry a purpose-built grammar for every evidence family', () => {
+  const basal = fixture('./__fixtures__/basal-night-evidence.json').expected;
+  const isf = fixture('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
+  const ic = fixture('../mockups/diagnose-workstation.synthetic/ic-block-evidence.capture.json')
+    .cases.directional_only;
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const options = {
+    basal: queuePreviewOption({ kind: 'basal', data: basal }, null, previewColors),
+    isf: queuePreviewOption({ kind: 'isf', data: isf }, null, previewColors),
+    ic: queuePreviewOption({ kind: 'carb-ratio', data: ic }, [60, 240], previewColors),
+    event: queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors),
+  };
+
+  assert.equal(options.basal.series.find(({ id }) => id === 'queue:basal:departures').data.length,
+    basal.nights.length, 'basal draws every served night around its programmed rate');
+  assert.equal(options.isf.series.find(({ id }) => id === 'queue:isf:steps').data.length,
+    isf.steps.length, 'correction factor draws every served dose/response step');
+  assert.equal(options.ic.series.filter(({ id }) => id?.startsWith('queue:ic:run:')).length,
+    ic.series.length, 'I:C preserves every served meal trace');
+  assert.deepEqual(options.ic.series.find(({ id }) => id === `queue:ic:run:${ic.series[0].run_id}`).data,
+    ic.series[0].points.map(({ minute, bg }) => [minute, bg]),
+    'I:C does not smooth or manufacture points');
+  const supported = event.projection.cohorts.filter((cohort) =>
+    cohort.points.some((point) => point.support !== 'withheld' && Number.isFinite(point.median)));
+  assert.equal(options.event.series.filter(({ id }) => id?.endsWith(':median')).length,
+    supported.length, 'behavioral previews draw each cohort with served aggregate support');
+  assert.ok(options.basal.series.some(({ id }) => id === 'queue:basal:programmed'));
+  assert.ok(options.isf.series.some(({ id }) => id === 'queue:isf:zero'));
+  assert.ok(options.ic.series.some(({ id }) => id === 'queue:ic:meal-anchor'));
+  assert.ok(options.event.series.some(({ id }) => id === 'queue:event:event-anchor'));
+  for (const option of Object.values(options)) {
+    assert.equal(option.xAxis.show, false);
+    assert.equal(option.yAxis.show, false);
+    assert.equal(option.tooltip.show, false);
+  }
+});
+
+test('#341 · queue preview lines retain missing and withheld positions as real gaps', () => {
+  const ic = queuePreviewOption({ kind: 'carb-ratio', data: {
+    runs: [{ run_id: 'meal', in_pool: true }],
+    series: [{ run_id: 'meal', points: [
+      { minute: -5, bg: 110 }, { minute: 0, bg: null }, { minute: 5, bg: 130 },
+    ] }],
+  } }, [60, 240], previewColors);
+  const meal = ic.series.find(({ id }) => id === 'queue:ic:run:meal');
+  assert.deepEqual(meal.data, [[-5, 110], [0, null], [5, 130]]);
+  assert.equal(meal.connectNulls, false);
+  assert.notEqual(meal.symbol, 'none', 'isolated served meal points remain visible');
+  assert.equal(meal.itemStyle.color, previewColors.signal,
+    'meal symbols use the same evidence ink as their trace');
+
+  const event = queuePreviewOption({ kind: 'event-comparison', data: { projection: {
+    window_min: [-10, 20], cohorts: [{ key: 'matched', name: 'Matched', points: [
+      { minute: -10, median: 100, p25: 90, p75: 110, support: 'supported' },
+      { minute: -5, median: 105, p25: 95, p75: 115, support: 'supported' },
+      { minute: 0, median: null, p25: null, p75: null, support: 'withheld' },
+      { minute: 5, median: 120, p25: 108, p75: 132, support: 'limited' },
+      { minute: 10, median: 125, p25: 112, p75: 138, support: 'limited' },
+    ] }],
+  } } }, [60, 240], previewColors);
+  const median = event.series.find(({ id }) => id === 'queue:event:matched:median');
+  assert.deepEqual(median.data, [
+    [-10, 100], [-5, 105], [0, null], [5, 120], [10, 125],
+  ]);
+  assert.equal(median.connectNulls, false);
+  assert.notEqual(median.symbol, 'none', 'isolated served cohort points remain visible');
+  assert.equal(median.itemStyle.color, previewColors.cohorts.matched,
+    'cohort symbols use the same evidence ink as their trace');
+  assert.deepEqual(event.series.filter(({ id }) => id?.startsWith('queue:event:matched:band:'))
+    .map(({ quantiles }) => quantiles), [[[-10, 90, 110], [-5, 95, 115]],
+      [[5, 108, 132], [10, 112, 138]]], 'withheld evidence splits the quantile bands');
+});
+
+test('#341 · behavioral preview bands plot served p25/p75 coordinates directly', () => {
+  const event = fixture('../mockups/diagnose-workstation.synthetic/finding-case-files.json')
+    .cases['finding:carb_undercount'].event;
+  const option = queuePreviewOption({ kind: 'event-comparison', data: event }, [60, 240], previewColors);
+  const band = option.series.find(({ id, quantiles }) => id?.includes(':comparison:band:')
+    && quantiles?.some(([, p25, p75]) => p75 > p25));
+  assert.ok(band, 'the served comparison cohort publishes a nonzero spread');
+  const rendered = band.renderItem({ coordSys: { x: 0, y: 0, width: 300, height: 90 } }, {
+    coord: ([minute, value]) => [minute, value],
+  });
+  const expected = band.quantiles.length === 1
+    ? [[band.quantiles[0][0], band.quantiles[0][2]], [band.quantiles[0][0], band.quantiles[0][1]]]
+    : [
+      ...band.quantiles.map(([minute, , p75]) => [minute, p75]),
+      ...band.quantiles.toReversed().map(([minute, p25]) => [minute, p25]),
+    ];
+  const points = rendered.type === 'polygon'
+    ? rendered.shape.points
+    : [[rendered.shape.x1, rendered.shape.y1], [rendered.shape.x2, rendered.shape.y2]];
+  assert.deepEqual(points, expected, 'the rendered spread uses the served quantiles, not a stack delta');
+});
 
 test('buildSlotLane reads the backend verdict fields', () => {
   const lane = buildSlotLane([
@@ -205,6 +307,75 @@ test('renderCanvas draws a wrapped window as two areas with one range label', ()
     .filter(([start]) => start.xAxis != null).length, 0);
 });
 
+test("#366 · every parked label anchors on the strip's own ceiling, so it lands on the plot", () => {
+  const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowFill: '#777', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* The ruler comes from the shipped producer, never a literal. Ten of the
+     twelve `range:` injections in this file are [40, 300], the one ruler in the
+     tree tall enough to seat a fixed anchor of 296 inside the plot — which is
+     why the suite stayed green while the label painted off the top of it. */
+  const paint = ({ p90, counts, clientWidth, window: win, windowLabel }) => {
+    const envelope = {
+      labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+      p90: filled(p90), counts: filled(counts), raw: filled(1), days: 12, pool: 45,
+    };
+    renderCanvas({ clientWidth, setAttribute() {} }, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, stats: { spread: 27 },
+      range: stripGlucoseRange(envelope), window: win, windowLabel,
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    const data = context.markPoint ? context.markPoint.data : [];
+    assert.ok(data.length, 'the case must actually emit the placement it is about');
+    for (const datum of data) {
+      /* Equality against the axis the chart drew, read back from the emitted
+         option: the ceiling is the one value that seats a label on the line the
+         inside placement occupies, and a `<=` bound admits every value under it. */
+      assert.equal(datum.coord[1], option.yAxis[0].max,
+        'a parked label anchors on the drawn axis maximum');
+    }
+    return data;
+  };
+
+  // a window too narrow for its name at a narrow element width
+  const [narrow] = paint({
+    p90: 215, counts: 12, clientWidth: 600, window: [0, 360], windowLabel: 'OVERNIGHT 00:00–06:00',
+  });
+  assert.equal(option.yAxis[0].max, 220, 'this envelope rules well below the retired constant');
+  assert.equal(narrow.label.formatter, 'OVERNIGHT 00:00–06:00');
+  assert.equal(narrow.label.position, 'right');
+  assert.equal(narrow.label.distance, 6);
+  assert.equal(narrow.label.verticalAlign, 'top');
+  assert.deepEqual(narrow.label.offset, [0, 5],
+    "the parked text hangs below the ceiling on the inside placement's own distance");
+
+  // a window whose thinnest bin is below the support floor: the notice rides along
+  const [thin] = paint({
+    p90: 255, counts: 0, clientWidth: 1396, window: [1080, 1440], windowLabel: 'EVENING 18:00–24:00',
+  });
+  assert.equal(option.yAxis[0].max, 260);
+  assert.match(thin.label.formatter, /INSUFFICIENT SAMPLE — thinnest bin holds 0/);
+  assert.equal(thin.label.position, 'left');
+  assert.equal(thin.label.distance, 6);
+  assert.equal(thin.label.verticalAlign, 'top');
+  assert.deepEqual(thin.label.offset, [0, 5]);
+
+  // a window wrapping midnight: the CONTINUES marker rides the same anchor
+  const wrapped = paint({
+    p90: 215, counts: 12, clientWidth: 1396, window: [1320, 120], windowLabel: '22:00–02:00',
+  }).at(-1);
+  assert.equal(wrapped.label.formatter, 'CONTINUES');
+  assert.equal(wrapped.label.position, 'insideTop');
+  assert.equal(wrapped.label.distance, 5);
+});
+
 test('a tile landing never changes the already-drawn strip range', () => {
   const labels = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
   const filled = (value) => Array.from({ length: 96 }, () => value);
@@ -292,6 +463,76 @@ test('slice 4 · the outside-the-gates scrim is the exact complement of the wind
   for (const point of dims().flat()) {
     assert.ok(option.xAxis[0].data.includes(point), `${point} must be a real category`);
   }
+});
+
+test('#370 · the target caption drops below the grip band when a drawn gate strikes it', () => {
+  const labels = Array.from({ length: 96 }, (_, index) =>
+    `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`);
+  const filled = (value) => Array.from({ length: 96 }, () => value);
+  const envelope = {
+    labels, p10: filled(80), p25: filled(100), p50: filled(120), p75: filled(140),
+    p90: filled(160), counts: filled(12), raw: filled(1), days: 12, pool: 45,
+  };
+  const colors = {
+    muted: '#111', warn: '#222', danger: '#333', targetFill: '#444', targetText: '#555',
+    rail: '#666', windowDim: '#77777788', windowEdge: '#888', bandOuter: '#999',
+    bandInner: '#aaa', median: '#ccc', targetEdge: '#ddd',
+    onAccent: '#eee', text: '#123', surface2: '#234', line: '#345', occurrence: '#456', meal: '#567', grid: '#678',
+  };
+  let option = null;
+  const chart = { setOption(next) { option = next; }, off() {}, on() {} };
+  /* clientWidth here is the CHART element's width, not the viewport's: the
+     Diagnose layout gives the chart 390px inside a 390px viewport but 399.6px
+     inside a 768px one, so 400 is this test's stand-in for the 768px evidence
+     width. Driving 768 would render a 682px plot no gate reaches. */
+  const render = (clientWidth, window) => {
+    const el = { clientWidth, setAttribute() {} };
+    renderCanvas(el, { getInstanceByDom() { return chart; } }, {
+      envelope, markers: [], colors, supportFloor: 8, range: [40, 220],
+      window, windowLabel: windowSpanText(window),
+    });
+    const context = option.series.find((series) => series.name === '__context');
+    // the target band is the entry keyed by yAxis; the window entries are keyed by xAxis
+    const [target] = context.markArea.data.filter(([start]) => start.yAxis != null);
+    return { el, label: target[0].label };
+  };
+  /* Where the gates land, asked of the same exported function the brace itself
+     places them with — never a copied constant. The caption is anchored to the
+     plot's left edge and runs ~99px, so a gate inside that run hides a glyph. */
+  const gates = (el, window) => window.map((minute) => Math.round(xAtMinute(el, minute) * 10) / 10);
+  const dropped = { show: true, position: 'insideBottomLeft', distance: 0 };
+  const shipped = { show: true, position: 'insideStartTop', distance: 10 };
+  const rest = {
+    color: '#555', fontSize: 10, fontWeight: 600, formatter: 'TARGET 70–180 mg/dL',
+    backgroundColor: '#666', padding: [2, 5], borderRadius: 2,
+  };
+
+  // an ordinary 08:00–16:00 daytime window at the two narrowest evidence widths:
+  // the window's own start gate lands in the caption's glyph run, and NO
+  // horizontal slot between the gates is wide enough to hold the caption —
+  // which is why the escape is vertical
+  const daytime = render(390, [480, 960]);
+  assert.deepEqual(gates(daytime.el, [480, 960]), [136.4, 238.8]);
+  assert.deepEqual(daytime.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 390');
+
+  const daytimeWider = render(400, [480, 960]);
+  assert.deepEqual(gates(daytimeWider.el, [480, 960]), [139.8, 245.5]);
+  assert.deepEqual(daytimeWider.label, { ...dropped, ...rest },
+    'the caption must clear the grip band on a struck daytime window at 400');
+
+  // the struck side of the reported Overnight boundary: the window's end gate
+  // sits inside the caption
+  const narrow = render(400, [0, 360]);
+  assert.deepEqual(gates(narrow.el, [0, 360]), [34, 113.3]);
+  assert.deepEqual(narrow.label, { ...dropped, ...rest });
+
+  // and its clear side, where that same gate has slid out past the caption's
+  // tail: the shipped placement, unchanged
+  const wide = render(1010, [0, 360]);
+  assert.deepEqual(gates(wide.el, [0, 360]), [GRID.left, 267.4]);
+  assert.deepEqual(wide.label, { ...shipped, ...rest },
+    'a caption no gate reaches keeps the placement it ships with');
 });
 
 test('renderCanvas pans labels and every data series into dimmed neighbouring days', () => {

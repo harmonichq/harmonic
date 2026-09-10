@@ -103,10 +103,26 @@ function legend(surface, caseFile, selected) {
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
 }
 
+/* A LABEL MUST NEVER BE STRUCK BY LINEWORK — the rank the workstation's own
+   target caption already takes (diagnose-workstation-chart.js:1024-1038), not a
+   second treatment of the same fact. Left unplaced, ECharts centres a markArea
+   label on the area's TOP edge, which here is the y = 180 boundary: the rule ran
+   through every glyph and the centre-tick gridline crossed it (#355). Starting
+   the caption at the band's own start, 10px clear of the rule, moves it off both
+   lines and off the median traces; the opaque pad in the panel's ground colour
+   breaks whatever still passes behind it. The pad is a PLAIN resolved colour,
+   never a color-mix() string — zrender's parser silently drops one on the
+   markArea path (diagnose-workstation.js:331), painting no plate and no error. */
+const targetCaption = (surface) => ({
+  show: true, position: 'insideStartTop', distance: 10,
+  color: css(surface, '--mk-muted'), fontSize: 10,
+  backgroundColor: css(surface, '--ck-rail'), padding: [2, 5], borderRadius: 2,
+});
+
 function option(surface, caseFile, selected, range, mini = false) {
   const { projection } = caseFile;
   const series = [{ type: 'line', data: [], silent: true, name: 'Target range',
-    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180' }) }, { yAxis: 180 }]] } }];
+    markArea: { silent: true, itemStyle: { color: `color-mix(in srgb, ${css(surface, '--mk-ok')} 7%, transparent)` }, data: [[{ yAxis: 70, ...(mini ? {} : { name: 'target 70–180', label: targetCaption(surface) }) }, { yAxis: 180 }]] } }];
   for (const cohort of projection.cohorts) {
     for (const support of ['supported', 'limited']) {
       if (!cohort.points.some((point) => point.support === support)) continue;
@@ -120,6 +136,17 @@ function option(surface, caseFile, selected, range, mini = false) {
     if (!mini && cohort.support === 'withheld') series.push(...episodeSeries(surface, cohort, selected?.cohort));
   }
   if (!mini) series.push(...selectedSeries(surface, selected));
+  /* THE CHART THAT DRAWS THE TRACE OWNS AN AXIS THAT HOLDS IT (#367). The
+     injected range belongs to the field, and the field deliberately never saw
+     this selection — so the one branch that draws the trace widens for it here,
+     where the trace is pushed, rather than in the range's producer. Only a chart
+     actually carrying the extra series extends, and it extends outward, so it
+     still contains the shared ruler every neighbouring tile is read against;
+     the mini rank, which draws no selected trace, keeps the injected range
+     exactly. A series drawn outside its own axis stops and resumes later, which
+     reads as absent CGM rather than an off-scale value. */
+  const drawn = mini ? range
+    : containing(range, (selected?.glucose || []).map((point) => point.bg));
   /* A MINI KEEPS NO AXIS FURNITURE AT ALL, and it is INERT (ADR 215 amendments,
      2026-08-27) — the same rank the other evidence kinds take from
      diagnose-evidence-charts' MINI_GRID: 6px of air on all four sides, no tick
@@ -129,7 +156,7 @@ function option(surface, caseFile, selected, range, mini = false) {
     grid: mini ? { left: 6, right: 6, top: 6, bottom: 6 } : { left: GRID.left, right: 34, top: 26, bottom: 42 },
     tooltip: mini ? { show: false } : { trigger: 'axis', showContent: false },
     xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
-    yAxis: { type: 'value', min: range[0], max: range[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
+    yAxis: { type: 'value', min: drawn[0], max: drawn[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 
 /* ONE GLUCOSE AXIS FOR A WHOLE ARRANGEMENT. The envelope is the range every
@@ -147,6 +174,19 @@ export function glucoseRange(values) {
   const low = Math.min(floorFloor, Math.floor(Math.min(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
   const high = Math.max(ceilCeil, Math.ceil(Math.max(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP);
   return [low, high];
+}
+
+/* Widen a range outward over values the injected range never saw, quantised to
+   the same step the envelope widens by, and never narrowing it on either side.
+   One caller: `option()`'s non-mini branch, for the selected trace it alone
+   draws — the note there says why that chart may widen when the field may not. */
+function containing(range, values) {
+  const finite = values.filter(Number.isFinite);
+  if (finite.length === 0) return range;
+  return [
+    Math.min(range[0], Math.floor(Math.min(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP),
+    Math.max(range[1], Math.ceil(Math.max(...finite) / GLUCOSE_STEP) * GLUCOSE_STEP),
+  ];
 }
 
 /** The shared tile range is based on served cohort evidence, never a selected
@@ -229,7 +269,8 @@ export function renderEventSurface(surface, caseFile,
   const chartElement = surface.querySelector('#ec-chart');
   const chart = window.echarts.init(chartElement, null, { renderer: 'canvas' });
   /* The mount reads its own axis off the cohort values it is about to draw:
-     alone on the surface, this chart IS the whole field. */
+     alone on the surface, this chart IS the whole field. The builder widens what
+     it is handed over the selected trace it draws — see the note at `option()`. */
   chart.setOption(eventComparisonChartOption(
     caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
   ));

@@ -37,7 +37,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 from ...events import BasalEvent, BolusEvent, CgmReading
 from ...insulin import ACCOUNTING_DIA_MIN, BolusIob
@@ -343,15 +343,15 @@ def classify_correction_stacking(
     )
 
 
-def count_correction_stacks(
+def correction_stack_observations(
     window_boluses: Sequence[BolusEvent],
     context_boluses: Sequence[BolusEvent],
     context_cgm: Sequence[CgmReading],
     context_basal: Sequence[BasalEvent] = (),
     *,
     scenario_config: ScenarioConfig = ScenarioConfig(),
-) -> Tuple[int, int]:
-    """Count ``(behavior, harm)`` stacked correction pairs in one window (#131).
+) -> tuple[dict, ...]:
+    """Observe behavior and harm decisions for stacked correction pairs in one window (#131).
 
     The Outcomes-trend split of ``correction_stacking`` into the **behavior** it is
     (repeatedly correcting onto meaningful insulin still on board) and the rare
@@ -398,44 +398,42 @@ def count_correction_stacks(
     # context slice — not the window slice — feeds the reconstruction.
     iob = BolusIob(list(context_boluses), iob_peak_min, iob_dia_min)
 
-    behavior = 0
-    harm = 0
-    for i in range(1, len(pairs)):
-        prev, stack = pairs[i - 1], pairs[i]
+    rows = []
+    for prev, stack in zip(pairs, pairs[1:]):
+        row = {"t": stack.t, "source_key": tuple(b.seq_num if b.seq_num is not None else b.t.isoformat() for b in (prev, stack)),
+               "k": 0, "harm": 0, "reason": None,
+               "harm_interval": (stack.t, stack.t + timedelta(minutes=low_lookahead_min)),
+               "harm_excluded": False}
+        rows.append(row)
         if stack.t - prev.t > timedelta(minutes=stack_window_min):
-            continue  # not stacked — the first had time to act
-
+            row["reason"] = "outside_stack_window"
+            row["harm_excluded"] = True
+            continue
         bg_at_stack = series.nearest(stack.t)
         slope = series.slope(stack.t, timedelta(minutes=slope_lookback_min))
-        # Runaway-high chase — high AND still rising — is rational dosing, excluded.
-        if (
-            bg_at_stack is not None
-            and bg_at_stack >= runaway_high_mgdl
-            and slope is not None
-            and slope > runaway_rising_slope
-        ):
+        if (bg_at_stack is not None and bg_at_stack >= runaway_high_mgdl
+                and slope is not None and slope > runaway_rising_slope):
+            row["reason"] = "runaway_chase"
+            row["harm_excluded"] = True
             continue
-
-        # "Insufficient regard for IOB" is the behavior's signature; a cleared first
-        # dose is not a real stack.
         if iob.at(stack.t) < stack_iob_floor_u:
+            row["reason"] = "cleared_iob"
+            row["harm_excluded"] = True
             continue
-        behavior += 1
-
-        # Harm adds the existing outcome gate: not a recovery from an upstream
-        # low/suspend, and a real low actually followed.
-        gate = upstream_cause(
-            stack.t, context_cgm, context_basal, scenario_config=scenario_config
-        )
+        row["k"] = 1
+        gate = upstream_cause(stack.t, context_cgm, context_basal, scenario_config=scenario_config)
         if gate.explained:
+            row["harm_excluded"] = True
+            row["reason"] = "upstream_harm_exclusion"
             continue
-        nadir_bg, _ = _first_low_after(
-            context_cgm,
-            stack.t,
-            stack.t + timedelta(minutes=low_lookahead_min),
-            low_mgdl,
-        )
-        if nadir_bg is not None:
-            harm += 1
+        nadir_bg, _ = _first_low_after(context_cgm, *row["harm_interval"], low_mgdl)
+        row["harm"] = int(nadir_bg is not None)
+    return tuple(rows)
 
-    return behavior, harm
+
+def count_correction_stacks(window_boluses, context_boluses, context_cgm, context_basal=(),
+                            *, scenario_config=ScenarioConfig()):
+    """Legacy behavior/harm totals from the shared decisions, without a measurement gate."""
+    rows = correction_stack_observations(window_boluses, context_boluses, context_cgm,
+                                         context_basal, scenario_config=scenario_config)
+    return sum(row["k"] for row in rows), sum(row["harm"] for row in rows)

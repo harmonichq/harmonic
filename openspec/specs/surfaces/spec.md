@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Harmonic is a single-page app with no build step and no login — the HTML shell loads unauthenticated, and the browser's embedded Vue interpreter renders four distinct surfaces to answer different questions about the data. Each surface renders read-only server-owned projections; surfaces never re-derive analysis verdicts that belong to the backend.
+Harmonic is a single-page app with a built shell and no login — the HTML shell loads unauthenticated, and the browser renders four distinct surfaces to answer different questions about the data. Each surface renders read-only server-owned projections; surfaces never re-derive analysis verdicts that belong to the backend.
 
 ## Requirements
 
@@ -20,10 +20,24 @@ grammar is unsupported, so a saved hash link opens the default page rather than
 the page it names. Programmatic interfaces live below `/api` and local assets
 below `/assets`.
 
+The server SHALL serve the shell at `/` and at exactly the live page paths, and
+SHALL answer every other path 404. A retired page id is therefore not served and
+SHALL NOT be migrated to a live page: its address never reaches the shell. The
+browser router SHALL resolve a live page id to itself and any other id to the
+default page, which is what keeps an unrecognized Guide handoff target on a real
+surface.
+
 #### Scenario: The app is single-page, no-build, no-login HTML and Vue
 
 - **WHEN** the capability evaluates the behavior described by this requirement
 - **THEN** the stated behavior applies
+
+#### Scenario: A retired page id is not served and is not migrated
+
+- **GIVEN** a page id the app no longer has, such as `patterns`, `daily` or `outcomes`
+- **WHEN** that id is requested as a page path
+- **THEN** the server answers 404 and the shell does not load
+- **AND** the browser router grants that id no live page of its own
 
 ### Requirement: Diagnose surface asks "what tuning moves are available now?"
 
@@ -400,44 +414,33 @@ high-glucose mark SHALL read the one `--high` token.
 The Diagnose evidence stage SHALL hold the active finding's chart: the
 rank-1 finding's chart while the findings queue shows, the drilled finding's
 chart while a drill is open, and the rank-1 chart again when the reader leaves
-the drill. A chart picked from the explorer SHALL open that chart's finding
-through the one chart-click route. The stage chart SHALL keep its drawer cell
-as the marked current frame.
+the drill. A queue-row activation SHALL immediately open its existing finding
+details; there SHALL be no preview-only intermediate step or additional Open
+finding action. A chart picked from All charts SHALL open that chart's finding
+through the existing shared chart-click route. All charts SHALL mark its current
+stage chart when it is reopened. Existing parameter-specific clock-window
+release rules SHALL remain unchanged on queue and chart entry paths.
+
+#### Scenario: A row opens details immediately
+
+- **GIVEN** a queue with a lower-ranked finding
+- **WHEN** the reader clicks its row or presses Enter on it
+- **THEN** the existing details occupy the inspector and that finding's chart occupies the stage
+- **AND** the Findings breadcrumb returns focus and scroll to the originating row while restoring the root stage's normal rank-1 choice
 
 #### Scenario: Leaving a drill returns the rank-1 chart to the stage
 
 - **GIVEN** a populated synthetic Diagnose window whose rank-1 finding differs from a lower-ranked one
 - **WHEN** the reader drills the lower-ranked finding and then returns to the findings queue
 - **THEN** the stage holds the rank-1 finding's chart
-- **AND** the drilled chart's drawer cell is no longer the current frame
+- **AND** reopening All charts marks that current chart rather than the chart just left
 
 #### Scenario: An explorer pick opens the finding
 
-- **WHEN** the reader picks a chart from the explorer
-- **THEN** the explorer closes, that chart holds the stage, and its finding's drill is open
-
-### Requirement: The charts drawer is a picker that opens minimized
-
-The charts drawer SHALL open hidden and SHALL never return on its own; a field
-shrinking past the dock floor SHALL hide it, and a field growing back SHALL NOT
-re-dock it. Picking a chart from the drawer — by cell click, by Enter on a
-cell, from a Watching tail cell, or from the explorer — SHALL seat and drill
-that chart and put the drawer away. The bring-up control, the show-every-chart
-control and chart fullscreen SHALL remain.
-
-#### Scenario: The drawer opens hidden and stays hidden across a resize
-
-- **GIVEN** a fresh visit to a populated synthetic Diagnose window
-- **THEN** the drawer is hidden and the stage holds the rank-1 chart
-- **WHEN** the field shrinks below the dock floor and grows back above it
-- **THEN** the drawer is still hidden
-
-#### Scenario: A pick puts the drawer away
-
-- **GIVEN** the reader has brought the drawer up
-- **WHEN** the reader picks a chart from it
-- **THEN** that chart holds the stage with its finding's drill open
-- **AND** the drawer is hidden
+- **GIVEN** All charts is open, including its Watching reads
+- **WHEN** the reader activates a chart
+- **THEN** All charts closes and the chart's existing finding/details route opens in the inspector with the matching stage evidence
+- **AND** settings entry retains its existing per-parameter drawn-window behavior
 
 ### Requirement: Every findings row carries one served headline
 
@@ -465,15 +468,15 @@ publish, and is identical across reruns of the same window.
 
 The Diagnose stage card's title SHALL render the active row's served headline
 verbatim and SHALL be its only home on the surface: the chart SHALL NOT draw
-it, drawer and explorer cells SHALL keep the short nameplate, and no drill
+it, queue and All charts cells SHALL keep the short nameplate, and no drill
 level SHALL repeat it.
 
 #### Scenario: The stage title is the headline's only home
 
 - **GIVEN** a populated synthetic Diagnose window
 - **WHEN** any family's chart holds the stage
-- **THEN** the stage card's title equals that row's served headline
-- **AND** the headline text appears nowhere else on the surface
+- **THEN** the stage title uses that row's served headline
+- **AND** queue minis and All charts previews contain no duplicate headline
 
 ### Requirement: Headlines are authored with the operator from the engine's facts
 
@@ -502,68 +505,22 @@ the base and the revision served on the same synthetic database.
 - **THEN** it reports its applicable story count, zero failures and no skipped story
 - **AND** every retired story prints its sanction
 
-### Requirement: The Diagnose findings rail is a tapered queue read off served order and tier
-
-The un-drilled Diagnose findings rail SHALL render the findings projection's
-rows in the server's order at three weights chosen from served facts only. The first shown priced ranked row SHALL render as the hero: its served title,
-its detail line, and its flavor and tier words, with no headline of its own
-(the stage card remains the headline's only home) and no chart of its own. Every further
-shown priced ranked row SHALL render as a compact row carrying a mini chart
-drawn by the same registry option the charts drawer's cell draws for that row,
-from data already fetched for that descriptor. Every shown unpriced ranked row
-SHALL render title-only under the existing seam sentence. Held, blind and
-history reads SHALL stay collapsed behind the Watching control unchanged. Tier
-captions SHALL print once where the served tier of consecutive shown priced
-rows changes, each caption's text drawn from one pinned map whose domain is exactly the two
-priced tier slugs and whose range is the design system's words for them;
-unpriced rows carry no caption. The rail SHALL introduce no rank, tier, floor,
-direction, threshold or ranking word of its own, and SHALL show no 0–100
-number. When a compact row's mini host measures narrower than the rail's named
-minimum the row SHALL omit its mini, mark it omitted, and keep its facts.
-
-#### Scenario: The hero is the first priced row and carries no chart
-
-- **GIVEN** a populated synthetic Diagnose window with at least two priced ranked rows
-- **WHEN** the findings queue shows
-- **THEN** the first priced row in served order renders as the hero with its served title and its detail line
-- **AND** the hero contains no chart element and does not repeat the served headline
-- **AND** the stage holds that row's chart
-
-#### Scenario: A compact row's mini is the drawer's own chart
-
-- **WHEN** a compact row's descriptor has fetched data
-- **THEN** the row's mini renders the same series the drawer's cell for that chart renders
-- **AND** no additional request was made for it
-
-#### Scenario: Tier captions come from the pinned map only
-
-- **WHEN** consecutive shown priced rows change served tier
-- **THEN** exactly one caption prints between them, and its text is the pinned map's word for the new tier
-- **AND** no tier word outside that map's range, and no word for an unpriced tier, appears in the rail
-
-#### Scenario: A sift promotes the next priced row
-
-- **WHEN** a sift hides the first priced row
-- **THEN** the next shown priced row renders as the hero
-
-#### Scenario: A narrow row keeps its facts
-
-- **WHEN** a compact row's mini host measures narrower than the rail's named minimum
-- **THEN** the row omits its mini and marks it omitted
-- **AND** the row's title and detail line still render
-
 ### Requirement: A revision of the Diagnose findings rail ships with its ledger amendments and evidence
 
-A revision of the shipped Diagnose findings rail SHALL amend the frozen
-behavior ledger and its app-only replay for every added, changed, moved or
-retired rail behavior in the same change and SHALL store before/after renders
-of every affected state from the base and the revision served on the same
-synthetic database at 1440×900, 1280×800, 1024×768, 768×1024 and 390×844.
+A revision of the shipped Diagnose findings rail and its surrounding evidence
+layout SHALL amend the frozen behavior ledger and its app-only replay for every
+added, changed, moved or retired behavior in the same change. Retirements SHALL
+retain their dated operator sanction and executable absence witness. Before/after
+renders SHALL cover the affected queue, detail, clock-selection and expanded-view
+states from base and revision on matching synthetic inputs. The complete replay
+and repository merge gates SHALL pass before the implementation PR opens.
 
 #### Scenario: The replay proves the revision
 
-- **WHEN** the amended replay runs against the built revision on the declared no-fetch server
-- **THEN** it reports its applicable story count, zero failures and no skipped story
+- **WHEN** the amended replay and repository gates run against the built revision
+- **THEN** every applicable story executes with zero failures and each retired behavior retains its attributed absence check
+- **AND** inspected synthetic before/after renders demonstrate the required arrangement and reachable controls at desktop, short and narrow viewports
+- **AND** the runnable exploratory wireframe has been removed before the implementation PR opens
 
 ### Requirement: Diagnose hosts a non-advisory aggregate-evidence section outside Audit and Watching
 
@@ -601,3 +558,328 @@ visual lock SHALL settle rendered name, placement, wording, and charts.
 - **WHEN** Diagnose records its response age
 - **THEN** the report passes through unchanged
 - **AND** only that report shape's recorded age is cleared
+
+### Requirement: Diagnose places selected evidence before the clock overview
+
+At desktop widths, Diagnose SHALL place the spotlight at the top of the left
+pane below the clock-window controls, the glucose-by-time-of-day overview and
+its basal verdict lane beneath the spotlight, and the findings/details
+inspector on the right. The active clock range SHALL remain visible beside the
+window controls. The overview SHALL retain its existing plotting, readout, drag, resize,
+slide, preset, touch and basal-lane behaviors. The right pane's persistent
+watched-change floor SHALL remain available in both queue and detail states.
+
+#### Scenario: Read evidence after choosing a window
+
+- **WHEN** the reader chooses a clock-window preset on a desktop viewport
+- **THEN** the spotlight precedes the glucose overview and the active range remains visible above both panes
+- **AND** the queue and spotlight describe the same served window
+
+#### Scenario: A narrow or short viewport retains the controls
+
+- **WHEN** the viewport cannot fit the desktop columns or the usual spotlight height
+- **THEN** phone widths present Spotlight, the overview, complete Findings rows and Watching in one shell-owned vertical reading flow without document-level horizontal overflow
+- **AND** the overview's time selection, finding details, watched-change state and fullscreen exit remain reachable by keyboard and touch
+- **AND** All charts and single-chart fullscreen remain temporary viewport-owned states whose dismissal preserves the prior reading position
+
+### Requirement: Ranked findings share one aligned row structure
+
+Every shown priced ranked row SHALL use the same rank, short title, served
+annotation where already applicable, support/action detail, type label and
+drill-affordance columns, with a matching full-width mini preview below the text.
+The first row SHALL use that same
+structure without a hero card, unique shadow, enlarged title, or special height.
+Wrapped content MAY increase row height when needed; rank alone SHALL NOT.
+The root stage's current row SHALL have a restrained non-geometric selected
+state, separately recognizable from its rank number. The queue SHALL retain
+server order and existing filtering semantics and SHALL derive no clinical
+rank, tier, eligibility or verdict. Tier captions SHALL appear at the beginning
+of each contiguous served priced-tier group using the existing tier-word map.
+Unpriced tail rows SHALL retain their title-only seam. Watching reads SHALL
+retain their disclosure and drill paths, with available chart previews when expanded.
+
+A mini SHALL use the descriptor's already fetched evidence in a purpose-built
+queue preview. It SHALL preserve served observations, support and gaps without
+inventing values. Preview rendering SHALL cause no additional analysis request
+and SHALL leave full-size chart options unchanged. All priced rows, including
+the first, SHALL reflow their preview below readable text at narrow widths.
+The existing minimum readable mini-width policy remains the fallback if a host
+cannot meet that floor; text and drill affordances SHALL remain available.
+Pending, empty, failed
+or stale evidence SHALL use the existing state presentation, never fabricated
+curves or fabricated counts.
+
+#### Scenario: Ranked rows align regardless of rank or type
+
+- **GIVEN** synthetic ranked settings and habit findings with mixed-length titles
+- **WHEN** the queue is rendered at a width that admits minis
+- **THEN** rank, type and drill columns align across every priced row, with equally sized full-width preview wells below the text
+- **AND** the top row has the same structure and a mini governed by the same rules
+
+#### Scenario: Filtering changes order visibility, not geometry
+
+- **WHEN** the reader filters the queue so a different priced row becomes first
+- **THEN** the existing served-order projection determines the shown order and the root stage selection
+- **AND** no promoted row becomes a hero card or loses its mini solely because it is first
+
+#### Scenario: Minis remain honest at narrow widths and during failures
+
+- **WHEN** the queue is rendered at phone or tablet width
+- **THEN** available previews reflow to retain readable chart wells and can scroll fully into view
+- **AND** a host below the existing readable-width floor is omitted, while an unready descriptor uses the normal evidence-state presentation
+- **AND** every affected row still opens its existing finding details
+
+### Requirement: All charts opens fullscreen without an intermediate dock
+
+The Charts control SHALL directly open the full-screen All charts browser over
+the Diagnose workspace, including both panes and the overview. There SHALL be
+no bottom-docked or raised chart strip, dock resize floor, bring-up toggle, or
+intermediate dock state. The browser SHALL reuse the existing live chart
+catalog, chart renderers, identities, selection and drill routes, including
+Watching and non-ranked chart access. It SHALL offer every chart currently
+available through the existing explorer, not only rows visible in the ranked
+queue. A visible Close control and Escape SHALL dismiss it without changing the
+selected finding, clock window, inspector level or underlying scroll position,
+and restore focus to Charts. Browser scrolling SHALL keep the exit reachable;
+underlying workspace controls SHALL not receive interaction while it is open.
+The spotlight SHALL retain its separate single-chart Expand view and its existing
+chart controls and return behavior. No browser/OS fullscreen API is required.
+
+#### Scenario: One action opens All charts
+
+- **GIVEN** the normal Diagnose workspace, whether at the queue or a finding detail
+- **WHEN** the reader activates Charts by click or keyboard
+- **THEN** the full-screen browser opens directly with the current chart marked and all eligible catalog entries reachable
+- **AND** no docked-strip state is entered or rendered
+
+#### Scenario: Dismissal preserves the working context
+
+- **GIVEN** a lower-ranked finding is open under a drawn window with a scrolled inspector
+- **WHEN** the reader opens All charts and dismisses it through Close or Escape without choosing
+- **THEN** the previous finding, clock window, inspector level and scroll remain unchanged and Charts regains focus
+
+#### Scenario: Watching remains reachable independently of the ranked queue
+
+- **GIVEN** Watching or unranked charts exist outside the visible ranked rows
+- **WHEN** the reader opens All charts and chooses one of those charts
+- **THEN** it uses the same existing chart/finding route and served evidence as before the dock's removal
+
+#### Scenario: Single-chart expansion is independent of browsing
+
+- **WHEN** the reader expands the spotlight chart and then closes it
+- **THEN** the one chart occupies its full-screen view and returns to its prior context without opening All charts or a dock
+
+#### Scenario: Resize cannot resurrect the retired strip
+
+- **WHEN** the viewport crosses former dock breakpoints while the workspace, browser or single-chart view is active
+- **THEN** no docked or raised strip, dock toggle or dock-dependent transition becomes available
+
+### Requirement: A rendered Finding row states one denominator
+
+The Finding case-file preparation SHALL publish every rendered finding row with
+a `headline` composed from that row's own published `appearances` and `tier`
+through the findings projection's headline composer, so the row's queue detail
+line, its `case_header` summary and its served headline name the same count,
+denominator and population noun. A rendered row SHALL NOT carry the sentence
+the projection composed from the appearances the preparation replaced.
+
+The rendered row SHALL retain every family appearance the findings projection
+published for that finding. It SHALL substitute the case file's own claimed
+count, denominator and population noun for the case file's own family, and
+SHALL publish that family as the row's first appearance so the composed
+sentence names it. Every other family's appearance SHALL keep the count and
+denominator the projection published for it.
+
+The preparation's own `findings` payload SHALL be published unchanged, and no
+frontend module SHALL compose, recompose or re-derive the sentence.
+
+#### Scenario: The case file's denominator differs from the projection's
+
+- **GIVEN** a prepared window whose case-file population for a finding counts a
+  different denominator than the findings projection published for that finding
+- **WHEN** the preparation renders that finding's row
+- **THEN** the row's first appearance, its `case_header` summary and its
+  `headline` state the same count, denominator and noun
+- **AND** the preparation's `findings` payload keeps the appearances and the
+  headline the projection composed
+
+#### Scenario: The finding appears in more than one family
+
+- **GIVEN** a projection row whose appearances name two families in family-name
+  order, and whose first appearance is not the case file's recurrence family
+- **WHEN** the preparation renders that row
+- **THEN** the rendered row's `appearances` still name both families
+- **AND** the case file's own family is the first appearance, carrying the case
+  file's claimed count, denominator and noun
+- **AND** the other family's appearance keeps the count and denominator the
+  projection published
+- **AND** the rendered `headline` states the case file's own family noun and
+  its counts
+
+### Requirement: A carb-ratio block names its interval the way the server labels it
+
+A Diagnose carb-ratio block SHALL name its interval with the day's far edge
+spelled `24:00`, matching the span label the server publishes for that same
+block, wherever the surface prints that interval — the parameter panel head, the
+watch dock's staged title, the peak-hour block link, the selected-window chip and
+the through-midnight sentence. A block covering the whole day SHALL NOT print a
+zero-length interval.
+
+The surface SHALL derive this name from one formatter, not a second copy of the
+rule. A block's geometry — whether it runs through midnight, and the minute
+ranges the canvas brackets — SHALL be unchanged by how its interval is named.
+
+#### Scenario: The all-day block reads as a whole day
+
+- **GIVEN** the server publishes a carb-ratio block starting at minute 0 and ending at its exclusive minute 1440
+- **WHEN** the reader opens that block's panel from its findings-queue row
+- **THEN** the panel head names the interval `00:00–24:00`
+- **AND** the queue row's own served label for the same block still reads `00:00 to 24:00`
+- **AND** staging the block prints that same interval in the watch dock
+
+#### Scenario: A block that runs through midnight is unaffected
+
+- **GIVEN** the server publishes a carb-ratio block whose end minute falls strictly between minute 0 and its start minute
+- **WHEN** the reader opens that block's panel
+- **THEN** the interval is named from its own start and end, as it is today
+- **AND** the block is still marked as running through midnight
+- **AND** the minute ranges the canvas brackets for it are unchanged
+
+### Requirement: Diagnose evidence charts seat their axis names inside the chart
+
+Every axis name a Diagnose evidence chart draws at full rank SHALL render
+entirely inside that chart's own box, on every mode the chart publishes. No part
+of a name SHALL be painted outside the chart's bounds, whichever grid inset the
+axis sits against.
+
+The names themselves SHALL be unchanged: this is a rule about where a name is
+seated, not about what it says. The evidence canvas's grid geometry — the
+canvas-wide spine inset a tile shares with the glucose strip, and the right inset
+reserved for the last axis label — SHALL NOT be widened to seat a name, and the
+on-chart legend SHALL keep the seat its own configuration gives it. A chart whose
+axis name already renders inside its box SHALL keep the seating it has. The mini
+rank SHALL continue to carry no axis name at all.
+
+#### Scenario: The correction-factor rest-windows chart states both its units
+
+- **GIVEN** the Diagnose evidence canvas showing the correction factor's rest
+  windows at full rank
+- **WHEN** the reader looks at the chart's axis names in each alignment the tile
+  publishes
+- **THEN** the y-axis name reads `glucose change (mg/dL)` in full, with no part of
+  it painted outside the chart, under both event and clock alignment
+- **AND** the x-axis name reads `insulin acted (U)` in full, with no part of it
+  painted outside the chart
+
+#### Scenario: The carb-ratio meal-runs chart states its elapsed-time unit
+
+- **GIVEN** a carb ratio finding's meal runs drawn at full rank
+- **WHEN** the reader looks at the chart's axis names in each alignment the tile
+  publishes
+- **THEN** the name reads `minutes from first meal` in full, with no part of it
+  painted outside the chart
+- **AND** the clock alignment's `meal start` and `Carb ratio (g/U)` are seated by
+  the same rule, from the same shared helper, rather than by a second one
+
+#### Scenario: Seating a name moves nothing that already rendered
+
+- **WHEN** every finding row in the queue is opened in turn, in every alignment
+  its tiles publish, and each drawn axis name is measured against its own chart's
+  bounds
+- **THEN** no axis name overhangs any edge of its chart
+- **AND** the basal chart's axis name keeps the seat it had, unmoved
+- **AND** each chart's grid insets and legend seat are the ones it had before
+- **AND** a chart rendered at mini rank carries no axis name
+
+### Requirement: A findings-queue row is exposed as the control it is
+
+Every Diagnose findings-queue row that drills into a finding SHALL be exposed to
+assistive technology as an activatable control, and SHALL keep its position within
+the queue's list. The row's list membership SHALL NOT be bought by overriding the
+control role: the row element SHALL carry no `role` that replaces its implicit
+`button` role, and list semantics SHALL be carried by an enclosing element
+instead.
+
+This requirement governs exposure only. The queue's rendered geometry, its
+keyboard behaviour — Tab order, Enter and Space activation, and the focus ring —
+and the row identity and state hooks that the shipped browser suites and frozen
+behaviour replays locate SHALL be unchanged by satisfying it.
+
+#### Scenario: A reader navigating by control reaches every finding
+
+- **WHEN** the findings queue has painted its rows
+- **THEN** each row that drills into a finding is exposed with the `button` role
+- **AND** a query for a control by that row's own title matches exactly that row
+- **AND** the row is still exposed as an item of the queue's list
+
+#### Scenario: The queue's ranked and unranked rows are exposed alike
+
+- **WHEN** the queue paints ranked rows, tier captions, the unranked-tail note and
+  unranked tail rows together
+- **THEN** every drilling row, ranked or unranked, is exposed with the `button`
+  role
+- **AND** the rank numeral remains hidden from assistive technology, because the
+  row's list position is still announced
+
+#### Scenario: Restoring the role moves nothing a reader can see
+
+- **WHEN** the queue is painted with ranked rows, a tier caption, the
+  unranked-tail note and two consecutive unranked tail rows
+- **THEN** the vertical gap between each painted piece's rendered box and the next
+  one's is the gap it was before the row's control role was restored, including
+  the tightened gap the tail note and the consecutive tail rows share
+- **AND** Tab reaches every row in visual order, and Enter and Space each drill
+
+### Requirement: A merged parameter finding stages every member the server published
+
+A Diagnose findings row that names a span of several parameter slots SHALL stage
+every member the projection published for that row, and only those members whose
+own backend staging verdict is true. Membership SHALL be read from the row's
+served member list; the surface SHALL derive it from no row id, title, or clock
+arithmetic, and SHALL re-derive no floor, threshold, direction or safety verdict
+for any member. Un-staging SHALL remove exactly the set staging added, and the
+surface's staged tally, its staging control's state, the parameter lane's staged
+marks, the watch dock's line and the Plan badge SHALL all describe that one set.
+A finding whose published membership is a single slot SHALL stage exactly that
+slot, unchanged.
+
+A detail panel that shows one member of such a finding SHALL name the finding's
+span and say that staging acts on the whole run, and SHALL keep printing that
+member's own Current, Estimate and Recommended rather than a span figure. The
+watch dock SHALL name the staged span in every case, and SHALL print a
+current-to-recommended number pair only where every staged member carries the
+same pair.
+
+#### Scenario: A merged basal finding stages both its half hours
+
+- **GIVEN** the findings queue publishes one basal row whose served members are
+  two contiguous half-hour slots, each carrying a true staging verdict with its
+  own current and recommended rate
+- **WHEN** the reader opens that row and uses its staging control
+- **THEN** the Plan draft holds one item per published member, each with that
+  member's own current and recommended value
+- **AND** the watch dock names the row's whole span
+- **AND** the Plan badge counts every staged member
+
+#### Scenario: Un-staging removes exactly what staging added
+
+- **GIVEN** a merged basal finding is staged from its own panel
+- **WHEN** the reader undoes it from that panel
+- **THEN** every item that staging added leaves the Plan draft
+- **AND** no member of the run remains staged in the surface's own tally, lane
+  marks or dock line
+
+#### Scenario: A member panel says which run it belongs to
+
+- **WHEN** the reader opens a panel for one member of a multi-member finding
+- **THEN** the panel names the finding's span and states that staging acts on the
+  whole run
+- **AND** the panel's Current, Estimate and Recommended remain that member's own
+  served numbers
+
+#### Scenario: A single-slot finding is unchanged
+
+- **WHEN** the reader opens and stages a finding whose published membership is one
+  slot
+- **THEN** the Plan draft holds exactly that one item
+- **AND** the panel carries no span statement beyond the slot's own clock span

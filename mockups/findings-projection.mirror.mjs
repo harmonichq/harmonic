@@ -48,6 +48,27 @@ const OUTCOME_KIND = {
   over_treated_low: 'high', correction_stacking: 'low', correction_on_iob: 'low',
   missed_meal: 'high', meal_bolus_short: 'high',
 };
+const EXPOSURE_FAMILY = {
+  carb_undercount: 'meals', late_bolus: 'meals', meal_over_delivery: 'meals',
+  over_treated_low: 'lows', correction_stacking: 'correction_clusters',
+  correction_on_iob: 'lows', missed_meal: 'highs', meal_bolus_short: 'highs',
+};
+const PATTERN_RATE_FAMILY = {
+  highs_after_meals: 'meals', lows_after_meals: 'meals',
+  highs_after_treating_lows: 'lows', lows_after_correcting_highs: 'lows',
+  overnight_lows_no_iob: null,
+};
+
+function patternRateFamily(pattern) {
+  return PATTERN_RATE_FAMILY[pattern.key] ?? null;
+}
+
+function patternChartable(pattern, exposures) {
+  const family = patternRateFamily(pattern);
+  const hasAdmittedHabit = (pattern.members || [])
+    .some((member) => member.kind === 'habit' && member.admitted);
+  return hasAdmittedHabit && Number(exposures.exposures?.[family]?.n || 0) > 0;
+}
 // evidence_population.policy_for — Meal bolus fell short recurs over eligible
 // meal groups even though each member episode lands in the Highs family.
 const RECURRENCE_GROUP_POLICY = {
@@ -58,6 +79,11 @@ const SETTINGS_CHIPS = {
   basal_rate: { raise: ['highs'], lower: ['lows'] },
   carb_ratio: { raise: ['lows'], lower: ['highs'] },
   isf: { strengthen: ['highs'], weaken: ['lows'] },
+};
+const PATTERN_CHIPS = {
+  highs_after_meals: ['highs', 'meals'], lows_after_meals: ['lows', 'meals'],
+  highs_after_treating_lows: ['highs'],
+  lows_after_correcting_highs: ['lows', 'corrections'], overnight_lows_no_iob: ['lows'],
 };
 // findings_projection.UNCAUSED_HIGHS_COPY — the operator-confirmed sentence, with
 // the noun's number as its only variation (a surface printing '1 highs' is a defect).
@@ -115,7 +141,7 @@ function row(fields) {
     evidence: null, verdict_counts: null, verdict_counts_by_family: null,
     chips: null, window_scope: null,
     past_setting: null, programmed_now: null, regime_end: null, run_ids: null,
-    event_chart: null,
+    event_chart: null, pattern: null, pattern_chart: null, claimed_by: null,
     ...fields,
   };
 }
@@ -123,6 +149,7 @@ function row(fields) {
 function chipsFor(row) {
   if (row.register === 'held' || row.register === 'blind' || row.register === 'history') return [];
   if (row.register === 'assert') return [...SETTINGS_CHIPS[row.parameter][row.direction]];
+  if (row.kind === 'pattern') return [...PATTERN_CHIPS[row.pattern.key]];
 
   const chips = [];
   const kind = OUTCOME_KIND[row.lever] ?? null;
@@ -137,7 +164,7 @@ function chipsFor(row) {
 function stampedRow(fields) {
   const result = row(fields);
   result.chips = chipsFor(result);
-  result.window_scope = result.parameter === 'isf' ? 'whole_day' : 'window';
+  result.window_scope = result.parameter === 'isf' ? 'whole_day' : result.window_scope || 'window';
   return result;
 }
 
@@ -644,7 +671,7 @@ function icHeadline(r) {
     + `${supportN} meal runs${againstCurrent}.`;
 }
 
-function findingHeadline(r) {
+export function findingHeadline(r) {
   // findRows in this mirror never publishes a row without an appearance
   // (transcribed from `_finding_rows`'s `by_lever` construction), so this
   // is never null.
@@ -668,6 +695,13 @@ function historyHeadline(r) {
 }
 
 function headlineFor(r) {
+  if (r.kind === 'pattern') {
+    if (r.pattern.count_status) return `${r.title}: counts under review`;
+    if (r.pattern.admission_route === 'none') return r.title;
+    const noun = r.pattern.rate_producer === 'harm_band_source_nights'
+      ? 'nights' : FAMILY_NOUN[patternRateFamily(r.pattern)];
+    return `${r.title} in ${r.pattern.k} of ${r.pattern.n} ${noun}`;
+  }
   if (r.kind === 'habit') return findingHeadline(r);
   if (r.register === 'history') return historyHeadline(r);
   if (r.parameter === 'basal_rate') return basalHeadline(r);
@@ -699,9 +733,9 @@ function selection(analysis, query, selectedId) {
 
 /** The queue's one order: priced rows by priority desc, then unpriced rows by count
     desc, then the demoted held and blind registers in clock order. */
-function sortKey(r) {
+function sortKey(r, patterns = new Map()) {
   const span = r.span || {};
-  return [
+  const key = [
     REGISTER_RANK[r.register],
     r.priority != null ? 0 : 1,
     -(r.priority || 0),
@@ -710,15 +744,17 @@ function sortKey(r) {
     r.register === 'history' && r.regime_end ? -Date.parse(r.regime_end) : 0,
     r.title || '',
   ];
+  if (r.claimed_by && patterns.has(r.claimed_by)) return [...sortKey(patterns.get(r.claimed_by)), 1, ...key];
+  return [...key, 0];
 }
-const compare = (a, b) => {
-  const left = sortKey(a);
-  const right = sortKey(b);
+const compare = (a, b, patterns) => {
+  const left = sortKey(a, patterns);
+  const right = sortKey(b, patterns);
   for (let i = 0; i < left.length; i += 1) {
     if (left[i] < right[i]) return -1;
     if (left[i] > right[i]) return 1;
   }
-  return 0;
+  return left.length - right.length;
 };
 
 /**
@@ -728,6 +764,9 @@ const compare = (a, b) => {
  * @param {{start_min: number, end_min: number}|null} bounds
  */
 export function projectFindings(inputs, bounds = null, selectedId = null) {
+  if (!Object.hasOwn(inputs, 'outcome_patterns')) {
+    throw new Error('findings mirror input is missing outcome_patterns');
+  }
   const analysis = inputs.analysis || {};
   const exposures = inputs.exposures || {};
   const scenarios = inputs.scenarios || {};
@@ -739,7 +778,28 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
   rows = [...rows, ...findingRows(exposures, scenarios, query),
     ...historyRows(analysis, query)];
-  rows.sort(compare);
+  const patterns = new Map();
+  if (!query.scoped) {
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    for (const pattern of inputs.outcome_patterns) {
+      if (pattern.collapse !== 'remain_pattern') continue;
+      for (const lever of pattern.rate_levers || []) {
+        const claimed = byId.get(`finding:${lever.replace('habit:', '')}`);
+        if (claimed) {
+          claimed.claimed_by = pattern.subject;
+        }
+      }
+      const projected = stampedRow({
+        id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
+        priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
+        pattern: structuredClone(pattern), window_scope: 'whole_day',
+        pattern_chart: patternChartable(pattern, exposures)
+          ? { key: pattern.key, window: structuredClone(query.dict) } : null,
+      });
+      rows.push(projected); patterns.set(pattern.subject, projected);
+    }
+  }
+  rows.sort((a, b) => compare(a, b, patterns));
   for (const row of rows) {
     if (row.priority == null) row.tier = 'noted';
     else if (row.register === 'assert') row.tier = 'next_in_line';
@@ -751,6 +811,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   const counts = { assert: 0, held: 0, blind: 0, finding: 0, history: 0 };
   const chip_counts = { highs: 0, lows: 0, meals: 0, corrections: 0 };
   for (const r of rows) {
+    if (r.claimed_by) continue;
     counts[r.register] += 1;
     for (const chip of r.chips) chip_counts[chip] += 1;
   }
@@ -766,6 +827,9 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     window: query.dict,
     findings_window: { days: analysis.window_days ?? null, ...(exposures.window || {}) },
     rows,
+    // Prepared by Python's build_outcome_patterns once.  The fixture mirror
+    // transcribes this backend roster; it does not classify or rank Patterns.
+    outcome_patterns: structuredClone(inputs.outcome_patterns),
     selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,

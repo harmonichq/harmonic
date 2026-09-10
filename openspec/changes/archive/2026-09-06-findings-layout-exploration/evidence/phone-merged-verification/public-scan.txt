@@ -1,0 +1,27 @@
+
+221 rule5-dose-ratio finding(s) match the acknowledged baseline (digest d6b0025ea3e0…); each was read and judged non-identifying. See scripts/public_scan_config.txt.
+
+suppressed by a pin (the date rule only — reason recorded in the config):
+  frontend/cockpit-shell.browser.test.mjs:136	17 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 12 invented round test dates (§3.1 [R6])
+  frontend/daily-nav.test.js:17	16 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 16 invented round test dates (§3.1 [R6])
+  frontend/day-surface.browser.mjs:36	8 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 8 invented round test dates (§3.1 [R6])
+  frontend/diagnose-workstation-behavior.replay.mjs:176	17 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 9 in-span dates, operator sanction and revision dates quoted in story comments (§3.1 [R6])
+  tests/test_api.py:98	10 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 8 invented round test dates (§3.1 [R6])
+  tests/test_store.py:28	14 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 16 invented round test dates (§3.1 [R6])
+  uv.lock:16	47 distinct in-span dates (>= 8), no accepted provenance stamp
+		pinned: 77 in-span dates, package upload stamps (§3.1 [R6])
+
+prose exemptions in force (plan-ruled, never inferred):
+  scripts/public_scan_config.txt	dose-ratio	the generated baseline records matched dose texts; without this the record of the findings is itself findings (#728)
+
+pins that suppressed nothing on this run:
+  frontend/__fixtures__/ic-blocks.json
+  mockups/diagnose-event-comparison.synthetic/capture.json
+
+scan-public-tree: 398 file(s) scanned, 22 stamped, 7 pinned, 221 acknowledged dose-ratio, 0 finding(s).

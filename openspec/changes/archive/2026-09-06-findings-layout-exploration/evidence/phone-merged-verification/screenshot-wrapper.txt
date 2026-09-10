@@ -1,0 +1,10 @@
+✔ wrapper serves a stripPrefix fixture and fixture-backed stubs, and applies no theme (84.454334ms)
+✔ the wrapper defines no theme-application hook (0.114208ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.9665

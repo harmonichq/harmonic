@@ -1,0 +1,48 @@
+✔ Diagnose behavior ledger inventory matches the replay registry (1.899208ms)
+✔ Diagnose behavior ledger requires a retirement inventory (0.712917ms)
+✔ Diagnose behavior ledger rejects a replay story removed without retirement (1.132375ms)
+✔ Diagnose behavior ledger rejects an issued ID without a replay story (1.077916ms)
+✔ Diagnose behavior ledger accepts a permanent retirement (0.942792ms)
+✔ Diagnose behavior ledger rejects coordinated deletion of an issued ID (0.91825ms)
+✔ Diagnose behavior ledger rejects coordinated renumbering of an issued ID (0.792791ms)
+✔ Diagnose behavior ledger rejects a malformed story range (0.290375ms)
+✔ Diagnose behavior ledger rejects a malformed replay registration (0.451083ms)
+✔ Diagnose behavior ledger rejects an unquoted replay ID (0.425917ms)
+✔ queryState reads Diagnose state from the canonical route query (0.404583ms)
+✔ #302 · a settled tile refreshes the mounted findings-row mini (0.357084ms)
+✔ #302 · the rail mini defines every cohort ink the shared chart reads off it (0.338667ms)
+✔ selected detail describes its glucose trace in product language (0.167291ms)
+✔ C44/C56 replay poses enter the existing Findings queue once (1.085208ms)
+✔ generated finding story pose preserves a ready id already in its preparation (9.275375ms)
+✔ generated missed-meal queue pose does not duplicate a served row (11.8335ms)
+✔ #223 · direction-only Correction factor detail leaves evidence ownership with the analyzer (9.877375ms)
+✔ basal detail states the served support floor (0.315292ms)
+✔ basal slot detail groups served nights, selects one, and preserves roster mechanics (2.528584ms)
+✔ basal slot evidence states distinguish loading and unavailable data (0.101083ms)
+✔ the night roster perturbs nothing in the numbers and staging block (0.1985ms)
+✔ basal night roster caps and expands its served rows (0.506042ms)
+✔ basal night detail prints the served rates and glucose beside the roster mean (0.24425ms)
+✔ basal night detail prints every null served rate and mean as an em dash (0.339834ms)
+✔ basal night detail names the group the served night was sorted into (0.584459ms)
+✔ each basal night row prints the served date, both rates and the in-slot mean (0.287583ms)
+✔ basal night roster preserves a null served roster mean as an em dash (0.158417ms)
+✔ Dark derives the Diagnose material ladder through the shipped role owners (#255) (0.526667ms)
+✔ the vessel cascade composes one Dark 1px/4px grammar (#255) (0.277333ms)
+✔ #341 · All charts visibly marks the current chart without changing geometry (0.112666ms)
+✔ #341 · All charts announces its actual scroll direction (0.07725ms)
+✔ Diagnose mounts the merged workstation surface (#636) (0.387208ms)
+✔ Glossary overlay has dialog semantics and accessible name (0.178084ms)
+✔ Month-expand panel has dialog semantics and accessible name (0.242625ms)
+✔ Verify mounts the ported workstation and none of the retired workbench (#660) (0.147084ms)
+✔ Guide sidebar intro does not claim the preview unconditionally sits beside the article (0.137042ms)
+✔ the page declares its own app icon (0.0685ms)
+✔ the cockpit footer keeps the full advisory sentence visible (#535) (0.231583ms)
+✔ the cockpit identity wears the locked Harmonic mark (0.322375ms)
+ℹ tests 40
+ℹ suites 0
+ℹ pass 40
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 89.149333

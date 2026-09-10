@@ -1,0 +1,25 @@
+✖ #83 · Filter and every menu item stay reachable at 390×844 (1729.138875ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1897.763125
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:1978:1
+✖ #83 · Filter and every menu item stay reachable at 390×844 (1729.138875ms)
+  AssertionError [ERR_ASSERTION]: Filter menu stays attached to its trigger: {"trigger":{"top":690,"bottom":711},"menu":{"top":104,"bottom":313},"gap":377}
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/341-c2/frontend/diagnose-workstation.browser.test.mjs:1995:14)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

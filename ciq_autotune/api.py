@@ -5,7 +5,7 @@ prints (ROADMAP §5): ``GET /api/analyze`` returns its JSON, ``POST /api/fetch``
 live pull. The result schema *is* the contract a frontend builds on, so the API
 adds no analysis of its own.
 
-It also serves the frontend SPA (``frontend/index.html``) at ``/`` and its explicit
+It also serves the built frontend SPA (``frontend/dist/index.html``) at ``/`` and its explicit
 page paths, alongside the ``/api`` routes on the same port — there is no separate frontend server and
 no login screen (#10): the SPA shell itself loads unauthenticated, then makes
 bearer-token-gated API calls.
@@ -21,6 +21,7 @@ extra on a core-only install.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import sqlite3
@@ -73,6 +74,7 @@ from .derived_artifacts import (
     rebuild_ic_block_evidence,
 )
 from .store import Store
+from .guidance import baseline_for, is_preference_subject
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +83,10 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 RECOMPUTE_PACE_SECONDS = 0.1
 
-_FRONTEND_INDEX = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
+_FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+_FRONTEND_INDEX = _FRONTEND_DIST / "index.html"
+_FRONTEND_ASSETS = _FRONTEND_DIST / "assets"
+_FRONTEND_BUILD_COMMAND = "npm ci && npm run build"
 SPA_PAGES = ("day", "diagnose", "verify", "plan", "settings", "guide")
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
@@ -101,7 +106,8 @@ def _latest_instant(store) -> Optional[datetime]:
     (mirrors ``summarize_trend``'s default so the pin guard sees the same anchor)."""
     times = ([e.t for e in store.basal_events()]
              + [r.t for r in store.cgm_readings()]
-             + [b.t for b in store.bolus_events()])
+             + [b.t for b in store.bolus_events()]
+             + [s.captured_at for s in store.settings_snapshots()])
     return max(times) if times else None
 
 
@@ -123,7 +129,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         import contextlib
 
         from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
-        from fastapi.responses import FileResponse, JSONResponse
+        from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+        from fastapi.staticfiles import StaticFiles
     except ImportError as e:  # pragma: no cover - depends on the optional extra
         raise RuntimeError(
             "The HTTP API needs the 'api' extra: `uv sync --extra api` "
@@ -140,6 +147,48 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     key_path = key_path or configuration.secret_key_path
     if enable_fetch_loop is None:
         enable_fetch_loop = not configuration.no_fetch
+    # One in-process result cache for this app's lifetime (#267).  Construct it
+    # before the guarded data migration so a completed rewrite invalidates every
+    # subsequently served shape.
+    cache = ResultCache(incarnation=analysis_incarnation)
+    migrated_patterns = False
+    # Writable application startup owns analysis-backed migration; history and
+    # ordinary CLI connections only apply the schema stamp in Store.__init__.
+    with Store.open(db_path) as store:
+        if store.pattern_migration_pending():
+            try:
+                from .analyzers.scenario import build_scenarios
+                window_days = findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS
+                analysis = analyze(
+                    store, window_days=window_days, ignore_setting_changes=False,
+                    pool_agreeing_basal_regimes=True,
+                    carb_entries=store.carb_entries(),
+                    prompt_responses=store.prompt_responses(),
+                ).to_dict()
+                exposures = build_exposures(store, window_days=window_days)
+                scenarios = build_scenarios(store, window_days=window_days).to_dict()
+                migrated_patterns = store.migrate_pattern_subjects(
+                    analysis, exposures, scenarios,
+                )
+            except Exception:
+                logger.exception("Pattern subject migration remains pending")
+    if migrated_patterns:
+        cache.bump()
+    frontend_built = _FRONTEND_INDEX.is_file()
+    if not frontend_built:
+        logger.error("Frontend build is missing; run %s", _FRONTEND_BUILD_COMMAND)
+
+    class _FrontendAssets(StaticFiles):
+        """Serve assets that appear after an in-place frontend build."""
+
+        async def check_config(self):
+            if Path(self.directory).is_dir():
+                await super().check_config()
+
+        async def get_response(self, path, scope):
+            if not Path(self.directory).is_dir():
+                return PlainTextResponse("Not Found", status_code=404)
+            return await super().get_response(path, scope)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: "FastAPI"):
@@ -176,7 +225,6 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # endpoints answer from it until a write bumps it; every mutating endpoint and
     # the hourly fetch loop clear it. A per-app instance (not a module singleton)
     # keeps two-DB tests isolated. See ADR 0035.
-    cache = ResultCache(incarnation=analysis_incarnation)
     app.state.result_cache = cache
     app.state.finding_case_file_before_commit = None
     fixed_flights: dict[tuple, None] = {}
@@ -333,6 +381,46 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             key, build_snapshot, validate=current_fixed_result)
         return generation, result.value
 
+    def guidance_payload():
+        """Compose source guidance and the read-only lifecycle verdict at one revision."""
+        from .watched_change import active_watched_change, follow_up_admission, pending_plan
+        for _ in range(3):
+            with Store.open_queryonly(db_path) as store:
+                revision = store.input_data_revision()
+                now = _latest_instant(store) or datetime.now()
+                admission = follow_up_admission(store, now=now)
+                watch = active_watched_change(store, (), (), (), now=now)
+                pending = pending_plan(store)
+                draft = store.get_plan_draft()
+                preferences = store.guidance_preferences()
+            try:
+                generation, snapshot = history_snapshot(findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+            except ResultCache.GenerationChanged:
+                continue
+            with Store.open_queryonly(db_path) as store:
+                if store.input_data_revision() != revision:
+                    continue
+            payload = snapshot[0].guidance(
+                active_watch=watch.to_dict() if watch is not None else None,
+                preferences=preferences,
+                analysis_generation=f"guidance:{generation}:r{revision}")
+            payload.update(input_revision=revision, admission=admission, pending_plan=pending, draft=draft)
+            if admission["state"] == "unavailable":
+                payload.update(disposition="unavailable", selected=None, unavailable=admission["reason"])
+            elif watch is None and pending:
+                payload.update(disposition="pending_plan", selected=None)
+            elif watch is None and draft and draft["items"]:
+                payload.update(disposition="draft", selected=None)
+            return payload
+        raise ResultCache.GenerationChanged("guidance inputs changed during every snapshot")
+
+    def guidance_or_unavailable():
+        try:
+            return guidance_payload()
+        except Exception as error:
+            logger.exception("guidance source unavailable")
+            raise HTTPException(status_code=503, detail="guidance is unavailable") from error
+
     def ic_block_evidence_preparation():
         """One current I:C meal-run preparation per cache generation."""
         key = ("ic-block-evidence-preparation",)
@@ -385,6 +473,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             alignment = params.get("alignment")
             occ = params.get("occ")
             valid_findings = {f"finding:{lever.value}" for lever in Lever}
+            valid_findings |= findings_projection_module.PATTERN_SUBJECTS
             if (not isinstance(pid, str) or not re.fullmatch(r"fp_[0-9a-f]{32}", pid)
                     or ((finding is None) == (lever is None))
                     or (finding is not None and finding not in valid_findings)
@@ -444,240 +533,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     # ADR 94 publishes it at ``/api/openapi.json``, and
     # ``tests/test_frontend_asset_routes.py`` fails the moment it stops
     # answering.
+    def built_shell():
+        if not _FRONTEND_INDEX.is_file():
+            return PlainTextResponse(
+                f"Frontend build is missing; run {_FRONTEND_BUILD_COMMAND}.",
+                status_code=503,
+            )
+        return FileResponse(_FRONTEND_INDEX)
+
     @app.get("/")
     def index():
-        return FileResponse(_FRONTEND_INDEX)
+        return built_shell()
 
     for _page in SPA_PAGES:
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
-    # The frontend has no build step and no fingerprinted filenames, and these
-    # routes send no Cache-Control — so browsers heuristically cached the ES
-    # modules off Last-Modified and a reloaded page kept running week-old code
-    # while the server served fresh bytes (observed live: one URL, two bodies —
-    # the module map's copy stale, a cache-busted import current). `no-cache`
-    # forces revalidation on every load; the payloads are local files on a
-    # local port, so the cost is nil and stale UI is the only thing spent.
+    # The shell has one stable URL, so it revalidates on every load. Vite
+    # fingerprints assets, so they can stay immutable until their names change.
     @app.middleware("http")
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path.lstrip("/") in SPA_PAGES or path.startswith("/assets/"):
+        if path == "/" or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
+        elif path.startswith("/assets/") and response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
-    # Serve the frontend's sibling ES-module / stylesheet assets (#100). These
-    # are explicit per-file routes (not a StaticFiles mount) so they can never
-    # shadow an API route or the ``/`` index. No token, same as ``index``.
-    # Content types are pinned because the module graph fails to load if the
-    # browser rejects the .js MIME type.
-    _FRONTEND_DIR = _FRONTEND_INDEX.parent
-
-    @app.get("/assets/tab-routing.js")
-    def tab_routing_js():
-        return FileResponse(_FRONTEND_DIR / "tab-routing.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/scenario-chart.js")
-    def scenario_chart_js():
-        return FileResponse(_FRONTEND_DIR / "scenario-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/chart-builders.js")
-    def chart_builders_js():
-        return FileResponse(_FRONTEND_DIR / "chart-builders.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workspaces.js")
-    def diagnose_workspaces_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workspaces.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation-chart.js")
-    def diagnose_workstation_chart_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation.js")
-    def diagnose_workstation_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/occurrence-roster.js")
-    def occurrence_roster_js():
-        return FileResponse(_FRONTEND_DIR / "occurrence-roster.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-event-comparison.js")
-    def diagnose_event_comparison_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-workstation-data.js")
-    def diagnose_workstation_data_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation-data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-evidence-charts.js")
-    def diagnose_evidence_charts_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-evidence-charts.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-canvas-layout.js")
-    def diagnose_canvas_layout_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-layout.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-canvas-state.js")
-    def diagnose_canvas_state_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-canvas-state.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/finding-case-file-validation.js")
-    def finding_case_file_validation_js():
-        return FileResponse(_FRONTEND_DIR / "finding-case-file-validation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-findings-queue.js")
-    def diagnose_findings_queue_js():  # #735: the inspector's level 1
-        return FileResponse(_FRONTEND_DIR / "diagnose-findings-queue.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/watched-change-dock.js")
-    def watched_change_dock_js():  # #735: the inspector's floor
-        return FileResponse(_FRONTEND_DIR / "watched-change-dock.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/data.js")
-    def data_js():
-        return FileResponse(_FRONTEND_DIR / "data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/diagnose-data-age.js")
-    def diagnose_data_age_js():
-        return FileResponse(_FRONTEND_DIR / "diagnose-data-age.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/plan.js")
-    def plan_js():
-        return FileResponse(_FRONTEND_DIR / "plan.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/settling.js")
-    def settling_js():
-        return FileResponse(_FRONTEND_DIR / "settling.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/carb-log.js")
-    def carb_log_js():
-        return FileResponse(_FRONTEND_DIR / "carb-log.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/prompt-queue.js")
-    def prompt_queue_js():
-        return FileResponse(_FRONTEND_DIR / "prompt-queue.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation.js")
-    def verify_workstation_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation-chart.js")
-    def verify_workstation_chart_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-workstation-data.js")
-    def verify_workstation_data_js():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation-data.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/verify-trial.js")
-    def verify_trial_js():
-        return FileResponse(_FRONTEND_DIR / "verify-trial.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/daily-nav.js")
-    def daily_nav_js():
-        return FileResponse(_FRONTEND_DIR / "daily-nav.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/guide.js")
-    def guide_js():
-        return FileResponse(_FRONTEND_DIR / "guide.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/kb.js")
-    def kb_js():  # #269: Guide-KB shell + markdown render (vue-free)
-        return FileResponse(_FRONTEND_DIR / "kb.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/model-view-log.js")
-    def model_view_log_js():
-        return FileResponse(_FRONTEND_DIR / "model-view-log.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/serial-gate.js")
-    def serial_gate_js():
-        return FileResponse(_FRONTEND_DIR / "serial-gate.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-chart.js")
-    def day_chart_js():
-        return FileResponse(_FRONTEND_DIR / "day-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-hero-chart.js")
-    def day_hero_chart_js():  # #332: mobile glucose-hero Day chart
-        return FileResponse(_FRONTEND_DIR / "day-hero-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/day-dose-focus.js")
-    def day_dose_focus_js():  # #385: Day-chart insulin-lane dose-focus core
-        return FileResponse(_FRONTEND_DIR / "day-dose-focus.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/nav-chart.js")
-    def nav_chart_js():
-        return FileResponse(_FRONTEND_DIR / "nav-chart.js",
-                            media_type="text/javascript")
-
-    @app.get("/assets/scenario.css")
-    def scenario_css():
-        return FileResponse(_FRONTEND_DIR / "scenario.css",
-                            media_type="text/css")
-
-    @app.get("/assets/shell.css")
-    def shell_css():
-        return FileResponse(_FRONTEND_DIR / "shell.css",
-                            media_type="text/css")
-
-    @app.get("/assets/diagnose-workstation.css")
-    def diagnose_workstation_css():
-        return FileResponse(_FRONTEND_DIR / "diagnose-workstation.css",
-                            media_type="text/css")
-
-    @app.get("/assets/diagnose-event-comparison.css")
-    def diagnose_event_comparison_css():
-        return FileResponse(_FRONTEND_DIR / "diagnose-event-comparison.css",
-                            media_type="text/css")
-
-    @app.get("/assets/verify-workstation.css")
-    def verify_workstation_css():
-        return FileResponse(_FRONTEND_DIR / "verify-workstation.css",
-                            media_type="text/css")
-
-    @app.get("/assets/theme.css")
-    def theme_css():
-        """The Harmonic theme's role rules (#736) — served last, loaded last."""
-        return FileResponse(_FRONTEND_DIR / "theme.css",
-                            media_type="text/css")
-
-    @app.get("/assets/favicon.svg")
-    def favicon_svg():
-        return FileResponse(_FRONTEND_DIR / "favicon.svg",
-                            media_type="image/svg+xml")
+    # One prefix-scoped build directory route serves only fingerprinted assets;
+    # it cannot claim page or API paths outside ``/assets``.
+    app.mount("/assets", _FrontendAssets(directory=_FRONTEND_ASSETS, check_dir=False),
+              name="frontend-assets")
 
     @app.get("/api/health")
     def health() -> dict:
@@ -810,30 +696,45 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return fixed_response(fixed(key, "outcomes-trend-v1", lambda store: summarize_trend(store, window_days=window).to_dict()))
 
     @app.get("/api/verify/trials")
-    def verify_trials_endpoint(selected: Optional[str] = None,
+    def verify_trials_endpoint(selected: Optional[str] = None, kind: str = "trial",
+                               assessment: str = "original",
                                _: None = Depends(require_token)) -> dict:
-        """The bounded, side-effect-free Trial roster for Verify (ADR 579).
-
-        The Trial's maturing window and watch horizon are fixed backend facts
-        owned by the watched-change module (#18) — no caller window exists here.
-
-        Answers from the ResultCache since #660: a selected Trial's detail now
-        carries the paired per-period envelopes, which bin every CGM reading in
-        both windows, so the workstation's three detail requests are as heavy as
-        the other cached reads. An unknown id raises out of ``compute`` and is
-        never cached.
-        """
         from .watched_change import review_trials
-
-        def compute() -> dict:
-            with Store.open(db_path) as store:
+        if kind not in ("trial", "focus") or assessment not in ("original", "retained", "current"):
+            raise HTTPException(status_code=422, detail="invalid history kind or assessment mode")
+        if selected is None and assessment != "original":
+            raise HTTPException(status_code=422, detail="reassessment requires a selection")
+        if kind == "focus" and selected is not None and not selected.isdecimal():
+            raise HTTPException(status_code=404, detail="unknown follow-up identity")
+        from .follow_up_comparison import capture_comparison_context
+        identity = int(selected) if kind == "focus" and selected is not None else selected
+        for _ in range(3):
+            with Store.open_queryonly(db_path) as store:
+                # Key and compute share one SQLite snapshot. A crossed write must
+                # retry with a new connection, not recompute inside the old snapshot.
+                store.conn.execute("BEGIN")
+                revision = store.input_data_revision()
                 now = _latest_instant(store) or datetime.now()
-                return review_trials(store, now=now, selected=selected)
+                record = store.follow_up_record(kind, identity) if identity is not None else None
+                retained = record.get("comparison_context") if record else None
+                current = (capture_comparison_context(store, at=now, input_revision=revision)
+                           if assessment != "original" else None)
+                context = json.dumps((retained, current), sort_keys=True)
+                key = ("verify-trials", kind, identity, assessment, revision, context)
 
-        try:
-            return cache.get_or_compute(("verify-trials", selected), compute)
-        except KeyError:
-            raise HTTPException(status_code=404, detail="unknown or expired Trial")
+                def unchanged(result):
+                    with Store.open_queryonly(db_path) as latest:
+                        return result["input_revision"] == revision == latest.input_data_revision()
+
+                try:
+                    return cache.get_or_compute(key, lambda: review_trials(
+                        store, now=now, selected=identity, kind=kind, assessment=assessment),
+                        validate=unchanged, attempts=1)
+                except ResultCache.GenerationChanged:
+                    continue
+                except KeyError:
+                    raise HTTPException(status_code=404, detail="unknown follow-up identity")
+        raise HTTPException(status_code=503, detail="history inputs changed during every snapshot")
 
     @app.get("/api/explore/time-of-day")
     def explore_time_of_day_endpoint(_: None = Depends(require_token)) -> dict:
@@ -892,11 +793,56 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "code": "history_not_found",
                 "message": "Past-setting evidence was not found.",
             }) from error
+
         except ResultCache.GenerationChanged as error:
             raise HTTPException(status_code=409, detail={
                 "code": "analysis_generation_mismatch",
                 "message": "Evidence changed. Refresh findings.",
             }) from error
+
+    @app.get("/api/guidance")
+    def guidance_endpoint(_: None = Depends(require_token)) -> dict:
+        """The fixed-window backend-owned next-priority guidance read."""
+        return guidance_or_unavailable()
+
+    @app.put("/api/guidance/preferences/{subject:path}")
+    def set_guidance_preference_endpoint(subject: str, payload: dict = Body(...),
+                                         _: None = Depends(require_token)) -> dict:
+        generation, reason = payload.get("generation"), payload.get("reason")
+        if not isinstance(generation, str):
+            raise HTTPException(status_code=400, detail="generation is required")
+        if reason is not None and not isinstance(reason, str):
+            raise HTTPException(status_code=400, detail="reason must be a string")
+        current = guidance_or_unavailable()
+        if generation != current["analysis_generation"]:
+            raise HTTPException(status_code=409, detail="guidance changed; read it again")
+        candidate = next((row for row in current["candidates"] if row["subject"] == subject), None)
+        if candidate is None or candidate.get("absent"):
+            raise HTTPException(status_code=404, detail="unknown current guidance subject")
+        baseline = baseline_for(candidate)
+        with Store.open(db_path) as store:
+            try:
+                store.save_guidance_preference(
+                    subject, decided_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    reason=reason, expected_revision=current["input_revision"], **baseline)
+            except ValueError as error:
+                raise HTTPException(status_code=409, detail=str(error)) from error
+        cache.bump()
+        return {"subject": subject, "set_aside": True}
+
+    @app.delete("/api/guidance/preferences/{subject:path}")
+    def restore_guidance_preference_endpoint(subject: str,
+                                             _: None = Depends(require_token)) -> dict:
+        with Store.open(db_path) as store:
+            stored = any(row["subject"] == subject
+                         for row in store.guidance_preferences())
+            if not stored and not is_preference_subject(subject):
+                raise HTTPException(status_code=404,
+                                    detail="unknown guidance subject")
+            restored = store.restore_guidance_preference(subject)
+        if restored:
+            cache.bump()
+        return {"subject": subject, "set_aside": False}
 
     @app.get("/api/diagnose/carb-ratio-block-evidence")
     def diagnose_ic_block_evidence_endpoint(
@@ -1498,93 +1444,325 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         return (fixed_response(fixed(key, "backtest-v1", snapshot_compute)) if holdout_days == 2
                 else cache.get_or_compute(key, compute))
 
+    def follow_up_read(store):
+        from .watched_change import follow_up_admission
+        return {"input_revision": store.input_data_revision(),
+                "admission": follow_up_admission(store, now=_latest_instant(store) or datetime.now())}
+
+    def durable_request(payload, *, creation=False, apply=False, required=False):
+        payload = payload or {}
+        fields = {"request_id", "input_revision", "subject", "analysis_generation", "draft_updated_at"}
+        durable = "request_id" in payload
+        if not durable:
+            if required or fields.intersection(payload):
+                raise HTTPException(status_code=422, detail="complete durable request required")
+            return False
+        needed = {"request_id", "input_revision"}
+        if creation:
+            needed |= {"subject", "analysis_generation"}
+        if apply:
+            needed.add("draft_updated_at")
+        if (not needed <= payload.keys() or type(payload.get("input_revision")) is not int
+                or any(not isinstance(payload.get(key), str) or not payload[key].strip()
+                       or len(payload[key]) > 512 for key in needed - {"input_revision"})):
+            raise HTTPException(status_code=422, detail="invalid durable request fields")
+        for key in ("conclusion", "reason"):
+            if payload.get(key) is not None and (not isinstance(payload[key], str) or len(payload[key]) > 4096):
+                raise HTTPException(status_code=422, detail=f"invalid {key}")
+        return True
+
+    def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False):
+        from .store import FollowUpConflict, FocusAlreadyActive
+        from .watched_change import reconcile_follow_up
+
+        def retry(store):
+            if not durable:
+                return None
+            receipt = store.follow_up_request(payload["request_id"])
+            if receipt is None:
+                return None
+            if (receipt["operation"] != operation or receipt["kind"] != kind
+                    or (identity is not None and receipt["id"] != identity)):
+                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if operation == "pin":
+                expected = (f"pattern:{payload['pattern_key']}" if payload.get("pattern_key")
+                            else "habit:" + str(payload.get("lever")))
+                actual = (receipt["result"]["record"].get("subject")
+                          or "habit:" + receipt["result"]["record"]["lever"])
+                if actual != expected:
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
+                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            return receipt["result"]
+
+        def terminal(store):
+            record = store.follow_up_record(kind, identity) if identity is not None else None
+            if record and durable:
+                if operation == "withdraw" and record["withdrawal"].get("state") == "available":
+                    return record
+                if operation in ("finish", "resolve") and "kind" in record["ending"]:
+                    return record
+            return None
+
+        try:
+            with Store.open_queryonly(db_path) as store:
+                saved = retry(store)
+                if saved is not None:
+                    return saved
+                ended = terminal(store)
+            source = guidance_or_unavailable() if creation and ended is None else None
+            with Store.open(db_path) as store:
+                before = store.input_data_revision()
+                with store.follow_up_transaction():
+                    saved = retry(store)
+                    if saved is not None:
+                        return saved
+                    ended = terminal(store)
+                    if ended is not None:
+                        record = ended
+                    else:
+                        if durable and payload["input_revision"] != store.input_data_revision():
+                            raise FollowUpConflict("stale_input_revision", store.input_data_revision())
+                        if source is not None and source["input_revision"] != store.input_data_revision():
+                            raise FollowUpConflict("stale_source", store.input_data_revision())
+                        now = _latest_instant(store) or datetime.now()
+                        recorded_at = datetime.now()
+                        admission = reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                        record = mutate(store, admission, source, now, recorded_at)
+                    # Saving a new retry receipt is itself a durable write. Reserve
+                    # its revision before capturing the returned common verdict.
+                    revision = store.input_data_revision()
+                    if durable and revision == before:
+                        revision += 1
+                    frontier = store.follow_up_frontier()
+                    if frontier is not None:
+                        store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
+                                                         reconciled_input_revision=store.input_data_revision())
+                    result = {**{key: record[key] for key in (
+                        ("applied_at", "items") if kind == "plan" else
+                        ("id", "lever", "pinned_at", "status") if kind == "focus" else ("id",))},
+                        "record": record, **follow_up_read(store)}
+                    result["input_revision"] = revision
+                    if durable:
+                        store.save_follow_up_request(payload["request_id"], operation=operation,
+                                                     kind=kind, id=record["id"], result=result)
+                changed = store.input_data_revision() != before
+            if changed:
+                cache.bump()
+            return result
+        except (FollowUpConflict, FocusAlreadyActive, sqlite3.IntegrityError) as error:
+            with Store.open_queryonly(db_path) as store:
+                current = follow_up_read(store)
+            detail = {"code": getattr(error, "reason", "lifecycle_conflict"), **current}
+            raise HTTPException(status_code=409, detail=detail if durable else str(error))
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error))
+
+    def source_context(source, candidate, recorded_at):
+        from .guidance import COMPARISON_VERSION
+        actions = candidate["action"] if isinstance(candidate.get("action"), list) else []
+        return {"version": "386:1", "state": "available",
+                "captured_at": recorded_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "input_revision": source["input_revision"], "analysis_generation": source["analysis_generation"],
+                "action": candidate["action"], "explanation": candidate["title"] or "Supported setting change",
+                "source_window": candidate["source_window"], "policy": COMPARISON_VERSION,
+                "subjects": [candidate["subject"]], "occurrences": candidate["occurrence_ids"],
+                "settings": [{"value": action["recommended"], "unit": action["units"]}
+                             for action in actions],
+                "support": candidate["support"], "unknowns": candidate["unknowns"]}
+
+    def selected_source(store, source, payload, subject, durable):
+        from .store import FollowUpConflict
+        if durable and (payload["subject"] != subject or payload["analysis_generation"] != source["analysis_generation"]):
+            raise FollowUpConflict("stale_source", store.input_data_revision())
+        candidate = next((row for row in source["candidates"] if row["subject"] == subject), None)
+        if candidate is None or not candidate.get("action") or candidate.get("preference", {}).get("set_aside"):
+            raise FollowUpConflict("ineligible_source", store.input_data_revision())
+        return candidate
+
     @app.get("/api/plan")
     def get_plan_endpoint(_: None = Depends(require_token)) -> dict:
-        with Store.open(db_path) as store:
-            draft = store.get_plan_draft()
-        return draft or {"items": [], "updated_at": None}
+        with Store.open_queryonly(db_path) as store:
+            store.conn.execute("BEGIN")
+            return {**(store.get_plan_draft() or {"items": [], "updated_at": None}), **follow_up_read(store)}
 
     @app.put("/api/plan")
-    def put_plan_endpoint(items: list = Body(..., embed=True),
-                          _: None = Depends(require_token)) -> dict:
-        updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def put_plan_endpoint(items: list = Body(..., embed=True), _: None = Depends(require_token)) -> dict:
+        updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
         with Store.open(db_path) as store:
             try:
                 store.save_plan_draft(items, updated_at)
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-        # No cache.bump(): plan_draft is a UX-only convenience that does not feed
-        # any analysis computation — clearing heavy results here is pure waste (#427).
+            except ValueError as error:
+                raise HTTPException(status_code=400, detail=str(error))
         return {"items": items, "updated_at": updated_at}
 
     @app.post("/api/plan/apply")
-    def apply_plan_endpoint(_: None = Depends(require_token)) -> dict:
-        applied_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with Store.open(db_path) as store:
-            try:
-                result = store.apply_plan(applied_at)
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-            except sqlite3.IntegrityError:
-                # Two applies landed in the same wall-clock second (applied_at
-                # is the plan_history primary key) — ask the client to retry.
-                raise HTTPException(status_code=409, detail="a plan was just applied, try again")
-        cache.bump()  # (#267)
-        return result
+    def apply_plan_endpoint(payload: Optional[dict] = Body(None), _: None = Depends(require_token)) -> dict:
+        from dataclasses import asdict
+        from .guidance import plan_deliverable
+        from .store import FollowUpConflict
+        from .watched_change import pending_plan
+        payload = payload or {}
+        durable = durable_request(payload, creation=True, apply=True)
+
+        def apply(store, admission, source, now, at):
+            draft = store.get_plan_draft()
+            if not draft or not draft["items"]:
+                raise ValueError("no plan draft to apply")
+            if any(type(item.get("start_min")) is not int or not 0 <= item["start_min"] < 1440
+                   or type(item.get("value")) not in (int, float) for item in draft["items"]):
+                raise ValueError("plan items require a start_min and numeric value to apply")
+            if durable and draft["updated_at"] != payload["draft_updated_at"]:
+                raise FollowUpConflict("stale_draft", store.input_data_revision())
+            if admission["state"] != "available" or admission["active_kind"] or pending_plan(store):
+                raise FollowUpConflict("occupied_admission", store.input_data_revision())
+            family = draft["items"][0]["type"]
+            parameter = {"basal": "basal_rate", "isf": "isf", "ic": "carb_ratio", "target": "target_bg"}[family]
+            candidate = selected_source(store, source, payload, "setting:" + parameter, durable)
+            snapshots = store.settings_snapshots()
+            profile = snapshots[-1].settings.active() if snapshots else None
+            if profile is None:
+                raise FollowUpConflict("missing_source_profile", store.input_data_revision())
+            for item in draft["items"]:
+                actions = candidate["action"]
+                matched = next((action for action in actions
+                    if (item["start_min"] in action.get("member_start_mins", []) if family == "ic" else
+                        action["start_min"] <= item["start_min"] < action["end_min"])), None)
+                if matched is None:
+                    raise FollowUpConflict("ineligible_draft", store.input_data_revision())
+            segments = [asdict(segment) for segment in profile.segments]
+            applied = store.apply_plan(at.strftime("%Y-%m-%d %H:%M:%S"))
+            return store.save_follow_up_record({"kind": "plan", "id": applied["applied_at"], "version": "386:1",
+                **applied, "decision_context": source_context(source, candidate, at),
+                "deliverable": {"version": "386:1", "state": "available",
+                                "source_snapshot": snapshots[-1].captured_at.strftime("%Y-%m-%d %H:%M:%S"),
+                                "source_profile": asdict(profile), "rows": plan_deliverable(segments, applied["items"])}})
+        return lifecycle("apply", "plan", None, payload, durable=durable, mutate=apply, creation=True)
 
     @app.get("/api/plan/history")
     def plan_history_endpoint(_: None = Depends(require_token)) -> dict:
-        with Store.open(db_path) as store:
-            return {"history": store.plan_history()}
+        with Store.open_queryonly(db_path) as store:
+            store.conn.execute("BEGIN")
+            return {"history": store.follow_up_records("plan"), **follow_up_read(store)}
 
-    # --- Focus: pin / unpin / list a watched behavioral lever (#244) ----------
+    @app.post("/api/plan/history/withdraw")
+    def withdraw_plan_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:
+        from .store import FollowUpConflict
+        from .watched_change import pending_plan
+        durable_request(payload, required=True)
+        identity = payload.get("applied_at")
+        if not isinstance(identity, str) or not identity:
+            raise HTTPException(status_code=422, detail="applied_at required")
+        def withdraw(store, admission, source, now, at):
+            record = store.follow_up_record("plan", identity)
+            if record is None:
+                raise HTTPException(status_code=404, detail="unknown Plan")
+            if not pending_plan(store) or pending_plan(store)["id"] != identity:
+                raise FollowUpConflict("nonpending_plan", store.input_data_revision())
+            return store.save_follow_up_record({**record, "withdrawal": {
+                "version": "386:1", "state": "available", "withdrawn_at": at.strftime("%Y-%m-%d %H:%M:%S"),
+                "reason": payload.get("reason")}})
+        return lifecycle("withdraw", "plan", identity, payload, durable=True, mutate=withdraw)
+
+    def _pinnable_pattern_member(row):
+        from .watched_change import is_pinnable
+        if (row.get("kind") != "pattern"
+                or row["readiness"]["verdict"] != "ready"
+                or row.get("action") is None):
+            return None
+        return next((
+            member for member in row["members"]
+            if member["kind"] == "habit"
+            and is_pinnable(member["subject"].split(":", 1)[1], row["pattern_key"])
+        ), None)
 
     @app.get("/api/focus")
     def list_focus_endpoint(_: None = Depends(require_token)) -> dict:
-        """Every Focus ever pinned (active + closed), newest first, plus the pinnable
-        universe so the client can offer only behavioral-flavored levers (ADR 0029)."""
         from .watched_change import pinnable_levers
-        with Store.open(db_path) as store:
-            return {"focuses": store.list_focuses(),
-                    "pinnable": sorted(pinnable_levers())}
+        guidance = guidance_or_unavailable()
+        patterns = [row for row in guidance["candidates"]
+                    if _pinnable_pattern_member(row) is not None]
+        with Store.open_queryonly(db_path) as store:
+            store.conn.execute("BEGIN")
+            return {"focuses": store.follow_up_records("focus"), "pinnable": sorted(pinnable_levers()),
+                    "pinnable_patterns": [{"key": row["pattern_key"], "subject": row["subject"],
+                                           "readiness": row["readiness"]} for row in patterns],
+                    **follow_up_read(store)}
 
     @app.post("/api/focus")
-    def pin_focus_endpoint(lever: str = Body(..., embed=True),
-                           _: None = Depends(require_token)) -> dict:
-        """Pin a behavioral lever as the active Focus.
+    def pin_focus_endpoint(payload: dict = Body(...), _: None = Depends(require_token)) -> dict:
+        from .store import FollowUpConflict
+        from .watched_change import is_pinnable
+        from .follow_up_comparison import capture_comparison_context
+        durable = durable_request(payload, creation=True)
+        lever, pattern_key = payload.get("lever"), payload.get("pattern_key")
+        if pattern_key is not None:
+            if not isinstance(pattern_key, str):
+                raise HTTPException(status_code=422, detail="pattern_key must be a string")
+            current = guidance_or_unavailable()
+            pattern = next((row for row in current["candidates"]
+                            if row.get("subject") == f"pattern:{pattern_key}"), None)
+            if pattern is None:
+                raise HTTPException(status_code=400, detail="Pattern Focus is not ready")
+            member = _pinnable_pattern_member(pattern)
+            if member is None:
+                raise HTTPException(status_code=400, detail="Pattern Focus is not pinnable")
+            lever = member["subject"].split(":", 1)[1]
+        if not isinstance(lever, str):
+            raise HTTPException(status_code=422, detail="lever required")
+        if not is_pinnable(lever, pattern_key):
+            raise HTTPException(status_code=400, detail=f"{lever!r} is not a pinnable behavioral lever")
+        def pin(store, admission, source, now, at):
+            if not admission["focus_pin"]["available"]:
+                raise FollowUpConflict("occupied_admission", store.input_data_revision())
+            subject = f"pattern:{pattern_key}" if pattern_key else "habit:" + lever
+            if pattern_key is None:
+                candidate = next((row for row in source["candidates"]
+                                  if row.get("kind") == "pattern" and any(
+                                      member["subject"] == subject
+                                      for member in row["members"])), None)
+                if candidate is None:
+                    candidate = selected_source(store, source, payload, subject, durable)
+            else:
+                candidate = selected_source(store, source, payload, subject, durable)
+                if candidate["readiness"]["verdict"] != "ready":
+                    raise FollowUpConflict("ineligible_source", store.input_data_revision())
+            focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
+            return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
+                **({"subject": subject} if pattern_key else {}),
+                "decision_context": source_context(source, candidate, at),
+                "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
+        return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)
 
-        Enforces the one-active invariant at pin time (ADR 0029): rejected (409) while
-        a Trial is live — a pump change is watched as a Trial, not a Focus — or while
-        another Focus is already active. A non-behavioral (tuning) lever is a 400.
-        """
-        from .store import FocusAlreadyActive
-        from .watched_change import is_pinnable, trial_is_active
-        if not is_pinnable(lever):
-            raise HTTPException(status_code=400,
-                                detail=f"{lever!r} is not a pinnable behavioral lever")
-        pinned_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with Store.open(db_path) as store:
-            now = _latest_instant(store) or datetime.now()
-            if trial_is_active(store, now=now):
-                raise HTTPException(
-                    status_code=409,
-                    detail="a setting change is under trial — cannot pin a Focus")
-            try:
-                result = store.pin_focus(lever, pinned_at)
-            except FocusAlreadyActive as e:
-                raise HTTPException(status_code=409, detail=str(e))
-        cache.bump()  # (#267)
-        return result
+    def finish_follow_up(kind, identity, payload, durable):
+        from .store import FollowUpConflict
+        from .watched_change import capture_ending
+        def finish(store, admission, source, now, at):
+            record = store.follow_up_record(kind, identity)
+            if record is None:
+                raise HTTPException(status_code=404, detail="unknown follow-up identity")
+            if kind == "focus" and record["status"] != "active" and not durable:
+                raise HTTPException(status_code=404, detail="no active focus with that id")
+            if admission["state"] != "available" or admission["active_kind"] != kind or admission["active_id"] != identity:
+                raise FollowUpConflict("nonactive_subject", store.input_data_revision())
+            if kind == "trial" and not admission["can_finish_trial"]:
+                raise FollowUpConflict("immature_trial", store.input_data_revision())
+            return capture_ending(store, record, kind="manual" if kind == "focus" else "user_finished",
+                                  effective_at=at, recorded_at=at, data_cutoff=now,
+                                  conclusion=payload.get("conclusion"))
+        return lifecycle("resolve" if kind == "focus" else "finish", kind, identity, payload,
+                         durable=durable, mutate=finish)
 
     @app.post("/api/focus/{focus_id}/resolve")
-    def resolve_focus_endpoint(focus_id: int,
+    def resolve_focus_endpoint(focus_id: int, payload: Optional[dict] = Body(None),
                                _: None = Depends(require_token)) -> dict:
-        """Unpin (resolve) an active Focus. 404 if there is no active Focus by that id."""
-        with Store.open(db_path) as store:
-            if not store.resolve_focus(focus_id, "resolved"):
-                raise HTTPException(status_code=404, detail="no active focus with that id")
-        cache.bump()  # (#267)
-        return {"id": focus_id, "status": "resolved"}
+        payload = payload or {}
+        return finish_follow_up("focus", focus_id, payload, durable_request(payload))
+
+    @app.post("/api/verify/trials/{trial_id}/finish")
+    def finish_trial_endpoint(trial_id: str, payload: dict = Body(...),
+                              _: None = Depends(require_token)) -> dict:
+        return finish_follow_up("trial", trial_id, payload, durable_request(payload, required=True))
 
     def signal_recompute() -> None:
         """Invalidate after a fetch and notify the lifespan-owned worker.

@@ -1,0 +1,25 @@
+✖ #341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable (2003.848083ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2174.446917
+
+✖ failing tests:
+
+test at frontend/diagnose-workstation.browser.test.mjs:338:1
+✖ #341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable (2003.848083ms)
+  AssertionError [ERR_ASSERTION]: 760px Spotlight chart controls stay inside their tile: [{"left":705,"right":749,"width":44,"height":44,"hostLeft":10,"hostRight":750,"name":"Show Basal 00:30 to 01:30 fullscreen"},{"left":726,"right":770,"width":44,"height":44,"hostLeft":10,"hostRight":750,"name":"Keep Basal 00:30 to 01:30"}]
+      at TestContext.<anonymous> (file:///Users/connor/worktrees/harmonic/341-c2/frontend/diagnose-workstation.browser.test.mjs:368:14)
+      at async Test.run (node:internal/test_runner/test:1404:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

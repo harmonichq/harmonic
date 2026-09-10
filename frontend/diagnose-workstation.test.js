@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
-import { assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
+import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
+import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 import {
+  patternCaseResponse,
   generatedFindingPose,
   generatedFindingProjection,
 } from './diagnose-workstation-behavior.replay.mjs';
@@ -105,12 +107,12 @@ test('generated missed-meal queue pose does not duplicate a served row', () => {
     new URL('../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8',
   ));
   const id = 'finding:missed_meal';
-  const served = projectFindings({
+  const served = projectFindings(populateFindingsProjectionInput({
     analysis: payload.analyze,
     exposures: payload.exposures,
     scenarios: payload.scenarios,
     event_charts: projectionFixture.inputs.event_charts,
-  });
+  }));
   const projection = generatedFindingProjection(id)(served, caseFiles);
   assert.equal(projection.rows.filter((row) => row.id === id).length, 1,
     'the replay sends one ready missed-meal row through the same fixture projection as the built app');
@@ -428,4 +430,68 @@ test('basal night roster preserves a null served roster mean as an em dash', () 
     renderSlotLevel(host, basalCell, new Set(), 30, 8, () => {}, { nightEvidence: payload, shownCount: 5 });
     assert.match(host.html.join('\n'), /— mg\/dL mean/);
   } finally { globalThis.document = originalDocument; }
+});
+
+test('#356 · a carb-ratio block names the day edge 24:00 and keeps its geometry', () => {
+  /* The findings queue row that opens this panel carries the server's own
+     label for the same block, `00:00 to 24:00`. Naming the block from a bare
+     clock formatter reduced its exclusive end minute modulo one day, so the
+     whole-day block announced a zero-length interval one click below the row
+     that had just named the whole day. The cells are built from block payloads
+     here, not from a hand-set span, so the producer is what is pinned. */
+  const [wholeDay, throughMidnight] = buildIcBlocks([
+    {
+      block_id: 0,
+      label: 'All day',
+      start_min: 0,
+      end_min: 1440,
+      current_values: [5.6],
+      recommended: 5.7,
+      direction: 'raise',
+      asserts_move: true,
+      state: 'numeric',
+    },
+    {
+      block_id: 1200,
+      label: 'Overnight',
+      start_min: 1200,
+      end_min: 360,
+      current_values: [5.6],
+      recommended: 5.5,
+      direction: 'lower',
+      asserts_move: true,
+      state: 'numeric',
+    },
+  ]);
+
+  assert.equal(wholeDay.span, '00:00–24:00');
+  assert.equal(wholeDay.wraps, false);
+  assert.deepEqual(wholeDay.spans, [[0, 1440]]);
+
+  assert.equal(throughMidnight.span, '20:00–06:00');
+  assert.equal(throughMidnight.wraps, true);
+  assert.deepEqual(throughMidnight.spans, [[1200, 1440], [0, 360]]);
+});
+
+
+test('#395 · fixture Pattern cases retain every requested clock and event coordinate', () => {
+  const capture = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-event-comparison.synthetic/capture.json', import.meta.url), 'utf8'));
+  const preparation = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8')).preparation;
+  for (const alignment of ['clock', 'event']) {
+    const url = new URL('http://app.local/api/diagnose/finding-case-file');
+    url.search = new URLSearchParams({ projection_id: preparation.projection_id,
+      finding_id: 'pattern:highs_after_meals', alignment });
+    const response = patternCaseResponse(capture, url, preparation.coordinates.window);
+    assert.equal(validFindingCaseFile(response), true);
+    assert.equal(response.projection_id, preparation.projection_id);
+    assert.equal(response.finding.id, url.searchParams.get('finding_id'));
+    assert.equal(response.projection.alignment, alignment);
+    assert.deepEqual(response.window, preparation.coordinates.window);
+    assert.equal(sameFindingCaseWindow(response.window, null), true);
+    assert.equal(response.selection.state, 'none');
+    assert.equal(response.selection.requested_id, null);
+    if (alignment === 'clock') assert.equal(response.projection.clock.buckets.length, 12);
+  }
 });

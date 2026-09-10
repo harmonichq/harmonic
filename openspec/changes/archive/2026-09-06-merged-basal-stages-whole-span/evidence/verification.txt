@@ -1,0 +1,86 @@
+Verification — #372, all commands run in /Users/connor/worktrees/harmonic/372
+on 2026-09-06, against branch 372-merged-basal-partial-staging.
+
+Preflight (once per worktree; without it pytest dies in collection):
+
+  $ uv sync --frozen --extra api --extra sync
+  → exit 0
+
+BASE, before any implementation — the frozen behaviour ledger replayed against
+the base app (ui-craft revise §2), on the declared no-fetch QA server started by
+AGENTS.md's copy-then-serve block at 127.0.0.1:8850:
+
+  $ BASE_URL=http://127.0.0.1:8850 TARGET=app \
+      PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
+      node frontend/diagnose-workstation-behavior.replay.mjs
+  app: 163 of 163 stories passed
+
+FAILING FIRST — the merged-run case against the unchanged single-slot filter
+(full run in failing-first-stage-items-for.txt):
+
+  $ node --test frontend/diagnose-workspaces.test.js
+  ✖ a merged basal finding maps every eligible published member into Plan rows (#372)
+    AssertionError: every asserting member of the run stages, and only those
+    actual: [ 10 ]   expected: [ 10, 11 ]
+  ℹ pass 5 / ℹ fail 1
+
+The six-command fast gate (AGENTS.md), after the fix:
+
+1 $ uv run python -m pytest
+  ========== 2227 passed, 1 skipped, 185 warnings in 105.92s (0:01:45) ===========
+
+2 $ node --test 'frontend/**/*.test.js'
+  ℹ tests 590
+  ℹ pass 590
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+
+3 $ npx --yes @fission-ai/openspec@1 validate --all --strict
+  Totals: 73 passed, 0 failed (73 items)
+
+4 $ python3 scripts/check_adr_numbers.py
+  check-adr: 122 ADRs in 67 design.md files, all identities unique and issue-keyed.
+
+5 $ python3 scripts/check_owned_identifiers.py
+  check-owned-identifiers: 30 owned-identifier rules passed.
+
+6 $ python3 scripts/check_public_allowlist.py
+  check-public-allowlist: 398 tracked file(s) cleared to ship, 1558 excluded. Every tracked path dispositioned.
+  (the excluded count rises by this change's 12 evidence files; the shipping count holds)
+
+The two browser legs this change touches, each run on its own with no other
+browser leg of this worktree in flight:
+
+7 $ PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
+      node --test frontend/diagnose-workstation.browser.test.mjs
+  ℹ tests 62
+  ℹ suites 0
+  ℹ pass 62
+  ℹ fail 0
+  ℹ cancelled 0
+  ℹ skipped 0
+  ℹ todo 0
+
+8 $ BASE_URL=http://127.0.0.1:8850 TARGET=app \
+      PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
+      node frontend/diagnose-workstation-behavior.replay.mjs
+  app: 164 of 164 stories passed
+
+  and, for the new story on its own:
+
+  $ ONLY=C61 BASE_URL=http://127.0.0.1:8850 TARGET=app \
+      PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json \
+      node frontend/diagnose-workstation-behavior.replay.mjs
+    ok C61
+
+  app: 1 of 1 stories passed
+
+The server behind legs 8 and the renders, started from this worktree and killed
+afterwards (never the committed database, never a shared sweep server):
+
+  scratch="${TMPDIR:-/tmp}/harmonic-qa-e2e-372.sqlite"
+  rm -f "$scratch" "$scratch-wal" "$scratch-shm" "$scratch.derived.sqlite"
+  cp mockups/qa-e2e.synthetic/harmonic.sqlite "$scratch"
+  uv run harmonic serve --no-fetch --token '' --db "$scratch" --port 8850

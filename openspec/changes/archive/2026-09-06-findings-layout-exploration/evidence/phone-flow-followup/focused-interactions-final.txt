@@ -1,0 +1,13 @@
+✔ #341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable (5711.037ms)
+✔ #341 · a long narrow Spotlight title leaves a readable I:C plot (1878.068292ms)
+✔ #341 · useful queue previews remain present and legible at narrow width (1848.679041ms)
+✔ #341 · All charts dismissal preserves a genuinely scrolled phone reading position (2510.481917ms)
+✔ #341 · a narrow lower-rank drill returns with rank one readable (1786.448916ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13893.524416

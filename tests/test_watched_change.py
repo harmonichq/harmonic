@@ -207,6 +207,18 @@ class RevertRuleTest(unittest.TestCase):
 
 
 class FocusViewTest(unittest.TestCase):
+    def test_pattern_focus_adds_identity_but_keeps_lever_derived_copy(self):
+        row = {"id": 4, "lever": "late_bolus", "pattern_key": "highs_after_meals",
+               "pinned_at": "2026-07-01 08:00:00", "status": "active"}
+        view = wc.focus_view(row).to_dict()
+        self.assertEqual(view["subject"], "pattern:highs_after_meals")
+        self.assertEqual(view["pattern_key"], "highs_after_meals")
+        self.assertEqual(view["title"], "Late bolus")
+        self.assertEqual(view["target_metric"], "arc")
+
+    def test_all_setting_pattern_is_not_pinnable(self):
+        self.assertFalse(wc.is_pinnable("basal_rate", "overnight_lows_no_iob"))
+
     def test_meal_lever_outcome_is_arc(self):
         v = wc.focus_view({"id": 1, "lever": "late_bolus",
                            "pinned_at": "2026-07-01 08:00:00", "status": "active"})
@@ -241,11 +253,21 @@ class OneActiveInvariantTest(unittest.TestCase):
     def setUp(self):
         self.store = Store.open(":memory:")
 
+    def reconcile(self, boluses=(), now=None):
+        self.store.upsert_bolus([{
+            "seq_num": index + 1, "request_time": str(b.t), "completion_time": str(b.t),
+            "description": "Bolus", "completion": "Completed", "insulin": b.insulin,
+            "isf": b.isf, "carb_ratio": b.carb_ratio, "carbs": b.carbs,
+        } for index, b in enumerate(boluses)])
+        with self.store.follow_up_transaction():
+            wc.reconcile_follow_up(self.store, now=now or _day(10), recorded_at=now or _day(10))
+
     def tearDown(self):
         self.store.close()
 
     def test_focus_surfaces_when_no_trial(self):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
+        self.reconcile()
         active = wc.active_watched_change(
             self.store, [], [], [], now=_day(10))
         self.assertEqual(active.kind, "focus")
@@ -255,6 +277,7 @@ class OneActiveInvariantTest(unittest.TestCase):
         self.store.pin_focus(
             "overnight_low_from_evening_dosing", "2026-05-06 08:00:00"
         )
+        self.reconcile()
         active = wc.active_watched_change(
             self.store, [], [], [], now=_day(10)
         )
@@ -265,6 +288,7 @@ class OneActiveInvariantTest(unittest.TestCase):
     def test_setting_change_preempts_and_drops_focus(self):
         self.store.pin_focus("late_bolus", "2026-05-06 08:00:00")
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])  # change at day 5
+        self.reconcile(bolus, _day(8))
         active = wc.active_watched_change(
             self.store, [], bolus, [], now=_day(8))
         # Trial takes the slot; the Focus is dropped (not paused), not surfaced.
@@ -274,11 +298,36 @@ class OneActiveInvariantTest(unittest.TestCase):
 
     def test_trial_active_blocks_a_pin(self):
         bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
+        self.reconcile(bolus, _day(8))
         self.assertTrue(wc.trial_is_active(
             self.store, bolus_events=bolus, now=_day(8)))
-        # No change → no trial → a pin would be allowed.
-        self.assertFalse(wc.trial_is_active(
+        # Caller-supplied slices cannot change the committed admission.
+        self.assertTrue(wc.trial_is_active(
             self.store, bolus_events=[], now=_day(8)))
+
+    def test_trial_admission_blocks_a_pattern_focus_pin(self):
+        bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
+        self.reconcile(bolus, _day(8))
+        admission = wc.follow_up_admission(self.store, now=_day(8))
+        self.assertEqual(admission["active_kind"], "trial")
+        self.assertFalse(admission["focus_pin"]["available"])
+
+    def test_trial_preempts_an_active_pattern_focus(self):
+        unavailable = {"version": "386:1", "state": "unavailable",
+                       "reason": "not_recorded"}
+        with self.store.follow_up_transaction():
+            focus = self.store.pin_focus(
+                "late_bolus", "2026-05-06 08:00:00", "highs_after_meals",
+            )
+            self.store.save_follow_up_record({
+                "kind": "focus", "id": focus["id"], "version": "386:1", **focus,
+                "decision_context": unavailable, "comparison_context": unavailable,
+            })
+        bolus = _isf_boluses([(30, 1, 4), (45, 5, 8)])
+        self.reconcile(bolus, _day(8))
+        self.assertIsNone(self.store.active_focus())
+        record = self.store.follow_up_record("focus", focus["id"])
+        self.assertEqual(record["ending"]["kind"], "trial_preempted")
 
     def test_nothing_watched_returns_none(self):
         self.assertIsNone(wc.active_watched_change(

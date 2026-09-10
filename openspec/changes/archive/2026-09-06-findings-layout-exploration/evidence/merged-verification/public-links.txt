@@ -1,0 +1,1 @@
+check-public-links: 360 shipping document(s) scanned; every link, path reference and symlink resolves inside the tree.

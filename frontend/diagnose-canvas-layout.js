@@ -41,20 +41,6 @@ export function unpinChart(layout, chartId) {
   });
 }
 
-/* THE DOCK IS THE WHOLE ORDERED SET, SPOTLIGHT INCLUDED. Lifting the
-   spotlighted chart out left the dock holding the leftovers — whichever charts
-   the reader happened not to be looking at, with its membership changing on
-   every click. A set that re-forms under each interaction cannot read as one
-   object, however it is framed. Keeping every chart in one order and MARKING
-   the one on stage makes the dock a filmstrip with a current frame: clicking a
-   cell moves the stage, it does not change what the row contains.
-
-   The order is the same one `placeSeats` sorts by, derived here without lifting
-   anything, so the two can never disagree about what comes first. */
-export function dockOrder(candidateIds, layout) {
-  return [...new Set(candidateIds)];
-}
-
 /* THE ROW PRESERVES ITS CANDIDATE ORDER AND NO INTERACTION SHUFFLES IT. The
    focal chart is lifted OUT of the row; everything else follows the server
    rank plus retained-live tail already supplied by the membership seam. A

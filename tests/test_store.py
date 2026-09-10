@@ -719,6 +719,47 @@ class IcBlockProvenancePlanStoreTest(unittest.TestCase):
         result = self.store.apply_plan("2026-06-01 12:00:00")
         self.assertEqual(result["items"], items)
 
+    def test_all_day_block_closing_at_midnight_round_trips(self):
+        # #357: the I:C analyzer publishes a profile carrying one I:C all day as
+        # the single block start_min 0, end_min 1440 — the exclusive end naming
+        # the first minute after the arc. That is the whole of such a wearer's
+        # day, and the only block they can be offered; the bounds check read its
+        # 1440 as an impossible minute of day and refused the save.
+        prov = self._block(start=0, end=1440, members=(0, 420, 660, 1080))
+        items = [
+            {"type": "ic", "start_min": m, "value": 5.7, "ic_block_provenance": prov}
+            for m in (0, 420, 660, 1080)
+        ]
+        self.store.save_plan_draft(items, "2026-06-01 09:00:00")
+        self.assertEqual(self.store.get_plan_draft()["items"], items)
+        result = self.store.apply_plan("2026-06-01 12:00:00")
+        self.assertEqual(result["items"], items)
+        self.assertEqual(self.store.plan_history(), [result])
+
+    def test_block_end_outside_its_own_domain_still_rejected(self):
+        # The end admits midnight and nothing past it: 1441 is off the clock, -1
+        # and 0 are not ends at all, and a bool or a float is not a minute. The
+        # save is refused and no draft is recorded. Each value is pinned to the
+        # bounds message, because a widened bound would still be refused a check
+        # or two later by the empty-arc or member-containment guards — 0 and True
+        # both are, on this fixture — and a bare ValueError cannot tell the two
+        # apart. Each value also gets its own store, so one admitted value
+        # reports as one failure instead of leaking a draft into every subtest
+        # after it.
+        for end in (1441, -1, 0, True, 1440.0):
+            with self.subTest(block_end_min=end):
+                store = Store.open(":memory:")
+                self.addCleanup(store.close)
+                prov = self._block(start=0, end=end, members=(0, 420, 660, 1080))
+                items = [
+                    {"type": "ic", "start_min": m, "value": 5.7,
+                     "ic_block_provenance": prov}
+                    for m in (0, 420, 660, 1080)
+                ]
+                with self.assertRaisesRegex(ValueError, "invalid I:C block bounds"):
+                    store.save_plan_draft(items, "2026-06-01 09:00:00")
+                self.assertIsNone(store.get_plan_draft())
+
     def test_truncated_single_row_claiming_two_members_rejected_on_save(self):
         prov = self._block()
         items = [{"type": "ic", "start_min": 720, "value": 9.5, "ic_block_provenance": prov}]
@@ -1185,3 +1226,52 @@ class FocusStoreTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FollowUpMigrationStoreTest(unittest.TestCase):
+    def test_legacy_history_is_readable_before_migration_and_unchanged_after_restart(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'legacy-synthetic.sqlite')
+            # Manufacture the historical schema, without any follow-up tables.
+            with sqlite3.connect(path) as conn:
+                conn.executescript('''
+                    CREATE TABLE plan_history (applied_at TEXT PRIMARY KEY, items_json TEXT NOT NULL);
+                    CREATE TABLE focus (id INTEGER PRIMARY KEY, lever TEXT NOT NULL,
+                                        pinned_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active');
+                    CREATE UNIQUE INDEX focus_one_active ON focus(status) WHERE status = 'active';
+                    CREATE TABLE input_data_revision (id INTEGER PRIMARY KEY, revision INTEGER NOT NULL);
+                    INSERT INTO input_data_revision VALUES (1, 7);
+                    INSERT INTO plan_history VALUES ('2026-08-01 09:00:00', '[{"type":"basal","key":0,"value":0.7}]');
+                    INSERT INTO focus VALUES (1, 'late_bolus', '2026-08-01 10:00:00', 'resolved');
+                    INSERT INTO focus VALUES (2, 'late_bolus', '2026-08-02 10:00:00', 'active');
+                ''')
+            with open(path, 'rb') as file:
+                original_bytes = file.read()
+            with Store.open_readonly(path) as reader:
+                statements = []
+                reader.conn.set_trace_callback(statements.append)
+                plans = reader.follow_up_records('plan')
+                focuses = reader.follow_up_records('focus')
+                self.assertEqual(reader.follow_up_records('trial'), [])
+                self.assertIsNone(reader.follow_up_frontier())
+                self.assertIsNone(reader.follow_up_request('unknown'))
+                self.assertEqual(reader.input_data_revision(), 7)
+                self.assertEqual(reader.conn.total_changes, 0)
+                self.assertTrue(all(s.lstrip().upper().startswith('SELECT') for s in statements))
+            with open(path, 'rb') as file:
+                self.assertEqual(file.read(), original_bytes)
+            self.assertEqual(os.listdir(tmp), ['legacy-synthetic.sqlite'])
+            unknown = {'version': '386:1', 'state': 'unavailable', 'reason': 'legacy_not_recorded'}
+            self.assertEqual(plans[0]['decision_context'], unknown)
+            self.assertEqual(plans[0]['deliverable'], unknown)
+            self.assertEqual(focuses[1]['ending'], unknown)
+            self.assertNotIn('effective_at', focuses[1]['ending'])
+            self.assertEqual(focuses[1]['status'], 'resolved')
+            for _ in range(2):
+                with Store.open(path) as migrated:
+                    self.assertEqual(migrated.follow_up_records('plan'), plans)
+                    self.assertEqual(migrated.follow_up_records('focus'), focuses)
+                    self.assertEqual(migrated.input_data_revision(), 7)
+                    with self.assertRaises(FocusAlreadyActive):
+                        migrated.pin_focus('late_bolus', '2026-08-03 10:00:00')
+                    self.assertEqual(migrated.active_focus()['id'], 2)

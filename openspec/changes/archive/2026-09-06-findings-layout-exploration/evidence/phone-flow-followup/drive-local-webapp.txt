@@ -1,0 +1,6 @@
+FAIL nav http://127.0.0.1:8873/?mode=typical :: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8873/?mode=typical
+FAIL wait-for .dw :: page.waitForSelector: Timeout 15000ms exceeded.
+OK wait 500ms
+OK eval -> {"title":"","adjust":null,"flow":false}
+CONSOLE_ERRORS []
+OK screenshot /private/tmp/ticket-341-phone-driver-smoke.png

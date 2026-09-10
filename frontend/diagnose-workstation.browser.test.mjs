@@ -69,7 +69,8 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  derivedPumpSettings, openApp, openerProblems, panThenAim, state, withIsfVerdict,
+  derivedPumpSettings, openApp, openerProblems, panThenAim, state, touchDrag, touchScroll,
+  withIsfVerdict,
   withoutIsfProjectionVerdict, twoFamilyInputs,
   densityHistoryInputs,
   issue81PendingProjection, issue81FailedProjection, issue81SlicedProjection,
@@ -77,18 +78,18 @@ import {
   issue86PendingRoot, issue86MalformedRecovery,
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
+import { populateFindingsProjectionInput } from './browser-fixture-population.js';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const { createBuiltShell } = require('./built-shell.js');
 const FINDINGS_PROJECTION = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
 // #672: fail closed. A missing prerequisite must exit nonzero, never `skip` —
 // a skipped run exits 0, and a green step that exercised zero browser
 // assertions is the silent-skip failure mode the mock-to-app port process
-// forbids for replay scripts, now extended to this suite. This suite did not
-// previously require VENDOR_DIR (CI already passes it); it now does, so a
-// missing vendor asset is caught here instead of failing later inside a real
-// page load. Every missing prerequisite is named explicitly and accumulated,
+// forbids for replay scripts, now extended to this suite. Every missing
+// prerequisite is named explicitly and accumulated,
 // so one failing run points at everything wrong, not just the first thing
 // checked.
 const missing = [];
@@ -108,15 +109,8 @@ if (chromium && !EXEC && !existsSync(chromium.executablePath())) {
   missing.push(`Chromium executable is missing (no PLAYWRIGHT_EXECUTABLE_PATH and `
     + `${chromium.executablePath()} does not exist — run playwright install chromium)`);
 }
-const VENDOR = process.env.VENDOR_DIR;
-if (!VENDOR) {
-  missing.push('VENDOR_DIR is unset (point it at a directory holding vendored '
-    + 'vue.esm-browser.js and echarts.min.js)');
-} else {
-  for (const asset of ['vue.esm-browser.js', 'echarts.min.js']) {
-    if (!existsSync(join(VENDOR, asset))) missing.push(`VENDOR_DIR=${VENDOR} is missing ${asset}`);
-  }
-}
+let shell;
+try { shell = createBuiltShell(); } catch (error) { missing.push(error.message); }
 if (missing.length) {
   throw new Error(`diagnose-workstation.browser.test.mjs cannot run — missing prerequisites:\n  - ${missing.join('\n  - ')}`);
 }
@@ -136,6 +130,13 @@ after(() => runner.close());
 // diagnose-workstation-behavior.replay.mjs's own `settle` is not exported —
 // this is the same wait, kept local rather than widening that file's surface.
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
+
+async function touchTap(page, locator) {
+  await locator.scrollIntoViewIfNeeded();
+  const box = await locator.boundingBox();
+  assert.ok(box, 'touch target is rendered');
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+}
 
 async function shot(page, family, state_, viewport) {
   if (!SHOTS) return;
@@ -167,6 +168,42 @@ const expandWatching = async (page) => {
     await toggle.click();
   }
 };
+
+/* #362: the label column of a setting panel is sized by the labels in that panel,
+   so the geometry is measured here rather than pinned to a number — a label that
+   outgrows its column lands on the value beside it, and a two-word one wraps
+   against its neighbour's single line. Both are reported, for every labelled
+   number the opened panel is showing. */
+async function numrowProblems(page) {
+  return page.evaluate(() => {
+    const problems = [];
+    const panels = new Map();
+    for (const row of document.querySelectorAll('#level .numrow')) {
+      const k = row.querySelector('.k');
+      const name = k.textContent.trim();
+      const column = k.getBoundingClientRect().width;
+      if (k.scrollWidth > Math.ceil(column)) {
+        problems.push(`${name}: label ${k.scrollWidth}px overruns its ${Math.round(column)}px column`);
+      }
+      const range = document.createRange();
+      range.selectNodeContents(k);
+      const lines = range.getClientRects().length;
+      if (lines !== 1) problems.push(`${name}: label wraps onto ${lines} lines`);
+      const panel = row.parentElement;
+      if (!panels.has(panel)) panels.set(panel, []);
+      panels.get(panel).push({ name, left: Math.round(row.querySelector('b').getBoundingClientRect().left) });
+    }
+    for (const rows of panels.values()) {
+      const [first, ...rest] = rows;
+      for (const row of rest) {
+        if (row.left !== first.left) {
+          problems.push(`${row.name}: value starts at ${row.left}px, ${first.name} at ${first.left}px`);
+        }
+      }
+    }
+    return problems;
+  });
+}
 
 test('seven generated history reads remain ordered, reachable, laid out, and non-stageable', async () => {
   const browser = await runner.browser();
@@ -206,6 +243,8 @@ test('seven generated history reads remain ordered, reachable, laid out, and non
     assert.equal(rendered.history.currentCopies, 1,
       'the dense inspector keeps one quieter current-program line');
     assert.equal(rendered.history.stageCount, 0, 'the dense inspector remains non-stageable');
+    assert.deepEqual(await numrowProblems(page), [],
+      'the narrow past-setting read keeps each label on one line inside its own column');
     assert.ok(rendered.hScroll <= 0 && rendered.vScroll <= 0,
       `the narrow dense inspector stays inside its pane (${rendered.hScroll}, ${rendered.vScroll})`);
   } finally {
@@ -233,16 +272,15 @@ test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangem
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     for (let count = 0; count < 3; count += 1) {
       const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
       const next = page.locator('#tile-schematic .next:not([disabled])');
       if (await tile.count()) await tile.first().click();
       else await next.first().click();
     }
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     const read = () => page.evaluate(() => ({
       arrangement: document.querySelector('#tile-field').dataset.arrangement,
       tiles: [...document.querySelectorAll('.evidence-tile')].map((tile) => ({
@@ -265,26 +303,660 @@ test('#135 · Escape dismisses fullscreen and restores the exact canvas arrangem
   }
 });
 
-test('#215 · fullscreen from the docked strip takes the header and draws the chart', async () => {
+test('#341 · All charts confines interaction and dismissal preserves the window context', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  try {
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const pressedBefore = await page.locator('#seg-window button[aria-pressed="true"]').innerText();
+    const restingGeometry = await page.evaluate(() => {
+      const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+      return {
+        instruments: box('.dw > .instruments'),
+        spotlight: box('#tile-field'),
+        overviewHead: box('#canvas-head'),
+        overview: box('.canvas-pane > .body'),
+      };
+    });
+    assert.ok(restingGeometry.instruments.bottom <= restingGeometry.spotlight.top + 1,
+      'the global window selector remains above the Spotlight');
+    assert.ok(restingGeometry.spotlight.bottom <= restingGeometry.overviewHead.top + 1,
+      'the Spotlight precedes the overview-specific header and readout');
+    assert.ok(restingGeometry.overviewHead.bottom <= restingGeometry.overview.top + 1,
+      'the overview-specific header and readout stay grouped with the overview and basal lane');
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    assert.deepEqual(await page.evaluate(() => ({
+      instruments: document.querySelector('.dw > .instruments')?.inert,
+      inspector: document.querySelector('.dw > .panes > .inspector')?.inert,
+    })), { instruments: true, inspector: true },
+    'the full catalog makes the underlying Diagnose controls non-interactive');
+
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'Escape closes All charts');
+    assert.equal(await page.locator('#seg-window button[aria-pressed="true"]').innerText(), pressedBefore,
+      'catalog dismissal preserves the selected time window');
+    assert.deepEqual(await page.evaluate(() => ({
+      instruments: document.querySelector('.dw > .instruments')?.inert,
+      inspector: document.querySelector('.dw > .panes > .inspector')?.inert,
+      focus: document.activeElement?.id,
+    })), { instruments: false, inspector: false, focus: 'explorer-trigger' },
+    'dismissal restores underlying interaction and focus to All charts');
+
+    assert.equal(await page.getByRole('button', { name: 'Adjust window', exact: true }).count(), 0,
+      'the invented Adjust window shortcut is absent');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · the overview keeps its full name at the split tablet width', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 1024, height: 768 }, appSource: 'fixture',
+  });
+  try {
+    const title = page.locator('#canvas-head .head-rest h2');
+    assert.equal((await title.innerText()).trim(), 'GLUCOSE BY TIME OF DAY');
+    assert.equal(await title.evaluate((node) => node.scrollWidth <= node.clientWidth), true,
+      'the overview name is not reduced to an ellipsis beside empty scope furniture');
+  } finally {
+    await page.close();
+  }
+});
+
+/* #359 · the workspace may not paint one pane over the other. Between 761 and
+   about 830px the split still formed while the canvas pane's own furniture was
+   wider than its track, and the pane carries no overflow rule, so it painted
+   across the findings queue: the rank number and the first word of every row
+   were covered, and the covered strip answered to the canvas.
+
+   Asserted with `document.elementFromPoint` inside each row's own box, never by
+   comparing bounding rectangles — a clipped element still reports its unclipped
+   box, so a rectangle assertion passes on the broken surface as readily as on
+   the fixed one. The last two widths are controls: the split above the new
+   floor is untouched. */
+test('#359 · findings-queue rows own their own surface at every tablet width', async () => {
+  const browser = await runner.browser();
+  const measured = [];
+  for (const width of [761, 768, 800, 830, 900, 1024]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport: { width, height: 1024 }, history: true, appSource: 'fixture',
+    });
+    try {
+      measured.push({
+        width,
+        rows: await page.locator('#level .qrow').evaluateAll((rows) => {
+          const name = (node) => {
+            if (!node) return 'nothing';
+            const classes = typeof node.className === 'string' ? node.className.trim() : '';
+            return `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}`
+              + (classes ? `.${classes.split(/\s+/).join('.')}` : '');
+          };
+          return rows.slice(0, 2).map((row) => {
+            /* Each row is brought into its own port before it is hit-tested.
+               `#level` computes `overflow-y: auto`, and once the panes stack it
+               is far shorter than the split leaves it: measured at 800x1024,
+               251px of port over 452px of rows, which puts the second row's
+               midpoint at y=955 against a port that ends at 900. Its midpoint
+               therefore lands on the watched-change dock below the list — a
+               scroll position, not another pane's paint. Without this the case
+               would measure where the queue happens to be scrolled instead of
+               the horizontal ownership it exists to assert. */
+            row.scrollIntoView({ block: 'center' });
+            const box = row.getBoundingClientRect();
+            const hit = document.elementFromPoint(box.left + 6, box.top + box.height / 2);
+            return { row: name(row), hit: name(hit), owns: !!hit && (hit === row || row.contains(hit)) };
+          });
+        }),
+      });
+    } finally {
+      await page.close();
+    }
+  }
+  assert.ok(measured.every(({ rows }) => rows.length === 2),
+    `every width publishes findings-queue rows to test: ${JSON.stringify(measured)}`);
+  const overprinted = measured.filter(({ rows }) => !rows.every((row) => row.owns));
+  assert.deepEqual(overprinted, [],
+    `these widths let another pane answer inside a findings-queue row: ${JSON.stringify(overprinted, null, 2)}`);
+});
+
+test('#341 · narrow spotlight, catalog, fullscreen, tiers, and controls remain usable', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 },
+    { width: 360, height: 800 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, appSource: 'fixture',
+    });
+    try {
+      const spotlight = await page.locator('#tile-focal .tile-chart canvas').first()
+        .evaluate((canvas) => canvas.getBoundingClientRect());
+      assert.ok(spotlight.height >= 120,
+        `${viewport.width}px keeps a readable selected evidence plot (${spotlight.height}px)`);
+
+      const tierGeometry = await page.locator('#level .qrow.priced').first().evaluate((row) => {
+        const tier = row.querySelector('.tier')?.getBoundingClientRect();
+        const label = row.querySelector('.lab')?.getBoundingClientRect();
+        return { tier, label };
+      });
+      assert.ok(tierGeometry.tier && tierGeometry.label
+        && tierGeometry.tier.bottom <= tierGeometry.label.top + 1,
+      `${viewport.width}px gives the tier its own line before the finding title`);
+
+      const rootControls = await page.locator('#tile-focal .evidence-tile').evaluate((tile) => {
+        const host = tile.getBoundingClientRect();
+        return [...tile.querySelectorAll('.tile-rail button, .tile-fullscreen')].map((button) => {
+          const box = button.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width, height: box.height,
+            hostLeft: host.left, hostRight: host.right, name: button.getAttribute('aria-label') };
+        });
+      });
+      assert.ok(rootControls.every(({ left, right, hostLeft, hostRight }) =>
+        left >= hostLeft - 1 && right <= hostRight + 1),
+      `${viewport.width}px Spotlight chart controls stay inside their tile: ${JSON.stringify(rootControls)}`);
+
+      await page.getByRole('button', { name: 'All charts', exact: true }).click();
+      const catalog = await page.locator('#tile-row').evaluate((row) => ({
+        client: row.clientWidth,
+        tiles: [...row.querySelectorAll('.evidence-tile')].map((tile) => {
+          const box = tile.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width };
+        }),
+      }));
+      assert.ok(catalog.tiles.length > 1, `${viewport.width}px catalog publishes multiple charts`);
+      assert.ok(catalog.tiles.every((tile) => tile.left >= 0
+        && tile.right <= viewport.width + 1 && tile.width <= catalog.client + 1),
+      `${viewport.width}px catalog cards stay inside their one-column viewport`);
+
+      const narrowControls = await page.locator('#tile-row .tile-rail button, #chart-headacts button')
+        .evaluateAll((buttons, viewportWidth) => buttons.map((button) => {
+          const box = button.getBoundingClientRect();
+          const tile = button.closest('.evidence-tile')?.getBoundingClientRect();
+          return { left: box.left, right: box.right, width: box.width, height: box.height,
+            tileLeft: tile?.left ?? 0, tileRight: tile?.right ?? viewportWidth,
+            name: button.getAttribute('aria-label') };
+        }), viewport.width);
+      assert.ok(narrowControls.every(({ width, height }) => width >= 44 && height >= 44),
+        `${viewport.width}px chart controls keep 44px hit areas: ${JSON.stringify(narrowControls)}`);
+      assert.ok(narrowControls.every(({ left, right, tileLeft, tileRight }) =>
+        left >= tileLeft - 1 && right <= tileRight + 1),
+      `${viewport.width}px catalog controls stay inside their tile or header: ${JSON.stringify(narrowControls)}`);
+
+      await page.getByRole('button', { name: 'Close', exact: true }).click();
+      await page.locator('#tile-focal .tile-fullscreen').click();
+      const fullscreen = await page.locator('#tile-field[data-fullscreen-tile] .tile-chart canvas').first()
+        .evaluate((canvas) => canvas.getBoundingClientRect());
+      assert.ok(fullscreen.height >= 240 && fullscreen.width <= viewport.width + 1,
+        `${viewport.width}px fullscreen exposes a usable chart (${fullscreen.width}x${fullscreen.height})`);
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('#341 · phone Diagnose is one complete vertical reading flow', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 800 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, hasTouch: true, isMobile: true,
+      appSource: 'fixture', findingsInputs: twoFamilyInputs,
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.waitForFunction(() => document.querySelectorAll(
+        '#level .mini[data-preview-kind] canvas',
+      ).length === 5);
+      const flow = await page.evaluate(() => {
+        const main = document.querySelector('.cockpit-stage > .main-content');
+        const box = (selector) => {
+          const node = document.querySelector(selector);
+          const rect = node.getBoundingClientRect();
+          return { top: rect.top + main.scrollTop, bottom: rect.bottom + main.scrollTop,
+            height: rect.height };
+        };
+        const overflow = (selector) => {
+          const node = document.querySelector(selector);
+          return node.scrollHeight - node.clientHeight;
+        };
+        return {
+          mainOverflow: main.scrollHeight - main.clientHeight,
+          nestedOverflow: {
+            canvas: overflow('.canvas-pane'),
+            inspectorBody: overflow('.inspector > .body'),
+            level: overflow('#level'),
+          },
+          spotlight: box('#tile-field'),
+          overview: box('.canvas-pane > .body'),
+          queue: box('.inspector > .body'),
+          watching: box('#watch-dock'),
+          documentOverflowX: document.documentElement.scrollWidth
+            - document.documentElement.clientWidth,
+          windowRail: {
+            label: box('.instruments .instrument > .cap'),
+            labels: [...document.querySelectorAll('#seg-window button')].map((button) => {
+              const range = document.createRange();
+              range.selectNodeContents(button);
+              const rect = range.getBoundingClientRect();
+              return { left: rect.left, right: rect.right };
+            }),
+          },
+        };
+      });
+      assert.ok(flow.mainOverflow > viewport.height,
+        `${viewport.width}px gives the shell one substantial reading scroll: ${JSON.stringify(flow)}`);
+      assert.deepEqual(flow.nestedOverflow, { canvas: 0, inspectorBody: 0, level: 0 },
+        `${viewport.width}px removes competing nested phone scrollports`);
+      assert.ok(flow.spotlight.height >= 350 && flow.overview.height >= 200
+        && flow.spotlight.bottom <= flow.overview.top + 1
+        && flow.overview.bottom <= flow.queue.top + 1
+        && flow.queue.bottom <= flow.watching.top + 1,
+      `${viewport.width}px orders complete Spotlight, overview, Findings, then Watching: ${JSON.stringify(flow)}`);
+      assert.ok(flow.documentOverflowX <= 0,
+        `${viewport.width}px phone reading flow has no document horizontal overflow`);
+      assert.ok(flow.windowRail.label.top >= 0
+        && flow.windowRail.labels.every(({ left, right }, index, labels) =>
+          left >= 0 && right <= viewport.width
+          && (index === 0 || left - labels[index - 1].right >= 3)),
+      `${viewport.width}px window label and preset words remain distinct and contained: ${JSON.stringify(flow.windowRail)}`);
+
+      const readingStops = [page.locator('#tile-field'), page.locator('.canvas-pane > .body'),
+        page.locator('#level .qrow.priced').first(), page.locator('#level .qrow.priced').last(),
+        page.locator('#watch-dock')];
+      for (const stop of readingStops) {
+        const visible = await stop.evaluate((node) => {
+          node.scrollIntoView({ block: 'start' });
+          const main = document.querySelector('.cockpit-stage > .main-content');
+          const rect = node.getBoundingClientRect();
+          const viewportRect = main.getBoundingClientRect();
+          return { top: rect.top, bottom: rect.bottom,
+            viewportTop: viewportRect.top, viewportBottom: viewportRect.bottom,
+            canvasScroll: document.querySelector('.canvas-pane').scrollTop,
+            levelScroll: document.querySelector('#level').scrollTop };
+        });
+        assert.ok(visible.top >= visible.viewportTop - 1
+          && visible.bottom <= visible.viewportBottom + 1
+          && visible.canvasScroll === 0 && visible.levelScroll === 0,
+        `${viewport.width}px can read each section whole through the shell scroll: ${JSON.stringify(visible)}`);
+      }
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('#341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    hasTouch: true, isMobile: true, appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await settle(page, 450);
+    await touchTap(page, page.getByRole('button', { name: '24 h', exact: true }));
+    await page.waitForFunction(() => document.querySelectorAll(
+      '#level .mini[data-preview-kind] canvas',
+    ).length === 5);
+
+    await touchScroll(page, { x: 180, y: 700 });
+    await page.locator('#chart').scrollIntoViewIfNeeded();
+    const chart = await page.locator('#chart').boundingBox();
+    assert.ok(chart && chart.width > 260 && chart.height >= 150,
+      `the overview is a usable touch surface: ${JSON.stringify(chart)}`);
+    await touchDrag(page,
+      { x: chart.x + chart.width * .28, y: chart.y + chart.height * .45 },
+      { x: chart.x + chart.width * .72, y: chart.y + chart.height * .45 },
+      { steps: 8 });
+    await settle(page);
+    const drawnWindow = (await page.locator('#seg-window [data-follow]').innerText())
+      .replace('×', '').trim();
+    assert.match(drawnWindow, /^Window \d\d:\d\d–\d\d:\d\d$/,
+      'the touch drag commits the shown time range');
+    await page.waitForFunction(() => {
+      const previews = [...document.querySelectorAll('#level .qrow.priced > .mini')];
+      return previews.length > 0 && previews.every((preview) => preview.querySelector('canvas'));
+    });
+
+    await touchTap(page, page.getByRole('button', { name: 'All charts', exact: true }));
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    await touchTap(page, page.getByRole('button', { name: 'Close', exact: true }));
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'touch dismisses All charts');
+    assert.equal((await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim(),
+      drawnWindow, 'All charts dismissal preserves the drawn window');
+
+    await settle(page, 450);
+    const rows = page.locator('#level .qrow.priced');
+    assert.ok(await rows.count() > 1, 'the touch path has a lower-ranked finding');
+    await touchTap(page, rows.nth(1));
+    await page.waitForFunction(() => document.querySelector('#crumb-trail button')?.textContent
+      .includes('Findings'));
+    assert.ok((await page.locator('#crumb-trail').innerText()).includes('Findings'),
+      'touch opens the lower-ranked finding immediately');
+    await settle(page);
+    await touchTap(page, page.locator('#crumb-trail button', { hasText: 'Findings' }));
+    const first = page.locator('#level .qrow.priced').first();
+    assert.ok(await first.evaluate((row) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const title = row.querySelector('.lab').getBoundingClientRect();
+      return title.top >= viewport.top && title.bottom <= viewport.bottom;
+    }), 'touch return puts rank one back in view');
+
+    const watching = page.locator('#watch-dock');
+    for (let step = 0; step < 12 && !await watching.evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const box = node.getBoundingClientRect();
+      return box.top >= viewport.top && box.bottom <= viewport.bottom;
+    }); step += 1) {
+      await touchScroll(page, { x: 180, y: 700 });
+    }
+    const reached = await watching.evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const box = node.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom, viewportTop: viewport.top,
+        viewportBottom: viewport.bottom,
+        mainScroll: document.querySelector('.cockpit-stage > .main-content').scrollTop };
+    });
+    assert.ok(reached.mainScroll > 0 && reached.top >= reached.viewportTop - 1
+      && reached.bottom <= reached.viewportBottom + 1,
+    `touch scrolling reaches complete Watching content: ${JSON.stringify(reached)}`);
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · a long narrow Spotlight title leaves a readable I:C plot', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === 'ic:720'
+      && document.querySelector('#tile-focal .tile-head h3')?.textContent.includes('Post-meal corrections'));
+    const geometry = await page.locator('#tile-focal .tile-chart').evaluate((host) => {
+      const chart = window.echarts.getInstanceByDom(host);
+      const grid = chart.getModel().getComponent('grid').coordinateSystem.getRect();
+      const axisView = chart.getViewOfComponentModel(chart.getModel().getComponent('yAxis'));
+      const ticks = [];
+      axisView.group.traverse((element) => {
+        // Scale ticks include clipped endpoints even when ECharts hides their
+        // labels. Measure the numeric labels the reader can actually see.
+        if (element.type !== 'text' || element.ignore || element.invisible
+          || !Number.isFinite(Number(element.style.text))) return;
+        ticks.push(element.transformCoordToGlobal(0, 0)[1]);
+      });
+      ticks.sort((left, right) => left - right);
+      return { hostHeight: host.getBoundingClientRect().height, plotHeight: grid.height,
+        canvasScrollTop: document.querySelector('.canvas-pane').scrollTop,
+        visibleTickCount: ticks.length,
+        minimumTickGap: Math.min(...ticks.slice(1).map((value, index) => value - ticks[index])) };
+    });
+    assert.ok(geometry.hostHeight >= 170 && geometry.plotHeight >= 90
+      && geometry.visibleTickCount >= 3 && geometry.minimumTickGap >= 14 && geometry.canvasScrollTop === 0,
+    `the long-title I:C plot keeps readable height and separated y ticks: ${JSON.stringify(geometry)}`);
+    const visibleContext = await page.evaluate(() => {
+      const rect = (selector) => {
+        const box = document.querySelector(selector).getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom };
+      };
+      return { windowRail: rect('#seg-window'), title: rect('#tile-focal .tile-head'),
+        pageScroll: window.scrollY, viewportHeight: window.innerHeight };
+    });
+    assert.ok(visibleContext.pageScroll === 0 && visibleContext.windowRail.top >= 0
+      && visibleContext.title.top >= 0 && visibleContext.title.bottom <= visibleContext.viewportHeight,
+    `the window rail and complete Spotlight title remain visible at rest: ${JSON.stringify(visibleContext)}`);
+    await shot(page, 'long-title-spotlight',
+      process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', { width: 390, height: 844 });
+    await page.locator('#canvas-head').evaluate((node) => node.scrollIntoView({ block: 'start' }));
+    const overviewReach = await page.locator('#canvas-head').evaluate((node) => {
+      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const box = node.getBoundingClientRect();
+      const content = node.querySelector('.head-rest').getBoundingClientRect();
+      return {
+        scrollTop: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+        top: box.top, bottom: box.bottom,
+        contentTop: content.top, contentBottom: content.bottom,
+        viewportTop: viewport.top, viewportBottom: viewport.bottom,
+        roundingInset: 1 / window.devicePixelRatio,
+      };
+    });
+    assert.ok(overviewReach.scrollTop > 0
+      && overviewReach.top >= overviewReach.viewportTop - overviewReach.roundingInset
+      && overviewReach.bottom <= overviewReach.viewportBottom + overviewReach.roundingInset
+      && overviewReach.contentTop >= overviewReach.viewportTop
+      && overviewReach.contentBottom <= overviewReach.viewportBottom,
+    `the overview remains reachable through the phone reading scroll: ${JSON.stringify(overviewReach)}`);
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · a rendered queue preview meets the existing width floor', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { state: 'typical', history: true, appSource: 'fixture' });
+  try {
+    await page.locator('#level .qrow.priced .mini').first().waitFor();
+    const widths = await page.locator('#level .qrow.priced .mini').evaluateAll((minis) =>
+      minis.map((mini) => mini.getBoundingClientRect().width));
+    assert.ok(widths.length > 0, 'the desktop queue renders quick previews');
+    assert.ok(widths.every((width) => width >= 120),
+      `every rendered preview meets the documented 120px floor: ${widths.join(', ')}`);
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · useful queue previews remain present and legible at narrow width', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => {
+      const level = document.querySelector('#level');
+      return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+        && !level.textContent.includes('Loading evidence');
+    });
+    const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
+      hosts.map((host) => {
+        const option = window.echarts.getInstanceByDom(host)?.getOption();
+        const box = host.getBoundingClientRect();
+        return { kind: host.dataset.previewKind, width: box.width, height: box.height,
+          series: (option?.series || []).map(({ id, data }) => ({ id, points: data?.length ?? 0 })) };
+      }));
+    assert.ok(previews.length > 1, 'the narrow ranked queue retains its charts');
+    assert.ok(previews.every(({ width, height }) => width >= 240 && height >= 76),
+      `narrow previews get a readable row of their own: ${JSON.stringify(previews)}`);
+    assert.ok(previews.every(({ kind, series }) => kind && series.some(({ points }) => points > 0)),
+      `each preview exposes a family grammar backed by served points: ${JSON.stringify(previews)}`);
+    const clipped = await page.locator('#level .qrow:has(> .mini) .lab, '
+      + '#level .qrow:has(> .mini) .sum, #level .qrow:has(> .mini) .den')
+      .evaluateAll((nodes) => nodes.filter((node) => node.scrollWidth > node.clientWidth + 1
+        || node.scrollHeight > node.clientHeight + 1).map((node) => node.textContent.trim()));
+    assert.deepEqual(clipped, [],
+      `chart rows preserve their supplied titles, annotations, and denominators: ${JSON.stringify(clipped)}`);
+    const minis = page.locator('#level .mini[data-preview-kind]');
+    for (let index = 0; index < await minis.count(); index += 1) {
+      const bounds = await minis.nth(index).evaluate((host) => {
+        const scroller = document.querySelector('.cockpit-stage > .main-content');
+        const before = host.getBoundingClientRect();
+        scroller.scrollTop += before.top - scroller.getBoundingClientRect().top - 4;
+        const box = host.getBoundingClientRect();
+        const visible = scroller.getBoundingClientRect();
+        return { kind: host.dataset.previewKind, top: box.top, bottom: box.bottom,
+          visibleTop: visible.top, visibleBottom: visible.bottom };
+      });
+      assert.ok(bounds.top >= bounds.visibleTop - 1 && bounds.bottom <= bounds.visibleBottom + 1,
+        `narrow preview ${index + 1} (${bounds.kind}) scrolls fully above the dock: ${JSON.stringify(bounds)}`);
+    }
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · expanding Watching renders its available ISF preview', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture',
+  });
+  try {
+    const watching = page.locator('#level .qcollapse');
+    assert.equal(await watching.getAttribute('aria-expanded'), 'false');
+    await watching.click();
+    const preview = page.locator('#level .qrow[data-id="isf"] .mini[data-preview-kind="isf"]');
+    await preview.locator('canvas').waitFor();
+    const evidence = await preview.evaluate((host) => {
+      const option = window.echarts.getInstanceByDom(host)?.getOption();
+      const box = host.getBoundingClientRect();
+      return { width: box.width, height: box.height,
+        steps: option?.series?.find(({ id }) => id === 'queue:isf:steps')?.data?.length || 0 };
+    });
+    assert.ok(evidence.width >= 240 && evidence.height >= 76 && evidence.steps > 0,
+      `the expanded Watching row exposes served ISF steps: ${JSON.stringify(evidence)}`);
+    const clipped = await page.locator('#level .qrow[data-id="isf"] .lab, '
+      + '#level .qrow[data-id="isf"] .sum, #level .qrow[data-id="isf"] .den')
+      .evaluateAll((nodes) => nodes.filter((node) => node.scrollWidth > node.clientWidth + 1
+        || node.scrollHeight > node.clientHeight + 1).map((node) => node.textContent.trim()));
+    assert.deepEqual(clipped, [], 'the expanded ISF row preserves all supplied text');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · All charts dismissal preserves a genuinely scrolled phone reading position', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true,
+    appSource: 'fixture', findingsInputs: twoFamilyInputs,
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => {
+      const node = document.querySelector('#level');
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+        && !node.textContent.includes('Loading evidence')
+        && document.querySelector('.cockpit-stage > .main-content').scrollHeight
+          > document.querySelector('.cockpit-stage > .main-content').clientHeight;
+    });
+    await page.waitForTimeout(150);
+    const opener = page.getByRole('button', { name: 'All charts', exact: true });
+    await opener.focus({ preventScroll: true });
+    await page.locator('#level .qrow.priced').nth(2).evaluate((node) =>
+      node.scrollIntoView({ block: 'start' }));
+    const before = await page.evaluate(() => ({
+      scroll: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+      scrollHeight: document.querySelector('.cockpit-stage > .main-content').scrollHeight,
+      rows: document.querySelectorAll('#level .qrow').length,
+      minis: document.querySelectorAll('#level .mini canvas').length,
+      queueHeight: document.querySelector('#level').getBoundingClientRect().height,
+      window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
+      finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
+    }));
+    assert.ok(before.scroll > 0, `the witness begins with real inspector overflow (${before.scroll})`);
+
+    await page.keyboard.press('Enter');
+    const catalog = page.locator('#tile-field[data-explorer] > #tile-row');
+    await catalog.evaluate((node) => { node.scrollTop = node.scrollHeight; });
+    assert.ok(await catalog.evaluate((node) => node.scrollTop > 0),
+      'the witness scrolls overflowing All charts content');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page, 500);
+
+    const after = await page.evaluate(() => ({
+      scroll: document.querySelector('.cockpit-stage > .main-content').scrollTop,
+      scrollHeight: document.querySelector('.cockpit-stage > .main-content').scrollHeight,
+      rows: document.querySelectorAll('#level .qrow').length,
+      minis: document.querySelectorAll('#level .mini canvas').length,
+      queueHeight: document.querySelector('#level').getBoundingClientRect().height,
+      window: document.querySelector('#seg-window [aria-pressed="true"]').textContent.trim(),
+      finding: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId,
+      focus: document.activeElement?.textContent?.trim(),
+    }));
+    assert.deepEqual({ ...after, focus: undefined }, { ...before, focus: undefined },
+      'catalog dismissal restores the exact reading scroll, window, and finding');
+    assert.equal(after.focus, 'All charts', 'catalog dismissal restores focus to its opener');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · narrow Spotlight content clears the overview header content', async () => {
+  const browser = await runner.browser();
+  for (const viewport of [{ width: 760, height: 900 }, { width: 390, height: 844 }]) {
+    const page = await openApp(browser, {
+      state: 'typical', viewport, history: true, appSource: 'fixture', findingsInputs: twoFamilyInputs,
+    });
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await page.locator('#tile-focal .evidence-tile').first().waitFor({ timeout: 5000 });
+      const boundary = await page.evaluate(() => {
+        const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+        const field = rect('#tile-field');
+        const tile = rect('#tile-focal .evidence-tile');
+        const content = rect('#tile-focal .tile-body');
+        const head = rect('#canvas-head');
+        const headContent = rect('#canvas-head .head-rest');
+        return { fieldBottom: field.bottom, tileBottom: tile.bottom, contentBottom: content.bottom,
+          headTop: head.top, headContentTop: headContent.top };
+      });
+      assert.ok(boundary.contentBottom <= boundary.headContentTop
+        && boundary.tileBottom <= boundary.headContentTop,
+      `${viewport.width}px keeps Spotlight content clear of overview content: ${JSON.stringify(boundary)}`);
+      assert.ok(boundary.fieldBottom - boundary.headTop <= 2.1,
+        `${viewport.width}px overlap is confined to the shared border geometry: ${JSON.stringify(boundary)}`);
+    } finally {
+      await page.close();
+    }
+  }
+});
+
+test('#341 · a narrow lower-rank drill returns with rank one readable', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 390, height: 844 }, history: true, appSource: 'fixture',
+  });
+  try {
+    const rows = page.locator('#level .qrow.priced');
+    assert.ok(await rows.count() > 1, 'the narrow queue publishes a lower-ranked drill target');
+    await rows.nth(1).click();
+    assert.ok((await page.locator('#crumb-trail').innerText()).includes('Findings'),
+      'the user action opens the lower-ranked detail');
+
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    const returned = await page.locator('#level .qrow.priced').first().evaluate((row) => {
+      const level = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+      const title = row.querySelector('.lab').getBoundingClientRect();
+      const tier = row.querySelector('.tier')?.getBoundingClientRect();
+      return { levelTop: level.top, titleTop: title.top, tierTop: tier?.top ?? null,
+        scrollTop: document.querySelector('.cockpit-stage > .main-content').scrollTop };
+    });
+    assert.ok(returned.titleTop >= returned.levelTop && returned.tierTop >= returned.levelTop,
+      `return makes rank one readable instead of stranding it above the pane: ${JSON.stringify(returned)}`);
+    assert.equal(await page.locator('#level').evaluate((node) => node.scrollTop), 0,
+      'the queue-origin return uses the shell reading flow, not a nested queue scroll');
+  } finally {
+    await page.close();
+  }
+});
+
+test('#341 · a chart picked from All charts can expand independently', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): the strip is brought up through
-       the reader's own control before a cell is read from it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const tile = page.locator('.tile-row .evidence-tile:has(.tile-chart canvas)').first();
     const chartId = await tile.getAttribute('data-chart-id');
     const chartTitle = (await tile.locator('h3').textContent()).trim();
-    const dockedTitle = await page.locator('#full-title').textContent();
 
-    /* A CELL'S ONLY VERB IS "BECOME THE SPOTLIGHT" (ADR 215 amendment), so
-       fullscreen is reached by promoting the cell and expanding from the stage.
-       The strip carries the pin and nothing else. */
-    assert.equal(await tile.locator('.tile-fullscreen').count(), 0,
-      'a cell offers no fullscreen of its own');
-    await tile.click();
+    await tile.locator('.tile-body').click();
     await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
     await page.locator('#tile-focal .tile-fullscreen').click();
     const fullscreen = page.locator(`.evidence-tile[data-chart-id="${chartId}"]`);
@@ -298,8 +970,8 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
       };
     });
 
-    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), null,
-      'fullscreen does not impersonate a dock state');
+    assert.equal(await page.locator('#dock-handle, [data-dock]').count(), 0,
+      'fullscreen cannot resurrect the retired strip');
     assert.equal(await page.locator('#tile-field').getAttribute('data-fullscreen-tile'), '',
       'the field names the temporary one-chart geometry directly');
     assert.equal(await page.locator('#canvas-head').getAttribute('data-full'), '',
@@ -308,11 +980,11 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
       'the shared header names the fullscreen chart');
     /* FULLSCREEN KEEPS THE CHART'S RAIL beside its way back. The tile has no
        margin of its own to hold controls, so the pin moves into the shared
-       header with Back to the dock; the retired mounted-only hide cell does
+       header with Close; the retired dock controls do
        not return. */
-    assert.deepEqual(await page.locator('#dock-headacts button')
+    assert.deepEqual(await page.locator('#chart-headacts button')
       .evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label'))),
-    [`Keep ${chartTitle}`, 'Back to the dock'],
+    [`Keep ${chartTitle}`, 'Close'],
     'fullscreen moves the chart rail and its one way back into the shared header');
     assert.equal(await fullscreen.locator('.tile-fullscreen').count(), 0,
       'fullscreen shrink has one home, in the shared header');
@@ -322,18 +994,87 @@ test('#215 · fullscreen from the docked strip takes the header and draws the ch
     assert.ok(measured.width > measured.tileWidth * .8,
       `the fullscreen plot takes its tile (${measured.width} of ${measured.tileWidth}px)`);
 
-    await page.getByRole('button', { name: 'Back to the dock' }).click();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     assert.equal(await page.locator('.dw').getAttribute('data-fullscreen'), null,
       'shrink returns through the door it came in');
-    /* The cell pick put the drawer away (ADR 306), so the state fullscreen
-       left — and lands back on — is hidden. */
-    assert.equal(await page.locator('#tile-field').getAttribute('data-dock'), 'hidden',
-      'and lands back on the dock state it left');
-    assert.equal(await page.locator('#full-title').textContent(), dockedTitle,
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
+      'closing the expanded chart returns to Diagnose, not All charts');
+    assert.equal((await page.locator('#full-title').textContent()).trim(), '',
       'the borrowed header carries no standing title of its own');
   } finally {
     await page.close();
   }
+});
+
+test('#365 · one-chart fullscreen lands focus on the chart and returns it to the opener', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+  /* WHERE THE KEYBOARD IS, in the ledger's own terms: the expanded chart's
+     container, that chart's own Full control, or neither. Naming the chart in
+     both answers is what separates a stage opener from a catalog cell's — an
+     assertion that only said "an opener" would pass on the wrong chart's. */
+  const focus = () => page.evaluate(() => {
+    const node = document.activeElement;
+    if (!node || node === document.body) return { at: 'body' };
+    if (node.classList.contains('evidence-tile')) return { at: 'chart', chartId: node.dataset.chartId };
+    if (node.classList.contains('tile-fullscreen')) {
+      return { at: 'opener', chartId: node.closest('.evidence-tile')?.dataset.chartId };
+    }
+    return { at: node.id || node.tagName.toLowerCase() };
+  });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    /* FROM THE STAGE, where the verb rides the focal tile's own header. */
+    const stageId = await page.locator('#tile-focal .evidence-tile').getAttribute('data-chart-id');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: stageId },
+      'expanding the stage chart lands the keyboard on the expanded chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'Escape returns the keyboard to the stage chart’s own Full control');
+
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: stageId },
+      'the header Close control returns the keyboard to the same opener');
+
+    /* FROM AN OPEN All charts CELL, which dismissal repaints back into: the
+       opener to restore is that cell's own rail control, not the stage's. */
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
+    const cellId = (await page.locator('#tile-row .evidence-tile:has(.tile-fullscreen)')
+      .evaluateAll((cells) => cells.map((cell) => cell.dataset.chartId)))
+      .find((chartId) => chartId !== stageId);
+    /* A CELL FOR SOME OTHER CHART, so a stage-only implementation cannot pass
+       this half by restoring the stage's control and calling it the opener. */
+    assert.ok(cellId, 'the catalog offers a cell for a chart other than the stage opener');
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'chart', chartId: cellId },
+      'expanding a catalog cell lands the keyboard on that cell’s chart');
+    await page.keyboard.press('Escape');
+    await settle(page);
+    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 1,
+      'dismissal repaints back into the still-open catalog');
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'Escape returns the keyboard to that catalog cell’s own Full control');
+
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${cellId}"] .tile-fullscreen`).click();
+    await settle(page);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await settle(page);
+    assert.deepEqual(await focus(), { at: 'opener', chartId: cellId },
+      'the header Close control returns the keyboard to the catalog cell’s opener');
+  } finally {
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while exercising #365 fullscreen opener focus');
 });
 
 test('#232 · every registered chart family stays inside one fullscreen frame', async () => {
@@ -467,7 +1208,7 @@ test('#232 · every registered chart family stays inside one fullscreen frame', 
         await shot(page, `fullscreen-${family.kind}`,
           process.env.DIAGNOSE_SCREENSHOT_VARIANT || 'revision', viewport);
 
-        await page.getByRole('button', { name: 'Back to the dock' }).click();
+        await page.getByRole('button', { name: 'Close', exact: true }).click();
         await settle(page);
         const after = await page.evaluate(() => ({
           focal: document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId || null,
@@ -509,30 +1250,27 @@ test(`#96 · global Align is permanently absent and alignment belongs to each ti
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     assert.equal(await page.locator('#seg-align, #align-canvas').count(), 0,
       'the retired global Align host cannot return');
-    assert.equal(await page.locator('#tile-row .tile-modes').count(), 0,
-      'a strip cell keeps only its pin, never a reading control');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     /* Basal's mode toggle retired with #205 (one treatment, no clock/event
        switch), so the per-tile-alignment proof promotes a chart that still
        owns modes. */
     /* Basal's clock/event toggle retired with #205, so the tile-owned-controls
        half of this proof promotes the ISF chart, which still owns modes and
-       docks in the Afternoon window. */
+       appears in the Afternoon window. */
     await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-    if (await page.locator('#tile-field').getAttribute('data-dock') === 'hidden') {
-      await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-      await page.locator('#tile-field[data-dock="docked"]').waitFor();
-    }
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const eligible = page.locator('#tile-row .evidence-tile[data-chart-id="isf"]').first();
     await eligible.waitFor({ state: 'visible' });
     assert.equal(await eligible.count(), 1,
-      'the strip publishes an ISF chart whose alignment controls can move to the spotlight');
-    await eligible.click();
+      'All charts publishes an ISF chart with its alignment controls');
+    assert.ok(await eligible.locator('.tile-modes').count() > 0,
+      'the full catalog chart exposes its own alignment control');
+    await eligible.locator('.tile-body').click();
     assert.ok(await page.locator('#tile-focal .tile-modes').count() > 0,
       'the promoted event chart owns its alignment control at the spotlight');
   } finally {
@@ -576,6 +1314,7 @@ test('#100 · the Findings crumb restores focus to the drilled finding row', asy
       'the finding row intended for crumb restoration is present in the queue');
     await findingRow.focus();
     await page.keyboard.press('Enter');
+    await page.locator('#level .inner .who').waitFor();
     await page.getByLabel(/Findings›Carb undercount/).getByRole('button', { name: 'Findings', exact: true }).focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id') || document.activeElement?.tagName), findingId,
@@ -824,6 +1563,8 @@ test('populated Diagnose renders readable ink and chart marks', async () => {
 });
 
 test('the populated 2084×742 glucose canvas keeps its composited window treatment and passive basal states legible', async () => {
+  // A named checkout's frontend directory; openApp serves its built dist so
+  // base-versus-revision evidence cannot accidentally render this checkout.
   const frontendRoot = process.env.DIAGNOSE_FRONTEND_ROOT || join(ROOT, 'frontend');
   const evidenceKind = process.env.DIAGNOSE_EVIDENCE_KIND || 'revision';
   const captureOnly = process.env.DIAGNOSE_CAPTURE_ONLY === '1';
@@ -1079,47 +1820,41 @@ test('the populated 2084×742 glucose canvas keeps its composited window treatme
   } finally { await page.close(); }
 });
 
-/* The dock is now the canvas filmstrip, and the Charts lip is its control —
-   neither inherits the retired explorer drawer's trench. Both carry compact
-   text, so measure their rendered chrome rather than a token probe that could
-   remain green after either surface moves. */
-test('the chart dock and its lip clear the text contrast floor', async () => {
+test('All charts and its Close control clear the text contrast floor', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     await page.locator('#tile-row .evidence-tile').first().waitFor({ state: 'visible' });
     const colors = await page.locator('#tile-field').evaluate((field) => {
       const color = (node) => {
-        if (!node) throw new Error('the chart dock is missing a text role to measure');
+        if (!node) throw new Error('All charts is missing a text role to measure');
         return getComputedStyle(node).color;
       };
       const ground = (node) => {
-        if (!node) throw new Error('the chart dock is missing chrome to measure');
+        if (!node) throw new Error('All charts is missing chrome to measure');
         return getComputedStyle(node).backgroundColor;
       };
       const cell = field.querySelector('#tile-row .evidence-tile');
-      const lip = field.querySelector('#dock-handle');
+      const action = document.querySelector('#chart-headacts button[aria-label="Close"]');
+      const actionGround = document.querySelector('#canvas-head');
       return {
         cell: ground(cell),
         name: color(cell?.querySelector('.tile-head h3')),
         meta: color(cell?.querySelector('.tile-meta')),
-        lip: ground(lip),
-        label: color(lip?.querySelector('.dock-word')),
-        act: color(lip?.querySelector('button')),
+        actionGround: ground(actionGround),
+        action: color(action),
       };
     });
     for (const [role, foreground, background] of [
       ['name', colors.name, colors.cell], ['meta', colors.meta, colors.cell],
-      ['lip label', colors.label, colors.lip], ['lip act', colors.act, colors.lip],
+      ['Close', colors.action, colors.actionGround],
     ]) {
       const ratio = contrastRatio(foreground, background);
       assert.ok(ratio >= 4.5,
-        `chart dock ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
+        `All charts ${role} meets WCAG AA on its chrome (${ratio.toFixed(2)}:1)`);
     }
   } finally {
     await page.close();
@@ -1163,56 +1898,45 @@ test('Diagnose keeps the Dark material roles ordered and target bounds as rails'
   } finally { await page.close(); }
 });
 
-test('every vessel state retains the Dark retheme edge', async () => {
+test('All charts catalog vessels retain the Dark retheme edge', async () => {
   const browser = await runner.browser();
   const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
   try {
     await page.getByRole('button', { name: '24 h', exact: true }).click();
-    /* THE DRAWER OPENS MINIMIZED (ADR 306): bring the strip up through the
-       reader's own control before reading it. */
-    await page.getByRole('button', { name: 'Bring the charts up', exact: true }).click();
-    await page.locator('#tile-field[data-dock="docked"]').waitFor();
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#tile-field[data-explorer]').waitFor();
     const styles = await page.evaluate(() => {
-      const field = document.querySelector('#tile-field');
-      const selector = '#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])';
       const style = (node) => {
         const computed = getComputedStyle(node);
         return { radius: computed.borderRadius, shadow: computed.boxShadow };
       };
-      field.removeAttribute('data-dock');
-      field.removeAttribute('data-raised');
-      field.removeAttribute('data-explorer');
-      const general = style(document.querySelector(selector));
-      field.setAttribute('data-dock', 'docked');
-      const docked = style(document.querySelector(selector));
-      const selectedNode = document.querySelector(selector);
-      selectedNode.setAttribute('data-selected', '');
-      const selected = style(selectedNode);
-      selectedNode.removeAttribute('data-selected');
-      selectedNode.setAttribute('data-tail-head', '');
-      const tail = style(selectedNode);
-      selectedNode.removeAttribute('data-tail-head');
-      field.setAttribute('data-raised', '');
-      const raised = style(document.querySelector(selector));
-      field.removeAttribute('data-raised');
-      field.setAttribute('data-explorer', '');
-      const explorer = style(document.querySelector(selector));
-      return { general, docked, selected, tail, raised, explorer };
+      return {
+        catalog: style(document.querySelector('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])')),
+        selected: style(document.querySelector('#tile-row .evidence-tile[data-selected]')),
+        label: document.querySelector('#tile-row').getAttribute('aria-label'),
+      };
     });
-    for (const state of ['general', 'docked', 'selected', 'tail', 'raised', 'explorer']) {
+    for (const state of ['catalog']) {
       assert.equal(styles[state].radius, '4px');
       assert.match(styles[state].shadow, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset/,
         `Dark ${state} cells retain the #453d35 vessel edge`);
     }
+    assert.equal(styles.selected.radius, '4px',
+      'the current mark does not change catalog geometry');
+    assert.notEqual(styles.selected.shadow, styles.catalog.shadow,
+      'the actual current chart has a visible computed-style difference from ordinary cells');
+    assert.match(styles.selected.shadow, /rgb\(242, 237, 226\) 0px 0px 0px 2px inset/,
+      'the current chart uses the existing focus-mark token as a non-geometric inset mark');
+    assert.equal(styles.label, 'Evidence charts — scrolls vertically',
+      'the catalog names the direction it actually scrolls');
 
-    await page.locator('#tile-field').evaluate((field) => field.removeAttribute('data-explorer'));
     const hoverTile = page.locator('#tile-row .evidence-tile:not([data-selected]):not([data-tail-head])').first();
     await hoverTile.hover();
     const hover = await hoverTile.evaluate((node) => getComputedStyle(node).boxShadow);
     assert.match(hover, /rgb\(69, 61, 53\) 0px 0px 0px 1px inset, rgba\(0, 0, 0, 0\.5\) 0px 0px 0px 1px, rgba\(0, 0, 0, 0\.55\) 0px 4px 10px -4px/,
       'Dark hover keeps the #453d35 vessel edge and cell-shadow stack');
 
-    await page.locator('#tile-row .evidence-tile').first().click();
+    await page.locator('#tile-row .evidence-tile').first().locator('.tile-body').click();
     await page.locator('#tile-focal .evidence-tile').waitFor({ state: 'visible' });
     const focal = await page.locator('#tile-focal .evidence-tile').evaluate((node) => {
       const style = getComputedStyle(node);
@@ -1382,7 +2106,7 @@ test('the Filter menu renders each server-published Sift count', async () => {
       await settle(page, 450);
       await page.getByRole('button', { name: /Filter/ }).click();
       assert.deepEqual(await page.getByRole('menuitemcheckbox').allTextContents(), [
-        'Highs 4', 'Lows 1', 'Meals 1', 'Corrections 1',
+        'Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1',
       ], 'the four Sift items spell the server-published global counts');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
@@ -1482,6 +2206,15 @@ test('#83 · Filter and every menu item stay reachable at 390×844', async () =>
       const trigger = page.getByRole('button', { name: /Filter/ });
       await trigger.waitFor();
       await trigger.click();
+      const placement = await page.evaluate(() => {
+        const trigger = document.querySelector('#filter-trigger').getBoundingClientRect();
+        const menu = document.querySelector('#filter-menu').getBoundingClientRect();
+        return { trigger: { top: trigger.top, bottom: trigger.bottom },
+          menu: { top: menu.top, bottom: menu.bottom },
+          gap: Math.min(Math.abs(menu.top - trigger.bottom), Math.abs(trigger.top - menu.bottom)) };
+      });
+      assert.ok(placement.gap <= 8,
+        `Filter menu stays attached to its trigger: ${JSON.stringify(placement)}`);
       const boxes = await page.locator('#filter-trigger, #filter-menu [role^="menuitem"]').evaluateAll(
         (nodes) => nodes.map((node) => {
           const rect = node.getBoundingClientRect();
@@ -1493,6 +2226,26 @@ test('#83 · Filter and every menu item stay reachable at 390×844', async () =>
         assert.ok(box.left >= 0 && box.right <= 390, `${box.label} stays inside the viewport horizontally`);
         assert.ok(box.top >= 0 && box.bottom <= 844, `${box.label} stays inside the viewport vertically`);
       }
+      assert.ok(boxes.slice(1).every((box) => box.bottom - box.top >= 44),
+        `every phone Filter item keeps a visible 44px target: ${JSON.stringify(boxes)}`);
+
+      await page.keyboard.press('Escape');
+      await trigger.focus({ preventScroll: true });
+      await trigger.evaluate((node) => {
+        const main = document.querySelector('.cockpit-stage > .main-content');
+        main.scrollTop += node.getBoundingClientRect().top - 150;
+      });
+      await page.keyboard.press('Enter');
+      const scrolledPlacement = await page.evaluate(() => {
+        const trigger = document.querySelector('#filter-trigger').getBoundingClientRect();
+        const menu = document.querySelector('#filter-menu').getBoundingClientRect();
+        return { trigger: { top: trigger.top, bottom: trigger.bottom },
+          menu: { top: menu.top, bottom: menu.bottom },
+          gap: Math.min(Math.abs(menu.top - trigger.bottom), Math.abs(trigger.top - menu.bottom)) };
+      });
+      assert.ok(scrolledPlacement.gap <= 8 && scrolledPlacement.menu.top >= 0
+        && scrolledPlacement.menu.bottom <= 844,
+      `Filter remains attached and bounded after page scroll: ${JSON.stringify(scrolledPlacement)}`);
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems at the narrow Filter viewport');
@@ -1510,11 +2263,45 @@ test('deselecting a Sift item leaves only rows matching the remaining choices', 
       await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
       await settle(page, 350);
       assert.deepEqual(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)), [
-        'finding:correction_on_iob', 'finding:late_bolus',
+        'pattern:highs_after_meals', 'finding:late_bolus',
+        'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+        'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob',
       ], 'a deselected Highs chip hides high-only rows while preserving multi-chip matches');
       await page.close();
       assert.deepEqual(openerProblems().slice(before), [],
         'no opener problems while sifting the queue by a chip');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('#363 · every findings-queue row is exposed as the control it is', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const page = await openApp(browser, { state: 'typical', appSource: 'fixture' });
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      await settle(page, 450);
+      const queue = page.locator('#level .q');
+      const painted = await page.locator('#level .q button.qrow').count();
+      assert.ok(painted > 0, 'the queue painted rows for this window');
+      /* Computed exposure, not markup: `role="listitem"` on the button used to
+         REPLACE its implicit `button` role, so the whole queue answered zero
+         here while every row remained clickable. */
+      assert.equal(await queue.getByRole('button')
+        .evaluateAll((nodes) => nodes.filter((node) => node.classList.contains('qrow')).length),
+      painted, 'every painted row is exposed with the button role');
+      const rows = await page.locator('#level .q button.qrow').evaluateAll((nodes) => nodes.map((node) => ({
+        id: node.dataset.id, title: node.querySelector('.lab').textContent.trim(),
+      })));
+      for (const { id, title } of rows) {
+        const control = queue.getByRole('button', { name: title });
+        assert.equal(await control.count(), 1,
+          `a control named ${title} is reachable in the queue, exactly once`);
+        assert.equal(await control.getAttribute('data-id'), id,
+          `the control named ${title} is that finding's own row`);
+      }
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while reading the queue by role');
     } finally { /* browser stays open; closed once in after() */ }
   });
 
@@ -1696,6 +2483,7 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
           estimate: await page.locator('#level .numrow').nth(1).locator('b').innerText(),
           text: await page.locator('#level').innerText(),
           stage: await page.locator('#level .stagebtn').count(),
+          geometry: await numrowProblems(page),
         });
         await page.close();
       }
@@ -1706,6 +2494,8 @@ test('a rounded false ISF verdict keeps evidence and empty Recommended geometry 
         assert.equal(reading.recommended, '--', 'Recommended keeps its reserved row with no numeric value');
         assert.equal(reading.estimate, '31.40', 'the estimate remains visible');
         assert.equal(reading.stage, 0, 'the false verdict exposes no stage control');
+        assert.deepEqual(reading.geometry, [],
+          `${reading.viewport.width}x${reading.viewport.height}: every label fits its own column and every value shares one edge`);
         assert.match(reading.text, /conservative step rounds to the current Correction factor/);
         assert.doesNotMatch(reading.text, /programmed factor/i);
         assert.match(reading.text, /CI 18\.20–46\.90/,
@@ -1786,6 +2576,112 @@ test('an exact true capped ISF verdict stages one unchanged value per generated 
     } finally { /* browser stays open; closed once in after() */ }
   });
 
+/* #372: the merged-run staging cross-check. The committed findings fixture
+   publishes `basal:30-90` — slots 1 and 2, both asserting `raise` with their own
+   current and recommended — so the two accumulators this surface keeps (the Plan
+   draft, and the lane's own staged tally) are observable over the same run
+   through the real affordance. A partial stage is what #372 was filed for, and
+   only reading BOTH here can catch it. */
+const stageMergedBasalRun = async (page, drafts) => {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  await settle(page, 400);
+  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+  assert.equal(await row.count(), 1,
+    'the committed findings fixture publishes one merged two-member basal row');
+  await row.click();
+  await settle(page, 450);
+  await page.locator('#level .stagebtn').click();
+  await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
+  await settle(page, 120);
+  return drafts.at(-1).items;
+};
+
+/** The staged half hours the SURFACE reports, in the lane's own marks. */
+const laneStagedStartMins = (page) => page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+  .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
+
+test('a merged basal finding stages every member the projection published (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: twoFamilyInputs,
+        exposuresInputs: async () => (await twoFamilyInputs()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(
+        items.map((item) => [item.type, item.start_min, item.current, item.recommended, item.value]),
+        [['basal', 30, 0.85, 1.02, 1.02], ['basal', 60, 0.85, 1.02, 1.02]],
+        'both published members reach the Plan draft carrying their own served numbers',
+      );
+      assert.deepEqual(await laneStagedStartMins(page), items.map((item) => item.start_min),
+        'the surface\'s staged tally and the PUT /api/plan body name the same members');
+      assert.match(await page.locator('#level .slot-say').first().innerText(),
+        /one of 2 half hours in Basal 00:30 to 01:30/i,
+        'the member panel says which finding it belongs to');
+      assert.equal(await page.locator('#watch-dock .what').innerText(),
+        'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+        'the dock names the staged span with the pair every staged member carries');
+
+      await page.locator('#level .stagebtn').click();
+      await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
+        .every((cell) => cell.dataset.staged !== 'true'));
+      await settle(page, 120);
+      assert.deepEqual(drafts.at(-1).items, [],
+        'undo takes back exactly the set staging added');
+      assert.deepEqual(await laneStagedStartMins(page), [],
+        'no member of the run stays marked in the lane after undo');
+
+      // A finding whose published membership is one half hour is unchanged: the
+      // fixture's slot 11 asserts alone, and its panel says nothing about a span.
+      await page.locator('#lane .lane-cell').nth(11).click();
+      await settle(page, 350);
+      const solo = await page.locator('#level .slot-say').allInnerTexts();
+      assert.ok(solo.length > 0, 'the single-member panel still prints its own sentence');
+      assert.ok(solo.every((line) => !/one of \d+ half hours/i.test(line)),
+        'a single-member finding carries no span statement');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a merged basal run');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
+test('the dock prints no rate pair when staged members disagree on one (#372)', async () => {
+    const browser = await runner.browser();
+    try {
+      const before = openerProblems().length;
+      const drafts = [];
+      /* A run is merged on register and direction, never on programmed rate, so
+         its members can carry different current values. The committed fixture's
+         two members agree, so this varies one SERVED number — never a verdict —
+         to reach the branch the fixture cannot pose. */
+      const disagreeingRates = async () => {
+        const inputs = structuredClone(await twoFamilyInputs());
+        const second = inputs.analysis.basal.find((slot) => slot.slot === 2);
+        assert.equal(second.current, 0.85, 'the fixture members agree before this variation');
+        second.current = 0.9;
+        return inputs;
+      };
+      const page = await openApp(browser, {
+        state: 'typical', appSource: 'fixture',
+        findingsInputs: disagreeingRates,
+        exposuresInputs: async () => (await disagreeingRates()).exposures,
+        onPlanDraft: (draft) => drafts.push(draft),
+      });
+      const items = await stageMergedBasalRun(page, drafts);
+      assert.deepEqual(items.map((item) => [item.start_min, item.current]), [[30, 0.85], [60, 0.9]],
+        'each member still stages its own programmed rate');
+      assert.equal(await page.locator('#watch-dock .what').innerText(), 'Basal 00:30 to 01:30',
+        'the dock names the span and prints no pair the staged members do not share');
+      await page.close();
+      assert.deepEqual(openerProblems().slice(before), [],
+        'no opener problems while staging a run whose members disagree on rate');
+    } finally { /* browser stays open; closed once in after() */ }
+  });
+
 /* `setError` is the interface's own failure path — frontend/index.html's
    `loadAudit` catch calls it directly on a rejected fetch (real code, not a
    mock behaviour: the mock is static captures and has no concept of a failed
@@ -1804,12 +2700,12 @@ test('setError tears down a live render and replaces the mount with a plain fail
        gates' route stubs use, so this test still exercises a LIVE render — which is
        the whole point of it: `setError`'s teardown branch is vacuous otherwise. */
     const payload = { ...raw, findings: projectFindings(
-      {
+      populateFindingsProjectionInput({
         analysis: raw.analyze,
         exposures: raw.exposures,
         scenarios: raw.scenarios,
         event_charts: FINDINGS_PROJECTION.inputs.event_charts,
-      }, null) };
+      }), null) };
     const browser = await runner.browser();
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     try {
@@ -1827,15 +2723,15 @@ test('setError tears down a live render and replaces the mount with a plain fail
               + '<body><div id="wrap"><div class="mount"></div></div>'
               + '<script type="module">import {createDiagnoseWorkstation} from '
               + `'/assets/diagnose-workstation.js';`
-              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), callbacks: {} });`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
               + `window.__ready = true;</script></body></html>`,
             contentType: 'text/html',
           });
         }
-        if (url.href.includes('echarts')) {
-          if (!VENDOR) return route.continue();
-          return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        }
+        if (url.href.includes('echarts')) return route.fulfill({
+          body: await readFile(join(ROOT, 'node_modules/echarts/dist/echarts.min.js')), contentType: 'text/javascript' });
         if (url.pathname.startsWith('/assets/')) {
           const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
           try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
@@ -1855,7 +2751,16 @@ test('setError tears down a live render and replaces the mount with a plain fail
       await page.evaluate(() => window.__view.setError('The evidence request failed.'));
       const wrap = page.locator('#wrap');
       assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error');
-      assert.equal(await wrap.evaluate((node) => node.firstElementChild.textContent), 'The evidence request failed.');
+      /* #361: the message is still shown, but as the detail line beneath the
+         app's own copy rather than as the entire surface — and the generic
+         failure now carries the Retry the mount was always handed. */
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error .dw-failure-detail')?.textContent ?? null),
+        'The evidence request failed.');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence");
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1);
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
       assert.deepEqual(errors, [], 'setError does not itself throw, even tearing down a live render');
     } finally { await page.close(); }
   });
@@ -1909,12 +2814,8 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
         const url = new URL(route.request().url());
         const path = url.pathname;
         if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
-        if (url.href.includes('echarts')) return route.fulfill({ body: await readFile(join(VENDOR, 'echarts.min.js')), contentType: 'text/javascript' });
-        if (url.href.includes('vue')) return route.fulfill({ body: await readFile(join(VENDOR, 'vue.esm-browser.js')), contentType: 'text/javascript' });
-        if (path === '/') return route.fulfill({ body: await readFile(join(ROOT, 'frontend/index.html')), contentType: 'text/html' });
-        if (/\.(js|css|svg|html)$/.test(path)) {
-          try { return route.fulfill({ body: await readFile(join(ROOT, 'frontend', path.replace(/^\/assets\//, ''))), contentType: MIME[extname(path)] || 'text/plain' }); } catch { /* fall through */ }
-        }
+        const response = shell.serve(path);
+        if (response) return route.fulfill(response);
         // The one deliberately broken endpoint: loadAudit's Promise.all
         // rejects on this, taking the real catch path a live fetch failure
         // (a timeout, a 5xx, a dropped connection) would.
@@ -1937,6 +2838,154 @@ test('a rejected first-load fetch shows the failure message, not an uncaught err
       const message = await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? '');
       assert.ok(message.length > 0, 'the surface shows a failure message');
       assert.deepEqual(errors, [], 'no uncaught error reaches the page — the surface fails closed, not crashes');
+    } finally { await page.close(); }
+  });
+
+/* #361: a token this server rejects is a token problem, and the reader is told
+   so in the app's own words with the route out the missing-token placeholder
+   already offers. Before this, `loadAudit`'s catch handed `setError` the bare
+   `e.message` and the surface became the API's own `detail` string — lowercase,
+   unpunctuated, flush to the mount's top-left corner, with no control in it.
+   This drives the REAL app path, because the fix spans index.html's catch (it
+   now passes the caught error, which carries the status) and the workstation's
+   own render. Its stub table mirrors the #654 regression's, except every /api
+   read answers 401 the way a server refusing the saved token does. */
+test('a rejected API token names the token and offers Settings, not the backend string', async () => {
+    const payloadPath = process.env.PAYLOAD;
+    assert.ok(payloadPath, 'PAYLOAD is required (backs the endpoints before the refusal)');
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.addInitScript(() => {
+        localStorage.setItem('ciq_token', 'not-the-token');
+      });
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        const path = url.pathname;
+        if (url.hostname.startsWith('fonts.')) return route.fulfill({ status: 204 });
+        const response = shell.serve(path);
+        if (response) return route.fulfill(response);
+        // Every read refused, exactly as ciq_autotune/api.py's require_token
+        // refuses a token the server does not accept. The detail string is
+        // that endpoint's own, verbatim.
+        if (path.startsWith('/api/')) {
+          return route.fulfill({ status: 401, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'missing or invalid bearer token' }) });
+        }
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ detail: 'not stubbed' }) });
+      });
+      await page.goto('http://app.local/?view=glucose');
+      await page.waitForSelector('.dw.dw-error', { timeout: 8000 });
+      await settle(page, 300);
+
+      const heading = await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null);
+      assert.equal(heading, "Diagnose can't use this API token",
+        'the reader is told this is a token problem, in the app\'s own words');
+      assert.notEqual(heading, 'missing or invalid bearer token',
+        'the backend string is never the heading');
+      const bodyText = await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? '');
+      assert.match(bodyText, /Update it in Settings/,
+        'the copy names the route out');
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control, the way out');
+      assert.equal((await controls.first().innerText()).trim(), 'Open Settings');
+
+      // The reported symptom: the surface sat at x=0 with padding: 0px. The
+      // block now sits inside the mount's own padding.
+      const geometry = await page.evaluate(() => {
+        const root = document.querySelector('.dw.dw-error');
+        const block = root.firstElementChild;
+        return {
+          padding: getComputedStyle(root).padding,
+          rootLeft: root.getBoundingClientRect().left,
+          blockLeft: block.getBoundingClientRect().left,
+        };
+      });
+      assert.notEqual(geometry.padding, '0px', 'the mount is no longer unpadded');
+      assert.ok(geometry.blockLeft > geometry.rootLeft,
+        `the failure block is inset from the mount's left edge (${geometry.blockLeft} > ${geometry.rootLeft})`);
+
+      // The control is the app's own Settings route, not a link the surface invented.
+      await controls.first().click();
+      await settle(page, 300);
+      assert.equal(await page.evaluate(() => location.pathname), '/settings',
+        'Open Settings moves the app to Settings through its own routing');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
+    } finally { await page.close(); }
+  });
+
+/* #361: the same frame, and the same way out, for a failure that is NOT a
+   rejected token — the claim this change makes is that EVERY failed load gets
+   one, not only the 401. The server's own sentence survives as the detail line
+   under app copy rather than being the whole screen. Mounted directly so the
+   test owns the `retry` callback and can prove the surface calls it rather than
+   reloading itself; the error is a real ApiTransportError raised by the app's
+   own transport against a stubbed 500, not a hand-built object. */
+test('a non-401 failure keeps the server message as detail and offers Retry through the app callback', async () => {
+    const browser = await runner.browser();
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    try {
+      const errors = [];
+      page.on('pageerror', (error) => errors.push(String(error)));
+      await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname === '/') {
+          return route.fulfill({
+            body: '<!doctype html><html><head></head>'
+              + '<body><div id="wrap"><div class="mount"></div></div>'
+              + '<script type="module">'
+              + `import {createDiagnoseWorkstation} from '/assets/diagnose-workstation.js';`
+              + `import {makeDeps} from '/assets/data.js';`
+              + 'window.__retried = 0;'
+              + `window.__view = createDiagnoseWorkstation({ root: document.querySelector('.mount'), `
+              + 'callbacks: { retry: () => { window.__retried += 1; } } });'
+              // The real transport, against the stubbed 500 below: this is the
+              // ApiTransportError loadAudit's catch would hand setError.
+              + 'try { await makeDeps().fetchAnalysis(); }'
+              + 'catch (e) { window.__caught = { status: e.status, message: e.message }; window.__view.setError(e); }'
+              + 'window.__ready = true;</script></body></html>',
+            contentType: 'text/html',
+          });
+        }
+        if (url.pathname.startsWith('/assets/')) {
+          const path = join(ROOT, 'frontend', url.pathname.replace(/^\/assets\//, ''));
+          try { return route.fulfill({ body: await readFile(path), contentType: MIME[extname(path)] || 'text/javascript' }); }
+          catch { return route.fulfill({ status: 404, body: 'missing' }); }
+        }
+        if (url.pathname.startsWith('/api/')) {
+          return route.fulfill({ status: 500, contentType: 'application/json',
+            body: JSON.stringify({ detail: 'synthetic server failure for the #361 non-401 arm' }) });
+        }
+        return route.fulfill({ status: 404, body: 'missing' });
+      });
+      await page.goto('http://diagnose.local/');
+      await page.waitForFunction(() => window.__ready === true);
+      await settle(page, 300);
+
+      assert.deepEqual(await page.evaluate(() => window.__caught),
+        { status: 500, message: 'synthetic server failure for the #361 non-401 arm' },
+        'the surface received the transport error itself, status and all');
+
+      const wrap = page.locator('#wrap');
+      assert.equal(await wrap.evaluate((node) => node.firstElementChild.className), 'dw dw-error',
+        'the mount keeps the class every existing selector matches');
+      assert.equal(await page.evaluate(() => document.querySelector('.dw.dw-error h2')?.textContent ?? null),
+        "Diagnose couldn't read this server's evidence",
+        'app copy is the heading, for a failure that is not a token refusal');
+      assert.match(await page.evaluate(() => document.querySelector('.dw.dw-error')?.textContent ?? ''),
+        /synthetic server failure for the #361 non-401 arm/,
+        "the server's own message stays visible, as detail");
+
+      const controls = page.locator('.dw.dw-error button, .dw.dw-error a');
+      assert.equal(await controls.count(), 1, 'exactly one control — no failure is a dead end');
+      assert.equal((await controls.first().innerText()).trim(), 'Retry');
+      await controls.first().click();
+      assert.equal(await page.evaluate(() => window.__retried), 1,
+        'Retry re-runs the app\'s own load through callbacks.retry; the surface reloads nothing itself');
+      assert.deepEqual(errors, [], 'no uncaught error reaches the page');
     } finally { await page.close(); }
   });
 
@@ -1984,9 +3033,11 @@ test('frontend contains no client-side verdict threshold or direction comparison
   // LOCK:diagnose-workstation:29 — occurrence handoff retains claim date into Day.
   const index = await readFile(join(ROOT, 'frontend/index.html'), 'utf8');
   assert.match(index, /day: \(occurrence\) => goToMoment\(occurrence\.t \|\| occurrence\.anchor\?\.t,[\s\S]*occurrence\.text \|\| occurrence\.anchor\?\.label/);
-  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\/assets\/diagnose-event-comparison\.js';/);
+  assert.match(index, /import \{ createDiagnoseEventComparison \} from '\.\/diagnose-event-comparison\.js';/);
   assert.match(index, /diagnoseView = createDiagnoseEventComparison\(\{ root: diagnoseRoot\.value,/);
-  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value\)/);
+  // #372: the merged-run member list travels on the payload, so the wiring
+  // this guard pins now hands it to the Plan draft's own predicate.
+  assert.match(index, /diagnoseStageItemsFor\(item\.key, diagnoseAnalysis\.value, item\.members\)/);
   assert.match(index, /keepOnlyPlanFamily\(planItemFamily\(items\[0\]\)\)/);
   assert.match(index, /stage: diagnoseStage, isStaged: diagnoseIsStaged/);
   assert.match(index, /v-show="hasToken && diagnoseReady"/);

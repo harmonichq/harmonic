@@ -1,0 +1,16 @@
+PASS S1
+PASS S2
+PASS S3
+PASS S4
+PASS S5
+PASS S6
+PASS S7
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+PASS S8
+PASS S9
+PASS S10
+PASS S11
+PASS S12
+PASS S13
+PASS S14
+14/14 stories passed against app

@@ -8,6 +8,9 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 from ciq_autotune.store import Store
+from ciq_autotune.finding_case_file import prepare as prepare_case_files, wrap
+from ciq_autotune.findings_projection import prepare_findings_projection
+from ciq_autotune.window_membership import WindowQuery
 
 from scripts.qa_e2e_cases import (
     BASAL_SOURCE_SPAN_DAYS,
@@ -19,6 +22,7 @@ from scripts.qa_e2e_cases import (
     ExpectedQueueRow,
     ExpectedSupport,
     ExpectedVerdictTally,
+    QaExpectation,
     assert_expectation,
     execute_case,
     materialize_case,
@@ -51,6 +55,7 @@ EXPECTED_CASE_NAMES = (
     "behavioral-missed-meal", "behavioral-meal-bolus-short",
     "behavioral-carb-log-fasting-exclusion",
     "behavioral-preempted-detector",
+    "pattern-near-tie", "pattern-collapse",
 )
 
 
@@ -78,6 +83,61 @@ def _execution(case):
 
 
 class QaE2ECasesTest(unittest.TestCase):
+    def test_generator_owned_pattern_case_matches_the_served_roster_counts(self):
+        case = next(case for case in QA_CASES
+                    if case.name == "pattern-near-tie")
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, case)
+                projection = prepare_findings_projection(
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios,
+                ).project(WindowQuery.whole_day(), analysis_generation="qa:0")
+                prepared = prepare_case_files(
+                    store, query=WindowQuery.whole_day(), version=0,
+                    analysis=execution.analysis, exposures=execution.exposures,
+                    scenarios=execution.scenarios, analysis_generation="qa:0",
+                )
+
+            patterns = {row["key"]: row for row in projection["outcome_patterns"]}
+            self.assertEqual(set(patterns), {
+                "highs_after_meals", "lows_after_meals", "highs_after_treating_lows",
+                "lows_after_correcting_highs", "overnight_lows_no_iob",
+            })
+            rendered_by_id = {row["id"]: row for row in wrap(prepared)["rendered_rows"]}
+            rows_by_id = {row["id"]: row for row in projection["rows"]}
+            for key, pattern in patterns.items():
+                with self.subTest(key=key):
+                    row = rows_by_id.get(pattern["subject"])
+                    if row is None or not row["pattern_chart"]:
+                        self.assertIsNone(prepared.case(pattern["subject"], "event", None))
+                        self.assertIsNone(prepared.case(pattern["subject"], "clock", None))
+                        continue
+                    case_file = prepared.case(pattern["subject"], "event", None)
+                    clock_case = prepared.case(pattern["subject"], "clock", None)
+                    self.assertEqual(
+                        (case_file["summary"]["denominator"],
+                         case_file["summary"]["claimed"],
+                         case_file["verdict_counts"]["fired"]),
+                        (pattern["n"], pattern["k"], pattern["k"]),
+                    )
+                    self.assertEqual(clock_case["projection"]["alignment"], "clock")
+                    self.assertEqual(clock_case["projection"]["clock"]["total"], pattern["k"])
+                    for field in ("finding", "family", "summary", "verdict_counts",
+                                  "occurrences"):
+                        self.assertEqual(clock_case[field], case_file[field])
+                    rendered = rendered_by_id[pattern["subject"]]
+                    self.assertEqual(rendered["pattern_chart"], row["pattern_chart"])
+                    self.assertEqual(rendered["case_header"]["summary"], case_file["summary"])
+
+    def test_outcome_pattern_expectation_is_required(self):
+        with self.assertRaises(TypeError):
+            QaExpectation(
+                {}, {}, {}, frozenset(), frozenset(), {}, frozenset(), frozenset(),
+            )
+
     def test_existing_cases_reject_an_extra_behavioral_summary_expectation(self):
         case = next(case for case in QA_CASES if case.name == "behavioral-precedence")
         self.assertEqual(case.expectation.uncaused_highs, 0)
@@ -249,7 +309,6 @@ class QaE2ECasesTest(unittest.TestCase):
                 row = _execution(case).analysis["ic_blocks"][0]
                 self.assertEqual(row["recommended"], recommendation)
 
-
 def _case_test(case):
     def test(self):
         if case.target_family == "basal":
@@ -277,6 +336,49 @@ def _case_test(case):
         execution, source_span = _execution_and_span(case)
         self.assertEqual(source_span, case.source_span_days)
         assert_expectation(case, execution)
+        patterns = {row["key"]: row for row in execution.outcome_patterns}
+        if case.name == "pattern-near-tie":
+            setting = patterns["overnight_lows_no_iob"]["members"][0]
+            overlapping_habit = patterns["highs_after_meals"]["members"][0]
+            ordinary_habit = patterns["highs_after_treating_lows"]["members"][0]
+            self.assertGreater(overlapping_habit["price"], setting["price"])
+            self.assertIsNone(setting["lo"])
+            self.assertIsNone(setting["hi"])
+            self.assertEqual(
+                patterns["highs_after_meals"]["admission_route"], "habit_threshold",
+            )
+            self.assertEqual(setting["price"], 52)
+            self.assertLess(ordinary_habit["price"], setting["price"])
+            self.assertEqual(
+                patterns["overnight_lows_no_iob"]["admission_route"],
+                "setting_staging",
+            )
+        elif case.name == "pattern-collapse":
+            pattern = patterns["highs_after_treating_lows"]
+            self.assertEqual(
+                [row["kind"] for row in pattern["members"]], ["habit"],
+            )
+            self.assertEqual(pattern["collapse"], "collapse_to_member")
+            self.assertEqual(pattern["action"], "habit:over_treated_low")
+            correction_overlap = patterns["lows_after_correcting_highs"][
+                "harm_low_overlap"
+            ][1]
+            self.assertEqual(
+                correction_overlap,
+                {
+                    "habit_subject": "habit:correction_on_iob",
+                    "setting_subject": "setting:isf",
+                    "status": "comparable",
+                    "count": 1,
+                    "reason": "shared_low_episode_nadir",
+                },
+            )
+        elif case.name == "showcase":
+            overnight = patterns["overnight_lows_no_iob"]
+            self.assertIsNone(overnight["members"][0]["seriousness"])
+            self.assertEqual(
+                overnight["members"][0]["seriousness_segments"], [],
+            )
         if case.name == "behavioral-correction-stacking":
             target_key = ("correction_stacking", "correction_clusters")
             target_tally = case.expectation.verdict_tallies[target_key]

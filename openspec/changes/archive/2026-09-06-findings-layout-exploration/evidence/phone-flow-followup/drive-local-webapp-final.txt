@@ -1,0 +1,8 @@
+OK nav http://127.0.0.1:8873/
+OK eval -> undefined
+OK nav http://127.0.0.1:8873/?mode=typical
+OK wait-for .dw
+OK wait 500ms
+OK eval -> {"title":"Harmonic","adjust":null,"flow":true}
+CONSOLE_ERRORS []
+OK screenshot /private/tmp/harmonic-341-phone-smoke.0wJg8h/driver.png

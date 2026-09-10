@@ -1,0 +1,32 @@
+{
+  "head": "b7b8adecc3888e27bf2efc970a309f468549bbdd",
+  "environment": {
+    "PLAYWRIGHT_MODULE": "/Users/connor/.cache/harmonic-browser-gate/pw/node_modules/playwright",
+    "VENDOR_DIR": "/Users/connor/.cache/harmonic-browser-gate/vendor",
+    "PAYLOAD": "mockups/diagnose-workstation.synthetic/payload.json"
+  },
+  "results": [
+    {
+      "name": "browser-workstation",
+      "command": [
+        "node",
+        "--test",
+        "frontend/diagnose-workstation.browser.test.mjs"
+      ],
+      "environment": {},
+      "exit": 0
+    },
+    {
+      "name": "browser-diagnose-replay",
+      "command": [
+        "node",
+        "frontend/diagnose-workstation-behavior.replay.mjs"
+      ],
+      "environment": {
+        "TARGET": "app",
+        "BASE_URL": "http://127.0.0.1:55340"
+      },
+      "exit": 0
+    }
+  ]
+}

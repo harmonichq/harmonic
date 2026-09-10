@@ -173,15 +173,28 @@ def _over_treated_step(
     (``not-sure`` / no matching answer) keeps ADR 0005's shape-only INFERRED beat. (A
     ``no`` answer never reaches here — the caller suppresses the whole step.)
     """
+    facts = {
+        "nadir_glucose_mgdl": nadir,
+        "rebound_glucose_mgdl": peak,
+        "logged_carbs_g": (
+            answer.carb_grams
+            if answer is not None and answer.answer == "carbs" else None
+        ),
+    }
     if answer is None or answer.answer != "carbs":
-        return Step(t=t, text=_over_treated_text(nadir, peak),
-                    evidence_tier=EvidenceTier.INFERRED)
+        return Step(
+            t=t,
+            text=_over_treated_text(nadir, peak),
+            evidence_tier=EvidenceTier.INFERRED,
+            citation={"facts": facts},
+        )
     refs = [event_ref(answer.carb_t)] if answer.carb_t is not None else []
     return Step(
         t=t,
         text=_confirmed_over_treated_text(nadir, peak, answer.carb_grams),
         evidence_tier=EvidenceTier.OBSERVED,
         cited_event_refs=refs,
+        citation={"facts": facts},
     )
 
 
@@ -390,11 +403,19 @@ def _meal_lever(
         scenario_config=scenario_config,
     )
     if cu.matched:
-        return (Lever.CARB_UNDERCOUNT, _step(meal.t, cu)), None
+        return (Lever.CARB_UNDERCOUNT, _step(meal.t, cu, facts={
+            "logged_carbs_g": cu.logged_carbs,
+            "implied_carbs_g": cu.implied_carbs,
+            "baseline_glucose_mgdl": cu.baseline_bg,
+            "peak_glucose_mgdl": cu.peak_bg,
+        })), None
 
     lb = classify_late_bolus(meal, cgm, basal, bolus, scenario_config=scenario_config)
     if lb.matched:
-        return (Lever.LATE_BOLUS, _step(meal.t, lb)), None
+        return (Lever.LATE_BOLUS, _step(meal.t, lb, facts={
+            "pre_bolus_slope_mgdl_min": lb.pre_bolus_slope,
+            "pre_bolus_glucose_mgdl": lb.pre_bolus_bg,
+        })), None
 
     # Meal over-delivery: ADR 681 assigns later suspend episodes to one Meal, then
     # judges each candidate at its own suspend start through the unchanged classifier.
@@ -402,7 +423,13 @@ def _meal_lever(
         meal, bolus, cgm, basal, scenario_config=scenario_config
     )
     if sv.matched:
-        return (Lever.MEAL_OVER_DELIVERY, _step(meal.t, sv)), None
+        return (Lever.MEAL_OVER_DELIVERY, _step(meal.t, sv, facts={
+            "suspend_start": _event_ref_or_none(sv.suspend_start),
+            "suspend_end": _event_ref_or_none(sv.suspend_end),
+            "suspend_duration_min": sv.suspend_duration_min,
+            "nadir_glucose_mgdl": sv.nadir_bg,
+            "nadir_at": _event_ref_or_none(sv.nadir_t),
+        })), None
 
     return None, cu
 
@@ -475,7 +502,15 @@ def _low_lever(
         anchor.t, nadir, cgm, bolus, basal, scenario_config=scenario_config
     )
     if coi.matched:
-        return (Lever.CORRECTION_ON_IOB, _step(anchor.t, coi)), None
+        return (Lever.CORRECTION_ON_IOB, _step(anchor.t, coi, facts={
+            "correction_at": _event_ref_or_none(coi.correction_t),
+            "iob_at_correction_u": coi.iob_at_correction,
+            "pre_correction_slope_mgdl_min": coi.pre_slope,
+            "glucose_at_correction_mgdl": coi.bg_at_correction,
+            "nadir_glucose_mgdl": coi.nadir_bg,
+            "nadir_at": _event_ref_or_none(coi.nadir_t),
+            "minutes_to_low": coi.mins_to_low,
+        })), None
 
     return None, coi
 
@@ -502,7 +537,17 @@ def _correction_lever(
     if cs.matched and cs.stack_t is not None:
         return (
             Lever.CORRECTION_STACKING,
-            _step(cs.stack_t, cs),
+            _step(cs.stack_t, cs, facts={
+                "stack_at": event_ref(cs.stack_t),
+                "gap_min": cs.gap_min,
+                "iob_at_stack_u": cs.iob_at_stack,
+                "pre_stack_slope_mgdl_min": cs.pre_stack_slope,
+                "glucose_at_stack_mgdl": cs.bg_at_stack,
+                "nadir_glucose_mgdl": cs.nadir_bg,
+                "nadir_at": _event_ref_or_none(cs.nadir_t),
+                "previous_bolus_seq_num": cs.previous_seq_num,
+                "second_bolus_seq_num": cs.second_seq_num,
+            }),
             cs.stack_t,
             (cs.previous_seq_num, cs.second_seq_num),
         ), None
@@ -570,6 +615,10 @@ def _high_lever(
         return (Lever.MISSED_MEAL, Step(
             t=onset, text=mm.detail, evidence_tier=mm.evidence_tier,
             cited_window=cited_window,
+            citation={"facts": {
+                "rise_slope_mgdl_min": mm.rise_slope,
+                "digestion_window": dict(cited_window) if cited_window else None,
+            }},
         )), None
 
     mbs = classify_meal_bolus_short(
@@ -584,13 +633,28 @@ def _high_lever(
         return (Lever.MEAL_BOLUS_SHORT, Step(
             t=onset, text=mbs.detail, evidence_tier=mbs.evidence_tier,
             cited_window=cited_window,
+            citation={"facts": {
+                "rise_slope_mgdl_min": mbs.rise_slope,
+                "meal_at": _event_ref_or_none(mbs.meal_t),
+                "correction_at": _event_ref_or_none(mbs.correction_t),
+                "digestion_window": dict(cited_window) if cited_window else None,
+            }},
         )), None
     return None, mm
 
 
-def _step(t: datetime, verdict: Verdict) -> Step:
+def _event_ref_or_none(t: Optional[datetime]) -> Optional[str]:
+    return event_ref(t) if t is not None else None
+
+
+def _step(t: datetime, verdict: Verdict, *, facts: dict) -> Step:
     """Turn a classifier verdict into a narrative :class:`Step` (its detail + tier)."""
-    return Step(t=t, text=verdict.detail, evidence_tier=verdict.evidence_tier)
+    return Step(
+        t=t,
+        text=verdict.detail,
+        evidence_tier=verdict.evidence_tier,
+        citation={"facts": facts},
+    )
 
 
 def _nadir_at(cgm: Sequence[CgmReading], t: datetime) -> Optional[float]:
@@ -713,6 +777,19 @@ def attribute(
                 silence = sil
             continue
         lever, step = result
+        source_facts = dict((step.citation or {}).get("facts") or {})
+        step = replace(step, citation={
+            "operation": f"scenario.attribution.{lever.value}",
+            "tier": step.evidence_tier.value,
+            "facts": {
+                "lever": lever.value,
+                "anchor_kind": a.kind.value,
+                "anchor_at": event_ref(step.t),
+                "event_refs": list(step.cited_event_refs),
+                "window": dict(step.cited_window) if step.cited_window else None,
+                **source_facts,
+            },
+        })
         if driver is None:
             driver_anchor = a
             if lever is Lever.CORRECTION_STACKING and correction_pair is not None:

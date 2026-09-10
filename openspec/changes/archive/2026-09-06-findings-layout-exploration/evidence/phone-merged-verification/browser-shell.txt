@@ -1,0 +1,27 @@
+✔ the retired occurrence route has no production source (3.811042ms)
+✔ the page never scrolls, the panes do, and the advisory stays whole on every tab (1233.687458ms)
+✔ top bar and footer expose the locked destination inventory and neutral profile facts (804.599417ms)
+✔ a bare or hash arrival is promoted to a maturing Trial, and a named page is not (2532.362917ms)
+✔ clean page paths own direct load, refresh, history, canonicalization, and local assets (2045.337958ms)
+cockpit-shell current ratios: outline 8.00, disc 6.19, label 17.76, focus 6.19
+cockpit-shell retirement R1: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
+cockpit-shell applicable stories: 10
+✔ cockpit shell behavior ledger replays every registered story (3801.365625ms)
+✔ Log carbs speaks the chrome control vocabulary and stays readable (246.646708ms)
+✔ cockpit chrome uses only the locked type ranks and three grounds (252.440292ms)
+✔ Verify headers share a seam while Diagnose keeps its overview header with its chart (939.389333ms)
+✔ small widths retain a labeled destination drawer without changing desktop cockpit chrome (568.81675ms)
+✔ transferred live counts and Verify clinical-color guard remain wired to real state (278.583833ms)
+✔ each cockpit lock assertion proves red under deliberate mutation and restores (280.2875ms)
+﹣ build renders cover both locked sizes (0.088125ms) # SKIP
+﹣ retired occurrence route evidence covers both desktop sizes (0.025458ms) # SKIP
+✔ event comparisons render the served case-file cohorts and retain no standalone controls (653.867917ms)
+✔ event comparisons fail closed when the served case file is malformed (565.239709ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 14374.726

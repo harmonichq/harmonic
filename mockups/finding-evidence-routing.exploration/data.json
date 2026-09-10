@@ -1606,7 +1606,7 @@
    }
   },
   "root": "Findings",
-  "meta": "11 findings · 30 days",
+  "meta": "8 findings · 30 days",
   "tiers": {
    "ic:720": {
     "tier": "next_in_line",
@@ -4438,7 +4438,7 @@
    "crumbCount": "1 episode",
    "subject": {
     "flavor": "habit",
-    "flavorWord": "Habit",
+    "flavorWord": "Cause",
     "flavorGlyph": "◈",
     "appearances": [
      {

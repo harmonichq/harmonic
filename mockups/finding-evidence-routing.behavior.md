@@ -3655,3 +3655,44 @@ whose labels are shown, retaining its 14px separation floor. Node coverage pins
 the range and tick spacing. Ordinary noun `habit` is restored in the glossary,
 with `Cause` named explicitly as the chip word; the two guide chip labels are
 updated accordingly.
+
+
+## Amendment — 2026-09-09, final review round (issue #395)
+
+Authority: ORDER.md coordinator amendment 4, F7–F11. The preceding coordinator
+run reported `app: 173 of 174 stories passed`, with S20's coincidence-link
+precondition still failing. The coordinator owns the post-fix browser rerun.
+
+**Member-family matching and unknown keys.** PATTERN_COPY now separates the
+machine family from the display noun. On this reviewed branch, the two meal
+Patterns use meals, both low-Exposure Patterns use lows (including Lows after
+correcting highs, changed by the round-3 sanction), and the overnight
+source-night Pattern has no Exposure family (`null`). Its own noun remains
+nights. A member matches its appearance's family and uses the first appearance
+only if no matching family exists. A node test puts correction_clusters first
+and lows second and pins the lows count; this does not rename either family.
+Unknown keys render a title-only drill with no denominator or mini, and the
+registry does not claim their unknown chart kind. Tests include an unknown
+ordinary key and the inherited-object key `__proto__`.
+
+**F9 supersedes the preceding tick-spacing amendment.** The broad narrow-chart
+spacing change is reverted; no shared mg/dL chart option is altered. The narrow
+preview and phone-scroll probes pin exactly seven mounted previews, rather
+than an open-ended count. The seven identities are pinned through the generated
+input, preparation adapter, queue painter and chart registry in a Node test.
+Five is the pre-Pattern count; two served Pattern mini hosts raise it to seven.
+
+**S20's clock opener uses the whole-day population.** The default input leads
+with Highs after meals; that whole-day-only Pattern is absent when the original
+`drill` state's overnight preparation arrives. A two-family input does not fix
+this: its leading Over-treated low is also absent overnight. S20 now opens the
+addressable `drill-all` state, which uses the existing clock-case boot path and
+unchanged factor cap on the whole-day queue. It still asserts both coincidence
+links and their basal-slot and I:C-block destinations. This adds a replay state;
+it changes no queue entry alignment, Pattern placement, scope or pin policy.
+The failed-first coordinator run above records the broken overnight precondition.
+
+Both exploration extracts are regenerated from their owners to carry Cause;
+their --check commands remain the drift proofs. The stylesheet's two remaining
+Habit comments now say Cause, and its member-count styles precede the trailing
+comment block.

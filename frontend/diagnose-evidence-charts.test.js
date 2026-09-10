@@ -1300,3 +1300,11 @@ test('#395 · the Pattern rail preview labels served cohorts and seats the event
       .markLine.data, [{ yAxis: 70 }, { yAxis: 180 }]);
   }
 });
+
+
+test('#395 · an unknown Pattern coordinate is not mounted as a supported chart kind', () => {
+  const entry = DIAGNOSE_EVIDENCE_CHARTS.find((item) => item.kind === 'pattern-case-file');
+  for (const key of ['future_pattern', '__proto__']) {
+    assert.equal(entry.matches({ pattern_chart: { key } }), false);
+  }
+});

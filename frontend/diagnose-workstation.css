@@ -1494,7 +1494,7 @@
 }
 /* FLAVOR TAGS (term 36) — glyph + word at caps-label rank, on the app's IDENTITY
    hues, never warn or danger, which are reserved for clinical state and would
-   make a flavor read as a verdict. `--mk-accent` was tried for Habit and
+   make a flavor read as a verdict. `--mk-accent` was tried for Cause and
    REVERTED: it is the hue the chart spends on the Meal-boluses mark and it
    collided with the clinical `--high` token's data encoding, reading as
    clinical state at once. The ◈ / ⚙ glyph carries the differentiation; the hue
@@ -1645,7 +1645,7 @@
 .dw .tailnote + .qitem.tail { margin-top: -4px; }
 .dw .qitem.tail + .qitem.tail { margin-top: calc(4px - var(--q-gap)); }
 /* the tail recedes the flavor but never re-hues it: same identity, less ink, so
-   the Setting/Habit read survives the demotion */
+   the Setting/Cause read survives the demotion */
 .dw .qrow[data-tier="noted"] .tag.setting { color: color-mix(in srgb, var(--primary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.habit { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
 .dw .qrow[data-tier="noted"] .tag.pattern { color: color-mix(in srgb, var(--mk-secondary) 72%, transparent); }
@@ -2080,10 +2080,10 @@
   }
 }
 
-/* Fullscreen is temporary canvas state, not a parallel pane composition. It
-   borrows the fullscreen header and body rows above; `data-fullscreen-tile`
-   owns only the one-chart field geometry. */
-
 .dw .qitem.claimed .member-title { grid-column: 2 / 4; grid-row: 1; text-align: left; }
 .dw .qitem.claimed .member-count { color: var(--mk-muted); font-size: var(--ck-micro); }
 .dw .qitem.claimed .member-title .lab { white-space: normal; }
+
+/* Fullscreen is temporary canvas state, not a parallel pane composition. It
+   borrows the fullscreen header and body rows above; `data-fullscreen-tile`
+   owns only the one-chart field geometry. */

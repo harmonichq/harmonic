@@ -1051,7 +1051,8 @@ const entries = [
         data: data?.projection?.cohorts?.[0]?.points?.map((point) => point.median) || [],
         lineStyle: { color: chartColors().signal, width: 1 } }]),
     coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
-    matches: (row) => Boolean(row?.pattern_chart),
+    matches: (row) => Boolean(row?.pattern_chart)
+      && Object.hasOwn(PATTERN_COPY, row.pattern_chart.key),
     coordinates: (row, findings) => ({
       projection_id: findings.projection_id,
       finding_id: row.id,

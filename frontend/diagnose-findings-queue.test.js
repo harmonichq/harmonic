@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { DIAGNOSE_EVIDENCE_CHARTS } from './diagnose-evidence-charts.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput, populateFindingCasePreparation } from './browser-fixture-population.js';
 import { fileURLToPath } from 'node:url';
@@ -537,7 +538,7 @@ test('#395 · Pattern recurrence reads one closed copy table and ignores headlin
     ['lows_after_correcting_highs', 'lows', 'followed a correction'],
     ['overnight_lows_no_iob', 'nights', 'ran low overnight'],
   ]) {
-    assert.deepEqual(PATTERN_COPY[key], { noun, outcome });
+    assert.deepEqual(PATTERN_COPY[key], { family: key === 'overnight_lows_no_iob' ? null : noun, noun, outcome });
     const row = { ...base, headline: 'A headline with no recurrence to parse',
       pattern: { ...base.pattern, key, k: 3, n: 20 } };
     assert.equal(queueRows({ rows: [row] })[0].detail.text, `3 of 20 ${noun} ${outcome}`);
@@ -577,4 +578,56 @@ test('#395 · an unpriced claimed member precedes the tail seam and prints its p
   const at = children.findIndex((node) => node.children?.[0]?.dataset.id === member.id);
   assert.equal(children[at - 1].children[0].dataset.id, member.claimedBy,
     'no seam or caption separates the adjacent served parent and member');
+});
+
+
+test('#395 · a member selects the Pattern family even when another appearance comes first', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  const parent = { ...base, id: 'pattern:lows_after_correcting_highs',
+    pattern: { ...base.pattern, key: 'lows_after_correcting_highs' } };
+  const member = { id: 'finding:correction_stacking', kind: 'habit', register: 'finding',
+    claimed_by: parent.id, appearances: [
+      { family: 'correction_clusters', noun: 'correction clusters', n: 2, m: 12 },
+      { family: 'lows', noun: 'low excursions', n: 6, m: 20 },
+    ] };
+  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 6 of 20 low excursions');
+  member.appearances.pop();
+  assert.equal(queueRows({ rows: [parent, member] })[1].memberCount, ' · 2 of 12 correction clusters');
+  assert.equal(PATTERN_COPY.overnight_lows_no_iob.family, null,
+    'source nights have no Exposure family to match');
+});
+
+test('#395 · unknown Pattern keys stay title-only and do not break adjacent members or findings', () => {
+  const base = W.global.rows.find((row) => row.kind === 'pattern');
+  for (const key of ['future_pattern', '__proto__']) {
+    const parent = { ...base, id: `pattern:${key}`, pattern: { ...base.pattern, key } };
+    const member = { id: 'finding:future_member', kind: 'habit', register: 'finding',
+      claimed_by: parent.id, appearances: [{ family: 'meals', noun: 'meals', n: 2, m: 20 }] };
+    let drilled;
+    const { host, miniSlots, rows } = paint({ rows: [parent, member] }, null,
+      (row) => { drilled = row; });
+    const item = host.children.find((node) => node.className === 'q').children
+      .find((node) => node.children?.[0]?.dataset.id === parent.id);
+    const button = item.children[0];
+    assert.equal(button.children.find((node) => node.className === 'lab').textContent, parent.title);
+    assert.ok(!button.children.some((node) => /^(den|mini|tag)/.test(node.className)));
+    assert.ok(!miniSlots.some((slot) => slot.row.id === parent.id));
+    assert.equal(rows[1].memberCount, ' · 2 of 20 meals');
+    button.listeners.click();
+    assert.equal(drilled, parent);
+  }
+});
+
+
+test('#395 · the two-family browser input publishes exactly seven mini hosts', () => {
+  const cases = JSON.parse(readFileSync(new URL(
+    '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
+  const input = populateFindingsProjectionInput(fixture.inputs);
+  const prepared = populateFindingCasePreparation(cases.preparation, projectFindings(input));
+  const { miniSlots } = paint({ ...prepared.findings, rows: prepared.rendered_rows });
+  assert.deepEqual(miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
+    .map(({ row }) => row.id), [
+    'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
+    'pattern:highs_after_meals', 'finding:carb_undercount', 'pattern:lows_after_correcting_highs',
+  ]);
 });

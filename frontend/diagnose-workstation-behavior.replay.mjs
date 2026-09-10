@@ -1510,11 +1510,13 @@ export const S19 = async (page) => {
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
 // LOCK:diagnose-workstation:33
 export const S20 = async (page) => {
-  // The drill opener requests the leading case in clock alignment. Coincidence
+  // The whole-day drill opener keeps its leading Pattern available. Coincidence
   // links belong to that clock case, not the event-aligned queue entry.
   await settle(page, 450);
   // The clock case carries the coincidence line.
-  ok((await state(page)).linkBtns.length === 2, 'S20 precondition: opens at the factor level');
+  const opened = await state(page);
+  ok(opened.linkBtns.length === 2,
+    `S20 precondition: clock case exposes both coincidence links (${opened.crumb.join(' / ')}; ${opened.levelText})`);
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View slot').click());
   await settle(page, 450);
   const slot = await state(page);
@@ -4197,7 +4199,7 @@ export const S150 = async (page) => {
     'S150 claimed member is nested by the served flag');
   is(await node.locator('.n').innerText(), '│', 'S150 nested member has the quiet non-rank tick');
   const parent = rows.find((row) => row.id === member.claimed_by);
-  const family = PATTERN_COPY[parent.pattern.key].noun;
+  const family = PATTERN_COPY[parent.pattern.key].family;
   const appearance = member.appearances.find((item) => item.family === family) || member.appearances[0];
   is((await node.locator('.member-count').textContent()).trim(),
     `· ${appearance.n} of ${appearance.m} ${appearance.noun}`,
@@ -5204,7 +5206,7 @@ export const STORIES = [
   ['S10', S10, 'dense'], ['S11', S11, 'dense'], ['S12', S12, 'dense'],
   ['S13', S13, 'dense'], ['S14', S14, 'dense'], ['S15', S15, 'typical'],
   ['S16', S16, 'typical'], ['S17', S17, 'typical'], ['S18', S18, 'typical'],
-  ['S19', S19, 'drill'], ['S20', S20, 'drill'], ['S21', S21, 'drawn'],
+  ['S19', S19, 'drill'], ['S20', S20, 'drill-all'], ['S21', S21, 'drawn'],
   ['S22', S22, 'typical'], ['S23', S23, 'drawn'],
   ['S24', S24, 'typical'], ['S25', S25, 'typical'],
   ['S26', S26, 'dense'], ['S27', S27, 'typical'], ['S28', S28, 'typical'],

@@ -53,11 +53,11 @@ export const MIN_ROW_MINI_WIDTH = 120;
 /* The roster key is server-owned; this closed table spells the sanctioned
    reader-facing outcome without deriving one from member findings. */
 export const PATTERN_COPY = Object.freeze({
-  highs_after_meals: { noun: 'meals', outcome: 'ran high' },
-  lows_after_meals: { noun: 'meals', outcome: 'ran low' },
-  highs_after_treating_lows: { noun: 'lows', outcome: 'rebounded high' },
-  lows_after_correcting_highs: { noun: 'lows', outcome: 'followed a correction' },
-  overnight_lows_no_iob: { noun: 'nights', outcome: 'ran low overnight' },
+  highs_after_meals: { family: 'meals', noun: 'meals', outcome: 'ran high' },
+  lows_after_meals: { family: 'meals', noun: 'meals', outcome: 'ran low' },
+  highs_after_treating_lows: { family: 'lows', noun: 'lows', outcome: 'rebounded high' },
+  lows_after_correcting_highs: { family: 'lows', noun: 'lows', outcome: 'followed a correction' },
+  overnight_lows_no_iob: { family: null, noun: 'nights', outcome: 'ran low overnight' },
 });
 
 /* Display units per parameter. Formatting, not policy: the projection publishes the
@@ -250,7 +250,7 @@ export function queueRows(projection, selected = null) {
       detail: detailFor(row),
       memberCount: row.claimed_by ? (() => {
         const parent = rows.find((candidate) => candidate.id === row.claimed_by);
-        const family = PATTERN_COPY[parent.pattern.key].noun;
+        const family = PATTERN_COPY[parent?.pattern?.key]?.family;
         const appearance = row.appearances.find((item) => item.family === family)
           || row.appearances[0];
         return appearance ? ` · ${appearance.n} of ${appearance.m} ${appearance.noun}` : '';
@@ -262,6 +262,7 @@ export function queueRows(projection, selected = null) {
 
 function detailFor(row) {
   if (row.kind === 'pattern') {
+    if (!Object.hasOwn(PATTERN_COPY, row.pattern?.key)) return { kind: 'pattern-unknown' };
     if (row.pattern?.count_status) return { kind: 'pattern-status', text: 'counts under review' };
     return { kind: 'pattern', text: patternPart(row) };
   }
@@ -402,7 +403,7 @@ export function renderFindingsQueue(host, projection, onDrill, view = null) {
       add(title, 'lab', row.title);
       add(title, 'member-count', row.memberCount);
     } else add(node, 'lab', row.title);
-    if (row.weight === 'tail' || row.detail?.kind === 'pattern-status') {
+    if (row.weight === 'tail' || ['pattern-status', 'pattern-unknown'].includes(row.detail?.kind)) {
       if (row.detail?.kind === 'pattern-status') paintDetail(node, row.detail);
       add(node, 'go', '›').setAttribute('aria-hidden', 'true');
       node.addEventListener('click', () => onDrill(row.raw));

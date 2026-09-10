@@ -268,6 +268,8 @@ const winText = (w) => windowSpanText(w.range);
 const CFG_BY_STATE = {
   typical: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 1 },
   drill: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 2 },
+  // Whole-day clock case: the leading Pattern is unavailable in scoped queries.
+  'drill-all': { win: 'all', pool: 45, factorCap: 6, occCap: 40, level: 2 },
   occurrence: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 3 },
   // a custom window already drawn, so the whole re-scope is judgeable from a URL
   drawn: { win: 'overnight', pool: 45, factorCap: 6, occCap: 40, level: 1, drawn: [135, 285] },

@@ -116,20 +116,9 @@ export function fieldRange(descriptors, registry, glucoseRange) {
 
 export function optionForDescriptor(descriptor, registry, range, context = {}) {
   const byKind = new Map(registry.map((entry) => [entry.kind, entry]));
-  const option = byKind.get(descriptor.kind).option(descriptor.mode, {
+  return byKind.get(descriptor.kind).option(descriptor.mode, {
     ...context, data: descriptor.data, range,
   });
-  if (!context.mini && context.surface?.clientWidth <= 480) {
-    const plotHeight = context.surface.clientHeight - option.grid.top - option.grid.bottom;
-    const axis = option.yAxis;
-    if (axis?.name === 'mg/dL' && plotHeight > 0) {
-      // Shared glucose bounds can widen when another Pattern joins the field.
-      // Keep those bounds; spend the available height on readable tick labels.
-      axis.interval = Math.ceil((axis.max - axis.min) / Math.max(1, Math.floor(plotHeight / 20)) / 20) * 20;
-      axis.axisLabel = { ...axis.axisLabel, showMinLabel: false, showMaxLabel: false };
-    }
-  }
-  return option;
 }
 
 export function tileStatePresentation(descriptor, pending = false, message = null) {

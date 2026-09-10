@@ -61,7 +61,7 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     ``clean`` and ``uncaused`` are **not** the same question (#63):
 
     * ``attributed`` — this occurrence is its episode's driver.
-    * ``attributed_levers`` — every lever that names this opportunity, including
+    * ``attributed_levers`` — every lever this feed maps onto this opportunity, including
       cross-family outcomes such as the meal behind a meal-bolus-short high or the
       low reached by correction stacking. The primary driver fields stay unchanged.
     * ``clean`` = ``n - attributed`` — this occurrence is not the driver. It says
@@ -138,13 +138,10 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         )
         if attribution.lever is Lever.MEAL_BOLUS_SHORT:
             policy = policy_for(attribution.lever)
-            try:
-                occurrence_id = policy.occurrence_for_episode(
-                    episode["id"], window_bolus, attribution.trigger_t,
-                    scenario_config=scenario_config,
-                )
-            except ValueError:
-                occurrence_id = None
+            occurrence_id = policy.occurrence_for_episode(
+                episode["id"], window_bolus, attribution.trigger_t,
+                scenario_config=scenario_config,
+            )
             meal = None if occurrence_id is None else next((
                 item for item in window_bolus
                 if policy.occurrence_id(item) == occurrence_id

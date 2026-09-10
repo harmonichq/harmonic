@@ -428,6 +428,195 @@ class MeasurementComparisonTest(unittest.TestCase):
                     self.assertGreater(row["assessment"]["interval"]["low"], 0)
 
 
+class PatternOpportunityComparisonTest(unittest.TestCase):
+    def materialize(self, **kwargs):
+        from scripts.qa_e2e_cases import _materialize_pattern_focus_meals
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "synthetic.sqlite"
+        with Store.open(path) as store:
+            _materialize_pattern_focus_meals(store, **kwargs)
+        return path
+
+    def comparison(self, store, *, pin=datetime(2024, 5, 5),
+                   cutoff=datetime(2024, 5, 9), key="highs_after_meals",
+                   lever="late_bolus", ending=None):
+        record = FollowUpComparisonTest().focus(store, pin, lever=lever, ending=ending)
+        record.update(pattern_key=key, subject=f"pattern:{key}")
+        original = copy.deepcopy(record)
+        result = compare_follow_up(store, record=record, data_cutoff=cutoff, input_revision=2)
+        self.assertEqual(record, original)
+        return result["comparison"]
+
+    def test_pattern_gate_can_be_met_before_fourteen_days_without_invented_direction(self):
+        path = self.materialize()
+        before = path.read_bytes()
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store)
+        self.assertEqual(path.read_bytes(), before)
+        for arm in ("before", "after"):
+            readiness = result["readiness"][arm]
+            self.assertTrue(readiness["criterion_met"], readiness)
+            self.assertEqual((readiness["count"], readiness["gate"], readiness["unit"],
+                              readiness["verdict"]), (12, 12, "meals", "ready"))
+            self.assertEqual(readiness["observed"], readiness["count"])
+            self.assertEqual(readiness["required"], readiness["gate"])
+            self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
+                "elapsed_days", "required_elapsed_days", "criterion_met",
+                "contributing_dates", "reason", "count", "gate", "verdict"}, readiness.keys())
+            self.assertIsNone(readiness["required_elapsed_days"])
+            self.assertEqual((readiness["measured"], readiness["unmeasured"]), (12, 0))
+            self.assertEqual(len(readiness["contributing_dates"]), 4)
+            self.assertEqual(result["adherence"][arm]["rate"], 0)
+        self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
+        self.assertEqual(result["assessment"]["state"], "unclear")
+
+    def test_elapsed_time_and_other_arm_cannot_supply_missing_opportunities(self):
+        path = self.materialize()
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store, pin=datetime(2024, 5, 8), cutoff=datetime(2024, 6, 1))
+        self.assertEqual(result["readiness"]["before"]["count"], 21)
+        after = result["readiness"]["after"]
+        self.assertEqual(after["count"], 3)
+        self.assertGreater(after["elapsed_days"], 14)
+        self.assertFalse(after["criterion_met"])
+        self.assertEqual(after["verdict"], "withheld")
+
+    def test_pin_and_ending_are_half_open_and_later_opportunities_stay_outside(self):
+        path = self.materialize()
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store, pin=datetime(2024, 5, 5, 6),
+                                     ending={"effective_at": "2024-05-05 18:00:00"})
+        self.assertEqual(result["readiness"]["before"]["count"], 12)
+        self.assertEqual(result["readiness"]["after"]["count"], 2)
+        self.assertFalse(result["readiness"]["after"]["criterion_met"])
+
+    def test_missing_measurements_are_separate_from_opportunity_readiness(self):
+        path = self.materialize(measured=False)
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store)
+        self.assertTrue(all(r["criterion_met"] for r in result["readiness"].values()))
+        for arm in ("before", "after"):
+            self.assertIsNone(result["adherence"][arm]["rate"])
+            self.assertEqual(result["adherence"][arm]["measured_opportunities"], 0)
+            self.assertEqual(result["readiness"][arm]["measured"], 0)
+            self.assertEqual(result["readiness"][arm]["unmeasured"], 12)
+        self.assertEqual(result["availability"]["state"], "unavailable")
+        self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
+
+    def test_zero_opportunities_are_not_observed_zero_behavior(self):
+        path = self.materialize(meals_per_day=0)
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store)
+        for arm in ("before", "after"):
+            self.assertEqual(result["readiness"][arm]["count"], 0)
+            self.assertEqual(result["readiness"][arm]["reason"], "zero_opportunities")
+            self.assertFalse(result["readiness"][arm]["criterion_met"])
+            self.assertIsNone(result["adherence"][arm]["rate"])
+
+    def test_published_gate_authority_controls_roster_and_comparison(self):
+        from unittest.mock import patch
+        from ciq_autotune.analyzers.scenario import outcome_patterns
+        from ciq_autotune.explore_exposures import build_exposures
+        path = self.materialize()
+        with Store.open_readonly(path) as store, patch.dict(outcome_patterns._GATES, {"highs_after_meals": 25}):
+            roster = outcome_patterns.build_outcome_patterns({}, build_exposures(store), {})
+            result = self.comparison(store)
+        self.assertEqual(roster[0]["readiness"], {"count": 24, "gate": 25, "verdict": "withheld"})
+        for readiness in result["readiness"].values():
+            self.assertEqual(readiness["gate"], 25)
+            self.assertFalse(readiness["criterion_met"])
+
+    def test_mapped_direction_waits_for_pattern_gate_and_keeps_glucose_checks(self):
+        from unittest.mock import patch
+        from ciq_autotune.analyzers.scenario import outcome_patterns
+        # The existing dense known-signal producer yields a nondegenerate TBR
+        # interval. It proves a direction is withheld by the gate, not by a
+        # coincidentally uninformative glucose trace.
+        store, _, end = SupportedComparisonTest().dense_profile()
+        pin = datetime(2026, 1, 17)
+        legacy = FollowUpComparisonTest().focus(store, pin, lever="correction_on_iob")
+        old = FollowUpComparisonTest().compare(store, legacy, end)
+        self.assertEqual(next(r for r in old["outcomes"] if r["key"] == "tbr")["assessment"]["state"], "concerning")
+        for limitation in ("opportunities", "ready", "coverage", "duration_removed"):
+            with self.subTest(limitation=limitation):
+                source, _, cutoff = SupportedComparisonTest().dense_profile(
+                    days=13 if limitation == "duration_removed" else 16)
+                split = datetime(2026, 1, 1) + timedelta(days=13 if limitation == "duration_removed" else 16)
+                if limitation == "coverage":
+                    source._cgm = [r for r in source._cgm if r.t.minute == 0]
+                # Moving the single policy gate exercises the real source count.
+                gate = 100 if limitation == "opportunities" else 12
+                with patch.dict(outcome_patterns._GATES, {"lows_after_correcting_highs": gate}):
+                    result = self.comparison(source, pin=split, cutoff=cutoff,
+                        key="lows_after_correcting_highs", lever="correction_on_iob")
+                tbr = next(r for r in result["outcomes"] if r["key"] == "tbr")
+                self.assertEqual(tbr["assessment"]["state"],
+                    "unclear" if limitation in ("opportunities", "coverage") else "concerning")
+                if limitation == "opportunities":
+                    self.assertGreater(tbr["assessment"]["interval"]["low"], 0)
+                    self.assertTrue(all(r["verdict"] == "withheld" for r in result["readiness"].values()))
+                elif limitation in ("ready", "duration_removed"):
+                    self.assertTrue(all(r["verdict"] == "ready" for r in result["readiness"].values()))
+
+    def test_four_day_pattern_gate_only_publishes_mapped_glucose_direction(self):
+        path = self.materialize(meals_per_day=0)
+        start = datetime(2024, 5, 1)
+        # Three distinct low episodes per date; longer lows and fewer highs
+        # after pin produce supported glucose differences without any boluses
+        # from which correction-stacking behavior could be measured.
+        readings = []
+        for day in range(8):
+            for sample in range(288):
+                low_samples = (3 if day < 4 else 12) + day % 3
+                high_samples = (30 if day < 4 else 8) + day % 3
+                phase = sample % 96
+                bg = 60 if 12 <= phase < 12 + low_samples else 220 if 40 <= phase < 40 + high_samples else 120
+                readings.append({"EventDateTime": str(start + timedelta(days=day, minutes=sample * 5)),
+                                 "Readings (CGM / BGM)": bg, "Description": "Synthetic EGV"})
+        with Store.open(path) as store:
+            store.upsert_cgm(readings)
+        with Store.open_readonly(path) as store:
+            result = self.comparison(store, key="lows_after_correcting_highs", lever="correction_stacking")
+        for arm in ("before", "after"):
+            self.assertEqual(result["readiness"][arm]["count"], 12)
+            self.assertEqual(result["readiness"][arm]["verdict"], "ready")
+            self.assertEqual(result["readiness"][arm]["elapsed_days"], 4)
+            self.assertEqual(result["adherence"][arm]["measured_opportunities"], 0)
+        outcomes = {row["key"]: row for row in result["outcomes"]}
+        self.assertEqual(outcomes["tbr"]["assessment"]["state"], "concerning")
+        for key in ("tir", "tar"):
+            interval = outcomes[key]["assessment"]["interval"]
+            self.assertTrue(interval["low"] > 0 or interval["high"] < 0)
+            self.assertEqual(outcomes[key]["assessment"]["state"], "unclear")
+        self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
+
+    def test_lows_and_collapsed_pattern_use_exposure_anchors_not_member_pairs(self):
+        from ciq_autotune.explore_exposures import build_exposures
+        from scripts.qa_e2e_cases import QA_CASES, materialize_case
+        for case_name, key, lever in (
+            ("pattern-collapse", "highs_after_treating_lows", "over_treated_low"),
+            ("behavioral-correction-stacking", "lows_after_correcting_highs", "correction_stacking"),
+        ):
+            with self.subTest(case=case_name), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "synthetic.sqlite"
+                with Store.open(path) as store:
+                    materialize_case(store, next(c for c in QA_CASES if c.name == case_name))
+                with Store.open_readonly(path) as store:
+                    exposures = build_exposures(store)
+                    result = self.comparison(store, pin=datetime(2024, 5, 16),
+                        cutoff=datetime(2024, 5, 31), key=key, lever=lever)
+                    for arm, lo, hi in (("before", "2024-05-01", "2024-05-16"),
+                                       ("after", "2024-05-16", "2024-05-31")):
+                        owned = [r for r in exposures["exposures"]["lows"]["occurrences"] if lo <= r["t"] < hi]
+                        self.assertEqual(result["readiness"][arm]["count"], len(owned))
+                        self.assertEqual(result["readiness"][arm]["unit"], "lows")
+                        self.assertEqual(result["readiness"][arm]["gate"], 12)
+                    if lever == "correction_stacking":
+                        self.assertNotEqual(sum(r["count"] for r in result["readiness"].values()),
+                            sum(result["adherence"][arm]["opportunities"] for arm in ("before", "after")))
+
+
 class PracticalComparisonTest(unittest.TestCase):
     store = FollowUpComparisonTest.store
     focus = FollowUpComparisonTest.focus

@@ -96,3 +96,23 @@ Round 3 sanction: Connor Griffin · 2026-09-09 · shown the whole real rail with
 every ruling applied (and told the chip word would read Cause in the build):
 "Yeah, this looks great. Let's ship it." The coordinator defaults above stand
 unless amended. This closes the design round; c3 builds to this record.
+
+## Revision evidence (2026-09-09, chunk c3 merged)
+
+Before renders (`before/`) come from the pre-c3 ticket branch served by the QA
+copy-then-serve procedure on port 8766; after renders (`after/`) from the c3
+build on port 8765, both on the synthetic QA showcase at 1440×900, 1280×800 and
+390×844 on the 24 h window, plus the dense synthetic fixture through the
+manufactured harness (`after/harness-dense-*`) where a chartable Pattern with
+nested causes exists, and one Pattern drill. Every input is synthetic; the
+operator's real-data renders from the design rounds stayed local and are not
+here.
+
+Replay against the built app: `replay-after.log`, 174 of 174 stories (the
+168 prior stories, with S24, S27, S28, S144 and the re-anchored Lever stories
+amended under the ledger's revision rule and dated in the ledger, plus
+S145–S150). All ten browser gate legs passed on the merged build (Diagnose
+workstation, canvas composition, cockpit shell, browser runner, Day surface,
+Plan first match, event-comparison replay 14/14, support audit, Verify 8/8).
+Code review: two axes (standards, spec), converged at round 3 with a delta
+re-check of the two gate-fix commits.

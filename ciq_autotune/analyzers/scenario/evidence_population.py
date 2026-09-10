@@ -52,7 +52,7 @@ class EvidencePopulationPolicy:
 
     @property
     def rate_family(self) -> Exposure | None:
-        """Closed recurrence account for clean rates and Verify, if one exists.
+        """Closed recurrence account for clean rates, if one exists.
 
         Custom meal recurrence still belongs to meals. Sequence recurrence has
         no Exposure account, regardless of its Meals display affinity.

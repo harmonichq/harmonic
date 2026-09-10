@@ -108,7 +108,7 @@ def attributed_occurrences(bolus_events, cgm_readings, basal_events=(), *, isf=N
     """Read unique occurrence ownership from the shared event evaluation."""
     return evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                     scenario_config=scenario_config, low_answers=low_answers,
-                    carb_entries=carb_entries).attributed
+                    carb_entries=carb_entries, bound_classifier_context=False).attributed
 
 
 def tally_attributions(
@@ -128,7 +128,7 @@ def tally_attributions(
     """
     evaluated = evaluate(bolus_events, cgm_readings, basal_events, isf=isf,
                          scenario_config=scenario_config, low_answers=low_answers,
-                         carb_entries=carb_entries)
+                         carb_entries=carb_entries, bound_classifier_context=False)
     exposure_counts = {family: len(rows) for family, rows in evaluated.families.items()}
     attributed: Dict[Lever, int] = {}
     seen = set()
@@ -680,7 +680,8 @@ def recurrence_observations(bolus, cgm, basal=(), *, lever, isf=None,
     lv = Lever(lever)
     policy = policy_for(lv)
     evaluated = evaluate(bolus, cgm, basal, isf=isf, scenario_config=scenario_config,
-                         low_answers=low_answers, carb_entries=carb_entries)
+                         low_answers=low_answers, carb_entries=carb_entries,
+                         bound_classifier_context=False)
     groups = [ep.anchors for ep in evaluated.episodes]
     families = evaluated.families
     owned = policy.recurrence_population(families, bolus, scenario_config=scenario_config,

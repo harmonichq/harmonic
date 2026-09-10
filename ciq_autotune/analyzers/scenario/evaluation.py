@@ -159,7 +159,6 @@ class Evaluation:
     sequences: SequenceEvaluation
     recurrence_counts: dict
     candidate_impacts: dict
-    competing_levers: frozenset
     attributed: tuple[AttributedOccurrence, ...]
 
 def bounded_episode(index, group, attr, cgm, *, next_start=None,
@@ -205,8 +204,14 @@ def _sequence_candidates(episode, sequences):
     return tuple(out)
 
 def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig(),
-             low_answers=(), carb_entries=(), window_start=None, window_end=None):
-    """Evaluate all consumers' source-window events once per invocation."""
+             low_answers=(), carb_entries=(), window_start=None, window_end=None,
+             bound_classifier_context=True):
+    """Evaluate source-window events once, preserving the caller's context contract.
+
+    Scenario and its evidence bound classifier context at the next group before
+    padding. Legacy tally/recurrence callers inspect the raw group's padded end.
+    Both use this same walk; neither reclassifies the returned episodes.
+    """
     times = [e.t for e in (*bolus, *cgm, *basal)]
     end = window_end or max(times, default=datetime.min)
     start = window_start or min(times, default=end)
@@ -216,11 +221,12 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
                                    window_end=end, config=EatingSequenceConfig())
     groups, families = _context(bolus, cgm, basal, isf, scenario_config, low_answers)
     attrs = []
-    for group in groups:
+    for index, group in enumerate(groups):
         lo = group.start - timedelta(minutes=scenario_config.engine_context_pad_min)
-        # Preserve the tally's classifier reach. The next group bounds burden,
-        # not the evidence each classifier is allowed to inspect.
-        hi = group.end + timedelta(minutes=scenario_config.engine_context_pad_min)
+        context_end = group.end
+        if bound_classifier_context and index + 1 < len(groups):
+            context_end = min(context_end, groups[index + 1].start)
+        hi = context_end + timedelta(minutes=scenario_config.engine_context_pad_min)
         attrs.append(attribute(group, _slice(cgm, lo, hi), _slice(bolus, lo, hi),
                                _slice(basal, lo, hi), isf=isf,
                                scenario_config=scenario_config, low_answers=low_answers))
@@ -235,7 +241,6 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
             bearing[i] = bool(_sequence_candidates(provisional, sequences))
     episodes = []
     impacts = {}
-    competing = set()
     for i, (group, attr) in enumerate(zip(groups, attrs)):
         ep = bounded_episode(i, group, attr, cgm,
             next_start=groups[i + 1].start if i + 1 < len(groups) else None,
@@ -246,8 +251,6 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
             for match in attr.matches]
         seq_candidates = _sequence_candidates(ep, sequences)
         candidates.extend(seq_candidates)
-        if seq_candidates:
-            competing.update(c.lever for c in seq_candidates)
         for candidate in candidates:
             population = impacts.setdefault(candidate.lever, {})
             population[candidate.occurrence_id] = max(population.get(candidate.occurrence_id, 0), ep.severity)
@@ -277,8 +280,7 @@ def evaluate(bolus, cgm, basal=(), *, isf=None, scenario_config=ScenarioConfig()
         sequence_populations=sequences.populations)) for lever in Lever}
     recurrences = tuple(_recurrence(ep, families, bolus, scenario_config) for ep in owned
                         if ep.attribution.lever is not None)
-    return Evaluation(tuple(owned), families, sequences, counts, prices,
-                      frozenset(competing), recurrences)
+    return Evaluation(tuple(owned), families, sequences, counts, prices, recurrences)
 
 def _recurrence(ep, families, bolus, scenario_config):
     attr = ep.attribution

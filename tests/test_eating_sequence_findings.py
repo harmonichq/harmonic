@@ -33,6 +33,7 @@ class SharedSequenceEvaluationTest(unittest.TestCase):
 
     def test_observed_impact_reverses_ownership_without_resizing_episodes(self):
         from ciq_autotune.analyzers.scenario.levers import Lever
+        from ciq_autotune.analyzers.scenario.evaluation import SEQUENCE_LEVERS
         for lever in ('high_carb_sequence', 'repeat_eating'):
             outcomes = []
             for competitor in ('mild', 'severe'):
@@ -46,7 +47,7 @@ class SharedSequenceEvaluationTest(unittest.TestCase):
                     self.assertEqual(result.candidate_impacts[e.attribution.lever], max(x.impact for x in e.candidates))
                 report = assemble(b, c, basal, carb_entries=log)
                 for p in report.patterns + report.low_confidence:
-                    if p.lever in result.competing_levers:
+                    if p.lever in SEQUENCE_LEVERS:
                         self.assertEqual(p.confidence.effect, result.candidate_impacts[p.lever])
                 outcomes.append([(e.start, e.end, e.severity, e.outcome_t) for e in contested])
             self.assertEqual(*outcomes)
@@ -175,7 +176,6 @@ class SharedSequenceEvaluationTest(unittest.TestCase):
         episode = next(e for e in result.episodes if e.attribution.lever == 'carb_undercount')
         self.assertIn('meal_over_delivery', {c.lever.value for c in episode.candidates})
         self.assertNotIn('meal_over_delivery', {e.attribution.lever for e in result.episodes})
-        self.assertFalse(result.competing_levers)
         self.assertTrue(all(c.attribution.steps[0].citation['operation'] == f'scenario.attribution.{c.lever.value}'
                             for c in episode.candidates))
 
@@ -253,6 +253,21 @@ def _ordinary_competition_stream():
     return sorted(bolus, key=lambda b: b.t), sorted(cgm, key=lambda r: r.t), basal
 
 
+def _crossing_reach_stream():
+    """The late peak crosses the next group's short configured context bound."""
+    from datetime import datetime
+    from ciq_autotune.analyzers.scenario_config import ScenarioConfig
+    from ciq_autotune.events import BolusEvent
+    start = datetime(2040, 2, 1, 12)
+    b = [BolusEvent(start, carbs=20, insulin=.5, carb_ratio=40, completion="Completed")]
+    c = [CgmReading(start + timedelta(minutes=m),
+                    350 if 180 <= m < 200 else 250 if 130 <= m < 180 else 110)
+         for m in range(-5, 365, 5)]
+    config = ScenarioConfig(segment_max_duration_min=120, engine_context_pad_min=5,
+                            carb_undercount_runaway_peak_mgdl=260)
+    return b, c, config
+
+
 class ReviewRegressionTest(unittest.TestCase):
     def test_sequence_winner_is_excluded_from_clean_rates_and_trends(self):
         from ciq_autotune.analyzers.scenario import tally_attributions
@@ -316,18 +331,10 @@ class ReviewRegressionTest(unittest.TestCase):
             self.assertTrue(result.sequences.populations[lever])
 
     def test_tally_preserves_classifier_reach_beyond_next_group(self):
-        from datetime import datetime
         from ciq_autotune.analyzers.scenario import tally_attributions, attributed_occurrences
         from ciq_autotune.analyzers.scenario.evaluation import evaluate
-        from ciq_autotune.analyzers.scenario_config import ScenarioConfig
-        from ciq_autotune.events import BolusEvent
-        start = datetime(2040, 2, 1, 12)
-        b = [BolusEvent(start, carbs=20, insulin=.5, carb_ratio=40, completion="Completed")]
-        c = [CgmReading(start + timedelta(minutes=m),
-                        350 if 180 <= m < 200 else 250 if 130 <= m < 180 else 110)
-             for m in range(-5, 365, 5)]
-        config = ScenarioConfig(segment_max_duration_min=120, engine_context_pad_min=5,
-                                carb_undercount_runaway_peak_mgdl=260)
+        b, c, config = _crossing_reach_stream()
+        start = b[0].t
         result = evaluate(b, c, isf=40, scenario_config=config)
         self.assertLess(result.episodes[1].start + timedelta(minutes=5),
                         start + timedelta(minutes=180))
@@ -336,3 +343,12 @@ class ReviewRegressionTest(unittest.TestCase):
         self.assertEqual(tally.get("carb_undercount", 0), 1)
         occurrences = attributed_occurrences(b, c, isf=40, scenario_config=config)
         self.assertEqual(sum(r.lever == "carb_undercount" for r in occurrences), 1)
+
+    def test_assemble_preserves_base_attribution_on_crossing_reach(self):
+        b, c, config = _crossing_reach_stream()
+        report = assemble(b, c, isf=40, scenario_config=config)
+        # The base's bounded classifier cannot see the decisive later peak;
+        # no episode or Pattern is emitted. The tally's wider read is pinned above.
+        self.assertEqual(report.episodes, {})
+        self.assertEqual(report.patterns, [])
+        self.assertEqual(report.low_confidence, [])

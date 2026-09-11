@@ -194,6 +194,17 @@ test('per-day reads forward an abort signal', async () => {
   for (const call of calls) assert.equal(call.opts.signal, signal);
 });
 
+test('deleteCarb removes one entry by id', async () => {
+  const { fetch, calls } = makeFakeFetch({ deleted: 1 });
+  const { deleteCarb } = makeDeps({ fetch });
+  await deleteCarb(41);
+  assert.equal(calls[0].url, '/api/carbs/41');
+  assert.equal(calls[0].opts.method, 'DELETE');
+  // The id is encoded rather than interpolated raw: it reaches the path.
+  await deleteCarb('4 1');
+  assert.equal(calls[1].url, '/api/carbs/4%201');
+});
+
 test('loadPlan builds GET /api/plan', async () => {
   const { fetch, calls } = makeFakeFetch({ items: [] });
   const { loadPlan } = makeDeps({ fetch });
@@ -390,4 +401,60 @@ test('non-2xx without detail falls back to statusText', async () => {
       return true;
     },
   );
+});
+
+test('guidance preferences use the legacy generation body and plain detail errors', async () => {
+  const { fetch, calls } = makeFakeFetch({ subject: 'setting:basal_rate', set_aside: true });
+  const client = makeDeps({ fetch });
+  await client.fetchGuidance();
+  await client.setGuidancePreference('setting:basal_rate', { generation: 'synthetic:r8', reason: 'Later' });
+  await client.restoreGuidancePreference('setting:basal_rate');
+  assert.equal(calls[0].url, '/api/guidance');
+  assert.equal(calls[1].opts.method, 'PUT');
+  assert.deepEqual(JSON.parse(calls[1].opts.body), { generation: 'synthetic:r8', reason: 'Later' });
+  assert.equal(calls[2].opts.method, 'DELETE');
+  assert.equal(calls[2].opts.body, undefined);
+  const failed = makeDeps({ fetch: makeFakeFetch({}, 409).fetch });
+  await assert.rejects(failed.setGuidancePreference('setting:basal_rate', { generation: 'old' }), error => {
+    assert.equal(error.status, 409);
+    assert.equal(error.detail, 'server error detail');
+    return true;
+  });
+});
+
+test('Plan preserves v1 bodyless apply and carries v2 durable fields unchanged', async () => {
+  const { fetch, calls } = makeFakeFetch({});
+  const client = makeDeps({ fetch });
+  const request = { request_id: 'synthetic-plan-1', input_revision: 8, subject: 'setting:basal_rate',
+    analysis_generation: 'synthetic:r8', draft_updated_at: '2024-06-02 00:00:00' };
+  await client.applyPlan();
+  await client.applyPlan(request);
+  assert.equal(calls[0].opts.body, undefined);
+  assert.deepEqual(JSON.parse(calls[1].opts.body), request);
+  const withdrawal = { request_id: 'synthetic-withdraw-1', input_revision: 9, applied_at: '2024-06-02 00:01:00', reason: null };
+  await client.withdrawPlan(withdrawal);
+  assert.equal(calls[2].url, '/api/plan/history/withdraw');
+  assert.deepEqual(JSON.parse(calls[2].opts.body), withdrawal);
+});
+
+test('retained selection and durable follow-up writes preserve caller identities', async () => {
+  const { fetch, calls } = makeFakeFetch({ record: { id: 'saved' } });
+  const api = makeDeps({ fetch });
+  await api.fetchVerifyTrials({ kind: 'focus', selected: '4', assessment: 'retained' });
+  const query = new URL(calls[0].url, 'http://synthetic').searchParams;
+  assert.equal(query.get('kind'), 'focus'); assert.equal(query.get('assessment'), 'retained');
+  assert.equal(query.get('selected'), '4');
+  const body = { request_id: 'same-retry', input_revision: 8, conclusion: 'Synthetic observation' };
+  await api.finishTrial('basal:180/2024', body);
+  assert.equal(calls[1].url, '/api/verify/trials/basal%3A180%2F2024/finish');
+  assert.deepEqual(JSON.parse(calls[1].opts.body), body);
+  await api.resolveFocus(4, body);
+  assert.deepEqual(JSON.parse(calls[2].opts.body), body);
+  await api.resolveFocus(4);
+  assert.equal(calls[3].opts.body, undefined, 'v1 keeps its legacy bodyless request');
+  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served', analysis_generation: 'g' };
+  await api.pinFocus(null, pin);
+  assert.deepEqual(JSON.parse(calls[4].opts.body), pin, 'no browser-selected member enters the Pattern pin');
+  await api.pinFocus('late_bolus');
+  assert.deepEqual(JSON.parse(calls[5].opts.body), { lever: 'late_bolus' }, 'v1 pin remains compatible');
 });

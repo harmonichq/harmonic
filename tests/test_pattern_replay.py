@@ -11,6 +11,78 @@ from ciq_autotune.watched_change import follow_up_admission, reconcile_follow_up
 from scripts.qa_e2e_cases import QA_CASES, assert_expectation, execute_case, materialize_case
 
 
+EXPECTED_ACTIVE_KINDS = {
+    "pattern-focus-meals": None,
+    "showcase": None,
+    "setting-recommendation": None,
+    "behavioral-precedence": None,
+    "basal-raise": None,
+    "basal-lower": None,
+    "basal-capped-raise": None,
+    "basal-capped-lower": None,
+    "basal-insufficient-seven-night": None,
+    "basal-insufficient-unsupported-sign": None,
+    "basal-blind": None,
+    "basal-no-baseline": None,
+    "basal-no-change": None,
+    "basal-recurring-low-lower": None,
+    "basal-recurring-low-no-clean-median": None,
+    "basal-recurring-low-gate": None,
+    "isf-strengthen": None,
+    "isf-direction-only-weaken": None,
+    "isf-held": None,
+    "ic-collecting": None,
+    "ic-raise": None,
+    "ic-lower": None,
+    "ic-capped-raise": None,
+    "ic-capped-lower": None,
+    "ic-held": None,
+    "ic-quiet-seven-run": None,
+    "ic-history-register": None,
+    "behavioral-carb-undercount": None,
+    "behavioral-late-bolus": None,
+    "behavioral-uncaused-highs": None,
+    "behavioral-false-low-suppressed": None,
+    "behavioral-low-no-suppressed": None,
+    "behavioral-lone-correction-clean": None,
+    "behavioral-meals-start-high": None,
+    "behavioral-carb-counting": None,
+    "behavioral-post-meal-correction-burden": None,
+    "behavioral-meal-over-delivery": None,
+    "behavioral-correction-stacking": None,
+    "behavioral-over-treated-low": None,
+    "behavioral-correction-on-iob": None,
+    "behavioral-missed-meal": None,
+    "behavioral-meal-bolus-short": None,
+    "behavioral-carb-log-fasting-exclusion": None,
+    "behavioral-preempted-detector": None,
+    "pattern-near-tie": None,
+    "pattern-collapse": None,
+    "high-carb-sequence-covered": None,
+    "high-carb-sequence-empty": None,
+    "high-carb-sequence-thin-candidate": None,
+    "high-carb-sequence-thin-reference": None,
+    "high-carb-sequence-losing": None,
+    "high-carb-sequence-multiple": None,
+    "repeat-eating-covered": None,
+    "repeat-eating-empty": None,
+    "repeat-eating-thin-candidate": None,
+    "repeat-eating-thin-reference": None,
+    "repeat-eating-losing": None,
+    "repeat-eating-multiple": None,
+    "c3-focus": "focus",
+    "c3-trial": "trial",
+    "c3-history": "trial",
+    "c3-preempted": "trial",
+    "c3-pin": None,
+    "c4-ic": "trial",
+    "c4-isf": None,
+    "c4-profile": None,
+    "c4-missing": "trial",
+    "c4-history": "trial",
+}
+
+
 class PatternReplayTest(unittest.TestCase):
     def test_adr_391_catalog_replay_through_public_producers(self):
         """Every manufactured catalog case remains a complete policy receipt.
@@ -76,7 +148,7 @@ class PatternReplayTest(unittest.TestCase):
                             candidate["action"],
                             source_candidates[candidate["chosen_member"]["subject"]]["action"],
                         )
-                self.assertIsNone(admission["active_kind"])
+                self.assertEqual(admission["active_kind"], EXPECTED_ACTIVE_KINDS[case.name])
                 if case.name in {"pattern-near-tie", "pattern-collapse"}:
                     ready_habits = [row for row in execution.outcome_patterns
                                     if row["readiness"]["verdict"] == "ready"

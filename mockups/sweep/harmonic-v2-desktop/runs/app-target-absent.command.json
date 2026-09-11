@@ -1,0 +1,21 @@
+{
+  "command": [
+    "node",
+    "frontend/harmonic-v2-desktop-behavior.replay.mjs"
+  ],
+  "cwd": "/Users/connor/worktrees/harmonic/389",
+  "environment": {
+    "PLAYWRIGHT_MODULE": "/Users/connor/.codex/skills/drive-local-webapp/node_modules/playwright",
+    "MOCK_BASE_URL": "http://127.0.0.1:59234",
+    "TARGET": "app",
+    "VIEWPORT": "1280x720",
+    "FONT_ASSETS": "/private/tmp/harmonic-348-completion/389-preflight/font-assets.json",
+    "ONLY": "S86"
+  },
+  "exit_code": 1,
+  "script_sha256_before": "d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116",
+  "script_sha256_after": "d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116",
+  "source_unchanged": true,
+  "stdout": "# harmonic-v2-desktop behaviour replay \u2014 TARGET=app viewport=1280x720 fonts=real\n# CANDIDATE ledger: mockups/harmonic-v2-desktop.behavior.md (not frozen)\nFAIL S86 \u2014 TARGET=app cannot run: the production surface /v2/ does not exist yet.\n  expected: http://127.0.0.1:8765/v2/ served by the packaged Python runtime\n  owed by: LOCK:harmonic-v2-desktop:HV2-01 (Python serves /v2/ and /v2/assets/)\n           LOCK:harmonic-v2-desktop:HV2-02 (v1 and /v2/ coexist, one authenticated API)\n  This is a deliberate fail-closed stop, not a skip.\n\n# executed 0 \u00b7 failed 1 \u00b7 deferred 0 \u00b7 selected 1 \u00b7 chromium launches 1\n",
+  "stderr": "FATAL: zero stories executed \u2014 a run that asserts nothing is a failure, not a pass\n"
+}

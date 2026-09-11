@@ -1,0 +1,58 @@
+# harmonic-v2-desktop captures — fonts=real out=/private/tmp/harmonic-348-completion/389-preflight/capture-6-full
+# NOT fidelity evidence: /v2/ does not exist, so nothing is paired against.
+FAILED overview-journey.1280x720 — captured state does not match its caption — overview-journey: S1/S4 — default Overview, persistent chrome, the leading concern with its action
+      rendered: BASAL · MAY 3 TO JUN 1, 2024 Basal 03:00 to 04:00 · lower 28 nights of steady data · 30 d basal run · Next in line Set aside Stage change DELIVERED VS PROGRAMMED nights at or above each rate · one step per night 0 exclud
+FAILED overview-journey.1440x900 — captured state does not match its caption — overview-journey: S1/S4 — default Overview, persistent chrome, the leading concern with its action
+      rendered: BASAL · MAY 3 TO JUN 1, 2024 Basal 03:00 to 04:00 · lower 28 nights of steady data · 30 d basal run · Next in line Set aside Stage change DELIVERED VS PROGRAMMED nights at or above each rate · one step per night 0 exclud
+FAILED chrome-invariance-day.1280x720 — captured state does not match its caption — chrome-invariance-day: S11 (end state: Day) — chrome measured against Overview as the reference view
+      rendered: DAY · READ JUN 1, 2024 · 23:59 · VIEWED JUN 2, 2024 · 12:00 Sat, Jun 1, 2024 96% in range · 0 lows · 1 high · 26 readings · 120–240 mg/dL RECORDED DAYS ‹ › Latest 32 recorded days · May 1, 2024 to Jun 1, 2024 Week of May
+FAILED chrome-invariance-day.1440x900 — captured state does not match its caption — chrome-invariance-day: S11 (end state: Day) — chrome measured against Overview as the reference view
+      rendered: DAY · READ JUN 1, 2024 · 23:59 · VIEWED JUN 2, 2024 · 12:00 Sat, Jun 1, 2024 96% in range · 0 lows · 1 high · 26 readings · 120–240 mg/dL RECORDED DAYS ‹ › Latest 32 recorded days · May 1, 2024 to Jun 1, 2024 Week of May
+CAPTURED narrow-chrome-absent.1280x720
+CAPTURED narrow-chrome-absent.1440x900
+CAPTURED explore-comparison-meals.1280x720
+CAPTURED explore-comparison-meals.1440x900
+CAPTURED explore-lane-48.1280x720
+CAPTURED explore-lane-48.1440x900
+CAPTURED explore-lane-nights.1280x720
+CAPTURED explore-lane-nights.1440x900
+CAPTURED changes-plan-staged.1280x720
+CAPTURED changes-plan-staged.1440x900
+CAPTURED changes-plan-failed-save.1280x720
+CAPTURED changes-plan-failed-save.1440x900
+CAPTURED changes-trial-active.1280x720
+CAPTURED changes-trial-active.1440x900
+CAPTURED changes-trial-ready.1280x720
+CAPTURED changes-trial-ready.1440x900
+CAPTURED changes-history-record.1280x720
+CAPTURED changes-history-record.1440x900
+CAPTURED changes-focus-tables.1280x720
+CAPTURED changes-focus-tables.1440x900
+CAPTURED changes-focus-preempted.1280x720
+CAPTURED changes-focus-preempted.1440x900
+CAPTURED day-direct.1280x720
+CAPTURED day-direct.1440x900
+CAPTURED day-month.1280x720
+CAPTURED day-month.1440x900
+CAPTURED day-contextual-return.1280x720
+CAPTURED day-contextual-return.1440x900
+CAPTURED utility-questions-answered.1280x720
+CAPTURED utility-questions-answered.1440x900
+CAPTURED utility-carbs-entry.1280x720
+CAPTURED utility-carbs-entry.1440x900
+CAPTURED utility-settings.1280x720
+CAPTURED utility-settings.1440x900
+CAPTURED utility-pump-settings.1280x720
+CAPTURED utility-pump-settings.1440x900
+CAPTURED utility-guide-handoff.1280x720
+CAPTURED utility-guide-handoff.1440x900
+CAPTURED state-empty-changes.1280x720
+CAPTURED state-empty-changes.1440x900
+CAPTURED state-quiet.1280x720
+CAPTURED state-quiet.1440x900
+CAPTURED state-failed-read.1280x720
+CAPTURED state-failed-read.1440x900
+CAPTURED state-set-aside.1280x720
+CAPTURED state-set-aside.1440x900
+
+# captured 46 · failed 4 · ids 25 × 2 viewports

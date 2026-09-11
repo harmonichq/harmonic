@@ -87,6 +87,16 @@ function replayInventory(source) {
 
 const initialIssued = parseList('S01–S158, C41–C62, and D1–D3');
 
+/* The mutation cases below edit the ledger's inventory lines. They read those
+   lines out of the ledger rather than restating them: hard-coded copies went
+   stale the first time a second retirement was recorded, and a mutation that no
+   longer applies is a guard that quietly stops guarding. */
+const inventoryLine = (label) => {
+  const match = ledger.match(new RegExp(`^\\*\\*${label} executable IDs:\\*\\* .+$`, 'm'));
+  assert.ok(match, `ledger declares no ${label} inventory`);
+  return match[0];
+};
+
 function validate(ledgerSource, replaySource) {
   const inventory = ledgerInventory(ledgerSource);
   const { registered, tags } = replayInventory(replaySource);
@@ -126,11 +136,11 @@ export function paritySummary() {
 }
 
 test('Diagnose behavior ledger inventory matches the replay registry', () => {
-  assert.deepEqual(paritySummary(), { active: 182, retired: 1, replay: 182, mutation_cases: 6 });
+  assert.deepEqual(paritySummary(), { active: 168, retired: 15, replay: 168, mutation_cases: 6 });
 });
 
 test('Diagnose behavior ledger requires a retirement inventory', () => {
-  const withoutRetiredInventory = ledger.replace('**Retired executable IDs:** S117\n', '');
+  const withoutRetiredInventory = ledger.replace(`${inventoryLine('Retired')}\n`, '');
   assert.throws(
     () => validate(withoutRetiredInventory, replay),
     /ledger must declare one retired-ID inventory/,
@@ -158,12 +168,12 @@ test('Diagnose behavior ledger rejects an issued ID without a replay story', () 
 });
 
 test('Diagnose behavior ledger accepts a permanent retirement', () => {
+  const active = inventoryLine('Active');
+  const retired = inventoryLine('Retired');
+  // S91 is active today, so retiring it is a real move between the two lines.
   const retiredS91 = ledger
-    .replace(
-      '**Active executable IDs:** S01–S116, S118–S158, C41–C62, and D1–D3',
-      '**Active executable IDs:** S01–S90, S92–S116, S118–S158, C41–C62, and D1–D3',
-    )
-    .replace('**Retired executable IDs:** S117', '**Retired executable IDs:** S91, S117');
+    .replace(active, active.replace('S69–S116', 'S69–S90, S92–S116'))
+    .replace(retired, `${retired.replace('** ', '** S91, ')}`);
   const withoutS91 = replay
     .replace("  ['S91', S91, 'drawn'],\n", '')
     .replaceAll('// STORY:finding-evidence-routing:S91', '// RETIRED:finding-evidence-routing:S91');

@@ -1,0 +1,150 @@
+# harmonic-v2-desktop behaviour replay — TARGET=mock viewport=1440x900 fonts=real
+# CANDIDATE ledger: mockups/harmonic-v2-desktop.behavior.md (not frozen)
+PASS S1
+PASS S2
+PASS S3
+PASS S4
+PASS S5
+PASS S6
+PASS S7
+PASS S7b
+PASS S8
+PASS S9
+PASS S10
+PASS S10b
+PASS S11
+PASS S12
+PASS S13
+PASS S14
+PASS S15
+PASS S16
+PASS S17
+PASS S18
+PASS S19
+PASS S20
+PASS S20b
+PASS S21
+PASS S22
+PASS S23
+PASS S24
+PASS S25
+PASS S26
+PASS S27
+PASS S28
+PASS S29
+PASS S30
+PASS S31
+PASS S32
+PASS S33
+PASS S34
+PASS S35
+PASS S36
+PASS S37
+PASS S37b
+PASS S38
+PASS S39
+PASS S40
+PASS S41
+PASS S42
+PASS S43
+PASS S44
+PASS S45
+PASS S45b
+PASS S46
+PASS S47
+PASS S48
+PASS S49
+PASS S50
+PASS S51
+PASS S52
+PASS S54
+PASS S54b
+PASS S55
+PASS S56
+PASS S56b
+PASS S57
+PASS S58
+PASS S59
+PASS S60
+PASS S61
+PASS S62
+PASS S63
+PASS S64
+PASS S65
+PASS S66
+PASS S67
+PASS S68
+PASS S69
+PASS S70
+PASS S71
+PASS S72
+PASS S72b
+PASS S73
+PASS S74
+PASS S75
+PASS S75b
+PASS S73c
+PASS S76
+PASS S77
+PASS S78
+PASS S79
+PASS S80
+PASS S81
+PASS S82
+PASS S83
+PASS S84
+PASS S85
+DEFERRED S86 — app opener only · LOCK:harmonic-v2-desktop:HV2-01 · Python serves /v2/ and /v2/assets/ with no Node runtime or CDN
+DEFERRED S87 — app opener only · LOCK:harmonic-v2-desktop:HV2-02 · v1 and /v2/ coexist against one authenticated API and database
+DEFERRED S88 — app opener only · LOCK:harmonic-v2-desktop:HV2-16 · Set aside and Restore are durable Store writes surviving reload
+DEFERRED S89 — app opener only · LOCK:harmonic-v2-desktop:HV2-20 · Plan draft, decision, reconciliation and withdrawal persist
+DEFERRED S90 — app opener only · LOCK:harmonic-v2-desktop:HV2-21 · capacity copy is served by the Plan deliverable contract, not memorized
+DEFERRED S91 — app opener only · LOCK:harmonic-v2-desktop:HV2-22 · readiness renders the record comparison fields; setting and Focus arms differ
+DEFERRED S92 — app opener only · LOCK:harmonic-v2-desktop:HV2-23 · pre-ready values come from the second assessment=retained request
+DEFERRED S93 — app opener only · LOCK:harmonic-v2-desktop:HV2-24 · each record renders its own criterion; no universal fourteen-day cutoff
+DEFERRED S94 — app opener only · LOCK:harmonic-v2-desktop:HV2-25 · Trial finish is durable and survives reload
+DEFERRED S95 — app opener only · LOCK:harmonic-v2-desktop:HV2-27 · trial_preempted stays history and never resumes
+DEFERRED S96 — app opener only · LOCK:harmonic-v2-desktop:HV2-28 · original, saved ending and retained reassessment across a sequential change
+DEFERRED S97 — app opener only · LOCK:harmonic-v2-desktop:HV2-29 · P19b pending, failed and sliced replacement withdraw the former projection
+DEFERRED S98 — app opener only · LOCK:harmonic-v2-desktop:HV2-30 · the selected I:C coherent pair survives a failed replacement
+DEFERRED S99 — app opener only · LOCK:harmonic-v2-desktop:HV2-31 · only backend-permitted actions are exposed; unavailable carries its reason
+DEFERRED S100 — app opener only · LOCK:harmonic-v2-desktop:HV2-32 · fractional-hour speech repaired in the shared renderer
+DEFERRED S80b — app opener only · LOCK:harmonic-v2-desktop:HV2-32 · a full-width empty destination (Changes with no change underway) focuses its own heading rather than leaving focus on the pressed navigation button
+DEFERRED S73b — app opener only · LOCK:harmonic-v2-desktop:HV2-32 · opening a Guide article moves focus to the article heading the handler already targets, rather than dropping focus to the document body
+DEFERRED S53 — app opener only · LOCK:harmonic-v2-desktop:HV2-25 · a failed durable Trial finish keeps the form, the written conclusion and a Retry, records no ending, and the retry then records it
+RETIRED R1 — Connor Griffin · 2026-09-01 · "light theme retired by operator decision."
+PASS R1
+RETIRED R2 — Connor Griffin · 2026-08-18 · "the dead occurrenceModal hash machinery goes with them."
+PASS R2
+RETIRED R3 — Connor Griffin · 2026-08-25 · "it just keeps my selector. The selection is a slicing method that lets me then dig into findings. Those findings will show up as dots on the chart anyway that I can then trace into."
+PASS R3
+RETIRED R4 — Connor Griffin · 2026-08-19 · "Occurrence selection should not change the window. The window is a filter view in order to get to selectable occurrences. Having selectable occurrences then retrace the window would be tautological."
+PASS R4
+RETIRED R5 — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
+PASS R5
+RETIRED R6 — Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
+PASS R6
+RETIRED R7 — Connor Griffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."
+PASS R7
+RETIRED R8 — Connor Griffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."
+PASS R8
+RETIRED R9 — Connor Griffin · 2026-08-19 · "I don't find the content of the drill-down view particularly useful. So, I think we could just simply have the if there's a current specific detail that needs to show, I think it should just mutate the standing screen."
+PASS R9
+RETIRED R10 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R10
+RETIRED R11 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R11
+RETIRED R12 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R12
+RETIRED R13 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+PASS R13
+RETIRED R14 — ADR 215 amendment · 2026-08-26 · "A pin orders the dock; it is not membership of a position."
+PASS R14
+RETIRED R15 — ADR 215 amendment · 2026-08-26 · "The dock is the whole ordered set, spotlight included."
+PASS R15
+RETIRED R16 — Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."
+PASS R16
+RETIRED R17 — ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)
+PASS R17
+
+# executed 111 · failed 0 · deferred 18 · selected 129 · chromium launches 1

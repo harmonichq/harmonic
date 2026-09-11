@@ -1607,7 +1607,158 @@ accepted lifecycle metadata and are not reopened. This is a formal design
 contract; it is not fidelity evidence, built-app acceptance or release approval,
 and it authorizes no production edit on its own.
 
-Navigation and naming in the preceding record are superseded by ADR 397 — Three destinations: Overview and Explore collapse into Diagnose. Diagnose is the v2 default and retains the shipped v1 name and Findings rail.
+## ADR 389 — Freeze the desktop behavior contract and admit four bounded production chunks
+
+Amended 2026-09-10 under coordinator amendment 13: remove the static Scope · 30 d chip from the v2 topbar at Connor Griffin’s instruction because it has no interaction and the analysis window is not user-changeable; retain the rest of the persistent chrome.
+
+Amended 2026-09-10 under coordinator amendment 12 / ADR 397: remove the v2 Diagnose column override so the carried rail keeps its shipped 430px geometry, correcting the 300px paired-desk token that was mis-targeted at the carried column.
+
+Amended 2026-09-10 under Coordinator Amendment 2: committed set-aside and Restore preference writes reconcile through the existing ingestion completion adapter, `reconcile_ingested_follow_up`, before their HTTP endpoints return success.
+
+Amended 2026-09-10 under #389 c3 Coordinator Amendment 2: inherited stories S129/S131 require an All Charts pick to select its chart's drill, so v2 observes tile click/Enter/Space before the shipped handler and invalidates the previous case request, while preserving the owner's same-chart no-op and treating pin/alignment controls as non-drill actions.
+
+This records the original #389 freeze and slicing. The later ADR 391, ADR 395
+and ADR 397 records below supersede its affected readiness, rail, navigation
+and copy requirements; the current chunk ownership is in `tasks.md`. Statements
+in the later handoff about artifacts being absent describe main at that time;
+the existing #389 artifacts are present on this branch and still owe those
+amendments before dependent implementation resumes.
+
+The v2 desktop now has both halves of its build contract. The 34-term visual lock
+was already frozen; its executable half is now
+`mockups/harmonic-v2-desktop.behavior.md`, `★ FROZEN`, with the fail-closed
+replay `frontend/harmonic-v2-desktop-behavior.replay.mjs`. Task 2.4 is complete,
+in triage, before any production implementation — which is the sequencing the
+lock itself demands: the ledger and replay are frozen **before** a production UI
+edit, not discovered during one.
+
+**What the freeze rests on.** The replay ran against the unchanged locked
+prototype at both accepted desktop sizes: 111 passed, 0 failed, 18 deferred, 129
+selected, one Chromium launch each. Every mock-applicable story then carried one
+feature-specific perturbation and was required to fail for its own reason — 111
+proved, 0 not proved. All 17 retirements keep their externally sourced sanctions
+and their premises, and each asserts absence and premise while printing its
+sanction. Twenty-five capture ids were recorded at both sizes. The raw command
+output, the captures and the seven retained fixture hashes are committed under
+`mockups/sweep/harmonic-v2-desktop/`. No sanction originates in the ledger, and
+none was added.
+
+**Eighteen stories have never passed, and cannot here.** `S53` (HV2-25), `S73b`
+and `S80b` (HV2-32) and `S86`–`S100` name behavior this prototype has no
+exercisable path for: durable persistence, packaged delivery, a failed durable
+Trial finish, and two caller-supplied focus targets that are not focusable. Each
+records the mechanism that was observed rather than assumed. They are obligations
+on the build. The app opener was exercised against the absent `/v2/` and exits
+nonzero having run zero stories, so an unbuilt surface can never satisfy them
+silently. No locked term was lowered to accommodate them.
+
+**Why four chunks, and where the seams are.** The slicing rubric fires on
+multiple deliverable artifacts, a live run inside the ticket, split-path evidence,
+lockstep copies of one fact, and a lifecycle-gated surface. Both loops stay in one
+child because ADR 348 settled that they share one desk, one navigation contract,
+one active-change seat and one history surface. Within that child the work splits
+four ways, each owning one coherent capability:
+
+1. **The desk, its shared contracts, and delivery.** The second Vite root and its
+   `base: '/v2/'` build, the Python `/v2/` and `/v2/assets/` routes and the
+   closed non-API route set, packaging and public-tree inputs, the persistent
+   chrome and all four destinations **including Day**, **every utility**, the
+   route and return state, and the keyboard, focus and Escape behavior. It
+   extends the existing `frontend/data.js` client and `frontend/tab-routing.js`
+   rather than adding a second of either.
+2. **Selected priority, its evidence, and Plan.** Overview's leading concern,
+   durable Set aside and Restore through their existing endpoints, Explore's
+   roster and comparison, the three setting evidence families and all 48 basal
+   slots, and Plan's complete lifecycle over the existing `frontend/plan.js`.
+3. **Trial and Focus follow-up and history.** Both arms, including the durable
+   conclusion, Revert-to-Plan, separate adherence and outcomes, preemption, and
+   the original / ending / reassessment history.
+4. **Generated and live delivery evidence, and the close.** The fewest existing
+   synthetic generators extended to reach the twelve scenario obligations with
+   provenance and drift gates, the frozen ledger replayed against the built app
+   at both sizes including the eighteen app-only stories, one fidelity row per
+   `HV2-*` term with paired renders, the HV2-32 shared repair with its coupled
+   Event S8 expectation and inherited ledger amendment, the packaged-runtime and
+   route proofs, the bounded archival close, and the Fable 5.1 polish pass over
+   the built surfaces.
+
+**Implementation may run concurrently after the desk interfaces are committed.**
+The original schedule serialized the chunks. On 2026-09-08 Connor directed:
+“any chance we could parallelize the build process here? things are astronomically slow”.
+Chunks 2 and 3 therefore build their owned features in isolated worktrees while
+chunk 1 finishes its corrections. The detailed ownership and ordered integration
+contract is in `contracts.md` under “#389 desktop build contracts”.
+
+Composition remains through chunk 1's published interfaces —
+`registerDestination`/`navigate` for a destination and its contextual Day entry,
+`openUtility` for a utility. Shared additions integrate in chunk order, and
+chunk 3 combines Plan and follow-up/history in one Changes registration. Plan and
+the shared chart renderers keep their behavior, and v1 is not decomposed. This
+scheduling change alters no acceptance criterion, data or clinical boundary,
+review requirement or human merge requirement.
+
+Day and the utilities belong to chunk 1 rather than to a journey, because both
+are desk-level: Day is one of the four destinations with its own chronology and
+navigation, the utilities are persistent chrome, and the return-focus contract
+that binds them is frontend-owned route state. Chunks 2 and 3 supply the subject
+for a contextual entry; they do not re-implement either.
+
+**Each chunk proves only what it delivered; the whole contract is proved once, at
+the end.** An earlier draft asked every chunk to run the complete frozen replay
+against the built app. That was unsatisfiable and was reproduced as such: the
+replay's `openApp()` throws unconditionally today, so no chunk can run any
+app-target story until that opener is written, and the full replay includes later
+chunks' journey stories that an earlier chunk has not built. Chunk 1 therefore
+owns the real app opener as a shared contract, each chunk converts and proves the
+app-opener-only stories for its own capability under an explicit `ONLY=`
+selection, and the complete replay with nothing deferred is chunk 4's final
+gate. The eighteen previously unprovable stories are partitioned four / six /
+seven / one across the chunks, so none is owned twice and none is left to the
+coordinator. Each chunk edits only its own replay stories; the coordinator
+integrates shared additions in chunk order. The independent verifier records
+final ledger verdicts from the complete raw evidence returned by chunk 4.
+
+Scenario support follows the same rule. The retained
+`mockups/harmonic-v2.exploration/` fixtures are frozen evidence and no chunk
+touches their bytes; a chunk needing a scenario the offline database does not
+serve extends the existing manufactured-case path in `scripts/qa_e2e_cases.py`
+and `scripts/gen_qa_e2e_db.py` **in the same chunk, before it must prove that
+behavior**. Saying "chunk 4 runs last" was not a sequencing rule and did not fix
+this.
+
+New tests live under a source root nothing looked at: the fast gate globs
+`frontend/**/*.test.js` only. Chunk 1 extends that command and the CI wiring to
+cover `frontend-v2/` as well, and adds the first explicit
+`frontend-v2/**/*.browser.test.mjs` matrix step, since browser suites in this
+repository are hand-listed rather than discovered. Later chunks extend that
+wiring. A green pre-existing `frontend/` suite is not coverage for a new v2
+interface.
+
+**What this does not decide.** No new threshold, eligibility rule, clinical
+policy, navigation name, fixture set or study. Follow-up readiness stays
+backend-owned and is read from the selected record's retained comparison, never
+from watch maturity. Mobile, root-route cutover and v1 retirement remain the
+later gates of tasks 4.1–4.3. Human acceptance of the complete first usable
+release stays a separate step after the pull request, outside every chunk.
+
+
+## ADR 389 — Remove historical past-setting reads from the app
+
+On 2026-09-08 Connor rejected retaining historical tuning reads in a collapsed
+Watching disclosure and instructed: “We dont' need historical reads in the app.”
+Historical past-setting findings therefore leave both v1 and v2 entirely,
+including Watching, All Charts and historical-setting inspection. Their removal
+is an explicit operator change to the prior preservation contract, not a claim
+that the existing app had already removed them.
+
+The shared queue and v1 presentation changes belong to chunk 1; v2 changes belong
+to chunk 2. Current-setting held and thin evidence remains distinct. This deletes
+no persisted source data and does not remove Trial/Focus original decisions,
+endings, or the past glucose evidence used to assess a current setting. The
+retired historical-setting predecessor stories, mixed-story retained obligations,
+lock amendments and rendered absence proof are recorded together before review.
+
+Navigation and naming in the preceding records are superseded by ADR 397 — Three destinations: Overview and Explore collapse into Diagnose. Diagnose is the v2 default and retains the shipped v1 name and Findings rail.
 
 ## September 8 direction change — outcome shapes and three destinations
 

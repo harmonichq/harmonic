@@ -171,6 +171,24 @@ function assertDetail(row) {
 }
 
 /**
+ * The findings rows this app presents, in the server's order.
+ *
+ * PAST-SETTING READS ARE RETIRED FROM THE APP. Connor, 2026-09-08, on being shown
+ * the historical carb-ratio row in Explore: "no." and "We dont' need historical
+ * reads in the app." They were previously demoted into the Watching disclosure;
+ * the instruction is that they are absent, not hidden behind one.
+ *
+ * This is the ONE place that decides it. Every presentation of the findings rows
+ * — the queue, its meta count, its mini charts, and anything a later surface
+ * builds from them — starts here, so no second classifier can disagree about
+ * what the reader is shown. The server still publishes the register and the
+ * backend read is untouched; the app simply does not present it.
+ */
+export function presentedRows(projection) {
+  return (projection?.rows || []).filter((row) => row.register !== 'history');
+}
+
+/**
  * The queue's display rows, in the server's order, with the server's ranking tier
  * and each row's single detail line chosen.
  *
@@ -183,12 +201,11 @@ function assertDetail(row) {
  * row's published tier.
  */
 export function queueRows(projection, selected = null) {
-  const rows = projection?.rows || [];
+  const rows = presentedRows(projection);
   const sifting = selected !== null;
   const filtered = rows.map((row) => {
     const chips = row.chips || [];
-    const watching = row.register === 'held' || row.register === 'blind'
-      || row.register === 'history';
+    const watching = row.register === 'held' || row.register === 'blind';
     // Watching reads remain reachable through their disclosure rather than
     // competing with actionable findings.
     const siftedOut = chips.length > 0 && sifting && !chips.some((chip) => selected.has(chip));
@@ -229,16 +246,14 @@ export function queueRows(projection, selected = null) {
       rank,
       /* Slice 4 — the two-line evidence summary is the projection's own
          `annotation` sentence, revealed rather than composed. Only an
-         asserting row carries one the queue was not already printing
-         (history's annotation restates its past/support detail line). */
+         asserting row carries one the queue was not already printing. */
       summary: row.register === 'assert' && typeof row.annotation === 'string'
         && row.annotation ? row.annotation : null,
       id: row.id,
       register: row.register,
       title: row.title,
-      flavor: row.register === 'history' ? 'watching'
-        : row.kind === 'pattern' ? 'pattern'
-          : row.kind === 'setting' ? 'setting' : 'habit',
+      flavor: row.kind === 'pattern' ? 'pattern'
+        : row.kind === 'setting' ? 'setting' : 'habit',
       pattern: row.kind === 'pattern',
       claimedBy: row.claimed_by || null,
       tier: row.tier,
@@ -273,10 +288,6 @@ function detailFor(row) {
   }
   if (row.register === 'finding') return { kind: 'appearances', parts: appearanceParts(row) };
   if (row.register === 'assert') return assertDetail(row);
-  if (row.register === 'history') {
-    const runs = row.support === 1 ? '1 meal run' : `${row.support} meal runs`;
-    return { kind: 'history', past: `past ${num(row.past_setting)} g/U`, support: runs };
-  }
   // held / blind — WORDS, not a number spine (term 14). The reason is verbatim
   // backend copy; only the prefix is ours, and the lock pins it byte for byte.
   return { kind: 'reason', text: `${HELD_PREFIX}${row.reason || ''}` };
@@ -308,13 +319,6 @@ function paintDetail(node, detail) {
   if (detail.kind === 'pattern' || detail.kind === 'pattern-status') {
     const den = add(node, `den ${detail.kind}`);
     den.textContent = detail.text;
-    return den;
-  }
-  if (detail.kind === 'history') {
-    const den = add(node, 'den history-detail');
-    add(den, 'v', detail.past);
-    add(den, 'sep', '·');
-    den.append(detail.support);
     return den;
   }
   const den = add(node, 'den');

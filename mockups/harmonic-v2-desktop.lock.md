@@ -30,6 +30,8 @@ Sanction: Connor Griffin, 2026-09-08, the September 8 direction change recorded 
 Old (superseded): "Overview is the default destination. Overview, Explore, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
 New: "Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes."
 
+Amended HV2-09 · 2026-09-10 · coordinator amendment 13: Connor Griffin instructed, "kill that scope thing unless we're going to include some kind of modal or something to go with it, it serves nothing." The preceding New statement is now superseded as to Scope only. Current: Diagnose is the default destination; Diagnose, Changes, Day, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes.
+
 Old (superseded): "Overview owns the backend-selected active change or leading available priority and its next action. It does not duplicate Explore's full findings roster."
 New: "Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster."
 
@@ -312,6 +314,22 @@ these captures do not prove the amended build.
 This is prototype evidence. Built-app fidelity pairs, the fidelity ledger and
 human release acceptance belong to the build and to task 3.4/3.5.
 
+## Re-settlement — 2026-09-08, historical past-setting reads
+
+Sanction: Connor Griffin · 2026-09-08 · “We dont' need historical reads in the app.”
+This supersedes the proposed Watching-only parity correction. HV2-31's former
+“historical states” included past-setting tuning reads; the amended term excludes
+those reads entirely while preserving Trial/Focus original records and endings.
+No source data is deleted. Held/thin current-setting evidence and the past glucose
+observations used for a current setting remain available.
+
+The same ruling changes the selected-I:C fixture obligation to current `ic-lower`
+and retires the historical-setting predecessors named in the registry below.
+HV2-30/S98 still owe coherent replacement, failure, retry and dated stale-state
+proof on a current setting. R18 owes rendered absence from an input that actually
+contains a historical row. Earlier prototype captures are evidence only for
+unchanged states; new absence evidence is owed by the build.
+
 ## Precedence
 
 ADR 397 and the dated amendment above supersede the selected prototype and
@@ -347,11 +365,11 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-02 | V1 and `/v2/` coexist against the same authenticated Python API and database. This contract admits neither cutover nor v1 retirement. | gate | Route/auth matrix exercising both surfaces |
 | HV2-03 | At `1280×720` and `1440×900`, the document has no root/page scroll or horizontal overflow; populated stage and reading content scroll only inside their owned panes. | gate | Computed geometry assertions and paired renders |
 | HV2-04 | Shell rows are `38px / minmax(0,1fr) / 24px` below `860px` viewport height, including `1280×720`; at `1440×900` they are `42px / minmax(0,1fr) / 26px`. | gate | Computed grid-track assertions |
-| HV2-05 | Paired evidence/reading states use one flexible evidence stage plus a `300px` reading pane separated by the shipped one-pixel hairline. Preserve the selected full-width empty Changes state when no change is underway; do not manufacture a reading pane there. The approved intermediate-width rule for paired states is `256px` at `701–1100px`; it is inherited behavior, not mobile admission. | gate | Computed width/divider assertions |
+| HV2-05 | Original (superseded as to Diagnose): Paired evidence/reading states use one flexible evidence stage plus a `300px` reading pane separated by the shipped one-pixel hairline. Preserve the selected full-width empty Changes state when no change is underway; do not manufacture a reading pane there. The approved intermediate-width rule for paired states is `256px` at `701–1100px`; it is inherited behavior, not mobile admission. Amended 2026-09-10 · coordinator amendment 12 / amendment 14: Diagnose is the carried v1 Findings rail at its shipped `430px`, with no v2 narrow-width override. The `300px` reading pane and existing `256px` adaptation belong to paired desk states (Changes, Day); empty Changes remains full-width. | gate | Computed width/divider assertions |
 | HV2-06 | Preserve the premium fixed cockpit: dark diagnostic desk, paired stage/reading panes where the selected state uses them, the selected full-width empty states, and flat role-based surfaces. No page banner, hero-metric template, repeated card grid, or bottom action bar. | eye | Named eye judgment at both target sizes |
 | HV2-07 | Material uses the shipped dark role ladder: desk `#0F0D0B`, chart well `#14120F`, field `#1E1A17`, sheet `#221E1B`, rail `#2B2622`, rule `#3F3833`, edge `#453D35`, and inks `#F2EDE2`, `#CFC8BD`, `#A49C90` with nav `#C6BFB3`. Theme controls and theme storage remain absent; their retirement does not retire dark material. | gate | Computed styles on consuming elements |
 | HV2-08 | Inter remains the single UI family. Stage titles use the selected `1.14rem`, weight `700`, line-height `1.3`, tracking `-.01em`; clinical numbers use tabular figures. No heading exceeds the design-system `1.5rem` ceiling. | gate/eye | Computed type assertions plus eye judgment |
-| HV2-09 | Diagnose is the default destination. Diagnose, Changes, Day, scope, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes. | gate | Route/default and cross-view geometry replay |
+| HV2-09 | Amended 2026-09-10 · coordinator amendment 13: Diagnose is the default destination. Diagnose, Changes, Day, Log carbs, advisory status and utilities remain persistent chrome without moving across destination changes; Scope is removed. Superseded wording is preserved in the HV2-09 amendment record above. | gate | Route/default and cross-view geometry replay |
 | HV2-10 | Changes owns the backend-selected active change or leading available priority and its next action, alongside its HV2-12 responsibilities. It does not duplicate Diagnose's full findings roster. | gate | Guidance-state replay |
 | HV2-11 | Diagnose owns Findings, clock-window exploration, detailed evidence, the selected case file, Spotlight and All Charts. It carries the shipped v1 Findings rail as-is, including #395's Patterns. Its evidence stage remains geometrically stable as the Findings, clock window and selected case change, under HV2-03–HV2-08. | gate | Diagnose workflow and paired render |
 | HV2-12 | Changes owns current Plan or Focus, Trial/Focus progress, endings, saved conclusions, original records, history, reassessments and Pump settings. | gate | Setting and habit history workflows |
@@ -373,10 +391,12 @@ as `LOCK:harmonic-v2-desktop:HV2-nn`.
 | HV2-28 | History distinguishes original decision or first-observed context, observed change, immutable saved ending, current/retained reassessment and explicitly unavailable legacy facts. A finished record first opens itself rather than immediately promoting another concern. | gate | Historical selection and sequential-change replay |
 | HV2-29 | A new-window load or failed replacement obeys P19b: show only count-free loading/error content for the requested range, withdraw former rows/recommendations/support/staging, and never masquerade the previous projection as the new result. | gate | P19b pending/failed/sliced-window replay |
 | HV2-30 | P19b does not erase the selected I:C exception: a replacement may preserve the last coherent selected I:C case/canvas pair while withholding staging. A clearly dated same-subject stale result may also remain during an ordinary failed refresh. These are separate states. | gate | I:C coherent-pair and same-subject refresh fixtures |
-| HV2-31 | Quiet, held, held-for-safety, thin, missing, pending, ready, unavailable, failed, stale, superseded and historical states make distinct claims and expose only backend-permitted actions. Unavailable carries a served reason; it is not an unresolved criterion. | gate | One addressable fixture per state |
+| HV2-31 | Quiet, held, held-for-safety, thin, missing, pending, ready, unavailable, failed, stale and superseded states, plus retained Trial/Focus records, make distinct claims and expose only backend-permitted actions. Unavailable carries a served reason; it is not an unresolved criterion. Historical past-setting tuning reads are absent from Diagnose, Changes, Day, Watching, All Charts, counts and selection in both app surfaces. | gate | One addressable fixture per state |
 | HV2-32 | Destination arrival focuses its pane heading unless the caller supplies a precise target. Selection, cohort, chart cursor, slot, night, date and utilities remain keyboard-operable; color semantics always have label, shape or positional redundancy. Fractional-hour chart speech is repaired in `frontend/diagnose-event-comparison.js`, not in a v2-only formatter. | gate | Keyboard, accessible-name/readout and color-redundancy checks |
 | HV2-33 | Escape follows the repaired hierarchy, restores launcher/focus, preserves established unsaved utility input, and does not discard a draft implicitly. Destination changes preserve only state owned by their route contract. | gate | Layered Escape, focus and scroll replay |
 | HV2-34 | Rebinding, chart replacement, `ResizeObserver`, pagehide/unmount and late-response paths clean up fully. Mock source/clock/failure controls, scenario switchers and Review notes never enter production. | gate | Repeated mount/unmount, stale-response and DOM-absence assertions |
+
+The following two chrome paragraphs are the superseded pre-amendment-13 record (Scope only).
 
 **Default view and persistent chrome** are stated in HV2-09 rather than in two
 extra terms: Diagnose is the default destination, and the destination switcher
@@ -391,6 +411,8 @@ is reached from Changes (HV2-12), not from the footer strip. An open utility
 takes the reading pane's seat and leaves the destination underneath standing
 (HV2-33). Diagnose carries the shipped Findings rail as-is within this chrome;
 this paragraph authorizes no rail redesign.
+
+Amended persistent chrome · 2026-09-10 · coordinator amendment 13: remove Scope from both lists above. Every destination retains the same identity, three destination buttons, gap and Log carbs in the topbar, and the same advisory and utilities footer. All other statements in those paragraphs remain current.
 
 ### Backend binding notes
 
@@ -411,11 +433,23 @@ arrangement and binds it to the serialized field, per precedence rule 3.
   request, not to a roster field.
 - **Setting and Focus readiness have different shapes.** Setting arms carry
   `{unit, required, observed, contributing_dates, criterion_met, reason,
-  available, elapsed_days}`. The Focus override omits `available` and `required`
+  available, elapsed_days}`.
+  **Amended 2026-09-10 — #389 Coordinator Amendment 2, under ADR 391/395.**
+  Old (superseded): The Focus override omits `available` and `required`
   and carries `{unit, observed, measured, unmeasured, elapsed_days,
   required_elapsed_days: 14, criterion_met, contributing_dates, reason}`. A
   Focus surface renders the actual positive/measured population and elapsed
   days, never an "X of Y required" meter.
+  New: Legacy non-Pattern Focus retains that shape; Pattern Focus retains all
+  those fields with `required_elapsed_days: null` and adds
+  `{count, gate, verdict, required}`. The backend opportunity owner supplies
+  `count`, `gate`, `verdict`, `unit`, `contributing_dates` and `reason` for each
+  retained arm; `observed` aliases `count`, `required` aliases `gate`, and
+  `criterion_met` reflects the served verdict. `measured` and `unmeasured`
+  retain the lever's behavior-observation counts, with their denominator in
+  `adherence`; they need not sum to the Pattern count. A Pattern Focus surface
+  renders the served opportunity count, gate and verdict alongside separate
+  behavior measurements, with elapsed days descriptive and no client criterion.
 - **No unresolved criterion exists.** Every `_comparison_readiness` branch sets
   a concrete `required` and a boolean `criterion_met`. The unavailable-evidence
   cases stay; an unresolved-criterion state has no producer (HV2-31).
@@ -520,7 +554,7 @@ footer injection):
 
 - Identity: `Harmonic` with `advisory` as its small mark
 - Destinations: `Diagnose` · `Changes` · `Day` (nav label `Main`)
-- Scope: `Scope` · `30 d`
+- Superseded 2026-09-10 · coordinator amendment 13: Scope: `Scope` · `30 d` — removed from the current persistent chrome.
 - `＋Log carbs` (the mark is U+FF0B, fullwidth plus)
 - Advisory line: `Advisory only — review with your clinician before changing pump settings.`
 - Footer utilities (nav label `Utilities`): `Carb questions` with its open
@@ -688,8 +722,8 @@ intentionally absent.
 | S01–S08 | Keep shell and clock fundamentals. |
 | S09–S23 | Keep selection/roster/setting successors; honor the partial retirements in S12 and S17. |
 | S24–S40 | Keep case/event successors; old global mechanics in S33–S35 and S37–S38 remain retired. |
-| S41–S71 | Keep history, loading, failure, retry, stale replacement, supersession and non-actionability; retired global canvas mechanics remain absent. |
-| S72–S91 | Keep current window/selection/history successors; do not revive global Align. |
+| S41–S71 | The 2026-09-08 historical-setting ruling retires S41, S43–S48, S53–S56, S63–S64 and S68 as attributed absence checks. S42 keeps the held/blind Watching disclosure and sift. Earlier global-canvas retirements remain in force. Current-setting replacement obligations remain under HV2-29/HV2-30. |
+| S72–S91 | Keep current window/selection successors; S74 retains default-collapsed held/blind Watching and footer absence, with historical rows removed. Do not revive global Align. |
 | S92–S101 | Keep the retired old fixed-seat mechanics retired; preserve the successor Spotlight/All Charts behavior. |
 | S102–S108 | Keep chart state, scale, retry and full-screen behavior. |
 | S109, S112, S113 | Keep the retired old mode/layout/duplicate-tile mechanics retired. ADR 397 changes destination naming without reinstating those retired canvas mechanics. |
@@ -765,7 +799,7 @@ whole-profile or Focus threshold.
 | Changes/guidance | Load priority, active Plan/Trial/Focus and quiet guidance states. | Failed/unavailable cannot become quiet; the frontend cannot choose a competing action or infer admission. | #387 admission envelope |
 | Diagnose/window | Draw, resize, slide, cross midnight, clear, restore route, select roster/case and open All Charts. | Click without movement does nothing; occurrence selection does not change the window; global Align and Event-charts controls stay absent. | Existing APIs/renderers |
 | P19b replacement | Select a new window, hold its request pending, fail it, retry, then settle it. | No former projection counts, rows, recommendation, support or staging masquerades as the new result. | Existing findings protocol |
-| Selected I:C replacement | Open a coherent selected I:C historical case, request a replacement, fail and retry. | Preserve only the coherent case/canvas pair; never mix generations or expose staging. | Existing findings protocol |
+| Selected I:C replacement | Open a coherent selected current-setting I:C case (`ic-lower`), request a replacement, fail and retry. | Preserve only the coherent case/canvas pair; never mix generations or expose staging. | Existing findings protocol |
 | Setting evidence | Open Basal, Correction factor and Carb ratio; inspect evidence and all 48 basal slots; open a night in Day and return. | Held/thin/missing rows keep values but cannot stage unless the backend permits; no frontend support/readiness derivation. | Existing producers |
 | Plan | Stage one family, inspect complete schedule/capacity, save draft, record decision, reconcile pending→mismatch/match, withdraw where allowed. | Save/apply failure records no success; stale revision conflicts; empty plan; divergent first plan; edit-revert manufactures no history. | #387 lifecycle protocol |
 | Trial/readiness | Open an accumulating Trial; inspect live chart/value/direction; render its type-specific unit/count/criterion; finish when permitted; reload the record. | Unavailable comparison; count met but inference unclear; >14-day accumulation; inconclusive finish; immature finish refused; no session Keep; Revert uses the supplied Plan route only. | #387 readiness fields/permissions |
@@ -818,6 +852,11 @@ and supplies updated evidence; no superseded navigation requirement survives
 through the port instruction.
 
 ## What this lock does not do
+
+The #389 c4 builder evidence index is
+[`sweep/harmonic-v2-desktop/fidelity.md`](sweep/harmonic-v2-desktop/fidelity.md).
+It contains one ported row per term and the outstanding execution evidence.
+It changes no term or sanction and records no final fidelity or eye verdict.
 
 It does not implement anything, does not prove built-app fidelity, and does not
 carry release acceptance. It admits no mobile design, no root-route cutover and

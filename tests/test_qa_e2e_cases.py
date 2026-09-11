@@ -30,6 +30,7 @@ from scripts.qa_e2e_cases import (
 
 
 EXPECTED_CASE_NAMES = (
+    "pattern-focus-meals",
     "showcase", "setting-recommendation", "behavioral-precedence",
     "basal-raise", "basal-lower", "basal-capped-raise",
     "basal-capped-lower", "basal-insufficient-seven-night",
@@ -68,7 +69,8 @@ EXPECTED_CASE_NAMES = (
     'repeat-eating-thin-reference',
     'repeat-eating-losing',
     'repeat-eating-multiple',
-
+    "c3-focus", "c3-trial", "c3-history", "c3-preempted", "c3-pin",
+    "c4-ic", "c4-isf", "c4-profile", "c4-missing", "c4-history",
 )
 
 

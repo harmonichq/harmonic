@@ -15,7 +15,7 @@ jobs:
   backend:
     name: pytest (backend)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -33,6 +33,8 @@ jobs:
         run: uv sync --frozen --extra api --extra sync
       - name: Run tests
         run: uv run python -m pytest
+      - name: Check the runtime acceptance probe rejects incomplete proofs
+        run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
       # The frontend's I:C block fixtures are real analyzer output, not literals
@@ -135,9 +137,11 @@ jobs:
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec@1 validate --all --strict
       # Pure-logic frontend modules are tested with Node's built-in runner —
-      # no npm dependency; the dev-only harness/ is not exercised here.
+      # no npm dependency; the dev-only harness/ is not exercised here. Both
+      # source roots are named: frontend-v2/ is the v2 desk (#389), and a glob
+      # that does not name it is a runner no new test is ever seen by.
       - name: Run tests
-        run: node --test 'frontend/**/*.test.js'
+        run: node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'
       # The browser capture is generated too; a passing test must not run
       # against bytes that have drifted from its support-stamp producer.
       - name: Check the event-comparison synthetic capture is current
@@ -200,7 +204,7 @@ jobs:
     name: browser gates — ${{ matrix.gate }}
     needs: browser-gate-setup
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.timeout || 15 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
@@ -221,6 +225,26 @@ jobs:
       # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
+      # #389: the v2 desk's own browser gate. Browser suites are never
+      # discovered by a glob in this repository — they are hand-listed matrix
+      # entries — so the new source root gets its own step here, and chunks 2, 3
+      # and 4 add theirs beside it. It serves the BUILT desk from disk and
+      # answers the API from manufactured payloads in the driver, so it needs no
+      # Python and no server.
+          - gate: V2 desk
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
+          - gate: V2 Trial and Pattern Focus
+            python: true
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
+            timeout: 30
+          - gate: V2 complete frozen ledger 1280x720
+            python: true
+            timeout: 60
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$RUNNER_TEMP/v2-1280x720"
+          - gate: V2 complete frozen ledger 1440x900
+            python: true
+            timeout: 60
+            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out "$RUNNER_TEMP/v2-1440x900"
           - gate: First-plan reconcile
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
@@ -265,12 +289,12 @@ jobs:
       - name: Build the delivered frontend shell
         run: npm ci && npm run build
       - name: Set up uv for the no-fetch app server
-        if: matrix.server
+        if: matrix.server || matrix.python
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
       - name: Install the API runtime for the no-fetch app server
-        if: matrix.server
+        if: matrix.server || matrix.python
         run: uv sync --frozen --extra api
       - name: Restore the isolated browser runner and Chromium
         id: browser-runner-cache
@@ -298,6 +322,15 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
+      - name: Retain v2 acceptance output
+        if: always() && startsWith(matrix.gate, 'V2 complete frozen ledger')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.gate }}
+          path: |
+            ${{ runner.temp }}/v2-*/commands.json
+            ${{ runner.temp }}/v2-*/*.log
+            ${{ runner.temp }}/v2-*/captures/
 
   frontend-browser:
     name: browser gates
@@ -325,26 +358,16 @@ jobs:
           push: false
           load: true
           tags: harmonic:pr-test
-      - name: Require the runtime image to exclude Node
-        run: docker run --rm --entrypoint sh harmonic:pr-test -c '! command -v node'
-      - name: Serve the built shell from the runtime image
-        run: |
-          cp mockups/qa-e2e.synthetic/harmonic.sqlite "$RUNNER_TEMP/harmonic-qa.sqlite"
-          chmod 666 "$RUNNER_TEMP/harmonic-qa.sqlite"
-          docker run --detach --name harmonic-pr-smoke --publish 8765:8765 \
-            --env TIMEZONE_NAME=America/Phoenix \
-            --volume "$RUNNER_TEMP/harmonic-qa.sqlite:/app/tconnect-data/harmonic.sqlite" \
-            harmonic:pr-test --host 0.0.0.0 --port 8765 --no-fetch --token '' --db /app/tconnect-data/harmonic.sqlite
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:8765/ | grep --quiet '/assets/index-'; then
-              docker rm --force harmonic-pr-smoke
-              exit 0
-            fi
-            sleep 1
-          done
-          docker logs harmonic-pr-smoke
-          docker rm --force harmonic-pr-smoke
-          exit 1
+      - name: Prove both packaged shells, assets, authentication and closed routes
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py package --image harmonic:pr-test --out "$RUNNER_TEMP/v2-package"
+      - name: Retain packaged runtime proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-packaged-runtime
+          path: |
+            ${{ runner.temp }}/v2-package/*.log
+            ${{ runner.temp }}/v2-package/*.json
 
   docker:
     name: build + push image

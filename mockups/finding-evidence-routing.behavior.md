@@ -11,16 +11,31 @@ S41-S71.
 The app-only replay is
 `frontend/diagnose-workstation-behavior.replay.mjs`.
 
+**Inventory: 183 issued, 168 active, 15 retired.**
+
 **183 issued executable IDs:** S01–S158, C41–C62, and D1–D3
-**Active executable IDs:** S01–S116, S118–S158, C41–C62, and D1–D3
-**Retired executable IDs:** S117
+**Active executable IDs:** S01–S40, S42, S49–S52, S57–S62, S65–S67, S69–S116, S118–S158, C41–C62, and D1–D3
+**Retired executable IDs:** S41, S43–S48, S53–S56, S63–S64, S68, and S117
 
 Retired *behaviors* keep their executable IDs permanently: each such replay is
 an attributed absence check and prints its sanction. `Retired executable IDs`
 counts only IDs removed from execution, which this ledger admits solely on an
-operator sanction that removes the behaviour's surface outright. S117 is the
+operator sanction that removes the behaviour's surface outright. S117 was the
 first: ADR 304 retired the light theme, so there is no second palette to repaint
 from and no absence for a replay to check.
+
+The second sanction is Connor Griffin, 2026-09-08, shown the historical
+carb-ratio row in Explore: "no." and "We dont' need historical reads in the
+app." That removes the past-setting (`register: history`) surface outright — the
+queue row, its Watching placement, its case file and its selection path — so the
+fourteen IDs whose subject WAS that surface leave execution: S41, S43, S44–S48,
+S53–S56, S63, S64 and S68. Two mixed stories stay active with their historical
+clause dropped and everything else intact: S42 keeps the Watching disclosure,
+its sift and its mobile target; S74 keeps the disclosure's default-collapsed
+behaviour, scoped to a window that still carries held reads. Stories that merely
+opened on a fixture containing a past-setting row, and every story asserting the
+2026-08-25 Event-charts retirement, are untouched. The backend still publishes
+the register; no analyzer, store or history API changed.
 
 All are opened through the real no-fetch server and tagged
 `STORY:finding-evidence-routing:<id>`. Static HTML, CSS and JavaScript come from
@@ -1705,46 +1720,62 @@ The replay function keeps the same id and gains
 `STORY:finding-evidence-routing:<id>` during implementation.
 
 ```
-S41 · The global queue renders every server-published history row after held and
+S41 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): The global queue renders every server-published history row after held and
       blind rows, under the Watching register, preserving server order.
   pre-change failure: queueRows has no history placement or Watching treatment;
                       detailFor falls through to held/blind reason copy.
 
-S42 · During an excursion-chip sift, held, blind, and history rows collapse into
-      one reachable Watching control whose count includes all three registers;
-      expanding it restores those same rows without changing the sift.
+S42 · During an excursion-chip sift, held and blind current-setting rows collapse
+      into one reachable Watching control whose count excludes historical reads;
+      expanding it restores those same current rows without changing the sift.
+  amendment: Connor Griffin · 2026-09-08 — historical clause removed; sift,
+             expansion and mobile-target obligations retained.
   pre-change failure: only held/blind collapse and the control literally counts
                       and names `held or blind` reads.
 
-S43 · A history queue row prints the past-setting detail and support supplied by
+S43 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A history queue row prints the past-setting detail and support supplied by
       the server, omits `programmed_now`, and exposes no stage affordance.
   pre-change failure: history has no detail formatter; its finished annotation is
                       incorrectly prefixed as a held reason.
 
-S44 · Clicking a history row opens its canonical history case file by opaque id;
+S44 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): Clicking a history row opens its canonical history case file by opaque id;
       neither the queue row nor any case-file state can call the stage/Plan path.
   pre-change failure: drillFinding treats every carb-ratio setting id as a current
                       I:C block id, finds no block, and opens nothing.
 
-S45 · The history case file leads with the exact conclusion `Past setting. No
+S45 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): The history case file leads with the exact conclusion `Past setting. No
       change suggested.` and shows the current programmed value exactly once,
       afterward and visually quieter; no other current-value copy is rendered.
   pre-change failure: no history case-file renderer or conclusion-first hierarchy
                       exists.
 
-S46 · The same active history id is reachable globally and under every overlapping
+S46 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): The same active history id is reachable globally and under every overlapping
       clock scope; changing scope preserves the selected id and re-renders only
       server-returned membership.
   pre-change failure: the current reload has no selected_id and cannot preserve a
                       history selection across a findings-window request.
 
-S47 · A findings response with selection disposition `out_of_scope` keeps the
+S47 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A findings response with selection disposition `out_of_scope` keeps the
       complete prior history case file open and shows the server message; the queue
       may omit the row, but neither inspector nor canvas is cleared or substituted.
   pre-change failure: the current selection model resolves only live queue rows and
                       has no disposition path.
 
-S48 · By clock and the case file are one coherent projection of one selected
+S48 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): By clock and the case file are one coherent projection of one selected
       history id and one `analysis_generation`; the queue supplies both facts and
       the browser derives neither identity nor lifecycle.
   pre-change failure: the workstation stores neither selected history identity nor
@@ -1772,23 +1803,31 @@ S52 · A run containing multiple meals renders every server-published meal offse
       meal identities.
   pre-change failure: no history event renderer consumes member_offsets_min.
 
-S53 · A thin but non-null server estimate remains visible as non-actionable history,
+S53 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A thin but non-null server estimate remains visible as non-actionable history,
       with its wide interval and support; it has no stage path.
   pre-change failure: no history formatter can show this accepted-failure state.
 
-S54 · The browser never removes history from an estimate null check, ratio test, id
+S54 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): The browser never removes history from an estimate null check, ratio test, id
       syntax, support threshold, age calculation, or direction calculation; a row
       disappears only when the findings response omits it and supplies the selected
       item's server disposition.
   pre-change failure: the only carb-ratio drill path guesses current-block identity
                       from the id prefix, and no server-disposition path exists.
 
-S55 · A findings response with `aged_out` returns inspector and canvas atomically to
+S55 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A findings response with `aged_out` returns inspector and canvas atomically to
       the queue and renders exactly `Past-setting evidence aged out of the 90-day
       window.` as the retirement notice.
   pre-change failure: no selected-history findings response is requested or handled.
 
-S56 · A findings response with `unavailable` returns inspector and canvas atomically
+S56 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A findings response with `unavailable` returns inspector and canvas atomically
       to the queue and renders exactly `Past-setting evidence no longer maps to one
       current program block.` as a distinct retirement notice.
   pre-change failure: no selected-history findings response is requested or handled.
@@ -1822,12 +1861,16 @@ S62 · Explicit Retry starts exactly one new coordinated attempt from the visibl
       clears the stale notice only after a coherent replacement commits.
   pre-change failure: no explicit recovery affordance exists.
 
-S63 · A malformed selected history id response preserves the last coherent pair,
+S63 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A malformed selected history id response preserves the last coherent pair,
       runs the one coordinated recovery attempt, then stops visibly stale if the
       server still rejects it; the browser does not decode or repair the id.
   pre-change failure: no typed invalid_history_id recovery exists.
 
-S64 · An unknown selected history id response follows the same bounded preservation
+S64 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): An unknown selected history id response follows the same bounded preservation
       path for history_not_found; it never guesses a replacement row.
   pre-change failure: no typed history_not_found recovery exists.
 
@@ -1845,7 +1888,9 @@ S67 · A process-restart generation mismatch follows S60-S62 even when database 
       opaque process state.
   pre-change failure: the current workstation has no generation concept.
 
-S68 · A superseded findings response cannot update the queue, selected disposition,
+S68 · RETIRED 2026-09-08 — permanent historical-setting absence check.
+  sanction: Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+  prior story (superseded): A superseded findings response cannot update the queue, selected disposition,
       case file, generation, or either canvas after a newer request owns the view.
   pre-change failure: window requests have a key guard, but it does not cover selected
                       identity, generation, disposition, or coordinated recovery.
@@ -2709,6 +2754,7 @@ entry erases or weakens the other.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 - **AMENDED event-comparison replay S8 · issue 135 live judging.** The dated retirement above remains the record of the global comparison canvas. On 2026-08-28 the keyboard cursor was restored on the visible, focusable comparison chart in the Spotlight, where Arrow keys expose the served cohort readout and update the chart's accessible name. `diagnose-event-comparison-behavior.replay.mjs` S8 is the living witness and still proves every comparison canvas is nested inside an evidence tile; the global comparison canvas remains permanently absent.
   sanction: live-judging ruling · 2026-08-28 · “The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence.”
+- **AMENDED event-comparison replay S8 · 2026-09-10 · #389 HV2-32.** Under execution lock v2 389 2, c2 repairs the shared axis/readout formatter. The old fifteen-minute cursor presentation was `+0.25 h`; the new presentation is `+15 min`. Five minutes reads `+5 min`; ninety minutes before reads `−1 h 30 min`. Whole-hour and anchor labels remain. Both visible readout and accessible name use that shared label. The Spotlight cursor, served cohort values and permanent global-canvas absence assertions remain unchanged. The independent verifier owns the result.
 - **RETIRED event-comparison replay S12 keyboard clause · final gate reconciliation.** Its server-owned downgrade, median, spread and legend assertions remain living; only the keyboard point-count clause retires with the global comparison cursor.
   sanction: Connor Griffin · 2026-08-26 · “rewrite their openers off the retired global 'By event' control onto the successor UI (the canvas's per-tile alignment / the case-file-backed comparison tile), preserving what those legs actually verify — the comparison's population semantics and the support audit's assertions.”
 - **RETIRED S92 · ADR 215 amendment.** Focus no longer swaps charts through fixed seats; promoting a chart leaves the dock's ordered set sorted.
@@ -3847,4 +3893,54 @@ hand-set.
   comparison labels retain their meaning.
 
 Revision evidence and chart-direction review remain pending with the coordinator.
-The issued inventory is 183, with 182 active IDs and the one inherited retirement.
+The issued inventory is 183, with 168 active IDs and 15 retired IDs.
+
+## Amendment — 2026-09-10, issue #389 coordinator amendment 11
+
+The 2026-09-08 retirement in `895b596b` remains in force: Connor Griffin,
+shown the past-setting row, said “no.” and “We dont' need historical reads in
+the app.” Three browser-only assertions still depended on that removed row or
+its refresh path. Their surviving contracts are reconciled here; no history
+surface returns and no additional executable ID is retired.
+
+- **#100 Backspace browser probe / P23.** Drill the served Carb undercount
+  Finding instead of `ich1_WzAsNzIwLCI2Il0`, then assert Backspace restores focus
+  to that originating row. Both use the workstation's shared `popTo`,
+  `pendingRowFocus` and `applyPendingFocus` path. The detail must open before
+  Backspace. S76's separate Enter/Findings-crumb contract is unchanged.
+- **issue81SlicedProjection / P19.** The issue-scoped historical “S43” label is
+  not ticket 10's retired executable S43. The frozen projection inputs and the
+  checked projection mirror serve twelve rows globally and three at
+  04:30–06:00. `presentedRows` excludes `register: history`, leaving eleven
+  global rows and exactly `Basal 05:30 · raise` and `ISF` in the slice. The crumb
+  remains `8 findings · 30 days` globally and `1 in this window` in the slice;
+  claimed members and the held ISF read do not inflate those actionable counts.
+  This supersedes the past-setting membership clauses in the earlier #81/P19
+  evidence notes, preserving positive membership, exclusion and content-spine
+  assertions.
+- **Composition window-adoption probe / P19.** Hold Morning's
+  `finding-case-file-preparation` response, let Afternoon settle, then release
+  Morning. The remaining `ensurePreparation` generation/window checks and
+  `adoptFindings` key check own this invariant. Assert Afternoon's chart remains,
+  no Morning-only chart is seated, the Afternoon preset stays pressed and no
+  page error occurs. Expected identities use the actual preset bounds
+  (06:00–12:00 and 12:00–18:00); the fixture's named morning/afternoon windows
+  are different slices. The removed history refresh and `.history-pending`
+  marker are no longer exercised.
+
+Inventory is unchanged: **183 issued, 168 active, 15 retired**. The ledger parity
+guard remains authoritative and is run with this amendment. No new browser pass
+is claimed here; the coordinator owns the workstation suite, composition suite
+and complete finding-evidence-routing replay on this change.
+
+
+## Amendment — 2026-09-10, issue #389 coordinator amendment 14
+
+The composition window-adoption probe now draws the frozen findings-projection
+fixture's `windows.morning` (04:30–08:00) and `windows.afternoon` (14:00–21:00)
+windows through the public clock brace. It reads expected IDs directly from those
+frozen Python answers, which `findings-projection-mirror.test.js` deep-compares;
+it never computes its expectation through the mirror. This supersedes amendment
+11's preset-bound and preset-button clauses: the selected-window assertion checks
+the 14:00–21:00 window chip. The held-response ordering, retained Afternoon chart,
+absence of Morning-only charts and no-page-error assertions remain.

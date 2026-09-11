@@ -1,0 +1,30 @@
+{
+  "mockups/harmonic-v2.exploration/journey.json": {
+    "sha256": "b256323378d0c4a92165a061fb58165e0f5caaf10d7d59660e49bde44ac3ec32",
+    "bytes": 7470297
+  },
+  "mockups/harmonic-v2.exploration/setting.json": {
+    "sha256": "bb95f04a29674ed0fe4c4fb54b94078823844b68e827db31b4eaa380e451395e",
+    "bytes": 114129
+  },
+  "mockups/harmonic-v2.exploration/focus.json": {
+    "sha256": "a97bc65aed6e7901d128f7eea0f490425668d033ce545b73cb50df3eeed3b43b",
+    "bytes": 2298745
+  },
+  "mockups/harmonic-v2.exploration/workstation.json": {
+    "sha256": "ba7e17b6931fcb61c9f1d601d79a5410a0ed952638348a42270e26dc1d0ff5ba",
+    "bytes": 1168740
+  },
+  "mockups/harmonic-v2.exploration/utilities.json": {
+    "sha256": "d3bc58b383fc11723ec1bda5d491cbbbc11e1cbd28bc43920d644c84c6960319",
+    "bytes": 19265
+  },
+  "mockups/harmonic-v2.exploration/evidence.json": {
+    "sha256": "7186afb6bfd94f56fcaad4043ee89389da1c599617ece8e10ec9bb985e6b4831",
+    "bytes": 37639
+  },
+  "mockups/verify-660-story.synthetic/payload.json": {
+    "sha256": "f5ce4063a6de202404f597d9537d8d6921fb82ddf0733d25174a3213eb677a15",
+    "bytes": 62864
+  }
+}

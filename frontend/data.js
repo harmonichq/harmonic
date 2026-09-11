@@ -210,11 +210,21 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * The Trial's maturing window is a backend fact — no window knob exists here.
    * @param {{ selected?: string }} [opts]
    */
-  function fetchVerifyTrials({ selected } = {}) {
+  function fetchVerifyTrials({ selected, kind, assessment } = {}) {
     const params = new URLSearchParams();
     if (selected) params.set('selected', selected);
+    if (kind) params.set('kind', kind);
+    if (assessment) params.set('assessment', assessment);
     const qs = params.toString();
     return api('/api/verify/trials' + (qs ? '?' + qs : ''));
+  }
+
+  /** Record a Trial ending with the durable retry identity and read revision. */
+  function finishTrial(id, durable) {
+    return api('/api/verify/trials/' + encodeURIComponent(id) + '/finish', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(durable),
+    });
   }
 
   /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
@@ -353,6 +363,16 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     });
   }
 
+  /**
+   * DELETE /api/carbs/<id> — remove one carb entry by id. A prompt-sourced
+   * entry takes its prompt_responses row with it (the #125 store rule), so the
+   * question that logged it resurrects in the queue.
+   * @param {number} entryId
+   */
+  function deleteCarb(entryId) {
+    return api('/api/carbs/' + encodeURIComponent(entryId), { method: 'DELETE' });
+  }
+
   // --- carb-log prompt queue (#128) --------------------------------------
 
   /** GET /api/prompts — the live review queue (List[Prompt], oldest-first). */
@@ -402,8 +422,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * POST /api/focus/{id}/resolve — unpin (retire) the active Focus by id.
    * @param {number} id
    */
-  function resolveFocus(id) {
-    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', { method: 'POST' });
+  function resolveFocus(id, durable) {
+    return api('/api/focus/' + encodeURIComponent(id) + '/resolve', durable ? {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(durable),
+    } : { method: 'POST' });
   }
 
   /**
@@ -413,11 +435,11 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
    * surfaces the message. Returns the pinned Focus row (with its id, for undo).
    * @param {string} lever
    */
-  function pinFocus(lever) {
+  function pinFocus(lever, durable) {
     return api('/api/focus', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lever }),
+      body: JSON.stringify(durable ? { ...(lever ? { lever } : {}), ...durable } : { lever }),
     });
   }
 
@@ -445,9 +467,77 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     return api('/api/plan/history');
   }
 
-  /** POST /api/plan/apply */
-  function applyPlan() {
-    return api('/api/plan/apply', { method: 'POST' });
+  /**
+   * POST /api/plan/apply — record the decision this Plan carries.
+   *
+   * Called with no argument the request is bodyless, which is the shape v1 has
+   * always sent and which the endpoint treats as a non-durable apply. A `request`
+   * makes it durable: `{request_id, input_revision, subject, analysis_generation,
+   * draft_updated_at}`, replayable under the same `request_id`, and answering 409
+   * with `detail: {code, input_revision, admission}` when the store moved under it.
+   *
+   * @param {object|null} [request]
+   */
+  function applyPlan(request = null) {
+    if (!request) return api('/api/plan/apply', { method: 'POST' });
+    return api('/api/plan/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * POST /api/plan/history/withdraw — withdraw a Plan still awaiting the pump.
+   * Durable only: `{request_id, input_revision, applied_at, reason?}`.
+   * @param {object} request
+   */
+  function withdrawPlan(request) {
+    return api('/api/plan/history/withdraw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+  }
+
+  // --- guidance: the backend-selected concern, and set aside (#383/#384) ---
+
+  /**
+   * GET /api/guidance — the one backend-owned read of what leads: the selected
+   * concern, the disposition it was selected under, every candidate with its
+   * evidence and set-aside preference, and the `analysis_generation` /
+   * `input_revision` a write must quote back.
+   */
+  function fetchGuidance() {
+    return api('/api/guidance');
+  }
+
+  /**
+   * PUT /api/guidance/preferences/<subject> — set a concern aside.
+   *
+   * Outside the durable-receipt envelope: no `request_id`, no `input_revision`
+   * in the body, and a plain-string `detail` on 409/404. It is not idempotent by
+   * receipt, so the caller re-reads `/api/guidance` after it rather than trusting
+   * the `{subject, set_aside}` answer to describe the whole read.
+   *
+   * @param {string} subject   a canonical guidance subject
+   * @param {{ generation: string, reason?: string|null }} body
+   */
+  function setGuidancePreference(subject, { generation, reason = null } = {}) {
+    return api('/api/guidance/preferences/' + encodeURIComponent(subject), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ generation, reason }),
+    });
+  }
+
+  /**
+   * DELETE /api/guidance/preferences/<subject> — restore a set-aside concern.
+   * The same non-receipt contract as `setGuidancePreference`; re-read after it.
+   * @param {string} subject
+   */
+  function restoreGuidancePreference(subject) {
+    return api('/api/guidance/preferences/' + encodeURIComponent(subject), { method: 'DELETE' });
   }
 
   return {
@@ -465,6 +555,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchDayNavigator,
     fetchOutcomesTrend,
     fetchVerifyTrials,
+    finishTrial,
     fetchExploreTimeOfDay,
     fetchEatingSequences,
     fetchExploreExposures,
@@ -480,6 +571,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchTimeline,
     fetchCarbs,
     createCarb,
+    deleteCarb,
     fetchPrompts,
     answerPrompt,
     clearPrompt,
@@ -490,6 +582,10 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     savePlanDraft,
     loadPlanHistory,
     applyPlan,
+    withdrawPlan,
+    fetchGuidance,
+    setGuidancePreference,
+    restoreGuidancePreference,
   };
 }
 
@@ -514,6 +610,7 @@ export const fetchModelView    = _defaults.fetchModelView;
 export const fetchDayNavigator = _defaults.fetchDayNavigator;
 export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
+export const finishTrial = _defaults.finishTrial;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchEatingSequences = _defaults.fetchEatingSequences;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;
@@ -531,6 +628,7 @@ export const dismissAuditItem = _defaults.dismissAuditItem;
 export const fetchTimeline     = _defaults.fetchTimeline;
 export const fetchCarbs        = _defaults.fetchCarbs;
 export const createCarb        = _defaults.createCarb;
+export const deleteCarb        = _defaults.deleteCarb;
 export const fetchPrompts      = _defaults.fetchPrompts;
 export const answerPrompt      = _defaults.answerPrompt;
 export const clearPrompt       = _defaults.clearPrompt;
@@ -541,3 +639,8 @@ export const loadPlan          = _defaults.loadPlan;
 export const savePlanDraft     = _defaults.savePlanDraft;
 export const loadPlanHistory   = _defaults.loadPlanHistory;
 export const applyPlan         = _defaults.applyPlan;
+
+export const withdrawPlan = _defaults.withdrawPlan;
+export const fetchGuidance = _defaults.fetchGuidance;
+export const setGuidancePreference = _defaults.setGuidancePreference;
+export const restoreGuidancePreference = _defaults.restoreGuidancePreference;

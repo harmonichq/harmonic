@@ -1,0 +1,613 @@
+{
+  "written": 50,
+  "failed": 0,
+  "viewports": [
+    "1280x720",
+    "1440x900"
+  ],
+  "captures": [
+    {
+      "id": "overview-journey",
+      "via": "story S1 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "scope": ".cockpit-shell",
+      "covers": "S1/S4 \u2014 default Overview, persistent chrome, the leading concern with its action",
+      "files": [
+        "overview-journey.1280x720.png",
+        "overview-journey.1280x720.html",
+        "overview-journey.1280x720.txt",
+        "overview-journey.1440x900.png",
+        "overview-journey.1440x900.html",
+        "overview-journey.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-changed.command.json",
+      "sha256": {
+        "overview-journey.1280x720.png": "3e807a3d9bb307aa3c16d9b72eb98174085a7677debb117f5f81f5a0bf7fde81",
+        "overview-journey.1280x720.html": "57ccb096bf59571237cfafe32342c67df86b5a2d1e84de4c00309cdeba6f6d5a",
+        "overview-journey.1280x720.txt": "0cb92a12159f8a92c00dbaa3a0a8537419399f06de5fcae638029196c5f959e5",
+        "overview-journey.1440x900.png": "8910ff5268b70e06d1c6465a64a697904f6e114d52446523190ac1738b4be308",
+        "overview-journey.1440x900.html": "83ff21ea95bbd001ea2add3f2f50f58a3e87f97e64268220bb0f4ca26089a4f6",
+        "overview-journey.1440x900.txt": "0cb92a12159f8a92c00dbaa3a0a8537419399f06de5fcae638029196c5f959e5"
+      }
+    },
+    {
+      "id": "chrome-invariance-day",
+      "via": "story S11 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "scope": ".cockpit-shell",
+      "covers": "S11 (end state: Day) \u2014 chrome measured against Overview as the reference view",
+      "files": [
+        "chrome-invariance-day.1280x720.png",
+        "chrome-invariance-day.1280x720.html",
+        "chrome-invariance-day.1280x720.txt",
+        "chrome-invariance-day.1440x900.png",
+        "chrome-invariance-day.1440x900.html",
+        "chrome-invariance-day.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-changed.command.json",
+      "sha256": {
+        "chrome-invariance-day.1280x720.png": "9efd1efcb4690ebe3ca1799a64052a6224338b4b2f166b2c9a72e25262dc590c",
+        "chrome-invariance-day.1280x720.html": "a21ae20d79d37a5abc67b48653387426ed3c8605ffa879a16518c261c5515118",
+        "chrome-invariance-day.1280x720.txt": "5eca5d0a524f386d68c3dbda4acba695c9a86e0ec92973d897b505594b1c5a3f",
+        "chrome-invariance-day.1440x900.png": "e168e1d52ac054792b1e445cf88b19efe83c91f085ee29563b3aa61269f72c3a",
+        "chrome-invariance-day.1440x900.html": "c55f3f4236fd26503f6cf8dcb15f28f190af43c08803916c184279e7236e83eb",
+        "chrome-invariance-day.1440x900.txt": "5eca5d0a524f386d68c3dbda4acba695c9a86e0ec92973d897b505594b1c5a3f"
+      }
+    },
+    {
+      "id": "narrow-chrome-absent",
+      "via": "story S10b (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S10b \u2014 desktop desk with both panes and no sheet toggle or seat control",
+      "files": [
+        "narrow-chrome-absent.1280x720.png",
+        "narrow-chrome-absent.1280x720.html",
+        "narrow-chrome-absent.1280x720.txt",
+        "narrow-chrome-absent.1440x900.png",
+        "narrow-chrome-absent.1440x900.html",
+        "narrow-chrome-absent.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "narrow-chrome-absent.1280x720.png": "7b680a472072e067221cb77962cec3117ed107ad6cc4e5a73849dfcafb244ad7",
+        "narrow-chrome-absent.1280x720.html": "b77efc3ff1c9225dc5889d9ae5b0badb3eca9d49c5e16fe85c74d57b045e6a6f",
+        "narrow-chrome-absent.1280x720.txt": "4cf3d0ed5d6517a48fab04919d1788dfacf0dabfb6da050c4f27c51cc82b6088",
+        "narrow-chrome-absent.1440x900.png": "34fe3f5bad80c73d9b7eb05b4d69911595baeaf98bf57ad738ac6475d6c14d4d",
+        "narrow-chrome-absent.1440x900.html": "16667847f2894ec76cbf87ac0731daaa66c138ef6e2c92fd2a1b68829bc2337c",
+        "narrow-chrome-absent.1440x900.txt": "4cf3d0ed5d6517a48fab04919d1788dfacf0dabfb6da050c4f27c51cc82b6088"
+      }
+    },
+    {
+      "id": "explore-comparison-meals",
+      "via": "story S21 (end state)",
+      "source": "meals",
+      "state": "investigate",
+      "covers": "S21/S28 \u2014 event comparison through the shipped renderer, every served cohort and support line",
+      "files": [
+        "explore-comparison-meals.1280x720.png",
+        "explore-comparison-meals.1280x720.html",
+        "explore-comparison-meals.1280x720.txt",
+        "explore-comparison-meals.1440x900.png",
+        "explore-comparison-meals.1440x900.html",
+        "explore-comparison-meals.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "explore-comparison-meals.1280x720.png": "db04673081327e7a182eb2bd3bd2ada7ae415c4490b7b519255270e2383969f3",
+        "explore-comparison-meals.1280x720.html": "bfad000975803454506711b0afd243ab6132b54db9427c93e18e6a355d7ac412",
+        "explore-comparison-meals.1280x720.txt": "5cdd184b4d10679b7bbd57d18fb7e54634746419d5be3040b91d52274e81e1cb",
+        "explore-comparison-meals.1440x900.png": "a29743654249035969b6b3702bbd04b013a5a806f5e7bcf01283f06d4a72860b",
+        "explore-comparison-meals.1440x900.html": "fd46a12f0258efc6f1ee6a09b801daa58efe935c63fcdae383d6f618187fe0a6",
+        "explore-comparison-meals.1440x900.txt": "5cdd184b4d10679b7bbd57d18fb7e54634746419d5be3040b91d52274e81e1cb"
+      }
+    },
+    {
+      "id": "explore-lane-48",
+      "via": "story S31 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S31 \u2014 all 48 basal slots, the densest lane the fixtures serve",
+      "files": [
+        "explore-lane-48.1280x720.png",
+        "explore-lane-48.1280x720.html",
+        "explore-lane-48.1280x720.txt",
+        "explore-lane-48.1440x900.png",
+        "explore-lane-48.1440x900.html",
+        "explore-lane-48.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "explore-lane-48.1280x720.png": "7fcf28991f8b874b5764c460635d05f678155bcd812034fc3088576ff50e9329",
+        "explore-lane-48.1280x720.html": "5b2dda9b8f1356221a49fd1b5eb678a1c1dc76df2ad8968ad10895289bca1631",
+        "explore-lane-48.1280x720.txt": "0a31d54e2cf6aedec8caa79951299f15b3876fdf04c5d88391d9ccb84f6321c9",
+        "explore-lane-48.1440x900.png": "192beb00adb732860e5d823f5f7fc8a0e6b66fe837c52abd26156fd33f591526",
+        "explore-lane-48.1440x900.html": "55a2dafa1c67ceae0ccd9ca4481e629525a28da89fb06d34d453668293a98cdc",
+        "explore-lane-48.1440x900.txt": "0a31d54e2cf6aedec8caa79951299f15b3876fdf04c5d88391d9ccb84f6321c9"
+      }
+    },
+    {
+      "id": "explore-lane-nights",
+      "via": "checkpoint",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S33 \u2014 a held supporting night with its served ordinal, over the 30-night roster and its fold",
+      "files": [
+        "explore-lane-nights.1280x720.png",
+        "explore-lane-nights.1280x720.html",
+        "explore-lane-nights.1280x720.txt",
+        "explore-lane-nights.1440x900.png",
+        "explore-lane-nights.1440x900.html",
+        "explore-lane-nights.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "explore-lane-nights.1280x720.png": "f6f9fce0bbe6cfb1e8b3bc610b75d037f9eda1ad84b1db1b42e107917ba20e50",
+        "explore-lane-nights.1280x720.html": "b7739b74f453682dd16ade526736c3852889e52036c0b5fddcecbc17ab2ddfb4",
+        "explore-lane-nights.1280x720.txt": "e9fda2836293aeb9591d5405675ca02519c112948f3860621c16f935f171dbd4",
+        "explore-lane-nights.1440x900.png": "24b625d9989ac7be7c4c1727ca4eb734e43abbe659e1caaf68b6ad8b7b30c38b",
+        "explore-lane-nights.1440x900.html": "d9d063ea0371f0b7b5ae2e59674ce67f363724f84b9fd937f8554217b58bf9e8",
+        "explore-lane-nights.1440x900.txt": "e9fda2836293aeb9591d5405675ca02519c112948f3860621c16f935f171dbd4"
+      }
+    },
+    {
+      "id": "changes-plan-staged",
+      "via": "story S39 (end state)",
+      "source": "setting",
+      "state": "investigate",
+      "covers": "S39 \u2014 Plan with the complete pump-entry schedule and its capacity copy",
+      "files": [
+        "changes-plan-staged.1280x720.png",
+        "changes-plan-staged.1280x720.html",
+        "changes-plan-staged.1280x720.txt",
+        "changes-plan-staged.1440x900.png",
+        "changes-plan-staged.1440x900.html",
+        "changes-plan-staged.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-plan-staged.1280x720.png": "66327bcd65192828d1050fed3499ca191bfeed7625cf20f138f54f710eebbce9",
+        "changes-plan-staged.1280x720.html": "e1170dc6b43b4b1ecf3079c7b8cf53965065b65910fc9e49adfecf592108c8b4",
+        "changes-plan-staged.1280x720.txt": "624f2337f804c09b70949d0d4eb9e6f7475ca5d36ea89191bd73046bd3f828cb",
+        "changes-plan-staged.1440x900.png": "a5e457bd0ac4d3901e66fc7301049c646661654c3ebdafde8d91afda89f06918",
+        "changes-plan-staged.1440x900.html": "e1170dc6b43b4b1ecf3079c7b8cf53965065b65910fc9e49adfecf592108c8b4",
+        "changes-plan-staged.1440x900.txt": "624f2337f804c09b70949d0d4eb9e6f7475ca5d36ea89191bd73046bd3f828cb"
+      }
+    },
+    {
+      "id": "changes-plan-failed-save",
+      "via": "checkpoint",
+      "source": "setting",
+      "state": "investigate",
+      "covers": "S40 \u2014 the failed draft save itself, stopped BEFORE the retry that clears it",
+      "files": [
+        "changes-plan-failed-save.1280x720.png",
+        "changes-plan-failed-save.1280x720.html",
+        "changes-plan-failed-save.1280x720.txt",
+        "changes-plan-failed-save.1440x900.png",
+        "changes-plan-failed-save.1440x900.html",
+        "changes-plan-failed-save.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-plan-failed-save.1280x720.png": "58a85a72d133e374c07084f7c676df6b7341bc8941543a9d32f6dbe11ed0bc7a",
+        "changes-plan-failed-save.1280x720.html": "7c7ec875e64cda703ed3cea8995e133559050611df38a3c4325cee5cc683937a",
+        "changes-plan-failed-save.1280x720.txt": "fb5d5161f9f40fc1771625b4a53100ac4d9ce9939937b66e42dc1b8cb13ac786",
+        "changes-plan-failed-save.1440x900.png": "35556570cf74eeed91e1544525d9e9513334e4c0e5f27269121c5864c8acb3d0",
+        "changes-plan-failed-save.1440x900.html": "7c7ec875e64cda703ed3cea8995e133559050611df38a3c4325cee5cc683937a",
+        "changes-plan-failed-save.1440x900.txt": "fb5d5161f9f40fc1771625b4a53100ac4d9ce9939937b66e42dc1b8cb13ac786"
+      }
+    },
+    {
+      "id": "changes-trial-active",
+      "via": "story S49 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S49 \u2014 Trial evidence with empty-population wording (no meals / unavailable)",
+      "files": [
+        "changes-trial-active.1280x720.png",
+        "changes-trial-active.1280x720.html",
+        "changes-trial-active.1280x720.txt",
+        "changes-trial-active.1440x900.png",
+        "changes-trial-active.1440x900.html",
+        "changes-trial-active.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-trial-active.1280x720.png": "f6778097a18e314bbfada40d52619351ab862211b5829cf2d29432ecfb3c3927",
+        "changes-trial-active.1280x720.html": "6199bcdc71756bc4168ad3ae4cdd3b71e3cc353704cfcc6031cd835643cbb6c5",
+        "changes-trial-active.1280x720.txt": "65ed3309fce1007f02a1cdf7921aa4b32b6b101b5906349f5a69ea29f8fc877e",
+        "changes-trial-active.1440x900.png": "893f1baf3ffd1938e569761b736c6718ec39f6c1196c2b1843fc3ecfa349d502",
+        "changes-trial-active.1440x900.html": "849da58194edadea6545b845931ec975e75343578bc2a0c3f8c3d98a45b7f65b",
+        "changes-trial-active.1440x900.txt": "65ed3309fce1007f02a1cdf7921aa4b32b6b101b5906349f5a69ea29f8fc877e"
+      }
+    },
+    {
+      "id": "changes-trial-ready",
+      "via": "checkpoint",
+      "source": "meals",
+      "state": "ready",
+      "covers": "S51 \u2014 the conclusion form as it arrives, required and still empty",
+      "files": [
+        "changes-trial-ready.1280x720.png",
+        "changes-trial-ready.1280x720.html",
+        "changes-trial-ready.1280x720.txt",
+        "changes-trial-ready.1440x900.png",
+        "changes-trial-ready.1440x900.html",
+        "changes-trial-ready.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-trial-ready.1280x720.png": "1764e3d599d0d54407c75869de2da9952f5971160803b9d799b1d3c857650056",
+        "changes-trial-ready.1280x720.html": "6fc473e1e26a9bcc8f12a65641536dabe6ae3e3f83f01c54642d4ce4fbb2863f",
+        "changes-trial-ready.1280x720.txt": "9f46dad4e14da3838bd503c9cbc35a9398308fe4d89a356ddaf3afc7a3c9dd96",
+        "changes-trial-ready.1440x900.png": "bc5683198da63c94a273de5eace1b8af7f9e78d314c139230677211445c30110",
+        "changes-trial-ready.1440x900.html": "b41bb408cd8d127c7345e7ae8e042b76b5dc724bac689b0f6c2a63832d731412",
+        "changes-trial-ready.1440x900.txt": "9f46dad4e14da3838bd503c9cbc35a9398308fe4d89a356ddaf3afc7a3c9dd96"
+      }
+    },
+    {
+      "id": "changes-history-record",
+      "via": "story S54 (end state)",
+      "source": "meals",
+      "state": "history",
+      "covers": "S54 \u2014 the saved record: original context, ending, unavailable legacy facts",
+      "files": [
+        "changes-history-record.1280x720.png",
+        "changes-history-record.1280x720.html",
+        "changes-history-record.1280x720.txt",
+        "changes-history-record.1440x900.png",
+        "changes-history-record.1440x900.html",
+        "changes-history-record.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-history-record.1280x720.png": "d0769eff28f79f8fff5a1d3690d70974078f77a59caa8b36fc77840739545d07",
+        "changes-history-record.1280x720.html": "9c6321b0c33b2765adfe3003621efd42d6e3ecead9023283ba2e3d7c71bad14f",
+        "changes-history-record.1280x720.txt": "f4aee91fef22ac9ead00b29a1306206ecabc6edaa4564e365cbe1116e760b6d7",
+        "changes-history-record.1440x900.png": "703e71b17c54b09d095d57fbf98980fede6b0f66ea0b8746bc87a79676ca71af",
+        "changes-history-record.1440x900.html": "ac60b681727b693fe922f3a1b6310c628cf74a5e59b43dc6dba769100657141c",
+        "changes-history-record.1440x900.txt": "f4aee91fef22ac9ead00b29a1306206ecabc6edaa4564e365cbe1116e760b6d7"
+      }
+    },
+    {
+      "id": "changes-focus-tables",
+      "via": "story S57 (end state)",
+      "source": "focus",
+      "state": "investigate",
+      "covers": "S57 \u2014 observed behavior and glucose outcomes as two separate served tables",
+      "files": [
+        "changes-focus-tables.1280x720.png",
+        "changes-focus-tables.1280x720.html",
+        "changes-focus-tables.1280x720.txt",
+        "changes-focus-tables.1440x900.png",
+        "changes-focus-tables.1440x900.html",
+        "changes-focus-tables.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-focus-tables.1280x720.png": "559226591017c3d4f2e60af257f4ccc998bb19b41b276afccc3b1d6d48fec3f1",
+        "changes-focus-tables.1280x720.html": "a3344f7289b326aacca1891cf08d1fa38432e69ecdac5436e6ba6c0dd5dca747",
+        "changes-focus-tables.1280x720.txt": "dcfc1e7b1f04d8610d0b31cce1e0a745051a62cfbc92223818fb8a020d0b1dd1",
+        "changes-focus-tables.1440x900.png": "e5b2600760a01345b8e3670567dd9d0b7ab21edbb7ea5879f51fb447d3e0d6cd",
+        "changes-focus-tables.1440x900.html": "8d85c7aadd59809ba29113dce97533116a1ce8c9d815a03f6540559ac9609480",
+        "changes-focus-tables.1440x900.txt": "dcfc1e7b1f04d8610d0b31cce1e0a745051a62cfbc92223818fb8a020d0b1dd1"
+      }
+    },
+    {
+      "id": "changes-focus-preempted",
+      "via": "story S58 (end state)",
+      "source": "focus",
+      "state": "investigate",
+      "covers": "S58 \u2014 a Trial-preempted Focus kept as history",
+      "files": [
+        "changes-focus-preempted.1280x720.png",
+        "changes-focus-preempted.1280x720.html",
+        "changes-focus-preempted.1280x720.txt",
+        "changes-focus-preempted.1440x900.png",
+        "changes-focus-preempted.1440x900.html",
+        "changes-focus-preempted.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "changes-focus-preempted.1280x720.png": "a88a5c3baab67b82cb039b1f80eaa6cabc5b43fb01888b16c7d420eaa84a649d",
+        "changes-focus-preempted.1280x720.html": "e305f2a2c95885a955a3ca4eb19872ad1236d1a34c8d4302ccc4b05d92f0658f",
+        "changes-focus-preempted.1280x720.txt": "9c907dfea2420e4924a5096005708ee454c1c4fb5872eb28c54e8d0f84c9653d",
+        "changes-focus-preempted.1440x900.png": "19f830239ac027155689dc75ae8f9a1c65c192ecc8822cb9c5454895c826cec7",
+        "changes-focus-preempted.1440x900.html": "a16b59cd2c0ac1dba69b7cf9a7b81be52b4ef5d8a506cb443b6ce4b9b3ddab7e",
+        "changes-focus-preempted.1440x900.txt": "9c907dfea2420e4924a5096005708ee454c1c4fb5872eb28c54e8d0f84c9653d"
+      }
+    },
+    {
+      "id": "day-direct",
+      "via": "story S67 (end state)",
+      "source": "meals",
+      "state": "investigate",
+      "covers": "S60/S63/S67 \u2014 direct Day: week ribbon, five-track chronology, Episode Log",
+      "files": [
+        "day-direct.1280x720.png",
+        "day-direct.1280x720.html",
+        "day-direct.1280x720.txt",
+        "day-direct.1440x900.png",
+        "day-direct.1440x900.html",
+        "day-direct.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "day-direct.1280x720.png": "ce96db04356ccd936ba7bd649cdff7e6b80df61802328e178713f25f7861bfcd",
+        "day-direct.1280x720.html": "65b8e0c302143f0f0e46d13a445d936ed0752d0dd72a091f6fe3b1e32609b188",
+        "day-direct.1280x720.txt": "b8d20c97b069951cc6bb11f9b1f43f54bf4d054e3e18e407369467288c998466",
+        "day-direct.1440x900.png": "5e637f74c19effa48919218a546c35b991e0d91050cf250c6edfb3cfbe82072e",
+        "day-direct.1440x900.html": "736f3c9f79ef425244b8d68b97650cc56792ec0e9a9fb464d562180a0a74730d",
+        "day-direct.1440x900.txt": "b8d20c97b069951cc6bb11f9b1f43f54bf4d054e3e18e407369467288c998466"
+      }
+    },
+    {
+      "id": "day-month",
+      "via": "story S65 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S65 \u2014 the month grid across a recorded range that crosses a month bound",
+      "files": [
+        "day-month.1280x720.png",
+        "day-month.1280x720.html",
+        "day-month.1280x720.txt",
+        "day-month.1440x900.png",
+        "day-month.1440x900.html",
+        "day-month.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "day-month.1280x720.png": "728fefc1200a460368eeeda65e097b442e2f7736f6c04ad221edb0247747e345",
+        "day-month.1280x720.html": "7a1be0e4f8023eda0f1335640b07091152e4e9158b5878adcf166d2645786445",
+        "day-month.1280x720.txt": "5b315b40803e745b39149aafdfc301e83508bd46a23a7abcf44d83a76b310830",
+        "day-month.1440x900.png": "df656514afddf6dc4716623ff1fe2955a3c2fcb336ea82b42615dd5f62cf1661",
+        "day-month.1440x900.html": "f27eaf5c2394135cef85979638224f8d44014d78e5ebdaaa94cefc4a5e928a6d",
+        "day-month.1440x900.txt": "5b315b40803e745b39149aafdfc301e83508bd46a23a7abcf44d83a76b310830"
+      }
+    },
+    {
+      "id": "day-contextual-return",
+      "via": "checkpoint",
+      "source": "meals",
+      "state": "investigate",
+      "covers": "S61 \u2014 contextual Day naming the subject it came from, BEFORE the return is taken",
+      "files": [
+        "day-contextual-return.1280x720.png",
+        "day-contextual-return.1280x720.html",
+        "day-contextual-return.1280x720.txt",
+        "day-contextual-return.1440x900.png",
+        "day-contextual-return.1440x900.html",
+        "day-contextual-return.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "day-contextual-return.1280x720.png": "ba35577a5686ca589c9fbd977bc540cdaabb9c9d01c5f76dda47fca00f5465cd",
+        "day-contextual-return.1280x720.html": "021bcb368f4095c931973b2718b337661117edc54100d4fc3830678e91b1acc9",
+        "day-contextual-return.1280x720.txt": "6aa9e7b177ee16186bfc2a7f467cea220b73c9b86323ffd2724660184a60237c",
+        "day-contextual-return.1440x900.png": "f3175ef5d5cc67ac3e23a49a266566e504f43d802d4fc8626554db1538149858",
+        "day-contextual-return.1440x900.html": "3aaae9ae8cb305d2cd1f3a1c66b634cd9159a93d39dea1e447f49ac0d80bcd69",
+        "day-contextual-return.1440x900.txt": "6aa9e7b177ee16186bfc2a7f467cea220b73c9b86323ffd2724660184a60237c"
+      }
+    },
+    {
+      "id": "utility-questions-answered",
+      "via": "checkpoint",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S72 \u2014 a question answered with its own Undo standing, BEFORE the Undo is taken",
+      "files": [
+        "utility-questions-answered.1280x720.png",
+        "utility-questions-answered.1280x720.html",
+        "utility-questions-answered.1280x720.txt",
+        "utility-questions-answered.1440x900.png",
+        "utility-questions-answered.1440x900.html",
+        "utility-questions-answered.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "utility-questions-answered.1280x720.png": "efbb8d5961263714d5d3eeaba2d32c2813193445b995c75f6549710047142be7",
+        "utility-questions-answered.1280x720.html": "bb32d8fac7f5634981e94688fc18313024c090dd3f6130a3eb191da3c38144c6",
+        "utility-questions-answered.1280x720.txt": "d09a36f178932e4bef9cf84ea38e4b388a9b7f3409391f7ef6c7b2807b2d0245",
+        "utility-questions-answered.1440x900.png": "6d4fd2592fefb17a33716e42560b06a55123ac779ac391861286e4c5554fcb47",
+        "utility-questions-answered.1440x900.html": "7ab103d4b2f41770c8ee2bbf9055fda3521f92ac482ce3734819a7286cd77159",
+        "utility-questions-answered.1440x900.txt": "d09a36f178932e4bef9cf84ea38e4b388a9b7f3409391f7ef6c7b2807b2d0245"
+      }
+    },
+    {
+      "id": "utility-carbs-entry",
+      "via": "checkpoint",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S72b \u2014 the logged entry listed in Log carbs, BEFORE it is removed",
+      "files": [
+        "utility-carbs-entry.1280x720.png",
+        "utility-carbs-entry.1280x720.html",
+        "utility-carbs-entry.1280x720.txt",
+        "utility-carbs-entry.1440x900.png",
+        "utility-carbs-entry.1440x900.html",
+        "utility-carbs-entry.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "utility-carbs-entry.1280x720.png": "01c08a633784dc06f96ed20af42a61a44a9955740ef218958382546329f61773",
+        "utility-carbs-entry.1280x720.html": "98ffc7e4ea9f900acd8b32d600b84bc39dd980578f1ceea60be2c6916f96b5a4",
+        "utility-carbs-entry.1280x720.txt": "a118a6ca4fef6c45c1b810b63cadf0d4b8d34461d881ecd467f19284f6977473",
+        "utility-carbs-entry.1440x900.png": "64e7cdc4aa622fa09c3792e20661d0e379265810ac5f6a8549637bc1947a8949",
+        "utility-carbs-entry.1440x900.html": "6e9cb133531dea5109781fbddb7c9326d5dd85add78e509d1107a9a07a1d5fa6",
+        "utility-carbs-entry.1440x900.txt": "a118a6ca4fef6c45c1b810b63cadf0d4b8d34461d881ecd467f19284f6977473"
+      }
+    },
+    {
+      "id": "utility-settings",
+      "via": "story S75b (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S75b \u2014 credentials saved in page with the password cleared, Developer mode on",
+      "files": [
+        "utility-settings.1280x720.png",
+        "utility-settings.1280x720.html",
+        "utility-settings.1280x720.txt",
+        "utility-settings.1440x900.png",
+        "utility-settings.1440x900.html",
+        "utility-settings.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "utility-settings.1280x720.png": "2dee2a13df42e82f80a334809366f0ce71dd6d6b694c90f848507179b64720f6",
+        "utility-settings.1280x720.html": "eb6675af6fb62257c32bf7cc9321c30d35d8f2bfdc1b63ccdb1446bd1084ae56",
+        "utility-settings.1280x720.txt": "e0979f5f6a4506af86ea76b093bc59cc6b2dd00fa41727a720a2418043bea428",
+        "utility-settings.1440x900.png": "12df14f654d003391e390cc85b3b57a5e3ef24e048a5cb954c84b8cbb2a796f1",
+        "utility-settings.1440x900.html": "9dab14e9b65053235e3e1f8d332441e89ec857570e2dca13b91658d5a15c2890",
+        "utility-settings.1440x900.txt": "e0979f5f6a4506af86ea76b093bc59cc6b2dd00fa41727a720a2418043bea428"
+      }
+    },
+    {
+      "id": "utility-pump-settings",
+      "via": "story S77 (end state)",
+      "source": "setting",
+      "state": "investigate",
+      "covers": "S77 \u2014 the Pump settings utility open, detected schedule distinct from the Plan",
+      "files": [
+        "utility-pump-settings.1280x720.png",
+        "utility-pump-settings.1280x720.html",
+        "utility-pump-settings.1280x720.txt",
+        "utility-pump-settings.1440x900.png",
+        "utility-pump-settings.1440x900.html",
+        "utility-pump-settings.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "utility-pump-settings.1280x720.png": "5df40e9dedf3604ad28ca004a5602c892f676b26a6cec38cc3de39342d815146",
+        "utility-pump-settings.1280x720.html": "5e8d6754951bd2eb4f291229bcc3ee1a17c55b4c0697cfca4378202df7ff3a97",
+        "utility-pump-settings.1280x720.txt": "6b38d53098cbc56c29fb98117006e8d0a2cf26044725dc8ebdff345adaad15e7",
+        "utility-pump-settings.1440x900.png": "555f5550b063bf76532995af73f09bf024a796f1be72780257143aa7174d6128",
+        "utility-pump-settings.1440x900.html": "5e8d6754951bd2eb4f291229bcc3ee1a17c55b4c0697cfca4378202df7ff3a97",
+        "utility-pump-settings.1440x900.txt": "6b38d53098cbc56c29fb98117006e8d0a2cf26044725dc8ebdff345adaad15e7"
+      }
+    },
+    {
+      "id": "utility-guide-handoff",
+      "via": "story S73c (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S73c (end state: Day, Guide still seated) \u2014 the article handoff followed",
+      "files": [
+        "utility-guide-handoff.1280x720.png",
+        "utility-guide-handoff.1280x720.html",
+        "utility-guide-handoff.1280x720.txt",
+        "utility-guide-handoff.1440x900.png",
+        "utility-guide-handoff.1440x900.html",
+        "utility-guide-handoff.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "utility-guide-handoff.1280x720.png": "5051004ecd930eb9dc96d37c3dce968491f982f3f92bccb9fb91358525c58cb4",
+        "utility-guide-handoff.1280x720.html": "44a6b110ee47d6205a8f4df0cdf8718c255440fba1dc83d44d84c6f9c3cb1821",
+        "utility-guide-handoff.1280x720.txt": "b675a04e64dffe79778e6615af5e3be33b679b894788dcaf4bd37a72c3582006",
+        "utility-guide-handoff.1440x900.png": "8c9eb21f34e313405eb40f51bcce69997e375d0c31fa1b9f778e607d49529857",
+        "utility-guide-handoff.1440x900.html": "b17f2c6edf0b7b0230bb5b045ddcd83b12de269530278c5b5785dc4f8fd684b4",
+        "utility-guide-handoff.1440x900.txt": "b675a04e64dffe79778e6615af5e3be33b679b894788dcaf4bd37a72c3582006"
+      }
+    },
+    {
+      "id": "state-empty-changes",
+      "via": "story S7b (end state)",
+      "source": "meals",
+      "state": "investigate",
+      "covers": "S7b \u2014 the selected full-width empty Changes state, no reading pane by intent",
+      "files": [
+        "state-empty-changes.1280x720.png",
+        "state-empty-changes.1280x720.html",
+        "state-empty-changes.1280x720.txt",
+        "state-empty-changes.1440x900.png",
+        "state-empty-changes.1440x900.html",
+        "state-empty-changes.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "state-empty-changes.1280x720.png": "b875dc31b22ad822479c7f0b9765ec4e65871b5bddb63fe6cd02c37968b755e7",
+        "state-empty-changes.1280x720.html": "3600525072115558fb7d5db6860982ae93f3de4a82293bac7dc26cfb460312a3",
+        "state-empty-changes.1280x720.txt": "f4f8bd739231c8f9930181995d6c5b74cc2b524788f07d2ff47438cba83e8c30",
+        "state-empty-changes.1440x900.png": "7c8d0847b60c65b3f3f566dd9223b207d3d533bcb07cf4831fa4f6ed21455ad3",
+        "state-empty-changes.1440x900.html": "3600525072115558fb7d5db6860982ae93f3de4a82293bac7dc26cfb460312a3",
+        "state-empty-changes.1440x900.txt": "f4f8bd739231c8f9930181995d6c5b74cc2b524788f07d2ff47438cba83e8c30"
+      }
+    },
+    {
+      "id": "state-quiet",
+      "via": "story S18 (end state)",
+      "source": "meals",
+      "state": "quiet",
+      "covers": "S18 \u2014 quiet: no priority needs action, Day still reachable",
+      "files": [
+        "state-quiet.1280x720.png",
+        "state-quiet.1280x720.html",
+        "state-quiet.1280x720.txt",
+        "state-quiet.1440x900.png",
+        "state-quiet.1440x900.html",
+        "state-quiet.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "state-quiet.1280x720.png": "fbed8a355880d9c73a538e0e91058e1017dde98ab3982847055cce6690143b01",
+        "state-quiet.1280x720.html": "17130394392dea1de9b2a396cf3aed67d5576bfd7fe1e2a1233e04fbd8e1996c",
+        "state-quiet.1280x720.txt": "cfd4adf8382c3928c712cd571ad22f642f94c36c7ff2786a23fb1cb21d76b612",
+        "state-quiet.1440x900.png": "62f3dfd521f62238e748f2fdd750cb13a77baac4069192429815f0d4f6574820",
+        "state-quiet.1440x900.html": "17130394392dea1de9b2a396cf3aed67d5576bfd7fe1e2a1233e04fbd8e1996c",
+        "state-quiet.1440x900.txt": "cfd4adf8382c3928c712cd571ad22f642f94c36c7ff2786a23fb1cb21d76b612"
+      }
+    },
+    {
+      "id": "state-failed-read",
+      "via": "story S19 (end state)",
+      "source": "meals",
+      "state": "error",
+      "covers": "S19 \u2014 a failed read, which must not read as quiet",
+      "files": [
+        "state-failed-read.1280x720.png",
+        "state-failed-read.1280x720.html",
+        "state-failed-read.1280x720.txt",
+        "state-failed-read.1440x900.png",
+        "state-failed-read.1440x900.html",
+        "state-failed-read.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "state-failed-read.1280x720.png": "f37e47e03b39f7f0cc0c88c0207b2ff3c480524eaac6262105347e64c0b8fd7d",
+        "state-failed-read.1280x720.html": "470641b84d4e2bba25e8bf4bb886017a416b014f95714201f5a6c21bfc672f8f",
+        "state-failed-read.1280x720.txt": "bfd44effc1e846fe1333f9e10809419e0445bdae104445f46a849011329d88a3",
+        "state-failed-read.1440x900.png": "5f4c847a870954a095de73728a18135a05ab565e1fc14c980b4f212f950a1b87",
+        "state-failed-read.1440x900.html": "470641b84d4e2bba25e8bf4bb886017a416b014f95714201f5a6c21bfc672f8f",
+        "state-failed-read.1440x900.txt": "bfd44effc1e846fe1333f9e10809419e0445bdae104445f46a849011329d88a3"
+      }
+    },
+    {
+      "id": "state-set-aside",
+      "via": "story S15 (end state)",
+      "source": "journey",
+      "state": "investigate",
+      "covers": "S15 \u2014 set aside with its reason and a visible Restore",
+      "files": [
+        "state-set-aside.1280x720.png",
+        "state-set-aside.1280x720.html",
+        "state-set-aside.1280x720.txt",
+        "state-set-aside.1440x900.png",
+        "state-set-aside.1440x900.html",
+        "state-set-aside.1440x900.txt"
+      ],
+      "receipt": "../runs/capture-full.command.json",
+      "sha256": {
+        "state-set-aside.1280x720.png": "d03da0c273cd5ba9f34c7bed6e4d447a124109769aaadf8263fc159cc59a3f10",
+        "state-set-aside.1280x720.html": "308dec2476214b3d13902e1c55e6114db5252ce11435ffcfca0ae78a0325c06d",
+        "state-set-aside.1280x720.txt": "66972b3130ba0a37c9dad555f429d3947fa003af7777ddbf330b8f80ddd48182",
+        "state-set-aside.1440x900.png": "15bb46cb0e9c648d1bb725a9e09f4c9b4f599e9863001edba0939816f99bd528",
+        "state-set-aside.1440x900.html": "b55419737c48c4df98e39c6de673d0e84aea796e4c63dc6efa5cf514cc015884",
+        "state-set-aside.1440x900.txt": "66972b3130ba0a37c9dad555f429d3947fa003af7777ddbf330b8f80ddd48182"
+      }
+    }
+  ],
+  "note": "Frozen observations of the LOCKED PROTOTYPE at the two locked viewports. Not regenerated fixtures and not built-app fidelity evidence: /v2/ does not exist, so nothing is paired against these. Receipts point at the raw, unmodified command output retained under ../runs/. The 50 captures were produced by TWO commands (capture-full, then capture-changed for the four corrected ids); this manifest combines their successful outputs and is not a claim that any single command wrote all 50."
+}

@@ -13,7 +13,7 @@ import {
   EMPTY_LINE, EMPTY_SIFT_LINE, HELD_PREFIX, TAIL_NOTE, eventChartCoordinate,
   MIN_ROW_MINI_WIDTH, TIER, PATTERN_COPY,
   renderFindingsQueue,
-  caseFileAlignment, queueMeta, queueRows,
+  caseFileAlignment, queueMeta, queueRows, presentedRows,
 } from './diagnose-findings-queue.js';
 
 const fixture = JSON.parse(readFileSync(
@@ -72,25 +72,53 @@ test('term 45 · the meta has three forms and no others', () => {
   }
 });
 
-test('Watching rows collapse by default, without changing actionable rows', () => {
-  for (const name of ['global', 'morning', 'overnight', 'quiet', 'afternoon', 'low_block', 'rebound']) {
+/* PAST-SETTING READS ARE RETIRED FROM THE APP — Connor, 2026-09-08, shown the
+   historical carb-ratio row in Explore: "no." and "We dont' need historical
+   reads in the app." They were previously demoted into the Watching disclosure.
+   The fixture below really does carry a `history` row, so an app that still
+   presented one would fail here rather than pass vacuously. */
+const WINDOW_NAMES = ['global', 'morning', 'overnight', 'quiet', 'afternoon', 'low_block', 'rebound'];
+
+test('a past-setting read is absent from the queue, not collapsed into Watching', () => {
+  const served = WINDOW_NAMES.flatMap((name) => (W[name].rows || []));
+  assert.ok(served.some((row) => row.register === 'history'),
+    'this fixture must actually serve a history row, or the absence below proves nothing');
+  for (const name of WINDOW_NAMES) {
     const rows = queueRows(W[name]);
-    const watching = rows.filter((row) => ['held', 'blind', 'history'].includes(row.register));
-    assert.ok(watching.length > 0, `${name} has Watching rows`);
+    assert.deepEqual(rows.filter((row) => row.register === 'history'), [],
+      `${name} still presents a past-setting read`);
+    assert.deepEqual(rows.filter((row) => row.flavor === 'watching'), [],
+      `${name} still flavours a row as a past-setting read`);
+    assert.deepEqual(presentedRows(W[name]).filter((row) => row.register === 'history'), [],
+      `${name} still presents a past-setting row through the shared presentation`);
+  }
+  // The one window whose only Watching member WAS the past-setting read now
+  // carries no disclosure at all, rather than an empty one.
+  assert.deepEqual(queueRows(W.global).filter((row) => row.collapsed), []);
+});
+
+test('Watching still holds the held and blind reads it always did', () => {
+  for (const name of WINDOW_NAMES) {
+    const rows = queueRows(W[name]);
+    const watching = rows.filter((row) => ['held', 'blind'].includes(row.register));
     assert.ok(watching.every((row) => row.collapsed), `${name} collapses every Watching row`);
     assert.ok(rows.filter((row) => ['assert', 'finding'].includes(row.register))
       .every((row) => !row.collapsed), `${name} keeps actionable rows visible`);
   }
+  assert.ok(queueRows(W.morning).some((row) => row.collapsed),
+    'a current-setting held read is still reachable through its disclosure');
   const quiet = queueRows(W.quiet);
-  assert.ok(quiet.every((row) => row.collapsed), 'quiet is all Watching');
+  assert.ok(quiet.length > 0 && quiet.every((row) => row.collapsed), 'quiet is all Watching');
   assert.equal(quiet.filter((row) => !row.hidden && !row.collapsed).length, 0,
     'quiet has no shown row and takes the empty-copy state');
 });
 
 test('Watching rows stay in their disclosure while Sift is active', () => {
   const selected = new Set(['highs']);
-  const rows = queueRows(W.global, selected);
-  assert.ok(rows.filter((row) => row.register === 'history').every((row) => row.collapsed));
+  const rows = queueRows(W.morning, selected);
+  const watching = rows.filter((row) => ['held', 'blind'].includes(row.register));
+  assert.ok(watching.length > 0, 'this window carries a Watching read to keep');
+  assert.ok(watching.every((row) => row.collapsed));
 });
 
 test('all-Watching queue keeps its empty line compact above the disclosure', () => {
@@ -127,9 +155,9 @@ test('#395 · settings, Causes, and Patterns interleave in server order', () => 
   const rows = queueRows(W.global);
   assert.deepEqual(rows.map((r) => r.flavor),
     ['setting', 'pattern', 'habit', 'pattern', 'setting', 'setting', 'pattern', 'habit',
-      'pattern', 'habit', 'habit', 'watching']);
+      'pattern', 'habit', 'habit']);
   // the order is the projection's, untouched
-  assert.deepEqual(rows.map((r) => r.title), W.global.rows.map((r) => r.title));
+  assert.deepEqual(rows.map((r) => r.title), presentedRows(W.global).map((r) => r.title));
 });
 
 test('#302 · weights and captions walk the served rows without assigning a priority', () => {
@@ -152,7 +180,7 @@ test('#302 · weights and captions walk the served rows without assigning a prio
       { id: 'finding:correction_stacking', weight: 'tail', caption: null },
   ]);
   assert.ok(rows.filter((row) => row.weight === 'tail').every((row) => row.caption === null));
-  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed', 'collapsed']);
+  assert.deepEqual(queueRows(W.quiet).map((row) => row.weight), ['collapsed']);
   const meals = queueRows(W.global, new Set(['meals'])).filter((row) => !row.hidden && !row.collapsed);
   assert.deepEqual(meals.map(({ id, weight, caption }) => ({ id, weight, caption })), [
     { id: 'pattern:highs_after_meals', weight: 'priced', caption: null },
@@ -165,7 +193,7 @@ test('#302 · weights and captions walk the served rows without assigning a prio
 
 test('#341 · every priced row, including rank one, receives the common mini mount slot', () => {
   const result = paint(W.global);
-  assert.equal(result.rows.length, W.global.rows.length);
+  assert.equal(result.rows.length, presentedRows(W.global).length);
   assert.deepEqual(result.miniSlots.map(({ row }) => row.id), [
     'ic:720', 'pattern:highs_after_meals', 'finding:carb_undercount',
     'pattern:lows_after_meals', 'basal:30-90', 'basal:330-360',
@@ -217,8 +245,11 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
     assert.equal(row.children.find((child) => child.className === 'n')?.attributes['aria-hidden'],
       'true', `${title} still hides the rank numeral the item's position announces`);
   }
-  // the disclosure is a control of the queue itself, not a finding, so it is bare
-  assert.equal(list.children.at(-1).className, 'qcollapse');
+  /* This window's only Watching member was the retired past-setting read, so
+     no disclosure renders at all — an empty one would be a control for nothing.
+     The disclosure's own shape is covered where it still has members, by
+     'all-Watching queue keeps its empty line compact above the disclosure'. */
+  assert.equal(list.children.filter((child) => child.className === 'qcollapse').length, 0);
 });
 
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {
@@ -310,22 +341,16 @@ test('term 38 · every asserting setting row stages', () => {
   assert.ok(settings.every((r) => r.register === 'assert' && r.stageable));
 });
 
-test('S41/S43 · history stays in server order as Watching with past evidence only', () => {
-  const rows = queueRows(W.global);
-  const history = rows.find((row) => row.register === 'history');
-  assert.equal(rows.at(-1), history, 'server placed history last and the browser preserved it');
-  assert.equal(history.flavor, 'watching');
-  assert.equal(history.stageable, false);
-  assert.deepEqual(history.detail, {
-    kind: 'history', past: 'past 6.0 g/U', support: '3 meal runs',
-  });
-  assert.doesNotMatch(JSON.stringify(history.detail), /programmed|now|5\.0/);
-});
-
-test('S42 · a sift collapses held, blind, and history into Watching', () => {
+/* RETIRED:Connor Griffin:2026-09-08 — "no." / "We dont' need historical reads in
+   the app." S41 and S43 asserted the past-setting row's own presentation (its
+   Watching flavour, its server position, its past/support detail line). The row
+   is no longer presented, so those assertions have no subject; their absence is
+   asserted above instead. S42 is RETAINED below with its history clause dropped:
+   the held/blind half of that sift is unrelated to the retirement. */
+test('S42 · a sift keeps held and blind reads in Watching', () => {
   const rows = queueRows(W.morning, new Set(['highs']));
   const watching = rows.filter((row) => row.collapsed);
-  assert.deepEqual(watching.map((row) => row.register), ['held', 'held', 'history']);
+  assert.deepEqual(watching.map((row) => row.register), ['held', 'held']);
   assert.ok(watching.every((row) => !row.hidden));
 });
 
@@ -457,7 +482,7 @@ test('#223 · direction-only Correction factor stays asserted after priced rows 
   assert.equal(isf.summary, isf.raw.annotation, 'the queue transcribes the analyzer explanation');
   assert.match(isf.summary, /fasting data agrees with the set factor/i);
   assert.match(isf.summary, /recurring correction-linked lows call for weaker corrections/i);
-  assert.deepEqual(rows.map((row) => row.raw.id), projected.rows.map((row) => row.id),
+  assert.deepEqual(rows.map((row) => row.raw.id), presentedRows(projected).map((row) => row.id),
     'automatic candidates retain backend order');
 });
 

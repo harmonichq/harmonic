@@ -1,0 +1,102 @@
+FOCUS · ACTIVE
+Over-treated low
+Pinned May 30, 2024 · 12:00 · 2 of 6 lows Jun 15 to Jun 29, 2024
+Inspect lows
+PROGRESS
+14-day windows, fixed · 5 available · read Jun 29, 2024 · 12:00
+Pump-local time
+over-treated low, attributed
+lows in window
+time below range
+time in range
+┆ pinned
+▭ unavailable
+OBSERVED BEHAVIOR	APR 20 TO MAY 4
+CGM 25%
+	MAY 4 TO MAY 18
+CGM 100%
+	MAY 18 TO JUN 1
+CGM 100%
+	JUN 1 TO JUN 15
+CGM 100%
+	JUN 15 TO JUN 29
+CGM 100%
+
+Over-treated low
+attributed of lows · Inferred
+	no lows
+unavailable
+	no lows
+unavailable
+	2 of 6
+33.3% attributed
+	no lows
+unavailable
+	2 of 6
+33.3% attributed
+GLUCOSE OUTCOMES	APR 20 TO MAY 4
+CGM 25%
+	MAY 4 TO MAY 18
+CGM 100%
+	MAY 18 TO JUN 1
+CGM 100%
+	JUN 1 TO JUN 15
+CGM 100%
+	JUN 15 TO JUN 29
+CGM 100%
+
+Time in range
+70–180 mg/dL
+	100%	100%	98.9%	100%	98.9%
+Time below range
+<70 mg/dL · target
+	0%	0%	0.6%	0%	0.6%
+Mean glucose
+mg/dL
+	120 mg/dL	120 mg/dL	119.8 mg/dL	120 mg/dL	119.8 mg/dL
+Glucose variability (CV)
+%
+	0%	0%	7.7%	0%	7.7%
+Nights with a low
+below 70 mg/dL
+	0 of 3
+0.0%
+	0 of 14
+0.0%
+	1 of 14
+7.1%
+	0 of 14
+0.0%
+	1 of 14
+7.1%
+THIS FOCUS
+Active
+FOCUS
+PINNED MAY 30
+
+The low rebounded high — follow your usual low-treatment plan and recheck in 15 min before treating again.
+
+2 of 6 lowsJun 15 to Jun 29 · latest window
+0.6% time below rangetarget · 98.9% time in range
+Windows
+14 days, fixed · 5 available
+Read
+Jun 29, 2024 · 12:00
+
+A window with no lows has nothing to compare.
+
+CONCLUSION
+Conclusion
+Record conclusion & resolve
+
+Resolving ends the Focus. Nothing here is sent to your pump.
+
+WHAT WAS KNOWN
+MAY 30, 2024 · 12:00
+2 of 6 lowsApr 30 to May 30, 2024 · wide interval
+Priority
+Over-treated low · Worth a look
+
+The low rebounded high — follow your usual low-treatment plan and recheck in 15 min before treating again.
+
+SOURCE DETAIL

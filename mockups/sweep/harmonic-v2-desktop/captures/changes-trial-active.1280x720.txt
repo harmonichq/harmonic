@@ -1,0 +1,83 @@
+TRIAL · READY TO JUDGE
+Basal 03:30 · 0.6 → 0.48 U/h
+Detected Jun 3, 2024 · 03:30 · 15 days elapsed · 0 data gaps
+Inspect nights
+BEFORE → TRIAL
+median glucose by clock
+Pump-local time
+Trial above Before
+Trial below Before
+median glucose by clock · days 15 → 15
+VIEW
+Before / Trial
+Available days
+GLUCOSE OBSERVATIONS	BEFORE	TRIAL
+Time below range
+target
+	0.7%
+3219 readings
+	0.0%
+4032 readings
+
+Time in range
+guardrail
+	98.6%
+3219 readings
+	100.0%
+4032 readings
+
+Meal glucose peak
+guardrail
+	unavailable
+1 meal
+	no meals
+no meals in period
+
+Meal glucose low point
+guardrail
+	no meals
+no meals in period
+	no meals
+no meals in period
+
+Logged rescue carbs
+context
+	0 entries
+0 g · 0 unknown amounts
+	0 entries
+0 g · 0 unknown amounts
+THIS TRIAL
+Ready to judge
+EVIDENCE ACCRUED
+15 days14 required · 0 data gaps
+
+This Trial is ready for a before-and-Trial read.
+
+Focus is unavailable while a Trial is live. It will not queue behind this change.
+
+CONCLUSION
+Conclusion
+Record conclusion & finish
+
+Observed on the pump. Changes are entered manually.
+
+DECISION
+Draft saved
+Jun 2, 2024 · 12:00
+Decision recorded
+Jun 2, 2024 · 12:05
+On pump
+Jun 3, 2024 · 00:00
+WHAT CHANGED
+SETTING	BEFORE	DETECTED
+Basal
+03:30
+	0.6 U/h	0.48 U/h
+
+Observed on the pump. The decision was recorded Jun 2, 2024 · 12:05.
+
+LIMITS OF THIS READ
+
+The evidence is limited to the selected Before and Trial periods.
+
+Observed movement does not establish that the setting caused it.

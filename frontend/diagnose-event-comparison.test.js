@@ -62,3 +62,19 @@ test('the stage target band caption clears its own boundary, on an opaque plate'
     globalThis.getComputedStyle = prior.getComputedStyle;
   }
 });
+
+// LOCK:harmonic-v2-desktop:HV2-32 — public chart option, shared with speech.
+test('fractional-hour cursor labels use whole minutes without decimal-hour speech', () => {
+  const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
+  try {
+    globalThis.document = { documentElement: {} };
+    globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#000' });
+    const source = caseFiles().cases['finding:late_bolus'].event;
+    const label = eventComparisonChartOption(source, GLUCOSE_ENVELOPE).xAxis.axisLabel.formatter;
+    assert.equal(label(5), '+5 min');
+    assert.equal(label(15), '+15 min');
+    assert.equal(label(-90), '−1 h 30 min');
+    assert.equal(label(60), '+1 h');
+    assert.equal(label(0), source.projection.anchor.label);
+  } finally { Object.assign(globalThis, prior); }
+});

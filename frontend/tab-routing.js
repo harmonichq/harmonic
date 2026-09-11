@@ -73,8 +73,8 @@ export function serializeRoute(route, extra = []) {
 }
 
 export function writeRoute(route, { location = window.location, history = window.history,
-  replace = false, extra = [] } = {}) {
-  const address = serializeRoute(route, extra);
+  replace = false, extra = [], serialize = serializeRoute } = {}) {
+  const address = serialize(route, extra);
   // The comparison spans the fragment even though nothing routes on it: an
   // address that still carries one differs from its canonical form, so the
   // in-place write is what drops a stale fragment rather than leaving it.
@@ -84,13 +84,56 @@ export function writeRoute(route, { location = window.location, history = window
   return address;
 }
 
-export function subscribeRoute(listener, browser = window) {
+// ---------------------------------------------------------------------------
+// The v2 desk's address (#389). It extends this module rather than forking it:
+// one owner parses and serializes every address the app answers.
+//
+// v1 puts its page in the PATH because the server serves a page path per tab.
+// The v2 desk is served at one path, `/v2/`, and its three destinations are
+// query state — which is also where the contextual Day entry's own context
+// belongs, since HV2-14 makes that context frontend-owned route state rather
+// than a backend payload. Adding `/v2/<destination>` paths would widen the
+// server's closed non-API route set for no gain.
+// ---------------------------------------------------------------------------
+export const V2_PAGE = '/v2/';
+export const V2_DESTINATIONS = ['diagnose', 'changes', 'day'];
+const V2_DEFAULT_DESTINATION = 'diagnose';
+// A contextual Day entry carries all of these; a direct one carries none
+// (HV2-13/HV2-14). `from` is the destination to return to, `focus` the precise
+// target within it — "restore the exact target" is what makes the return a
+// return rather than a second arrival.
+export const V2_CONTEXT_KEYS = ['date', 'moment', 'subject', 'occurrence', 'window', 'lever', 'from', 'focus'];
+
+export function resolveDestination(destination) {
+  return V2_DESTINATIONS.includes(destination) ? destination : V2_DEFAULT_DESTINATION;
+}
+
+export function parseV2Route({ search = '' } = {}) {
+  const params = new URLSearchParams(search);
+  const context = {};
+  for (const key of V2_CONTEXT_KEYS) {
+    const value = params.get(key);
+    if (value) context[key] = value;
+  }
+  return { destination: resolveDestination(params.get('to')), context };
+}
+
+export function serializeV2Route({ destination, context = {} } = {}) {
+  const params = new URLSearchParams();
+  params.set('to', resolveDestination(destination));
+  for (const key of V2_CONTEXT_KEYS) {
+    if (context[key]) params.set(key, context[key]);
+  }
+  return `${V2_PAGE}?${params.toString()}`;
+}
+
+export function subscribeRoute(listener, browser = window, parse = parseRoute) {
   let previous = null;
   const notify = () => {
     const address = `${browser.location.pathname}${browser.location.search}${browser.location.hash}`;
     if (address === previous) return;
     previous = address;
-    listener(parseRoute(browser.location));
+    listener(parse(browser.location));
   };
   browser.addEventListener('popstate', notify);
   return () => {

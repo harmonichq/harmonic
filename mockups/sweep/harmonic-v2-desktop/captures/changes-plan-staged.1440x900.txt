@@ -1,0 +1,29 @@
+PLAN · STAGED
+Basal 03:00 to 04:00 · 0.6 → 0.48 U/h
+3 of 16 segments used · Nothing here is sent to your pump.
+Save draft
+Record decision
+Pump settings
+DELIVERABLE
+pump-ready schedule
+Pump-local time
+
+Draft not saved. Saving the draft preserves consideration.
+
+START TIME	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+03:00 NEW BREAK	0.6 0.48	1 U : 40 mg/dL	10	110
+04:00 NEW BREAK	0.6	1 U : 40 mg/dL	10	110
+THIS CHANGE
+Staged
+DECISION
+Draft saved
+Not saved
+Decision recorded
+Not recorded
+DETECTED PUMP SETTINGS
+CURRENT
+START	BASAL (U/H)	CORRECTION FACTOR	CARB RATIO (G/U)	TARGET (MG/DL)
+00:00	0.6	1 U : 40 mg/dL	10	110
+
+Detected schedule. The proposed schedule is the Plan beside it.

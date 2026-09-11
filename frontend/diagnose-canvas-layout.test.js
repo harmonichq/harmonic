@@ -217,3 +217,24 @@ test('a starred focal chart keeps the focal seat whatever order it was retained 
   ]);
 });
 
+/* PAST-SETTING READS ARE RETIRED FROM THE APP — Connor, 2026-09-08: "no." and
+   "We dont' need historical reads in the app." The queue no longer presents
+   them, and All charts must not become a second way back to one. This is the
+   generator's own exclusion, asserted against a row that really carries the
+   retired register. */
+test('a past-setting row publishes no chart, so All charts cannot restore it', () => {
+  const registry = [{
+    kind: 'carb-ratio', name: 'Carb ratio', matches: () => true,
+    coordinates: () => ({}),
+  }];
+  const history = { id: 'ic-history:720', register: 'history', parameter: 'carb_ratio',
+    title: 'Carb ratio · past setting', headline: 'past 6.0 g/U' };
+  const live = { id: 'ic:720', register: 'assert', parameter: 'carb_ratio',
+    title: 'Carb ratio', headline: 'now 5.0 g/U' };
+
+  const descriptors = descriptorsFromFindings({ rows: [history, live] }, registry);
+  assert.deepEqual(descriptors.map((descriptor) => descriptor.chartId), ['ic:720'],
+    'a past-setting row was given a chart of its own');
+  assert.deepEqual(descriptorsFromFindings({ rows: [history] }, registry), [],
+    'a window of nothing but past-setting rows still publishes no chart');
+});

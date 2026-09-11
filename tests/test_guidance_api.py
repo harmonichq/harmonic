@@ -124,6 +124,35 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(restored.status_code, 200, restored.text)
         self.assertEqual(app.state.result_cache.version - before, 1)
 
+    def test_preference_writes_keep_offline_guidance_reconciled(self):
+        from ciq_autotune.watched_change import reconcile_ingested_follow_up
+        tmp, _app, client = self._case_client("basal-lower")
+        with Store.open(tmp.name) as store:
+            reconcile_ingested_follow_up(store)
+        current = client.get("/api/guidance").json()
+        self.assertEqual(current["disposition"], "eligible_action")
+        subject = current["selected"]["subject"]
+        path = f"/api/guidance/preferences/{subject}"
+        saved = client.put(path, json={"generation": current["analysis_generation"]})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        aside = client.get("/api/guidance").json()
+        self.assertEqual(aside["admission"]["state"], "available")
+        self.assertNotEqual(aside["disposition"], "unavailable")
+        self.assertTrue(next(row for row in aside["candidates"]
+                             if row["subject"] == subject)["preference"]["set_aside"])
+        self.assertGreater(aside["input_revision"], current["input_revision"])
+        stale = client.put(path, json={"generation": current["analysis_generation"]})
+        self.assertEqual(stale.status_code, 409)
+        restored = client.delete(path)
+        self.assertEqual(restored.status_code, 200, restored.text)
+        after = client.get("/api/guidance").json()
+        self.assertEqual(after["disposition"], "eligible_action")
+        self.assertEqual(after["selected"]["subject"], subject)
+        self.assertGreater(after["input_revision"], aside["input_revision"])
+        with Store.open_readonly(tmp.name) as store:
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                             store.input_data_revision())
+
     def test_failed_pattern_migration_leaves_readable_rows_and_serves(self):
         import ciq_autotune.api as api_module
         from ciq_autotune.api import create_app
@@ -454,8 +483,9 @@ class GuidanceApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         after = client.get("/api/guidance", headers=headers).json()
-        self.assertEqual(after["disposition"], "unavailable")
-        self.assertEqual(after["admission"]["reason"], "reconciliation_required")
+        self.assertEqual(after["disposition"], "active_change")
+        self.assertEqual(after["admission"]["state"], "available")
+        self.assertEqual(after["active_watch"], current["active_watch"])
 
     def test_restore_rejects_invalid_subject_but_keeps_canonical_idempotence(self):
         from ciq_autotune.api import create_app

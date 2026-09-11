@@ -150,7 +150,22 @@ export const planDraft = () => memory.read?.draft || null;
 const REASON_SAID = {
   reconciliation_required:
     'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
+  active_trial:
+    'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
 };
+
+const REASON_LABEL = {
+  reconciliation_required: 'Waiting for reconciliation',
+  active_trial: 'Trial in progress',
+};
+
+/** Product copy for a served admission reason without exposing its API token. */
+export function admissionReason(reason) {
+  return {
+    said: REASON_SAID[reason] || 'Harmonic is not offering a Focus from this read.',
+    label: REASON_LABEL[reason] || 'Unavailable from this read',
+  };
+}
 
 /**
  * The served unavailable reason, said in a sentence when it is a known code.

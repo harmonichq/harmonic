@@ -99,6 +99,7 @@ _FRONTEND_V2_INDEX = _FRONTEND_V2_DIST / "index.html"
 _FRONTEND_V2_ASSETS = _FRONTEND_V2_DIST / "assets"
 V2_PAGE = "/v2/"
 V2_ASSETS = "/v2/assets"
+V2_DESTINATION_PAGES = tuple(f"{V2_PAGE}{destination}" for destination in ("diagnose", "changes", "day"))
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -183,6 +184,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 )
             except Exception:
                 logger.exception("Pattern subject migration remains pending")
+        # A prior local write can leave the frontier behind the durable input
+        # revision (for example, a carb-log write before #404). Recover through
+        # the existing transactional reconciler; GET handlers remain read-only
+        # and this does not invent a Focus admission.
+        frontier = store.follow_up_frontier()
+        if frontier and frontier["reconciled_input_revision"] != store.input_data_revision():
+            from .watched_change import reconcile_ingested_follow_up
+            reconcile_ingested_follow_up(store)
     if migrated_patterns:
         cache.bump()
     frontend_built = _FRONTEND_INDEX.is_file()
@@ -574,6 +583,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
     @app.get(V2_PAGE)
+    @app.get("/v2/diagnose")
+    @app.get("/v2/changes")
+    @app.get("/v2/day")
     def index_v2():
         return built_shell(_FRONTEND_V2_INDEX)
 
@@ -583,7 +595,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path == V2_PAGE or path.lstrip("/") in SPA_PAGES:
+        if path == "/" or path == V2_PAGE or path in V2_DESTINATION_PAGES or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
         elif (path.startswith("/assets/") or path.startswith(f"{V2_ASSETS}/")) \
                 and response.status_code == 200:
@@ -1314,6 +1326,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
+    def reconcile_carb_write(store) -> None:
+        """Finish a carb/prompt write against the current Follow-up frontier."""
+        from .watched_change import reconcile_ingested_follow_up
+        reconcile_ingested_follow_up(store)
+
     @app.get("/api/carbs")
     def list_carbs_endpoint(start: Optional[datetime] = None,
                             end: Optional[datetime] = None,
@@ -1328,25 +1345,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def create_carb_endpoint(payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         entry = _carb_entry_from_payload(payload)
-        with Store.open(db_path) as store:
-            new_id = store.upsert_carb_entry(entry)
-            result = store.get_carb_entry(new_id)
-        cache.bump()  # carb entries feed /api/analyze's fasting-ISF exclusion (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                new_id = store.upsert_carb_entry(entry)
+                committed = True
+                reconcile_carb_write(store)
+                result = store.get_carb_entry(new_id)
+        finally:
+            if committed:
+                cache.bump()  # a committed write stays invalidated if reconcile fails
         return result
 
     @app.patch("/api/carbs/{entry_id}")
     def update_carb_endpoint(entry_id: int, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
-        with Store.open(db_path) as store:
-            existing = store.get_carb_entry(entry_id)
-            if existing is None:
-                raise HTTPException(status_code=404, detail="carb entry not found")
-            # PATCH is a partial merge over the stored row (source/created_at are
-            # preserved unless explicitly overridden), re-validated as a whole.
-            entry = _carb_entry_from_payload({**existing, **payload})
-            store.upsert_carb_entry(entry, id=entry_id)
-            result = store.get_carb_entry(entry_id)
-        cache.bump()  # (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                existing = store.get_carb_entry(entry_id)
+                if existing is None:
+                    raise HTTPException(status_code=404, detail="carb entry not found")
+                # PATCH is a partial merge over the stored row (source/created_at are
+                # preserved unless explicitly overridden), re-validated as a whole.
+                entry = _carb_entry_from_payload({**existing, **payload})
+                store.upsert_carb_entry(entry, id=entry_id)
+                committed = True
+                reconcile_carb_write(store)
+                result = store.get_carb_entry(entry_id)
+        finally:
+            if committed:
+                cache.bump()
         return result
 
     @app.delete("/api/carbs/{entry_id}")
@@ -1354,11 +1383,18 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                              _: None = Depends(require_token)) -> dict:
         # Deleting a prompt-sourced entry cascades its prompt_responses row away
         # (the #125 store rule) so the sourcing prompt resurrects.
-        with Store.open(db_path) as store:
-            n = store.delete_carb_entry(entry_id)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                n = store.delete_carb_entry(entry_id)
+                committed = bool(n)
+                if n:
+                    reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()
         if n == 0:
             raise HTTPException(status_code=404, detail="carb entry not found")
-        cache.bump()  # (#267)
         return {"deleted": n}
 
     # --- carb-log prompt review queue (#128) -------------------------------
@@ -1397,27 +1433,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=400, detail="anchor_t is required")
         anchor_t = parse_t(raw_anchor) if isinstance(raw_anchor, str) else raw_anchor
 
-        with Store.open(db_path) as store:
-            # Idempotent per (detector, anchor_t): clear any prior answer first so
-            # re-answering (revise) never leaves a duplicate/stale response row.
-            store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
-            if answer == "carbs":
-                # The carbs answer's source and time are server-authoritative: the
-                # entry is pinned to the anchor and tagged rise-prompt / low-prompt,
-                # regardless of what the #126 sheet echoes back.
-                entry_payload = dict(payload.get("entry") or {})
-                entry_payload["t"] = anchor_t
-                entry_payload["source"] = SOURCE_BY_DETECTOR[detector]
-                entry = _carb_entry_from_payload(entry_payload)
-                carb_id, resp_id = store.record_carb_entry_with_response(
-                    entry, detector=detector, anchor_t=anchor_t, answer="carbs")
-                result = {"answer": "carbs", "carb_entry_id": carb_id,
-                          "prompt_response_id": resp_id}
-            else:
-                resp_id = store.record_prompt_response(
-                    detector=detector, anchor_t=anchor_t, answer=answer)
-                result = {"answer": answer, "prompt_response_id": resp_id}
-        cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                # Idempotent per (detector, anchor_t): clear any prior answer first so
+                # re-answering (revise) never leaves a duplicate/stale response row.
+                store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
+                if answer == "carbs":
+                    # The carbs answer's source and time are server-authoritative: the
+                    # entry is pinned to the anchor and tagged rise-prompt / low-prompt,
+                    # regardless of what the #126 sheet echoes back.
+                    entry_payload = dict(payload.get("entry") or {})
+                    entry_payload["t"] = anchor_t
+                    entry_payload["source"] = SOURCE_BY_DETECTOR[detector]
+                    entry = _carb_entry_from_payload(entry_payload)
+                    carb_id, resp_id = store.record_carb_entry_with_response(
+                        entry, detector=detector, anchor_t=anchor_t, answer="carbs")
+                    result = {"answer": "carbs", "carb_entry_id": carb_id,
+                              "prompt_response_id": resp_id}
+                else:
+                    resp_id = store.record_prompt_response(
+                        detector=detector, anchor_t=anchor_t, answer=answer)
+                    result = {"answer": answer, "prompt_response_id": resp_id}
+                committed = True
+                reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
         return result
 
     @app.delete("/api/prompts/answer")
@@ -1435,9 +1477,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if raw_anchor is None:
             raise HTTPException(status_code=400, detail="anchor_t is required")
         anchor_t = parse_t(raw_anchor) if isinstance(raw_anchor, str) else raw_anchor
-        with Store.open(db_path) as store:
-            n = store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
-        cache.bump()  # (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                n = store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
+                committed = bool(n)
+                if n:
+                    reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()
         return {"cleared": n}
 
     @app.get("/api/report")

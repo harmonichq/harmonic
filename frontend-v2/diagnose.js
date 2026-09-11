@@ -8,7 +8,7 @@ import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
-import { focusOfferForCase, readFocusOptions } from './focus-entry.js';
+import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { formatStartMin } from '../frontend/plan.js';
 
 /** One mounted shared view and one coherent initial read. loadCase remains an
@@ -201,6 +201,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
 
   function showFocusAction() {
     root?.querySelector('[data-start-focus]')?.remove();
+    root?.querySelector('[data-focus-context]')?.remove();
     root?.querySelector('[data-action="watch"]')?.remove();
     if (!seated) return;
     if (entry.from === 'changes' && payload?.watched) {
@@ -211,7 +212,20 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     }
     const selected = caseContext.current();
     const offered = focusOfferForCase(selected);
-    if (!offered) return;
+    const context = focusContextForCase(selected);
+    if (!offered) {
+      if (!context) return;
+      const button = root.ownerDocument.createElement('button');
+      button.className = 'gf-btn focus-context'; button.dataset.focusContext = context.subject;
+      button.textContent = context.retry ? 'Focus status unavailable — Retry'
+        : `Focus unavailable: ${context.label}`;
+      button.title = context.reason;
+      button.onclick = context.retry ? () => readFocusOptions().then(showFocusAction)
+        : () => navigate('changes', { subject: context.subject, from: 'diagnose',
+          window: `${selected.window.start_min}-${selected.window.end_min}` });
+      root.querySelector('header.crumb')?.append(button);
+      return;
+    }
     const button = root.ownerDocument.createElement('button');
     button.className = 'gf-btn'; button.dataset.startFocus = offered.subject;
     button.textContent = 'Start Focus';

@@ -1505,7 +1505,14 @@ function boot(root, data, callbacks, signal) {
   }
 
   function currentTileDescriptors() {
-    return tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
+    const current = tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
+    /* A thin basal slot may be deliberately absent from the ranked findings,
+       but selecting it is still a request to inspect that slot's own evidence.
+       Keep this one transient descriptor local to the active slot frame: it is
+       neither a second findings list nor a new candidate for the queue. */
+    const active = activeSlotDescriptor();
+    return active && !current.some(({ chartId }) => chartId === active.chartId)
+      ? [...current, active] : current;
   }
 
   /* THE ROW ORDER IS DERIVED, NEVER CARRIED. It is the published findings rank
@@ -1529,10 +1536,11 @@ function boot(root, data, callbacks, signal) {
     /* The comparison tile's request quotes the same opaque projection id the
        inspector's own case-file drill quotes, and the preparation is where that
        id lives — the findings queue carries rows, not the served generation. */
-    const generated = descriptorsFromFindings(
+    const selectedSlot = activeSlotDescriptor();
+    const generated = [...descriptorsFromFindings(
       findings && { ...findings, projection_id: preparation?.projection_id },
       DIAGNOSE_EVIDENCE_CHARTS,
-    );
+    ), ...(selectedSlot ? [selectedSlot] : [])];
     const generationChanged = tileAnalysisGeneration !== null
       && tileAnalysisGeneration !== generation;
     const old = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
@@ -1571,7 +1579,10 @@ function boot(root, data, callbacks, signal) {
       nextRuntime.set(seed.chartId, sameRequest
         ? carried
         : { current: true, pending: false, message: null, request: 0, retained: false });
-      return sameRequest ? prior : seed;
+      /* The active thin slot's evidence belongs to its frame request, not the
+         ordinary tile loader.  Let its settled response replace the prior
+         transient descriptor while ordinary tiles retain their fetched data. */
+      return sameRequest && !seed.transientSlot ? prior : seed;
     });
     tileDescriptors = next;
     tileRuntime = nextRuntime;
@@ -1587,7 +1598,7 @@ function boot(root, data, callbacks, signal) {
     seatingPolicyKey = nextPolicyKey;
     for (const descriptor of tileDescriptors) {
       const runtime = tileRuntime.get(descriptor.chartId);
-      if (!runtime.retained && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
+      if (!runtime.retained && !descriptor.transientSlot && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
           && descriptor.data === null && descriptor.state === 'empty') {
         void fetchTile(descriptor);
       }
@@ -2040,6 +2051,15 @@ function boot(root, data, callbacks, signal) {
     drilledChartId = chartId;
     if (chartId && !fullscreen) focusChart(chartId);
   };
+  const readerWindow = () => ({
+    drawn: drawn ? drawn.slice() : null, presetKey, explicitPreset,
+  });
+  const restoreReaderWindow = (state) => {
+    if (!state) return;
+    drawn = state.drawn ? state.drawn.slice() : null;
+    presetKey = state.presetKey;
+    explicitPreset = state.explicitPreset;
+  };
   const popTo = (i) => {
     ++caseGeneration;
     pendingKey = null;
@@ -2052,8 +2072,15 @@ function boot(root, data, callbacks, signal) {
        scrolling it back over rank one; direct All charts entry is not tagged
        queueOrigin and retains its saved queue position. */
     if (resetQueueRoot) queueScrollTop = 0;
+    const leavingSlot = top().k === 'slot' ? top() : null;
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
+    if (leavingSlot && !stack.some((frame) => frame.k === 'slot')) {
+      // A slot supplies its own evidence scope while open. Its caller's
+      // explicit preset or drawn Window is reader state, so restore it only
+      // when the slot has actually been left rather than while swapping slots.
+      restoreReaderWindow(leavingSlot.returnWindow);
+    }
     seatDrill(popped.drilledChartId);
     /* LEAVING A DRILL RE-SEATS THE ACTIVE FINDING'S CHART, NEVER THE CHART
        JUST LEFT (ADR 306). `popped.drilledChartId` is null once the stack is
@@ -2118,6 +2145,18 @@ function boot(root, data, callbacks, signal) {
     requestSlotNightEvidence(frame);
     return frame;
   };
+  const activeSlotDescriptor = () => {
+    const frame = top();
+    if (frame?.k !== 'slot' || slotDescriptor(frame.cell)) return null;
+    const data = slotNightEvidence(frame);
+    return {
+      chartId: `basal:${frame.cell.startMin}`,
+      kind: 'basal', title: `Basal ${frame.cell.label}`, headline: null, meta: null,
+      mode: null, coordinates: { slot: frame.cell.i }, data,
+      state: data?.failed ? 'error' : descriptorHasData({ kind: 'basal', data }) ? 'ok' : 'empty',
+      transientSlot: true,
+    };
+  };
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
   /* Selection belongs to the standing case file, while descriptor data belongs
@@ -2125,7 +2164,7 @@ function boot(root, data, callbacks, signal) {
      mutating fetch-owned state that an in-flight tile response can replace. */
   const tileCaseFile = (descriptor) => {
     const frame = top();
-    return ['event-comparison', 'eating-sequence'].includes(descriptor.kind)
+    return ['event-comparison', 'pattern-case-file', 'eating-sequence'].includes(descriptor.kind)
       && frame.k === 'factor' && frame.rowId === descriptor.chartId
       && frame.caseFile?.projection?.alignment === 'event'
       ? frame.caseFile : descriptor.data;
@@ -2183,11 +2222,12 @@ function boot(root, data, callbacks, signal) {
        "Window 07:00–07:30" instead of "Slot 07:00"), and a 30-min span is under
        the 90-min floor a DRAWN window must respect — a slot boundary is data,
        not a drawn sample, and only the frame path renders it unsnapped. */
+    const returnWindow = top().k === 'slot' ? top().returnWindow : readerWindow();
     releaseWindow();
     if (top().k === 'slot') {
       prepareSlotFrame(Object.assign(top(), { cell, rowId })); paint(); return;
     }
-    push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin }));
+    push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin, returnWindow }));
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
@@ -2254,7 +2294,9 @@ function boot(root, data, callbacks, signal) {
          and never moves the brace. Reported in the control row's follow chip. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`, clearDrawn);
+      // The Window group already names this compact control; repeat only the
+      // chosen span in its follow chip.
+      markWindowSegment(windowSpanText(canvasDrawn), clearDrawn);
     } else if (explicitPreset) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
          same reason — pressing one at any level is a scope CHANGE by the user,
@@ -2421,10 +2463,9 @@ function boot(root, data, callbacks, signal) {
     if (act === 'browse') button.id = 'explorer-trigger';
     button.title = CHART_ACTIONS[act].label;
     button.setAttribute('aria-label', CHART_ACTIONS[act].label);
-    button.append(chartActionFace(act));
     const label = document.createElement('span');
     label.textContent = CHART_ACTIONS[act].label;
-    button.append(label);
+    button.append(label, chartActionFace(act));
     button.onclick = (ev) => {
       ev.stopPropagation();
       if (fullscreen) {
@@ -3568,8 +3609,7 @@ function boot(root, data, callbacks, signal) {
       paintLive(mode === 'slide' ? 'both'
         : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
           : mode);
-      markWindowSegment(drawn
-        ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
+      markWindowSegment(drawn ? windowSpanText(drawn) : 'Whole day', clearDrawn);
       /* A pin holds chart identity, not stale evidence. The drag coordinator
          keeps one request live and one latest position queued behind it. */
       ensurePinnedDragPreparation();

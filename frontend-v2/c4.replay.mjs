@@ -197,6 +197,13 @@ async function selectedPattern404(page) {
     actual: { selectedTrace: actual.trace, markerObservations: actual.markers },
   });
   assert.deepEqual(failures, [], 'S106 selected Pattern focal option must carry the served trace and markers together');
+  const focusStatus = page.locator('[data-focus-context]');
+  await focusStatus.waitFor({ timeout: 30000 });
+  const visible = await focusStatus.innerText();
+  assert.match(visible, /^Focus unavailable: /,
+    'S106 selected Pattern parent must expose the backend withholding state in Diagnose');
+  assert.doesNotMatch(visible, /reconciliation_required|active_trial/,
+    'S106 Focus withholding copy must not expose backend admission tokens');
 }
 const geometry404 = page => page.evaluate(() => {
   const box = node => {
@@ -235,6 +242,53 @@ async function deskGeometry404(page, destination) {
   const report = await geometry404(page);
   assert.ok(report.rail, `S107 premise: ${destination} publishes its reading rail`);
   return report.rail.width;
+}
+
+const compactControl404 = page => page.evaluate(() => {
+  const fields = ['height', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'borderTopWidth',
+    'borderTopStyle', 'borderTopColor', 'borderRadius', 'backgroundColor', 'color', 'boxShadow'];
+  const read = node => Object.fromEntries(fields.map(field => [field, getComputedStyle(node)[field]]));
+  const filter = document.querySelector('#filter-trigger');
+  const selected = document.querySelector('#seg-window button[aria-pressed="true"]');
+  const resting = [...document.querySelectorAll('#seg-window button')]
+    .find(button => button.getAttribute('aria-pressed') === 'false');
+  const level = document.querySelector('#level');
+  if (!filter || !selected || !resting || !level) throw new Error('S107 Filter parity premise is absent');
+  return { loading: level.dataset.loading, filter: read(filter), selected: read(selected), resting: read(resting) };
+});
+
+async function filterParity404(page) {
+  const failures = [];
+  const before = await compactControl404(page);
+  if (JSON.stringify(before.filter) !== JSON.stringify(before.resting)) failures.push({ state: 'resting', before });
+  await page.locator('#filter-trigger').click();
+  const expanded = await compactControl404(page);
+  if (JSON.stringify(expanded.filter) !== JSON.stringify(expanded.selected)) failures.push({ state: 'expanded', expanded });
+  await page.locator('#filter-trigger').click();
+  let release; let arrive;
+  const arrived = new Promise(resolve => { arrive = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  // Root Findings owns this preparation. Holding it proves Filter retains the
+  // compact resting control while its own visible header is loading.
+  await page.route('**/api/diagnose/finding-case-file-preparation*', async route => {
+    arrive(); await gate; await route.continue();
+  });
+  try {
+    await page.getByRole('button', { name: 'Morning', exact: true }).click();
+    await boundedWait(arrived, 'S107 held Findings preparation');
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'true', null,
+      { timeout: 30000 });
+    const loading = await compactControl404(page);
+    if (loading.loading !== 'true' || JSON.stringify(loading.filter) !== JSON.stringify(loading.resting)) {
+      failures.push({ state: 'loading', loading });
+    }
+  } finally {
+    release(); await page.unroute('**/api/diagnose/finding-case-file-preparation*');
+  }
+  await settled(page);
+  assert.deepEqual(failures, [],
+    'S107 Filter must share Window compact-control geometry and states, including Findings loading');
 }
 
 export const C4_STORIES = {
@@ -358,6 +412,7 @@ export const C4_STORIES = {
   },
   async S107(page) {
     await fullDayDiagnose(page);
+    await filterParity404(page);
     const diagnose = await geometry404(page);
     const allCharts = await page.getByRole('button', { name: 'All charts', exact: true }).evaluate(button => {
       const box = node => {

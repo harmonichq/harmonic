@@ -67,7 +67,7 @@ test('initial and failed current reads own distinct Diagnose frames and retry', 
   try {
     served.fail(false);
     await seat.querySelector('[data-action="open-diagnose"]').onclick();
-    assert.deepEqual(addresses, ['/v2/?to=diagnose'], 'Open Diagnose discards the contextual entry');
+    assert.deepEqual(addresses, ['/v2/diagnose'], 'Open Diagnose discards the contextual entry');
   } finally { globalThis.window = previous; }
   destination.mount(seat, { navigation: 1, hold() {} });
   assert.ok(seat.node, 'successful retry seats the carried composition');

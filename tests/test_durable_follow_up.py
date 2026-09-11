@@ -29,6 +29,80 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(store.input_data_revision(), revision)
             self.assertIsNone(store.follow_up_frontier())
 
+    def _manufacture_frontier_trial(self, *, changed_at, ending_record=None):
+        """Create only a durable synthetic Trial/frontier pair for lifecycle seams."""
+        from tests.test_follow_up_store import trial
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                record = store.save_follow_up_record({
+                    **trial(f"basal:0:{changed_at.replace('-', '').replace(':', '').replace(' ', '')}", changed_at),
+                    **({"ending": ending_record} if ending_record else {}),
+                })
+                store.advance_follow_up_frontier(
+                    record["id"], changed_at,
+                    reconciled_input_revision=store.input_data_revision())
+        return record
+
+    def test_carb_write_reconciles_a_stale_live_frontier_and_preserves_its_trial(self):
+        # A future manufactured transition remains live at this test's wall
+        # time. The carb write is a normal public lifecycle cause, not a
+        # hand-stamped frontier repair.
+        record = self._manufacture_frontier_trial(changed_at="2099-01-02 09:00:00")
+        with Store.open_readonly(self.path) as store:
+            original_ending = store.follow_up_record("trial", record["id"])["ending"]
+        response = self.client.post("/api/carbs", headers=self.headers, json={
+            "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
+        self.assertEqual(response.status_code, 200, response.text)
+        read = self.client.get("/api/plan", headers=self.headers)
+        self.assertEqual(read.status_code, 200, read.text)
+        self.assertEqual(read.json()["admission"]["active_kind"], "trial")
+        self.assertEqual(read.json()["admission"]["active_id"], record["id"])
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("trial", record["id"])["ending"], original_ending)
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                             store.input_data_revision())
+
+    def test_startup_recovers_stale_frontier_without_reopening_an_expired_trial(self):
+        from tests.test_follow_up_store import ending
+        record = self._manufacture_frontier_trial(
+            changed_at="2020-01-02 09:00:00", ending_record=ending("expired_unreviewed", None))
+        # Simulate an older local write that advanced the input revision but did
+        # not reach the lifecycle completion seam; no real data is involved.
+        with Store.open(self.path) as store:
+            store.upsert_carb_entry(self._carb("2026-09-11 12:00:00"))
+            self.assertNotEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                                store.input_data_revision())
+        restarted = TestClient(create_app(
+            db_path=self.path, token="synthetic-token", enable_fetch_loop=False))
+        read = restarted.get("/api/plan", headers=self.headers)
+        self.assertEqual(read.status_code, 200, read.text)
+        self.assertIsNone(read.json()["admission"]["active_kind"])
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("trial", record["id"])["ending"]["kind"],
+                             "expired_unreviewed")
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                             store.input_data_revision())
+
+    def test_committed_carb_write_invalidates_the_cache_when_reconciliation_fails(self):
+        from unittest.mock import patch
+        failing = TestClient(create_app(db_path=self.path, token="synthetic-token",
+                                        enable_fetch_loop=False), raise_server_exceptions=False)
+        before = failing.app.state.result_cache.version
+        with patch("ciq_autotune.watched_change.reconcile_ingested_follow_up",
+                   side_effect=RuntimeError("manufactured reconcile failure")):
+            response = failing.post("/api/carbs", headers=self.headers, json={
+                "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
+        self.assertEqual(response.status_code, 500, response.text)
+        self.assertEqual(failing.app.state.result_cache.version, before + 1)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(len(store.carb_entries()), 1)
+
+    @staticmethod
+    def _carb(at):
+        from ciq_autotune.events import CarbEntry
+        from ciq_autotune.store import parse_t
+        return CarbEntry(t=parse_t(at), grams=8, certainty="exact", source="manual")
+
     def test_finish_is_authenticated_before_identity_lookup(self):
         response = self.client.post("/api/verify/trials/unknown/finish", json={
             "request_id": "finish", "input_revision": 0})

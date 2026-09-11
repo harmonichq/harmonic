@@ -20,6 +20,27 @@ test('case-file comparison selection uses its served cohort identity', () => {
     'the renderer does not derive a comparison cohort from a verdict');
 });
 
+test('a selected event case carries each served marker with its selected glucose trace', () => {
+  const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
+  try {
+    globalThis.document = { documentElement: {} };
+    globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#9b7448' });
+    const source = Object.values(caseFiles().cases['finding:missed_meal'].selected_event)
+      .find((caseFile) => caseFile.selection.state === 'selected');
+    const option = eventComparisonChartOption(source, GLUCOSE_ENVELOPE);
+    const detail = source.selection.detail;
+    assert.deepEqual(option.series.find((series) => series.id === 'selected:trace').data,
+      detail.glucose.map((point) => [point.minute, point.bg]));
+    const markers = option.series.filter((series) => series.id?.startsWith('selected:marker:'));
+    assert.equal(markers.length, detail.markers.length);
+    for (const [index, marker] of detail.markers.entries()) {
+      assert.equal(markers[index].name, `Selected ${marker.kind} marker`);
+      assert.equal(markers[index].data[0][0], marker.minute);
+      assert.ok(Number.isFinite(markers[index].data[0][1]));
+    }
+  } finally { Object.assign(globalThis, prior); }
+});
+
 /* THE CAPTION MUST NOT BE STRUCK BY THE LINE IT NAMES (#355). ECharts places an
    unpositioned markArea label at the centre of the area's TOP edge — here the
    y = 180 target boundary — with no background, so the boundary rule struck the

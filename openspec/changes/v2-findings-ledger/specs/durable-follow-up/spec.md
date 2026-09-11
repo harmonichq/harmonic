@@ -54,3 +54,20 @@ not prewarmed, and SHALL remain distinct from the late conclusion.
 - **WHEN** the public write and subsequent history read complete
 - **THEN** the conflict is explicit or the idempotent saved result is returned
 - **AND** the next cached read reflects only the committed record
+
+### Requirement: Local writes reconcile a stale follow-up frontier
+
+After a committed carb or prompt write, and on startup when the retained
+frontier revision is stale, the existing local reconciliation SHALL run without
+changing immutable endings or admission policy. GET requests remain read-only.
+If reconciliation fails after the input commits, cached reads SHALL still be
+invalidated and the failure SHALL remain explicit.
+
+#### Scenario: A committed input recovers a stale frontier
+
+- **GIVEN** a synthetic stale frontier with either a live or expired retained
+  Trial
+- **WHEN** a carb or prompt write commits, or the app starts against it
+- **THEN** local reconciliation preserves the original ending and current
+  admission result
+- **AND** a failed reconciliation still invalidates cache after the input write

@@ -138,3 +138,24 @@ The actual focal header overrides the generic centering CSS and already anchors
 its expansion control near the top; preserve that placement while verifying
 other states and control density. The scope ledger owns the detailed receipts.
 This draft does not convert a requested fix into a passing baseline story.
+
+## ADR 404 — Local follow-up reconciliation and discoverable withholding
+
+### Decision
+
+After a committed local carb or prompt write, and at startup when a saved
+frontier is stale, complete the existing transactional follow-up reconciliation.
+The read remains read-only. Diagnose may offer Focus only from the backend's
+served admission, and otherwise names the served withholding reason with a
+route to the owning parent Pattern. A child may name that parent only through
+served membership; ambiguity stays unavailable.
+
+### Consequences
+
+This narrowly supersedes the risk contract's earlier "no new automatic
+recovery" wording for local reconciliation after those existing writes and
+stale startup only. It does not stamp a frontier, clear an immutable Trial,
+alter admission or clinical policy, prewarm, add a recovery endpoint, or make a
+GET mutate state. A committed input write invalidates the cache even if its
+subsequent reconciliation fails. The shared v2 router canonically writes
+`/v2/diagnose`, `/v2/changes`, and `/v2/day`; legacy `?to=` links remain reads.

@@ -85,9 +85,23 @@ function episodeSeries(surface, cohort, selectedCohort) {
 
 function selectedSeries(surface, detail) {
   if (!detail) return [];
-  return [{ id: 'selected:trace', name: 'Selected trace', type: 'line', silent: true,
+  const trace = [{ id: 'selected:trace', name: 'Selected trace', type: 'line', silent: true,
     showSymbol: false, data: detail.glucose.map((point) => [point.minute, point.bg]),
     lineStyle: { color: css(surface, '--ec-focus'), width: 2.5 }, z: 6 }];
+  /* The selected occurrence is evidence, not just a highlighted roster row.
+     Its trace and each served marker therefore travel together into the focal
+     option.  A marker without its own glucose value seats at the nearest
+     observed selected-trace point; the server still owns its time and kind. */
+  const atMinute = (minute) => detail.glucose.reduce((nearest, point) => (
+    !nearest || Math.abs(point.minute - minute) < Math.abs(nearest.minute - minute) ? point : nearest
+  ), null)?.bg ?? 120;
+  const markers = (detail.markers || []).map((marker, index) => ({
+    id: `selected:marker:${index}`, name: `Selected ${marker.kind} marker`, type: 'scatter',
+    silent: true, symbol: 'circle', symbolSize: 7,
+    data: [[marker.minute, Number.isFinite(marker.bg) ? marker.bg : atMinute(marker.minute)]],
+    itemStyle: { color: css(surface, '--ec-focus') }, z: 7,
+  }));
+  return [...trace, ...markers];
 }
 
 function legend(surface, caseFile, selected) {

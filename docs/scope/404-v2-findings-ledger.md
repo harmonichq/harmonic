@@ -1,5 +1,11 @@
 # #404 v2 desk findings ledger triage
 
+> **2026-09-11 implementation amendment.** Approved scope adds readable v2
+> paths with legacy-link compatibility, local follow-up reconciliation after
+> committed carb/prompt writes or stale startup, and truthful backend-served
+> Focus withholding context. It excludes clinical-policy changes, frontend
+> readiness derivation, mutable GETs, prewarming, and immutable-ending rewrites.
+
 ## Decisions
 
 - Reuse the clean ticket worktree and its three existing QA commits. The fetched main is `12388f584fe11b2da7077d0ad5381f6c1af7d6ac`; ticket HEAD is `fbdfd3c9aaf50573da7b6c83233172afb04fe6fe`. Main is an ancestor. No application changes were made in triage. `inline`

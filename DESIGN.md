@@ -321,3 +321,11 @@ unavailable label. Mini rank omits axis furniture and interaction.
 The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js.
 The component harness reads generator-owned public Python cases. The coordinator
 owns rendered direction review and the three-viewport evidence matrix.
+
+### #404 desk revise amendment
+
+Window and Filter share compact control material in resting, expanded, and
+Findings-loading states. Diagnose, Changes, and Day share one reading rail;
+served long roster text truncates before its cohort; and selected Pattern glucose
+and markers render only from the served case file. Focus admission remains
+backend-owned: a withheld child offers only its uniquely served parent context.

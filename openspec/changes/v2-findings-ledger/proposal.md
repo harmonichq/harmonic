@@ -27,6 +27,10 @@ moving policy into the browser.
   without replacing the original ending; load reassessment only when requested.
 - Integrate served case-file detail and selection into the v2 desk, including
   race-safe selection/window changes and the settled compact, readable layout.
+- Reconcile an existing stale local follow-up frontier after committed carb or
+  prompt writes and stale startup; render only the backend's Focus admission or
+  its withholding reason, with a served parent route from nested Findings.
+- Canonicalize v2 destination addresses while retaining legacy `?to=` links.
 - Add generated synthetic evidence and public-interface proofs before final
   runtime admission. Programmed ratios remain only in Pump settings and
   historical Focus naming stays deferred.

@@ -58,12 +58,12 @@ export const deskSurface = () => surface;
 
 /**
  * Register one destination's content.
- * @param {{id: string, title: string, mount: (host: Element, deps: object) => void}} entry
+ * @param {{id: string, title: string, mount: (host: Element, deps: object) => void, retainFrame?: (host: Element) => boolean}} entry
  */
-export function registerDestination({ id, title, mount }) {
+export function registerDestination({ id, title, mount, retainFrame }) {
   if (resolveDestination(id) !== id) throw new Error(`unknown v2 destination ${JSON.stringify(id)}`);
   if (typeof mount !== 'function') throw new Error(`destination ${id} registered without a mount`);
-  destinations.set(id, { id, title, mount });
+  destinations.set(id, { id, title, mount, retainFrame });
 }
 
 /** Register a teardown the NEXT render runs — a chart, an observer, a listener. */
@@ -183,7 +183,12 @@ export function render() {
   surface.dataset.sheet = view.sheetOpen ? 'open' : 'closed';
 
   const entry = destinations.get(destination);
-  if (entry) entry.mount(surface, { context: { ...context }, navigation, render, hold });
+  // Day is a reader rather than a loading screen: when it already owns a
+  // populated desk, a selected-day read must leave that desk in place.  The
+  // destination opts into this explicitly; every other destination keeps the
+  // normal replace-on-render lifecycle.
+  const retainFrame = Boolean(entry?.retainFrame?.(surface));
+  if (entry) entry.mount(surface, { context: { ...context }, navigation, render, hold, retainFrame });
   else surface.innerHTML = unclaimedFrame(destination);
 
   // An open utility takes the reading pane's seat on whichever frame rendered.

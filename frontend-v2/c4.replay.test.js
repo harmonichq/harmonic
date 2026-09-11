@@ -168,7 +168,7 @@ test('S103 reaches its aggregate return assertion after exercising all three win
   const page = qa404Page();
   const whole = { label: '24 h', min: 0, max: 95 };
   const morning = { ...whole, label: 'Morning' };
-  const drawn = { ...whole, label: 'Window 15:30–21:30 ×' };
+  const drawn = { ...whole, label: '15:30–21:30 ×' };
   const reads = [whole, whole, morning, morning, drawn, whole];
   page.evaluate = async () => { assert.ok(reads.length); return reads.shift(); };
   await assert.rejects(C4_STORIES.S103(page), error => {
@@ -275,7 +275,7 @@ for (const width of [480, 760]) {
   });
 }
 
-for (const seen of ['(absent)', 'Window 12:00–18:00 ×']) {
+for (const seen of ['(absent)', '12:00–18:00 ×']) {
   test(`a bounded drawn-window failure reports chip seen: ${seen}`, async () => {
     const { C4_STORIES } = await import('./c4.replay.mjs');
     const page = qa404Page();

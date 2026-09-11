@@ -35,26 +35,26 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
 
 ## 3. Shipped desk, generated evidence and runtime integration
 
-- [ ] 3.1 Implement surfaces **The desk renders served Pattern evidence and
+- [x] 3.1 Implement surfaces **The desk renders served Pattern evidence and
   preserves selection** by consuming the existing case-file response, with
   per-family selected handoff, served short labels/markers, honest missing
   values, and stale selection/window response rejection; do not redefine its
   producer-owned payload or add an API.
-- [ ] 3.2 Make the retained C4 selected-trace/marker and geometry regressions pass,
+- [x] 3.2 Make the retained C4 selected-trace/marker and geometry regressions pass,
   supplementing focused option coverage for changed evidence families; retain
   the existing working low-comparison selected-trace story as its control.
-- [ ] 3.3 Implement surfaces **The v2 desk preserves readable
+- [x] 3.3 Implement surfaces **The v2 desk preserves readable
   cross-destination evidence chrome**: parent-owned expandable members/minis,
   long-label safety, label-before-icon/top-right tall headers, compact existing
   density tokens, Diagnose/Changes/Day rail parity in loaded/loading/settings
   table states, basal legend/verdict/accent, skeleton and named reassessment
   loading.
-- [ ] 3.4 Implement surfaces **Diagnose and Day keep the reader's navigation
+- [x] 3.4 Implement surfaces **Diagnose and Day keep the reader's navigation
   context** and **Changes keeps completed and expired Trial records reachable**.
   Make the existing S101–S105 regressions pass at their feature assertions,
   repairing the intermittent drawn-window setup without weakening expectations.
   Preserve S100 timing and merged keyboard regressions.
-- [ ] 3.5 Generate only synthetic fixture/case evidence through listed
+- [x] 3.5 Generate only synthetic fixture/case evidence through listed
   producers, run their drift checks, then obtain the coordinator's serial
   public-interface runtime proof at both supported desktop widths. Do not claim
   a freeze or screenshot proof before that admission.

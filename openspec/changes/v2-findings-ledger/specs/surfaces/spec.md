@@ -103,3 +103,29 @@ identity. Neither record access nor a late conclusion SHALL resume a watch.
 - **WHEN** the reader opens its surfaced Changes record and records a late conclusion
 - **THEN** the record displays the original expiry and the separately dated conclusion
 - **AND** it remains expired with the existing watch-admission behavior
+
+### Requirement: Focus withholding and v2 destinations remain discoverable
+
+Diagnose SHALL render either the backend-served Focus action or its served
+withholding reason. A nested Finding may route to one visible parent Pattern
+only when served membership identifies exactly one owner; the browser SHALL NOT
+derive readiness. V2 SHALL canonically write readable destination paths while
+accepting legacy query links.
+
+#### Scenario: A child opens its served parent context
+
+- **GIVEN** a remain-pattern child whose visible parent is withheld by backend
+  admission
+- **WHEN** the reader opens the child
+- **THEN** Diagnose states the served withholding reason and routes to that
+  parent context
+- **AND** an ambiguous membership does not invent a parent or Focus action
+
+#### Scenario: A Focus status refresh fails after a served parent read
+
+- **GIVEN** Diagnose retains a served parent Pattern and its admission state
+- **WHEN** the later Focus-status read fails
+- **THEN** Diagnose keeps that parent context visible with a plain-language
+  status and reachable Retry action
+- **AND** it does not erase the parent, expose a backend token, or infer a
+  Focus admission

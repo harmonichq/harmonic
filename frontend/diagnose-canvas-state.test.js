@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  chartClickRoute, chartFrameFindingIsLive, fallbackFocalId, isDrilledSpotlight,
+  chartClickRoute, chartFrameFindingIsLive, drilledChartIdForFrame, fallbackFocalId, isDrilledSpotlight,
   popInspector, rosterChartIds, seatableChartIds,
 } from './diagnose-canvas-state.js';
 import { createCanvasLayout, placeSeats } from './diagnose-canvas-layout.js';
@@ -176,6 +176,15 @@ test('a lane-picked slot for a DIFFERENT slot than the clicked chart still pops 
   assert.deepEqual(chartClickRoute(descriptor, standing, findingsRows), {
     action: 'drill', popToRoot: true, row: findingsRows[0],
   });
+});
+
+test('a thin slot owns the stage even when the preceding Pattern frame retains its row id', () => {
+  const descriptors = [
+    { chartId: 'finding:meal_bolus_short', kind: 'event-comparison', coordinates: {} },
+    { chartId: 'basal:720', kind: 'basal', coordinates: { slot: 24 } },
+  ];
+  assert.equal(drilledChartIdForFrame({ k: 'slot', rowId: 'finding:meal_bolus_short', cell: { i: 24 } }, descriptors),
+    'basal:720', 'a selected slot must not leave the preceding Pattern chart on stage');
 });
 
 test('clicking the chart the reader already stands on moves nothing, for a behavioral finding', () => {

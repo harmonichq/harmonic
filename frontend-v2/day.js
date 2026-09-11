@@ -404,7 +404,55 @@ function bind(host) {
   if (retry) retry.onclick = () => { memory.error = null; render(); };
 }
 
-function mount(host, { context }) {
+function dayState() {
+  return {
+    iso: memory.date,
+    rows: loadedDays(),
+    bounds: memory.bounds,
+    month: memory.month,
+    monthArrived: memory.months.has(memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date)),
+    stats: dayStats(memory.day.model),
+    ledger: buildEpisodeLedger(memory.day.model),
+    entry: memory.entry,
+    moved: memory.moved,
+    focusT: memory.focusT,
+    readAt: memory.bounds.readAt,
+    viewedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    isNarrow: narrow(),
+    colors: deskColors(),
+  };
+}
+
+function copyAttributes(from, to) {
+  for (const attribute of [...to.attributes]) to.removeAttribute(attribute.name);
+  for (const attribute of [...from.attributes]) to.setAttribute(attribute.name, attribute.value);
+}
+
+// Keep the Day frame's three structural owners mounted.  A served day can
+// replace its material, but it must not detach the standing stage, reader, or
+// navigator while the reader follows a selected date.
+function patchDayFrame(host, markup) {
+  const template = document.createElement('template');
+  template.innerHTML = markup;
+  const nextStage = template.content.querySelector('.gf-stage-day');
+  const nextReading = template.content.querySelector('.gf-reading');
+  const nextNav = template.content.querySelector('#gf-nav');
+  const stage = host.querySelector('.gf-stage-day');
+  const reading = host.querySelector('.gf-reading');
+  const nav = host.querySelector('#gf-nav');
+  if (!nextStage || !nextReading || !nextNav || !stage || !reading || !nav) return false;
+
+  copyAttributes(nextNav, nav);
+  nav.replaceChildren(...nextNav.childNodes);
+  nextNav.replaceWith(nav);
+  copyAttributes(nextStage, stage);
+  stage.replaceChildren(...nextStage.childNodes);
+  copyAttributes(nextReading, reading);
+  reading.replaceChildren(...nextReading.childNodes);
+  return true;
+}
+
+function mount(host, { context, retainFrame = false }) {
   adopt(context);
   // A read that failed is shown, not re-issued. This check leads because every
   // read below is started from inside a render: re-issuing one here on the
@@ -425,32 +473,29 @@ function mount(host, { context }) {
   const shown = memory.month ? `${memory.month.y}-${String(memory.month.m).padStart(2, '0')}` : monthKey(memory.date);
   if (!memory.months.has(shown)) read(`month:${shown}`, () => loadMonth(shown));
   const held = monthKey(memory.date);
-  if (!memory.months.has(held)) { read(`month:${held}`, () => loadMonth(held)); host.innerHTML = loadingFrame('Day'); return; }
-  if (memory.day?.iso !== memory.date) { read(`day:${memory.date}`, () => loadDay(memory.date)); host.innerHTML = loadingFrame('Day'); return; }
+  if (!memory.months.has(held)) {
+    read(`month:${held}`, () => loadMonth(held));
+    if (retainFrame) { host.querySelector('.gf-stage-day')?.setAttribute('aria-busy', 'true'); return; }
+    host.innerHTML = loadingFrame('Day'); return;
+  }
+  if (memory.day?.iso !== memory.date) {
+    read(`day:${memory.date}`, () => loadDay(memory.date));
+    if (retainFrame) { host.querySelector('.gf-stage-day')?.setAttribute('aria-busy', 'true'); return; }
+    host.innerHTML = loadingFrame('Day'); return;
+  }
 
-  host.innerHTML = dayFrame({
-    iso: memory.date,
-    rows: loadedDays(),
-    bounds: memory.bounds,
-    month: memory.month,
-    monthArrived: memory.months.has(shown),
-    stats: dayStats(memory.day.model),
-    ledger: buildEpisodeLedger(memory.day.model),
-    entry: memory.entry,
-    moved: memory.moved,
-    focusT: memory.focusT,
-    readAt: memory.bounds.readAt,
-    viewedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
-    isNarrow: narrow(),
-    colors: deskColors(),
-  });
+  const markup = dayFrame(dayState());
+  if (!(retainFrame && patchDayFrame(host, markup))) host.innerHTML = markup;
   bind(host);
   mountCharts(host);
 }
 
 /** Seat the Day desk on the shell. Called once, by the entry module. */
 export function installDay() {
-  registerDestination({ id: 'day', title: 'Day', mount });
+  registerDestination({
+    id: 'day', title: 'Day', mount,
+    retainFrame: (host) => Boolean(host.querySelector('.gf-stage-day') && host.querySelector('.gf-reading') && host.querySelector('#gf-nav')),
+  });
   // Day steps its month back to the week, then drops its focused log moment.
   registerEscape('day', () => {
     if (currentDestination() !== 'day') return false;

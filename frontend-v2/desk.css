@@ -22,7 +22,7 @@
 .gf { position:relative; min-width:0; min-height:0; display:grid; grid-template-rows:minmax(0,1fr); overflow:hidden;
   font-size:var(--ck-body); color:var(--wk-ink-body);
   --ec-matched:var(--mk-primary); --ec-nearly-matched:var(--mk-warn); --ec-comparison:var(--mk-accent); --ec-focus:var(--mk-text);
-  --gf-reading:300px; }
+  --gf-reading:430px; }
 .gf * { box-sizing:border-box; }
 .gf p { margin:0; line-height:1.5; }
 .gf h1,.gf h2,.gf h3 { margin:0; }

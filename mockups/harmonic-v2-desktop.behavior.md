@@ -2577,3 +2577,11 @@ otherwise cancels a queued drag repaint. Each chip wait is bounded to seven
 seconds and reports the text seen or its absence. The feature assertions and
 all other stories are unchanged. Node checks cover two manufactured chart widths
 and failed-chip diagnostics; the coordinator still owns browser reproof.
+
+### #404 revise amendment — 2026-09-11
+
+The shipped surface proves compact Filter/Window parity including named Findings
+loading, served selected Pattern trace/markers, exact record doors, readable v2
+paths, and backend-withheld Focus parent context. The operator requested Filter
+match the resized Window controls. This frozen historical prose remains baseline
+evidence rather than a replacement lock.

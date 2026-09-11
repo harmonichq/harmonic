@@ -1122,6 +1122,10 @@
   margin: 0 auto 0 0; font-size: 12px; font-weight: 550;
   letter-spacing: normal; text-transform: none; color: var(--mk-text);
 }
+.crumb .focus-context {
+  flex: 0 1 27ch; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* THREE INK RANKS. Current: full ink, medium, and deliberately inert — the
    ABSENCE of hover is what says "you are here". */
 /* The root never loses a character. THE CURRENT ITEM NOW DOES (#135 fix round,
@@ -1160,12 +1164,19 @@
 }
 
 .filter-wrap { position: relative; flex: 0 0 auto; }
-.filter-trigger {
-  min-width: 50px; border: 1px solid var(--wk-rule); border-radius: 5px;
-  padding: 2px 7px; background: var(--wk-surface); color: var(--wk-ink-body);
-  font: 600 var(--ck-micro)/1.35 Inter, system-ui, sans-serif; cursor: pointer;
+.v2-content .filter-trigger {
+  /* #404: this is another compact instrument control, not a separate outlined
+     button. Keeping the Window values verbatim makes the loading header and
+     the settled findings header share one control vocabulary. */
+  min-width: 50px; border: 0; border-radius: 5px; padding: 4px 9px;
+  background: transparent; color: var(--wk-ink-body);
+  font-family: inherit; font-size: 11.5px; font-weight: 550; line-height: normal; cursor: pointer;
 }
-.filter-trigger:hover { color: var(--wk-ink); border-color: var(--mk-secondary); }
+.v2-content .filter-trigger:hover { color: var(--wk-ink-body); background: transparent; }
+.v2-content .filter-trigger[aria-expanded="true"] {
+  background: var(--wk-surface); color: var(--wk-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 62%, transparent);
+}
 .filter-trigger:focus-visible,
 .filter-menu button:focus-visible { outline: 2px solid var(--mk-primary); outline-offset: 2px; }
 .filter-menu {
@@ -1371,6 +1382,12 @@
   text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* Comparison rows have one description and one cohort. Give that pair its
+   own two flexible columns so a long served cohort label never overlays the
+   event description it classifies. */
+.ev-row:has(.only) { grid-template-columns: 112px minmax(0, 1fr) auto; }
+.ev-row:has(.only) .only { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ev-row:has(.only) .tier { grid-column: 3; }
 .ev-row[aria-pressed="true"] {
   background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
 }

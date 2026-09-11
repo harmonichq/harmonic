@@ -127,12 +127,15 @@ export function chartFrameFindingIsLive(chartId, findingsRows) {
 export function drilledChartIdForFrame(frame, descriptors) {
   if (!frame) return null;
   if (frame.k === 'chart') return frame.chartId;
-  if (frame.rowId && descriptors.some(({ chartId }) => chartId === frame.rowId)) {
-    return frame.rowId;
-  }
+  /* A selected basal slot owns the stage even when the reader arrived from a
+     different Finding.  Its inherited row id is breadcrumb context, never a
+     license to leave that former chart on stage. */
   if (frame.k === 'slot') {
     return descriptors.find(({ kind, coordinates }) => kind === 'basal'
       && coordinates?.slot === frame.cell?.i)?.chartId || null;
+  }
+  if (frame.rowId && descriptors.some(({ chartId }) => chartId === frame.rowId)) {
+    return frame.rowId;
   }
   if (frame.k === 'block') {
     return descriptors.find(({ kind, coordinates }) => kind === 'carb-ratio'

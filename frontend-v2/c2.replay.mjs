@@ -572,10 +572,10 @@ export const C2_STORIES = {
     await cells.first().press('ArrowLeft');
     await assertSelectedEdge('last');
     await waitForLaneRepaint('ArrowRight');
-    // The key goes to the selected cell; locator.press focuses it first, so a
-    // focus dropped by the evidence repaint is tolerated here — that loss is
-    // the product observation on #404, not this story's claim, which is the
-    // wrap (asserted below with focus on the moved-to cell).
+    // The key goes to the selected cell. The lane repaint keeps focus on it
+    // (renderLane restores the focused cell after an evidence repaint), so
+    // locator.press's own focus-first is belt and braces; the story's claim is
+    // the wrap, asserted below with focus on the moved-to cell.
     await page.locator('#lane > button[aria-pressed="true"]').press('ArrowRight');
     await assertSelectedEdge('first');
   },

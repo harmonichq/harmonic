@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel } from './diagnose-workstation.js';
+import { buildIcBlocks, queryState, renderIsfLevel, renderSlotLevel, renderLane } from './diagnose-workstation.js';
 import { validFindingCaseFile, sameFindingCaseWindow, assertMatchingFindingCasePreparation } from './finding-case-file-validation.js';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
@@ -211,6 +211,71 @@ class RosterElement {
   addEventListener(name, listener) { this.listeners.set(name, listener); }
   click() { this.listeners.get('click')?.(); }
 }
+
+function laneDocument() {
+  const doc = { activeElement: null, createElement(tag) {
+    const node = new RosterElement(tag);
+    node.focus = () => { doc.activeElement = node; };
+    return node;
+  } };
+  const host = new RosterElement();
+  host.style = {};
+  host.querySelectorAll = () => host.children.filter(node => node.tagName === 'BUTTON' && !node.dataset.clockCopy);
+  Object.defineProperty(host, 'innerHTML', { set(value) {
+    assert.equal(value, '');
+    // Removing a focused descendant blurs it, as the browser does.
+    if (host.children.includes(doc.activeElement)) doc.activeElement = null;
+    host.children = [];
+  } });
+  return { doc, host };
+}
+
+test('a basal lane repaint keeps the selected slot and its keyboard focus', () => {
+  const originalDocument = globalThis.document;
+  const { doc, host } = laneDocument();
+  const lane = { cells: [
+    { i: 0, label: '00:00', verdict: 'hold' },
+    { i: 47, label: '23:30', verdict: 'insufficient' },
+  ] };
+  try {
+    globalThis.document = doc;
+    let selected = lane.cells[0];
+    const paint = () => renderLane(host, lane, selected, new Set(), cell => { selected = cell; paint(); });
+    paint();
+    host.children[1].click();
+    host.children[1].focus();
+    // A newly selected slot's evidence completes and the same painter runs again.
+    paint();
+    assert.deepEqual(host.children.map(node => node.getAttribute('aria-pressed')), ['false', 'true']);
+    assert.equal(doc.activeElement, host.children[1], 'the selected slot still owns keyboard focus after evidence repaint');
+    // The next input reaches the current buttons and can change selection.
+    host.children[0].click();
+    host.children[0].focus();
+    paint();
+    assert.deepEqual(host.children.map(node => node.getAttribute('aria-pressed')), ['true', 'false']);
+    assert.equal(doc.activeElement, host.children[0]);
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('a basal lane repaint respects cleared selection and focus outside the lane', () => {
+  const originalDocument = globalThis.document;
+  const { doc, host } = laneDocument();
+  const lane = { cells: [{ i: 0, label: '00:00', verdict: 'hold' }] };
+  try {
+    globalThis.document = doc;
+    renderLane(host, lane, lane.cells[0], new Set(), () => assert.fail('retired callback'));
+    host.children[0].focus();
+    const otherControl = doc.createElement('button');
+    otherControl.focus();
+    let picked = null;
+    renderLane(host, lane, null, new Set([0]), cell => { picked = cell; });
+    assert.equal(host.children[0].getAttribute('aria-pressed'), 'false', 'navigation can still clear selection');
+    assert.equal(doc.activeElement, otherControl, 'a selected slot does not steal focus back from another control');
+    assert.equal(host.children[0].dataset.staged, 'true', 'the repaint still updates staged state');
+    host.children[0].click();
+    assert.equal(picked, lane.cells[0], 'the replacement button invokes the current pick callback');
+  } finally { globalThis.document = originalDocument; }
+});
 
 const basalCell = {
   i: 0, startMin: 0, endMin: 30, asserts: false, verdict: 'insufficient',

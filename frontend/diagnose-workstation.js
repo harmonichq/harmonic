@@ -487,14 +487,19 @@ function icBlockAtMinute(icBlocks, minute) {
     || icBlocks[0];
 }
 
-function renderLane(lane, selectedCell, staged, onPick) {
-  const host = el('lane');
+export function renderLane(host, lane, selectedCell, staged, onPick) {
+  // Evidence completion rebuilds the buttons after a lane key has focused one.
+  // Preserve that cell's identity without taking focus from another control.
+  const focusedCell = [...host.querySelectorAll('button:not([data-clock-copy])')]
+    .find(button => button === document.activeElement)?.dataset.cell;
+  let restoreFocus = null;
   host.style.gridTemplateColumns = `repeat(${lane.cells.length}, 1fr)`;
   host.innerHTML = '';
   for (const cell of lane.cells) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'lane-cell';
+    b.dataset.cell = String(cell.i);
     b.dataset.verdict = cell.verdict;
     b.dataset.staged = String(staged.has(cell.i));
     b.setAttribute('aria-pressed', String(selectedCell != null && cell.i === selectedCell.i));
@@ -502,7 +507,9 @@ function renderLane(lane, selectedCell, staged, onPick) {
     b.setAttribute('aria-label', `${cell.label} basal slot, ${VERDICT_KEY[cell.verdict]}`);
     b.addEventListener('click', () => onPick(cell));
     host.append(b);
+    if (b.dataset.cell === focusedCell) restoreFocus = b;
   }
+  restoreFocus?.focus({ preventScroll: true });
 }
 
 /**
@@ -3793,7 +3800,7 @@ function boot(root, data, callbacks, signal) {
       : document.activeElement?.closest?.('#level .case-occurrence')?.dataset.occurrenceId;
     paintLevel();
     if (heldRow) focusOccurrenceRow(heldRow);
-    renderLane(lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
+    renderLane(el('lane'), lane, top().k === 'slot' ? top().cell : null, staged, pickCell);
     renderLaneKey(lane);
     paintWatch();
     paintTiles();

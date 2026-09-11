@@ -6,16 +6,22 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "17 9 * * *"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  backend:
-    name: pytest (backend)
+  backend-tests:
+    name: pytest shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/3, 2/3, 3/3]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -31,10 +37,40 @@ jobs:
           version: "0.11.25"
       - name: Sync deps (api + sync extras, from the lockfile)
         run: uv sync --frozen --extra api --extra sync
-      - name: Run tests
-        run: uv run python -m pytest
+      - name: Run the selected backend files
+        run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py pytest --shard "${{ matrix.shard }}" --out "$RUNNER_TEMP/pytest-${{ strategy.job-index }}"
+      - name: Retain backend shard inventory and output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-${{ strategy.job-index }}
+          path: |
+            ${{ runner.temp }}/pytest-*/*.json
+            ${{ runner.temp }}/pytest-*/pytest.log
+
+  generators:
+    name: generator drift checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Build the production frontend
+        run: npm ci && npm run build
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.25"
+      - name: Sync deps (api + sync extras, from the lockfile)
+        run: uv sync --frozen --extra api --extra sync
       - name: Check the runtime acceptance probe rejects incomplete proofs
         run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py
+      - name: Check generated case caching
+        run: uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$RUNNER_TEMP/case-cache"
       - name: Check guidance instruction and Plan parity
         run: node scripts/check_guidance_plan_contract.mjs
       # The frontend's I:C block fixtures are real analyzer output, not literals
@@ -86,6 +122,40 @@ jobs:
         run: uv run python scripts/gen_missed_meal_comparison_fixtures.py --check
       - name: Check the generated eating-sequence report fixture is current
         run: uv run python scripts/gen_eating_sequence_fixtures.py --check
+
+  backend:
+    name: pytest (backend)
+    needs: [backend-tests, generators]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Require every backend shard and generator check
+        env:
+          TESTS_RESULT: ${{ needs.backend-tests.result }}
+          GENERATORS_RESULT: ${{ needs.generators.result }}
+        run: test "$TESTS_RESULT" = success && test "$GENERATORS_RESULT" = success
+
+  latest-nightly:
+    name: latest nightly
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Require the latest completed main nightly aggregate to be green and fresh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py nightly --out "$RUNNER_TEMP/latest-nightly"
+      - name: Retain the nightly result consulted by this PR
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-nightly
+          path: ${{ runner.temp }}/latest-nightly/nightly.json
 
   docs:
     name: ADR numbering guard
@@ -204,7 +274,7 @@ jobs:
     name: browser gates — ${{ matrix.gate }}
     needs: browser-gate-setup
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.timeout || 15 }}
+    timeout-minutes: ${{ matrix.timeout }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
@@ -212,18 +282,23 @@ jobs:
       matrix:
         include:
           - gate: Day lifecycle
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/day-surface.browser.mjs
           - gate: Diagnose workstation
+            timeout: 10
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-workstation.browser.test.mjs
           - gate: Diagnose canvas composition
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
           - gate: Cockpit shell
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
       # #554: the shared browser-runner.js front door itself — proves it
       # launches Chromium once per command and still isolates scenarios.
       # #672: fails closed like every other browser gate, so it's a
       # `.browser.test.mjs` (not `.test.js`) and only runs here.
           - gate: Browser runner lifecycle
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/browser-runner.browser.test.mjs
       # #389: the v2 desk's own browser gate. Browser suites are never
       # discovered by a glob in this repository — they are hand-listed matrix
@@ -232,20 +307,14 @@ jobs:
       # answers the API from manufactured payloads in the driver, so it needs no
       # Python and no server.
           - gate: V2 desk
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/desk.browser.test.mjs
           - gate: V2 Trial and Pattern Focus
+            timeout: 30
             python: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend-v2/follow-up.browser.test.mjs
-            timeout: 30
-          - gate: V2 complete frozen ledger 1280x720
-            python: true
-            timeout: 60
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$RUNNER_TEMP/v2-1280x720"
-          - gate: V2 complete frozen ledger 1440x900
-            python: true
-            timeout: 60
-            command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out "$RUNNER_TEMP/v2-1440x900"
           - gate: First-plan reconcile
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node frontend/plan-first-match.browser.mjs
       # The behaviour replay is a .replay.mjs, which the `frontend/**/*.test.js`
       # glob never discovers, so it gets its own explicit step. It fails closed —
@@ -259,6 +328,7 @@ jobs:
       # leg) has been archived; the anti-drift guarantee lives on in these
       # stories replaying against the built app forever.
           - gate: Diagnose workstation behaviour ledger
+            timeout: 21
             server: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
       # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
@@ -269,8 +339,10 @@ jobs:
       # (S1–S12). It fails closed when browser infrastructure or a fixture is
       # absent (#672).
           - gate: Diagnose event comparisons
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
           - gate: Diagnose comparison support audit
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node mockups/diagnose-event-comparison-support-audit.mjs
       # #660: the Verify workstation's own frozen ledger. This surface has
       # shipped (#722): the app is now the contract artifact, so this is the
@@ -278,6 +350,7 @@ jobs:
       # synthetic set. It fails closed — a run that executes zero stories
       # exits nonzero.
           - gate: Verify behaviour ledger
+            timeout: 5
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
     steps:
       - uses: actions/checkout@v5
@@ -322,19 +395,104 @@ jobs:
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
-      - name: Retain v2 acceptance output
-        if: always() && startsWith(matrix.gate, 'V2 complete frozen ledger')
+
+  v2-ledger-plan:
+    name: select v2 ledger shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      REPLAY_SHARDS: '{"smoke":["1/1"],"full":["1/4","2/4","3/4","4/4"]}'
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      shards: ${{ steps.plan.outputs.shards }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Select before expanding the browser matrix
+        id: plan
+        env:
+          SMOKE_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: |
+          args=()
+          if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
+          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/v2-plan"
+      - name: Retain the selection and planned shard inventory
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.gate }}
+          name: v2-plan
+          path: ${{ runner.temp }}/v2-plan/
+
+  v2-ledger:
+    name: browser gates — V2 ${{ needs.v2-ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.v2-ledger-plan.outputs.count }} selected)
+    needs: [browser-gate-setup, v2-ledger-plan]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 21 || 60 }}
+    env:
+      PLAYWRIGHT_VERSION: "1.61.1"
+    strategy:
+      fail-fast: false
+      matrix:
+        viewport: [1280x720, 1440x900]
+        shard: ${{ fromJSON(needs.v2-ledger-plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Build the delivered frontend shell
+        run: npm ci && npm run build
+      - name: Set up uv for the no-fetch app server
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install the API runtime for the no-fetch app server
+        run: uv sync --frozen --extra api
+      - name: Restore the isolated browser runner and Chromium
+        id: browser-runner-cache
+        uses: actions/cache@v4
+        with:
           path: |
-            ${{ runner.temp }}/v2-*/commands.json
+            ${{ runner.temp }}/ciq-playwright
+            ${{ runner.temp }}/ciq-playwright-browsers
+          key: browser-gates-${{ runner.os }}-node-22-playwright-${{ env.PLAYWRIGHT_VERSION }}-v1
+      - name: Require the browser runner cache
+        if: steps.browser-runner-cache.outputs.cache-hit != 'true'
+        run: exit 1
+      - name: Run the selected v2 ledger
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
+          SMOKE_BASE: ${{ needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
+        run: |
+          args=()
+          if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
+          uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "${{ matrix.viewport }}" --shard "${{ matrix.shard }}" "${args[@]}" --out "$RUNNER_TEMP/v2-${{ matrix.viewport }}-${{ strategy.job-index }}"
+      - name: Retain v2 acceptance output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-${{ matrix.viewport }}-${{ strategy.job-index }}
+          path: |
+            ${{ runner.temp }}/v2-*/*.json
             ${{ runner.temp }}/v2-*/*.log
             ${{ runner.temp }}/v2-*/captures/
 
+
   frontend-browser:
     name: browser gates
-    needs: [frontend-browser-leg]
+    needs: [frontend-browser-leg, v2-ledger]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -342,7 +500,44 @@ jobs:
       - name: Require every browser gate leg to pass
         env:
           BROWSER_LEGS_RESULT: ${{ needs.frontend-browser-leg.result }}
-        run: test "$BROWSER_LEGS_RESULT" = success
+          V2_RESULT: ${{ needs.v2-ledger.result }}
+        run: test "$BROWSER_LEGS_RESULT" = success && test "$V2_RESULT" = success
+
+  nightly-result:
+    name: nightly result
+    needs: [backend, docs, frontend, frontend-browser]
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Compute the one nightly aggregate read by PRs and publication
+        env:
+          NIGHTLY_RESULTS: ${{ toJSON(needs) }}
+        run: python3 -c 'import json,os,sys; sys.exit(not all(job["result"] == "success" for job in json.loads(os.environ["NIGHTLY_RESULTS"]).values()))'
+
+  nightly-status:
+    name: refresh nightly status on open PRs
+    needs: nightly-result
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Read and publish the nightly aggregate on current PR commits
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 mockups/sweep/harmonic-v2-desktop/acceptance.py nightly-publish --out "$RUNNER_TEMP/nightly-status"
+      - name: Retain refreshed commit statuses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-statuses
+          path: ${{ runner.temp }}/nightly-status/*.json
 
   docker-pr:
     name: build + smoke-test image

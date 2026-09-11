@@ -110,16 +110,21 @@ owns a separate synthetic copy with the disposable token on 8766 for S87.
 Both servers use `--no-fetch`. `ONLY` and case overrides are removed by the
 wrapper; each applicable ledger entry must execute, with zero deferred.
 
-The coordinator reports about 13 minutes per size on this Mac. In CI run
-34528197575 (head 60340672), the 30-minute wrapper ceiling killed both sizes
-after 123 passes at 1280×720 and 122 at 1440×900, reaching R13 and R15.
-The coordinator estimates about 35 minutes per size on that runner; this is
-an estimate from the interrupted runs, not a completed CI timing. The complete
-replay's `acceptance.py` wrapper ceiling is 3000 seconds (50 minutes), inside
-the `timeout: 60` on both "V2 complete frozen ledger" entries in
-[ci.yml](../../../.github/workflows/ci.yml). That job limit leaves ten minutes
-outside the replay for setup and teardown. Other wrapper commands keep their
-existing limit.
+The full command remains unsharded by default. `--shard k/n` selects a
+contiguous slice of registry order after the same complete inventory check.
+Empty shards, malformed shard arguments, missing/duplicate/wrong PASS IDs,
+deferred entries and incomplete summaries fail. The wrapper discards inherited
+`ONLY` and `STORY_CASES` before applying its own selection.
+
+CI's named shard inventories in [ci.yml](../../../.github/workflows/ci.yml) own the shard lists.
+The `v2-ledger-plan` job selects the inventory before `v2-ledger` expands it.
+Every artifact has a unique size/shard name and retains `selection.json`, `inputs.json`, command
+records, raw logs and captures. Concatenating `complete-replay.log` files in
+numeric shard order preserves the complete registry's story order. Keep all
+shard headers and summaries; require every shard and the same input hashes
+before citing their union as a complete run. The receipt must cite the whole
+artifact set for each size. Local shards must run serially on this machine;
+they own the same ports. Timeout measurements and ceilings are stated below.
 
 ```sh
 /opt/homebrew/bin/python3.14 mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out "$evidence/app-1280x720"
@@ -196,6 +201,261 @@ VIEWPORT=1440x900 CAPTURE_DIR="$evidence/clinical-pairs-1440" node mockups/sweep
 These commands are prepared, not run. Same-byte transport is only one part of
 clinical fidelity; the coordinator must inspect each Basal, Correction factor
 and I:C pair and record whether the plotted data, axes and reading are faithful.
+
+## Fast-gates measurements and ceilings (#406)
+
+Every browser matrix leg has an explicit job timeout. These are whole-job
+ceilings, including setup and artifact retention. The table is the single
+written timeout rationale; ci.yml holds the executable values. Measurements
+are from ubuntu-latest jobs on 2026-09-10 in runs
+[34528197575](https://github.com/harmonichq/harmonic/actions/runs/34528197575),
+[34534519065](https://github.com/harmonichq/harmonic/actions/runs/34534519065),
+completed legs of
+[34537427194](https://github.com/harmonichq/harmonic/actions/runs/34537427194),
+and the sharded run
+[34545568885](https://github.com/harmonichq/harmonic/actions/runs/34545568885).
+Use the largest observed whole-job duration across those samples. A cancelled
+or failed run is identified explicitly; it is not a successful timing proof.
+
+| Browser leg | Measured runner wall time | Job ceiling | Headroom above sample |
+| --- | --- | --- | --- |
+| Day lifecycle | 0m57s | 5 min | 4m03s |
+| Diagnose workstation | 4m37s | 10 min | 5m23s |
+| Diagnose canvas composition | 2m32s | 6 min | 3m28s |
+| Cockpit shell | 1m10s | 6 min | 4m50s |
+| Browser runner lifecycle | 0m26s | 5 min | 4m34s |
+| V2 desk | 0m47s | 5 min | 4m13s |
+| V2 Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
+| V2 full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
+| V2 PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
+| First-plan reconcile | 0m38s | 5 min | 4m22s |
+| Diagnose workstation behaviour ledger | 10m32s successful | 21 min | 10m28s |
+| Diagnose event comparisons | 1m29s | 6 min | 4m31s |
+| Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
+| Verify behaviour ledger | 0m36s | 5 min | 4m24s |
+
+The full-ledger replay process ceiling is 960 seconds for a shard, leaving five
+minutes inside its CI job for setup, server teardown and retention. Unsharded
+local runs and partial PR smoke runs use 3000 seconds; their jobs reserve ten
+minutes outside the process ceiling. A PR selecting every story uses the full
+shard inventory and its shorter process/job ceilings.
+
+Run 34545568885 supplies actual sharded runner measurements, replacing the
+unsharded-run division used before. Whole-job seconds in numeric shard order:
+
+| Size | Shard 1 | Shard 2 | Shard 3 | Shard 4 |
+| --- | ---: | ---: | ---: | ---: |
+| 1280×720 | 532 | 276 | 569 | 516 (R6 failed) |
+| 1440×900 | 534 | 361 (S32 failed) | 554 | 543 |
+
+The slowest shard completed successfully in 569 s. Preserve the prior 372.55 s
+process headroom allowance, using that whole-job measurement conservatively:
+`569 + 372.55 = 941.55 s`, rounded up to a whole minute gives 960 s. Adding the
+same five-minute setup/teardown/retention allowance gives a 21-minute job.
+The process has 391 s above the measured whole-job duration. The previous
+unsharded measurements (1430/1575 s in run 34539350410) and local shard
+measurement (195.91 s on 9652979a, build excluded) are historical comparisons,
+not the current ceiling basis. The two failed shards remain failures; their
+wall times are not green acceptance evidence.
+
+Every ceiling was checked against the new job list. Preserve each previously
+stated headroom allowance and round up to a whole minute when the current
+ceiling no longer fits it. Cockpit shell now needs `70 + 236 = 306 s`, rounded
+to six minutes; event comparisons need `89 + 212 = 301 s`, also six minutes;
+the v1 ledger needs `632 + 584 = 1216 s`, rounded to 21 minutes. All other
+browser matrix ceilings retain at least their stated allowance. Browser setup
+measured 23 s against 15 minutes; the browser aggregate measured 4 s against
+five minutes. Partial smoke was not exercised by this run and retains its
+prior full-count comparison and ceiling. Contiguous partitions have equal
+counts, not equal cost. The full local coordinator run remains required for
+its separate browser proof.
+
+
+The first PR run on this branch,
+[34542522691](https://github.com/harmonichq/harmonic/actions/runs/34542522691),
+measured the v1 Diagnose workstation ledger at 565 s (failed at S140), and the
+expanded PR smoke legs at 1917 s for 1280×720 and 1905 s for 1440×900 (failed).
+These are whole-job wall times from the job list. The PR legs selected all 130
+stories but ran one partition per size. Selection now happens before matrix
+expansion: that same escalation uses main's full shard inventory. These numbers
+are historical full-selection timings, not measurements of the new shards.
+
+
+The same sharded run measured backend jobs at 222 / 568 / 220 s (the order's
+rounded summary calls the first approximately 220 s), generator checks at
+337 s, and selection at 16 s. All passed. The corresponding pytest processes
+took 204.76 / 545.18 / 196.60 s. These complete measurements replace the old
+959-second suite division and interrupted generator lower bound.
+
+| Job | Measured whole-job seconds | Job ceiling | Headroom above sample |
+| --- | ---: | --- | --- |
+| Backend shard 1/3 | 222 | 20 min | 978 s |
+| Backend shard 2/3 | 568 | 20 min | 632 s |
+| Backend shard 3/3 | 220 | 20 min | 980 s |
+| Generator drift checks | 337 | 12 min | 383 s |
+| Backend aggregate | 4 | 3 min | 176 s |
+| Latest nightly bootstrap | 9 | 3 min | 171 s; aggregate lookup still unmeasured |
+| V2 ledger selection | 16 | 5 min | 284 s |
+| ADR/public-tree guards | 37 | 10 min | 563 s |
+| Frontend Node checks | 19 | 10 min | 581 s |
+| Packaged-runtime check | 32 | 10 min | 568 s |
+
+The backend allowance stays approximately 580 s: `568 + 580 = 1148 s`, rounded
+up to 20 minutes. The wrapper process ceiling becomes 1140 s, retaining the
+one-minute outer allowance. The generator allowance stays 367 s:
+`337 + 367 = 704 s`, rounded up to 12 minutes. The QA drift step recorded 0 s
+at job-list timestamp resolution inside its three-minute ceiling. Selection and aggregate jobs retain their
+ceilings; their previous allowances were operational budgets, not ratios.
+Scheduled nightly aggregation (three minutes), status publication (five
+minutes), and main image publication (ten minutes) were skipped in this PR
+run and retain their previous operational budgets without a new measurement.
+
+Round-robin backend partitioning stays. The retained pytest logs and command
+records contain only shard totals, without per-test/per-file durations or
+JUnit timing data; the job list cannot assign the 568 s to individual files.
+The wrapper can pass a weighted partition, but this evidence cannot produce a
+measured weight table. Guessing from test counts would replace deterministic
+round-robin with unmeasured weights. A future measured table must be the sole
+partition weight authority; none is invented here.
+
+The case transport already generated each raw case once per run. It now also
+reconciles that template once, then copies it for every story. Each copy clears
+its old WAL, SHM and derived-store files. Stories never serve or mutate the
+template. Nested case changes and Trial/Focus use this same transport. No cache
+is shared across commands, shards or commits.
+
+`case-cache --check` delegates showcase validation to `gen_qa_e2e_db.check()`.
+For each non-showcase registry case it generates two stores and compares
+logical SQLite dumps using the existing generator's dump rule. `c3-history`
+generation stamps observation metadata with the wall clock; the comparison
+freezes `watched_change.datetime` for both generations instead of dropping
+fields. Normal replay generation uses its existing clock. The check also
+mutates each story copy and its derived file, then requires the next copy to
+match the prepared template byte-for-byte with no derived file. CI runs this
+browser-free check without running the removed copy-then-reconcile benchmark.
+An empty registry or explicit case selection fails before preparation. `--case`
+selects a specific case (repeatable), including a nested variant; it does not
+change the replay's case mapping.
+
+```sh
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out "$evidence/case-cache"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$evidence/shard-1"
+```
+
+Opt into a one-off preparation benchmark separately:
+
+```sh
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --benchmark --out "$evidence/case-benchmark"
+```
+
+Only `--benchmark` writes `case-times.json`: three warm measurements per case
+comparing the previous raw-copy-plus-reconcile path with prepared copying,
+and the first cold preparation cost. Keep measured numbers with that run's
+receipt. This isolates store preparation; it is not an end-to-end story or CI
+speedup. Full replay logs include `# story-time <id> milliseconds=...` through
+story teardown and `# case-copy ... milliseconds=...` for each prepared copy.
+Retain both when measuring runner cost and nested case switches.
+
+## PR smoke, full main/nightly runs, and backend shards (#406 chunk 2)
+
+Every event runs the complete backend suite as deterministic, sorted-file
+round-robin partitions. Each partition receives explicit test-file arguments;
+pytest's zero-collection exit is a failure. The wrapper test enumerates `tests/`
+independently and requires the CI partitions' union to equal that inventory
+without overlap. `test-files.json` and raw output are retained per shard.
+The generator job runs the existing twelve fixture drift commands, both Python
+exploration checks and guidance/Plan parity in parallel with pytest. It also
+owns the wrapper and cache checks. The `pytest (backend)` aggregate requires
+all test shards and the generator job, preserving the existing required name.
+
+On pull requests, `v2-ledger` runs the fixed `SMOKE_STORIES` slice from
+acceptance.py plus touched stories. A browser-free `replay-plan` CI leg resolves
+that selection first. A complete selection uses the named `full` inventory,
+exactly as main does; a partial selection uses the named `smoke` inventory with
+one partition per size. Job names show mode, shard and total selected count.
+The plan and its selection reasons are retained in the `v2-plan` artifact.
+The fixed slice is pinned by a digest and checked against the actual dependency
+closures for every generated case, including nested variants, and all three
+destinations. It includes the utility entry points. It is not a second registry.
+
+`--base <ref>` compares the merge-base with committed HEAD. The selector uses
+Babel's parser declared as a direct devDependency and pinned in the frontend
+lockfile (run `npm ci` first).
+It compares exported story functions, object-method stories and the transitive
+helpers and constants they reference. Imported replay helpers are followed too;
+the inherited `STORY:` comments retain their namespaced identities. The v2
+files themselves have no `STORY:` comments, so their exported registry names
+supply that identity. Both old and new graphs participate, retaining deleted
+helpers and renamed bindings in the affected set. Python's AST supplies case
+recipe and materializer dependencies without executing recipes. Shared runner,
+registry, transport, generator or acceptance-driver changes select the full
+ledger. Unrelated production changes receive the fixed smoke coverage. Selection
+errors fail; they never return a silently empty subset.
+
+`smoke.json` records the comparison commits, changed files, affected symbols,
+case/destination coverage and selected IDs. `selection.json` distinguishes
+`smoke` and `full` receipts. A PR smoke receipt cannot be cited as full coverage.
+The other explicit browser suites and inherited ledgers retain their existing
+commands on every event.
+
+Main pushes and the scheduled event run every full v2 partition. ci.yml owns
+the nightly cron and both matrix inventories. Nightly runs do not publish an
+image. The `nightly result` job computes the backend, docs, frontend and browser
+aggregate once. The PR `latest nightly` check and the scheduled publisher both
+read that same job's conclusion through the shared `nightly_result()` lookup.
+The PR reads it from the latest completed scheduled CI run on main; publication
+reads it from its own scheduled run after the aggregate finishes. Neither
+reader substitutes the overall workflow conclusion or recomputes the job results.
+The [workflow-jobs API](https://docs.github.com/en/rest/actions/workflow-jobs)
+lookup uses the latest attempt and follows pagination.
+
+A result older than 36 hours, measured from the scheduled run's `run_started_at`,
+does not satisfy either reader, even when its aggregate is green. Exactly 36
+hours is allowed. An existing run with a missing/incomplete aggregate fails.
+API errors and failed, cancelled or skipped aggregates fail. An in-progress
+nightly does not erase the last completed result used by a PR. Both readers
+retain `nightly.json` with the run, aggregate, age and resulting state.
+
+After the first scheduled CI run with the aggregate exists on main, configure
+branch protection to require `latest nightly` as well as the existing
+backend/browser checks. This workflow exposes the check; it does not edit
+repository protection. Bootstrap is the sole exception: if no scheduled run
+has completed, the PR check passes with a warning in the job summary and a
+`bootstrap: true` receipt. Once a completed scheduled run exists, the green
+aggregate and 36-hour rules apply unchanged. A missing aggregate in an existing
+run is a failure, not bootstrap. API errors remain failures even during bootstrap.
+At the end of every scheduled run, `nightly-status` publishes the shared result
+to each open PR's head and test-merge commit under the same `latest nightly`
+context. This blocks an existing PR whose earlier check read a green nightly
+before the new failure. Both a check and commit status with the same required
+name must pass, per
+[GitHub's required-check rules](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
+Only the scheduled publisher has status-write permission; it checks out main
+and never executes a PR's code with that token. A prior failed PR check still
+needs a rerun after a healthy nightly. Freshness is evaluated when a check or
+publication runs; GitHub statuses do not expire by themselves. Retain the
+publication receipt and investigate a failed publisher before relying on the
+refreshed statuses. A publisher failure does not change the shared test aggregate.
+
+The full local v2 ledger remains one shell command, run serially at both sizes
+once on the commit that will be pushed. Omit `--base` to run the full inventory.
+Build both shells and set PLAYWRIGHT_MODULE as documented above first. This
+cost was approximately thirteen minutes per size before the cache change.
+
+```sh
+(
+  for viewport in 1280x720 1440x900; do
+    uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport "$viewport" --out "$evidence/full-$viewport" || exit
+  done
+)
+```
+
+To execute a backend partition, use the desired shard argument from ci.yml
+with `acceptance.py pytest --shard <k/n> --out <fresh scratch>`. Run the full
+backend locally with the existing `uv run python -m pytest` command after
+building both shells. PR smoke execution is `replay --base <ref>`. The CI-called
+`replay-plan` leg owns matrix planning and requires the workflow's `REPLAY_SHARDS`
+environment value; it does not launch a browser.
 
 ## Historical comparison renders
 

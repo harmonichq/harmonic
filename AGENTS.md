@@ -153,6 +153,22 @@ PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app node mockups/diagnose
 PLAYWRIGHT_MODULE="$PW/node_modules/playwright" TARGET=app PAYLOAD=mockups/verify-660-story.synthetic/payload.json node frontend/verify-660-story-behavior.replay.mjs
 ```
 
+**2026-09-10 — #406 gate scheduling.** On pull requests, the v2 ledger runs the
+fixed smoke slice and stories affected by replay/helper or case-recipe changes,
+at both sizes. A PR selecting the complete ledger uses the same shards as main
+and nightly runs; smaller selections use one job per size. The other explicit
+browser suites and inherited ledgers keep running
+on every event. The PR `latest nightly` check and scheduled publisher read the
+same `nightly result` job aggregate. A result older than 36 hours from the
+scheduled run's start does not satisfy either reader. Both retain the consulted
+run and age as an artifact. Before any scheduled run completes, the PR check
+passes with a bootstrap warning. The scheduled completion job also refreshes that
+status on open PR commits, so an earlier green PR check cannot hide a later
+failed nightly. The backend runs all test files across its matrix partitions
+while a separate generator job checks drift. The CI workflow owns the matrices
+and commands; the private acceptance record states the selection rules and
+measured ceilings.
+
 All eleven **fail closed**: a missing driver, built shell or fixture exits
 nonzero, naming what is absent, rather than skipping. A green step that
 silently ran zero assertions is the exact failure mode that design guards

@@ -3877,9 +3877,13 @@ export const S140 = async (page) => {
   const id = 'finding:over_treated_low';
   const rowMini = page.locator(`#level .qrow.priced[data-id="${id}"] .mini`);
   await rowMini.locator('canvas').waitFor();
-  const series = async (locator) => locator.evaluate((host) =>
-    window.echarts.getInstanceByDom(host).getOption().series
-      .map(({ id, data }) => ({ id, data })));
+  const series = async (locator) => {
+    await page.waitForFunction((host) => !!window.echarts?.getInstanceByDom(host),
+      await locator.elementHandle(), { timeout: 10000 });
+    return locator.evaluate((host) =>
+      window.echarts.getInstanceByDom(host).getOption().series
+        .map(({ id, data }) => ({ id, data })));
+  };
   const rowSeries = await series(rowMini);
   await openAllCharts(page);
   const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);

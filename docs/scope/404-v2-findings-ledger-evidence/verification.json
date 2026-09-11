@@ -1,5 +1,5 @@
 {
-  "status": "All required local verification passed; final Full review pending",
+  "status": "All required local verification passed; final Full review converged",
   "source_commit": "91cfc1af093cf5eb804ff9e491322f3caafe8d0d",
   "backend": {
     "passed": 2530,
@@ -77,5 +77,18 @@
     "commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
     "raw_log": "browser-logs/v2-1440.log"
   },
-  "browser_checks": 14
+  "browser_checks": 14,
+  "code_review": {
+    "route": "Operator-approved unvalidated Codex-only Full review",
+    "model": "gpt-5.6-luna",
+    "effort": "medium",
+    "round": 2,
+    "reviewed_commit": "5fa118f0788d1499a308e1333f7cf7409bb440e8",
+    "standards": "20/20 Holds; Converged",
+    "specification": "47/47 checked; Converged",
+    "reports": [
+      "final-standards-review.md",
+      "final-spec-review.md"
+    ]
+  }
 }

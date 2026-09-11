@@ -119,3 +119,50 @@ Connor answered: “what? Is this like if we make a code change to rename a patt
 The follow-up worker found the existing circular half-open WindowQuery and outcome-landing membership rule used by ordinary Finding/sequence populations. Pattern production currently derives count, membership, readiness, price and admission together from whole-day source products, and Pattern case files reject scoped queries. The change must preserve full physiological episode/classifier context and use one scoped population for the displayed Pattern, roster and evidence. Do not merely crop raw CGM or copy an unscoped price onto a scoped rate.
 
 Focus currently saves a Pattern key and validates whole-day guidance; it accepts no clock window. Q6 therefore asks whether a new Focus from a scoped Pattern retains that window for eligibility and follow-up, or whether scoped evidence is investigatory while Focus remains whole-day. This product choice remains pending. Do not rewrite existing saved contexts. Raw grounding is in `/private/tmp/harmonic-404-orchestrate/followup-scoped-patterns.result.json`. No application change was made.
+
+
+## Consolidated disposition after Q1–Q5
+
+| Report | Triage disposition |
+| --- | --- |
+| Pattern member ownership and mini alignment | Accepted direction: expandable children visibly belong to their parent; placement judged together in the shipped-app visual round. |
+| Generic response mini header | Use the served event label; add a served short noun only if measured layout needs it. |
+| Basal lane legend and verdict paint | Restore the carried v1 presentation in v2; source and screenshot comparison supersede the issue body's original shared-gap claim. |
+| Stage change accent | Restore the carried accent. |
+| Blank loading | Slow count-free skeleton, with named on-demand reassessment loading; no prewarm. |
+| Scoped Patterns absent | Q2 requires backend-scoped counts and membership; Q6 governs the consequence for new Focus records. |
+| Redundant Window chip noun | Keep only the span; existing S101 is fail-first coverage. |
+| Thin basal slot keeps Pattern graph | Open the slot's own graph; preserve S102 and the already-fixed keyboard path. |
+| Back from basal drill loses window | Restore 24 h, named and drawn selections; S103 remains owed at both sizes. |
+| Day teardown | Keep persistent frame nodes; S104 confirms the defect. |
+| On-pump Plan history door | Expose the existing exact record route; S105 confirms the missing door. |
+| Expired Trial | Q1 keeps expiry and allows a separately dated late conclusion in the reachable record. |
+| All charts / Close and expansion icon | Text left of icon; icon stays top-right including tall headers. |
+| Window controls oversized | Match tighter desk density; preserve interaction and accessibility. |
+| Selected occurrence traces missing | Repair selected Pattern case-file handoff and prove each affected evidence family. |
+| Sparse occurrence detail and markers | Render useful served details and selected markers; preserve honest missing values. |
+| Long label collisions | Prevent overlap at both supported widths and expanded roster states. |
+| Right rail width differs across tabs | Match the widened Diagnose reference in Changes and Day, including loading. |
+| Programmed ratios in footer | Excluded by Q4; keep them in Pump settings. |
+| Historical Focus naming | Deferred by Q5. |
+| Pump-settings ingestion lag | Already recorded as expected upstream upload/fetch timing; no new fix. |
+| Basal keyboard focus and S100 timing | Already fixed in #405/#409; retain regressions and do not duplicate. |
+
+The selected ticket's latest decision comment is https://github.com/harmonichq/harmonic/issues/404#issuecomment-5629739936 .
+
+### Additional inventory receipts
+
+The document worker located the current whole-feed/scoped omission promise in `openspec/specs/behavioral-layer/spec.md` and ADR 395 in `openspec/changes/harmonic-v2/design.md`; the coordinator read both cited statements. The new #404 decision supersedes this behavior. The late-conclusion contract must preserve the existing separation of original ending and reassessment in `openspec/changes/harmonic-v2/contracts.md`. Source admission must express these amendments in the owning new OpenSpec change and explicitly identify any still-active contract updates. Preserve historical decisions and archived records; do not rewrite them as if the new behavior had already existed.
+
+Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 may add the Focus comparison contract. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
+
+The static behavior worker found existing window, occurrence, fullscreen, Day and Changes stories but no measured rail-parity, long-label collision, compact-control or icon-placement assertions. Its result is an inventory, not a fresh passing freeze or complete runtime coverage. `frontend-v2/diagnose.js` currently starts Focus with only subject/from; the coordinator verified the omitted window and the backend's unscoped Focus admission. The new Focus-window contract remains pending Q6.
+
+
+### Passing preservation slice — 2026-09-10
+
+At planning commit `4135751`, using the already-built unchanged application shells, the coordinator ran the existing app-only replay with `ONLY=S13,S21,S23,S28,S32,S43,S61,S77,S97,S99,S100,R3,R4`, `VIEWPORT=1280x720`, generated synthetic case stores, and the installed Playwright. Result: **executed 13 / failed 0 / deferred 0 / selected 13 / Chromium launches 1**, exit 0. R3 and R4 printed their existing sanctions and passed their premises. Raw output: `/private/tmp/harmonic-404-preservation-1280.log`.
+
+This establishes a focused preservation baseline around the affected interactions. It does not supersede the S101–S105 negative receipt, prove the new screenshot reports, establish 1440px parity, or complete the fresh behavior freeze. No app, replay, fixture or CI file changed. No active worker or QA server remains owned by this pass.
+
+Current scope frontier: Q6 is awaiting the operator. Preserve all settled decisions and continue from the consolidated disposition; do not reopen Q1–Q5. The reviewed OpenSpec execution lock and triaged status are not yet complete.

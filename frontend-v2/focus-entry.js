@@ -42,7 +42,7 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
         .finally(() => { pending = null; changed(); });
       return pending;
     },
-    async start(subject) {
+    async start(subject, outcomeWindow = null) {
       if (saving) return null;
       const offered = candidate(subject);
       if (!offered || !source) return null;
@@ -50,6 +50,7 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
       saving = true; failure = null; changed();
       try {
         const saved = await api.pinFocus(null, { pattern_key: offered.key, subject: offered.subject,
+          outcome_window: outcomeWindow,
           request_id: attempt.id, input_revision: roster.input_revision,
           analysis_generation: source.analysis_generation });
         attempt = null; roster = null; source = null;
@@ -81,7 +82,10 @@ export function mount(host, deps = {}) {
   const start = host.querySelector('[data-focus="pin"], [data-focus="retry-pin"]');
   if (start) start.onclick = async () => {
     if (state.failure) await entry.read();
-    const saved = await entry.start(subject);
+    const parts = String(deps.context?.window || '').split('-').map(Number);
+    const outcomeWindow = parts.length === 2 && parts.every(Number.isInteger)
+      ? { start_min: parts[0], end_min: parts[1] } : null;
+    const saved = await entry.start(subject, outcomeWindow);
     if (saved) {
       await loadGuidance({ force: true });
       navigate('changes');

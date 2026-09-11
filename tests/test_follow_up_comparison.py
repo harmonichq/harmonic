@@ -440,9 +440,11 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
 
     def comparison(self, store, *, pin=datetime(2024, 5, 5),
                    cutoff=datetime(2024, 5, 9), key="highs_after_meals",
-                   lever="late_bolus", ending=None):
+                   lever="late_bolus", ending=None, outcome_window=None):
         record = FollowUpComparisonTest().focus(store, pin, lever=lever, ending=ending)
         record.update(pattern_key=key, subject=f"pattern:{key}")
+        if outcome_window is not None:
+            record['decision_context'] = {'outcome_window': outcome_window}
         original = copy.deepcopy(record)
         result = compare_follow_up(store, record=record, data_cutoff=cutoff, input_revision=2)
         self.assertEqual(record, original)
@@ -470,6 +472,16 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
             self.assertEqual(result["adherence"][arm]["rate"], 0)
         self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
         self.assertEqual(result["assessment"]["state"], "unclear")
+
+    def test_saved_outcome_window_filters_each_calendar_arm_without_clipping_context(self):
+        path = self.materialize()
+        with Store.open_readonly(path) as store:
+            result = self.comparison(
+                store, outcome_window={'start_min': 17 * 60, 'end_min': 19 * 60},
+            )
+        # The manufactured meals remain at 06:00, 12:00 and 18:00. The retained
+        # evening outcome scope admits exactly the 18:00 opportunity in each arm.
+        self.assertEqual([result['readiness'][arm]['count'] for arm in ('before', 'after')], [4, 4])
 
     def test_elapsed_time_and_other_arm_cannot_supply_missing_opportunities(self):
         path = self.materialize()

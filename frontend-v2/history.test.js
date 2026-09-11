@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  changeSection, endingSection, originalSection, reassessmentSection,
+  changeSection, endingSection, lateConclusionSection, originalSection, reassessmentSection,
   recordRoster, settingValue,
 } from './history.js';
 
@@ -146,6 +146,14 @@ test('a saved ending keeps its kind, its times and the wearer’s own words', ()
   assert.match(html, /data-ending-assessment="unavailable"/);
   assert.match(html, /Unavailable · unavailable_adherence/);
   assert.match(html, /Nothing here required a favourable result\./);
+});
+
+test('a late Trial conclusion is separate from the immutable expired ending', () => {
+  const html = lateConclusionSection({ state: 'available', recorded_at: '2026-09-10 12:00:00',
+    conclusion: 'The change helped after I had more time to observe it.' });
+  assert.match(html, /data-record-part="late-conclusion"/);
+  assert.match(html, /recorded after expiry/);
+  assert.match(html, /does not change the saved ending or resume the Trial/);
 });
 
 test('a preempted Focus is dropped, kept, and explicitly never resumed', () => {

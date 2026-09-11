@@ -15,11 +15,12 @@ test('pin uses the served canonical Pattern and never chooses its member or calc
   await entry.read();
   assert.equal(entry.candidate(offered.subject), offered, 'served permission holds even with a count below the gate');
   assert.equal(entry.candidate('habit:invented'), null);
-  assert.equal((await entry.start(offered.subject)).id, 4);
+  assert.equal((await entry.start(offered.subject, { start_min: 720, end_min: 1080 })).id, 4);
   assert.equal(writes[0][0], null);
-  assert.deepEqual(Object.keys(writes[0][1]).sort(), ['analysis_generation','input_revision','pattern_key','request_id','subject']);
+  assert.deepEqual(Object.keys(writes[0][1]).sort(), ['analysis_generation','input_revision','outcome_window','pattern_key','request_id','subject']);
   assert.equal(writes[0][1].pattern_key, offered.key);
   assert.equal(writes[0][1].subject, offered.subject);
+  assert.deepEqual(writes[0][1].outcome_window, { start_min: 720, end_min: 1080 });
 });
 
 test('failed pin preserves identity for retry and never publishes success', async () => {

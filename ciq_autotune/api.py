@@ -1541,6 +1541,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                           or "habit:" + receipt["result"]["record"]["lever"])
                 if actual != expected:
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+                scope = (receipt["result"]["record"].get("decision_context") or {}).get("outcome_window")
+                if scope != payload.get("outcome_window"):
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
@@ -1551,6 +1554,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if operation == "withdraw" and record["withdrawal"].get("state") == "available":
                     return record
                 if operation in ("finish", "resolve") and "kind" in record["ending"]:
+                    return record
+                if operation == "conclude" and record.get("late_conclusion", {}).get("state") == "available":
                     return record
             return None
 
@@ -1608,7 +1613,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error))
 
-    def source_context(source, candidate, recorded_at):
+    def source_context(source, candidate, recorded_at, *, outcome_window=None):
         from .guidance import COMPARISON_VERSION
         actions = candidate["action"] if isinstance(candidate.get("action"), list) else []
         return {"version": "386:1", "state": "available",
@@ -1619,7 +1624,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "subjects": [candidate["subject"]], "occurrences": candidate["occurrence_ids"],
                 "settings": [{"value": action["recommended"], "unit": action["units"]}
                              for action in actions],
-                "support": candidate["support"], "unknowns": candidate["unknowns"]}
+                "support": candidate["support"], "unknowns": candidate["unknowns"],
+                **({"outcome_window": outcome_window} if outcome_window is not None else {})}
 
     def selected_source(store, source, payload, subject, durable):
         from .store import FollowUpConflict
@@ -1746,6 +1752,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         from .follow_up_comparison import capture_comparison_context
         durable = durable_request(payload, creation=True)
         lever, pattern_key = payload.get("lever"), payload.get("pattern_key")
+        scope = payload.get("outcome_window")
         if pattern_key is not None:
             if not isinstance(pattern_key, str):
                 raise HTTPException(status_code=422, detail="pattern_key must be a string")
@@ -1762,6 +1769,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=422, detail="lever required")
         if not is_pinnable(lever, pattern_key):
             raise HTTPException(status_code=400, detail=f"{lever!r} is not a pinnable behavioral lever")
+        if pattern_key is not None:
+            from .window_membership import WindowQuery
+            if not isinstance(scope, dict) or set(scope) != {"start_min", "end_min"}:
+                raise HTTPException(status_code=422, detail="Pattern Focus requires an outcome window")
+            try:
+                scope = WindowQuery.clock(scope["start_min"], scope["end_min"]).to_dict()
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
+            scope = {key: scope[key] for key in ("start_min", "end_min")}
+            # Scope admission uses the same producer-owned Pattern population
+            # the Diagnose case showed. The global guidance row still supplies
+            # copy and the durable source generation; it cannot waive a scoped
+            # readiness verdict or derive membership in this endpoint.
+            try:
+                generation, snapshot = history_snapshot(
+                    findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+                scoped = snapshot[0].project(
+                    WindowQuery.clock(scope["start_min"], scope["end_min"]),
+                    analysis_generation=generation,
+                )
+                scoped_pattern = next((row for row in scoped["rows"]
+                                       if row.get("id") == f"pattern:{pattern_key}"), None)
+            except ResultCache.GenerationChanged as error:
+                raise HTTPException(status_code=409, detail="Pattern evidence changed. Refresh findings.") from error
+            if (scoped_pattern is None
+                    or (scoped_pattern.get("pattern") or {}).get("readiness", {}).get("verdict") != "ready"):
+                raise HTTPException(status_code=409, detail="Pattern Focus is not ready in this outcome window")
         def pin(store, admission, source, now, at):
             if not admission["focus_pin"]["available"]:
                 raise FollowUpConflict("occupied_admission", store.input_data_revision())
@@ -1780,7 +1814,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
             return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
                 **({"subject": subject} if pattern_key else {}),
-                "decision_context": source_context(source, candidate, at),
+                "decision_context": source_context(source, candidate, at, outcome_window=scope),
                 "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
         return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)
 
@@ -1813,6 +1847,26 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def finish_trial_endpoint(trial_id: str, payload: dict = Body(...),
                               _: None = Depends(require_token)) -> dict:
         return finish_follow_up("trial", trial_id, payload, durable_request(payload, required=True))
+
+    @app.post("/api/verify/trials/{trial_id}/conclusion")
+    def conclude_trial_endpoint(trial_id: str, payload: dict = Body(...),
+                                _: None = Depends(require_token)) -> dict:
+        from .store import FollowUpConflict
+        durable_request(payload, required=True)
+        if not isinstance(payload.get("conclusion"), str) or not payload["conclusion"].strip():
+            raise HTTPException(status_code=422, detail="late conclusion requires text")
+        def conclude(store, admission, source, now, at):
+            record = store.follow_up_record("trial", trial_id)
+            if record is None:
+                raise HTTPException(status_code=404, detail="unknown follow-up identity")
+            if record["ending"].get("kind") != "expired_unreviewed":
+                raise FollowUpConflict("trial_not_expired", store.input_data_revision())
+            return store.save_follow_up_record({**record, "late_conclusion": {
+                "version": "386:1", "state": "available",
+                "recorded_at": at.strftime("%Y-%m-%d %H:%M:%S"),
+                "conclusion": payload["conclusion"],
+            }})
+        return lifecycle("conclude", "trial", trial_id, payload, durable=True, mutate=conclude)
 
     def signal_recompute() -> None:
         """Invalidate after a fetch and notify the lifespan-owned worker.

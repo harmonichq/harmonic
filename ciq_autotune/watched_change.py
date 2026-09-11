@@ -742,6 +742,8 @@ def review_trials(store, *, now: datetime, selected=None, kind="trial", assessme
                   original={"context": (record.get("observed_context", record.get("decision_context"))
                                         if record else _unavailable("not_recorded")),
                             "ending": record["ending"] if record else _unavailable("not_recorded"),
+                            "late_conclusion": record.get("late_conclusion", _unavailable("not_recorded"))
+                                               if record else _unavailable("not_recorded"),
                             "assessment": record["ending"].get("assessment", _unavailable("not_recorded"))
                                           if record else _unavailable("not_recorded")},
                   reassessment=None)

@@ -157,6 +157,32 @@ class DurableFollowUpTest(unittest.TestCase):
         self.reopen()
         self.assertEqual(self.store.follow_up_record('trial', original['id']), winner)
 
+    def test_expired_trial_keeps_its_ending_when_a_late_conclusion_retries(self):
+        original = self.save_trial()
+        expired = self.save_trial({**original, 'ending': ending('expired_unreviewed', None)})
+        late = {'version': '386:1', 'state': 'available', 'recorded_at': T2,
+                'conclusion': 'The later observation still supports this change.'}
+        saved = self.save_trial({**expired, 'late_conclusion': late})
+        revision = self.store.input_data_revision()
+        retried = self.save_trial({**saved, 'late_conclusion': {**late, 'conclusion': 'Different retry'}})
+        self.assertEqual(retried, saved)
+        self.assertEqual(retried['ending'], expired['ending'])
+        self.assertEqual(retried['late_conclusion'], late)
+        self.assertEqual(self.store.input_data_revision(), revision)
+
+    def test_new_focus_context_keeps_a_valid_outcome_window_without_backfilling_legacy(self):
+        focus = self.store.pin_focus('late_bolus', T0, pattern_key='highs_after_meals')
+        context_with_scope = {**context('pin'), 'outcome_window': {'start_min': 1020, 'end_min': 120}}
+        with self.store.follow_up_transaction():
+            saved = self.store.save_follow_up_record({
+                'kind': 'focus', 'id': focus['id'], 'version': '386:1',
+                'decision_context': context_with_scope, 'comparison_context': comparison_context(),
+            })
+        self.assertEqual(saved['decision_context']['outcome_window'], context_with_scope['outcome_window'])
+        self.store.resolve_focus(focus['id'])
+        legacy = self.store.pin_focus('late_bolus', T1)
+        self.assertNotIn('outcome_window', self.store.follow_up_record('focus', legacy['id'])['decision_context'])
+
     def test_later_relationship_fills_absence_but_not_original_context(self):
         first = self.save_trial()
         self.apply()

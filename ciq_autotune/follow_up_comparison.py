@@ -29,6 +29,7 @@ from .outcomes_trend import (
 )
 from .rescue_evidence import eligible_carb_entries, first_observation, observe
 from .trial_evidence import comparison_evidence, _in_block
+from .window_membership import WindowQuery
 
 _VERSION = "386:1"
 _FMT = "%Y-%m-%d %H:%M:%S"
@@ -359,6 +360,9 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         # The published exposure feed uses collect_anchors' near-low population,
         # not build_opportunities' stricter gate-low population. Preserve full
         # context through the read cutoff, then assign anchors to exact arms.
+        scope = (record.get("decision_context") or {}).get("outcome_window")
+        query = (WindowQuery.clock(scope["start_min"], scope["end_min"])
+                 if scope is not None else None)
         anchors = (collect_anchors(bolus, cgm, basal,
                    scenario_config=ScenarioConfig(**context["configuration"]))
                    if pattern_key else ())
@@ -387,7 +391,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                 sources = {}
                 for family, anchor_kind in (("meals", "meal"), ("lows", "low")):
                     owned = [{"t": anchor.t.strftime(_FMT)} for anchor in anchors
-                             if anchor.kind.value == anchor_kind and lo <= anchor.t < hi]
+                             if anchor.kind.value == anchor_kind and lo <= anchor.t < hi
+                             and (query is None or query.contains(anchor.t.hour * 60 + anchor.t.minute))]
                     sources[family] = {"n": len(owned), "occurrences": owned}
                 criterion = opportunity_readiness(pattern_key, {}, {"exposures": sources})
                 arm.update({

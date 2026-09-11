@@ -236,6 +236,12 @@ export function endingSection(ending, { kind }) {
     <p class="gf-meta">An observation period may end without a clear answer. Nothing here required a favourable result.</p></section>`;
 }
 
+export function lateConclusionSection(conclusion) {
+  if (conclusion?.state !== 'available') return '';
+  return `<section class="gf-section" data-record-part="late-conclusion" data-late-conclusion="available"><h3>Later conclusion <span class="meta">recorded after expiry</span></h3>
+    <p data-late-conclusion-text>${e(conclusion.conclusion)}</p><p class="gf-meta">Recorded ${e(stamp(conclusion.recorded_at))}. This does not change the saved ending or resume the Trial.</p></section>`;
+}
+
 /** The observed change: the setting, and what it became. */
 export function changeSection(detail) {
   const changes = detail.changes || [];
@@ -329,6 +335,7 @@ function recordFrame(state) {
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">
     ${originalSection(detail.original || {})}
     ${endingSection(ending, { kind })}
+    ${lateConclusionSection((detail.original || {}).late_conclusion)}
     ${periodsSection(shown.comparison, kind)}
     ${changeSection({ ...detail, kind })}
     ${readinessSection(shown.comparison, { kind, heading: 'Evidence accrued' })}
@@ -413,7 +420,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   if (!memory.record || memory.record.mode !== memory.mode
       || memory.record.id !== memory.open.id || memory.record.kind !== memory.open.kind) {
     load(key, token => loadRecord(memory.open, memory.mode, token));
-    host.innerHTML = loadingFrame('Changes');
+    host.innerHTML = loadingFrame(memory.mode === 'original' ? 'Changes' : 'Reassessment');
     return;
   }
   host.innerHTML = recordFrame({ ...memory.record });

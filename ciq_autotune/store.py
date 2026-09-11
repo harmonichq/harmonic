@@ -531,13 +531,13 @@ _FOLLOW_UP_FIELDS = {
              'reconciliation', 'withdrawal'},
     'trial': {'parameter', 'slot', 'changed_at', 'before', 'after',
               'block', 'members', 'first_observed_at', 'observed_context',
-              'comparison_context', 'reconciliation', 'ending'},
+              'comparison_context', 'reconciliation', 'ending', 'late_conclusion'},
     'focus': {'lever', 'subject', 'pattern_key', 'pinned_at', 'status', 'decision_context',
               'comparison_context', 'ending'},
 }
 _FOLLOW_UP_ENVELOPES = frozenset((
     'decision_context', 'observed_context', 'comparison_context',
-    'deliverable', 'reconciliation', 'withdrawal', 'ending',
+    'deliverable', 'reconciliation', 'withdrawal', 'ending', 'late_conclusion',
 ))
 
 _PATTERN_SCHEMA_VERSION = 393
@@ -1505,6 +1505,16 @@ class Store:
             if (not isinstance(setting, dict) or 'value' not in setting
                     or not isinstance(setting.get('unit'), str) or not setting['unit']):
                 raise ValueError('retained setting requires a value and units')
+        # A new Pattern Focus retains the outcome clock scope that admitted it.
+        # Old records intentionally omit it: absence preserves their established
+        # whole-population comparison semantics rather than manufacturing scope.
+        scope = context.get('outcome_window')
+        if scope is not None:
+            if (not isinstance(scope, dict)
+                    or set(scope) != {'start_min', 'end_min'}):
+                raise ValueError('retained outcome window must name both clock bounds')
+            from .window_membership import WindowQuery
+            WindowQuery.clock(scope['start_min'], scope['end_min'])
 
     @classmethod
     def _validate_follow_up_assessment(cls, assessment):
@@ -1654,7 +1664,7 @@ class Store:
                 winner = dict(record)
             else:
                 winner = json.loads(row['record_json'])
-                for field in ('reconciliation', 'ending', 'withdrawal'):
+                for field in ('reconciliation', 'ending', 'withdrawal', 'late_conclusion'):
                     prior = winner.get(field, {})
                     proposed = record.get(field, {})
                     if not isinstance(proposed, dict):
@@ -1662,9 +1672,10 @@ class Store:
                     # An observed ending with explicitly unknown event timing is
                     # still a first ending. Its availability is not permission
                     # for a later request to replace the retained facts.
-                    captured = 'kind' if field == 'ending' else 'withdrawn_at'
-                    prior_captured = field != 'reconciliation' and captured in prior
-                    proposed_captured = field != 'reconciliation' and captured in proposed
+                    captured = ('kind' if field == 'ending' else 'withdrawn_at'
+                                if field == 'withdrawal' else 'recorded_at')
+                    prior_captured = field not in ('reconciliation',) and captured in prior
+                    proposed_captured = field not in ('reconciliation',) and captured in proposed
                     if (prior.get('state') != 'available' and not prior_captured
                             and (proposed.get('state') == 'available' or proposed_captured)):
                         winner[field] = proposed
@@ -1701,6 +1712,14 @@ class Store:
                         and terminal.get('conclusion') is not None):
                     raise ValueError('automatic ending cannot supply a user conclusion')
                 self._validate_follow_up_assessment(terminal.get('assessment'))
+            late = winner.get('late_conclusion', {})
+            if late.get('state') == 'available':
+                if kind != 'trial' or terminal.get('kind') != 'expired_unreviewed':
+                    raise ValueError('a late conclusion belongs only to an expired Trial')
+                self._follow_up_time(late.get('recorded_at'))
+                if (not isinstance(late.get('conclusion'), str)
+                        or not late['conclusion'].strip()):
+                    raise ValueError('late conclusion requires text')
             withdrawal = winner.get('withdrawal', {})
             if withdrawal.get('state') == 'available':
                 self._follow_up_time(withdrawal.get('withdrawn_at'))

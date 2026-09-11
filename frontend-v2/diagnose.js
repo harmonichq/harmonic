@@ -217,7 +217,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     button.textContent = 'Start Focus';
     button.onclick = () => {
       if (focusOfferForCase(caseContext.current())?.subject === offered.subject)
-        navigate('changes', { subject: offered.subject, from: 'diagnose' });
+        navigate('changes', { subject: offered.subject, from: 'diagnose',
+          window: `${selected.window.start_min}-${selected.window.end_min}` });
     };
     root.querySelector('header.crumb')?.append(button);
   }

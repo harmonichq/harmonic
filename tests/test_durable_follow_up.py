@@ -34,6 +34,40 @@ class DurableApiTest(unittest.TestCase):
             "request_id": "finish", "input_revision": 0})
         self.assertEqual(response.status_code, 401)
 
+    def test_expired_trial_conclusion_is_additive_idempotent_and_refreshes_history(self):
+        # This record is manufactured through the Store's public durable shape;
+        # no detector, vendor connection, or personal database is involved.
+        from tests.test_follow_up_store import ending, trial
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                record = store.save_follow_up_record({
+                    **trial('basal:0:20260902090000'),
+                    'ending': ending('expired_unreviewed', None),
+                })
+            revision = store.input_data_revision()
+        selected = {'kind': 'trial', 'selected': record['id']}
+        before = self.client.get('/api/verify/trials', headers=self.headers, params=selected)
+        self.assertEqual(before.status_code, 200, before.text)
+        self.assertEqual(before.json()['selected']['original']['ending'], record['ending'])
+        body = {'request_id': 'late-conclusion', 'input_revision': revision,
+                'conclusion': 'The later evidence still supports the change.'}
+        response = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                    headers=self.headers, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        saved = response.json()['record']
+        self.assertEqual(saved['ending'], record['ending'])
+        self.assertEqual(saved['late_conclusion']['conclusion'], body['conclusion'])
+        # A new retry identity cannot replace either immutable fact.
+        retry = self.client.post(f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+                                 json={**body, 'request_id': 'late-conclusion-retry',
+                                       'conclusion': 'Different words'})
+        self.assertEqual(retry.status_code, 200, retry.text)
+        self.assertEqual(retry.json()['record']['late_conclusion'], saved['late_conclusion'])
+        after = self.client.get('/api/verify/trials', headers=self.headers, params=selected)
+        self.assertEqual(after.status_code, 200, after.text)
+        self.assertEqual(after.json()['selected']['original']['ending'], record['ending'])
+        self.assertEqual(after.json()['selected']['original']['late_conclusion'], saved['late_conclusion'])
+
     def test_pattern_follow_up_reads_serve_the_roster_title_separately_from_context(self):
         with Store.open(self.path) as store:
             with store.follow_up_transaction():

@@ -4,7 +4,7 @@ The High-carb sequence finding uses observed glucose responses for the highest-c
 
 ## Synthetic capture provenance
 
-All images in `rendered/` are unmodified browser captures of manufactured input from `scripts/gen_eating_sequence_fixtures.py`. The base is `e582355532af9c4e422bf5121af8aae6b66af434`; the revision is `096c5d20460e39f2964acdd01c9e2cb5692a01ab`. Both shells were built before revision capture. No live vendor fetch or personal data was used. PNG dimensions and the browser viewport agree for every listed image.
+All images in `rendered/` are unmodified browser captures of manufactured input from `scripts/gen_eating_sequence_fixtures.py`. The base is `e582355532af9c4e422bf5121af8aae6b66af434`; the capture checkout is `647feb2197efa53f4eccfd1f0aa3169ff135b469`, whose product, test and fixture source exactly matches reviewed ticket `d6192126f8f2aa9e80c21e94d25b21aac3b203b6`. Both shells were built before revision capture. No live vendor fetch or personal data was used. PNG dimensions and the browser viewport agree for every listed image.
 
 The before/after opening views use `high_carb_sequence_empty`, the same eligible population and the same viewport. Baseline S155 captures preserve the prior aggregate chart; revision captures show the response chart. The browser flow may leave a different scroll position after fullscreen return.
 
@@ -18,7 +18,7 @@ Additional inspected views: [mobile readout](rendered/readout-mobile.png), [mobi
 
 ## Focused verification
 
-The captured product revision at `096c5d2` passed 10 v1 and 11 v2 browser checks at each of 1280 × 720, 1440 × 900 and 390 × 844, with no failures or skips. They cover source-matched cohort and selected traces, clean/reference and second fired selections, clock scope, singleton and limited observations, gaps, typed errors and stale recovery, fullscreen return and keyboard readout. Commit `b0bf21ee7c631f12b81df94b9e5cefd503d5f3ff` adds direct pointer proof without changing product source: v1 S155 and the v2 scoped-selection/fullscreen test each passed independently at 1280 × 720. Real mouse movement to minute 330 changed both stage and fullscreen readouts to +5 h 30 min, 270 mg/dL (n=8) and 110 mg/dL (n=32). S153, S155, S157 and S158 retain their existing sequence semantics and Repeat eating branches.
+The final reviewed product source passed 10 v1 and 11 v2 browser checks at each of 1280 × 720, 1440 × 900 and 390 × 844, with no failures or skips. They cover source-matched cohort and selected traces, clean/reference and second fired selections, clock scope, singleton and limited observations, gaps, typed errors and stale recovery, fullscreen return and keyboard readout. Commit `b0bf21ee7c631f12b81df94b9e5cefd503d5f3ff` adds direct pointer proof without changing product source: v1 S155 and the v2 scoped-selection/fullscreen test each passed independently at 1280 × 720. Real mouse movement to minute 330 changed both stage and fullscreen readouts to +5 h 30 min, 270 mg/dL (n=8) and 110 mg/dL (n=32). S153, S155, S157 and S158 retain their existing sequence semantics and Repeat eating branches.
 
 The final commands use `PLAYWRIGHT_MODULE` from the repository browser-cache helper, `VIEWPORT` for each size, and a fresh `DIAGNOSE_EVIDENCE_DIR`. Browser commands run serially with host permissions:
 
@@ -33,9 +33,11 @@ Independent coordinator checks on the committed revision passed 171 backend/fixt
 
 ## Whole-branch corrections
 
-Review of the integrated branch found a selected singleton with no painted marker and a prohibited internal scope label in the new legend. Revision `70045d7` adds the selected observation marker in the shared renderer and plain-language scope labels. The full screenshot matrix will be refreshed after the correction review.
+Review of the integrated branch found a selected singleton with no painted marker and a prohibited internal scope label in the new legend. Revision `70045d7` adds the selected observation marker in the shared renderer and plain-language scope labels. The full screenshot matrix was refreshed on unchanged reviewed source. All 105 captured PNGs match their actual viewport dimensions. The retained selected-singleton visual proof uses the [1280 × 720 stage](rendered/selected-singleton-stage.png) and [390 × 844 fullscreen](rendered/selected-singleton-fullscreen.png); the mobile stage marker is covered by its painted-mark assertion, since that stage screenshot framed the scrolled inspector.
 
 The Findings fixture generator is a second caller of the shared compactor. Its capture was regenerated and its existing JavaScript mirror updated for the backend-owned short headlines. All 18 sequence QA cases across seven windows compare against the producer output. Independent focused frontend verification passed 166 tests with no skips; the Findings generator drift check passed. Commit `647feb21` corrects the reproduced test-readiness race by waiting for the mounted chart and required options. Both focused v2 tests then passed independently, preserving the selected singleton’s painted-mark assertion.
+
+Both whole-branch review axes converged with zero remaining implementation findings.
 
 ## Aggregate acceptance
 

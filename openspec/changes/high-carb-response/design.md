@@ -36,6 +36,8 @@ The backend owns the High-carb stage headline. Use the existing server headline 
 
 On 2026-09-11, Connor reviewed the rendered mobile header and rejected its paragraph-length numerical title. This direct implementation correction supersedes the earlier instruction to put the full comparison summary in the stage headline. Post-sequence views use “Glucose after high-carb eating”; in-sequence views use an accurate during-eating title. The percentages, comparison, sample counts and caveats remain readable in supporting detail. The correction changes presentation, not the underlying comparison.
 
+Connor subsequently rejected the verbose supporting-detail block and requested an Opus 5 high-effort UI critique. The default High-carb inspector now targets two concise cohort comparison rows for the selected period, with whole-percent time in range and integer counts. All three periods, glucose SD, units, counts, unavailable states and the complete server summary remain accessible through a collapsed disclosure. Display rounding does not change computation. The disclosure preserves its state during occurrence selection. Source population remains visible beside the chart so it cannot be confused with the clock-filtered roster.
+
 ## Risk contract
 
 - **Must prevent:** secret exposure, irreversible loss of authoritative data, silent incorrect success; fabricated glucose curves; changed detector eligibility, ranking, ownership, support floor or dosing guidance; a caption describing a different population or period than its curve; false-low observations reappearing in the new evidence.

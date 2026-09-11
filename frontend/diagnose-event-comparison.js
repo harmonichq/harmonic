@@ -102,6 +102,12 @@ function legend(surface, caseFile, selected) {
           : `${count} · unavailable for an average`;
     return `<span class="ec-key-item" data-cohort="${cohort.key}" data-support="${cohort.support}" data-selected-cohort="${selectedCohort}"><i class="ec-key-mark" aria-hidden="true"></i><strong>${cohort.name}</strong><small>${state}${selectedCohort ? ' · selected cohort' : ''}</small></span>`;
   }).join('');
+  if (caseFile.projection.schema === 'high-carb-sequence-response-v1') {
+    const period = caseFile.projection.period === 'in_sequence' ? 'During eating'
+      : caseFile.projection.period === 'post_4h' ? 'Next 4 h' : 'Next 6 h';
+    const window = caseFile.projection.source_window;
+    key.insertAdjacentHTML('beforeend', `<span class="ec-comparison-unavailable">Source population · ${caseFile.projection.scope} scope · ${window.days} days · ${period}</span>`);
+  }
   if (caseFile.projection.comparison.state === 'unavailable') key.insertAdjacentHTML('beforeend',
     `<span class="ec-comparison-unavailable" role="status">${caseFile.projection.comparison.name} is unavailable for comparison.</span>`);
   if (selected) key.insertAdjacentHTML('beforeend', `<span class="ec-key-item" data-cohort="selected"><i class="ec-key-mark" aria-hidden="true"></i><strong>Selected trace</strong><small>${dateLabel(selected.date)} · observed</small></span>`);
@@ -253,7 +259,7 @@ function markup(caseFile, bodyOnly) {
    (#72) settled, which came back when fullscreen replaced the By-event mount it
    was settled at) and hangs only its readout in the line the caller lends it. */
 export function renderEventSurface(surface, caseFile,
-  { headerHost = null, headline = null } = {}) {
+  { headerHost = null, headline = null, range = null } = {}) {
   assertEventCaseFile(caseFile);
   const content = new AbortController();
   const selected = selection(caseFile);
@@ -276,7 +282,7 @@ export function renderEventSurface(surface, caseFile,
      alone on the surface, this chart IS the whole field. The builder widens what
      it is handed over the selected trace it draws — see the note at `option()`. */
   chart.setOption(eventComparisonChartOption(
-    caseFile, glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
+    caseFile, range || glucoseRange(eventComparisonGlucoseValues(caseFile)), surface,
   ));
   const head = headerHost || headline || surface.querySelector('#ec-canvas-head');
   const [windowStart, windowEnd] = caseFile.projection.window_min;

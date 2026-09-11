@@ -1140,7 +1140,8 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     setOption: (option) => { mountedOption = option; },
     on() {}, getZr: () => ({ on() {} }), resize() {}, dispose() {},
   };
-  const key = { dataset: {}, innerHTML: '', insertAdjacentHTML() {} };
+  const key = { dataset: {}, innerHTML: '',
+    insertAdjacentHTML: (_position, html) => { key.innerHTML += html; } };
   const chartElement = { addEventListener() {}, setAttribute() {} };
   const surface = {
     innerHTML: '',
@@ -1164,6 +1165,15 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     renderEventSurface(surface, widened);
     assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max],
       [GLUCOSE_ENVELOPE[0], 280]);
+
+    const highCarb = structuredClone(event);
+    highCarb.projection = { ...highCarb.projection,
+      schema: 'high-carb-sequence-response-v1', scope: 'pooled', period: 'post_6h',
+      source_window: { days: 30, start: '2039-12-22T06:00:00', end: '2040-01-21T06:00:00' } };
+    renderEventSurface(surface, highCarb, { range: [80, 240] });
+    assert.match(key.innerHTML, /Source population · pooled scope · 30 days · Next 6 h/);
+    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [80, 240],
+      'the focal surface preserves its injected shared range');
   } finally {
     globalThis.window = prior.window;
     globalThis.ResizeObserver = prior.ResizeObserver;

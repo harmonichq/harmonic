@@ -184,7 +184,7 @@ function validResponseCohort(cohort, key, name, window) {
     || !cohort.occurrence_ids.every((id) => /^o_[a-f0-9]{32}$/.test(id))
     || !Array.isArray(cohort.points)) return false;
   return cohort.points.every((point) => Number.isFinite(point?.minute)
-    && point.minute >= window[0] && point.minute <= window[1] && point.minute % 5 === 0
+    && point.minute >= window[0] && point.minute < window[1] && point.minute % 5 === 0
     && responseCount(point.n) && point.n <= cohort.usable_count
     && RESPONSE_SUPPORT.has(point.support)
     && (point.n === 0 || point.support === 'withheld'

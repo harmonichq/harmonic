@@ -731,6 +731,17 @@ function renderBehavioralFullscreen(host, f) {
   return mounted;
 }
 
+function renderHighCarbStage(host, caseFile, range) {
+  const previous = window.__diagnoseEventComparison;
+  const mounted = renderEventSurface(host, highCarbResponseCase(caseFile), { range });
+  mounted.restoreGlobal = () => {
+    if (window.__diagnoseEventComparison === mounted) {
+      window.__diagnoseEventComparison = previous;
+    }
+  };
+  return mounted;
+}
+
 /**
  * ONE item panel, for every parameter — a basal slot, an I:C block, or the ISF
  * value. Same component, same order, same reserved geometry; only the words are
@@ -2810,6 +2821,10 @@ function boot(root, data, callbacks, signal) {
               || (descriptor.kind === 'eating-sequence'
                 && caseFile.finding.lever === 'high_carb_sequence'))) {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
+              tileMounts.push(installTileMount(chartHost, mounted));
+            } else if (descriptor.kind === 'eating-sequence'
+              && caseFile.finding.lever === 'high_carb_sequence' && seat.seat === 'focal') {
+              const mounted = renderHighCarbStage(chartHost, caseFile, sharedGlucoseRange);
               tileMounts.push(installTileMount(chartHost, mounted));
             } else {
               const mounted = mountDescriptorChart(chartHost, descriptor, seat.seat === 'mini', {

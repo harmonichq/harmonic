@@ -201,10 +201,31 @@ test('selection validation retains exact served sequence details and rejects mal
     (c) => { c.projection.report.high_carb_sequence.finding = null; },
     (c) => { c.occurrences[0].id = 'bad'; },
     (c) => { c.projection.response.cohorts[0].name = 'High-carb sequences'; },
+    (c) => { c.projection.response.cohorts[0].points[2].minute = 15; },
   ]) {
     const broken = structuredClone(selected); mutate(broken);
     assert.equal(validEatingSequenceCase(broken), false);
   }
+});
+
+test('response points stop before the excluded post-sequence and in-sequence endpoints', () => {
+  const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global
+    .cases['finding:high_carb_sequence'].event;
+  const post = withHighCarbResponse(stored);
+  assert.equal(validHighCarbResponse(post), true);
+  post.projection.response.cohorts[0].points[2].minute = 15;
+  assert.equal(validHighCarbResponse(post), false);
+
+  const during = withHighCarbResponse(stored);
+  during.projection.report.high_carb_sequence.finding.period = 'in_sequence';
+  during.projection.response.period = 'in_sequence';
+  during.projection.response.window_min = [-10, 5];
+  for (const cohort of during.projection.response.cohorts) {
+    cohort.points = cohort.points.map((point, index) => ({ ...point, minute: -10 + (index * 5) }));
+  }
+  assert.equal(validHighCarbResponse(during), true);
+  during.projection.response.cohorts[1].points[2].minute = 5;
+  assert.equal(validHighCarbResponse(during), false);
 });
 
 test('thin source cohorts produce no substitute finding and adapter nulls remain null', () => {

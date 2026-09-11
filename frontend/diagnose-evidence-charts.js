@@ -1,4 +1,7 @@
-import { isEatingSequence, eatingSequenceChartOption, validEatingSequenceCase } from './diagnose-eating-sequences.js';
+import {
+  highCarbResponseCase, isEatingSequence, eatingSequenceChartOption,
+  validEatingSequenceCase,
+} from './diagnose-eating-sequences.js';
 import {
   eventComparisonChartOption,
   eventComparisonGlucoseValues,
@@ -1010,18 +1013,27 @@ const entries = [
     name: 'Eating sequence',
     modes: null,
     validateData: validEatingSequenceCase,
-    queuePreview: (descriptor, _range, colors) =>
-      eatingSequenceChartOption(descriptor.data, { mini: true, palette: colors.cohorts }),
+    queuePreview: (descriptor, range, colors) => descriptor.data.finding.lever === 'high_carb_sequence'
+      ? eventComparisonChartOption(highCarbResponseCase(descriptor.data), range, null, true)
+      : eatingSequenceChartOption(descriptor.data, { mini: true, palette: colors.cohorts }),
     nameFor: (row) => ({ title: row.title, meta: 'sequence cohorts · served comparison' }),
     meta: () => 'sequence cohorts · served comparison',
-    option: (_mode, { data, caseFile = data, surface = null, mini = false } = {}) =>
-      eatingSequenceChartOption(caseFile, { surface, mini }),
-    thumbnail: (data) => eatingSequenceChartOption(data, { mini: true }),
+    option: (_mode, { data, range, caseFile = data, surface = null, mini = false } = {}) =>
+      caseFile.finding.lever === 'high_carb_sequence'
+        ? eventComparisonChartOption(highCarbResponseCase(caseFile), range, surface, mini)
+        : eatingSequenceChartOption(caseFile, { surface, mini }),
+    thumbnail: (data) => {
+      if (data.finding.lever !== 'high_carb_sequence') return eatingSequenceChartOption(data, { mini: true });
+      const response = highCarbResponseCase(data);
+      return eventComparisonChartOption(response,
+        glucoseRange(eventComparisonGlucoseValues(response)), null, true);
+    },
     coordinateSchema: ['projection_id', 'finding_id', 'alignment', 'factor', 'view'],
     matches: (row) => isEatingSequence(row.lever) && Boolean(row.event_chart),
     coordinates: (row, findings) => ({ projection_id: findings.projection_id,
       finding_id: row.id, alignment: 'event', factor: row.lever, view: 'sequences' }),
-    glucoseValues: null,
+    glucoseValues: (data) => data?.finding?.lever === 'high_carb_sequence'
+      ? eventComparisonGlucoseValues(highCarbResponseCase(data)) : [],
   },
   {
     kind: 'event-comparison',

@@ -1339,8 +1339,6 @@ function boot(root, data, callbacks, signal) {
   const currentPreparationKey = () => windowKey(findingsWindow());
   let preparationGeneration = 0;
   let preparationInFlight = null;
-  let dragPreparationWait = null;
-  let dragPreparationWantedKey = null;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
   const requestWindow = () => {
@@ -1807,49 +1805,6 @@ function boot(root, data, callbacks, signal) {
         activeCaseError = caseErrorFrom(error);
         paint();
       });
-  }
-
-  /* Dragging can cross several 15-minute positions before one evidence
-     preparation returns. Keep one request in flight and one replaceable slot
-     for the newest position; intermediate positions have no tile to paint. */
-  function ensurePinnedDragPreparation() {
-    if (canvasLayout.pins.length === 0) {
-      dragPreparationWantedKey = null;
-      return;
-    }
-    dragPreparationWantedKey = currentPreparationKey();
-    if (dragPreparationWait) return;
-
-    const waitFor = (request, requestedKey) => {
-      dragPreparationWait = request;
-      request.then(() => {
-        if (signal.aborted || dragPreparationWait !== request) return;
-        dragPreparationWait = null;
-        const wantedKey = dragPreparationWantedKey;
-        dragPreparationWantedKey = null;
-        if (wantedKey !== null && wantedKey !== requestedKey) {
-          dragPreparationWantedKey = wantedKey;
-          issueLatest();
-        }
-      });
-    };
-
-    const issueLatest = () => {
-      if (canvasLayout.pins.length === 0 || dragPreparationWantedKey === null) {
-        dragPreparationWantedKey = null;
-        return;
-      }
-      if (preparationInFlight) {
-        waitFor(preparationInFlight, pendingKey);
-        return;
-      }
-      const requestedKey = dragPreparationWantedKey;
-      dragPreparationWantedKey = null;
-      const request = ensurePreparation();
-      if (!request) return;
-      waitFor(request, requestedKey);
-    };
-    issueLatest();
   }
 
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
@@ -3622,9 +3577,9 @@ function boot(root, data, callbacks, signal) {
         : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
           : mode);
       markWindowSegment(drawn ? windowSpanText(drawn) : 'Whole day', clearDrawn);
-      /* A pin holds chart identity, not stale evidence. The drag coordinator
-         keeps one request live and one latest position queued behind it. */
-      ensurePinnedDragPreparation();
+      /* Evidence preparation repaints the mounted inspector. Commit it only
+         after pointer release below, so that repaint cannot replace the chart
+         holding this gesture's pointer capture. */
     }
 
     function liveRepaint() {

@@ -197,3 +197,19 @@ The first coordinator API probe against the manufactured `c3-pin` case rejected
 The corrected public browser journey covers a 24 h save, reload, saved context,
 and Inspect return; the separate Afternoon journey retains failure/retry scope
 and request-identity coverage.
+
+### Held Window drag integration finding
+
+The complete #404 replay exposed a race after an occurrence was selected: an
+intermediate drag position started evidence preparation, and its repaint replaced
+the chart that held pointer capture. The terminal pointer event arrived, but the
+intended endpoint did not commit. Tightening replay synchronization alone did not
+resolve the full-run failure.
+
+The shipped Window controller now defers that preparation to its existing
+post-release commit paint. The held brace and readout still follow the pointer;
+the committed window determines the subsequent evidence request. A public browser
+regression observes no preparation request while held, then the exact 720–1290
+request and visible 12:00–21:30 window after release. S101 and S103 retain their
+real mouse gestures and exact visible assertions. This corrects gesture ownership
+without changing membership, clinical predicates, or ledger retirements.

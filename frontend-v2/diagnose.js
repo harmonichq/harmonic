@@ -11,6 +11,23 @@ import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
 import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { formatStartMin } from '../frontend/plan.js';
 
+// A case-file's unscoped WindowQuery is the reader's explicit 24 h selection.
+// Routes carry concrete coordinates because Pattern Focus requires a retained
+// outcome scope on its durable write; ordinary clock selections retain their
+// served coordinates unchanged.
+export function outcomeWindowForCase(selected) {
+  const window = selected?.window;
+  if (Number.isInteger(window?.start_min) && Number.isInteger(window?.end_min)) {
+    return { start_min: window.start_min, end_min: window.end_min };
+  }
+  return window?.scoped === false ? { start_min: 0, end_min: 1440 } : null;
+}
+
+const outcomeWindowRoute = selected => {
+  const scope = outcomeWindowForCase(selected);
+  return scope ? `${scope.start_min}-${scope.end_min}` : '';
+};
+
 /** One mounted shared view and one coherent initial read. loadCase remains an
  * unchanged Promise seam for the journey's caller; it is NOT a selection event.
  * Tile loads use it too. C3 must observe the reader's drill separately. */
@@ -212,6 +229,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       root.querySelector('header.crumb')?.append(back);
     }
     const selected = caseContext.current();
+    const selectedWindow = outcomeWindowRoute(selected);
     const offered = focusOfferForCase(selected);
     const context = focusContextForCase(selected);
     if (!offered) {
@@ -235,7 +253,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         button.textContent = context.action;
         button.title = context.reason;
         button.onclick = () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
-          window: `${selected.window.start_min}-${selected.window.end_min}` });
+          window: selectedWindow });
         crumb?.append(button);
       }
       return;
@@ -246,7 +264,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     button.onclick = () => {
       if (focusOfferForCase(caseContext.current())?.subject === offered.subject)
         navigate('changes', { subject: offered.subject, from: 'diagnose',
-          window: `${selected.window.start_min}-${selected.window.end_min}` });
+          window: selectedWindow });
     };
     root.querySelector('header.crumb')?.append(button);
   }

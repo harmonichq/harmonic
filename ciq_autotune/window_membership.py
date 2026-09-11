@@ -52,7 +52,10 @@ class WindowQuery:
                 raise ValueError(f"{name} must be minutes past midnight")
             if not 0 <= value <= DAY_MINUTES:
                 raise ValueError(f"{name} must be within 0..{DAY_MINUTES}")
-        if start_min % DAY_MINUTES == end_min % DAY_MINUTES:
+        # ``0–1440`` is the one explicit full-day scope retained by a Pattern
+        # Focus. Equal clock endpoints still mean an empty interval, so legacy
+        # clock-query validation stays unchanged.
+        if start_min % DAY_MINUTES == end_min % DAY_MINUTES and (start_min, end_min) != (0, DAY_MINUTES):
             raise ValueError("a window must span some part of the day")
         return cls(start_min, end_min)
 

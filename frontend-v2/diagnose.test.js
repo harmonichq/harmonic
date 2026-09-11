@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 
 let fetchReply = async () => ({ ok: true, json: async () => ({ items: [], history: [] }) });
 globalThis.fetch = (...args) => fetchReply(...args);
-const { createDiagnoseDestination } = await import('./diagnose.js');
+const { createDiagnoseDestination, outcomeWindowForCase } = await import('./diagnose.js');
+
+test('an unscoped case-file WindowQuery preserves the explicit 24 h Focus scope', () => {
+  assert.deepEqual(outcomeWindowForCase({ window: { scoped: false, start_min: null, end_min: null } }),
+    { start_min: 0, end_min: 1440 });
+  assert.deepEqual(outcomeWindowForCase({ window: { scoped: true, start_min: 22 * 60, end_min: 2 * 60 } }),
+    { start_min: 22 * 60, end_min: 2 * 60 });
+  assert.equal(outcomeWindowForCase({ window: { scoped: true, start_min: null, end_min: null } }), null);
+});
 
 function host() {
   const controls = new Map();

@@ -40,12 +40,13 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
   const title = 'Served Pattern title';
   const pageFor = stageText => {
     let reloaded = false; let location = 'http://127.0.0.1:8765/v2/?to=diagnose';
-    const scope = { start_min: 720, end_min: 1080 };
+    const scope = { start_min: 0, end_min: 1440 };
     const seenResponses = [];
     const preparation = {
-      url: () => 'http://127.0.0.1:8765/api/diagnose/finding-case-file-preparation?start_min=720&end_min=1080',
+      url: () => 'http://127.0.0.1:8765/api/diagnose/finding-case-file-preparation',
       ok: () => true, request: () => ({ method: () => 'GET' }),
-      json: async () => ({ rendered_rows: [{ id: 'finding:synthetic-pattern' }] }),
+      json: async () => ({ coordinates: { window: { scoped: false, start_min: null, end_min: null } },
+        rendered_rows: [{ id: 'finding:synthetic-pattern' }] }),
     };
     const focusRequest = { method: () => 'POST', postDataJSON: () => ({
       pattern_key: offered.key, subject: offered.subject, outcome_window: scope, request_id: 'synthetic-request',
@@ -73,13 +74,15 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
           : path === '/api/guidance'
             ? { candidates: [{ subject: offered.subject, collapse: 'collapse_to_member',
                 chosen_member: { subject: 'habit:synthetic-pattern' } }] }
-          : { focuses: [{ id: 8, title: 'Another Focus' }, { ...saved, title }] };
+          : { focuses: [{ id: 8, title: 'Another Focus' }, { ...saved, title }],
+            selected: { original: { context: { outcome_window: scope } } } };
         return { status: () => 200, text: async () => JSON.stringify(payload), json: async () => payload };
       } },
       locator: selector => ({
         filter() { return this; }, first() { return this; },
         waitFor: async () => {}, click: async () => {
-          if (selector.startsWith('[data-start-focus=')) location = 'http://127.0.0.1:8765/v2/changes?window=720-1080';
+          if (selector.startsWith('[data-start-focus=')) location = 'http://127.0.0.1:8765/v2/changes?window=0-1440';
+          if (selector === '[data-follow-up-inspect]') location = 'http://127.0.0.1:8765/v2/diagnose?window=0-1440';
         }, count: async () => 0,
         innerText: async () => {
           assert.equal(selector, '.gf-stage-focus');
@@ -94,9 +97,9 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
   await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S56(missing)), /served Focus title/);
   const passing = pageFor(title);
   await C3_STORIES.S56(passing);
-  assert.equal(passing._seenResponses.length, 2, 'S56 observes both selected-window preparation and Focus save responses');
+  assert.equal(passing._seenResponses.length, 3, 'S56 observes preparation, Focus save, and retained Inspect responses');
   assert.deepEqual(passing._seenResponses[1].request().postDataJSON().outcome_window,
-    { start_min: 720, end_min: 1080 }, 'S56 submits the authentic selected Diagnose scope before its reload assertion');
+    { start_min: 0, end_min: 1440 }, 'S56 submits the authentic selected 24 h scope before its reload assertion');
 });
 
 test('one invocation selects the generated case each story needs', () => {

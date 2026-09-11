@@ -180,7 +180,7 @@ class PatternReplayTest(unittest.TestCase):
                 db_path=database.name, token="", enable_fetch_loop=False,
             ))
             body = {"pattern_key": "highs_after_meals",
-                    "outcome_window": {"start_min": 0, "end_min": 1439}}
+                    "outcome_window": {"start_min": 0, "end_min": 1440}}
             pinned = client.post("/api/focus", json=body)
             self.assertEqual(pinned.status_code, 200, pinned.text)
             with Store.open(database.name) as store:

@@ -491,6 +491,28 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
                             < unscoped['denominators'][arm]['readings']
                             for arm in ('before', 'after')))
 
+    def test_saved_explicit_whole_day_scope_keeps_23_59_in_both_comparison_arms(self):
+        from ciq_autotune.event_comparison import scoped_outcome_occurrences
+        from ciq_autotune.window_membership import WindowQuery
+
+        path = self.materialize()
+        scope = {'start_min': 0, 'end_min': 1440}
+        with Store.open_readonly(path) as store:
+            unscoped = self.comparison(store)
+            retained = self.comparison(store, outcome_window=scope)
+        for arm in ('before', 'after'):
+            self.assertEqual(retained['readiness'][arm]['count'], unscoped['readiness'][arm]['count'])
+            self.assertEqual(retained['denominators'][arm]['contributing_meals'],
+                             unscoped['denominators'][arm]['contributing_meals'])
+        query = WindowQuery.clock(**scope)
+        for start, end in ((datetime(2024, 5, 1), datetime(2024, 5, 2)),
+                           (datetime(2024, 5, 5), datetime(2024, 5, 6))):
+            included = scoped_outcome_occurrences([{
+                'outcome_t': (end - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S'),
+                'outcome_min': 1439,
+            }], start=start, end=end, query=query)
+            self.assertEqual(len(included), 1, 'the saved whole-day scope includes 23:59 in each arm')
+
     def test_elapsed_time_and_other_arm_cannot_supply_missing_opportunities(self):
         path = self.materialize()
         with Store.open_readonly(path) as store:

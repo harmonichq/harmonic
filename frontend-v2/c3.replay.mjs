@@ -81,28 +81,44 @@ async function readiness(page, kind = 'trial') {
   }, "readiness");
   return context;
 }
-async function startForm(page, drill = false) {
+async function startForm(page, selection = 'afternoon') {
   const roster = await read(page, '/api/focus');
   assert.equal(roster.admission?.state, 'available', 'case must publish available follow-up admission');
   assert.equal(roster.admission.focus_pin.available, true, 'case must permit starting a Focus');
   const offered = roster.pinnable_patterns[0];
   assert.ok(offered, 'case must publish a pinnable Pattern');
-  if (drill) {
-    await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
-    const scoped = page.waitForResponse(response => {
+  const expectedScope = selection === 'whole-day' ? { start_min: 0, end_min: 1440 }
+    : selection ? { start_min: 720, end_min: 1080 } : null;
+  if (selection) {
+    const wholeDay = selection === 'whole-day';
+    const preparation = page.waitForResponse(response => {
       const url = new URL(response.url());
       return url.pathname === '/api/diagnose/finding-case-file-preparation'
-        && url.searchParams.get('start_min') === '720' && url.searchParams.get('end_min') === '1080'
+        && (wholeDay
+          ? !url.searchParams.has('start_min') && !url.searchParams.has('end_min')
+          : url.searchParams.get('start_min') === '720' && url.searchParams.get('end_min') === '1080')
         && response.ok();
     }, { timeout: 30000 });
-    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-    const scopedPreparation = await boundedWait(scoped, 'selected Afternoon preparation').then(response => response.json());
+    await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
+    if (!wholeDay) await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const selectedPreparation = await boundedWait(preparation,
+      wholeDay ? 'selected 24 h preparation' : 'selected Afternoon preparation').then(response => response.json());
+    if (wholeDay) {
+      assert.equal(selectedPreparation.coordinates.window.scoped, false,
+        'the actual 24 h selection must retain the unscoped case-file payload');
+      assert.equal(selectedPreparation.coordinates.window.start_min, null);
+      assert.equal(selectedPreparation.coordinates.window.end_min, null);
+      // The app may open with another visual preset while this global
+      // preparation is already cached. Press the real 24 h control before
+      // drilling so the selected case and retained route share that scope.
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+    }
     const source = await read(page, '/api/guidance');
     const candidate = source.candidates.find(row => row.subject === offered.subject);
     const caseId = candidate.collapse === 'collapse_to_member'
       ? candidate.chosen_member.subject.replace(/^habit:/, 'finding:') : offered.subject;
-    assert.ok(scopedPreparation.rendered_rows.some(row => row.id === caseId),
-      'the selected Afternoon producer population must publish the Focus case that opens');
+    assert.ok(selectedPreparation.rendered_rows.some(row => row.id === caseId),
+      `the selected ${wholeDay ? '24 h' : 'Afternoon'} producer population must publish the Focus case that opens`);
     const row = page.locator(`#level .qrow[data-id="${caseId}"]`);
     await row.waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
@@ -116,11 +132,14 @@ async function startForm(page, drill = false) {
   await page.locator('[data-focus="pin"]').waitFor({ timeout: 30000 });
   const route = parseV2Route(new URL(page.url()));
   const scope = route.context.window?.split('-').map(Number);
-  return { offered, scope: scope?.length === 2 && scope.every(Number.isInteger)
-    ? { start_min: scope[0], end_min: scope[1] } : null, route };
+  const selectedScope = scope?.length === 2 && scope.every(Number.isInteger)
+    ? { start_min: scope[0], end_min: scope[1] } : null;
+  if (selection) assert.deepEqual(selectedScope, expectedScope,
+    'the shared Changes route preserves the selected Diagnose outcome scope');
+  return { offered, scope: selectedScope, route };
 }
-async function pin(page, drill = false) {
-  const { offered, scope, route } = await startForm(page, drill);
+async function pin(page, selection = 'afternoon') {
+  const { offered, scope, route } = await startForm(page, selection);
   assert.equal(route.destination, 'changes', 'the pin form must be reached through the shared Changes route');
   assert.ok(scope, 'a Pattern Focus form must retain the selected Diagnose outcome window');
   const response = page.waitForResponse(reply => reply.request().method() === 'POST'
@@ -141,11 +160,29 @@ async function pin(page, drill = false) {
   }, "pin");
   await page.reload(); await page.locator('.gf-stage-focus').waitFor({ timeout: 30000 });
   await waitForReplayAssertion(async seen => {
-    const followed = seen(await read(page, '/api/verify/trials'));
+    const followed = seen(await read(page, '/api/verify/trials', { kind: 'focus', selected: record.id }));
     const title = followed.focuses.find(row => row.id === record.id)?.title;
     assert.ok(typeof title === 'string' && title.trim(), 'the saved record must carry a served Focus title');
     assert.ok((seen(await page.locator('.gf-stage-focus').innerText())).includes(title), 'the stage must print the served Focus title');
+    if (scope.start_min === 0 && scope.end_min === 1440) {
+      assert.deepEqual(followed.selected?.original?.context?.outcome_window, scope,
+        'the saved Focus retains the exact explicit 24 h scope');
+    }
   }, "pin");
+  if (scope.start_min === 0 && scope.end_min === 1440) {
+    const preparation = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === '/api/diagnose/finding-case-file-preparation'
+        && !url.searchParams.has('start_min') && !url.searchParams.has('end_min') && response.ok();
+    }, { timeout: 30000 });
+    await press(page, '[data-follow-up-inspect]');
+    const returned = await boundedWait(preparation, 'retained 24 h Inspect preparation').then(response => response.json());
+    const inspectRoute = parseV2Route(new URL(page.url()));
+    assert.equal(inspectRoute.destination, 'diagnose');
+    assert.equal(inspectRoute.context.window, '0-1440', 'Inspect keeps the saved explicit 24 h scope');
+    assert.equal(returned.coordinates.window.scoped, false,
+      'Inspect requests the saved full-day case-file population without clipping it');
+  }
 }
 async function preempted(page) {
   const roster = await read(page, '/api/verify/trials');
@@ -355,9 +392,9 @@ export const C3_STORIES = {
   async S55(page) { await active(page); await waitForReplayAssertion(async seen => {
     assert.match(seen(await page.locator('.gf-stage-trial .gf-title').innerText()), /Profile change · \d+ settings|·/);
   }, "S55"); },
-  async S56(page) { await pin(page, true); },
+  async S56(page) { await pin(page, 'whole-day'); },
   async S56b(page) {
-    const { offered, scope, route } = await startForm(page, true);
+    const { offered, scope, route } = await startForm(page, 'afternoon');
     assert.equal(route.destination, 'changes');
     assert.ok(scope, 'S56b must reach the Pattern Focus form through a selected Diagnose window');
     let first;

@@ -14,7 +14,7 @@ from ciq_autotune.store import Store
 from scripts.qa_e2e_cases import QA_CASES, materialize_case
 
 
-WHOLE_DAY_OUTCOME_WINDOW = {"start_min": 0, "end_min": 1439}
+WHOLE_DAY_OUTCOME_WINDOW = {"start_min": 0, "end_min": 1440}
 
 
 @unittest.skipIf(TestClient is None, "api extra not installed")

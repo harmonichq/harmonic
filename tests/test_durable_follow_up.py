@@ -175,7 +175,7 @@ class DurableApiTest(unittest.TestCase):
                 'subject': 'pattern:highs_after_meals',
                 'analysis_generation': source['analysis_generation'],
                 'pattern_key': 'highs_after_meals', 'lever': 'high_carb_sequence',
-                'outcome_window': {'start_min': 0, 'end_min': 1439}}
+                'outcome_window': {'start_min': 0, 'end_min': 1440}}
         absent = self.client.post('/api/focus', headers=self.headers,
                                   json={key: value for key, value in body.items()
                                         if key != 'outcome_window'})

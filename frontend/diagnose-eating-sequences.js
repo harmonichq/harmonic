@@ -171,6 +171,60 @@ export function eatingSequenceComparison(caseFile) {
   };
 }
 
+const RESPONSE_PERIODS = ['in_sequence', 'post_4h', 'post_6h'];
+const RESPONSE_SUPPORT = new Set(['withheld', 'limited', 'supported']);
+const responseCount = (value) => Number.isInteger(value) && value >= 0;
+const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+function validResponseCohort(cohort, key, name, window) {
+  if (cohort?.key !== key || cohort.name !== name
+    || !responseCount(cohort.routed_count) || !responseCount(cohort.usable_count)
+    || cohort.usable_count > cohort.routed_count || !RESPONSE_SUPPORT.has(cohort.support)
+    || !Array.isArray(cohort.occurrence_ids) || cohort.occurrence_ids.length !== cohort.routed_count
+    || !cohort.occurrence_ids.every((id) => /^o_[a-f0-9]{32}$/.test(id))
+    || !Array.isArray(cohort.points)) return false;
+  return cohort.points.every((point) => Number.isFinite(point?.minute)
+    && point.minute >= window[0] && point.minute <= window[1] && point.minute % 5 === 0
+    && responseCount(point.n) && point.n <= cohort.usable_count
+    && RESPONSE_SUPPORT.has(point.support)
+    && (point.n === 0 || point.support === 'withheld'
+      ? point.median === null && point.p25 === null && point.p75 === null
+      : Number.isFinite(point.median) && Number.isFinite(point.p25) && Number.isFinite(point.p75)
+        && point.p25 <= point.median && point.median <= point.p75));
+}
+
+/** Validate the additive High-carb response without admitting it as a generic event case. */
+export function validHighCarbResponse(caseFile) {
+  if (caseFile?.finding?.lever !== 'high_carb_sequence') return false;
+  const response = caseFile.projection?.response;
+  const report = caseFile.projection?.report?.high_carb_sequence;
+  if (response?.schema !== 'high-carb-sequence-response-v1' || response.alignment !== 'event'
+    || !same(response.anchor, { kind: 'sequence_end', label: 'End of eating sequence' })
+    || !Array.isArray(response.window_min) || response.window_min.length !== 2
+    || !response.window_min.every(Number.isFinite) || response.window_min[0] >= response.window_min[1]
+    || !same(response.source_window, caseFile.projection.report?.window)
+    || response.scope !== report?.finding?.scope || response.period !== report?.finding?.period
+    || response.summary !== report?.finding?.summary
+    || !Array.isArray(response.comparisons)
+    || !same(response.comparisons, report?.comparisons?.filter((row) => row.scope === response.scope))
+    || !same(response.comparisons.map((row) => row.period), RESPONSE_PERIODS)
+    || !same(response.comparison, {
+      name: 'Other sequences',
+      state: response.cohorts?.[1]?.support === 'withheld' ? 'unavailable' : 'available',
+    })
+    || !Array.isArray(response.cohorts) || response.cohorts.length !== 2
+    || !validResponseCohort(response.cohorts[0], 'matched', 'Highest-carb fifth', response.window_min)
+    || !validResponseCohort(response.cohorts[1], 'comparison', 'Other sequences', response.window_min)) return false;
+  return response.cohorts.every((cohort) => cohort.points.every((point, index, points) =>
+    index === 0 || point.minute > points[index - 1].minute));
+}
+
+/** Present the served High-carb response to the shared event renderer without recomputing it. */
+export function highCarbResponseCase(caseFile) {
+  if (!validHighCarbResponse(caseFile)) throw new Error('High-carb response evidence is unavailable.');
+  return { ...caseFile, projection: caseFile.projection.response };
+}
+
 /** Sequence transport has its own projection, never event-response cohorts. */
 export function validEatingSequenceCase(data) {
   if (data?.schema !== 'diagnose-finding-case-file-v1' || !isEatingSequence(data?.finding?.lever)
@@ -212,9 +266,21 @@ export function validEatingSequenceCase(data) {
   if (!['none', 'selected', 'unavailable'].includes(selection?.state)) return false;
   if (selection.state === 'selected') {
     const row = data.occurrences.find((item) => item.id === selection.requested_id);
-    return Boolean(row) && JSON.stringify(row) === JSON.stringify(selection.detail);
+    if (!row) return false;
+    if (data.finding.lever === 'high_carb_sequence') {
+      const { glucose, comparison_cohort, ...retained } = selection.detail || {};
+      const response = data.projection.response;
+      const cohort = response?.cohorts?.find((item) => item.key === comparison_cohort);
+      if (!same(row, retained) || !cohort?.occurrence_ids.includes(row.id)
+        || !Array.isArray(glucose) || !glucose.every((point) => typeof point?.t === 'string'
+          && Number.isFinite(point.minute) && Number.isFinite(point.bg)
+          && point.minute >= response.window_min[0] && point.minute < response.window_min[1])) return false;
+    } else if (!same(row, selection.detail)) return false;
   }
-  return selection.detail === null;
+  if (selection.state !== 'selected' && selection.detail !== null) return false;
+  return data.finding.lever === 'high_carb_sequence'
+    ? validHighCarbResponse(data)
+    : !Object.hasOwn(data.projection, 'response');
 }
 
 /** Separate rulers for time in range (%) and glucose variability (mg/dL).

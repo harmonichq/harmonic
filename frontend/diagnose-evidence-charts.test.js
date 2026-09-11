@@ -1070,7 +1070,7 @@ test('glucose projections expose served values and thumbnails have no axis furni
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     if (entry.kind === 'eating-sequence') {
       const data = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
-        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'].event;
+        .states.repeat_eating_empty.windows.global.cases['finding:repeat_eating'].event;
       const thumb = entry.thumbnail(data);
       assert.ok(thumb.xAxis.every((axis) => axis.axisLabel.show === false));
       assert.ok(thumb.yAxis.every((axis) => axis.axisLabel.show === false));

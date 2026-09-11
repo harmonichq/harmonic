@@ -22,7 +22,10 @@
  * Issue #341 revises the canvas composition below: the evidence spotlight
  * leads, followed by the real clock overview and basal lane.
  */
-import { isEatingSequence, validEatingSequenceCase, eatingSequenceComparison } from './diagnose-eating-sequences.js';
+import {
+  highCarbResponseCase, isEatingSequence, validEatingSequenceCase,
+  eatingSequenceComparison,
+} from './diagnose-eating-sequences.js';
 import {
   buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
   buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
@@ -717,7 +720,9 @@ function renderBehavioralFullscreen(host, f) {
      shared-header ruling (#72) settled at the By-event mount that fullscreen
      replaced. */
   const previous = window.__diagnoseEventComparison;
-  const mounted = renderEventSurface(host, f.caseFile, { headline: el('canvas-fullhead') });
+  const caseFile = f.caseFile.finding.lever === 'high_carb_sequence'
+    ? highCarbResponseCase(f.caseFile) : f.caseFile;
+  const mounted = renderEventSurface(host, caseFile, { headline: el('canvas-fullhead') });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;
@@ -2801,7 +2806,9 @@ function boot(root, data, callbacks, signal) {
                smear — so every seat but the focal one draws in the registry's
                `mini` treatment: the tight grid and the small label rank. Only the
                focal chart is read at full size, and only it gets full furniture. */
-            if (fullscreen && descriptor.kind === 'event-comparison') {
+            if (fullscreen && (descriptor.kind === 'event-comparison'
+              || (descriptor.kind === 'eating-sequence'
+                && caseFile.finding.lever === 'high_carb_sequence'))) {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
               tileMounts.push(installTileMount(chartHost, mounted));
             } else {
@@ -3390,6 +3397,25 @@ function boot(root, data, callbacks, signal) {
       caption.className = 'statline sequence-comparison';
       caption.textContent = comparison.finding.summary;
       host.append(caption);
+      if (caseFile.finding.lever === 'high_carb_sequence') {
+        const facts = document.createElement('div');
+        facts.className = 'ev-detail case-facts sequence-supporting-detail';
+        const label = document.createElement('div');
+        label.className = 'lab';
+        label.textContent = 'Supporting comparison detail';
+        facts.append(label);
+        for (const row of comparison.periods) {
+          const detail = document.createElement('div');
+          detail.className = 'vd';
+          const timing = row.period === 'in_sequence' ? 'During eating' : row.label;
+          const unavailable = row.status === 'insufficient';
+          detail.textContent = unavailable
+            ? `${timing} · unavailable · ${row.referenceLabel} n = ${row.reference.n} · ${row.comparisonLabel} n = ${row.comparison.n}`
+            : `${timing} · time in range ${row.reference.tir_pct}% / ${row.comparison.tir_pct}% · glucose SD ${row.reference.sd_mgdl} / ${row.comparison.sd_mgdl} mg/dL · n = ${row.reference.n} / ${row.comparison.n}`;
+          facts.append(detail);
+        }
+        host.append(facts);
+      }
     }
     const eventComparison = caseFile.projection.alignment === 'event'
       && caseFile.projection.kind !== 'eating-sequence';

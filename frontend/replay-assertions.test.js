@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { waitForReplayAssertion } from './replay-assertions.mjs';
+import { waitForReplayAssertion, withReplayAssertionTimeout } from './replay-assertions.mjs';
 
 test('all original claims must hold in one observation attempt', async () => {
   let attempts = 0;
@@ -39,4 +39,41 @@ test('a stuck observation cannot extend the deadline and reports its last value'
     assert.match(error.message, /observation has not returned/);
     return true;
   });
+});
+
+
+test('a scoped negative deadline retains evidence and restores the 30-second default', async t => {
+  const scheduled = [];
+  const original = globalThis.setTimeout;
+  t.mock.method(globalThis, 'setTimeout', (callback, timeout, ...args) => {
+    scheduled.push(timeout);
+    return original(callback, timeout, ...args);
+  });
+  await assert.rejects(withReplayAssertionTimeout(10, () => waitForReplayAssertion(seen => {
+    const value = seen('wrong');
+    assert.equal(value, 'required', 'the negative control still rejects');
+  }, 'scoped rejection')), error => {
+    assert.match(error.message, /Timed out after 10 ms: scoped rejection/);
+    assert.match(error.message, /wrong/);
+    assert.match(error.message, /the negative control still rejects/);
+    return true;
+  });
+  assert.equal(await waitForReplayAssertion(() => 'ready', 'ordinary replay'), 'ready');
+  assert.deepEqual(scheduled, [10, 30000], 'negative controls do not shorten later positive stories');
+});
+
+test('concurrent scopes stay separate and an explicit per-call deadline wins', async t => {
+  const scheduled = [];
+  const original = globalThis.setTimeout;
+  t.mock.method(globalThis, 'setTimeout', (callback, timeout, ...args) => {
+    scheduled.push(timeout);
+    return original(callback, timeout, ...args);
+  });
+  await Promise.all([10, 20].map(timeout => withReplayAssertionTimeout(timeout, async () => {
+    await Promise.resolve();
+    await waitForReplayAssertion(() => true, 'concurrent scope');
+  })));
+  await withReplayAssertionTimeout(10, () => waitForReplayAssertion(() => true, 'explicit bound', 25));
+  await waitForReplayAssertion(() => true, 'outside both scopes');
+  assert.deepEqual(scheduled, [10, 20, 25, 30000]);
 });

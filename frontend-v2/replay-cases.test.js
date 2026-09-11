@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
 import { storyCase, createCaseServer } from './replay-cases.mjs';
 
 test('S56 requires the saved Focus title after reload, rather than its raw subject', async () => {
@@ -32,7 +33,7 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
       }),
     };
   };
-  await assert.rejects(C3_STORIES.S56(pageFor(offered.subject)), /served Focus title/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S56(pageFor(offered.subject))), /served Focus title/);
   await C3_STORIES.S56(pageFor(title));
 });
 
@@ -65,8 +66,8 @@ test('S7 distinguishes the carried Diagnose rail from the paired Changes reading
     }),
   });
   await C2_STORIES.S7(pageFor(430, 300));
-  await assert.rejects(C2_STORIES.S7(pageFor(300, 300)), /carried rail width/);
-  await assert.rejects(C2_STORIES.S7(pageFor(430, 430)), /reading-pane width/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(300, 300))), /carried rail width/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(430, 430))), /reading-pane width/);
 });
 
 test('S13 keeps the carried rail at 430px across all four sources', async () => {
@@ -184,7 +185,7 @@ test('S98 rejects a substituted subject, an unserved staging control, unnamed st
     [{ canvasCount: 1 }, /named stale state replaces the old canvas/],
   ]) {
     const { page, routes } = icReplacementDriver(state);
-    await assert.rejects(C2_STORIES.S98(page), expected);
+    await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S98(page)), expected);
     assert.equal(routes.size, 0, 'negative assertion still cleans up the story routes');
   }
 });

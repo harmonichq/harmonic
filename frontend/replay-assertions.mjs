@@ -1,10 +1,18 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { inspect } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 
-// Retry observations, never actions. Each callback re-reads its evidence and
-// runs the original assertions; all of them must pass in the same attempt.
+const assertionTimeout = new AsyncLocalStorage();
+
+// Scope a shorter deadline to synthetic negative controls without changing
+// other concurrent calls or the ordinary replay's 30-second default.
+export const withReplayAssertionTimeout = (timeout, run) => assertionTimeout.run(timeout, run);
+
+// Retry observations. A single dispatch is allowed only on the returning
+// attempt, never on an attempt that may retry. Each callback re-reads its
+// evidence and runs the original assertions; all must pass in that attempt.
 // `seen` retains the actual values even when a boolean assertion has no diff.
-export async function waitForReplayAssertion(assertion, description, timeout = 30000) {
+export async function waitForReplayAssertion(assertion, description, timeout = assertionTimeout.getStore() ?? 30000) {
   let timer;
   let expired = false;
   let lastError;

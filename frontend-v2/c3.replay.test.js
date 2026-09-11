@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
 import { openApp, REGISTRY, goto, harnessCheck, harnessSelect, S24 } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
 import { C3_CASES, C3_STORIES } from './c3.replay.mjs';
 import { S03 } from '../frontend/diagnose-workstation-behavior.replay.mjs';
@@ -87,7 +88,7 @@ test('S49 accepts the served daily Meals 0 and observed outcome zeroes', async (
   await C3_STORIES.S49(outcomePage(measured));
 });
 test('S49 rejects a daily count that differs from its selected served day', async () => {
-  await assert.rejects(C3_STORIES.S49(outcomePage({ ...measured, meals: '1' })), /'1' !== '0'/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S49(outcomePage({ ...measured, meals: '1' }))), /'1' !== '0'/);
 });
 for (const [denominator, n, text] of [['meals', 0, 'no meals'], ['readings', 0, 'no readings'], ['readings', 288, 'unavailable']]) {
   test(`S49 distinguishes ${text} from an observed zero`, async () => {
@@ -97,13 +98,13 @@ for (const [denominator, n, text] of [['meals', 0, 'no meals'], ['readings', 0, 
     };
     await C3_STORIES.S49(outcomePage(data));
     data.cells['[data-outcome="sample"] td:nth-child(2)'] = '0%';
-    await assert.rejects(C3_STORIES.S49(outcomePage(data)), /must name its missing population or measurement/);
+    await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S49(outcomePage(data))), /must name its missing population or measurement/);
   });
 }
 test('S49 rejects a missing-value label substituted for an observed zero', async () => {
   const data = structuredClone(measured);
   data.cells['[data-outcome="tbr"] td:nth-child(2)'] = 'no readings';
-  await assert.rejects(C3_STORIES.S49(outcomePage(data)), /expected to not match/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S49(outcomePage(data))), /expected to not match/);
 });
 test('an app story rejects a selected record different from the admitted watch', async () => {
   const page = apiPage({ admission: { state: 'available', active_kind: 'trial', active_id: 'one' }, selected: { id: 'two', kind: 'trial' } });
@@ -154,12 +155,6 @@ test('late harness controls are observed before their one change event', async (
   } finally { globalThis.document = previous; }
 });
 
-async function shortDeadline(run) {
-  const set = globalThis.setTimeout;
-  globalThis.setTimeout = (callback, ms, ...args) => set(callback, ms === 30000 ? 10 : ms, ...args);
-  try { await run(); } finally { globalThis.setTimeout = set; }
-}
-
 test('harness selection resolves the option and dispatches before an intervening render', async () => {
   const previous = globalThis.document;
   const changes = [];
@@ -192,7 +187,7 @@ test('harness selection rejects a change that never lands without redispatching'
     dispatchEvent() { changes++; this.value = ''; } };
   globalThis.document = { querySelector: () => node };
   try {
-    await shortDeadline(() => assert.rejects(harnessSelect({
+    await withReplayAssertionTimeout(10, () => assert.rejects(harnessSelect({
       evaluate: async (run, arg) => run(arg), waitForTimeout: async () => {},
     }, 'scenario', 'Synthetic'), /selected "", expected "synthetic"/));
     assert.equal(changes, 1);
@@ -316,7 +311,7 @@ test('S03 reports all four failed touch claims and runs each gesture once', asyn
       detach: async () => {},
     }) }),
   };
-  await shortDeadline(() => assert.rejects(S03(page), error => {
+  await withReplayAssertionTimeout(10, () => assert.rejects(S03(page), error => {
     for (const claim of ['primary touch moves the left full-height gate', 'left primary touch holds the far gate',
       'primary touch moves the right full-height gate', 'right primary touch holds the far gate']) {
       assert.ok(error.message.includes(claim), claim);

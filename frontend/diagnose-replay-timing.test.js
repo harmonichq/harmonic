@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { withReplayAssertionTimeout } from './replay-assertions.mjs';
 import { drawWindow, issue81SlicedProjection, waitForPreparationWindow } from './diagnose-workstation-behavior.replay.mjs';
 import { commitWindow, minuteAtX, snapWindow } from './diagnose-workstation-chart.js';
 
@@ -63,7 +64,7 @@ test('S43 compares the spine only after each level animation ends', async () => 
 });
 
 test('S43 still rejects a real spine difference after animations end', async () => {
-  await assert.rejects(slicedProjection(4), /same inspector content spine: expected 1048, got 1052/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => slicedProjection(4)), /same inspector content spine: expected 1048, got 1052/);
 });
 
 test('drawn preparation windows land on their frozen bounds through the shipped snap path', async () => {

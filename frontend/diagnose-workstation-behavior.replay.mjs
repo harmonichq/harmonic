@@ -5974,7 +5974,7 @@ export async function assertSequenceSelection(page, stored, occurrence) {
   }, 'sequence selection');
 }
 
-async function assertSequenceReadout(page, stored, selector) {
+async function assertSequenceReadout(page, stored, selector, minute = stored.event.projection.response.window_min[0]) {
   const readout = page.locator(selector);
   await page.waitForFunction((selector) => {
     let node = document.querySelector(selector);
@@ -5995,7 +5995,7 @@ async function assertSequenceReadout(page, stored, selector) {
   });
   const response = stored.event.projection.response;
   is(shown.pairs, response.cohorts.map((cohort) => {
-    const point = cohort.points.find((point) => point.minute === response.window_min[0]);
+    const point = cohort.points.find((point) => point.minute === minute);
     return { name: cohort.name, value: !point || point.support === 'withheld'
       ? 'unavailable' : `${Math.round(point.median)} · n${point.n}` };
   }), 'visible cursor values equal the served observations and support');
@@ -6007,6 +6007,30 @@ async function assertSequenceReadout(page, stored, selector) {
   console.log(`High-carb readout geometry ${JSON.stringify(shown)}`);
 }
 
+async function assertSequencePointerReadout(page, stored, selector, rank) {
+  const response = stored.event.projection.response;
+  // Inspect the served late rise, away from Home and with different cohort values.
+  const point = response.cohorts[0].points.find((point) => point.minute === 330);
+  ok(point?.support === 'supported', 'pointer probe has a served supported observation');
+  const chart = page.locator('#tile-focal #ec-chart');
+  await chart.scrollIntoViewIfNeeded();
+  const target = await chart.evaluate((host, point) => {
+    const chart = window.echarts.getInstanceByDom(host);
+    const [x, y] = chart.convertToPixel({ gridIndex: 0 }, [point.minute, point.median]);
+    const box = host.getBoundingClientRect();
+    return { x: box.left + x, y: box.top + y };
+  }, point);
+  await page.mouse.move(target.x, target.y);
+  await waitForReplayAssertion(async () => {
+    is(await page.locator(`${selector} .rd-time`).innerText(), '+5 h 30 min',
+      `${rank} pointer reads the served minute 330, not the preceding Home position`);
+    await assertSequenceReadout(page, stored, selector, point.minute);
+  }, `${rank} pointer readout`);
+  console.log(`High-carb ${rank} pointer ${JSON.stringify({ ...target, minute: point.minute,
+    cohorts: response.cohorts.map((cohort) => ({ name: cohort.name,
+      point: cohort.points.find((row) => row.minute === point.minute) })) })}`);
+}
+
 export async function assertSequenceFullscreen(page, stored) {
   const chart = page.locator('#tile-focal #ec-chart');
   const before = await assertSequenceResponse(page, stored);
@@ -6016,6 +6040,7 @@ export async function assertSequenceFullscreen(page, stored) {
   await assertSequenceReadout(page, stored, '#tile-focal #ec-readout');
   await captureEvidence(page, 'high_carb_sequence-stage-readout');
   const label = await chart.getAttribute('aria-label');
+  await assertSequencePointerReadout(page, stored, '#tile-focal #ec-readout', 'stage');
   const control = page.locator('#tile-focal .tile-fullscreen');
   await control.click();
   await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
@@ -6027,6 +6052,7 @@ export async function assertSequenceFullscreen(page, stored) {
     'fullscreen visible readout parity');
   await assertSequenceReadout(page, stored, '#canvas-fullhead #ec-readout');
   await captureEvidence(page, 'high_carb_sequence-fullscreen');
+  await assertSequencePointerReadout(page, stored, '#canvas-fullhead #ec-readout', 'fullscreen');
   await chart.press('End');
   is(await page.locator('#canvas-fullhead .rd-time').innerText(), '+6 h',
     'End reaches the actual six-hour upper endpoint');

@@ -3924,7 +3924,11 @@ lossless in both Python and JavaScript and retains the multiple-episode state.
 - **S155 amendment:** select the second fired sequence, then the Clean verdict
   band's reference sequence. Each mounted trace equals the served observations.
   Stage and fullscreen keep the same response series, selected trace, range and
-  source-matched keyboard readout. Escape restores selection, window and opener
+  source-matched keyboard readout. Both shells also move the actual browser mouse
+  to the served minute-330 observation using the chart's coordinate transform;
+  stage and fullscreen disclose `+5 h 30 min`, 270 mg/dL (n=8) and 110 mg/dL
+  (n=32). This follows Home, proving that pointer movement updates the readout.
+  Escape restores selection, window and opener
   focus. The High-carb readout overlays its headline without moving Full; the
   narrow stage and fullscreen headers reserve space for their three readout rows.
 - **S157 amendment:** open the scoped High-carb case. Its response equals the

@@ -359,7 +359,12 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
     const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
     await row.click();
     const chart = page.locator('#tile-focal #ec-chart');
-    await chart.waitFor();
+    await page.waitForFunction(() => {
+      const host = document.querySelector('#tile-focal #ec-chart');
+      const option = host && window.echarts.getInstanceByDom(host)?.getOption();
+      return option?.xAxis?.[0]?.axisLabel && ['matched', 'comparison'].every((cohort) =>
+        option.series?.some((series) => series.id === `${cohort}:point:supported`));
+    });
     const response = await chart.evaluate((host) => {
       const chart = window.echarts.getInstanceByDom(host);
       return {

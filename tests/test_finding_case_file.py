@@ -286,7 +286,7 @@ def test_case_file_consumes_the_authoritative_diagnose_window(monkeypatch):
 
     class Store:
         conn = Connection()
-        basal_events = cgm_readings = bolus_events = carb_entries = lambda self: []
+        basal_events = cgm_readings = bolus_events = carb_entries = prompt_responses = lambda self: []
 
     monkeypatch.setattr(findings_projection, "prepare_findings_projection", fake_projection)
     monkeypatch.setattr(finding_case_file, "_population", fake_population)
@@ -826,6 +826,8 @@ def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, cove
     assert cause["analysis_generation"] == body["findings"]["analysis_generation"] == "sequence:0"
     assert cause["projection"]["report"] == body["eating_sequence_report"] == report
     assert cause["projection"]["kind"] == "eating-sequence"
+    if lever == "repeat_eating":
+        assert "response" not in cause["projection"]
     selected_id = next(r["id"] for r in cause["occurrences"] if r["attributed"])
     selected = prepared.case(f"finding:{lever}", "event", selected_id)
     assert selected["selection"]["state"] == "selected"
@@ -840,6 +842,50 @@ def test_sequence_preparation_and_pattern_case_share_producer_counts(lever, cove
     assert bool(associated) == covered
     assert all(r["member"] != f"habit:{lever}" for r in parent["occurrences"])
     assert len(parent["occurrences"]) == len(exposures["exposures"]["meals"]["occurrences"])
+
+
+def test_high_carb_sequence_case_serves_the_retained_response_evidence():
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+            analysis_generation="sequence:0",
+        )
+
+    case = prepared.case("finding:high_carb_sequence", "event", None)
+
+    response = case["projection"]["response"]
+    assert response["schema"] == "high-carb-sequence-response-v1"
+    assert response["alignment"] == "event"
+    assert response["anchor"] == {"kind": "sequence_start", "label": "Sequence start"}
+    assert response["window_min"] == [0, 360]
+    assert response["scope"] == "pooled"
+    assert response["period"] == "post_6h"
+    assert response["source_window"] == prepared.sequence_report["window"]
+    assert response["summary"] == prepared.sequence_report["high_carb_sequence"]["finding"]["summary"]
+    assert response["comparisons"] == prepared.sequence_report["high_carb_sequence"]["comparisons"]
+    assert response["comparison"] == {"name": "Other sequences", "state": "available"}
+    assert [(cohort["key"], cohort["name"], cohort["routed_count"])
+            for cohort in response["cohorts"]] == [
+                ("matched", "Highest-carb fifth", 8),
+                ("comparison", "Other sequences", 32),
+            ]
+    selected_id = response["cohorts"][0]["occurrence_ids"][0]
+    selected = prepared.case("finding:high_carb_sequence", "event", selected_id)
+    detail = selected["selection"]["detail"]
+    assert selected["analysis_generation"] == "sequence:0"
+    assert detail["comparison_cohort"] == "matched"
+    assert detail["glucose"]
+    assert all(response["window_min"][0] <= point["minute"] < response["window_min"][1]
+               for point in detail["glucose"])
+    row = next(row for row in wrap(prepared)["findings"]["rows"]
+               if row["id"] == "finding:high_carb_sequence")
+    assert row["headline"] == response["summary"]
 
 
 def test_case_file_preserves_exposure_classifier_reach():

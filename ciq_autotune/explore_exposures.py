@@ -222,19 +222,34 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 family["by_cause"][item["cause_title"]] = (
                     family["by_cause"].get(item["cause_title"], 0) + 1
                 )
+    sequence_evidence = {}
+    sequence_report = evaluated.sequences.report.to_dict()
+    for lever, rows in evaluated.sequences.populations.items():
+        if not rows:
+            continue
+        evidence = {
+            "population": [row.to_dict() for row in rows],
+            "occurrences": [{"id": candidate.occurrence_id, "ep_id": ep.id,
+                             "lever": lever, "owner": ep.attribution.lever.value,
+                             "attributed": ep.attribution.lever == lever,
+                             "start": ep.start.isoformat(), "end": ep.end.isoformat(),
+                             "outcome_minute": ep.outcome_t.hour * 60 + ep.outcome_t.minute,
+                             "candidates": [c.to_dict() for c in ep.candidates]}
+                            for ep in evaluated.episodes for candidate in ep.candidates
+                            if candidate.lever == lever],
+        }
+        if lever == Lever.HIGH_CARB_SEQUENCE.value:
+            finding = sequence_report["high_carb_sequence"]["finding"]
+            if finding is not None:
+                evidence["response"] = {
+                    "source_window": sequence_report["window"],
+                    "scope": finding["scope"], "period": finding["period"],
+                    "summary": finding["summary"],
+                    "comparisons": sequence_report["high_carb_sequence"]["comparisons"],
+                }
+        sequence_evidence[lever] = evidence
     return {
         "window": {"start": start.date().isoformat(), "end": now.date().isoformat()},
         "exposures": families,
-        **({"sequence_evidence": {
-            lever: {"population": [row.to_dict() for row in rows],
-                    "occurrences": [{"id": candidate.occurrence_id, "ep_id": ep.id,
-                                     "lever": lever, "owner": ep.attribution.lever.value,
-                                     "attributed": ep.attribution.lever == lever,
-                                     "start": ep.start.isoformat(), "end": ep.end.isoformat(),
-                                     "outcome_minute": ep.outcome_t.hour * 60 + ep.outcome_t.minute,
-                                     "candidates": [c.to_dict() for c in ep.candidates]}
-                                    for ep in evaluated.episodes for candidate in ep.candidates
-                                    if candidate.lever == lever]}
-            for lever, rows in evaluated.sequences.populations.items() if rows}}
-           if any(evaluated.sequences.populations.values()) else {}),
+        **({"sequence_evidence": sequence_evidence} if sequence_evidence else {}),
     }

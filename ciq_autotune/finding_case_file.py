@@ -90,6 +90,7 @@ class PreparedCases:
     exposures: dict | None = None
     scenarios: dict | None = None
     sequence_report: dict | None = None
+    sequence_cgm: tuple = ()
 
     def _roster(self, lever):
         return tuple(
@@ -199,6 +200,28 @@ class PreparedCases:
                      "detail": None}
         if selected is not None:
             selection = {"state": "selected", "requested_id": occ, "detail": deepcopy(selected)}
+        response = self._high_carb_response() if lever is Lever.HIGH_CARB_SEQUENCE else None
+        if response is not None and selection["state"] == "selected":
+            selected_source = next((item for item in response["_population"]
+                                    if item["id"] == selection["detail"]["sequence"]["id"]), None)
+            cohort_of = {
+                occurrence_id: cohort["key"]
+                for cohort in response["cohorts"]
+                for occurrence_id in cohort["occurrence_ids"]
+            }
+            source_id = (None if selected_source is None else
+                         _opaque("o_", "sequences", selected_source["id"]))
+            if source_id is None or source_id not in cohort_of:
+                raise InconsistentProjection("inconsistent_projection")
+            anchor = datetime.fromisoformat(selected_source["sequence_start"])
+            start = datetime.fromisoformat(selected_source["start"])
+            end = datetime.fromisoformat(selected_source["end"])
+            selection["detail"]["glucose"] = _sequence_comparison_trace(
+                selected_source["id"], anchor, start, end, self.sequence_cgm,
+            )["trace"]["cgm"]
+            selection["detail"]["comparison_cohort"] = cohort_of[source_id]
+        if response is not None:
+            response.pop("_population")
         return {
             "schema": CASE_SCHEMA, "projection_id": self.projection_id,
             "analysis_generation": self.findings["analysis_generation"],
@@ -208,8 +231,53 @@ class PreparedCases:
             "summary": {"claimed": len(claimed), "denominator": len(roster), "noun": "sequences"},
             "verdict_counts": counts, "occurrences": occurrences,
             "projection": {"alignment": alignment, "kind": "eating-sequence",
-                           "report": deepcopy(self.sequence_report)},
+                           "report": deepcopy(self.sequence_report),
+                           **({"response": response} if response is not None else {})},
             "selection": selection,
+        }
+
+    def _high_carb_response(self):
+        evidence = (self.exposures or {}).get("sequence_evidence", {}).get(
+            Lever.HIGH_CARB_SEQUENCE.value, {})
+        source = evidence.get("response")
+        population = evidence.get("population") or ()
+        if source is None:
+            return None
+        scope, period = source["scope"], source["period"]
+        if not population or any(item.get("period") != period for item in population):
+            raise InconsistentProjection("inconsistent_projection")
+        anchored = [(item, datetime.fromisoformat(item["sequence_start"]),
+                     datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
+                    for item in population]
+        if any(end <= start for _, _, start, end in anchored):
+            raise InconsistentProjection("inconsistent_projection")
+        window = (min(round((start - anchor).total_seconds() / 60) for _, anchor, start, _ in anchored),
+                  max(round((end - anchor).total_seconds() / 60) for _, anchor, _, end in anchored))
+        if window[0] >= window[1]:
+            raise InconsistentProjection("inconsistent_projection")
+        matched = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
+                                              anchor, start, end, self.sequence_cgm)
+                   for item, anchor, start, end in anchored if item["candidate"]]
+        comparison = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
+                                                 anchor, start, end, self.sequence_cgm)
+                      for item, anchor, start, end in anchored if not item["candidate"]]
+        matched_cohort = event_comparison.project_cohort("matched", matched, window)
+        comparison_cohort = event_comparison.project_cohort("comparison", comparison, window)
+        matched_cohort["name"] = "Highest-carb fifth"
+        comparison_cohort["name"] = "Other sequences"
+        for cohort in (matched_cohort, comparison_cohort):
+            cohort["anchor"] = {"kind": "sequence_start", "label": "Sequence start"}
+        return {
+            "schema": "high-carb-sequence-response-v1", "alignment": "event",
+            "anchor": {"kind": "sequence_start", "label": "Sequence start"},
+            "window_min": list(window), "source_window": deepcopy(source["source_window"]),
+            "scope": scope, "period": period, "summary": source["summary"],
+            "comparisons": deepcopy(source["comparisons"]),
+            "comparison": {"name": "Other sequences",
+                           "state": "unavailable" if comparison_cohort["support"] == "withheld"
+                           else "available"},
+            "cohorts": [matched_cohort, comparison_cohort],
+            "_population": population,
         }
 
     def _pattern_case(self, finding_id, alignment, occ):
@@ -314,6 +382,7 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
         cgm = tuple(store.cgm_readings())
         bolus = tuple(store.bolus_events())
         carbs = tuple(store.carb_entries())
+        prompt_responses = tuple(store.prompt_responses())
         window_days = findings_projection.DIAGNOSE_SOURCE_WINDOW_DAYS
         projection = findings_projection.prepare_findings_projection(
             analysis=analysis, exposures=exposures, scenarios=scenarios,
@@ -337,7 +406,9 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
                          source_window_days=window_days, exposures=deepcopy(exposures),
-                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report))
+                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report),
+                         sequence_cgm=tuple(drop_readings(cgm, spans_from_records(
+                             false_low_span_records(cgm, prompt_responses)))))
 
 
 def _population(
@@ -661,6 +732,14 @@ def _comparison_trace(occurrence_id, anchor, cgm, window):
         {"t": row.t.strftime(FMT),
          "minute": round((row.t - anchor).total_seconds() / 60, 1), "bg": row.bg}
         for row in cgm if lo <= row.t <= hi and row.bg is not None
+    ]}}
+
+
+def _sequence_comparison_trace(occurrence_id, anchor, start, end, cgm):
+    return {"id": occurrence_id, "trace": {"cgm": [
+        {"t": row.t.strftime(FMT),
+         "minute": round((row.t - anchor).total_seconds() / 60, 1), "bg": row.bg}
+        for row in cgm if start <= row.t < end and row.bg is not None
     ]}}
 
 

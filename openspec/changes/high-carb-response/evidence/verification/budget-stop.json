@@ -1,0 +1,8 @@
+{
+  "reason": "slowest generated QA case16.62s exceeds15s ceiling",
+  "qa_suite_seconds": 58.25,
+  "full_pytest": "interrupted; not a pass",
+  "browsers": "not started",
+  "ledgers": "not started",
+  "head": "f902c28f7917af332e475086c2d643c7007b5420"
+}

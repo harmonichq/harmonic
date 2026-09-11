@@ -66,4 +66,9 @@ node --test --test-name-pattern='v2 Diagnose renders the generated High-carb|v2 
 
 ## Aggregate acceptance
 
-Full repository gates and the complete affected ledgers remain pending. Their final results will be recorded here after the integrated branch is tested. Focused results above do not claim aggregate completion.
+Final verification on `f902c28f7917af332e475086c2d643c7007b5420` passed both builds, all 877 Node tests, OpenSpec strict validation, the three repository guards, and affected eating-sequence, Findings, showcase and event fixture drift checks. The QA suite passed 81 tests and 20 subtests in 58.25 seconds. However, its slowest generated case, `test_case_c4_profile`, took 16.62 seconds, exceeding the unchanged 15-second ceiling. An isolated rerun reproduced the breach at 16.11 seconds (one test passed in 16.18 seconds). The backend and QA case source are identical to the earlier passing measurement on `73212a8e`; no timing cause is established.
+
+The owned final-run process chain was stopped under the repository's budget rule. Full pytest was interrupted and is not a pass. Browser suites and complete ledgers had not started. No showcase, performance limit or product code was changed to suppress the breach. Task 3.3 remains incomplete; no PR was opened.
+
+Other measured budgets: showcase 1,417,216 bytes (limit25MiB), showcase drift0.31s (limit30s), focused QA58.25s (limit90s). Full pytest's400s ceiling remains unverified on this final revision. The previous full attempt on73212a8e finished in343.96s with2521passed,1failed,1skipped; its public-tree failure is fixed and independently verified in the compact correction, but that earlier run is not a successful full gate.
+

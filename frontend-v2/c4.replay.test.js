@@ -118,12 +118,17 @@ test('clinical pairs fail if either consumer misses the expected endpoint or con
 // The coordinator still owns the actual browser fail-first proof.
 function qa404Page() {
   const actions = [];
+  const brace = (width = 500, range = [720, 1080]) => {
+    const x = minute => 34 + minute / 1425 * (width - 86);
+    return { width, selected: 'Afternoon', grips: Object.fromEntries(['a', 'b'].map((name, index) =>
+      [name, { x: x(range[index]), y: 70, left: x(range[index]) }])) };
+  };
   const node = selector => ({
     filter() { return this; }, first() { return this; },
     waitFor: async () => {},
     click: async () => { actions.push(selector); },
     boundingBox: async () => ({ x: 0, y: 0, width: 500, height: 210 }),
-    evaluate: async () => ({ a: { x: 180, y: 70 }, b: { x: 280, y: 70 } }),
+    evaluate: async fn => fn.toString().includes('document.querySelector') ? brace() : 500,
   });
   return {
     actions, node,
@@ -224,15 +229,16 @@ for (const width of [480, 760]) {
     const chart = { clientWidth: width };
     let range = [720, 1080], origin = 120, measured = false, laidOut = false;
     let pointer, held = false, edge, pending = null, chip = null;
-    const measurements = [], painted = [];
+    const measurements = [], painted = [], moves = [];
     page.locator = selector => ({ ...page.node(selector),
-      evaluate: async () => {
+      evaluate: async fn => {
         assert.equal(selector, '#chart');
+        if (!laidOut) return width;
         assert.ok(laidOut, 'wait for layout and animations before sampling grip pixels');
         measured = true; laidOut = false;
         measurements.push([...range]);
-        return Object.fromEntries(['a', 'b'].map((name, i) =>
-          [name, { x: origin + xAtMinute(chart, range[i]), y: 68 }]));
+        return { width, selected: 'Afternoon', grips: Object.fromEntries(['a', 'b'].map((name, i) =>
+          [name, { x: origin + xAtMinute(chart, range[i]), y: 68, left: xAtMinute(chart, range[i]) }])) };
       },
       innerText: async () => chip,
     });
@@ -252,7 +258,7 @@ for (const width of [480, 760]) {
       move: async (x, y) => {
         assert.ok(measured, 'the gesture must use freshly measured grips');
         assert.equal(y, 68, 'use the grip, not a guessed mid-chart ordinate');
-        pointer = x;
+        pointer = x; moves.push(x);
         if (held) {
           const minute = minuteAtX(chart, x - origin);
           pending = edge === 'a' ? snapWindow([minute, range[1]], 45, 'end')
@@ -272,8 +278,30 @@ for (const width of [480, 760]) {
     await assert.rejects(C4_STORIES.S101(page), { code: 'ERR_ASSERTION', message: new RegExp(copy404) });
     assert.deepEqual(measurements, [[720, 1080], [720, 1290]]);
     assert.deepEqual(painted, [[720, 1290], [930, 1290]]);
+    assert.equal(moves.at(1), moves.at(2), 'the first resize repeats its terminal coordinate before release');
+    assert.equal(moves.at(4), moves.at(5), 'the second resize repeats its terminal coordinate before release');
   });
 }
+
+test('S101 rejects an unpainted 24 h brace before it can drag the named Afternoon preset', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const { xAtMinute } = await import('../frontend/diagnose-workstation-chart.js');
+  const page = qa404Page();
+  const chart = { clientWidth: 480 };
+  const stale = [0, 1440];
+  page.locator = selector => ({ ...page.node(selector),
+    evaluate: async fn => fn.toString().includes('document.querySelector')
+      ? ({ width: chart.clientWidth, selected: 'Afternoon', grips: Object.fromEntries(
+      ['a', 'b'].map((name, index) => [name, {
+        x: xAtMinute(chart, stale[index]), y: 68, left: xAtMinute(chart, stale[index]),
+      }]),
+    ) }) : chart.clientWidth,
+  });
+  page.mouse.down = async () => assert.fail('a stale 24 h brace must fail before the mouse gesture');
+  await assert.rejects(C4_STORIES.S101(page),
+    /Afternoon brace must span 12:00–18:00 before dragging/);
+  assert.deepEqual(page.actions, ['[data-destination="diagnose"]', '24 h', 'Afternoon']);
+});
 
 for (const seen of ['(absent)', '12:00–18:00 ×']) {
   test(`a bounded drawn-window failure reports chip seen: ${seen}`, async () => {
@@ -287,8 +315,15 @@ for (const seen of ['(absent)', '12:00–18:00 ×']) {
         throw new Error('simulated chip timeout');
       }
     };
+    const x = minute => 34 + minute / 1425 * (500 - 86);
     page.locator = selector => ({ ...page.node(selector),
-      evaluate: async () => selector === '#seg-window' ? seen : page.node(selector).evaluate(),
+      evaluate: async fn => {
+        if (selector === '#seg-window') return seen;
+        return fn.toString().includes('document.querySelector')
+          ? { width: 500, selected: 'Afternoon', grips: Object.fromEntries(['a', 'b'].map((name, index) =>
+            [name, { x: x([720, 1080][index]), y: 70, left: x([720, 1080][index]) }])) }
+          : 500;
+      },
     });
     await assert.rejects(C4_STORIES.S101(page), error => {
       assert.equal(error.code, 'ERR_ASSERTION');

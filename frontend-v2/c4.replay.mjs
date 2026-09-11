@@ -1,6 +1,7 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
+import { xAtMinute } from '../frontend/diagnose-workstation-chart.js';
 import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
@@ -60,48 +61,88 @@ async function drawnWindow404(page) {
   // resizeWindowStart in the workstation replay, solve pixels from the standing
   // brace. Afternoon avoids the 24 h edge clamped to the last 23:45 category.
   await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
-  for (const [edge, from, to, target, span] of [
+  let grips = await laidOutBrace404(page, { label: 'Afternoon', range: [720, 1080] });
+  const moves = [
     ['b', 720, 1080, 1290, '12:00–21:30'],
     ['a', 720, 1290, 930, '15:30–21:30'],
-  ]) {
-    await settled(page);
-    // Local until the c4 workstation animation helper lands on this branch.
-    await page.waitForFunction(async () => {
-      await document.fonts.ready;
-      const plot = document.querySelector('#chart');
-      const grips = ['#grip-a', '#grip-b'].map(selector => document.querySelector(selector));
-      const chart = plot && globalThis.echarts.getInstanceByDom(plot);
-      if (!chart || grips.some(grip => !grip) || document.querySelector('#brace')?.hidden) return false;
-      const idle = () => chart.getZr().animation.isFinished() && !document.getAnimations().some(animation =>
-        (animation.playState === 'running' || animation.pending)
-        && animation.effect?.getComputedTiming().iterations !== Infinity);
-      const boxes = () => [plot, ...grips].flatMap(node => {
-        const box = node.getBoundingClientRect();
-        return [box.x, box.y, box.width, box.height];
-      });
-      if (!idle() || plot.clientWidth <= 0 || plot.clientHeight <= 0) return false;
-      const before = boxes();
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      return idle() && boxes().every((value, i) => Math.abs(value - before[i]) < 0.25);
-    }, null, { timeout: 10000 });
-    const grips = await page.locator('#chart').evaluate(() => Object.fromEntries(['a', 'b'].map(edge => {
-      const box = document.querySelector(`#grip-${edge}`).getBoundingClientRect();
-      return [edge, { x: box.x + box.width / 2, y: box.y + box.height / 2 }];
-    })));
+  ];
+  for (const [index, [edge, from, to, target, span]] of moves.entries()) {
     const perMinute = (grips.b.x - grips.a.x) / (to - from);
     assert.ok(perMinute > 0, '#404 drawn-window premise: laid-out brace edges must be ordered');
     await page.mouse.move(grips[edge].x, grips[edge].y);
     await page.mouse.down();
     try {
-      await page.mouse.move(grips.a.x + (target - from) * perMinute, grips[edge].y, { steps: 8 });
+      const targetX = grips.a.x + (target - from) * perMinute;
+      await page.mouse.move(targetX, grips[edge].y, { steps: 8 });
+      // Playwright's stepped move can leave the chart's frame coordinator at
+      // its penultimate sample. Re-send the physical drag's final coordinate
+      // before observing the live chip; pointerup would otherwise cancel that
+      // outstanding repaint and make the accepted endpoint nondeterministic.
+      await page.mouse.move(targetX, grips[edge].y);
       // Pointerup cancels a queued drag repaint. Observe the snapped live chip
       // BEFORE release, so the final pointer move has actually been applied.
       await drawnChip404(page, span);
     } finally { await page.mouse.up(); }
     await settled(page);
     await drawnChip404(page, span);
+    if (index + 1 < moves.length) grips = await laidOutBrace404(page);
   }
 }
+async function laidOutBrace404(page, expected = null) {
+  await settled(page);
+  const width = await page.locator('#chart').evaluate(node => node.clientWidth);
+  const positions = expected && expected.range.map(minute => xAtMinute({ clientWidth: width }, minute));
+  // A loading flag can clear before a queued control repaint begins. Wait for
+  // the actual named preset and its shared-chart brace, then sample it again;
+  // dragging the old 24 h brace commits a whole day and removes the follow chip.
+  await page.waitForFunction(async ({ label, width, positions: wanted }) => {
+    await document.fonts.ready;
+    const plot = document.querySelector('#chart');
+    const handles = ['a', 'b'].map(edge => document.querySelector(`#grip-${edge}`));
+    const chart = plot && globalThis.echarts.getInstanceByDom(plot);
+    const selected = label == null || [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
+      .some(button => button.textContent.trim() === label);
+    if (!chart || !selected || handles.some(handle => !handle)
+      || document.querySelector('#brace')?.hidden || plot.clientWidth !== width) return false;
+    const idle = () => chart.getZr().animation.isFinished() && !document.getAnimations().some(animation =>
+      (animation.playState === 'running' || animation.pending)
+      && animation.effect?.getComputedTiming().iterations !== Infinity);
+    const boxes = () => [plot, ...handles].flatMap(node => {
+      const box = node.getBoundingClientRect();
+      return [box.x, box.y, box.width, box.height];
+    });
+    if (!idle() || wanted && handles.some((handle, index) =>
+      Math.abs(parseFloat(handle.style.left) - wanted[index]) > .5)) return false;
+    const beforeBoxes = boxes();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return idle() && boxes().every((value, index) => Math.abs(value - beforeBoxes[index]) < .25);
+  }, { label: expected?.label ?? null, width, positions }, { timeout: 10000 });
+  const measured = await readBrace404(page);
+  if (expected) {
+    assert.equal(measured.selected, expected.label,
+      `#404 drawn-window premise: ${expected.label} must remain selected before dragging`);
+    const wanted = expected.range.map(minute => xAtMinute({ clientWidth: measured.width }, minute));
+    for (const [index, edge] of ['a', 'b'].entries()) assert.ok(
+      Math.abs(measured.grips[edge].left - wanted[index]) <= .5,
+      `#404 drawn-window premise: ${expected.label} brace must span 12:00–18:00 before dragging`,
+    );
+  }
+  return measured.grips;
+}
+const readBrace404 = page => page.locator('#chart').evaluate(node => {
+  const selected = [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
+    .find(button => button.textContent.trim());
+  return {
+    width: node.clientWidth,
+    selected: selected?.textContent.trim() ?? null,
+    grips: Object.fromEntries(['a', 'b'].map(edge => {
+      const handle = document.querySelector(`#grip-${edge}`);
+      const box = handle.getBoundingClientRect();
+      return [edge, { x: box.x + box.width / 2, y: box.y + box.height / 2,
+        left: parseFloat(handle.style.left) }];
+    })),
+  };
+});
 async function drawnChip404(page, span) {
   try {
     await page.waitForFunction(expected => {

@@ -3944,3 +3944,35 @@ it never computes its expectation through the mirror. This supersedes amendment
 11's preset-bound and preset-button clauses: the selected-window assertion checks
 the 14:00–21:00 window chip. The held-response ordering, retained Afternoon chart,
 absence of Morning-only charts and no-page-error assertions remain.
+
+
+## Baseline re-inventory — 2026-09-11, issue #410
+
+Base: `12388f58` (the ticket branch's fetched main). The existing High-carb
+sequence implementation was inspected through the declared component harness in
+manufactured mode. Both shells built. The existing `eating-sequence` selection
+of `frontend/diagnose-canvas-composition.browser.test.mjs` passed all ten tests
+with no skips, including S151–S158 and generation/count mismatch checks. This is
+a focused baseline under AGENTS.md's iteration rule, not a claim of a complete
+ledger replay. The existing ledger and replay remain frozen.
+
+The chart-specific inventory maps registry seating and minis to S153, row/All
+charts entry and fullscreen/focus/selection return to S155, window membership
+to S157, and periods/units/nulls/cohort support to S158. S151 keeps nesting and
+sequence counting. The imported shared mount owns resize and disposal. The
+ECharts legend's cohort visibility and item tooltip are retained behaviors; the
+revision's response cursor and explicit cohort visibility controls must cover
+them in the amended replay. The miniature remains inert.
+
+Connor approved the existing Pattern response-comparison presentation for the
+High-carb sequence chart: “yep.” The selected direction and source boundaries
+are recorded in ADR 410 in `openspec/changes/high-carb-response/design.md`.
+The aggregate dot panels are the replaced presentation, not a retirement of
+their evidence: all three periods, units, values, counts and unavailable states
+remain in supporting detail. No navigation or cohort-visibility behavior is
+retired. Repeat eating retains the current S152/S154/S156 and S158 branches.
+
+Implementation amends S153/S155/S158 for the new High-carb presentation and adds
+its observed-response readout/visibility evidence before declaring the revision
+complete. The issued and active story inventories are unchanged by this baseline
+record. The public synthetic probe and generated facts are in the active change.

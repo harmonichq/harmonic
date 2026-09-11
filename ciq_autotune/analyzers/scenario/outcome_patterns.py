@@ -356,3 +356,11 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
             "member_set_fingerprint": fingerprint,
         })
     return roster
+
+
+def outcome_window_population(analysis: dict, exposures: dict, scenarios: dict, query):
+    """Return the one outcome-window evidence population and its Pattern roster."""
+    from ...window_membership import outcome_window_exposures
+
+    population = outcome_window_exposures(exposures, query)
+    return population, build_outcome_patterns(analysis, population, scenarios)

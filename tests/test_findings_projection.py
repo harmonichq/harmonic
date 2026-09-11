@@ -410,7 +410,7 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
                          ["lows", "corrections"])
         self.assertEqual(afternoon["chip_counts"], {
-            "highs": 2, "lows": 1, "meals": 0, "corrections": 1,
+            "highs": 3, "lows": 1, "meals": 1, "corrections": 1,
         })
 
         global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
@@ -917,7 +917,7 @@ class PatternProjectionTest(unittest.TestCase):
                        if row["id"] == "pattern:highs_after_meals")
         self.assertIsNone(pattern["pattern_chart"])
 
-    def test_patterns_are_whole_day_only_and_claimed_rate_levers_follow_their_parent(self):
+    def test_patterns_and_claimed_rate_levers_share_the_scoped_population(self):
         pattern = next(row for row in self.result["rows"]
                        if row["id"] == "pattern:highs_after_meals")
         index = self.result["rows"].index(pattern)
@@ -947,7 +947,13 @@ class PatternProjectionTest(unittest.TestCase):
                 )))
 
         scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
-        self.assertFalse(any(row["kind"] == "pattern" for row in scoped["rows"]))
+        scoped_patterns = [row for row in scoped["rows"] if row["kind"] == "pattern"]
+        self.assertTrue(scoped_patterns)
+        for pattern_row in scoped_patterns:
+            self.assertEqual(pattern_row["window_scope"], "window")
+            self.assertEqual(pattern_row["pattern_chart"]["window"],
+                             WindowQuery.clock(*AFTERNOON).to_dict())
+            self.assertLessEqual(pattern_row["pattern"]["k"], pattern_row["pattern"]["n"])
         self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
 
     def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):

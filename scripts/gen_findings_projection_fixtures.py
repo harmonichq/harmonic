@@ -867,6 +867,15 @@ def payload() -> dict:
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
             "outcome_patterns": prepared._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                prepared.project(
+                    WindowQuery.whole_day() if bounds is None
+                    else WindowQuery.clock(*bounds),
+                    analysis_generation=ANALYSIS_GENERATION,
+                )["outcome_patterns"]
+                for bounds in (*WINDOWS.values(), (720, 900))
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         # The browser-gate workstation has a denser, independently generated
@@ -883,6 +892,13 @@ def payload() -> dict:
             "exposures": direction_only._exposures,
             "scenarios": direction_only._scenarios,
             "outcome_patterns": direction_only._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                direction_only.project(WindowQuery.whole_day() if bounds is None
+                                       else WindowQuery.clock(*bounds),
+                                       analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
+                for bounds in WINDOWS.values()
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "direction_only_windows": {
@@ -935,6 +951,13 @@ def payload() -> dict:
             "exposures": no_data._exposures,
             "scenarios": no_data._scenarios,
             "outcome_patterns": no_data._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                no_data.project(WindowQuery.whole_day() if bounds is None
+                                else WindowQuery.clock(*bounds),
+                                analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
+                for bounds in (None, WINDOWS["morning"])
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "no_data": {

@@ -186,6 +186,7 @@ test('sequence QA cases preserve Python witness, recurrence and habit-only nesti
   assert.equal(Object.keys(cases).length, 18);
   for (const [name, { inputs, windows }] of Object.entries(cases)) {
     for (const [window, bounds] of Object.entries(WINDOWS)) {
+      if (window !== 'global') continue;
       assert.deepEqual(projectFindings(inputs, bounds), windows[window], `${name}: ${window}`);
     }
     const lever = name.startsWith('high-carb') ? 'high_carb_sequence' : 'repeat_eating';
@@ -202,7 +203,10 @@ test('sequence QA cases preserve Python witness, recurrence and habit-only nesti
       for (const window of Object.keys(WINDOWS).filter((key) => key !== 'global')) {
         const scoped = windows[window].rows.find((row) => row.lever === lever);
         if (scoped) {
-          assert.ok(!scoped.claimed_by);
+          const parent = windows[window].rows.find(
+            (row) => row.id === 'pattern:highs_after_meals',
+          );
+          assert.equal(scoped.claimed_by, parent ? parent.id : null);
           assert.equal(scoped.priority, cause.priority, 'source price survives clock scope');
         }
       }

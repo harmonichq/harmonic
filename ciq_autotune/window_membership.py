@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
 from typing import Dict, List, Optional, Tuple
 
 from .analyzers.scenario.levers import outcome_kind
@@ -88,6 +89,30 @@ def outcome_minute(occurrence: dict, exposures_payload: dict) -> Optional[int]:
     """Return the clock minute where an occurrence's consequence landed."""
     anchors = _episode_anchors(exposures_payload.get("exposures") or {})
     return _outcome_minute(occurrence, anchors)
+
+
+def outcome_window_exposures(exposures: dict, query: WindowQuery) -> dict:
+    """Copy exposure evidence with each family limited by its outcome landing."""
+    scoped = deepcopy(exposures)
+    for family in (scoped.get("exposures") or {}).values():
+        occurrences = [
+            occurrence for occurrence in family.get("occurrences") or ()
+            if query.contains(outcome_minute(occurrence, exposures))
+        ]
+        family["occurrences"] = occurrences
+        family["n"] = len(occurrences)
+        family["attributed"] = sum(item.get("attributed", False) for item in occurrences)
+        family["clean"] = family["n"] - family["attributed"]
+        family["levers"] = list(dict.fromkeys(
+            item["cause_lever"] for item in occurrences if item.get("cause_lever") is not None
+        ))
+        family["by_cause"] = {}
+        for item in occurrences:
+            if item.get("cause_title") is not None:
+                family["by_cause"][item["cause_title"]] = (
+                    family["by_cause"].get(item["cause_title"], 0) + 1
+                )
+    return scoped
 
 
 def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:

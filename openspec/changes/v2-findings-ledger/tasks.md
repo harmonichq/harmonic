@@ -1,0 +1,56 @@
+# #404 implementation checklist
+
+**DRAFT — triage only.** These are candidate positional slices, not an execution
+lock. The coordinator owns routing, review, admission, and final proof.
+
+## 1. Scoped Pattern population, projection and API
+
+- [ ] 1.1 Implement the single producer-owned outcome-window Pattern population
+  required by behavioral-layer **Habit associations preserve bounded episode
+  ownership**, using the existing per-family outcome rule without changing
+  classifier thresholds, identity, or bounded episode context.
+- [ ] 1.2 Serve scoped Pattern rows and case files from that same population,
+  including count, denominator, readiness, roster, selected occurrence and
+  evidence; do not derive membership or policy in the browser.
+- [ ] 1.3 Add public-interface synthetic coverage for named, drawn and circular
+  half-open windows, outcome/antecedent boundary pairs, zero/thin denominators,
+  and the over-treated-low Low-identity/High-landing rule.
+
+## 2. Durable Focus scope and Trial history lifecycle
+
+- [ ] 2.1 Implement durable saved scope for a new Focus as required by
+  durable-follow-up **New Focus records retain the selected outcome window**;
+  validate it at admission and apply it inside both existing calendar comparison
+  arms without clipping contributing episodes.
+- [ ] 2.2 Preserve old Focus computation semantics when scope is absent, reject
+  stale admission, and prevent later Diagnose navigation from mutating saved
+  scope.
+- [ ] 2.3 Implement the additive late-conclusion operation required by
+  durable-follow-up **A late Trial conclusion is additive to an immutable
+  ending**, preserving expiry and original ending across conflict, retry,
+  restart, and cache invalidation.
+- [ ] 2.4 Add named on-demand reassessment loading with no prewarm, preserving
+  read-only history and the distinction between reassessment and conclusion.
+
+## 3. Shipped desk, generated evidence and runtime integration
+
+- [ ] 3.1 Implement surfaces **The desk renders served Pattern evidence and
+  preserves selection** through the existing case-file route, with per-family
+  selected handoff, served short labels/markers, honest missing values, and
+  stale selection/window response rejection.
+- [ ] 3.2 Implement surfaces **The v2 desk preserves readable
+  cross-destination evidence chrome**: parent-owned expandable members/minis,
+  long-label safety, label-before-icon/top-right tall headers, compact existing
+  density tokens, Diagnose/Changes/Day rail parity in loaded/loading/settings
+  table states, basal legend/verdict/accent, skeleton and named reassessment
+  loading.
+- [ ] 3.3 Implement surfaces **Diagnose and Day keep the reader's navigation
+  context** and **Changes keeps completed and expired Trial records reachable**.
+  Make the existing S101–S105 regressions pass at their feature assertions,
+  repairing the intermittent drawn-window setup without weakening expectations.
+  Preserve S100 timing and merged keyboard regressions.
+- [ ] 3.4 Generate only synthetic fixture/case evidence through listed
+  producers, run their drift checks, then obtain the coordinator's serial
+  public-interface runtime proof at both supported desktop widths. Do not claim
+  a freeze or screenshot proof before that admission.
+

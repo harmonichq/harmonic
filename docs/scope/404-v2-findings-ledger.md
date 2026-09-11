@@ -173,3 +173,93 @@ Scope interview decisions are settled. Preserve the consolidated disposition; do
 Connor agreed that a Focus started from a named or drawn Pattern window retains that window for eligibility and follow-up. He clarified his example to evening rather than morning, confirming the coordinator's explanation: the Focus tracks the contributing behavior associated with outcomes in the selected evening window; full contributing episodes remain available even when they begin earlier. The selected window follows the outcome, rather than separately clipping the behavior's onset. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain the selected outcome window in Focus.
 
 Apply the same saved scope to both comparison arms. Changing the live Diagnose window later does not silently change an existing Focus. Preserve original historical contexts; no inferred clock window is backfilled into older Focus records. Exact timestamps and denominator membership must be grounded in the owning producers before task/source admission. Do not silently swap an exposure anchor timestamp for the selected outcome timestamp.
+
+
+## Full base replay and targeted rendered grounding
+
+At application code inherited through `56eb22467b0705c1516f51af06add59bb93979ce`
+(the intervening edits are planning only), the coordinator ran the complete v2
+ledger once at each supported viewport, serially on generated case stores. Each
+run selected 135 stories and reported **executed 129 / failed 6 / deferred 0 /
+Chromium launches 1**, exit 1. These are baseline results, not green acceptance.
+
+- At 1280x720, S101–S105 all reached their intended feature assertion.
+- At 1440x900, S101, S102, S104 and S105 reached the intended assertion. S103
+  instead stopped at the known intermittent drawn-window premise. Preserve its
+  setup repair and do not claim a reliable two-size feature proof for S103.
+- At both sizes S87 failed its prerequisite: no protected synthetic auth server
+  was configured. This is unverified authentication evidence, not a demonstrated
+  application regression. Its requested token-bearing command conflicts with
+  AGENTS.md's empty-token QA declaration; a narrow operator exception is pending.
+- All other selected stories, including the permanent retirements and their
+  premises, passed. No second full replay is needed for planning-only edits.
+
+Raw complete logs: `/private/tmp/harmonic-404-base-full-1280x720.log` and
+`/private/tmp/harmonic-404-base-full-1440x900.log`.
+
+### New reports reproduced on the synthetic app
+
+Two bounded coordinator probes used the existing built-app opener and
+`createCaseServer`, with the declared no-fetch, empty-token server. The complete
+probe scripts and outputs remain in session scratch; both probes exited 0 and
+closed their owned browser/server processes. They report defects rather than
+assert that requested fixes pass. The coordinator inspected the resulting
+Pattern, working comparison and meal-collision screenshots.
+
+- Selected Pattern detail served 73 glucose points and two markers at each size,
+  but the focal chart had no `selected:trace` series. Its aggregate Matched curve
+  remained visible. A working ordinary low-event comparison contained a
+  `selected:trace` series with 37 points. This directly reproduces the reported
+  difference between selected Pattern and ordinary occurrence charts.
+- The Pattern focal chart's option contained only the target and matched
+  aggregate/spread series, without a selected marker representation. The detail
+  pane nevertheless promised selected glucose and evidence markers. Preserve
+  the separate absence of retired meal markers from the pooled glucose chart.
+- Diagnose's rail measured 430px; Changes and Day measured 300px, at both sizes.
+  Their dividers therefore differed from the Diagnose reference by 130px.
+- All charts and Close both placed their text to the right of the icon.
+- In the existing showcase's meal-bolus-short comparison rows, the rendered
+  description intruded 14.625px into the clipped long cohort-label text area at
+  both sizes; the screenshots visibly reproduce the collision.
+- Sampled Window buttons measured 36px high. This is a baseline measurement,
+  not a new target dimension; the operator's tighter-density direction governs.
+- The sampled focal expansion buttons already started 4px below the header top.
+  The more specific focal CSS overrides the generic header centering rule.
+  Earlier static-only statements about centering were incomplete. The sampled
+  catalogue had no header expansion controls. Keep the top-right direction as a
+  cross-state acceptance requirement; do not claim a reproduced centering defect
+  or change the already-correct focal anchoring without measured evidence.
+
+Evidence directory: `/private/tmp/harmonic-404-new-report-evidence/`.
+Raw logs: `probe.log` and `geometry-probe.log`. Scripts:
+`/private/tmp/harmonic-404-orchestrate/runtime-probe.mjs` and
+`/private/tmp/harmonic-404-orchestrate/runtime-geometry-probe.mjs`.
+The scripts required coordinator corrections to the worker's syntax, selectors
+and series assertion before they supplied usable evidence. No screenshot or
+record-level data from the operator's own attachments was published or committed.
+
+### Draft and remaining gates
+
+The new OpenSpec proposal, numbered tasks and capability deltas are drafted as
+three serial capability chunks. Coordinator authoring checks corrected missing
+explicit navigation/history/trace acceptance, routing ownership prose and
+abbreviated command output. The facts appendix is regenerated from complete
+command output. `npx --yes @fission-ai/openspec@1 validate v2-findings-ledger
+--strict` completed successfully after those corrections. The draft remains
+unadmitted and unreviewed; validation is structural, not a review verdict.
+
+Two narrow workflow choices were sent asynchronously and have no answer yet:
+
+1. Permit a second localhost synthetic server with fetch disabled and a fixed
+   test token solely for S87, as an exception to AGENTS.md's empty-token rule,
+   or leave that story unverified. The prepared command is in
+   `/private/tmp/harmonic-404-auth-server.command.txt`; it has not run.
+2. Permit Terra for the mandatory Full-depth plan review under the explicitly
+   unvalidated Codex exception, or have the operator arrange Opus review.
+   `orchestrate/references/review-routing.md` supplies this restriction. No
+   reviewer has been dispatched and no verdict is claimed.
+
+Do not infer either answer from elapsed time. Product decisions Q1–Q6 remain
+settled, Q5 deferred. No application implementation, execution lock, triaged
+status or PR is complete. All owned CLI workers and synthetic replay/probe
+processes from this pass are terminal.

@@ -2774,13 +2774,13 @@ export const S82 = async (page) => {
   await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
     ok(during.panOffset > 0, 'S82 the day pans left under the right boundary');
-    is(during.chip, 'Window 22:00–02:00', 'S82 the draw reads its wrapped window before release');
+    is(during.chip, '22:00–02:00', 'S82 the draw reads its wrapped window before release');
   }, 'S82 gesture');
   await captureEvidence(page, 'S82-mid-pan-right');
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
-    is((seen(await state(page))).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
+    is((seen(await state(page))).chip, '22:00–02:00', 'S82 draw right commits across midnight');
   }, "S82");
 };
 
@@ -3282,7 +3282,7 @@ export const issue81SlicedProjection = async (page) => {
   await waitForLevelAnimations(page);
   await waitForReplayAssertion(async seen => {
     const sliced = seen(await state(page));
-    is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
+    is(sliced.chip, '04:30–06:00', 'S43 the public brace lands on the intended slice');
     is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
     is(sliced.queue.map((row) => row.title),
       ['Basal 05:30 · raise', 'ISF'],
@@ -5866,18 +5866,21 @@ export const S156 = (page) => sequenceDrill(page, 'repeat_eating');
 export const S157 = async (page) => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
     const input = await sequenceState(page, `${lever}_empty`);
-    const source = input.windows.global.preparation.rendered_rows.find((r) => r.lever === lever);
+    const expected = input.windows['0-360'].preparation.rendered_rows;
     await page.getByRole('button', { name: 'Overnight', exact: true }).click();
     await settle(page, 500);
     await waitForReplayAssertion(async seen => {
       const rows = seen(await servedRows(page, [0, 360]));
-      ok(!rows.some((r) => r.kind === 'pattern'), 'scoped query omits whole-feed Patterns');
-      const cause = rows.find((r) => r.id === source.id);
-      ok(cause && !cause.claimed_by, 'witnessed scoped cause remains without an orphan parent');
-      is(cause.priority, source.priority, 'source-window Priority is stable');
-      const node = page.locator(`#level .qrow[data-id="${source.id}"]`);
-      is(seen(await node.count()), 1, 'witnessed scoped cause renders');
-      is(seen(await page.locator('#level .qitem.claimed').count()), 0, 'scoped rail invents no nesting');
+      const shape = list => list.map(row => ({ id: row.id, kind: row.kind, priority: row.priority,
+        claimed_by: row.claimed_by, window: row.pattern_chart?.window || row.event_chart?.window || null }));
+      is(shape(rows), shape(expected), 'the scoped producer population owns its Pattern roster and child ownership');
+      const ids = seen(await page.locator('#level .qrow').evaluateAll(nodes => nodes.map(node => node.dataset.id)));
+      is(ids, expected.filter(row => row.register !== 'blind').map(row => row.id),
+        'the rail renders exactly the scoped producer parents and nested children, never global-only rows');
+      for (const row of expected.filter(row => row.claimed_by)) {
+        const parent = rows.find(candidate => candidate.id === row.claimed_by);
+        ok(parent?.kind === 'pattern', `scoped child ${row.id} retains its served Pattern parent`);
+      }
     }, "S157");
   }
 };

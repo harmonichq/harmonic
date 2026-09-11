@@ -1847,12 +1847,15 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     WindowQuery.clock(scope["start_min"], scope["end_min"]),
                     analysis_generation=generation,
                 )
-                scoped_pattern = next((row for row in scoped["rows"]
-                                       if row.get("id") == f"pattern:{pattern_key}"), None)
+                # A Pattern may intentionally collapse to its served habit row
+                # in the reading queue. Admission still belongs to the scoped
+                # Pattern producer, whose roster survives that presentation.
+                scoped_pattern = next((row for row in scoped["outcome_patterns"]
+                                       if row.get("key") == pattern_key), None)
             except ResultCache.GenerationChanged as error:
                 raise HTTPException(status_code=409, detail="Pattern evidence changed. Refresh findings.") from error
             if (scoped_pattern is None
-                    or (scoped_pattern.get("pattern") or {}).get("readiness", {}).get("verdict") != "ready"):
+                    or scoped_pattern.get("readiness", {}).get("verdict") != "ready"):
                 raise HTTPException(status_code=409, detail="Pattern Focus is not ready in this outcome window")
         def pin(store, admission, source, now, at):
             if not admission["focus_pin"]["available"]:

@@ -200,9 +200,11 @@ async function selectedPattern404(page) {
   const focusStatus = page.locator('[data-focus-context]');
   await focusStatus.waitFor({ timeout: 30000 });
   const visible = await focusStatus.innerText();
-  assert.match(visible, /^Focus unavailable: /,
-    'S106 selected Pattern parent must expose the backend withholding state in Diagnose');
-  assert.doesNotMatch(visible, /reconciliation_required|active_trial/,
+  const reason = await focusStatus.getAttribute('title');
+  assert.match(visible, /^(View Plan|View Trial|View Focus|Focus unavailable|Focus status unavailable)$/,
+    `S106 selected Pattern parent must expose a compact reachable Focus action in Diagnose: ${visible}`);
+  assert.ok(reason?.trim(), 'S106 selected Pattern parent must retain the backend withholding explanation');
+  assert.doesNotMatch(`${visible} ${reason}`, /reconciliation_required|active_trial/,
     'S106 Focus withholding copy must not expose backend admission tokens');
 }
 const geometry404 = page => page.evaluate(() => {

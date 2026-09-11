@@ -428,6 +428,8 @@ S7 · A paired state is one flexible evidence stage beside a 300px reading pane
 Amended S7 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector is the carried v1 Findings rail at its shipped 430px, with a wider evidence stage; the 300px reading pane belongs to the paired desk states (Changes, Day), measured on .gf-desk > .gf-reading. The app replay uses a Changes case with a Trial underway to prove that paired width.
 The preceding wording and results are the attributed pre-amendment record.
 
+Amended S7 · 2026-09-11 · #404 browser correction: the paired desk reading rail is the same shipped 430px column as Diagnose. Changes and Day preserve that width beside their flexible stages.
+
 
 ```
 S7b · The selected full-width empty Changes state is preserved as observed: with
@@ -1301,6 +1303,8 @@ S56 · Starting a Focus pins it and lands on Overview, leaving no Retry standing
 Amended S56 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
 The preceding wording and results are the attributed pre-amendment record.
 
+Amended S56 · 2026-09-11 · #404 browser correction: Pattern Focus begins from a selected Diagnose outcome window; that exact served scope travels to the durable pin request and remains backend-admitted.
+
 
 ```
 S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
@@ -1315,6 +1319,8 @@ S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
 
 Amended S56b · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
 The preceding wording and results are the attributed pre-amendment record.
+
+Amended S56b · 2026-09-11 · #404 browser correction: the failed and retried selected-window Pattern pin carry the same durable request identity and outcome scope; only a successful backend response opens Focus.
 
 
 ```

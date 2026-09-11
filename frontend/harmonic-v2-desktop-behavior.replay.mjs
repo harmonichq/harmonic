@@ -692,7 +692,7 @@ export const S7 = async (page) => {
   await waitForReplayAssertion(async seen => {
     const reading = seen(await box(page, '.gf-desk > .gf-reading'));
     ok(reading, 'the paired state has no reading pane');
-    ok(Math.round(reading.w) === 300, `the reading pane is ${reading.w}px, not the locked 300px`);
+    ok(Math.round(reading.w) === 430, `the reading pane is ${reading.w}px, not the shared locked 430px`);
     const stage = seen(await box(page, '.gf-desk > .gf-stage'));
     ok(stage && stage.w > reading.w, 'the evidence stage is not the flexible pane beside the reading pane');
   }, "S7");
@@ -2731,13 +2731,17 @@ export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no
     }, "S86");
     // The non-API route set is closed: a path the server never declared is a
     // 404, not the shell.
-    const closed = await page.evaluate(async () => {
+    const routes = await page.evaluate(async () => {
       const out = {};
-      for (const path of ['/v2/day', '/v2/overview', '/v2/index.html', '/v2/assets/no-such.js']) {
+      for (const path of ['/v2/diagnose', '/v2/changes', '/v2/day', '/v2/overview', '/v2/index.html', '/v2/assets/no-such.js']) {
         out[path] = (await fetch(path)).status;
       }
       return out;
     });
+    for (const path of ['/v2/diagnose', '/v2/changes', '/v2/day']) {
+      ok(routes[path] === 200, `the canonical desk path ${path} returned ${routes[path]}, not 200`);
+    }
+    const closed = Object.fromEntries(Object.entries(routes).filter(([path]) => !['/v2/diagnose', '/v2/changes', '/v2/day'].includes(path)));
     for (const [path, status] of Object.entries(closed)) {
       ok(status === 404, `${path} answered ${status}; the non-API route set is not closed`);
     }

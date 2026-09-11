@@ -4,6 +4,7 @@ import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { boundedWait } from './c2.replay.mjs';
 import { date } from './frame.js';
+import { parseV2Route } from '../frontend/tab-routing.js';
 
 export const C3_CASES = Object.freeze({
   ...Object.fromEntries('S36,S45,S45b,S46,S47,S48,S49,S50,S51,S52,S53,S55,S91,S92,S94'.split(',').map(id => [id, 'c3-trial'])),
@@ -88,11 +89,20 @@ async function startForm(page, drill = false) {
   assert.ok(offered, 'case must publish a pinnable Pattern');
   if (drill) {
     await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
-    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const scoped = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === '/api/diagnose/finding-case-file-preparation'
+        && url.searchParams.get('start_min') === '720' && url.searchParams.get('end_min') === '1080'
+        && response.ok();
+    }, { timeout: 30000 });
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    const scopedPreparation = await boundedWait(scoped, 'selected Afternoon preparation').then(response => response.json());
     const source = await read(page, '/api/guidance');
     const candidate = source.candidates.find(row => row.subject === offered.subject);
     const caseId = candidate.collapse === 'collapse_to_member'
       ? candidate.chosen_member.subject.replace(/^habit:/, 'finding:') : offered.subject;
+    assert.ok(scopedPreparation.rendered_rows.some(row => row.id === caseId),
+      'the selected Afternoon producer population must publish the Focus case that opens');
     const row = page.locator(`#level .qrow[data-id="${caseId}"]`);
     await row.waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
@@ -104,24 +114,35 @@ async function startForm(page, drill = false) {
     await changes(page); await press(page, '[data-start-focus]');
   }
   await page.locator('[data-focus="pin"]').waitFor({ timeout: 30000 });
-  return offered;
+  const route = parseV2Route(new URL(page.url()));
+  const scope = route.context.window?.split('-').map(Number);
+  return { offered, scope: scope?.length === 2 && scope.every(Number.isInteger)
+    ? { start_min: scope[0], end_min: scope[1] } : null, route };
 }
 async function pin(page, drill = false) {
-  const offered = await startForm(page, drill);
+  const { offered, scope, route } = await startForm(page, drill);
+  assert.equal(route.destination, 'changes', 'the pin form must be reached through the shared Changes route');
+  assert.ok(scope, 'a Pattern Focus form must retain the selected Diagnose outcome window');
+  const response = page.waitForResponse(reply => reply.request().method() === 'POST'
+    && new URL(reply.url()).pathname === '/api/focus', { timeout: 30000 });
   await press(page, '[data-focus="pin"]');
+  const saved = await boundedWait(response, 'pin save response');
+  assert.equal(saved.status(), 200, `pin save response: ${await saved.text()}`);
+  assert.deepEqual(saved.request().postDataJSON().outcome_window, scope,
+    'the selected Diagnose window is submitted to the Pattern Focus API');
   await page.locator('.gf-stage-focus').waitFor({ timeout: 30000 });
-  const { saved } = await waitForReplayAssertion(async seen => {
+  const { saved: record } = await waitForReplayAssertion(async seen => {
     const roster = seen(await read(page, '/api/focus'));
     const saved = roster.focuses.find(row => row.id === roster.admission.active_id);
     assert.equal(saved.pattern_key, offered.key);
-    assert.equal(new URL(seen(page.url())).searchParams.get('to'), 'changes');
+    assert.equal(parseV2Route(new URL(seen(page.url()))).destination, 'changes');
     assert.equal(seen(await page.locator('[data-focus="retry-pin"]').count()), 0);
     return { saved };
   }, "pin");
   await page.reload(); await page.locator('.gf-stage-focus').waitFor({ timeout: 30000 });
   await waitForReplayAssertion(async seen => {
     const followed = seen(await read(page, '/api/verify/trials'));
-    const title = followed.focuses.find(row => row.id === saved.id)?.title;
+    const title = followed.focuses.find(row => row.id === record.id)?.title;
     assert.ok(typeof title === 'string' && title.trim(), 'the saved record must carry a served Focus title');
     assert.ok((seen(await page.locator('.gf-stage-focus').innerText())).includes(title), 'the stage must print the served Focus title');
   }, "pin");
@@ -163,9 +184,10 @@ export const C3_STORIES = {
     await press(page, '[data-follow-up-inspect]');
     await page.waitForFunction(slot => document.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label')?.startsWith(`${slot} basal slot,`), slot, { timeout: 30000 });
     await waitForReplayAssertion(async seen => {
-      assert.equal(new URL(seen(page.url())).searchParams.get('to'), 'diagnose');
-      assert.equal(new URL(seen(page.url())).searchParams.get('window'), `${start}-${start + 30}`);
-      assert.equal(new URL(seen(page.url())).searchParams.get('from'), 'changes');
+      const route = parseV2Route(new URL(seen(page.url())));
+      assert.equal(route.destination, 'diagnose');
+      assert.equal(route.context.window, `${start}-${start + 30}`);
+      assert.equal(route.context.from, 'changes');
     }, "S36");
   },
   async S45(page) {
@@ -324,17 +346,20 @@ export const C3_STORIES = {
     await page.locator('[data-record-part="ending"]').waitFor();
     await press(page, '[data-action="overview"]');
     await waitForReplayAssertion(async seen => {
-      assert.equal(new URL(seen(page.url())).searchParams.get('to'), 'diagnose');
-      assert.equal(new URL(seen(page.url())).searchParams.get('subject'), 'setting:basal_rate');
-      assert.equal(new URL(seen(page.url())).searchParams.get('window'), '180-210');
+      const route = parseV2Route(new URL(seen(page.url())));
+      assert.equal(route.destination, 'diagnose');
+      assert.equal(route.context.subject, 'setting:basal_rate');
+      assert.equal(route.context.window, '180-210');
     }, "S54b");
   },
   async S55(page) { await active(page); await waitForReplayAssertion(async seen => {
     assert.match(seen(await page.locator('.gf-stage-trial .gf-title').innerText()), /Profile change · \d+ settings|·/);
   }, "S55"); },
-  async S56(page) { await pin(page); },
+  async S56(page) { await pin(page, true); },
   async S56b(page) {
-    const offered = await startForm(page, true);
+    const { offered, scope, route } = await startForm(page, true);
+    assert.equal(route.destination, 'changes');
+    assert.ok(scope, 'S56b must reach the Pattern Focus form through a selected Diagnose window');
     let first;
     await page.route('**/api/focus', route => route.request().method() === 'POST'
       ? (first = route.request().postDataJSON(), route.fulfill({ status: 503, json: { detail: 'Synthetic pin refusal' } })) : route.continue());
@@ -342,11 +367,17 @@ export const C3_STORIES = {
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('[data-focus="retry-pin"]').evaluate(el => el === document.activeElement)), true);
       assert.equal((seen(await read(page, '/api/focus'))).focuses.length, 0);
+      assert.deepEqual(first?.outcome_window, scope, 'the refused request retains the selected Diagnose window');
     }, "S56b");
     await page.unroute('**/api/focus');
-    const retry = page.waitForRequest(r => r.method() === 'POST' && new URL(r.url()).pathname === '/api/focus', { timeout: 30000 });
+    const retry = page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === '/api/focus', { timeout: 30000 });
     await press(page, '[data-focus="retry-pin"]');
-    assert.equal((await boundedWait(retry, 'pin retry')).postDataJSON().request_id, first.request_id);
+    const response = await boundedWait(retry, 'pin retry response');
+    assert.equal(response.status(), 200, `pin retry response: ${await response.text()}`);
+    assert.equal(response.request().postDataJSON().request_id, first.request_id,
+      'the retry keeps the durable request identity');
+    assert.deepEqual(response.request().postDataJSON().outcome_window, scope,
+      'the retry keeps the selected Diagnose outcome window');
     await page.locator('.gf-stage-focus').waitFor();
     assert.equal((await read(page, '/api/focus')).focuses[0].pattern_key, offered.key);
   },

@@ -63,6 +63,25 @@ class GuidanceApiTest(unittest.TestCase):
         self.assertEqual(resolved.status_code, 200, resolved.text)
         self.assertEqual(app.state.result_cache.version - before, 2)
 
+    def test_pattern_focus_accepts_a_ready_scoped_pattern_that_collapses_to_its_member(self):
+        _tmp, _app, client = self._case_client("c3-pin")
+        roster = client.get("/api/focus").json()
+        offered = roster["pinnable_patterns"][0]
+        guidance = client.get("/api/guidance").json()
+        scope = {"start_min": 720, "end_min": 1080}
+        prepared = client.get("/api/diagnose/finding-case-file-preparation", params=scope).json()
+        # The public scoped presentation intentionally collapses this Pattern
+        # into its served child; it is not permission to lose the Pattern's
+        # producer-owned admission on the write path.
+        self.assertIn("finding:over_treated_low", {row["id"] for row in prepared["rendered_rows"]})
+        response = client.post("/api/focus", json={
+            "pattern_key": offered["key"], "subject": offered["subject"], "outcome_window": scope,
+            "request_id": "00000000-0000-4000-8000-000000000404",
+            "input_revision": roster["input_revision"], "analysis_generation": guidance["analysis_generation"],
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["record"]["decision_context"]["outcome_window"], scope)
+
     def test_all_setting_pattern_pin_is_rejected_separately(self):
         _tmp, _app, client = self._case_client("showcase")
         response = client.post(

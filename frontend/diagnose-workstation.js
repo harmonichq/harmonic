@@ -1209,6 +1209,7 @@ function boot(root, data, callbacks, signal) {
 
   renderInstruments(CFG.win, exposureCapture, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
+    invalidateSlotReturn();
     presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
   });
   /* PORT DEVIATION (#654), same reason as the scope readout above: the status
@@ -2062,6 +2063,15 @@ function boot(root, data, callbacks, signal) {
     presetKey = state.presetKey;
     explicitPreset = state.explicitPreset;
   };
+  // A slot remembers the reader's pre-drill scope only until the reader makes
+  // another explicit scope choice. Returning after that choice must retain the
+  // new server-owned population, while an ordinary slot return still restores
+  // its untouched caller scope.
+  function invalidateSlotReturn() {
+    for (const frame of stack) {
+      if (frame.k === 'slot') frame.returnWindow = null;
+    }
+  }
   const popTo = (i) => {
     ++caseGeneration;
     pendingKey = null;
@@ -3475,7 +3485,7 @@ function boot(root, data, callbacks, signal) {
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
   // explicit choice in its own right, so it outranks the frame's window too
-  function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
+  function clearDrawn() { invalidateSlotReturn(); drawn = null; explicitPreset = true; paint(); }
 
   /** A lane click is a physical scope choice, so it REPLACES the workspace —
       and so does a basal or I:C drill reaching this picker, by queue row or
@@ -3725,6 +3735,7 @@ function boot(root, data, callbacks, signal) {
         presetKey = 'all';
         explicitPreset = true;
       }
+      if (!cancelled) invalidateSlotReturn();
       committedBeforeDrag = null;
       dragDisplayWindow = null;
       clockPanOffset = 0;

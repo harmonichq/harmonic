@@ -313,7 +313,12 @@ async function projectionReplacement(page) {
   await waitForReplayAssertion(async seen => {
     const ids = seen(await page.locator('#level .qrow').evaluateAll(rows => rows.map(row => row.dataset.id)));
     check(ids.length > 0, 'the recovered slice retains its own matching basal Finding');
-    check(ids.every(id => served.rendered_rows.some(row => row.id === id)), 'the slice paints only its served rows');
+    const expected = served.rendered_rows.filter(row => !row.claimed_by).map(row => row.id);
+    assert.deepEqual(ids, expected, 'the slice paints its complete producer-owned scoped roster, including Patterns');
+    for (const row of served.rendered_rows.filter(row => row.claimed_by)) {
+      check(served.rendered_rows.some(parent => parent.id === row.claimed_by && parent.kind === 'pattern'),
+        `the scoped child ${row.id} retains its published Pattern owner`);
+    }
     check(served.window?.scoped || served.findings?.window?.scoped, 'recovery is a scoped producer result');
   }, "projectionReplacement");
 }
@@ -498,7 +503,7 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       const reading = seen(await page.locator('.gf-desk > .gf-reading').boundingBox());
       const stage = seen(await page.locator('.gf-desk > .gf-stage').boundingBox());
-      assert.equal(Math.round(reading.width), 300, 'paired Changes keeps the desk reading-pane width');
+      assert.equal(Math.round(reading.width), 430, 'paired Changes keeps the shared desk reading-pane width');
       check(stage.width > reading.width);
     }, "S7");
   },

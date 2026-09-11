@@ -622,7 +622,7 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
     const drawnWindow = await waitForReplayAssertion(async seen => {
       const value = seen((await page.locator('#seg-window [data-follow]').innerText())
         .replace('×', '').trim());
-      assert.match(value, /^Window \d\d:\d\d–\d\d:\d\d$/,
+      assert.match(value, /^\d\d:\d\d–\d\d:\d\d$/,
         'the touch drag commits the shown time range');
       return value;
     }, '#341 touch drag window');
@@ -785,7 +785,7 @@ test('#341 · useful queue previews remain present and legible at narrow width',
     await page.waitForFunction(() => {
       const level = document.querySelector('#level');
       return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
-        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 6
         && !level.textContent.includes('Loading evidence');
     });
     const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
@@ -865,7 +865,7 @@ test('#341 · All charts dismissal preserves a genuinely scrolled phone reading 
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.waitForFunction(() => {
       const node = document.querySelector('#level');
-      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 6
         && !node.textContent.includes('Loading evidence')
         && document.querySelector('.cockpit-stage > .main-content').scrollHeight
           > document.querySelector('.cockpit-stage > .main-content').clientHeight;
@@ -2078,7 +2078,7 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
     // day's 02:00 — a held boundary is travel, never a place to release on
     const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
       { past: 180, aim: 24 * 60 + 2 * 60 });
-    assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
+    assert.equal(during.chip, '22:00–02:00', 'the draw wraps before release');
     await page.mouse.up();
     await settle(page, 500);
 
@@ -2091,7 +2091,7 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
       axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
         .getOption().xAxis[0].data.length,
     }));
-    assert.equal(wrapped.chip, 'Window 22:00–02:00');
+    assert.equal(wrapped.chip, '22:00–02:00');
     /* Edge and grip counts are static markup and paintBrace writes the same
        two offsets into both, so counting them or comparing them proves
        nothing. What can actually move is WHERE each one lands: pin all four

@@ -208,9 +208,11 @@ committed. Replay synchronization alone did not resolve the full-run failure.
 Live preparation and case-file reads remain required during ordinary and wrapped
 held drags, as inherited v1 S107 specifies. The Window controller preserves that
 flow while leaving overview and brace painting to the active drag until release.
-It observes the active pointer at document scope, so evidence repaint cannot turn
-lost chart capture into a premature cancellation. Normal pointer-up or cancellation
-still completes the gesture through the existing controller lifecycle.
+It observes the active pointer at document scope and restores chart capture when
+a mouse button remains held after a repaint-related loss. Touch capture loss
+retains the existing cancellation and previous-window restoration behavior. Normal
+pointer-up or cancellation still completes the gesture through the controller
+lifecycle.
 
 The public browser regression observes live preparation and a pinned case-file
 read for the held endpoint, followed by an exact 12:00–21:30 commit. Focused v1

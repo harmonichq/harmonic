@@ -116,7 +116,8 @@ Empty shards, malformed shard arguments, missing/duplicate/wrong PASS IDs,
 deferred entries and incomplete summaries fail. The wrapper discards inherited
 `ONLY` and `STORY_CASES` before applying its own selection.
 
-CI's `v2-ledger` matrix in [ci.yml](../../../.github/workflows/ci.yml) owns the shard list.
+CI's named shard inventories in [ci.yml](../../../.github/workflows/ci.yml) own the shard lists.
+The `v2-ledger-plan` job selects the inventory before `v2-ledger` expands it.
 Every artifact has a unique size/shard name and retains `selection.json`, `inputs.json`, command
 records, raw logs and captures. Concatenating `complete-replay.log` files in
 numeric shard order preserves the complete registry's story order. Keep all
@@ -224,7 +225,7 @@ or failed run is identified explicitly; it is not a successful timing proof.
 | V2 desk | 0m47s | 5 min | 4m13s |
 | V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
 | V2 full ledger, each shard at either size | Measured-derived: 1575 / 4 = 393.75 s (see calculation below) | 18 min | 686.25 s above the derived shard time |
-| V2 PR smoke, each size | May select the full ledger: measured jobs 1430 s / 1575 s, with story failures | 60 min | 2025 s above the longer measured job, including setup and retention |
+| V2 PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
 | First-plan reconcile | 0m38s | 5 min | 4m22s |
 | Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
 | Diagnose event comparisons | 1m28s | 5 min | 3m32s |
@@ -233,9 +234,9 @@ or failed run is identified explicitly; it is not a successful timing proof.
 
 The full-ledger replay process ceiling is 780 seconds for a shard, leaving five
 minutes inside its CI job for setup, server teardown and retention. Unsharded
-local runs and PR smoke runs use 3000 seconds. A smoke run can include every
-story after a shared helper or runner change; its job reserves ten minutes
-outside the process ceiling. Other acceptance commands keep their existing limits.
+local runs and partial PR smoke runs use 3000 seconds; their jobs reserve ten
+minutes outside the process ceiling. A PR selecting every story uses the full
+shard inventory and its shorter process/job ceilings. Other acceptance commands keep their existing limits.
 
 The coordinator measured complete unsharded jobs in CI run
 [34539350410](https://github.com/harmonichq/harmonic/actions/runs/34539350410)
@@ -256,6 +257,16 @@ full local run before claiming the CI latency improvement. No runner tier,
 story body or assertion changes accompany these CI scheduling changes.
 
 
+The first PR run on this branch,
+[34542522691](https://github.com/harmonichq/harmonic/actions/runs/34542522691),
+measured the v1 Diagnose workstation ledger at 565 s (failed at S140), and the
+expanded PR smoke legs at 1917 s for 1280×720 and 1905 s for 1440×900 (failed).
+These are whole-job wall times from the job list. The PR legs selected all 130
+stories but ran one partition per size. Selection now happens before matrix
+expansion: that same escalation uses main's full shard inventory. These numbers
+are historical full-selection timings, not measurements of the new shards.
+
+
 The backend timing sources are the same two #405 runs above: 34534519065 and
 34537427194. Pytest alone completed in 948 s and 959 s. Guidance/Plan parity
 completed in 4 s, the I:C fixture check in 1 s, and the evidence-canvas check in
@@ -270,6 +281,7 @@ complete generator-job total.
 | Backend aggregate | Only compares the two job results | 3 min | Runner startup and one shell command |
 | Nightly result aggregate | Only compares backend, docs, frontend and browser results | 3 min | Runner startup and one Python command |
 | Latest nightly | Run and aggregate-job API lookups, each bounded at 30 s | 3 min | Checkout, requests and receipt retention |
+| V2 ledger selection | Browser-free inventory and dependency scan; local tests complete within seconds | 5 min | Checkout, npm install, selection and receipt retention; first runner timing pending |
 | Refresh nightly status | PR enumeration and status requests, each bounded at 30 s | 5 min | Derived operational allowance; first scheduled run supplies total timing |
 
 The backend wrapper process has an 840-second ceiling. Test-file sizes do not
@@ -329,8 +341,12 @@ owns the wrapper and cache checks. The `pytest (backend)` aggregate requires
 all test shards and the generator job, preserving the existing required name.
 
 On pull requests, `v2-ledger` runs the fixed `SMOKE_STORIES` slice from
-acceptance.py plus touched stories, with one matrix partition per size. The
-fixed slice is pinned by a digest and checked against the actual dependency
+acceptance.py plus touched stories. A browser-free `replay-plan` CI leg resolves
+that selection first. A complete selection uses the named `full` inventory,
+exactly as main does; a partial selection uses the named `smoke` inventory with
+one partition per size. Job names show mode, shard and total selected count.
+The plan and its selection reasons are retained in the `v2-plan` artifact.
+The fixed slice is pinned by a digest and checked against the actual dependency
 closures for every generated case, including nested variants, and all three
 destinations. It includes the utility entry points. It is not a second registry.
 
@@ -367,15 +383,19 @@ lookup uses the latest attempt and follows pagination.
 
 A result older than 36 hours, measured from the scheduled run's `run_started_at`,
 does not satisfy either reader, even when its aggregate is green. Exactly 36
-hours is allowed. Missing history, a missing/incomplete aggregate and API errors
-fail closed. A failed, cancelled or skipped aggregate fails. An in-progress
+hours is allowed. An existing run with a missing/incomplete aggregate fails.
+API errors and failed, cancelled or skipped aggregates fail. An in-progress
 nightly does not erase the last completed result used by a PR. Both readers
 retain `nightly.json` with the run, aggregate, age and resulting state.
 
 After the first scheduled CI run with the aggregate exists on main, configure
 branch protection to require `latest nightly` as well as the existing
 backend/browser checks. This workflow exposes the check; it does not edit
-repository protection. Before that first nightly, the check fails.
+repository protection. Bootstrap is the sole exception: if no scheduled run
+has completed, the PR check passes with a warning in the job summary and a
+`bootstrap: true` receipt. Once a completed scheduled run exists, the green
+aggregate and 36-hour rules apply unchanged. A missing aggregate in an existing
+run is a failure, not bootstrap. API errors remain failures even during bootstrap.
 At the end of every scheduled run, `nightly-status` publishes the shared result
 to each open PR's head and test-merge commit under the same `latest nightly`
 context. This blocks an existing PR whose earlier check read a green nightly
@@ -405,8 +425,9 @@ cost was approximately thirteen minutes per size before the cache change.
 To execute a backend partition, use the desired shard argument from ci.yml
 with `acceptance.py pytest --shard <k/n> --out <fresh scratch>`. Run the full
 backend locally with the existing `uv run python -m pytest` command after
-building both shells. PR smoke selection is part of `replay --base <ref>`;
-it has no separate preview command.
+building both shells. PR smoke execution is `replay --base <ref>`. The CI-called
+`replay-plan` leg owns matrix planning and requires the workflow's `REPLAY_SHARDS`
+environment value; it does not launch a browser.
 
 ## Historical comparison renders
 

@@ -181,8 +181,7 @@ class ReplayWrapperTest(unittest.TestCase):
         # Read the CI shard inventory; this test does not own a second list.
         import re
         workflow = (acceptance.REPO / ".github/workflows/ci.yml").read_text()
-        matrix = workflow.split("  v2-ledger:\n", 1)[1].split("    steps:\n", 1)[0]
-        inventories = json.loads(re.search(r"fromJSON\('([^']+)'\)", matrix).group(1))
+        inventories = json.loads(re.search(r"REPLAY_SHARDS: '([^']+)'", workflow).group(1))
         shards = inventories['full']
         self.assertTrue(shards)
         groups = [self.replay(acceptance.shard_arg(shard)) for shard in shards]
@@ -219,6 +218,55 @@ class ReplayWrapperTest(unittest.TestCase):
                     "--shard=" + value, "--out", str(out)], capture_output=True, text=True)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertFalse(out.exists())
+
+
+class ReplayPlanTest(unittest.TestCase):
+    def test_full_pr_escalation_uses_the_same_shards_as_main(self):
+        import re
+        workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
+        inventories = re.search(r"REPLAY_SHARDS: '([^']+)'", workflow).group(1)
+        named = json.loads(inventories)
+        ids = ReplayWrapperTest.ids
+        for base, selection, mode in [(None, ids, 'full'), ('base', ids, 'full'), ('base', ids[:20], 'smoke')]:
+            with self.subTest(base=base, mode=mode), tempfile.TemporaryDirectory() as directory:
+                run = acceptance.Run(Path(directory) / 'out')
+                output = Path(directory) / 'outputs'
+                with patch.dict(os.environ, {'REPLAY_SHARDS': inventories, 'GITHUB_OUTPUT': str(output)}), \
+                     patch.object(acceptance, 'inventory', return_value=ids), \
+                     patch.object(acceptance, 'smoke_selection', return_value=selection) as select:
+                    plan = acceptance.replay_plan(run, base)
+                if base:
+                    select.assert_called_once_with(run, base, ids)
+                else:
+                    select.assert_not_called()
+                self.assertEqual(plan['shards'], named[mode])
+                self.assertEqual(plan['mode'], mode)
+                self.assertEqual(plan['selected'], selection)
+                self.assertEqual(json.loads((run.out / 'plan.json').read_text()), plan)
+                self.assertIn(f"shards={json.dumps(named[mode])}\n", output.read_text())
+                self.assertIn(f"mode={mode}\n", output.read_text())
+                self.assertIn(f"count={len(selection)}\n", output.read_text())
+        ledger = workflow.split('  v2-ledger:\n', 1)[1].split('  frontend-browser:\n', 1)[0]
+        self.assertIn('fromJSON(needs.v2-ledger-plan.outputs.shards)', ledger)
+        self.assertIn("needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha", ledger)
+        self.assertIn('needs.v2-ledger-plan.outputs.count', ledger)
+
+    def test_ci_plan_command_exports_real_inventory_without_browser(self):
+        import re
+        workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
+        inventories = re.search(r"REPLAY_SHARDS: '([^']+)'", workflow).group(1)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'outputs'
+            out = Path(directory) / 'plan'
+            env = {**os.environ, 'REPLAY_SHARDS': inventories, 'GITHUB_OUTPUT': str(output)}
+            env.pop('PLAYWRIGHT_MODULE', None)
+            result = subprocess.run([sys.executable, acceptance.__file__, 'replay-plan', '--out', str(out)],
+                                    env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            plan = json.loads((out / 'plan.json').read_text())
+            self.assertEqual(plan['count'], 130)
+            self.assertEqual(plan['shards'], json.loads(inventories)['full'])
+            self.assertIn('mode=full\n', output.read_text())
 
 
 class CaseCacheTest(unittest.TestCase):
@@ -292,6 +340,23 @@ class InventoryProofTest(unittest.TestCase):
             self.inventory(ids)
 
 class BackendShardTest(unittest.TestCase):
+    def test_two_files_reach_pytest_as_separate_arguments_and_are_logged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory))
+            files = ['tests/test_one.py', 'tests/test_two.py']
+            with patch.object(acceptance, 'test_files', return_value=files), \
+                 patch.object(acceptance.subprocess, 'Popen') as child:
+                child.return_value.wait.return_value = 0
+                acceptance.pytest_shard(run, (1, 3))
+                self.assertEqual(child.call_args.args[0], ['uv', 'run', 'python', '-m', 'pytest', *files])
+            records = json.loads((run.out / 'commands.json').read_text())
+            self.assertEqual(records[0]['argv'][-2:], files)
+            self.assertTrue((run.out / 'pytest.log').is_file())
+            workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
+            artifact = workflow.split('      - name: Retain backend shard inventory and output', 1)[1].split('  generators:', 1)[0]
+            self.assertIn('if: always()', artifact)
+            self.assertIn('/pytest-*/pytest.log', artifact)
+
     def test_ci_shards_partition_every_test_file_once(self):
         import re
         workflow = (acceptance.REPO / '.github/workflows/ci.yml').read_text()
@@ -444,6 +509,21 @@ class NightlyTest(unittest.TestCase):
     def reply(self, value, code=200):
         return code, json.dumps(value).encode(), {}
 
+    def test_first_nightly_bootstrap_passes_with_warning_and_summary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            run = acceptance.Run(Path(directory) / 'out')
+            summary = Path(directory) / 'summary.md'
+            summary.write_text('Existing summary\n')
+            with patch.dict(os.environ, {**self.env, 'GITHUB_STEP_SUMMARY': str(summary)}), \
+                 patch.object(acceptance, 'request', return_value=self.reply({'workflow_runs': []})) as request:
+                acceptance.nightly_check(run)
+            request.assert_called_once()
+            self.assertIn('**Warning:** No scheduled nightly has completed yet', summary.read_text())
+            self.assertTrue(summary.read_text().startswith('Existing summary\n'))
+            receipt = json.loads((run.out / 'nightly.json').read_text())
+            self.assertEqual(receipt['state'], 'success')
+            self.assertTrue(receipt['bootstrap'])
+
     def test_both_callers_read_the_same_aggregate_and_freshness_boundary(self):
         # A failed publication changes the workflow conclusion, not its test aggregate.
         for age, aggregate, workflow, expected in [
@@ -494,7 +574,7 @@ class NightlyTest(unittest.TestCase):
 
     def test_missing_unrelated_incomplete_and_api_failure_are_rejected(self):
         for replies in [
-            [self.reply({}, 403)], [self.reply({'workflow_runs': []})],
+            [self.reply({}, 403)],
             *[[self.reply({'workflow_runs': [self.run_data(**changes)]})] for changes in
               [{'event': 'push'}, {'head_branch': 'other'}, {'status': 'in_progress'}]],
             [self.reply({'workflow_runs': [self.run_data()]}), self.reply({}, 403)],

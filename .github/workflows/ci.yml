@@ -46,7 +46,7 @@ jobs:
           name: pytest-${{ strategy.job-index }}
           path: |
             ${{ runner.temp }}/pytest-*/*.json
-            ${{ runner.temp }}/pytest-*/*.log
+            ${{ runner.temp }}/pytest-*/pytest.log
 
   generators:
     name: generator drift checks
@@ -396,19 +396,52 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
         run: ${{ matrix.command }}
 
-  v2-ledger:
-    name: browser gates — V2 ledger ${{ matrix.viewport }} ${{ matrix.shard }}
-    needs: browser-gate-setup
+  v2-ledger-plan:
+    name: select v2 ledger shards
     runs-on: ubuntu-latest
-    # A PR touching shared replay infrastructure can select the whole ledger.
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 60 || 18 }}
+    timeout-minutes: 5
+    env:
+      REPLAY_SHARDS: '{"smoke":["1/1"],"full":["1/4","2/4","3/4","4/4"]}'
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      shards: ${{ steps.plan.outputs.shards }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Select before expanding the browser matrix
+        id: plan
+        env:
+          SMOKE_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: |
+          args=()
+          if [[ -n "$SMOKE_BASE" ]]; then args+=(--base "$SMOKE_BASE"); fi
+          python3 mockups/sweep/harmonic-v2-desktop/acceptance.py replay-plan "${args[@]}" --out "$RUNNER_TEMP/v2-plan"
+      - name: Retain the selection and planned shard inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-plan
+          path: ${{ runner.temp }}/v2-plan/
+
+  v2-ledger:
+    name: browser gates — V2 ${{ needs.v2-ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.v2-ledger-plan.outputs.count }} selected)
+    needs: [browser-gate-setup, v2-ledger-plan]
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 18 || 60 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:
       fail-fast: false
       matrix:
         viewport: [1280x720, 1440x900]
-        shard: ${{ fromJSON('{"smoke":["1/1"],"full":["1/4","2/4","3/4","4/4"]}')[github.event_name == 'pull_request' && 'smoke' || 'full'] }}
+        shard: ${{ fromJSON(needs.v2-ledger-plan.outputs.shards) }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -440,7 +473,7 @@ jobs:
       - name: Run the selected v2 ledger
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/ciq-playwright-browsers
-          SMOKE_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          SMOKE_BASE: ${{ needs.v2-ledger-plan.outputs.mode == 'smoke' && github.event.pull_request.base.sha || '' }}
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/ciq-playwright/node_modules/playwright
         run: |
           args=()

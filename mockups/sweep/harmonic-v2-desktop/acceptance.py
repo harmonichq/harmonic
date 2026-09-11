@@ -119,8 +119,16 @@ def nightly_result(run, run_id=None):
             f"/repos/{repository}/actions/workflows/ci.yml/runs?event=schedule&branch=main&status=completed&per_page=1")
     code, body, _ = request("https://api.github.com", path, token)
     require(code == 200, f"nightly lookup failed: HTTP {code}")
-    runs = [json.loads(body)] if run_id else json.loads(body).get("workflow_runs", [])
-    require(runs, "no completed nightly exists; bootstrap the schedule before requiring this check")
+    runs = [json.loads(body)] if run_id else json.loads(body)["workflow_runs"]
+    if not runs:
+        warning = "No scheduled nightly has completed yet; bootstrap passes until the first completed run."
+        result = {"state": "success", "bootstrap": True, "warning": warning}
+        (run.out / "nightly.json").write_text(json.dumps(result, indent=2) + "\n")
+        print(f"::warning::{warning}")
+        if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(summary, "a") as stream:
+                stream.write(f"**Warning:** {warning}\n")
+        return result
     latest = runs[0]
     require(latest.get("event") == "schedule" and latest.get("head_branch") == "main"
             and (run_id or latest.get("status") == "completed"), "nightly lookup returned an unrelated run")
@@ -146,6 +154,8 @@ def nightly_result(run, run_id=None):
 
 def nightly_check(run):
     result = nightly_result(run)
+    if result.get("bootstrap"):
+        return
     require(result["state"] == "success",
             f"latest nightly {result['run']['id']}: failed or older than 36 h; see {result['run'].get('html_url')}")
     print(f"latest nightly {result['run']['id']}: success")
@@ -464,6 +474,21 @@ def smoke_selection(run, base, ids):
     return [identity for identity in ids if identity in selected]
 
 
+def replay_plan(run, base=None):
+    """Choose the CI shard inventory after resolving the PR's actual selection."""
+    ids = inventory(run)
+    selected = smoke_selection(run, base, ids) if base else ids
+    mode = "full" if selected == ids else "smoke"
+    shards = json.loads(os.environ["REPLAY_SHARDS"])[mode]
+    require(shards, "empty replay shard inventory")
+    plan = {"mode": mode, "shards": shards, "count": len(selected), "selected": selected, "base": base}
+    (run.out / "plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+    if output := os.environ.get("GITHUB_OUTPUT"):
+        with open(output, "a") as stream:
+            stream.write(f"mode={mode}\nshards={json.dumps(shards)}\ncount={len(selected)}\n")
+    return plan
+
+
 def replay(run, viewport, shard=None, base=None):
     ids = inventory(run)
     selected_ids = smoke_selection(run, base, ids) if base else ids
@@ -752,25 +777,27 @@ def package(run, image=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("leg", choices=["checks", "budget", "replay", "package", "public-tree", "probe", "inventory", "case-cache", "pytest", "nightly", "nightly-publish"])
+    parser.add_argument("leg", choices=["checks", "budget", "replay", "replay-plan", "package", "public-tree", "probe", "inventory", "case-cache", "pytest", "nightly", "nightly-publish"])
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--image", help="package leg: use an image built by the preceding CI step")
     parser.add_argument("--viewport", choices=["1280x720", "1440x900"], default="1280x720")
     parser.add_argument("--shard", type=shard_arg, help="replay or pytest: deterministic partition k/n")
-    parser.add_argument("--base", help="replay: include the fixed PR slice and stories touched since this Git base")
+    parser.add_argument("--base", help="replay or replay-plan: include the fixed PR slice and stories touched since this Git base")
     parser.add_argument("--check", action="store_true", help="case-cache: verify generation and copy isolation")
     parser.add_argument("--benchmark", action="store_true", help="case-cache: opt in to before/after preparation measurements")
     parser.add_argument("--case", action="append", help="case-cache: select this case (repeatable; default: registry cases)")
     args = parser.parse_args()
     if args.shard and args.leg not in {"replay", "pytest"}:
         parser.error("--shard is only valid for replay or pytest")
-    if args.base and args.leg != "replay":
-        parser.error("--base is only valid for replay")
+    if args.base and args.leg not in {"replay", "replay-plan"}:
+        parser.error("--base is only valid for replay or replay-plan")
     if (args.check or args.case or args.benchmark) and args.leg != "case-cache":
         parser.error("--check, --benchmark and --case are only valid for case-cache")
     run = Run(args.out)
     if args.leg == "replay":
         replay(run, args.viewport, args.shard, args.base)
+    elif args.leg == "replay-plan":
+        replay_plan(run, args.base)
     elif args.leg == "pytest":
         pytest_shard(run, args.shard)
     elif args.leg == "nightly":

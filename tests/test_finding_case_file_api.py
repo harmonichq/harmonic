@@ -177,6 +177,56 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()["detail"]["code"], "finding_unavailable")
 
+    def test_scoped_pattern_case_keeps_the_queue_population_and_selection(self):
+        from ciq_autotune.finding_case_file import prepare as prepare_case_files
+        from ciq_autotune.window_membership import WindowQuery
+        from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
+
+        qa_case = next(case for case in QA_CASES if case.name == "pattern-near-tie")
+        query = WindowQuery.clock(14 * 60, 21 * 60)
+        with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
+            with Store.open(database.name) as store:
+                materialize_case(store, qa_case)
+            with Store.open_readonly(database.name) as store:
+                execution = execute_case(store, qa_case)
+                prepared = prepare_case_files(
+                    store, query=query, version=0, analysis=execution.analysis,
+                    exposures=execution.exposures, scenarios=execution.scenarios,
+                    analysis_generation="qa-scoped-pattern:0",
+                )
+
+        retained, reason = self.app.state.result_cache.get_or_build_preparation(
+            ("scoped-pattern-clock",), lambda version: prepared,
+        )
+        self.assertIs(retained, prepared)
+        self.assertIsNone(reason)
+        row = next(row for row in prepared.findings["rows"]
+                   if row["id"] == "pattern:highs_after_meals")
+        self.assertEqual(row["window_scope"], "window")
+        self.assertEqual(row["pattern_chart"]["window"], query.to_dict())
+        response = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id, "finding_id": row["id"],
+            "alignment": "clock",
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        case = response.json()
+        self.assertEqual(case["summary"], {
+            "claimed": row["pattern"]["k"], "denominator": row["pattern"]["n"],
+            "noun": "meals",
+        })
+        self.assertEqual(len(case["occurrences"]), row["pattern"]["n"])
+        self.assertEqual(case["window"], query.to_dict())
+        selected_id = case["occurrences"][0]["id"]
+        selected = self.client.get("/api/diagnose/finding-case-file", params={
+            "projection_id": prepared.projection_id, "finding_id": row["id"],
+            "alignment": "clock", "occ": selected_id,
+        })
+        self.assertEqual(selected.status_code, 200, selected.text)
+        detail = selected.json()["selection"]["detail"]
+        self.assertEqual(detail["id"], selected_id)
+        self.assertTrue(detail["glucose"])
+        self.assertIn("markers", detail)
+
     def test_preparation_forwards_history_selection_and_generation(self):
         sentinel = {
             "id": "ich1_selected", "disposition": "out_of_scope",

@@ -156928,6 +156928,878 @@
     "start_min": 840
    }
   },
+  "drawn": {
+   "analysis_generation": "findings-fixture-process:0",
+   "chip_counts": {
+    "corrections": 0,
+    "highs": 3,
+    "lows": 0,
+    "meals": 1
+   },
+   "counts": {
+    "assert": 1,
+    "blind": 0,
+    "finding": 2,
+    "held": 2,
+    "history": 0
+   },
+   "findings_window": {
+    "days": 30,
+    "end": "2026-08-17",
+    "start": "2026-07-18"
+   },
+   "outcome_patterns": [
+    {
+     "action": "carb_ratio",
+     "admission_route": "setting_staging",
+     "collapse": "remain_pattern",
+     "harm_low_overlap": [
+      {
+       "count": null,
+       "habit_subject": "habit:carb_undercount",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
+      },
+      {
+       "count": null,
+       "habit_subject": "habit:late_bolus",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
+      },
+      {
+       "count": null,
+       "habit_subject": "habit:high_carb_sequence",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
+      },
+      {
+       "count": null,
+       "habit_subject": "habit:repeat_eating",
+       "reason": "different_identity_spaces",
+       "setting_subject": "setting:carb_ratio",
+       "status": "not_comparable"
+      }
+     ],
+     "k": 0,
+     "key": "highs_after_meals",
+     "member_set_fingerprint": "3dbae730bfb75717",
+     "members": [
+      {
+       "action": "habit:carb_undercount",
+       "admitted": true,
+       "hi": 0.2184,
+       "k": 9,
+       "kind": "habit",
+       "lo": 0.1003,
+       "price": 21,
+       "producer": "scenario",
+       "seriousness": "low",
+       "subject": "habit:carb_undercount"
+      },
+      {
+       "action": "carb_ratio",
+       "admitted": true,
+       "hi": null,
+       "k": 24,
+       "kind": "setting",
+       "lo": null,
+       "price": 66,
+       "producer": "tuning_levers",
+       "seriousness": null,
+       "seriousness_segments": [],
+       "subject": "setting:carb_ratio"
+      }
+     ],
+     "n": 1,
+     "overlap_counts": {
+      "highs_after_treating_lows": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "lows_after_correcting_highs": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "lows_after_meals": {
+       "count": 0,
+       "reason": "shared_meals_exposure",
+       "status": "comparable"
+      },
+      "overnight_lows_no_iob": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      }
+     },
+     "rate": 0.0,
+     "rate_levers": [
+      "habit:carb_undercount",
+      "habit:late_bolus",
+      "habit:meal_bolus_short"
+     ],
+     "rate_producer": "exposures",
+     "readiness": {
+      "count": 1,
+      "gate": 12,
+      "verdict": "withheld"
+     },
+     "seriousness": null,
+     "settled_price": 66,
+     "subject": "pattern:highs_after_meals",
+     "title": "Highs after meals",
+     "wilson": {
+      "hi": 0.6216,
+      "lo": 0.0
+     }
+    },
+    {
+     "action": "carb_ratio",
+     "admission_route": "setting_staging",
+     "collapse": "remain_pattern",
+     "harm_low_overlap": [
+      {
+       "count": 0,
+       "habit_subject": "habit:meal_over_delivery",
+       "reason": "shared_low_episode_nadir",
+       "setting_subject": "setting:carb_ratio",
+       "status": "comparable"
+      }
+     ],
+     "k": 0,
+     "key": "lows_after_meals",
+     "member_set_fingerprint": "13141e472c40a768",
+     "members": [
+      {
+       "action": "carb_ratio",
+       "admitted": true,
+       "hi": null,
+       "k": 24,
+       "kind": "setting",
+       "lo": null,
+       "price": 66,
+       "producer": "tuning_levers",
+       "seriousness": null,
+       "seriousness_segments": [],
+       "subject": "setting:carb_ratio"
+      }
+     ],
+     "n": 1,
+     "overlap_counts": {
+      "highs_after_meals": {
+       "count": 0,
+       "reason": "shared_meals_exposure",
+       "status": "comparable"
+      },
+      "highs_after_treating_lows": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "lows_after_correcting_highs": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "overnight_lows_no_iob": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      }
+     },
+     "rate": 0.0,
+     "rate_levers": [
+      "habit:meal_over_delivery"
+     ],
+     "rate_producer": "exposures",
+     "readiness": {
+      "count": 1,
+      "gate": 12,
+      "verdict": "withheld"
+     },
+     "seriousness": null,
+     "settled_price": 66,
+     "subject": "pattern:lows_after_meals",
+     "title": "Lows after meals",
+     "wilson": {
+      "hi": 0.6216,
+      "lo": 0.0
+     }
+    },
+    {
+     "action": "habit:over_treated_low",
+     "admission_route": "habit_threshold",
+     "collapse": "collapse_to_member",
+     "harm_low_overlap": [],
+     "k": 1,
+     "key": "highs_after_treating_lows",
+     "member_set_fingerprint": "a0de7500243ef646",
+     "members": [
+      {
+       "action": "habit:over_treated_low",
+       "admitted": true,
+       "hi": 0.2731,
+       "k": 8,
+       "kind": "habit",
+       "lo": 0.1221,
+       "price": 28,
+       "producer": "scenario",
+       "seriousness": "low",
+       "subject": "habit:over_treated_low"
+      }
+     ],
+     "n": 3,
+     "overlap_counts": {
+      "highs_after_meals": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "lows_after_correcting_highs": {
+       "count": 0,
+       "reason": "shared_lows_exposure",
+       "status": "comparable"
+      },
+      "lows_after_meals": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "overnight_lows_no_iob": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      }
+     },
+     "rate": 0.3333,
+     "rate_levers": [
+      "habit:over_treated_low"
+     ],
+     "rate_producer": "exposures",
+     "readiness": {
+      "count": 3,
+      "gate": 12,
+      "verdict": "withheld"
+     },
+     "seriousness": "low",
+     "settled_price": 28,
+     "subject": "pattern:highs_after_treating_lows",
+     "title": "Highs after treating lows",
+     "wilson": {
+      "hi": 0.6788,
+      "lo": 0.1058
+     }
+    },
+    {
+     "action": null,
+     "admission_route": "none",
+     "collapse": "remain_pattern",
+     "harm_low_overlap": [
+      {
+       "count": 0,
+       "habit_subject": "habit:correction_stacking",
+       "reason": "shared_low_episode_nadir",
+       "setting_subject": "setting:isf",
+       "status": "comparable"
+      },
+      {
+       "count": 0,
+       "habit_subject": "habit:correction_on_iob",
+       "reason": "shared_low_episode_nadir",
+       "setting_subject": "setting:isf",
+       "status": "comparable"
+      }
+     ],
+     "k": 0,
+     "key": "lows_after_correcting_highs",
+     "member_set_fingerprint": "72e37bdefcacb6d7",
+     "members": [
+      {
+       "action": null,
+       "admitted": false,
+       "hi": null,
+       "k": 0,
+       "kind": "setting",
+       "lo": null,
+       "price": 0,
+       "producer": "tuning_levers",
+       "seriousness": null,
+       "seriousness_segments": [],
+       "subject": "setting:isf"
+      }
+     ],
+     "n": 3,
+     "overlap_counts": {
+      "highs_after_meals": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "highs_after_treating_lows": {
+       "count": 0,
+       "reason": "shared_lows_exposure",
+       "status": "comparable"
+      },
+      "lows_after_meals": {
+       "count": null,
+       "reason": "different_exposure_families",
+       "status": "not_comparable"
+      },
+      "overnight_lows_no_iob": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      }
+     },
+     "rate": 0.0,
+     "rate_levers": [
+      "habit:correction_stacking",
+      "habit:correction_on_iob"
+     ],
+     "rate_producer": "exposures",
+     "readiness": {
+      "count": 3,
+      "gate": 12,
+      "verdict": "withheld"
+     },
+     "seriousness": null,
+     "settled_price": 0,
+     "subject": "pattern:lows_after_correcting_highs",
+     "title": "Lows after correcting highs",
+     "wilson": {
+      "hi": 0.3538,
+      "lo": 0.0
+     }
+    },
+    {
+     "action": null,
+     "admission_route": "setting_staging",
+     "collapse": "remain_pattern",
+     "harm_low_overlap": [],
+     "k": 0,
+     "key": "overnight_lows_no_iob",
+     "member_set_fingerprint": "be01b57ca95abd31",
+     "members": [
+      {
+       "action": null,
+       "admitted": true,
+       "hi": null,
+       "k": 0,
+       "kind": "setting",
+       "lo": null,
+       "price": 39,
+       "producer": "tuning_levers",
+       "seriousness": null,
+       "seriousness_segments": [],
+       "subject": "setting:basal_rate"
+      }
+     ],
+     "n": 0,
+     "overlap_counts": {
+      "highs_after_meals": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      },
+      "highs_after_treating_lows": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      },
+      "lows_after_correcting_highs": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      },
+      "lows_after_meals": {
+       "count": null,
+       "reason": "no_habit_exposure_identity",
+       "status": "not_comparable"
+      }
+     },
+     "rate": null,
+     "rate_levers": [],
+     "rate_producer": "harm_band_source_nights",
+     "readiness": {
+      "count": 0,
+      "gate": 12,
+      "verdict": "withheld"
+     },
+     "seriousness": null,
+     "settled_price": 39,
+     "subject": "pattern:overnight_lows_no_iob",
+     "title": "Overnight lows with no insulin on board",
+     "wilson": null
+    }
+   ],
+   "rows": [
+    {
+     "annotation": "post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "highs"
+     ],
+     "claimed_by": null,
+     "current": 5.7,
+     "direction": "lower",
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 4.2857,
+      "lo": 4.2857,
+      "method": "bootstrap-inverse-ratio-wls-clustered",
+      "n": 24,
+      "n_clusters": 24,
+      "value": 4.2857,
+      "wide": false
+     },
+     "event_chart": null,
+     "evidence": null,
+     "headline": "Post-meal corrections imply meals are under-covered — a tighter (smaller) I:C would dose more per carb. Measured 4.3 g/U across 24 meal runs against 5.7 programmed.",
+     "id": "ic:720",
+     "kind": "setting",
+     "label": "Evening",
+     "lean": null,
+     "lever": null,
+     "members": null,
+     "parameter": "carb_ratio",
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": 66,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": 5.0,
+     "regime_end": null,
+     "register": "assert",
+     "run_ids": null,
+     "span": {
+      "end_min": 1440,
+      "label": "12:00 to 24:00",
+      "start_min": 720
+     },
+     "support": {
+      "n": 24,
+      "noun": "meal runs",
+      "run_days": 90
+     },
+     "tier": "next_in_line",
+     "title": "I:C 12:00 to 24:00 · lower",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [
+      "highs",
+      "meals"
+     ],
+     "claimed_by": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "headline": "Highs after meals in 0 of 1 meals",
+     "id": "pattern:highs_after_meals",
+     "kind": "pattern",
+     "label": null,
+     "lean": null,
+     "lever": null,
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": {
+      "action": "carb_ratio",
+      "admission_route": "setting_staging",
+      "collapse": "remain_pattern",
+      "harm_low_overlap": [
+       {
+        "count": null,
+        "habit_subject": "habit:carb_undercount",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       },
+       {
+        "count": null,
+        "habit_subject": "habit:late_bolus",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       },
+       {
+        "count": null,
+        "habit_subject": "habit:high_carb_sequence",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       },
+       {
+        "count": null,
+        "habit_subject": "habit:repeat_eating",
+        "reason": "different_identity_spaces",
+        "setting_subject": "setting:carb_ratio",
+        "status": "not_comparable"
+       }
+      ],
+      "k": 0,
+      "key": "highs_after_meals",
+      "member_set_fingerprint": "3dbae730bfb75717",
+      "members": [
+       {
+        "action": "habit:carb_undercount",
+        "admitted": true,
+        "hi": 0.2184,
+        "k": 9,
+        "kind": "habit",
+        "lo": 0.1003,
+        "price": 21,
+        "producer": "scenario",
+        "seriousness": "low",
+        "subject": "habit:carb_undercount"
+       },
+       {
+        "action": "carb_ratio",
+        "admitted": true,
+        "hi": null,
+        "k": 24,
+        "kind": "setting",
+        "lo": null,
+        "price": 66,
+        "producer": "tuning_levers",
+        "seriousness": null,
+        "seriousness_segments": [],
+        "subject": "setting:carb_ratio"
+       }
+      ],
+      "n": 1,
+      "overlap_counts": {
+       "highs_after_treating_lows": {
+        "count": null,
+        "reason": "different_exposure_families",
+        "status": "not_comparable"
+       },
+       "lows_after_correcting_highs": {
+        "count": null,
+        "reason": "different_exposure_families",
+        "status": "not_comparable"
+       },
+       "lows_after_meals": {
+        "count": 0,
+        "reason": "shared_meals_exposure",
+        "status": "comparable"
+       },
+       "overnight_lows_no_iob": {
+        "count": null,
+        "reason": "no_habit_exposure_identity",
+        "status": "not_comparable"
+       }
+      },
+      "rate": 0.0,
+      "rate_levers": [
+       "habit:carb_undercount",
+       "habit:late_bolus",
+       "habit:meal_bolus_short"
+      ],
+      "rate_producer": "exposures",
+      "readiness": {
+       "count": 1,
+       "gate": 12,
+       "verdict": "withheld"
+      },
+      "seriousness": null,
+      "settled_price": 66,
+      "subject": "pattern:highs_after_meals",
+      "title": "Highs after meals",
+      "wilson": {
+       "hi": 0.6216,
+       "lo": 0.0
+      }
+     },
+     "pattern_chart": {
+      "key": "highs_after_meals",
+      "window": {
+       "end_min": 900,
+       "label": "12:00–15:00",
+       "scoped": true,
+       "start_min": 720
+      }
+     },
+     "priority": 66,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "worth_a_look",
+     "title": "Highs after meals",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "annotation": null,
+     "appearances": [
+      {
+       "family": "lows",
+       "m": 3,
+       "n": 1,
+       "noun": "lows"
+      }
+     ],
+     "asserts_move": null,
+     "chips": [
+      "highs"
+     ],
+     "claimed_by": null,
+     "current": null,
+     "direction": null,
+     "episodes": 1,
+     "estimate": null,
+     "event_chart": {
+      "lever": "over_treated_low",
+      "window": {
+       "end_min": 900,
+       "label": "12:00–15:00",
+       "scoped": true,
+       "start_min": 720
+      }
+     },
+     "evidence": [
+      {
+       "date": "2026-08-13",
+       "ep_id": "2026-08-13-ep0",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-13 13:55:00",
+       "verdict": "fired"
+      },
+      {
+       "date": "2026-08-14",
+       "ep_id": "2026-08-14-ep1",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-14 12:10:00",
+       "verdict": "near_miss"
+      },
+      {
+       "date": "2026-08-15",
+       "ep_id": "2026-08-15-ep2",
+       "family": "lows",
+       "kind": "low",
+       "t": "2026-08-15 12:10:00",
+       "verdict": "clean"
+      }
+     ],
+     "headline": "Ranks among this window's findings. Showed up in 1 of 3 lows in this window.",
+     "id": "finding:over_treated_low",
+     "kind": "habit",
+     "label": null,
+     "lean": null,
+     "lever": "over_treated_low",
+     "members": null,
+     "parameter": null,
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": 28,
+     "programmed_now": null,
+     "reason": null,
+     "recommended": null,
+     "regime_end": null,
+     "register": "finding",
+     "run_ids": null,
+     "span": null,
+     "support": null,
+     "tier": "worth_a_look",
+     "title": "Over-treated low",
+     "verdict_counts": {
+      "clean": 1,
+      "fired": 1,
+      "near_miss": 1,
+      "no_data": 0,
+      "outranked": 0
+     },
+     "verdict_counts_by_family": {
+      "lows": {
+       "clean": 1,
+       "fired": 1,
+       "near_miss": 1,
+       "no_data": 0,
+       "outranked": 0
+      }
+     },
+     "window_scope": "window"
+    },
+    {
+     "annotation": "not enough nights of steady data yet to point one way",
+     "appearances": null,
+     "asserts_move": null,
+     "chips": [],
+     "claimed_by": null,
+     "current": null,
+     "direction": null,
+     "episodes": null,
+     "estimate": null,
+     "event_chart": null,
+     "evidence": null,
+     "headline": "Not enough nights of steady data yet to point one way. Delivered below the programmed rate across 18 steady nights.",
+     "id": "basal:750-840",
+     "kind": "setting",
+     "label": "12:30 to 14:00",
+     "lean": "lower",
+     "lever": null,
+     "members": [
+      {
+       "current": 1.1,
+       "days": 18,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 1.15,
+        "lo": 0.8,
+        "method": "bootstrap-median",
+        "n": 18,
+        "value": 0.95,
+        "wide": false
+       },
+       "recommended": 0.95,
+       "start_min": 750
+      },
+      {
+       "current": 1.1,
+       "days": 18,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 1.15,
+        "lo": 0.8,
+        "method": "bootstrap-median",
+        "n": 18,
+        "value": 0.95,
+        "wide": false
+       },
+       "recommended": 0.95,
+       "start_min": 780
+      },
+      {
+       "current": 1.1,
+       "days": 18,
+       "estimate": {
+        "confidence": 0.8,
+        "hi": 1.15,
+        "lo": 0.8,
+        "method": "bootstrap-median",
+        "n": 18,
+        "value": 0.95,
+        "wide": false
+       },
+       "recommended": 0.95,
+       "start_min": 810
+      }
+     ],
+     "parameter": "basal_rate",
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": "insufficient evidence",
+     "recommended": null,
+     "regime_end": null,
+     "register": "held",
+     "run_ids": null,
+     "span": {
+      "end_min": 840,
+      "label": "12:30 to 14:00",
+      "start_min": 750
+     },
+     "support": {
+      "n": 18,
+      "noun": "nights of steady data",
+      "run_days": 30
+     },
+     "tier": "noted",
+     "title": "Basal 12:30 to 14:00 · leaning lower",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "window"
+    },
+    {
+     "annotation": "fasting data agrees with the set factor",
+     "appearances": null,
+     "asserts_move": false,
+     "chips": [],
+     "claimed_by": null,
+     "current": 36.0,
+     "direction": null,
+     "episodes": null,
+     "estimate": {
+      "confidence": 0.8,
+      "hi": 43.6,
+      "lo": 16.8,
+      "method": "bootstrap-ols-isf",
+      "n": 5,
+      "value": 29.4,
+      "wide": true
+     },
+     "event_chart": null,
+     "evidence": null,
+     "headline": "No direction is called: fasting data agrees with the set factor. 5 fasting nights measured against 1 U : 36 mg/dL programmed.",
+     "id": "isf",
+     "kind": "setting",
+     "label": "Fasting",
+     "lean": null,
+     "lever": null,
+     "members": null,
+     "parameter": "isf",
+     "past_setting": null,
+     "pattern": null,
+     "pattern_chart": null,
+     "priority": null,
+     "programmed_now": null,
+     "reason": "fasting data agrees with the set factor",
+     "recommended": null,
+     "regime_end": null,
+     "register": "held",
+     "run_ids": null,
+     "span": null,
+     "support": {
+      "n": 5,
+      "noun": "fasting nights",
+      "run_days": 30
+     },
+     "tier": "noted",
+     "title": "ISF",
+     "verdict_counts": null,
+     "verdict_counts_by_family": null,
+     "window_scope": "whole_day"
+    }
+   ],
+   "schema": "diagnose-findings-v2",
+   "selection": null,
+   "uncaused_highs": {
+    "count": 1,
+    "text": "1 high had no cause detected by the app"
+   },
+   "window": {
+    "end_min": 900,
+    "label": "12:00–15:00",
+    "scoped": true,
+    "start_min": 720
+   }
+  },
   "global": {
    "analysis_generation": "findings-fixture-process:0",
    "chip_counts": {

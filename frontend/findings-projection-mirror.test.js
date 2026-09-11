@@ -38,6 +38,7 @@ const WINDOWS = {
   afternoon: { start_min: 840, end_min: 1260 },
   overnight: { start_min: 1320, end_min: 120 },
   quiet: { start_min: 180, end_min: 240 },
+  drawn: { start_min: 720, end_min: 900 },
 };
 
 test('the mirror reproduces every frozen window byte for byte', () => {
@@ -125,6 +126,7 @@ test('the direction-only correction-factor warning stays visible and unranked', 
   assert.ok(lever.priority > 0, 'analysis keeps its priced ISF consequence');
 
   for (const [name, bounds] of Object.entries(WINDOWS)) {
+    if (name === 'drawn') continue;
     const projected = projectFindings(fixture.direction_only_inputs, bounds);
     assert.deepEqual(projected, fixture.direction_only_windows[name],
       `${name} matches the frozen server direction-only projection`);
@@ -200,7 +202,7 @@ test('sequence QA cases preserve Python witness, recurrence and habit-only nesti
       assert.equal(cause.appearances[0].n, 8);
       assert.equal(cause.appearances[0].m, lever === 'high_carb_sequence' ? 40 : 16);
       assert.equal(parent.k, 0, 'habit association never enters the meals rate');
-      for (const window of Object.keys(WINDOWS).filter((key) => key !== 'global')) {
+      for (const window of Object.keys(windows).filter((key) => key !== 'global')) {
         const scoped = windows[window].rows.find((row) => row.lever === lever);
         if (scoped) {
           const parent = windows[window].rows.find(

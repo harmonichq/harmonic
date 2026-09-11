@@ -918,7 +918,8 @@ def payload() -> dict:
                 else WindowQuery.clock(*bounds),
                 analysis_generation=ANALYSIS_GENERATION)
             for name, bounds in WINDOWS.items()
-        },
+        } | {"drawn": prepared.project(
+            WindowQuery.clock(720, 900), analysis_generation=ANALYSIS_GENERATION)},
         "settings_cases": {
             "carb_ratio_raise": prepare_findings_projection(
                 analysis=analysis(blocks=ic_raise_blocks()), exposures=exposures(),

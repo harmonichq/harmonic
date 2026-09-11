@@ -337,11 +337,6 @@ server-owned outcome-window membership and opaque event-selection identity stay
 in force; ADR 63's classifier, Highs denominator, and evidence-only constraints
 stay in force.
 
-**#404 pointer.** The active `v2-findings-ledger` change adds selected Pattern
-trace/marker rendering and a served parent-context route for nested Findings;
-this historical producer record retains its server-owned membership and stale
-response rules.
-
 **Consequences.** The title-keyed alignment allowlist and browser-side
 `(family, ep_id, t)` membership join retire. The server module earns its seam by
 concentrating four-family routing, atomic population construction, selection,

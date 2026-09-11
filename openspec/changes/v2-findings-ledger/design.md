@@ -82,6 +82,41 @@ Focus admission and comparison scope. This ADR does not authorize a new
 classifier threshold, a Focus-title migration, legacy-window backfill, or a
 rewrite of old contexts.
 
+### Documentation placement — #404 active record
+
+This change is the sole active OpenSpec location for #404 semantics. On
+2026-09-11 the #404 additions below were relocated here from the inherited
+active records, which were restored exactly to
+`12388f584fe11b2da7077d0ad5381f6c1af7d6ac` for publishing preflight. The
+source references preserve the original placement without leaving a second
+active #404 folder.
+
+- From `openspec/changes/harmonic-v2/contracts.md`: a new Pattern Focus retains
+  its outcome clock window in bounded decision context; the ending contract adds
+  `/api/verify/trials/{trial_id}/conclusion` for one separately dated late
+  conclusion on an expired Trial. That conclusion is additive: the expiry's
+  ending kind, effective time and saved assessment remain immutable; retry
+  returns the first saved conclusion and never reopens admission. Reassessment
+  remains named and on demand, never prewarmed. A Focus without retained scope
+  remains legacy history with its existing comparison semantics, without an
+  inferred scope or new unavailable state.
+- From `openspec/changes/harmonic-v2/design.md`: ADR 397 supersedes navigation
+  only in historical ADR 348; all other requirements remain binding. #404
+  further supersedes only the earlier no-local-recovery scope for stale local
+  follow-up reconciliation. Immutable-ending and admission rules remain binding.
+- From `openspec/changes/harmonic-v2/journeys.md`: #404 supersedes the
+  historical journey only for readable v2 paths, exact Plan/Trial record doors,
+  and backend-served Focus withholding context. Its original navigation and
+  follow-up prose remains historical.
+- From `openspec/changes/diagnose-finding-case-files/design.md`: #404 adds
+  selected Pattern trace/marker rendering and a served parent-context route for
+  nested Findings. The historical producer record retains its server-owned
+  membership and stale-response rules.
+
+These relocated statements are the active supersession pointers. They do not
+change acceptance requirements, the behavioral ledger, clinical policy, or the
+historical records they now leave unmodified.
+
 ### Q6 producer grounding
 
 `over_treated_low` has consequence `high` while remaining in the `lows`

@@ -65,9 +65,9 @@ existing records; no schema or endpoint is implemented by this document.
 | --- | --- | --- |
 | Applied Plan | Existing `applied_at` key and items; bounded `decision_context`; complete pump-entry deliverable including its source profile and captured I:C provenance | Extend Store apply/history and authenticated `/api/plan/apply`, `/api/plan/history` |
 | Trial | Existing Verify id, parameter/slot, detected time, before/after settings, captured block/members where present; `first_observed_at`, bounded `observed_context`; nullable reconciled Plan key and match receipt | Backend watch reconciliation persists through Store; selected reads extend `/api/verify/trials` |
-| Focus | Existing stored id/lever/pinned time; bounded `decision_context`, including a new Pattern's retained outcome clock window; retained `comparison_context` | Extend Store pin/list and authenticated `/api/focus` |
+| Focus | Existing stored id/lever/pinned time; bounded `decision_context`; retained `comparison_context` | Extend Store pin/list and authenticated `/api/focus` |
 | Plan intent withdrawal | Applied Plan key, withdrawn time and optional user reason; original intent remains readable | Authenticated `/api/plan/history/withdraw` through Store; see #387 implementation interfaces |
-| Trial or Focus ending | Kind, effective time, recorded time, optional user conclusion, bounded final assessment with its actual periods/context/limits; an expired Trial may additionally retain one separately dated late conclusion | Proposed authenticated `/api/verify/trials/{trial_id}/finish` and `/api/verify/trials/{trial_id}/conclusion`; extend `/api/focus/{focus_id}/resolve`; automatic endings are written by watch reconciliation |
+| Trial or Focus ending | Kind, effective time, recorded time, optional user conclusion, bounded final assessment with its actual periods/context/limits | Proposed authenticated `/api/verify/trials/{trial_id}/finish`; extend `/api/focus/{focus_id}/resolve`; automatic endings are written by watch reconciliation |
 | Admission frontier | Newest admitted canonical Trial id and detected time; retained after ending | Same backend watch owner and Store; read by active selection, Verify, guidance and Focus pin guard |
 
 Each context envelope carries `version`, `state` and `reason` when unavailable.
@@ -120,12 +120,6 @@ Focus rows. Original context/ending and a later reassessment are separate fields
 with explicit availability; a reassessment never replaces the saved snapshot.
 Deduplicate retained and derived Trial summaries by their canonical id. A record
 whose raw evidence is no longer available remains readable as a record.
-
-A late Trial conclusion is additive. The expiry's ending kind, effective time and
-saved assessment stay immutable; retry returns the first saved conclusion and
-never reopens admission. Reassessment remains a named, on-demand read and is not
-prewarmed. A Focus without retained scope is legacy history: it retains its
-existing comparison semantics without inferred scope or a new unavailable state.
 
 ## Follow-up periods and source context
 

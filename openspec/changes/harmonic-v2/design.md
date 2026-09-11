@@ -80,7 +80,7 @@ desktop cockpit, original Trial evidence, saved conclusions, precise Day return,
 and the visible Set aside/Restore behavior. Continue using CONTEXT.md and the
 existing app's prose. No new concept or navigation debate is required.
 
-Navigation only in this historical ADR 348 record is superseded by ADR 397. All other requirements remain binding. #404's active change further supersedes only its earlier no-local-recovery scope for stale local follow-up reconciliation; immutable-ending and admission rules remain binding.
+Navigation only in this historical ADR 348 record is superseded by ADR 397. All other requirements remain binding.
 
 This closes direction selection and the completed desktop walkthrough work.
 It does not turn page-memory prototype state into durable production behavior,

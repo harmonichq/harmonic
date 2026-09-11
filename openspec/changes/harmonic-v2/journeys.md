@@ -174,9 +174,3 @@ manufactured sources listed in `design.md`; any additional committed fixture
 must have a generator and drift check. The v2 walkthrough is complete only when
 its observed behavior and unresolved gaps are recorded. This document alone is
 not that evidence and is not a visual lock.
-
-## #404 supersession pointer
-
-`v2-findings-ledger` supersedes this historical journey only for readable v2
-paths, exact Plan/Trial record doors, and backend-served Focus withholding
-context. Its original navigation and follow-up prose remains historical.

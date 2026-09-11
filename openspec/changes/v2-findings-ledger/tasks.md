@@ -61,14 +61,16 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
 
 ## Document ownership
 
-The backend scope chunk updates its behavioral-layer delta and generated
-projection contract. The follow-up chunk updates CONTEXT.md and the additive
-contract in openspec/changes/harmonic-v2/contracts.md. The surface/integration
-chunk reconciles DESIGN.md, PRODUCT.md, and harmonic-v2/journeys.md where these
-accepted behaviors are described, adds supersession pointers to the historical
-harmonic-v2 and diagnose-finding-case-files design records, and carries this
-change's source, evidence ledger and INDEX updates. Base capability specs are
-folded from these deltas during the established post-merge archive; do not
-rewrite them early. Historical decisions retain their original text.
+The backend scope chunk updates this change's behavioral-layer delta and
+generated projection contract. The follow-up chunk updates CONTEXT.md and this
+change's additive contract record. The surface/integration chunk reconciles
+DESIGN.md, PRODUCT.md, and this change's source, evidence ledger and INDEX
+updates. #404 supersession statements that were briefly placed in inherited
+`harmonic-v2` and `diagnose-finding-case-files` active records are owned solely
+by `v2-findings-ledger/design.md`'s **Documentation placement — #404 active
+record** section; those inherited records are restored exactly to
+`12388f584fe11b2da7077d0ad5381f6c1af7d6ac`. Base capability specs fold from
+these deltas during the established post-merge archive; do not rewrite them
+early. Historical decisions retain their original text.
 
 - [x] 3.6 Apply the operator-requested Opus 5 high design critique, preserve inherited behavior, and verify the revised states with synthetic captures and public-interface checks.

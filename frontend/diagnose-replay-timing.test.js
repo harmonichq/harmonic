@@ -1,8 +1,58 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withReplayAssertionTimeout } from './replay-assertions.mjs';
-import { drawWindow, issue81SlicedProjection, waitForPreparationWindow } from './diagnose-workstation-behavior.replay.mjs';
+import { drawWindow, issue81SlicedProjection, S107, waitForPreparationWindow } from './diagnose-workstation-behavior.replay.mjs';
 import { commitWindow, minuteAtX, snapWindow } from './diagnose-workstation-chart.js';
+
+test('S107 carries the observed wrapped window into its pinned-read proof before release', async () => {
+  const run = async (publishWrapped = true) => {
+    let observe;
+    let gesture = 0;
+    let held = false;
+    const released = [];
+    const windows = [[420, 780], [1320, 120]];
+    const projections = ['fp_' + '01a4030c'.repeat(4), 'fp_' + '05280078'.repeat(4)];
+    const page = {
+      getByRole: () => ({ click: async () => {} }),
+      waitForFunction: async () => {}, waitForTimeout: async () => {},
+      keyboard: { press: async () => {} },
+      locator: () => ({
+        getAttribute: async () => 'finding:over_treated_low',
+        locator() { return this; }, click: async () => {},
+      }),
+      on: (event, callback) => { assert.equal(event, 'request'); observe = callback; },
+      off: (event, callback) => { assert.equal(event, 'request'); assert.equal(callback, observe); observe = null; },
+      evaluate: async callback => {
+        // The scalar clock-pan reader accompanies the structured plot/state readers.
+        if (callback.toString().includes("Number(document.getElementById('chart')")) return 360;
+        return { x: 0, y: 0, w: 1000, h: 400, panOffset: gesture === 2 ? 360 : 0,
+          chip: gesture === 2 ? 'Window 22:00–02:00' : 'Window 07:00–13:00' };
+      },
+      mouse: {
+        down: async () => { gesture++; held = true; },
+        move: async () => {
+          if (!held || (gesture === 2 && !publishWrapped)) return;
+          const [start, end] = windows[gesture - 1];
+          for (const path of [
+            `/api/diagnose/finding-case-file-preparation?start_min=${start}&end_min=${end}`,
+            `/api/diagnose/finding-case-file?projection_id=${projections[gesture - 1]}&finding_id=finding:over_treated_low&alignment=event`,
+          ]) observe({ url: () => `http://127.0.0.1:8765${path}` });
+        },
+        up: async () => { released.push(gesture); held = false; },
+      },
+    };
+    await S107(page);
+    assert.deepEqual(released, [1, 2], 'both gestures release after their pinned-read proof');
+    assert.equal(observe, null, 'the completed story removes its request observer');
+  };
+  await run();
+  await assert.rejects(withReplayAssertionTimeout(10, () => run(false)), error => {
+    assert.match(error.message, /pinned chart re-reads its wrapped intermediate window before release/);
+    assert.match(error.message, /saw.*preparations: \[\], cases: \[\]/s);
+    assert.doesNotMatch(error.message, /Cannot destructure/);
+    return true;
+  });
+});
 
 // Exercise the public story with a level whose animation outlasts fixed sleeps.
 // Loading finishes first; only polling the animation sees its actual completion.

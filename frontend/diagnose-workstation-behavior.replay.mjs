@@ -5021,13 +5021,11 @@ export const S107 = async (page) => {
   await panThenAim(page, { x: chartXAt(unrolled, 22 * 60) }, 'right',
     { past: 180, aim: 26 * 60 });
   const { wrapped } = await waitForReplayAssertion(async seen => {
-    await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
     ok(during.panOffset > 0, 'S107 midnight re-read did not travel through the unrolled day');
-      const wrapped = seen(await chipWindow('S107 midnight drag'));
-      ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
-      return { wrapped };
-    }, "S107");
+    const wrapped = seen(await chipWindow('S107 midnight drag'));
+    ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
+    return { wrapped };
   }, 'S107 gesture');
   await waitForPinnedRead(wrapped, before,
     'S107 the pinned chart re-reads its wrapped intermediate window before release');

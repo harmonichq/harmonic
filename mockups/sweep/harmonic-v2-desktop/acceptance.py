@@ -698,7 +698,9 @@ class ShellAssets(HTMLParser):
 def probe(base, token):
     """Request both packaged shells and their real assets; no source-text stand-in."""
     rows = []
-    for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/")]:
+    for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/"),
+                         ("/v2/diagnose", "/v2/assets/"), ("/v2/changes", "/v2/assets/"),
+                         ("/v2/day", "/v2/assets/")]:
         status, body, headers = request(base, page)
         require(status == 200, f"{page}: {status}")
         require(headers.get("cache-control") == "no-cache", f"{page}: shell cache policy")
@@ -718,7 +720,7 @@ def probe(base, token):
             require(cache.get("cache-control") == "public, max-age=31536000, immutable", f"{asset}: cache policy")
             rows.append({"path": asset, "status": code, "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()})
         rows.append({"path": page, "status": status})
-    for path in ["/unlisted", "/v2/diagnose", "/v2/changes", "/v2/day", "/v2/index.html", "/v1",
+    for path in ["/unlisted", "/v2/unlisted", "/v2/index.html", "/v1",
                  "/v2/assets/no-such.js", "/assets/no-such.js"]:
         code = request(base, path)[0]
         require(code == 404, f"closed route {path}: expected 404, got {code}")

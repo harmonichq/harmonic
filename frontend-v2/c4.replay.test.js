@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
 import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry } from './c4.replay.mjs';
 import { REGISTRY } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
@@ -195,10 +196,25 @@ test('S102 reaches graph identity after opening a Pattern and selecting a thin s
     json: async () => ({ rendered_rows: [{ id, kind: 'pattern', pattern_chart: { key: 'highs_after_meals' } }] }) }) };
   page.locator = selector => ({ ...page.node(selector), getAttribute: async () => id });
   page.getByRole = (_role, { name }) => ({ ...page.node(String(name)), getAttribute: async () => 'nodata' });
-  await assert.rejects(C4_STORIES.S102(page), { code: 'ERR_ASSERTION', message: new RegExp(graph404) });
+  await assert.rejects(withReplayAssertionTimeout(80, () => C4_STORIES.S102(page)),
+    error => error.cause?.code === 'ERR_ASSERTION' && error.message.includes(graph404));
   assert.deepEqual(page.actions.slice(0, 4), ['[data-destination="diagnose"]', '24 h', 'All charts',
     `#tile-row .evidence-tile[data-chart-id="${id}"]`]);
   assert.equal(page.actions.at(-1), String(/^12:00 basal slot,/));
+});
+
+test('S102 waits through intermediate focal frames without selecting the slot again', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa404Page();
+  const id = 'pattern:highs_after_meals';
+  page.request = { get: async () => ({ status: () => 200, text: async () => '',
+    json: async () => ({ rendered_rows: [{ id, kind: 'pattern', pattern_chart: {} }] }) }) };
+  const frames = [null, id, 'basal:720'];
+  page.locator = selector => ({ ...page.node(selector), getAttribute: async () => frames.shift() });
+  page.getByRole = (_role, { name }) => ({ ...page.node(String(name)), getAttribute: async () => 'nodata' });
+  await C4_STORIES.S102(page);
+  assert.equal(frames.length, 0);
+  assert.equal(page.actions.filter(action => action === String(/^12:00 basal slot,/)).length, 1);
 });
 
 test('S103 reaches its aggregate return assertion after exercising all three window entries', async () => {

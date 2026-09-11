@@ -409,10 +409,15 @@ export const C4_STORIES = {
     await fullDayDiagnose(page);
     const previous = await slot404(page);
     const focal = page.locator('#tile-focal .evidence-tile');
-    assert.notEqual(await focal.getAttribute('data-chart-id'), previous,
-      'S102 thin basal slot click left the Pattern graph on stage');
-    assert.equal(await focal.getAttribute('data-chart-id'), 'basal:720',
-      'S102 the stage must open the selected 12:00 basal graph, including its thin state');
+    // Lane selection precedes the asynchronous evidence repaint. Observe the
+    // final focal identity once per attempt, rather than two intermediate frames.
+    await waitForReplayAssertion(async seen => {
+      const chartId = seen(await focal.getAttribute('data-chart-id'));
+      assert.notEqual(chartId, previous,
+        'S102 thin basal slot click left the Pattern graph on stage');
+      assert.equal(chartId, 'basal:720',
+        'S102 the stage must open the selected 12:00 basal graph, including its thin state');
+    }, 'S102 selected thin basal focal chart');
   },
   async S103(page) {
     // Separate from S102: a graph failure must not mask the lost-window proof.

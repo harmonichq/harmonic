@@ -20,6 +20,15 @@ test('R18 is a unique app-only registry function with a manufactured history cas
   assert.equal(storyCase('R18'), 'c4-history');
 });
 
+test('S106 and S107 are unique app-only C4 stories with their required manufactured cases', () => {
+  for (const [id, expectedCase, term] of [['S106', 'pattern-near-tie', 'HV2-17'], ['S107', 'showcase', 'HV2-11']]) {
+    const entries = REGISTRY.filter(([entry]) => entry === id);
+    assert.equal(entries.length, 1, `${id} is registered once`);
+    assert.equal(entries[0][1].deferred.term, term);
+    assert.equal(storyCase(id), expectedCase);
+  }
+});
+
 test('R18 fails before touching the UI when historical input is absent', async () => {
   await assert.rejects(historicalAbsence(inputPage([{ kind: 'setting', register: 'assert' }])), /actual register=history/);
 });

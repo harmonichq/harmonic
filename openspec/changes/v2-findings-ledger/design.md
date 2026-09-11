@@ -1,6 +1,6 @@
 # V2 findings ledger design
 
-This change is in triage. No execution lock or implementation admission exists yet.
+This change is in triage. Its inherited revise contract is frozen in the behavior ledger; independent review precedes posting an execution lock.
 
 ## ADR 404 — Retain expiry and record a late conclusion separately
 
@@ -14,7 +14,7 @@ Connor Griffin, 2026-09-10 local time, answered triage Q1: “Keep the expiry; s
 
 ### Consequences
 
-The reader can understand why a watch ended and record their conclusion later. The implementation must keep the original ending distinguishable from the later statement. This decision does not reopen already expired records as active, change the maturity rule, rewrite prior assessments, or operate the pump. The late-conclusion operation and placement in Changes remain to be specified and reviewed within this change.
+The reader can understand why a watch ended and record their conclusion later. The implementation must keep the original ending distinguishable from the later statement. This decision does not reopen already expired records as active, change the maturity rule, rewrite prior assessments, or operate the pump. The durable-follow-up and surfaces deltas define the operation and placement; they require independent review before the execution lock.
 
 ## ADR 404 — Recalculate Patterns for the selected clock window
 
@@ -28,7 +28,7 @@ Connor Griffin, 2026-09-10 local time, answered Q2: “Recalculate Pattern count
 
 ### Consequences
 
-The active Pattern roster, served counts, membership and chart evidence need one coherent selected-window contract. Keep existing producer ownership and explicit denominators; do not make the frontend recompute attribution or clinical policy. Pattern admission and Focus entry must use the same selected scope; the Focus retention decision below governs follow-up. Producer details still require grounding before the execution lock. This decision does not authorize rewriting saved historical contexts.
+The active Pattern roster, served counts, membership and chart evidence need one coherent selected-window contract. Keep existing producer ownership and explicit denominators; do not make the frontend recompute attribution or clinical policy. Pattern admission and Focus entry must use the same selected scope; the Focus retention decision below governs follow-up. The producer grounding below informs the selected-window contract. This decision does not authorize rewriting saved historical contexts.
 
 ## Reassessment loading
 
@@ -90,84 +90,27 @@ calendar arms. Old Focus records retain their existing computation semantics:
 they receive neither a guessed/backfilled scope nor a new blanket unavailable
 state solely because that field is absent.
 
-## Candidate routing rationale
+## Execution ownership
 
-Three serial chunks are proposed: (1) scoped Pattern population/projection/API;
-(2) durable Focus scope plus Trial history lifecycle; and (3) shipped UI,
-synthetic generation and runtime integration. Chunk 2 consumes Chunk 1's scoped Pattern contract for Focus admission; it owns
-the saved Focus context itself. Trial late conclusions share persistence/API
-files with that work, so they remain in the same lifecycle chunk without an
-invented domain dependency.
-The routing traits are Multiple deliverable artifacts, Live run inside ticket,
-and Lifecycle-gated surface revision. No nearby reviewer-memory slicing anchor was available. These are planning observations only; the
-coordinator owns final routing and review depth.
+Three serial chunks carry the source: scoped Pattern population and projection;
+durable Focus context and Trial history; then the shipped surface and synthetic
+integration proof. The scoped population is one backend contract consumed by
+Focus admission and chart evidence. The follow-up chunk owns saved scope and
+additive conclusions. The surface chunk consumes those contracts without
+recomputing membership or policy. Sequential overlaps in api.py and the v2
+state/rendering files are intentional; none of these chunks runs concurrently.
 
-`ciq_autotune/api.py` is a sequential file overlap: Chunk 1 owns scoped Pattern
-reads and case-file serving; Chunk 2 owns Focus/history writes and reads. The
-shared `frontend-v2/diagnose.js`, `frontend-v2/history.js`, and
-`frontend-v2/frame.js` overlap sequentially between Chunk 2's lifecycle state
-and Chunk 3's rendering integration. No chunks run concurrently across these
-files.
+The execution envelope supplies the closed file allowlists and selected task
+and acceptance slices. The checklist's Document ownership section supplies the
+contract amendment responsibilities; existing base specs fold from these deltas
+only through the established archive workflow.
 
-### Candidate inventory and checks
-
-Chunk 1 owns `ciq_autotune/analyzers/scenario/levers.py`,
-`ciq_autotune/analyzers/scenario/outcome_patterns.py`,
-`ciq_autotune/explore_exposures.py`, `ciq_autotune/window_membership.py`,
-`ciq_autotune/findings_projection.py`, `ciq_autotune/finding_case_file.py`,
-`ciq_autotune/api.py`, `tests/test_outcome_patterns.py`,
-`tests/test_explore_exposures.py`, `tests/test_findings_projection.py`, and
-`tests/test_finding_case_file_api.py`. Its checks cover public scoped named,
-custom and circular windows, outcome/antecedent boundary pairs, zero/thin
-denominators, and scoped Pattern case evidence.
-
-Chunk 2 owns `ciq_autotune/follow_up_comparison.py`, `ciq_autotune/store.py`,
-`ciq_autotune/watched_change.py`, `ciq_autotune/api.py`,
-`ciq_autotune/result_cache.py`, `frontend-v2/focus-entry.js`,
-`frontend-v2/diagnose.js`, `frontend-v2/diagnose-context.js`,
-`frontend-v2/history.js`, `frontend-v2/follow-up.js`, `frontend-v2/frame.js`,
-`tests/test_follow_up_comparison.py`, `tests/test_follow_up_store.py`,
-`tests/test_durable_follow_up.py`, `frontend-v2/focus-entry.test.js`,
-`frontend-v2/diagnose.test.js`, `frontend-v2/diagnose-context.test.js`,
-`frontend-v2/history.test.js`, `frontend-v2/follow-up.test.js`, and
-`frontend-v2/frame.test.js`. Its checks cover saved-scope arms, unchanged legacy
-contexts, stale admission, expiry plus additive-conclusion conflict/retry/cache,
-and named reassessment loading.
-
-Chunk 3 owns `frontend/diagnose-workstation.js`,
-`frontend/diagnose-evidence-charts.js`, `frontend/diagnose-event-comparison.js`,
-`frontend/diagnose-workstation.css`, `frontend-v2/desk.css`,
-`frontend-v2/day.js`, `frontend-v2/plan-view.js`, `frontend-v2/diagnose.js`,
-`frontend-v2/history.js`, `frontend-v2/frame.js`, `frontend-v2/c4.replay.mjs`,
-`frontend-v2/c4.replay.test.js`, `scripts/gen_findings_projection_fixtures.py`,
-`scripts/qa_e2e_cases.py`, `scripts/gen_qa_e2e_db.py`,
-`frontend/__fixtures__/findings-projection.json`,
-`mockups/findings-projection.mirror.mjs`, and
-`frontend/findings-projection-mirror.test.js`,
-`frontend/diagnose-event-comparison.test.js`,
-`frontend/diagnose-evidence-charts.test.js`,
-`frontend/diagnose-workstation.test.js`, `frontend-v2/day.test.js`,
-`frontend-v2/plan-view.test.js`, `frontend-v2/replay-cases.mjs`,
-`frontend/harmonic-v2-desktop-behavior.replay.mjs`,
-`mockups/harmonic-v2-desktop.behavior.md`, `mockups/INDEX.md`, and
-`mockups/qa-e2e.synthetic/harmonic.sqlite`. Its checks include per-family
-selected handoff, race rejection, S101–S105, S100/keyboard regression, both
-desktop widths, generated drift checks, and the coordinator's final serial live
-proof. No screenshot result is claimed by this draft.
-
-
-### Coordinator authoring checks
-
-The source-writer's first draft omitted positional checklist tasks and necessary
-file owners. Its revision fixed those classes; coordinator verification then
-found that listing regression names still did not normatively require all their
-repairs, and that the facts table had abbreviated command output. The coordinator
-made the navigation, history and selected-trace acceptance explicit, corrected
-chunk ownership prose, added the existing replay/ledger and generated-output
-paths to the candidate inventory, and regenerated the facts appendix directly
-from commands. These are authoring corrections, not an independent plan-review
-verdict. No source admission or behavior freeze is claimed.
-
+The slicing traits are multiple deliverable artifacts, a required live run,
+and shipped-surface revision. Nearby slicing calibration was absent. Projected
+worker context is approximately 145k, 160k and 170k respectively, including
+fixed workflow overhead; these are estimates, not measured historical peaks.
+The generated mirror is already compared with producer fixtures by one test,
+so lockstep copies without a common check does not add a fourth slicing trait.
 
 ### Rendered baseline qualification
 

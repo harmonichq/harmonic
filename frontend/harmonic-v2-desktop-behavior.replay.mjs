@@ -3288,6 +3288,10 @@ export const S103 = appOnly('HV2-11', '#404 slot return restores the clock windo
 export const S104 = appOnly('HV2-13', '#404 day replacement retains the standing frame', C4_STORIES.S104);
 // STORY:harmonic-v2-desktop:S105
 export const S105 = appOnly('HV2-12', '#404 on-pump Plan opens addressable history', C4_STORIES.S105);
+// STORY:harmonic-v2-desktop:S106
+export const S106 = appOnly('HV2-17', '#404 selected Pattern focal chart carries served trace and markers', C4_STORIES.S106);
+// STORY:harmonic-v2-desktop:S107
+export const S107 = appOnly('HV2-11', '#404 desk geometry remains coherent across destinations and long cohorts', C4_STORIES.S107);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3332,7 +3336,7 @@ export const REGISTRY = [
   ['S94', S94, J()], ['S95', S95, J()], ['S96', S96, J()], ['S97', S97, J()],
   ['S98', S98, J()], ['S99', S99, J()], ['S100', S100, J()],
   ['S101', S101, J()], ['S102', S102, J()], ['S103', S103, J()],
-  ['S104', S104, J()], ['S105', S105, J()],
+  ['S104', S104, J()], ['S105', S105, J()], ['S106', S106, J()], ['S107', S107, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

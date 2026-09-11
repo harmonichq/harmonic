@@ -286,3 +286,100 @@ Exit status: 0
 The complete base replay and targeted synthetic chart/geometry receipts are now
 recorded in the scope ledger's Full base replay section. Its limitations remain
 binding; these results do not claim an implementation pass or review verdict.
+
+## Closed execution path inventory
+
+Command: `git ls-files -- CONTEXT.md DESIGN.md PRODUCT.md ciq_autotune/analyzers/scenario/levers.py ciq_autotune/analyzers/scenario/outcome_patterns.py ciq_autotune/api.py ciq_autotune/event_comparison.py ciq_autotune/explore_exposures.py ciq_autotune/finding_case_file.py ciq_autotune/findings_projection.py ciq_autotune/follow_up_comparison.py ciq_autotune/result_cache.py ciq_autotune/store.py ciq_autotune/watched_change.py ciq_autotune/window_membership.py docs/scope/404-v2-findings-ledger.md frontend-v2/c4.replay.mjs frontend-v2/c4.replay.test.js frontend-v2/day.js frontend-v2/day.test.js frontend-v2/desk.css frontend-v2/diagnose-context.js frontend-v2/diagnose-context.test.js frontend-v2/diagnose.js frontend-v2/diagnose.test.js frontend-v2/focus-entry.js frontend-v2/focus-entry.test.js frontend-v2/follow-up.js frontend-v2/follow-up.test.js frontend-v2/frame.js frontend-v2/frame.test.js frontend-v2/history.js frontend-v2/history.test.js frontend-v2/plan-view.js frontend-v2/plan-view.test.js frontend-v2/replay-cases.mjs frontend/__fixtures__/findings-projection.json frontend/diagnose-event-comparison.js frontend/diagnose-event-comparison.test.js frontend/diagnose-evidence-charts.js frontend/diagnose-evidence-charts.test.js frontend/diagnose-workstation.css frontend/diagnose-workstation.js frontend/diagnose-workstation.test.js frontend/findings-projection-mirror.test.js frontend/harmonic-v2-desktop-behavior.replay.mjs frontend/occurrence-roster.js frontend/occurrence-roster.test.js mockups/INDEX.md mockups/findings-projection.mirror.mjs mockups/harmonic-v2-desktop.behavior.md mockups/qa-e2e.synthetic/harmonic.sqlite openspec/changes/diagnose-finding-case-files/design.md openspec/changes/harmonic-v2/contracts.md openspec/changes/harmonic-v2/design.md openspec/changes/harmonic-v2/journeys.md openspec/changes/v2-findings-ledger/design.md openspec/changes/v2-findings-ledger/proposal.md openspec/changes/v2-findings-ledger/specs/behavioral-layer/spec.md openspec/changes/v2-findings-ledger/specs/durable-follow-up/spec.md openspec/changes/v2-findings-ledger/specs/surfaces/spec.md openspec/changes/v2-findings-ledger/tasks.md openspec/changes/v2-findings-ledger/triage-facts.md scripts/gen_findings_projection_fixtures.py scripts/gen_qa_e2e_db.py scripts/qa_e2e_cases.py tests/test_durable_follow_up.py tests/test_event_comparison.py tests/test_explore_exposures.py tests/test_finding_case_file.py tests/test_finding_case_file_api.py tests/test_findings_projection.py tests/test_follow_up_comparison.py tests/test_follow_up_store.py tests/test_gen_qa_e2e_db.py tests/test_outcome_patterns.py tests/test_qa_e2e_cases.py tests/test_watched_change.py`
+
+```text
+CONTEXT.md
+DESIGN.md
+PRODUCT.md
+ciq_autotune/analyzers/scenario/levers.py
+ciq_autotune/analyzers/scenario/outcome_patterns.py
+ciq_autotune/api.py
+ciq_autotune/event_comparison.py
+ciq_autotune/explore_exposures.py
+ciq_autotune/finding_case_file.py
+ciq_autotune/findings_projection.py
+ciq_autotune/follow_up_comparison.py
+ciq_autotune/result_cache.py
+ciq_autotune/store.py
+ciq_autotune/watched_change.py
+ciq_autotune/window_membership.py
+docs/scope/404-v2-findings-ledger.md
+frontend-v2/c4.replay.mjs
+frontend-v2/c4.replay.test.js
+frontend-v2/day.js
+frontend-v2/day.test.js
+frontend-v2/desk.css
+frontend-v2/diagnose-context.js
+frontend-v2/diagnose-context.test.js
+frontend-v2/diagnose.js
+frontend-v2/diagnose.test.js
+frontend-v2/focus-entry.js
+frontend-v2/focus-entry.test.js
+frontend-v2/follow-up.js
+frontend-v2/follow-up.test.js
+frontend-v2/frame.js
+frontend-v2/frame.test.js
+frontend-v2/history.js
+frontend-v2/history.test.js
+frontend-v2/plan-view.js
+frontend-v2/plan-view.test.js
+frontend-v2/replay-cases.mjs
+frontend/__fixtures__/findings-projection.json
+frontend/diagnose-event-comparison.js
+frontend/diagnose-event-comparison.test.js
+frontend/diagnose-evidence-charts.js
+frontend/diagnose-evidence-charts.test.js
+frontend/diagnose-workstation.css
+frontend/diagnose-workstation.js
+frontend/diagnose-workstation.test.js
+frontend/findings-projection-mirror.test.js
+frontend/harmonic-v2-desktop-behavior.replay.mjs
+frontend/occurrence-roster.js
+frontend/occurrence-roster.test.js
+mockups/INDEX.md
+mockups/findings-projection.mirror.mjs
+mockups/harmonic-v2-desktop.behavior.md
+mockups/qa-e2e.synthetic/harmonic.sqlite
+openspec/changes/diagnose-finding-case-files/design.md
+openspec/changes/harmonic-v2/contracts.md
+openspec/changes/harmonic-v2/design.md
+openspec/changes/harmonic-v2/journeys.md
+openspec/changes/v2-findings-ledger/design.md
+openspec/changes/v2-findings-ledger/proposal.md
+openspec/changes/v2-findings-ledger/specs/behavioral-layer/spec.md
+openspec/changes/v2-findings-ledger/specs/durable-follow-up/spec.md
+openspec/changes/v2-findings-ledger/specs/surfaces/spec.md
+openspec/changes/v2-findings-ledger/tasks.md
+openspec/changes/v2-findings-ledger/triage-facts.md
+scripts/gen_findings_projection_fixtures.py
+scripts/gen_qa_e2e_db.py
+scripts/qa_e2e_cases.py
+tests/test_durable_follow_up.py
+tests/test_event_comparison.py
+tests/test_explore_exposures.py
+tests/test_finding_case_file.py
+tests/test_finding_case_file_api.py
+tests/test_findings_projection.py
+tests/test_follow_up_comparison.py
+tests/test_follow_up_store.py
+tests/test_gen_qa_e2e_db.py
+tests/test_outcome_patterns.py
+tests/test_qa_e2e_cases.py
+tests/test_watched_change.py
+```
+
+Exit code: 0
+
+## Registered revision stories
+
+Command: `node --input-type=module -e 'import {REGISTRY} from '"'"'./frontend/harmonic-v2-desktop-behavior.replay.mjs'"'"'; console.log(JSON.stringify({issued:REGISTRY.length,active:REGISTRY.filter(([id])=>!id.startsWith('"'"'R'"'"')).length,retired:REGISTRY.filter(([id])=>id.startsWith('"'"'R'"'"')).length}));'`
+
+```text
+{"issued":137,"active":119,"retired":18}
+```
+
+Exit code: 0

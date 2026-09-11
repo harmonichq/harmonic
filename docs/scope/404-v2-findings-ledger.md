@@ -174,6 +174,29 @@ Connor agreed that a Focus started from a named or drawn Pattern window retains 
 
 Apply the same saved scope to both comparison arms. Changing the live Diagnose window later does not silently change an existing Focus. Preserve original historical contexts; no inferred clock window is backfilled into older Focus records. Exact timestamps and denominator membership must be grounded in the owning producers before task/source admission. Do not silently swap an exposure anchor timestamp for the selected outcome timestamp.
 
+## Final triage disposition — 2026-09-10
+
+All Q1–Q6 decisions are settled. Q6 producer grounding establishes that an
+attributed `over_treated_low` remains identified by its Low exposure while its
+same-episode rebound High decides selected-clock membership; an unattributed Low
+remains a denominator opportunity under its existing rule. This is distinct from
+calendar Before/After boundaries. A new Focus saves the recurring selected scope;
+an old Focus retains existing computation semantics without a guessed scope or a
+new blanket unavailable result.
+
+The shipped-surface lifecycle remains **revise**. The base replay receipt at
+`cbcba39576c7d98c08be265a1255077c76b0f803` is 129 pass / 6 fail at each locked
+desktop size. It retains S101–S105 as fail-first obligations; S103 at 1440px has
+a drawing-setup failure and S87 awaits its separately authorized synthetic
+token-server supplemental result. Neither is waived or reported as passing here.
+
+Synthetic probes observed a served Pattern selected occurrence with glucose and
+markers but no focal selected trace/marker series, a working low-comparison
+`selected:trace`, cross-tab rail disparity, and long-row overlap. The focal
+button was already top anchored. Required implementation acceptance is recorded
+in this change's spec deltas and tasks; no screenshot or revised behavior is
+claimed by this disposition.
+
 
 ## Full base replay and targeted rendered grounding
 
@@ -248,7 +271,7 @@ command output. `npx --yes @fission-ai/openspec@1 validate v2-findings-ledger
 --strict` completed successfully after those corrections. The draft remains
 unadmitted and unreviewed; validation is structural, not a review verdict.
 
-Two narrow workflow choices were sent asynchronously and have no answer yet:
+The following workflow choices were pending at this receipt; the later approval below supersedes that pending state:
 
 1. Permit a second localhost synthetic server with fetch disabled and a fixed
    test token solely for S87, as an exception to AGENTS.md's empty-token rule,
@@ -259,7 +282,27 @@ Two narrow workflow choices were sent asynchronously and have no answer yet:
    `orchestrate/references/review-routing.md` supplies this restriction. No
    reviewer has been dispatched and no verdict is claimed.
 
-Do not infer either answer from elapsed time. Product decisions Q1–Q6 remain
+At that receipt no answer had been inferred from elapsed time. Product decisions Q1–Q6 remain
 settled, Q5 deferred. No application implementation, execution lock, triaged
 status or PR is complete. All owned CLI workers and synthetic replay/probe
 processes from this pass are terminal.
+
+## Approved completion steps and authentication supplement
+
+Connor subsequently instructed “codex, do it” after the two exact pending
+workflow choices were disclosed. This authorizes the separate protected
+synthetic S87 server and Terra for Full plan review under the explicitly
+unvalidated Codex exception. It does not authorize application implementation
+in this triage session or change the settled product directions.
+
+S87 was run alone at 1280x720 and 1440x900 with AUTH_BASE_URL pointing at the
+separate localhost server and a fixed test-only token. Each run reported
+1 executed, 0 failed, 0 deferred and 1 selected; both exited 0. The server read
+only its own copied synthetic showcase with --no-fetch. The owned process
+was stopped and copied database/sidecars removed. Complete logs are retained
+at /private/tmp/harmonic-404-auth-1280x720.log and
+/private/tmp/harmonic-404-auth-1440x900.log. This supplements the full baseline;
+it does not relabel the five feature obligations as passing.
+
+The execution source and envelope require Full independent review. Product
+Q1–Q6 are settled (Q5 deferred); no further product interview is required.

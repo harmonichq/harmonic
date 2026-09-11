@@ -1,5 +1,48 @@
 # Behavior ledger — harmonic-v2-desktop
 
+```text
+★ FROZEN 2026-09-10 · base cbcba39576c7d98c08be265a1255077c76b0f803
+  · generator cbcba39576c7d98c08be265a1255077c76b0f803 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: 0856d0e09426
+  · predecessor shipped v2 desk · retired 18
+  · lifecycle revise · contract this ledger + frontend/harmonic-v2-desktop-behavior.replay.mjs
+```
+
+This #404 amendment freezes the inherited preservation obligations and the
+operator-requested fail-first repairs. Connor instructed “keep logging these
+things in the ticket ... then proceed with triaging” and, after the remaining
+workflow choices were disclosed, “codex, do it.” Product rulings are retained in
+docs/scope/404-v2-findings-ledger.md and the #404 change. No inherited behavior
+is retired. This is a revision contract, not a claim that the defective base
+passes the requested repairs, and creates no replacement visual mock or lock.
+
+Safe-start authority is AGENTS.md's explicit QA copy-then-serve command using
+`uv run harmonic serve --no-fetch --token '' --db <owned synthetic copy> --port 8765`.
+The named source is the committed synthetic showcase above, or a named store
+emitted by scripts/gen_qa_e2e_db.py from scripts/qa_e2e_cases.py and copied before
+serving. Exact retained generated base stores and raw runs are under
+/private/tmp/harmonic-404-triage-01a08ec1/cases/; retained new-report captures and
+probe case bytes are under /private/tmp/harmonic-404-new-report-evidence/.
+The fixture hashes are tripwires; these retained paths carry the executed bytes.
+The sole token-bearing exception is the user-approved separate synthetic S87
+server recorded in the scope ledger; its raw two-size passing logs are retained.
+
+Base preservation: both full runs reported 129 passes and six failures;
+S87 subsequently passed in isolation at both sizes. S101–S105 remain defect
+obligations, with S103's wider setup failure explicitly retained. Corrected
+S106/S107 both reached their feature assertions at both sizes: missing focal
+trace/markers, mismatched rails, reversed All charts/Close, and five overlapping
+meal rows. The runner reports `executed 0 · failed 2 · deferred 0 · selected 2`
+for this all-failing slice and exits 1; it is expected fail-first evidence,
+not a passing execution. Complete logs:
+/private/tmp/harmonic-404-new-stories-corrected-1280x720.log and
+/private/tmp/harmonic-404-new-stories-corrected-1440x900.log.
+The unchanged focal top anchoring passed its measured check. Every applicable
+story must pass after implementation; no failure is waived by this freeze.
+
+The earlier greenfield freeze and dated amendments below remain historical
+provenance. For #404 the shipped revise contract above governs.
+
 **★ FROZEN 2026-09-08 · this ledger is the contract.** Under
 `behavior-sweep` §7 the stories below, replayed against the surface, are what the
 v2 desktop must keep doing. A revision that drops one amends this ledger through
@@ -47,6 +90,28 @@ and geometry only. S100 and coupled Event S8 speech repair/proof belong to c2.
 The lock manifest (`mockups/harmonic-v2-desktop.lock.md`, 34 terms) says what the
 surface looks like. This says what it **does**. Together they are the build
 contract; neither alone is sufficient.
+
+**Amendment — 2026-09-10, issue #404 review-ready revise preflight.** The
+shipped surface was re-inventoried at base
+`cbcba39576c7d98c08be265a1255077c76b0f803`, using only the declared synthetic
+case stores and the existing app-only replay. The original retained fixture
+paths and SHA-256 tripwires below remain unchanged. The base replay reported 129
+pass and 6 fail at each locked desktop viewport; it is a mixed receipt, not a
+new green freeze. S87's separately authorized protected synthetic-server receipt
+passed at both locked sizes. S103's 1440px drawn-window
+setup failure remains a failure. No retirement, permanent absence, or prior
+story status is changed or waived.
+
+The new synthetic probe observed a Pattern selected occurrence whose served
+detail has glucose and markers while its focal event tile has neither a
+`selected:trace` nor a marker-bearing series; a regular low comparison retains
+`selected:trace`. It also measured rail disparity and long-row text overlap at
+the locked sizes. The focal action was already top anchored, so no focal
+placement change is contracted. These are pending acceptance changes, not
+revised behavior: before source admission, add a C4 story plus focused chart
+option assertion for Pattern selected trace/markers, and add geometry assertions
+for the observed rail/row cases. Existing S101–S105 remain their named
+fail-first stories and C4 functions.
 
 **18 stories are app-opener-only and have never passed.** `S53` (HV2-25),
 `S73b` and `S80b` (HV2-32) plus `S86`–`S100` name behavior the lock contracts and
@@ -2343,9 +2408,10 @@ path. They are not passing browser evidence. Browser execution belongs to the
 coordinator at 1280x720 and 1440x900; the worker order prohibits build, serve and
 browser execution. The original freeze results above remain historical.
 
-Current inventory: **135 issued = 117 active + 18 retired**. S101–S105 are
+Current inventory: **137 issued = 119 active + 18 retired**. S101–S107 are
 app-opener-only. No earlier ID or lock term is retired or re-settled by this QA
-pass. The design and expiry decisions in #404 remain unresolved.
+pass. The design and expiry decisions were unresolved at this QA amendment;
+the final #404 triage disposition supersedes that historical status.
 
 ```
 S101 · A drawn Window chip carries only the span; the enclosing Window label
@@ -2410,6 +2476,35 @@ S105 · A confirmed-on-pump Plan with no active watch offers View change record;
             1440x900; no application fix or passing replay claimed
 ```
 
+```
+S106 · Selecting a served Pattern occurrence draws its exact served glucose
+       trace and served event markers together in the focal ECharts option.
+  element:  #tile-row .evidence-tile, #level .case-occurrence, #tile-focal .tile-chart
+  source:   frontend-v2/diagnose.js selection; frontend/diagnose-event-comparison.js option
+  lock:     HV2-17; S100/S26 retain the regular-comparison counterpart
+  data:     pattern-near-tie; selected Pattern detail supplies glucose and markers
+  evidence: C4_STORIES.S106; compares selected:trace plus visible supported
+            scatter/markPoint/markLine marker positions and served kind labels to case-file detail
+  status:   reached its feature assertion and failed at both locked sizes; corrected
+            marker-form evidence awaits coordinator reproof, while regular low retains its trace
+```
+
+```
+S107 · Diagnose, Changes and Day share one reading-rail width; All charts and
+       Close place each label before its icon; the focal action stays top-right;
+       long meal occurrence descriptions and cohorts do not overlap.
+  element:  .v2-diagnose .inspector, .gf-desk .gf-reading, All charts,
+            #chart-headacts, #tile-focal .tile-fullscreen, #level .case-occurrence
+  source:   frontend-v2/diagnose.js; frontend-v2/day.js; frontend-v2/plan-view.js;
+            frontend/diagnose-workstation.css
+  lock:     HV2-11; existing density tokens remain authoritative (no pixel target)
+  data:     showcase; All charts then finding:meal_bolus_short's long cohort roster
+  evidence: C4_STORIES.S107; aggregates every label/rail/focal/row observation,
+            including the catalog's actual Close control and overflow-visible text ink
+  status:   reached its feature assertion and failed at both locked sizes; corrected
+            Close/row evidence awaits coordinator reproof; focal top anchoring held
+```
+
 Additional handler inventory for this amendment:
 
 | Handler / registration | Source | Story |
@@ -2419,6 +2514,8 @@ Additional handler inventory for this amendment:
 | Basal lane click then Findings breadcrumb | frontend/diagnose-workstation.js | S103 |
 | Recorded-day click during model read | frontend-v2/day.js | S104 |
 | Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |
+| Pattern tile, occurrence selection and focal ECharts option | frontend-v2/diagnose.js, frontend/diagnose-event-comparison.js | S106 |
+| Destination navigation, All charts/Close and long cohort rows | frontend-v2/diagnose.js, day.js, plan-view.js, frontend/diagnose-workstation.css | S107 |
 
 ### Coordinator amendment 1 — 2026-09-10
 
@@ -2434,6 +2531,36 @@ Only after that setup settles does the story retain nodes and hold the selected
 day's read. Node regression tests call the four exported stories and distinguish
 their feature assertion from setup errors; those tests are not browser evidence.
 Corrected S101–S104 still require the coordinator's isolated two-viewport reproof.
+
+### Coordinator amendment 5 — 2026-09-10
+
+The separately authorized synthetic authenticated S87 receipt completed: each of
+`/private/tmp/harmonic-404-auth-1280x720.log` and
+`/private/tmp/harmonic-404-auth-1440x900.log` reports `1 executed · 0 failed ·
+0 deferred · 1 selected`. Its dedicated no-fetch token server and copied store
+were cleaned up. This records an executed S87 proof only; it changes neither
+S87's function nor any other story's status.
+
+The completed synthetic probes at
+`/private/tmp/harmonic-404-new-report-evidence/probe.log` and
+`geometry-probe.log` exposed the two previously unrepresented behaviors above.
+S106 and S107 are now registered permanent fail-first stories with manufactured
+case recipes. Their first browser receipts reached feature failures at both sizes; corrected receipts are recorded in the #404 freeze header.
+The recorded defects are not waived and this amendment makes no revised-surface
+pass claim.
+
+### Coordinator amendment 6 — 2026-09-10
+
+The first dedicated S106/S107 receipts at
+`/private/tmp/harmonic-404-new-stories-1280x720.log` and
+`/private/tmp/harmonic-404-new-stories-1440x900.log` reached their feature
+assertions at both sizes and failed there. They reported `0 executed · 2 failed
+· 0 deferred · 2 selected` followed by the runner's retained fatal zero-executed
+summary; that accounting is not changed by this amendment. The receipts exposed
+only evidence defects: S107 read the post-drill All charts action as Close and
+clipped overflow-visible row ink, while S106 posed an invalid categorical marker
+y-coordinate. The corrected contracts await coordinator reproof; no product or
+application behavior is changed.
 
 ### Coordinator amendment 2 — 2026-09-10
 

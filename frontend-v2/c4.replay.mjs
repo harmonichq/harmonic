@@ -130,6 +130,112 @@ async function slot404(page) {
   await page.waitForFunction(() => document.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label')?.startsWith('12:00 basal slot,'));
   return pattern.id;
 }
+async function selectedPattern404(page) {
+  await fullDayDiagnose(page);
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.kind === 'pattern' && row.pattern_chart);
+  assert.ok(pattern, 'S106 premise: a chartable served Pattern exists');
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
+  const occurrence = await selectOccurrence(page);
+  const file = await read(page, '/api/diagnose/finding-case-file', {
+    projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event', occ: occurrence,
+  });
+  const detail = file.selection?.detail;
+  assert.ok(Array.isArray(detail?.glucose) && detail.glucose.length,
+    'S106 premise: selected Pattern detail supplies glucose');
+  assert.ok(Array.isArray(detail?.markers) && detail.markers.length,
+    'S106 premise: selected Pattern detail supplies markers');
+  await waitForCharts(page);
+  const observed = await page.evaluate(() => {
+    const host = document.querySelector('#tile-focal .tile-chart');
+    const chart = host && globalThis.echarts.getInstanceByDom(host);
+    if (!chart) throw new Error('S106 focal Pattern ECharts instance is absent');
+    const label = value => typeof value === 'string' ? value
+      : typeof value?.formatter === 'string' ? value.formatter : '';
+    const point = (value, source, series) => {
+      const valueAt = value?.coord ?? value?.value ?? value;
+      const coords = Array.isArray(valueAt) ? valueAt : [];
+      const x = Number.isFinite(value?.xAxis) ? value.xAxis : coords[0];
+      const y = Number.isFinite(value?.yAxis) ? value.yAxis : coords[1];
+      const labels = [value?.name, label(value?.label), series.name, series.id].filter(Boolean).join(' ');
+      const style = source === 'line' ? { ...series.lineStyle, ...value?.lineStyle }
+        : { ...series.itemStyle, ...value?.itemStyle };
+      const visible = source === 'line'
+        ? style.opacity !== 0 && style.type !== 'none'
+        : series.symbol !== 'none' && series.symbolSize !== 0 && style.opacity !== 0;
+      return { source, x, y, labels, visible };
+    };
+    const series = chart.getOption().series.map(series => ({
+      id: series.id ?? null, data: Array.isArray(series.data) ? series.data : null,
+      markers: [
+        ...(series.type === 'scatter' ? (series.data || []).map(value => point(value, 'scatter', series)) : []),
+        ...((series.markPoint?.data || []).map(value => point(value, 'markPoint', series))),
+        ...((series.markLine?.data || []).map(value => point(value, 'line', series))),
+      ],
+    }));
+    return { series, markers: series.flatMap(entry => entry.markers) };
+  });
+  const expected = {
+    trace: detail.glucose.map(point => [point.minute, point.bg]),
+    markers: detail.markers.map(marker => ({ minute: marker.minute, kind: marker.kind })),
+  };
+  const actual = {
+    trace: observed.series.find(series => series.id === 'selected:trace')?.data ?? null,
+    markers: observed.markers,
+  };
+  // Keep both served facts in one observation: a highlighted roster row alone
+  // is not proof that its trace and event markers reached the focal option.
+  const matches = expected.markers.every(marker => actual.markers.some(observation =>
+    observation.x === marker.minute
+      && (Number.isFinite(observation.y) || observation.source === 'line')
+      && observation.visible && observation.labels.toLowerCase().includes(marker.kind.toLowerCase())));
+  const failures = [];
+  if (JSON.stringify(actual.trace) !== JSON.stringify(expected.trace) || !matches) failures.push({
+    expected: { selectedTrace: expected.trace, servedMarkers: expected.markers },
+    actual: { selectedTrace: actual.trace, markerObservations: actual.markers },
+  });
+  assert.deepEqual(failures, [], 'S106 selected Pattern focal option must carry the served trace and markers together');
+}
+const geometry404 = page => page.evaluate(() => {
+  const box = node => {
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+      width: rect.width, height: rect.height };
+  };
+  const textBox = node => {
+    const range = document.createRange(); range.selectNodeContents(node);
+    const rect = range.getBoundingClientRect(); const clip = box(node);
+    const clipped = getComputedStyle(node).overflowX !== 'visible';
+    return { left: clipped ? Math.max(clip.left, rect.left) : rect.left,
+      right: clipped ? Math.min(clip.right, rect.right) : rect.right,
+      top: rect.top, bottom: rect.bottom };
+  };
+  return {
+    rail: box(document.querySelector('.v2-diagnose .panes > .inspector, .gf-desk > .gf-reading')),
+    focal: [...document.querySelectorAll('#tile-focal .tile-head')].map(head => ({
+      head: box(head), control: box(head.querySelector('.tile-fullscreen')),
+    })),
+    actions: [...document.querySelectorAll('#chart-headacts button[data-act]')].map(button => ({
+      text: button.textContent.trim(), aria: button.getAttribute('aria-label'),
+      label: box(button.querySelector('span')), icon: box(button.querySelector('svg')),
+    })),
+    rows: [...document.querySelectorAll('#level .case-occurrence')].map(row => {
+      const only = row.querySelector('.only'); const tier = row.querySelector('.tier');
+      return only && tier ? { label: only.textContent.trim(), cohort: tier.textContent.trim(),
+        only: textBox(only), tier: textBox(tier) } : null;
+    }).filter(Boolean),
+  };
+});
+async function deskGeometry404(page, destination) {
+  await press(page, `nav.v2-nav [data-destination="${destination}"]`);
+  await waitForDesk(page);
+  const report = await geometry404(page);
+  assert.ok(report.rail, `S107 premise: ${destination} publishes its reading rail`);
+  return report.rail.width;
+}
 
 export const C4_STORIES = {
   async S101(page) {
@@ -246,6 +352,61 @@ export const C4_STORIES = {
     await page.locator('[data-ending-kind="user_finished"]').waitFor();
     assert.equal(new URL(page.url()).searchParams.get('occurrence'), `record:trial:${ended.id}`,
       'S105 record address must reopen the exact saved subject');
+  },
+  async S106(page) {
+    await selectedPattern404(page);
+  },
+  async S107(page) {
+    await fullDayDiagnose(page);
+    const diagnose = await geometry404(page);
+    const allCharts = await page.getByRole('button', { name: 'All charts', exact: true }).evaluate(button => {
+      const box = node => {
+        const rect = node?.getBoundingClientRect();
+        return rect && { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+      };
+      return { text: button.textContent.trim(), label: box(button.querySelector('span')), icon: box(button.querySelector('svg')) };
+    });
+    const rails = { diagnose: diagnose.rail?.width };
+    assert.ok(Number.isFinite(rails.diagnose), 'S107 premise: Diagnose publishes its reading rail');
+    rails.changes = await deskGeometry404(page, 'changes');
+    rails.day = await deskGeometry404(page, 'day');
+    await fullDayDiagnose(page);
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
+    const catalog = await geometry404(page);
+    const meal = page.locator('#tile-row .evidence-tile[data-chart-id="finding:meal_bolus_short"]');
+    assert.ok(await meal.count(), 'S107 premise: showcase supplies the long meal cohort chart');
+    await meal.click();
+    await page.waitForFunction(id => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === id,
+      'finding:meal_bolus_short', { timeout: 30000 });
+    await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+    const drilled = await geometry404(page);
+    const failures = [];
+    if (new Set(Object.values(rails)).size !== 1) failures.push({ rails });
+    for (const [state, actions, expectedAction] of [
+      ['all-charts', [allCharts], 'All charts'], ['catalog-close', catalog.actions, 'Close'], ['drilled-return', drilled.actions, 'All charts'],
+    ]) {
+      const matching = actions.filter(action => (action.aria || action.text) === expectedAction);
+      if (matching.length !== 1) failures.push({ state, expectedAction, actions });
+      for (const action of matching) {
+        if (!action.label || !action.icon || action.label.right > action.icon.left) failures.push({ state,
+          action: action.aria || action.text, label: action.label, icon: action.icon, expected: 'label before icon' });
+      }
+    }
+    for (const focal of diagnose.focal) {
+      if (!focal.control || focal.control.right > focal.head.right || focal.control.top < focal.head.top
+          || focal.control.top >= focal.head.top + focal.head.height / 2) failures.push({
+        focal, expected: 'top-right focal control',
+      });
+    }
+    assert.ok(drilled.rows.length, 'S107 premise: the long meal chart supplies comparison cohort rows');
+    for (const row of drilled.rows) {
+      const xOverlap = Math.max(0, Math.min(row.only.right, row.tier.right) - Math.max(row.only.left, row.tier.left));
+      const yOverlap = Math.max(0, Math.min(row.only.bottom, row.tier.bottom) - Math.max(row.only.top, row.tier.top));
+      if (xOverlap > 0 && yOverlap > 0) failures.push({ label: row.label, cohort: row.cohort, xOverlap, yOverlap,
+        expected: 'description and cohort text do not overlap' });
+    }
+    assert.deepEqual(failures, [], 'S107 desk geometry must preserve labels, rails, focal placement and long cohort rows');
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

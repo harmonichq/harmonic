@@ -2,9 +2,9 @@
 
 ## Status
 
-**DRAFT — triage only.** This is an ordinary ticket change, not an amendment
-owned by `harmonic-v2`. No execution lock, source admission, behavior freeze,
-review verdict, or implementation authorization is implied.
+**Review-ready triage source.** This is an ordinary ticket change, not an
+amendment owned by `harmonic-v2`. The inherited revise contract and fail-first additions are frozen.
+Coordinator pinning and independent review precede the posted execution lock.
 
 ## Why
 
@@ -31,19 +31,17 @@ moving policy into the browser.
   runtime admission. Programmed ratios remain only in Pump settings and
   historical Focus naming stays deferred.
 
-## Active-contract amendments
+## Active-contract and documentation ownership
 
-This change modifies the scoped-Pattern promise in
-`openspec/specs/behavioral-layer/spec.md`, adds retained-window and
-late-conclusion behavior alongside `openspec/changes/harmonic-v2/contracts.md`,
-and extends `openspec/changes/harmonic-v2/specs/surfaces/spec.md`. Historical
-ADRs and the existing finding-case-files design retain their original text; ADR
-404 supplies the supersession pointer. The existing exact record route is reused.
+The capability deltas in this change are the normative acceptance source.
+The checklist's Document ownership section assigns the contract updates and
+historical supersession pointers; base specs fold only during the established
+post-merge archive. Reuse the existing exact-record route.
 
 ## Risks and prerequisite
 
 This proposal spans one shared backend population, persisted follow-up context,
-and a shipped surface, so full-depth review may be warranted. Q6 producer
+and a shipped surface, so the execution envelope requires Full review. Q6 producer
 grounding establishes the over-treated-low Low-identity/High-landing distinction;
 implementation still needs coordinator admission and runtime proof before any
 claim is made about the changed application.

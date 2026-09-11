@@ -162,3 +162,9 @@ contract remains `finding-evidence-routing.behavior.md` and its app-only replay.
   Python producers. The real chart lives in `frontend/diagnose-eating-sequences.js`;
   the component harness and S151–S158 consume these transports directly.
   This is generated test input, not a mock implementation. Render review is pending.
+
+#404 re-freezes the shipped v2 revision contract in
+[harmonic-v2-desktop.behavior.md](harmonic-v2-desktop.behavior.md), with the
+registered S106/S107 fail-first trace and geometry obligations. The ledger's
+header retains the synthetic base-byte and raw-run locators; no replacement
+mock or real-data screenshot is published.

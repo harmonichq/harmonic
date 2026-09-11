@@ -1,7 +1,7 @@
 # #404 implementation checklist
 
-**DRAFT — triage only.** These are candidate positional slices, not an execution
-lock. The coordinator owns routing, review, admission, and final proof.
+**Review-ready plan.** These positional slices are the source for the
+coordinator-pinned execution envelope; they are not themselves a posted lock.
 
 ## 1. Scoped Pattern population, projection and API
 
@@ -38,19 +38,33 @@ lock. The coordinator owns routing, review, admission, and final proof.
   preserves selection** through the existing case-file route, with per-family
   selected handoff, served short labels/markers, honest missing values, and
   stale selection/window response rejection.
-- [ ] 3.2 Implement surfaces **The v2 desk preserves readable
+- [ ] 3.2 Make the retained C4 selected-trace/marker and geometry regressions pass,
+  supplementing focused option coverage for changed evidence families; retain
+  the existing working low-comparison selected-trace story as its control.
+- [ ] 3.3 Implement surfaces **The v2 desk preserves readable
   cross-destination evidence chrome**: parent-owned expandable members/minis,
   long-label safety, label-before-icon/top-right tall headers, compact existing
   density tokens, Diagnose/Changes/Day rail parity in loaded/loading/settings
   table states, basal legend/verdict/accent, skeleton and named reassessment
   loading.
-- [ ] 3.3 Implement surfaces **Diagnose and Day keep the reader's navigation
+- [ ] 3.4 Implement surfaces **Diagnose and Day keep the reader's navigation
   context** and **Changes keeps completed and expired Trial records reachable**.
   Make the existing S101–S105 regressions pass at their feature assertions,
   repairing the intermittent drawn-window setup without weakening expectations.
   Preserve S100 timing and merged keyboard regressions.
-- [ ] 3.4 Generate only synthetic fixture/case evidence through listed
+- [ ] 3.5 Generate only synthetic fixture/case evidence through listed
   producers, run their drift checks, then obtain the coordinator's serial
   public-interface runtime proof at both supported desktop widths. Do not claim
   a freeze or screenshot proof before that admission.
 
+## Document ownership
+
+The backend scope chunk updates its behavioral-layer delta and generated
+projection contract. The follow-up chunk updates CONTEXT.md and the additive
+contract in openspec/changes/harmonic-v2/contracts.md. The surface/integration
+chunk reconciles DESIGN.md, PRODUCT.md, and harmonic-v2/journeys.md where these
+accepted behaviors are described, adds supersession pointers to the historical
+harmonic-v2 and diagnose-finding-case-files design records, and carries this
+change's source, evidence ledger and INDEX updates. Base capability specs are
+folded from these deltas during the established post-merge archive; do not
+rewrite them early. Historical decisions retain their original text.

@@ -200,16 +200,20 @@ and request-identity coverage.
 
 ### Held Window drag integration finding
 
-The complete #404 replay exposed a race after an occurrence was selected: an
-intermediate drag position started evidence preparation, and its repaint replaced
-the chart that held pointer capture. The terminal pointer event arrived, but the
-intended endpoint did not commit. Tightening replay synchronization alone did not
-resolve the full-run failure.
+The complete #404 replay exposed a race after an occurrence was selected: live
+evidence preparation repainted the held chart and replaced its ECharts event
+target. Lost pointer capture then cancelled the drag before the intended endpoint
+committed. Replay synchronization alone did not resolve the full-run failure.
 
-The shipped Window controller now defers that preparation to its existing
-post-release commit paint. The held brace and readout still follow the pointer;
-the committed window determines the subsequent evidence request. A public browser
-regression observes no preparation request while held, then the exact 720–1290
-request and visible 12:00–21:30 window after release. S101 and S103 retain their
-real mouse gestures and exact visible assertions. This corrects gesture ownership
-without changing membership, clinical predicates, or ledger retirements.
+Live preparation and case-file reads remain required during ordinary and wrapped
+held drags, as inherited v1 S107 specifies. The Window controller preserves that
+flow while leaving overview and brace painting to the active drag until release.
+It observes the active pointer at document scope, so evidence repaint cannot turn
+lost chart capture into a premature cancellation. Normal pointer-up or cancellation
+still completes the gesture through the existing controller lifecycle.
+
+The public browser regression observes live preparation and a pinned case-file
+read for the held endpoint, followed by an exact 12:00–21:30 commit. Focused v1
+S107 and v2 S101/S103 pass at both sizes with their existing live-read and real
+mouse-gesture assertions. This corrects gesture ownership without changing
+membership, clinical predicates, or ledger retirements.

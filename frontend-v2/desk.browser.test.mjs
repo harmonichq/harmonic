@@ -315,6 +315,36 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
   } finally { await close(); }
 });
 
+test('a failed Focus read keeps a short visible Retry beside its explanation at compact width', async () => {
+  const desk = await openDesk({ beforeNavigate: async page => {
+    // A malformed reply rejects the real shared client without adding a browser
+    // console error that would conceal the Diagnose surface's own failure UI.
+    await page.route('**/api/focus', route => route.fulfill({ status: 200,
+      contentType: 'application/json', body: '{' }));
+  } });
+  const { page } = desk;
+  try {
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    await page.locator('#filter-trigger').waitFor({ state: 'visible' });
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#level .qrow[data-id^="pattern:"]').first().click();
+    const status = page.locator('[data-focus-context]');
+    const retry = page.locator('[data-focus-retry]');
+    await Promise.all([status.waitFor({ state: 'visible' }), retry.waitFor({ state: 'visible' })]);
+    assert.equal((await status.innerText()).trim(), 'Focus status unavailable');
+    assert.equal((await retry.innerText()).trim(), 'Retry');
+    const boxes = await page.evaluate(() => {
+      const box = selector => { const rect = document.querySelector(selector)?.getBoundingClientRect(); return rect && { left: rect.left, right: rect.right, width: rect.width }; };
+      const status = document.querySelector('[data-focus-context]');
+      return { crumb: box('.inspector .crumb'), status: box('[data-focus-context]'), retry: box('[data-focus-retry]'),
+        statusClipped: status.scrollWidth > status.clientWidth };
+    });
+    assert.ok(boxes.status.width > 0 && boxes.retry.width > 0, `Focus recovery controls must render: ${JSON.stringify(boxes)}`);
+    assert.ok(boxes.retry.right <= boxes.crumb.right + 0.5, `Retry must remain within the Findings header: ${JSON.stringify(boxes)}`);
+    assert.equal(boxes.statusClipped, false, `Focus explanation must remain readable: ${JSON.stringify(boxes)}`);
+  } finally { await desk.close(); }
+});
+
 test('the chrome holds still across every destination, and one is current at a time', async () => {
   const { page, close } = await openDesk();
   try {

@@ -202,6 +202,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function showFocusAction() {
     root?.querySelector('[data-start-focus]')?.remove();
     root?.querySelector('[data-focus-context]')?.remove();
+    root?.querySelector('[data-focus-retry]')?.remove();
     root?.querySelector('[data-action="watch"]')?.remove();
     if (!seated) return;
     if (entry.from === 'changes' && payload?.watched) {
@@ -215,15 +216,28 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     const context = focusContextForCase(selected);
     if (!offered) {
       if (!context) return;
-      const button = root.ownerDocument.createElement('button');
-      button.className = 'gf-btn focus-context'; button.dataset.focusContext = context.subject;
-      button.textContent = context.retry ? 'Focus status unavailable — Retry'
-        : `Focus unavailable: ${context.label}`;
-      button.title = context.reason;
-      button.onclick = context.retry ? () => readFocusOptions().then(showFocusAction)
-        : () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
+      const crumb = root.querySelector('header.crumb');
+      if (context.retry) {
+        // A read error needs an explanation and a reachable recovery action.
+        // Keeping Retry its own compact control prevents a long status label
+        // from hiding the only available action in the narrow findings header.
+        const status = root.ownerDocument.createElement('span');
+        status.className = 'focus-context'; status.dataset.focusContext = context.subject;
+        status.textContent = 'Focus status unavailable'; status.title = context.reason;
+        const retry = root.ownerDocument.createElement('button');
+        retry.className = 'gf-btn focus-retry'; retry.dataset.focusRetry = context.subject;
+        retry.textContent = 'Retry'; retry.title = context.reason;
+        retry.onclick = () => readFocusOptions().then(showFocusAction);
+        crumb?.append(status, retry);
+      } else {
+        const button = root.ownerDocument.createElement('button');
+        button.className = 'gf-btn focus-context'; button.dataset.focusContext = context.subject;
+        button.textContent = `Focus unavailable: ${context.label}`;
+        button.title = context.reason;
+        button.onclick = () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
           window: `${selected.window.start_min}-${selected.window.end_min}` });
-      root.querySelector('header.crumb')?.append(button);
+        crumb?.append(button);
+      }
       return;
     }
     const button = root.ownerDocument.createElement('button');

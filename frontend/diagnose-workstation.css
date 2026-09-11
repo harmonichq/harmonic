@@ -1123,9 +1123,14 @@
   letter-spacing: normal; text-transform: none; color: var(--mk-text);
 }
 .crumb .focus-context {
-  flex: 0 1 27ch; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  flex: 1 1 12ch; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   white-space: nowrap;
 }
+.crumb .focus-retry { flex: 0 0 auto; min-width: 50px; }
+/* A failed Focus read owns this header until it is retried. Its stale loading
+   meta is not useful recovery information, and yielding that slot keeps both
+   the explanation and Retry readable at the compact rail width. */
+.crumb:has(.focus-retry) .meta { display: none; }
 /* THREE INK RANKS. Current: full ink, medium, and deliberately inert — the
    ABSENCE of hover is what says "you are here". */
 /* The root never loses a character. THE CURRENT ITEM NOW DOES (#135 fix round,

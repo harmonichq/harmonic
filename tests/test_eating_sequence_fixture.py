@@ -111,25 +111,33 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
                 state = self.fixture["states"][f"{lever}_{name}"]
                 rows = state["windows"]["global"]["preparation"]["rendered_rows"]
                 self.assertNotIn(f"finding:{lever}", {r["id"] for r in rows})
-            source = self.fixture["states"][f"{lever}_multiple"]
-            case = source["windows"]["global"]["cases"][f"finding:{lever}"]["event"]
-            self.assertGreater(sum(len(r["episodes"]) for r in case["occurrences"] if r["attributed"]), 8)
-            self.assertEqual(case["summary"]["claimed"], 8)
+            if lever == "repeat_eating":
+                source = self.fixture["states"][f"{lever}_multiple"]
+                case = source["windows"]["global"]["cases"][f"finding:{lever}"]["event"]
+                self.assertGreater(sum(len(r["episodes"]) for r in case["occurrences"] if r["attributed"]), 8)
+                self.assertEqual(case["summary"]["claimed"], 8)
 
-    def test_sequence_cases_retain_one_real_fired_selection(self):
+    def test_sequence_cases_retain_every_real_fired_selection(self):
         for state in self.fixture["states"].values():
             for window in state["windows"].values():
                 for stored in window["cases"].values():
                     event = stored["event"]
                     if event["family"] != "sequences":
                         continue
-                    self.assertEqual(len(stored["selections"]), 1)
-                    selected_id = next(iter(stored["selections"]))
-                    selected = next(row for row in event["occurrences"] if row["id"] == selected_id)
-                    self.assertEqual(selected["verdict"], "fired")
+                    fired = {row["id"] for row in event["occurrences"] if row["verdict"] == "fired"}
+                    self.assertEqual(set(stored["selections"]), fired)
 
     def test_high_carb_in_sequence_response_is_producer_derived(self):
+        from scripts.gen_eating_sequence_fixtures import products
         case = self.fixture["states"]["high_carb_sequence_in_sequence"]["windows"]["global"]["cases"][
             "finding:high_carb_sequence"]["event"]
         self.assertEqual(case["projection"]["response"]["period"], "in_sequence")
         self.assertEqual(case["projection"]["response"]["window_min"], [0, 5])
+        _, (bolus, _, _, _) = products("high_carb_sequence", during=True, varied_duration=True)
+        from ciq_autotune.analyzers.eating_sequences import build_sequences
+        varied = build_sequences(bolus, config=EatingSequenceConfig())
+        durations = {
+            sequence.end - sequence.start
+            for sequence in varied
+        }
+        self.assertGreater(len(durations), 1)

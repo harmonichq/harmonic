@@ -71,7 +71,7 @@ test('fractional-hour cursor labels use whole minutes without decimal-hour speec
     globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#000' });
     const source = caseFiles().cases['finding:late_bolus'].event;
     const label = eventComparisonChartOption(source, GLUCOSE_ENVELOPE).xAxis.axisLabel.formatter;
-    assert.equal(eventComparisonChartOption(source, GLUCOSE_ENVELOPE).xAxis.axisLabel.align, 'left');
+    assert.equal(eventComparisonChartOption(source, GLUCOSE_ENVELOPE).xAxis.axisLabel.align, undefined);
     assert.equal(label(5), '+5 min');
     assert.equal(label(15), '+15 min');
     assert.equal(label(-90), '−1 h 30 min');

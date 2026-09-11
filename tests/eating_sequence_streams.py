@@ -53,10 +53,16 @@ def carb_entry(t):
 
 
 def sequence_episode_stream(lever, *, covered=False, competitor="mild", multi=False,
-                            during=False):
+                            during=False, varied_duration=False):
     factory = high_carb_stream if lever == "high_carb_sequence" else repeat_eating_stream
     bolus, _, carbs, basal = factory()
     bolus = [replace(b, insulin=0.5, seq_num=i + 1) for i, b in enumerate(bolus)]
+    if varied_duration and lever == "high_carb_sequence":
+        bolus = [item for index, dose in enumerate(bolus) for item in (
+            [dose, replace(dose, t=dose.t + timedelta(minutes=30), seq_num=10_000 + index)]
+            if index % 2 else [dose]
+        )]
+        bolus.sort(key=lambda dose: dose.t)
     sequences = build_sequences(bolus, config=EatingSequenceConfig())
     cgm = []
     for index, sequence in enumerate(sequences):

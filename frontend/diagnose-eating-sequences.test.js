@@ -108,7 +108,7 @@ const sequenceFixture = expandSequenceFixture(JSON.parse(readFileSync(
 
 test('public sequence cases select the dedicated chart before the generic response chart', () => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
-    for (const state of ['covered', 'empty', 'multiple']) {
+    for (const state of lever === 'high_carb_sequence' ? ['covered', 'empty', 'limited'] : ['covered', 'empty', 'multiple']) {
       const generated = sequenceFixture.states[`${lever}_${state}`].windows.global;
       const prepared = generated.preparation;
       const data = generated.cases[`finding:${lever}`].event;
@@ -131,7 +131,7 @@ test('public sequence cases select the dedicated chart before the generic respon
         assert.equal(highCarbResponseCase(data).projection, data.projection.response);
         const option = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === 'eating-sequence')
           .option(null, { caseFile: data, range: [60, 200] });
-        assert.equal(option.xAxis.axisLabel.formatter(0), 'End of eating sequence');
+        assert.equal(option.xAxis.axisLabel.formatter(0).replace('\n', ' '), 'End of eating sequence');
         assert.ok(option.series.some((series) => series.name === 'Highest-carb fifth'));
         assert.ok(option.series.some((series) => series.name === 'Other sequences'));
         continue;
@@ -181,7 +181,8 @@ test('producer-derived responses stop before their endpoint', () => {
     .cases['finding:high_carb_sequence'].event;
   const post = structuredClone(stored);
   assert.equal(validHighCarbResponse(post), true);
-  post.projection.response.cohorts[0].points[2].minute = 15;
+  const endpoint = post.projection.response.window_min[1];
+  post.projection.response.cohorts[0].points.at(-1).minute = endpoint;
   assert.equal(validHighCarbResponse(post), false);
 
   const during = structuredClone(sequenceFixture.states.high_carb_sequence_in_sequence

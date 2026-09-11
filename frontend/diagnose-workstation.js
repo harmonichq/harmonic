@@ -69,7 +69,7 @@ import { watchDockView, paintWatchDock } from './watched-change-dock.js';
    from this module too; the cycle is safe because neither side calls the
    other's import at module-evaluation time, only from inside functions run
    later, after both modules have finished loading. */
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { eventComparisonGlucoseValues, renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -734,7 +734,10 @@ function renderBehavioralFullscreen(host, f) {
 function renderHighCarbStage(host, caseFile, range) {
   const previous = window.__diagnoseEventComparison;
   const headline = host.closest('.evidence-tile')?.querySelector('.tile-head');
-  const mounted = renderEventSurface(host, highCarbResponseCase(caseFile), { range, headline });
+  const response = highCarbResponseCase(caseFile);
+  const mounted = renderEventSurface(host, response, {
+    range: glucoseRange([...range, ...eventComparisonGlucoseValues(response)]), headline,
+  });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;

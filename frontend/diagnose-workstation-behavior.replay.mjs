@@ -5861,12 +5861,24 @@ async function sequenceDrill(page, lever) {
   const first = page.locator('#level .case-occurrence').first();
   await first.click();
   await page.locator('#level .sequence-detail').waitFor();
-  const { detail } = await waitForReplayAssertion(async seen => {
+  let { detail } = await waitForReplayAssertion(async seen => {
     const detail = seen(await page.locator('#level .sequence-detail').innerText());
     is(seen(await page.locator('#level .clear-trace').innerText()), 'Clear trace', 'sequence selection uses the shared clear label');
     return { detail };
   }, "sequenceDrill");
   await captureEvidence(page, `${lever}-selected`);
+  if (lever === 'high_carb_sequence') {
+    await page.locator('#level .clear-trace').click();
+    const second = Object.keys(input.windows.global.cases[id].selections)[1];
+    await page.locator(`#level .case-occurrence[data-occurrence-id="${second}"]`).click();
+    await waitForReplayAssertion(async seen => {
+      is(seen(await page.locator('#level .case-selection-state').count()), 0,
+        'every fired roster occurrence retains its served selection');
+      ok(seen(await page.locator('#level .sequence-detail').isVisible()),
+        'the second fired occurrence exposes its observed sequence detail');
+      detail = seen(await page.locator('#level .sequence-detail').innerText());
+    }, 'sequenceDrill');
+  }
   const windowBefore = (await state(page)).pressed;
   const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
   await control.click();
@@ -5946,8 +5958,23 @@ export const S158 = async (page) => {
           'served in-sequence interval retains its own endpoints');
         ok(seen(await page.locator('#tile-focal #ec-chart-key').innerText()).includes('During eating'),
           'served in-sequence period remains named in the response scope');
+        const marks = seen(await page.locator('#tile-focal #ec-chart').evaluate((host) =>
+          window.echarts.getInstanceByDom(host).getZr().storage.getDisplayList()
+            .filter((item) => item.type === 'path').length));
+        is(marks, 2, 'isolated supported cohort observations paint two visible marks');
       }, 'S158');
+      await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
       await captureEvidence(page, `${lever}-in-sequence`);
+      await sequenceState(page, `${lever}_limited`);
+      await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
+      await page.locator('#tile-focal #ec-chart').waitFor();
+      await waitForReplayAssertion(async seen => {
+        const option = seen(await page.locator('#tile-focal #ec-chart').evaluate((host) =>
+          window.echarts.getInstanceByDom(host).getOption()));
+        ok(option.series.some((series) => series.id === 'comparison:line:limited'),
+          'limited point support is rendered without removing its supported Finding');
+      }, 'S158');
+      await captureEvidence(page, `${lever}-limited`);
     }
     await sequenceState(page, `${lever}_null_period`);
     await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
@@ -5965,6 +5992,8 @@ export const S158 = async (page) => {
         ok(option.series.some((series) => series.id === 'matched:line:supported')
           && option.series.some((series) => series.id === 'comparison:line:supported'),
         'response curves remain mounted while aggregate detail is unavailable');
+        const gap = option.series.find((series) => series.id === 'matched:line:supported').data;
+        is(gap[0][1], null, 'a missing supported response point remains a true line gap');
         const detail = seen(await page.locator('#level .sequence-supporting-detail').innerText());
         ok(detail.includes('During eating · unavailable')
           && detail.includes('Other sequences (Q1-Q4)')

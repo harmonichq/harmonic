@@ -49,11 +49,12 @@ FINDINGS_OUT = ROOT / "mockups/eating-sequence-findings.synthetic/payload.json"
 
 
 def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False,
-             during=False):
+             during=False, varied_duration=False):
     """Manufacture source events, then call the same public served producers."""
     bolus, cgm, log, basal = sequence_episode_stream(
         "repeat_eating" if lever == "both" else lever,
-        covered=covered, competitor=competitor, multi=multi, during=during)
+        covered=covered, competitor=competitor, multi=multi, during=during,
+        varied_duration=varied_duration)
     sequences = build_sequences(bolus, config=EatingSequenceConfig())
     if lever == "both":
         # Lower single-window excursions keep their high-carb price below the
@@ -94,9 +95,12 @@ def findings_payload():
             ("losing", {"competitor": "severe"}),
             ("multiple", {"multi": True}),
             ("in_sequence", {"during": True}),
+            ("limited", {"during": True, "varied_duration": True}),
             ("null_period", {"null_period": True}),
         ):
-            if lever == "both" and name != "covered":
+            if (lever == "both" and name != "covered") or (
+                    name in {"in_sequence", "limited"} and lever != "high_carb_sequence") or (
+                    lever == "high_carb_sequence" and name == "multiple"):
                 continue
             key = f"{lever}_{name}"
             projection, (bolus, cgm, log, _) = products(lever, **options)
@@ -123,22 +127,20 @@ def findings_payload():
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
                             continue
-                        # The fixture needs one reachable selected trace, not a
-                        # duplicate case-file response for every roster member.
-                        # The replay activates the first served occurrence; all
-                        # other identities still exercise the public unavailable
-                        # selection path in its route handler.
+                        # Keep every fired selection the public case endpoint
+                        # can serve. Non-fired roster entries remain explicitly
+                        # unavailable through the same route response.
                         event = prepared.case(row["id"], "event", None)
                         if event is None:
                             continue
-                        selected = next((row for row in event["occurrences"]
-                                         if row["verdict"] == "fired"), event["occurrences"][0])
                         cases[row["id"]] = {
                             "event": event,
                             "clock": prepared.case(row["id"], "clock", None),
                             "selections": (
-                                {selected["id"]: prepared.case(
-                                    row["id"], "event", selected["id"])["selection"]}
+                                {occurrence["id"]: prepared.case(
+                                    row["id"], "event", occurrence["id"])["selection"]
+                                 for occurrence in event["occurrences"]
+                                 if occurrence["verdict"] == "fired"}
                                 if event["family"] == "sequences" else {}
                             ),
                         }

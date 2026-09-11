@@ -21,6 +21,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput, populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import { expandSequenceFixture } from '../frontend/eating-sequence-fixture.js';
 
 const require = createRequire(import.meta.url);
 const { createBuiltShell } = require('../frontend/built-shell.js');
@@ -128,6 +129,7 @@ const STATUS = {
 const generated = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const evidence = generated('../mockups/diagnose-workstation.synthetic/payload.json');
 const caseFiles = generated('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
+const sequenceFixture = expandSequenceFixture(generated('../mockups/eating-sequence-findings.synthetic/payload.json'));
 const patternCapture = generated('../mockups/diagnose-event-comparison.synthetic/capture.json');
 const basalEvidence = generated('../frontend/__fixtures__/basal-night-evidence.json').expected;
 const isfEvidence = generated('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
@@ -201,7 +203,8 @@ const runner = createBrowserRunner(() => chromium.launch());
 after(() => runner.close());
 
 /** The built desk, served from disk with its API answered above. */
-async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate } = {}) {
+async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate,
+  sequenceState = null } = {}) {
   const browser = await runner.browser();
   const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
   const page = await context.newPage();
@@ -213,6 +216,29 @@ async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigat
     const url = new URL(route.request().url());
     const served = shell.serve(url.pathname);
     if (served) return route.fulfill(served);
+    if (sequenceState) {
+      const state = sequenceFixture.states[sequenceState];
+      const key = url.searchParams.has('start_min')
+        ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
+      const window = state?.windows[key];
+      if (url.pathname === '/api/diagnose/findings' || url.pathname === '/api/diagnose/finding-case-file-preparation') {
+        assert.ok(window, `missing generated sequence window ${sequenceState}/${key}`);
+        const body = url.pathname.endsWith('preparation') ? window.preparation
+          : { ...window.preparation.findings, rows: window.preparation.rendered_rows };
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+      }
+      if (url.pathname === '/api/diagnose/finding-case-file') {
+        const retained = Object.values(state.windows).find((item) =>
+          item.preparation.projection_id === url.searchParams.get('projection_id'));
+        const finding = retained?.cases[url.searchParams.get('finding_id')];
+        assert.ok(finding, 'requested generated sequence case is absent');
+        const body = structuredClone(finding[url.searchParams.get('alignment')]);
+        const occ = url.searchParams.get('occ');
+        if (occ) body.selection = structuredClone(finding.selections[occ]
+          || { state: 'unavailable', requested_id: occ, detail: null });
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+      }
+    }
     if (url.pathname.startsWith('/api/kb/')) {
       return route.fulfill({ contentType: 'text/markdown', body: '# Reading Day\n\nThe **Day** tab is the forensic replay.\n' });
     }
@@ -312,6 +338,35 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
     assert.ok(inter.declared > 0, 'the built surface declares no Inter face');
     assert.ok(inter.available, 'Inter is named but not available to render with');
     assert.ok(inter.loaded > 0, `no Inter face loaded (${inter.declared} declared)`);
+  } finally { await close(); }
+});
+
+test('v2 Diagnose renders the generated High-carb response and its selected trace', async () => {
+  const { page, close } = await openDesk({ sequenceState: 'high_carb_sequence_in_sequence' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
+    await row.click();
+    const chart = page.locator('#tile-focal #ec-chart');
+    await chart.waitFor();
+    const response = await chart.evaluate((host) => {
+      const chart = window.echarts.getInstanceByDom(host);
+      return {
+        anchor: chart.getOption().xAxis[0].axisLabel.formatter(0),
+        marks: chart.getZr().storage.getDisplayList().filter((item) => item.type === 'path').length,
+      };
+    });
+    assert.equal(response.anchor.replace('\n', ' '), 'End of eating sequence');
+    assert.equal(response.marks, 2, 'the two supported singleton observations did not paint');
+    const occurrence = Object.keys(sequenceFixture.states.high_carb_sequence_in_sequence
+      .windows.global.cases['finding:high_carb_sequence'].selections)[1];
+    await page.locator(`#level .case-occurrence[data-occurrence-id="${occurrence}"]`).click();
+    await page.locator('#level .sequence-detail').waitFor();
+    assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 1);
+    assert.ok(await chart.evaluate((host) => window.echarts.getInstanceByDom(host).getOption().series
+      .some((series) => series.id === 'selected:trace')));
+    await press(page, '#level .clear-trace');
+    assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 0);
   } finally { await close(); }
 });
 

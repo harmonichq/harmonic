@@ -85,10 +85,18 @@ class WindowQuery:
         }
 
 
-def outcome_minute(occurrence: dict, exposures_payload: dict) -> Optional[int]:
-    """Return the clock minute where an occurrence's consequence landed."""
+def outcome_timestamp(occurrence: dict, exposures_payload: dict) -> Optional[str]:
+    """Return the producer-owned timestamp where an occurrence's consequence landed."""
     anchors = _episode_anchors(exposures_payload.get("exposures") or {})
-    return _outcome_minute(occurrence, anchors)
+    return _outcome_timestamp(occurrence, anchors)
+
+
+def outcome_minute(occurrence: dict, exposures_payload: dict) -> Optional[int]:
+    """Return the clock minute projected from the one outcome timestamp rule."""
+    if occurrence.get("outcome_minute") is not None:
+        return occurrence["outcome_minute"]
+    timestamp = outcome_timestamp(occurrence, exposures_payload)
+    return _minute_of(timestamp) if timestamp is not None else None
 
 
 def outcome_window_exposures(exposures: dict, query: WindowQuery) -> dict:
@@ -125,16 +133,28 @@ def _episode_anchors(families: dict) -> Dict[str, List[Tuple[str, str]]]:
     return anchors
 
 
-def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[str, str]]]) -> Optional[int]:
-    if occurrence.get("outcome_minute") is not None:
-        return occurrence["outcome_minute"]
-    kind = outcome_kind(occurrence.get("cause_lever"))
-    if kind == "sequence":
+def _outcome_timestamp(occurrence: dict,
+                       anchors: Dict[str, List[Tuple[str, str]]]) -> Optional[str]:
+    if occurrence.get("outcome_at") is not None:
+        return occurrence["outcome_at"]
+
+    def landing(lever):
+        kind = outcome_kind(lever)
+        if kind is None or kind == "sequence":
+            return None
+        matches = [stamp for stamp, anchor_kind
+                   in anchors.get(occurrence.get("ep_id"), [])
+                   if anchor_kind == kind]
+        return max(matches) if matches else None
+
+    cause_kind = outcome_kind(occurrence.get("cause_lever"))
+    if cause_kind == "sequence":
         return None
-    if kind is not None:
-        landings = [stamp for stamp, anchor_kind
-                    in anchors.get(occurrence.get("ep_id"), [])
-                    if anchor_kind == kind]
-        if landings:
-            return _minute_of(max(landings))
-    return _minute_of(occurrence["t"])
+    caused = landing(occurrence.get("cause_lever"))
+    if caused is not None:
+        return caused
+    for lever in occurrence.get("attributed_levers") or ():
+        attributed = landing(lever)
+        if attributed is not None:
+            return attributed
+    return occurrence["t"]

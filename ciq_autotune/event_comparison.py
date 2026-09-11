@@ -21,7 +21,6 @@ from .analyzers.classifiers import (
 )
 from .analyzers.scenario.engine import _effective_isf
 from .analyzers.scenario.attribute import over_treated_rebound_judgment
-from .analyzers.scenario.levers import outcome_kind
 from .analyzers.scenario.meal_suspend import (
     MealSuspendOwnership,
     classify_meal_owned_suspend,
@@ -29,7 +28,7 @@ from .analyzers.scenario.meal_suspend import (
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.evidence_population import completed_carb_bolus
 from .insulin import ACCOUNTING_DIA_MIN
-from .window_membership import WindowQuery
+from .window_membership import WindowQuery, outcome_timestamp
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
@@ -545,7 +544,10 @@ def _build_catalog_capture(
         before, after = config["window"]
         for index, source in enumerate(source_family["occurrences"]):
             anchor = _dt(source["t"])
-            outcome_at = _outcome_at(source, exposures_payload)
+            outcome_at = outcome_timestamp(source, exposures_payload)
+            if outcome_at is None:
+                raise AssertionError(f"{view_name} source has no outcome timestamp")
+            outcome_at = _dt(outcome_at)
             meal = None
             if view_name == "meals":
                 ordinal = meal_ordinals.get(anchor, 0)
@@ -661,25 +663,6 @@ def _build_catalog_capture(
     }
     _validate_capture(capture)
     return capture
-
-
-def _outcome_at(source: dict, exposures_payload: dict) -> datetime:
-    """Read an occurrence's full outcome timestamp from its producer episode."""
-    levers = [source.get("cause_lever"), *(source.get("attributed_levers") or ())]
-    for lever in levers:
-        kind = outcome_kind(lever)
-        if kind is None or kind == "sequence":
-            continue
-        landings = [
-            _dt(occurrence["t"])
-            for family in exposures_payload["exposures"].values()
-            for occurrence in family["occurrences"]
-            if occurrence.get("ep_id") == source.get("ep_id")
-            and occurrence.get("kind") == kind
-        ]
-        if landings:
-            return max(landings)
-    return _dt(source["t"])
 
 
 def scoped_outcome_occurrences(occurrences, *, start: datetime, end: datetime,

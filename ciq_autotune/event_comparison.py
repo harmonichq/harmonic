@@ -21,6 +21,7 @@ from .analyzers.classifiers import (
 )
 from .analyzers.scenario.engine import _effective_isf
 from .analyzers.scenario.attribute import over_treated_rebound_judgment
+from .analyzers.scenario.levers import outcome_kind
 from .analyzers.scenario.meal_suspend import (
     MealSuspendOwnership,
     classify_meal_owned_suspend,
@@ -28,7 +29,7 @@ from .analyzers.scenario.meal_suspend import (
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.evidence_population import completed_carb_bolus
 from .insulin import ACCOUNTING_DIA_MIN
-from .window_membership import WindowQuery, outcome_minute
+from .window_membership import WindowQuery
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
@@ -468,6 +469,10 @@ def _validate_capture(capture: dict) -> None:
             if (not isinstance(outcome_min, int) or isinstance(outcome_min, bool)
                     or not 0 <= outcome_min < 1440):
                 raise AssertionError(f"{occurrence['id']}: missing outcome minute")
+            outcome_t = occurrence.get("outcome_t")
+            if (not isinstance(outcome_t, str)
+                    or _dt(outcome_t).hour * 60 + _dt(outcome_t).minute != outcome_min):
+                raise AssertionError(f"{occurrence['id']}: missing outcome timestamp")
             if set(occurrence["routes"]) != set(view["factors"]):
                 raise AssertionError(f"{occurrence['id']}: incomplete factor routing")
             for factor, route in occurrence["routes"].items():
@@ -540,6 +545,7 @@ def _build_catalog_capture(
         before, after = config["window"]
         for index, source in enumerate(source_family["occurrences"]):
             anchor = _dt(source["t"])
+            outcome_at = _outcome_at(source, exposures_payload)
             meal = None
             if view_name == "meals":
                 ordinal = meal_ordinals.get(anchor, 0)
@@ -623,7 +629,8 @@ def _build_catalog_capture(
                     "ep_id": source["ep_id"],
                     "date": source["date"],
                     "anchor_t": source["t"],
-                    "outcome_min": outcome_minute(source, exposures_payload),
+                    "outcome_t": outcome_at.strftime(FMT),
+                    "outcome_min": outcome_at.hour * 60 + outcome_at.minute,
                     "anchor_bg": source.get("bg"),
                     "worst_bg": source.get("worst_bg"),
                     "label": source.get("label"),
@@ -656,17 +663,36 @@ def _build_catalog_capture(
     return capture
 
 
+def _outcome_at(source: dict, exposures_payload: dict) -> datetime:
+    """Read an occurrence's full outcome timestamp from its producer episode."""
+    levers = [source.get("cause_lever"), *(source.get("attributed_levers") or ())]
+    for lever in levers:
+        kind = outcome_kind(lever)
+        if kind is None or kind == "sequence":
+            continue
+        landings = [
+            _dt(occurrence["t"])
+            for family in exposures_payload["exposures"].values()
+            for occurrence in family["occurrences"]
+            if occurrence.get("ep_id") == source.get("ep_id")
+            and occurrence.get("kind") == kind
+        ]
+        if landings:
+            return max(landings)
+    return _dt(source["t"])
+
+
 def scoped_outcome_occurrences(occurrences, *, start: datetime, end: datetime,
                                query: WindowQuery) -> list[dict]:
     """Choose complete producer traces by outcome landing inside one calendar arm.
 
-    Calendar membership belongs to an occurrence's published ``outcome_min``,
-    never to its exposure anchor.  The returned occurrence is deliberately not
-    clipped: its trace is the episode context that made the producer's landing
-    meaningful in the first place.
+    Calendar membership belongs to the producer's published ``outcome_t``;
+    ``outcome_min`` supplies only its clock scope. The returned occurrence is
+    deliberately not clipped: its trace is the episode context that made the
+    producer's landing meaningful in the first place.
     """
     return [occurrence for occurrence in occurrences
-            if start <= _dt(occurrence["anchor_t"]) < end
+            if start <= _dt(occurrence["outcome_t"]) < end
             and query.contains(occurrence.get("outcome_min"))]
 
 
@@ -688,7 +714,8 @@ def scoped_focus_cohort(store, *, start: datetime, end: datetime,
     if latest is None:
         return {"view": view, "occurrences": (), "cgm_times": frozenset(),
                 "bolus_keys": frozenset()}
-    window_days = max(1, ceil((latest - start).total_seconds() / 86400))
+    lead_days = ceil(EVENT_COMPARISON_CATALOG_LEAD_IN_MIN / (24 * 60))
+    window_days = max(1, ceil((latest - start).total_seconds() / 86400) + lead_days)
     exposures = build_exposures(store, window_days=window_days)
     capture = _build_catalog_capture(
         store, window_days=window_days, exposures_payload=exposures,

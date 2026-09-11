@@ -399,6 +399,14 @@ class DurableApiTest(unittest.TestCase):
             with store.follow_up_transaction():
                 focus = store.pin_focus("late_bolus", str(pin), pattern_key="highs_after_meals")
                 record = {"kind": "focus", "version": "386:1", **focus,
+                    "decision_context": {"version": "386:1", "state": "available",
+                        "captured_at": str(pin), "input_revision": store.input_data_revision(),
+                        "action": None, "explanation": "Synthetic Pattern Focus.",
+                        "source_window": {"start": "2024-05-01 00:00:00",
+                                          "end": "2024-05-09 00:00:00"},
+                        "policy": "synthetic:1", "subjects": ["pattern:highs_after_meals"],
+                        "occurrences": [], "settings": [], "support": {}, "unknowns": [],
+                        "outcome_window": {"start_min": 17 * 60, "end_min": 19 * 60}},
                     "comparison_context": capture_comparison_context(store, at=pin,
                         input_revision=store.input_data_revision())}
                 store.save_follow_up_record(record)
@@ -409,14 +417,19 @@ class DurableApiTest(unittest.TestCase):
         response = self.client.get("/api/verify/trials", headers=self.headers, params=params)
         self.assertEqual(response.status_code, 200, response.text)
         selected = response.json()["selected"]
-        readiness = selected["reassessment"]["comparison"]["readiness"]
-        self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [12, 12])
-        self.assertTrue(all(r["criterion_met"] for r in readiness.values()))
+        comparison = selected["reassessment"]["comparison"]
+        readiness = comparison["readiness"]
+        self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [4, 4])
+        self.assertEqual([comparison["denominators"][arm]["contributing_meals"]
+                          for arm in ("before", "after")], [4, 4])
+        self.assertTrue(all(comparison["denominators"][arm]["readings"] > 0
+                            for arm in ("before", "after")))
+        self.assertTrue(all(not r["criterion_met"] for r in readiness.values()))
         for arm in readiness.values():
             self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
                 "elapsed_days", "required_elapsed_days", "criterion_met",
                 "contributing_dates", "reason", "count", "gate", "verdict"}, arm.keys())
-            self.assertEqual((arm["measured"], arm["unmeasured"]), (12, 0))
+            self.assertEqual((arm["measured"], arm["unmeasured"]), (4, 0))
             self.assertIsNone(arm["required_elapsed_days"])
         self.assertEqual(Path(self.path).read_bytes(), before_bytes)
         with Store.open_readonly(self.path) as store:

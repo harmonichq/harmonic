@@ -40,6 +40,15 @@ Connor answered Q4: “Keep those values only in Pump settings.” Do not restor
 
 For Q5 Connor said to deal with historical Pattern naming when/if it happens. Defer Focus-title persistence and legacy title migration from this change; the report remains recorded on #404. The coordinator clarified that the current fallback can also result from a Pattern leaving current results.
 
+### Risk contract
+
+- **Must prevent:** secret exposure; irreversible loss of authoritative data; silent incorrect success; real-data or vendor fetch in automated work; classifier-policy change; mutation of an original ending, expiry, or legacy computation semantics; and presenting stale scope or selection as current.
+- **Must recover:** only the already-specified stale response rejection, cache invalidation, and read convergence; no new automatic recovery is introduced.
+- **Accepted failure:** a rare local browser, server, network, or tool failure clearly stops for a manual rerun after owned cleanup; it never passes or silently skips.
+- **Unsupported:** live vendor or pump writes, Focus-title migration or legacy-title backfill, legacy-window backfill, and excluded footer behavior.
+- **Evidence owed:** public Focus/history and finding-case-file interfaces; preserved immutable-ending, expiry, legacy-scope, producer-owned-policy, and stale-response invariants; and the newly observed selected-evidence, geometry, loading, and retained regression assertions.
+- **Why:** selected-window findings and durable follow-up are advisory, persisted, and rendered through a shipped surface, so bounded failures and existing safety/identity guarantees must remain explicit.
+- **Disposition:** inline; copied unchanged to `openspec/changes/v2-findings-ledger/design.md` as the admitted implementation authority.
 
 ## ADR 404 — Retain the selected outcome window in Focus
 
@@ -104,6 +113,15 @@ The execution envelope supplies the closed file allowlists and selected task
 and acceptance slices. The checklist's Document ownership section supplies the
 contract amendment responsibilities; existing base specs fold from these deltas
 only through the established archive workflow.
+
+Chunk 1 exclusively owns the finding-case-file producer handoff: its existing
+response carries `projection` (including cohorts), `summary`, `occurrences`, and
+`selection.detail`, with served identity, glucose, markers, and labels. It owns
+the scoped Pattern payload, any bounded generic short label, and the projection
+fixture/mirror. Chunk 3 only consumes that response for rendering and state; it
+does not derive membership or policy, redefine the response, or add a second
+API. A producer defect found during serial surface integration returns through
+the coordinator to chunk 1 after the serial state is preserved.
 
 The slicing traits are multiple deliverable artifacts, a required live run,
 and shipped-surface revision. Nearby slicing calibration was absent. Projected

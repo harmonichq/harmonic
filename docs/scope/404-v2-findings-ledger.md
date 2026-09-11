@@ -10,6 +10,16 @@
 - Exact history routes already exist in `frontend-v2/history.js` (`openRecord` uses the record kind and id in `occurrence`). The on-pump Plan door is missing; test reloading the existing route rather than assume a new routing mechanism is needed. `inline`
 - The later issue comment corrects the initial basal-lane report: restore the carried v1 legend and verdict paint in v2. Stage change accent restoration is also settled. Existing 430px rail width and removed Scope chip remain intact. `inline`
 
+### Risk contract
+
+- **Must prevent:** secret exposure; irreversible loss of authoritative data; silent incorrect success; real-data or vendor fetch in automated work; classifier-policy change; mutation of an original ending, expiry, or legacy computation semantics; and presenting stale scope or selection as current.
+- **Must recover:** only the already-specified stale response rejection, cache invalidation, and read convergence; no new automatic recovery is introduced.
+- **Accepted failure:** a rare local browser, server, network, or tool failure clearly stops for a manual rerun after owned cleanup; it never passes or silently skips.
+- **Unsupported:** live vendor or pump writes, Focus-title migration or legacy-title backfill, legacy-window backfill, and excluded footer behavior.
+- **Evidence owed:** public Focus/history and finding-case-file interfaces; preserved immutable-ending, expiry, legacy-scope, producer-owned-policy, and stale-response invariants; and the newly observed selected-evidence, geometry, loading, and retained regression assertions.
+- **Why:** selected-window findings and durable follow-up are advisory, persisted, and rendered through a shipped surface, so bounded failures and existing safety/identity guarantees must remain explicit.
+- **Disposition:** inline; copied unchanged to `openspec/changes/v2-findings-ledger/design.md` as the admitted implementation authority.
+
 ### Grounding
 
 The selected issue has no formal parent and no existing work-order comment. #405 merged the #389 implementation. The main branch subsequently merged #407 (gate scheduling) and #409 (replay timing). Standing decisions are in AGENTS.md, DESIGN.md, CONTEXT.md and `openspec/changes/harmonic-v2/`, including its design, contracts, journeys and spec deltas; no separate standing-decisions source is configured.
@@ -39,7 +49,7 @@ None. This remains the selected #404 lifecycle. No external issue, PR, branch or
 
 ## Remaining dispositions
 
-No decision awaits an ADR or separate issue yet. Open operator decisions above have not been ruled. The risk contract, document inventory, final chunk ownership, review depth, strict OpenSpec validation and reviewed execution lock remain downstream of scope.
+No decision awaits an ADR or separate issue yet. Open operator decisions above have not been ruled. The document inventory, final chunk ownership, review depth, strict OpenSpec validation and reviewed execution lock remain downstream of scope.
 
 ## Reproduction receipt — 2026-09-10 local time
 
@@ -306,3 +316,27 @@ it does not relabel the five feature obligations as passing.
 
 The execution source and envelope require Full independent review. Product
 Q1–Q6 are settled (Q5 deferred); no further product interview is required.
+
+## Mandatory review round 1
+
+Full-depth review used the operator-approved, explicitly unvalidated Terra
+route. Three blocking findings were verified, all tagged **authoring**:
+
+- The facts appendix had not been refreshed after the replay registry edit
+  shifted its cited line. All command/output receipts were regenerated; the
+  baseline revision resolves explicitly rather than pretending a future source
+  commit can appear in its own HEAD receipt.
+- Interview-mode scope lacked the required explicit risk block. The default
+  risk floor and existing source invariants are now recorded identically here
+  and in the authoritative design. No assurance or product scope was added.
+- Producer payload/fixture ownership overlapped the renderer chunk. Chunk 1
+  now exclusively owns the served case-file handoff and projection fixtures;
+  integration returns producer defects to that owner through the coordinator.
+
+Two additional claims were refuted against the governing workflow and both
+reviewers withdrew them: the orchestration workflow already owns the uncommitted
+ORDER.md transport; the dated q1 browser restriction applied to the triage
+preparation worker, not the future implementation chunk.
+
+The corrected source requires the same reviewer's re-verification and a fresh
+cold pass before posting. No original application defect is reported fixed.

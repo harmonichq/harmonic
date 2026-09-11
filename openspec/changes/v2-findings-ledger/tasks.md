@@ -11,7 +11,8 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
   classifier thresholds, identity, or bounded episode context.
 - [ ] 1.2 Serve scoped Pattern rows and case files from that same population,
   including count, denominator, readiness, roster, selected occurrence and
-  evidence; do not derive membership or policy in the browser.
+  evidence, served labels, glucose and markers through the existing case-file
+  response; do not derive membership or policy in the browser.
 - [ ] 1.3 Add public-interface synthetic coverage for named, drawn and circular
   half-open windows, outcome/antecedent boundary pairs, zero/thin denominators,
   and the over-treated-low Low-identity/High-landing rule.
@@ -35,9 +36,10 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
 ## 3. Shipped desk, generated evidence and runtime integration
 
 - [ ] 3.1 Implement surfaces **The desk renders served Pattern evidence and
-  preserves selection** through the existing case-file route, with per-family
-  selected handoff, served short labels/markers, honest missing values, and
-  stale selection/window response rejection.
+  preserves selection** by consuming the existing case-file response, with
+  per-family selected handoff, served short labels/markers, honest missing
+  values, and stale selection/window response rejection; do not redefine its
+  producer-owned payload or add an API.
 - [ ] 3.2 Make the retained C4 selected-trace/marker and geometry regressions pass,
   supplementing focused option coverage for changed evidence families; retain
   the existing working low-comparison selected-trace story as its control.

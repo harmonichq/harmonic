@@ -620,7 +620,29 @@ test(`a retained Day frame visibly marks its own loading work without unmounting
     assert.equal(await previous.isDisabled(), false, 'the manufactured Day has a prior recorded day');
     let arrive;
     const arrived = new Promise(resolve => { arrive = resolve; });
-    const gate = new Promise(() => {});
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    const chartState = () => page.evaluate(() => {
+      const stage = document.querySelector('.gf-stage-day');
+      const nav = document.querySelector('#gf-nav');
+      const chartElement = stage?.querySelector('.gf-chart');
+      const chart = chartElement && window.echarts?.getInstanceByDom(chartElement);
+      return {
+        busy: stage?.getAttribute('aria-busy') || null,
+        stage: stage?.__dayRetainedIdentity || null,
+        navigation: nav?.__dayRetainedIdentity || null,
+        chart: Boolean(chart), series: chart?.getOption()?.series?.length || 0,
+      };
+    });
+    const before = await page.evaluate(() => {
+      const stage = document.querySelector('.gf-stage-day');
+      const nav = document.querySelector('#gf-nav');
+      stage.__dayRetainedIdentity = 'stage';
+      nav.__dayRetainedIdentity = 'navigation';
+      const chart = window.echarts?.getInstanceByDom(stage.querySelector('.gf-chart'));
+      return { chart: Boolean(chart), series: chart?.getOption()?.series?.length || 0 };
+    });
+    assert.ok(before.chart && before.series > 0, `the initial Day chart must be populated: ${JSON.stringify(before)}`);
     await page.route('**/api/model-view*', async route => { arrive(); await gate; await route.fallback(); });
     try {
       await previous.click();
@@ -631,7 +653,19 @@ test(`a retained Day frame visibly marks its own loading work without unmounting
           reading: Boolean(document.querySelector('.gf-reading')), navigation: Boolean(document.querySelector('#gf-nav')) };
       });
       assert.deepEqual(retained, { busy: 'true', loading: 'Loading Day', reading: true, navigation: true });
+      const held = await chartState();
+      assert.deepEqual({ stage: held.stage, navigation: held.navigation }, { stage: 'stage', navigation: 'navigation' },
+        `the retained frame must keep its structural owners: ${JSON.stringify(held)}`);
+      assert.ok(held.chart && held.series > 0,
+        `the retained Day chart must keep rendered series while its next read is held: ${JSON.stringify(held)}`);
       await capture(page, `day-retained-loading-${viewport}`);
+      release();
+      await page.waitForFunction(() => document.querySelector('.gf-stage-day')?.getAttribute('aria-busy') !== 'true', null, { timeout: 30000 });
+      const settled = await chartState();
+      assert.deepEqual({ stage: settled.stage, navigation: settled.navigation }, { stage: 'stage', navigation: 'navigation' },
+        `the settled Day read must preserve its retained structural owners: ${JSON.stringify(settled)}`);
+      assert.ok(settled.chart && settled.series > 0,
+        `the settled Day chart must render its new served series: ${JSON.stringify(settled)}`);
     } finally { await page.unroute('**/api/model-view*'); }
   } finally { await close(); }
 });

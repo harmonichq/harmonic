@@ -475,12 +475,12 @@ function mount(host, { context, retainFrame = false }) {
   const held = monthKey(memory.date);
   if (!memory.months.has(held)) {
     read(`month:${held}`, () => loadMonth(held));
-    if (retainFrame) { markRetainedFrameLoading(host); return; }
+    if (retainFrame) { retainLoadingFrame(host); return; }
     host.innerHTML = loadingFrame('Day'); return;
   }
   if (memory.day?.iso !== memory.date) {
     read(`day:${memory.date}`, () => loadDay(memory.date));
-    if (retainFrame) { markRetainedFrameLoading(host); return; }
+    if (retainFrame) { retainLoadingFrame(host); return; }
     host.innerHTML = loadingFrame('Day'); return;
   }
 
@@ -500,6 +500,14 @@ function markRetainedFrameLoading(host) {
   loading.setAttribute('role', 'status');
   loading.setAttribute('aria-label', 'Loading Day');
   stage.append(loading);
+}
+
+// routes disposes each render's chart before the destination decides whether to
+// retain its frame. Re-seat the still-served day through Day's existing chart
+// owner so the dimmed frame keeps the evidence it was already showing.
+function retainLoadingFrame(host) {
+  markRetainedFrameLoading(host);
+  mountCharts(host);
 }
 
 /** Seat the Day desk on the shell. Called once, by the entry module. */

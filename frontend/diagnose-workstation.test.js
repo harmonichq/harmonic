@@ -218,13 +218,16 @@ function laneDocument() {
     node.focus = () => { doc.activeElement = node; };
     return node;
   } };
+  doc.body = doc.createElement('body');
+  doc.activeElement = doc.body;
   const host = new RosterElement();
   host.style = {};
+  host.contains = node => node === host || host.children.includes(node);
   host.querySelectorAll = () => host.children.filter(node => node.tagName === 'BUTTON' && !node.dataset.clockCopy);
   Object.defineProperty(host, 'innerHTML', { set(value) {
     assert.equal(value, '');
     // Removing a focused descendant blurs it, as the browser does.
-    if (host.children.includes(doc.activeElement)) doc.activeElement = null;
+    if (host.children.includes(doc.activeElement)) doc.activeElement = doc.body;
     host.children = [];
   } });
   return { doc, host };
@@ -274,6 +277,26 @@ test('a basal lane repaint respects cleared selection and focus outside the lane
     assert.equal(host.children[0].dataset.staged, 'true', 'the repaint still updates staged state');
     host.children[0].click();
     assert.equal(picked, lane.cells[0], 'the replacement button invokes the current pick callback');
+  } finally { globalThis.document = originalDocument; }
+});
+
+test('a basal lane repaint does not reclaim focus moved to the spotlight during rebuild', () => {
+  const originalDocument = globalThis.document;
+  const { doc, host } = laneDocument();
+  const lane = { cells: [{ i: 0, label: '00:00', verdict: 'hold' }] };
+  try {
+    globalThis.document = doc;
+    renderLane(host, lane, lane.cells[0], new Set(), () => {});
+    host.children[0].focus();
+    const spotlight = doc.createElement('div');
+    const append = host.append.bind(host);
+    host.append = (...children) => {
+      append(...children);
+      spotlight.focus();
+    };
+    renderLane(host, lane, lane.cells[0], new Set(), () => {});
+    assert.equal(doc.activeElement, spotlight, 'the spotlight keeps focus acquired during the lane rebuild');
+    assert.equal(host.children[0].getAttribute('aria-pressed'), 'true', 'retaining spotlight focus does not clear slot selection');
   } finally { globalThis.document = originalDocument; }
 });
 

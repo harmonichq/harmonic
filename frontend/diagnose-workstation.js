@@ -509,7 +509,11 @@ export function renderLane(host, lane, selectedCell, staged, onPick) {
     host.append(b);
     if (b.dataset.cell === focusedCell) restoreFocus = b;
   }
-  restoreFocus?.focus({ preventScroll: true });
+  // A focus handoff during the rebuild outranks this passive restoration.
+  const active = document.activeElement;
+  if (restoreFocus && (active === document.body || host.contains(active))) {
+    restoreFocus.focus({ preventScroll: true });
+  }
 }
 
 /**

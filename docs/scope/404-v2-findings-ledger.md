@@ -25,12 +25,12 @@ The CI workflow and acceptance wrapper select and shard the v2 ledger. During tr
 ## Open questions
 
 1. Trial expiry settled by Q1 below: keep expiry, surface its record and allow a separately dated late conclusion. Details of where it appears belong to the visual round.
-2. Scoped Patterns: show whole-day Patterns with explicit whole-day meaning and a windowed chart, introduce genuinely scoped Pattern semantics, or explain their absence with a route back to 24 h?
+2. Scoped Patterns settled by Q2 below: recalculate backend counts and membership. Q6 asks whether a Focus started there retains the selected window for eligibility and follow-up.
 3. Rail visual round: settle parent-owned expandable Cause members and mini placement together in the running app after the behavior sweep. Preserve member-specific evidence and served ownership.
 4. Response mini labels: retain the served event label, deciding on a short backend noun only if the measured layout needs it.
-5. Loading: shared skeleton or destination-specific skeletons; show explicit reassessment progress, prewarm retained comparisons, or both? Never show stale figures as current results.
-6. Pump-profile footer: restore current programmed ratios or keep them behind Pump settings?
-7. Historical Focus titles: preserve the last-known Pattern title for future records; decide how an already-unnamed legacy record is shown without inventing historical context.
+5. Loading: shared or destination-specific skeleton geometry remains a visual choice. Q3 settles named on-demand reassessment loading without prewarming. Never show stale figures as current results.
+6. Pump-profile footer settled by Q4: keep programmed ratios only in Pump settings.
+7. Historical Focus naming deferred by Q5; do not add title persistence or migration to this change.
 8. Complete the shipped-app behavior inventory/replay and obtain any required freeze/amendment sanctions before visual design and source admission. Mandatory plan review remains pending; no executable order exists.
 
 ## Spawned tasks
@@ -94,11 +94,28 @@ The completed worker prompts, lifecycle state and raw answers remain in coordina
 
 The ticket carries the decision/reproduction update at https://github.com/harmonichq/harmonic/issues/404#issuecomment-5629691481 .
 
-Pending operator questions already sent (do not infer answers or repeat settled Q1):
-
-- Q2: keep explicitly whole-day Patterns visible with a window-focused chart (recommended), recalculate scoped Pattern semantics, or explain their absence and offer 24 h.
-- Q3: named reassessment loading with computation on open (recommended), or named loading plus prewarming recent retained reassessments.
-- Q4: restore current programmed correction factor/carb ratio in the footer (recommended), or keep them only in Pump settings.
-- Q5: preserve saved Pattern titles for future Focus records and label genuinely missing legacy titles honestly (recommended), or continue generic Focus titles after retirement.
+Q1–Q4 are settled below. Q5 is deferred. Do not repeat those questions. Q6 is pending: whether Focus eligibility and follow-up retain the selected Pattern clock window.
 
 After these answers, finish the remaining visual choices through the admitted UI Craft revise process, inventory/replay and sanctions. Then settle chunk ownership and the risk contract, author/validate the OpenSpec source, obtain mandatory independent plan review and prepare the execution lock. No unreviewed lock is executable. No application changes or PR were made by this triage session.
+
+### Q2 settled — Window-scoped Pattern semantics
+
+Connor selected: “Recalculate Pattern counts and membership for the selected window; this needs broader backend changes.” The selected clock window must determine Pattern counts and membership through backend-owned computation. A whole-day Pattern with only its chart cropped does not meet this decision. Why: Pattern rows should describe the same selected scope the reader is inspecting. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Recalculate Patterns for the selected clock window.
+
+### Q3 settled — Reassessments load on demand
+
+Connor selected: “Show named loading; compute reassessments when opened (Recommended).” Show what is loading immediately, compute the selected reassessment on open, and preserve current versus retained assessment identity. No retained-reassessment prewarming belongs to #404. Why: explain the wait without adding background recomputation. `inline`
+
+### Q4 settled — Programmed ratios remain in Pump settings
+
+Connor selected: “Keep those values only in Pump settings.” Remove footer restoration from the planned implementation. The values remain available through Pump settings. `inline`
+
+### Q5 deferred — Historical Focus naming
+
+Connor answered: “what? Is this like if we make a code change to rename a pattern? We will deal with that when/if it happens”. The coordinator clarified that the reported fallback can also occur when the Pattern leaves current results. Defer title persistence, legacy-title backfill and naming migration in #404. Preserve the original ticket observation without treating it as an accepted implementation requirement. `inline`
+
+### Scoped Pattern grounding
+
+The follow-up worker found the existing circular half-open WindowQuery and outcome-landing membership rule used by ordinary Finding/sequence populations. Pattern production currently derives count, membership, readiness, price and admission together from whole-day source products, and Pattern case files reject scoped queries. The change must preserve full physiological episode/classifier context and use one scoped population for the displayed Pattern, roster and evidence. Do not merely crop raw CGM or copy an unscoped price onto a scoped rate.
+
+Focus currently saves a Pattern key and validates whole-day guidance; it accepts no clock window. Q6 therefore asks whether a new Focus from a scoped Pattern retains that window for eligibility and follow-up, or whether scoped evidence is investigatory while Focus remains whole-day. This product choice remains pending. Do not rewrite existing saved contexts. Raw grounding is in `/private/tmp/harmonic-404-orchestrate/followup-scoped-patterns.result.json`. No application change was made.

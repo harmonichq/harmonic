@@ -3940,6 +3940,12 @@ lossless in both Python and JavaScript and retains the multiple-episode state.
   limited reference observations. The missing minute-zero point remains a gap,
   followed by the observed minute-five point. No trajectory bridges the gap.
 
+The v2 singleton-selection story also checks the selected series' own painted
+marker at 0 minutes, 270 mg/dL, in stage and fullscreen, then clears selection.
+Dense selected traces retain no point markers. The response legend translates
+source scope to “Sequences at all times of day” or “Evening sequences”; the
+backend report summary and clock-roster boundary remain unchanged.
+
 The existing hand-listed composition and v2 desk suites also own these named
 browser stories through the actual High-carb case-file integration:
 

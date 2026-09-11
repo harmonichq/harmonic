@@ -318,7 +318,10 @@ sequence uses the backend-owned title “Glucose after high-carb eating” (or
 “Glucose during high-carb eating” for an in-sequence comparison) and the shared
 response renderer: observed glucose in mg/dL over time
 from the end of eating, the target range, named highest-carb and other-sequence
-curves, cohort support and source scope. Its supporting detail retains the full numerical comparison summary and all three
+curves, cohort support and source scope. The legend names “Sequences at all times
+of day” or “Evening sequences” within the source population, independently of the
+clock-filtered roster. A selected singleton paints one focus-colored marker;
+dense selected traces retain lines without markers. Its supporting detail retains the full numerical comparison summary and all three
 served aggregate intervals, including explicit unavailable cells. The mini rank
 omits axis furniture and interaction. The end anchor keeps two lines; narrow
 High-carb charts omit the adjacent +1 h label to leave reading space. Short

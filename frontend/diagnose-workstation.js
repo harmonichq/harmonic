@@ -2123,8 +2123,10 @@ function boot(root, data, callbacks, signal) {
   }
 
   const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
+  // A frame-owned thin-slot descriptor must not masquerade as a Findings
+  // descriptor on the next paint and suppress its own regeneration.
   const slotDescriptor = (cell) => tileDescriptors.find((descriptor) => descriptor.kind === 'basal'
-    && descriptor.coordinates.slot === cell.i);
+    && !descriptor.transientSlot && descriptor.coordinates.slot === cell.i);
   const slotNightEvidence = (frame) => {
     const descriptor = slotDescriptor(frame.cell);
     if (descriptor?.data) return descriptor.data;

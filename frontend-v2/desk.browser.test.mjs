@@ -825,6 +825,30 @@ for (const viewport of Object.keys(VIEWPORTS)) {
   });
 }
 
+test('thin basal focal survives repeated paints while its evidence is pending', async () => {
+  const desk = await openDesk();
+  const { page } = desk;
+  const held = [];
+  try {
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
+    await page.locator('.qrow[data-id^="pattern:"]').first().waitFor();
+    await page.route('**/api/diagnose/basal-night-evidence*', route => { held.push(route); });
+    await page.getByRole('button', { name: /^12:00 basal slot,/ }).click();
+    await page.locator('#tile-focal .evidence-tile[data-chart-id="basal:720"]').waitFor();
+    for (let i = 0; i < 2; i += 1) {
+      await page.getByRole('button', { name: 'All charts', exact: true }).click();
+      await page.keyboard.press('Escape');
+      assert.equal(await page.locator('#tile-focal .evidence-tile').getAttribute('data-chart-id'), 'basal:720');
+    }
+    assert.ok(held.length, 'the thin slot has a pending real client request');
+    await Promise.all(held.map(route => route.fulfill({ status: 200, json: basalEvidence })));
+    await page.waitForFunction(() => !document.querySelector('#tile-focal .tile-state')?.textContent.includes('Loading'));
+    assert.equal(await page.locator('#tile-focal .evidence-tile').getAttribute('data-chart-id'), 'basal:720');
+  } finally { await desk.close(); }
+});
+
 // Amendment 6: S28/S83 observed a late tile completion painting null hosts.
 // Hold actual evidence responses until the mounted Diagnose view has left.
 for (const outcome of ['resolved', 'rejected']) {

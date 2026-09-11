@@ -5,6 +5,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from hashlib import sha256
+from math import floor
 import time
 import uuid
 
@@ -213,7 +214,7 @@ class PreparedCases:
                          _opaque("o_", "sequences", selected_source["id"]))
             if source_id is None or source_id not in cohort_of:
                 raise InconsistentProjection("inconsistent_projection")
-            anchor = datetime.fromisoformat(selected_source["sequence_start"])
+            anchor = datetime.fromisoformat(selected_source["sequence_end"])
             start = datetime.fromisoformat(selected_source["start"])
             end = datetime.fromisoformat(selected_source["end"])
             selection["detail"]["glucose"] = _sequence_comparison_trace(
@@ -242,18 +243,35 @@ class PreparedCases:
         source = evidence.get("response")
         population = evidence.get("population") or ()
         if source is None:
-            return None
-        scope, period = source["scope"], source["period"]
-        if not population or any(item.get("period") != period for item in population):
             raise InconsistentProjection("inconsistent_projection")
-        anchored = [(item, datetime.fromisoformat(item["sequence_start"]),
-                     datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
-                    for item in population]
+        try:
+            scope, period = source["scope"], source["period"]
+            comparisons = source["comparisons"]
+            source_window = source["source_window"]
+            summary = source["summary"]
+        except (KeyError, TypeError):
+            raise InconsistentProjection("inconsistent_projection") from None
+        if (not population or any(item.get("period") != period for item in population)
+                or len(comparisons) != 3 or any(item.get("scope") != scope for item in comparisons)):
+            raise InconsistentProjection("inconsistent_projection")
+        try:
+            anchored = [(item, datetime.fromisoformat(item["sequence_end"]),
+                         datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
+                        for item in population]
+        except (KeyError, TypeError, ValueError):
+            raise InconsistentProjection("inconsistent_projection") from None
         if any(end <= start for _, _, start, end in anchored):
             raise InconsistentProjection("inconsistent_projection")
-        window = (min(round((start - anchor).total_seconds() / 60) for _, anchor, start, _ in anchored),
-                  max(round((end - anchor).total_seconds() / 60) for _, anchor, _, end in anchored))
-        if window[0] >= window[1]:
+        if period == "in_sequence":
+            axis_window = (_round_outward(min((start - anchor).total_seconds() / 60
+                                               for _, anchor, start, _ in anchored)), 5)
+            point_window = (axis_window[0], 0)
+        else:
+            horizon = max(round((end - anchor).total_seconds() / 60)
+                          for _, anchor, _, end in anchored)
+            axis_window = (0, horizon)
+            point_window = (0, horizon - 5)
+        if axis_window[0] >= axis_window[1] or point_window[0] > point_window[1]:
             raise InconsistentProjection("inconsistent_projection")
         matched = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
                                               anchor, start, end, self.sequence_cgm)
@@ -261,18 +279,18 @@ class PreparedCases:
         comparison = [_sequence_comparison_trace(_opaque("o_", "sequences", item["id"]),
                                                  anchor, start, end, self.sequence_cgm)
                       for item, anchor, start, end in anchored if not item["candidate"]]
-        matched_cohort = event_comparison.project_cohort("matched", matched, window)
-        comparison_cohort = event_comparison.project_cohort("comparison", comparison, window)
+        matched_cohort = event_comparison.project_cohort("matched", matched, point_window)
+        comparison_cohort = event_comparison.project_cohort("comparison", comparison, point_window)
         matched_cohort["name"] = "Highest-carb fifth"
         comparison_cohort["name"] = "Other sequences"
         for cohort in (matched_cohort, comparison_cohort):
-            cohort["anchor"] = {"kind": "sequence_start", "label": "Sequence start"}
+            cohort["anchor"] = {"kind": "sequence_end", "label": "End of eating sequence"}
         return {
             "schema": "high-carb-sequence-response-v1", "alignment": "event",
-            "anchor": {"kind": "sequence_start", "label": "Sequence start"},
-            "window_min": list(window), "source_window": deepcopy(source["source_window"]),
-            "scope": scope, "period": period, "summary": source["summary"],
-            "comparisons": deepcopy(source["comparisons"]),
+            "anchor": {"kind": "sequence_end", "label": "End of eating sequence"},
+            "window_min": list(axis_window), "source_window": deepcopy(source_window),
+            "scope": scope, "period": period, "summary": summary,
+            "comparisons": deepcopy(comparisons),
             "comparison": {"name": "Other sequences",
                            "state": "unavailable" if comparison_cohort["support"] == "withheld"
                            else "available"},
@@ -741,6 +759,10 @@ def _sequence_comparison_trace(occurrence_id, anchor, start, end, cgm):
          "minute": round((row.t - anchor).total_seconds() / 60, 1), "bg": row.bg}
         for row in cgm if start <= row.t < end and row.bg is not None
     ]}}
+
+
+def _round_outward(minute):
+    return 5 * floor(minute / 5)
 
 
 def _completed_carb_boluses(bolus, cgm, basal, source_window_days):

@@ -245,7 +245,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                     "source_window": sequence_report["window"],
                     "scope": finding["scope"], "period": finding["period"],
                     "summary": finding["summary"],
-                    "comparisons": sequence_report["high_carb_sequence"]["comparisons"],
+                    "comparisons": [row for row in sequence_report["high_carb_sequence"]["comparisons"]
+                                    if row["scope"] == finding["scope"]],
                 }
         sequence_evidence[lever] = evidence
     return {

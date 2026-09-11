@@ -862,13 +862,16 @@ def test_high_carb_sequence_case_serves_the_retained_response_evidence():
     response = case["projection"]["response"]
     assert response["schema"] == "high-carb-sequence-response-v1"
     assert response["alignment"] == "event"
-    assert response["anchor"] == {"kind": "sequence_start", "label": "Sequence start"}
+    assert response["anchor"] == {"kind": "sequence_end", "label": "End of eating sequence"}
     assert response["window_min"] == [0, 360]
     assert response["scope"] == "pooled"
     assert response["period"] == "post_6h"
     assert response["source_window"] == prepared.sequence_report["window"]
     assert response["summary"] == prepared.sequence_report["high_carb_sequence"]["finding"]["summary"]
-    assert response["comparisons"] == prepared.sequence_report["high_carb_sequence"]["comparisons"]
+    assert response["comparisons"] == [
+        item for item in prepared.sequence_report["high_carb_sequence"]["comparisons"]
+        if item["scope"] == response["scope"]
+    ]
     assert response["comparison"] == {"name": "Other sequences", "state": "available"}
     assert [(cohort["key"], cohort["name"], cohort["routed_count"])
             for cohort in response["cohorts"]] == [
@@ -886,6 +889,78 @@ def test_high_carb_sequence_case_serves_the_retained_response_evidence():
     row = next(row for row in wrap(prepared)["findings"]["rows"]
                if row["id"] == "finding:high_carb_sequence")
     assert row["headline"] == response["summary"]
+
+
+def test_high_carb_response_rejects_missing_or_incoherent_retained_metadata():
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+        )
+
+    for mutation in (
+        lambda response: response.clear(),
+        lambda response: response.pop("scope"),
+        lambda response: response.__setitem__("comparisons", response["comparisons"][:2]),
+    ):
+        malformed = deepcopy(prepared)
+        response = malformed.exposures["sequence_evidence"]["high_carb_sequence"]["response"]
+        mutation(response)
+        with pytest.raises(InconsistentProjection, match="inconsistent_projection"):
+            malformed.case("finding:high_carb_sequence", "event", None)
+
+
+def test_in_sequence_response_uses_end_anchor_and_separate_outward_axis():
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+        )
+    response_source = prepared.exposures["sequence_evidence"]["high_carb_sequence"]["response"]
+    response_source["period"] = "in_sequence"
+    for index, item in enumerate(prepared.exposures["sequence_evidence"]["high_carb_sequence"]["population"]):
+        end = datetime.fromisoformat(item["sequence_end"])
+        start = end - timedelta(minutes=61 if index == 0 else 30)
+        item.update(sequence_start=start.isoformat(), start=start.isoformat(),
+                    end=(end + timedelta(minutes=60)).isoformat(), period="in_sequence")
+
+    response = prepared.case("finding:high_carb_sequence", "event", None)["projection"]["response"]
+
+    assert response["anchor"] == {"kind": "sequence_end", "label": "End of eating sequence"}
+    assert response["window_min"] == [-65, 5]
+    assert all(point["minute"] <= 0 for cohort in response["cohorts"]
+               for point in cohort["points"])
+
+
+def test_high_carb_response_excludes_confirmed_false_low_observations(monkeypatch):
+    from tests.test_findings_projection import sequence_products, seed_sequence_store
+    from ciq_autotune.analyzers.scenario import build_scenarios
+    from ciq_autotune.explore_exposures import build_exposures
+    projection, (bolus, cgm, _, _) = sequence_products("high_carb_sequence")
+    excluded = next(row for row in cgm if row.t > bolus[0].t)
+    records = lambda *_: [{"start": excluded.t, "end": excluded.t}]
+    monkeypatch.setattr("ciq_autotune.explore_exposures.false_low_span_records", records)
+    monkeypatch.setattr("ciq_autotune.finding_case_file.false_low_span_records", records)
+    with Store.open(":memory:") as store:
+        seed_sequence_store(store, bolus, cgm)
+        prepared = finding_case_file.prepare(
+            store, query=WindowQuery.whole_day(), version=0, analysis=projection._analysis,
+            exposures=build_exposures(store), scenarios=build_scenarios(store).to_dict(),
+        )
+
+    prepared.case("finding:high_carb_sequence", "event", None)
+
+    assert excluded not in prepared.sequence_cgm
 
 
 def test_case_file_preserves_exposure_classifier_reach():

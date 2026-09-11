@@ -98,7 +98,7 @@ export function mount(host, deps = {}) {
   const offered = entry.candidate(subject);
   const candidate = state.source?.candidates?.find(row => row.subject === subject);
   const copy = offered
-    ? `${e(candidate?.title || offered.subject)}. ${e(candidate?.readiness?.reason || '')}`
+    ? `${e(candidate?.title || offered.subject)}. This Pattern is ready to start a Focus.`
     : e(state.roster?.admission?.focus_pin?.reason || 'This Pattern is not currently offered as a Focus.');
   host.innerHTML = emptyFrame('Changes', 'Start a Pattern Focus', copy,
     `${offered ? `<button class="gf-btn primary" data-focus="${state.failure ? 'retry-pin' : 'pin'}" ${state.saving ? 'disabled' : ''}>${state.failure ? 'Retry' : 'Start Focus'}</button>` : '<button class="gf-btn" data-focus="refresh">Retry read</button>'}<button class="gf-btn" data-destination-action="changes">Cancel</button>`,

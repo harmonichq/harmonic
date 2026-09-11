@@ -1,5 +1,5 @@
-import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 // Amendment 1 acceptance: real manufactured records, served by the app.
+import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { C2_STORIES, waitForCharts } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';

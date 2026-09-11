@@ -1,4 +1,3 @@
-import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { expandSequenceFixture } from './eating-sequence-fixture.js';
 // Behaviour replay for the Diagnose workstation — the executable half of the
 // frozen behaviour ledger for the shipped Diagnose workstation.
@@ -23,6 +22,7 @@ import { expandSequenceFixture } from './eating-sequence-fixture.js';
 // FAILS CLOSED. A missing driver, built shell or fixture exits nonzero. It
 // never skips: a green run that executed zero stories is the exact silent pass
 // this whole process exists to prevent.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { readFile, access, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -1083,29 +1083,45 @@ export const S03 = async (page) => {
     ok(after.chip !== start.chip, 'S03 the chip reports the resized window');
   }, "S03");
 
+  // Each gesture keeps its own live observation window. A failed left proof
+  // must not prevent the right gesture and its two claims from being reported.
+  const failures = [];
+  const checkTouch = async (description, assertions) => {
+    try {
+      await waitForReplayAssertion(async seen => {
+        const failed = [];
+        const check = assertion => {
+          try { assertion(); } catch (error) { failed.push(error.message); }
+        };
+        await assertions(seen, check);
+        if (failed.length) fail(failed.join('; '));
+      }, description);
+    } catch (error) { failures.push(error.message); }
+  };
   const leftStart = await state(page);
   await touchDrag(page,
     { x: b.x + leftStart.gripA, y }, { x: b.x + leftStart.gripA + 30, y });
   await settle(page);
-  await waitForReplayAssertion(async seen => {
+  await checkTouch('S03 left touch', async (seen, check) => {
     const leftAfter = seen(await state(page));
-    ok(leftAfter.gripA > leftStart.gripA + 10,
-      'S03 primary touch moves the left full-height gate');
-    near(leftAfter.gripB, leftStart.gripB, 1,
-      'S03 left primary touch holds the far gate');
-  }, "S03");
+    check(() => ok(leftAfter.gripA > leftStart.gripA + 10,
+      'S03 primary touch moves the left full-height gate'));
+    check(() => near(leftAfter.gripB, leftStart.gripB, 1,
+      'S03 left primary touch holds the far gate'));
+  });
 
   const rightStart = await state(page);
   await touchDrag(page,
     { x: b.x + rightStart.gripB, y }, { x: b.x + rightStart.gripB + 70, y });
   await settle(page);
-  await waitForReplayAssertion(async seen => {
+  await checkTouch('S03 right touch', async (seen, check) => {
     const rightAfter = seen(await state(page));
-    ok(rightAfter.gripB > rightStart.gripB + 20,
-      'S03 primary touch moves the right full-height gate');
-    near(rightAfter.gripA, rightStart.gripA, 1,
-      'S03 right primary touch holds the far gate');
-  }, "S03");
+    check(() => ok(rightAfter.gripB > rightStart.gripB + 20,
+      'S03 primary touch moves the right full-height gate'));
+    check(() => near(rightAfter.gripA, rightStart.gripA, 1,
+      'S03 right primary touch holds the far gate'));
+  });
+  if (failures.length) fail(failures.join('; '));
 };
 
 /** S04 · Dragging INSIDE a window slides it whole — both edges live, the width

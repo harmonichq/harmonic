@@ -18,7 +18,7 @@ test('a delayed destination is re-read without repeating the navigation click', 
     evaluate: async () => { reads++; return reads < 3 ? 'overview' : 'explore'; },
   }, 'explore');
   assert.equal(clicks, 1, 'the original action stays single-shot');
-  assert.ok(reads >= 3, 'the story observes the later destination');
+  assert.equal(reads, 3, 'each attempt reads the destination exactly once');
 });
 
 test('all original claims must hold in one observation attempt', async () => {

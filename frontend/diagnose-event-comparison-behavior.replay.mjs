@@ -1,4 +1,3 @@
-import { waitForReplayAssertion } from './replay-assertions.mjs';
 // Executable half of the #677 behaviour ledger (archived; the Verify
 // workstation replay is the same pattern).
 // Fourteen frozen stories, run through the app opener — the mock this ledger once
@@ -7,6 +6,7 @@ import { waitForReplayAssertion } from './replay-assertions.mjs';
 // after the fixture's server-owned support facts were computed, proving the
 // app leg derives support from the occurrences themselves rather than echoing
 // a stale capture stamp.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';

@@ -1,8 +1,9 @@
-import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 // App-only c3 bodies. Every read/write below uses the production API of a fresh
 // generator-owned case store. Historical prototype bodies remain unchanged.
+import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
 import { boundedWait } from './c2.replay.mjs';
+import { date } from './frame.js';
 
 export const C3_CASES = Object.freeze({
   ...Object.fromEntries('S36,S45,S45b,S46,S47,S48,S49,S50,S51,S52,S53,S55,S91,S92,S94'.split(',').map(id => [id, 'c3-trial'])),
@@ -199,14 +200,30 @@ export const C3_STORIES = {
     }, "S47");
   },
   async S48(page) {
-    await active(page); await press(page, '[data-mode="daily"]');
+    const { detail } = await active(page); await press(page, '[data-mode="daily"]');
     await page.selectOption('[data-select="evidence-period"]', 'before_period');
     const { options } = await waitForReplayAssertion(async seen => {
       const options = seen(await page.locator('[data-select="evidence-day"] option').evaluateAll(nodes => nodes.map(node => node.value)));
       assert.ok(options.length > 1);
       return { options };
     }, "S48");
-    const prior = await page.locator('.gf-day-read').innerText();
+    const prior = await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('[data-select="evidence-period"]').inputValue()), 'before_period');
+      assert.equal(seen(await page.locator('[data-select="evidence-day"]').inputValue()), options[0]);
+      const day = detail.day_rows.before_period[Number(options[0])];
+      const baseline = seen(await page.locator('.gf-day-read').evaluate(node => ({
+        copy: node.innerText,
+        figure: node.querySelector('.gf-figure')?.innerText,
+        values: [...node.querySelectorAll('td.v')].map(cell => cell.innerText),
+      })));
+      assert.ok(baseline.figure?.includes(date(day.date)), 'S48 the baseline names the served first Before day');
+      assert.ok(baseline.figure?.includes(`${day.n_readings} glucose readings`), 'S48 the baseline has the served reading count');
+      assert.deepEqual(baseline.values,
+        [day.tir, day.tbr].map(value => value == null ? 'no readings' : `${value}%`).concat(String(day.meals)),
+        'S48 the baseline has the served first Before day values');
+      assert.match(baseline.copy, /not necessarily a complete day/);
+      return baseline.copy;
+    }, 'S48 settled Before day');
     await page.selectOption('[data-select="evidence-day"]', options[1]);
     await waitForReplayAssertion(async seen => {
       assert.notEqual(seen(await page.locator('.gf-day-read').innerText()), prior);
@@ -255,8 +272,9 @@ export const C3_STORIES = {
     }, "S50");
   },
   async S51(page) {
-    const { roster } = await active(page);
+    await active(page);
     const { submit } = await waitForReplayAssertion(async seen => {
+      const roster = seen(await read(page, '/api/verify/trials'));
       assert.equal(roster.admission.can_finish_trial, true, 'case must permit finishing the Trial');
       const submit = page.locator('[data-form="finish"] [type="submit"]');
       assert.equal(seen(await submit.isDisabled()), true);

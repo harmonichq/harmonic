@@ -1,4 +1,3 @@
-import { waitForReplayAssertion } from './replay-assertions.mjs';
 // Behaviour replay for the Harmonic v2 desktop — the executable half of
 // mockups/harmonic-v2-desktop.behavior.md.
 //
@@ -7,10 +6,13 @@ import { waitForReplayAssertion } from './replay-assertions.mjs';
 // stories deferred, and one feature-specific negative proof per mock-applicable
 // story. Raw output is retained under mockups/sweep/harmonic-v2-desktop/runs/.
 //
-// Those runs were produced by this file at sha256
-// d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116. This header
-// and the CLI banner below were rewritten afterwards, as metadata only; no
-// story, selector, assertion, opener or registry entry changed.
+// Historical provenance: the original retained runs were produced by the
+// pre-amendment replay at sha256
+// d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116.
+// That digest identifies the original run input, not this amended file.
+// AMENDED 2026-09-10 · #408: bounded waits and observation timing only;
+// story claims, tolerances and actions remain unchanged. The original frozen
+// runs remain historical evidence; the amended replay requires fresh runs.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
@@ -53,6 +55,7 @@ import { waitForReplayAssertion } from './replay-assertions.mjs';
 //      (harmonic-v2-glucose.css:471) — the visible launcher at a desktop
 //      viewport is the footer's. activate()/visible() now take the first
 //      VISIBLE match and fail loudly when every match is hidden.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -210,18 +213,22 @@ export async function harnessSelect(page, key, labelSubstring) {
       const el = document.querySelector(s);
       if (!el) return { missing: true };
       const option = [...el.options].find((o) => o.textContent.includes(needle));
-      return option ? { value: option.value, chosen: option.textContent }
-        : { options: [...el.options].map((o) => o.textContent) };
+      if (!option) return { options: [...el.options].map((o) => o.textContent) };
+      // Resolve the option and dispatch in one browser turn. Missing-control
+      // attempts never dispatch; this successful attempt returns immediately.
+      el.value = option.value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return { value: option.value, chosen: option.textContent };
     }, [selector, labelSubstring]));
     ok(!value.missing, `harness control ${key} (${selector}) is absent on this source`);
     ok(!value.options, `harness control ${key} has no option matching ${JSON.stringify(labelSubstring)}: ${JSON.stringify(value.options)}`);
     return value;
   }, `harnessSelect ${key}`);
-  await page.evaluate(([selector, value]) => {
-    const el = document.querySelector(selector);
-    el.value = value;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  }, [selector, value.value]);
+  await waitForReplayAssertion(async seen => {
+    const selected = seen(await page.evaluate(s => document.querySelector(s)?.value ?? null, selector));
+    ok(selected === value.value,
+      `harness control ${key} selected ${JSON.stringify(selected)}, expected ${JSON.stringify(value.value)}`);
+  }, `harnessSelect ${key} selected value`);
   await page.waitForTimeout(250);
   return value.chosen;
 }
@@ -538,8 +545,8 @@ export async function goto(page, destination) {
   if (TARGET === 'app') destination = destination === 'explore' ? 'diagnose' : destination === 'overview' ? 'changes' : destination;
   await activate(page, `[data-destination="${destination}"]`);
   await waitForReplayAssertion(async seen => {
-    ok(seen(await destinationOf(page)) === destination,
-      `pressing ${destination} did not arrive there (still ${seen(await destinationOf(page))})`);
+    const actual = seen(await destinationOf(page));
+    if (actual !== destination) fail(`pressing ${destination} did not arrive there (still ${actual})`);
   }, "goto");
 }
 
@@ -1005,13 +1012,17 @@ export const S23 = async (page) => {
 
 export const S24 = async (page) => {
   await goto(page, 'explore');
-  const { held, ids } = await waitForReplayAssertion(async seen => {
-    const held = () => page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null);
-    const ids = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ)));
+  const held = () => page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null);
+  const { ids, start } = await waitForReplayAssertion(async seen => {
+    const { ids, selected } = seen(await page.evaluate(() => ({
+      ids: [...document.querySelectorAll('.gf-member-row[data-occ]')].map(b => b.dataset.occ),
+      selected: [...document.querySelectorAll('.gf-member-row[aria-pressed="true"]')].map(b => b.dataset.occ),
+    })));
     ok(ids.length > 1, 'the held cohort has fewer than two members to step through');
-    return { held, ids };
-  }, "S24");
-  const start = await held();
+    ok(selected.length === 1 && ids.includes(selected[0]),
+      'S24 the starting member is the sole held member of the rendered cohort');
+    return { ids, start: selected[0] };
+  }, 'S24 starting member');
   await activate(page, '[data-action="next-meal"]');
   await waitForReplayAssertion(async seen => {
     ok(seen(await held()) !== start, 'Next occurrence did not move the held member');

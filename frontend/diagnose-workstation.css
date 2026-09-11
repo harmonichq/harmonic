@@ -1381,7 +1381,11 @@
 .ev-row .worst { color: var(--mk-secondary); text-align: right; }
 .ev-row .delta { color: var(--mk-muted); text-align: right; }
 /* one reading only: the numeric columns give way to a single stated cell */
-.ev-row .only { grid-column: var(--ev-only-column, 2 / 6); color: var(--mk-text); white-space: nowrap; }
+.ev-row .only {
+  grid-column: var(--ev-only-column, 2 / 6); color: var(--mk-text); white-space: nowrap;
+  min-width: var(--ev-only-min-width, auto); overflow: var(--ev-only-overflow, visible);
+  text-overflow: var(--ev-only-text-overflow, clip);
+}
 .ev-row .only span { color: var(--mk-muted); font-family: Inter, system-ui, sans-serif; font-size: 10.5px; }
 .ev-row .tier {
   grid-column: var(--ev-tier-column, auto); text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
@@ -1395,9 +1399,9 @@
   grid-template-columns: 112px minmax(0, 1fr) auto;
   --ev-only-column: 2;
   --ev-tier-column: 3;
-}
-.ev-row.case-compact .only {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  --ev-only-min-width: 0;
+  --ev-only-overflow: hidden;
+  --ev-only-text-overflow: ellipsis;
 }
 .ev-row[aria-pressed="true"] {
   background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);

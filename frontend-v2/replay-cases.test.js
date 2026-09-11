@@ -39,32 +39,64 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
   const saved = { id: 7, pattern_key: offered.key, subject: offered.subject };
   const title = 'Served Pattern title';
   const pageFor = stageText => {
-    let reloaded = false;
+    let reloaded = false; let location = 'http://127.0.0.1:8765/v2/?to=diagnose';
+    const scope = { start_min: 720, end_min: 1080 };
+    const seenResponses = [];
+    const preparation = {
+      url: () => 'http://127.0.0.1:8765/api/diagnose/finding-case-file-preparation?start_min=720&end_min=1080',
+      ok: () => true, request: () => ({ method: () => 'GET' }),
+      json: async () => ({ rendered_rows: [{ id: 'finding:synthetic-pattern' }] }),
+    };
+    const focusRequest = { method: () => 'POST', postDataJSON: () => ({
+      pattern_key: offered.key, subject: offered.subject, outcome_window: scope, request_id: 'synthetic-request',
+    }) };
+    const savedResponse = {
+      url: () => 'http://127.0.0.1:8765/api/focus', status: () => 200,
+      text: async () => JSON.stringify({ record: saved }), request: () => focusRequest,
+    };
     return {
-      url: () => 'http://127.0.0.1:8765/v2/?to=changes',
-      goto: async () => {}, reload: async () => { reloaded = true; },
+      url: () => location,
+      goto: async url => { location = url; }, reload: async () => { reloaded = true; },
+      waitForResponse: async predicate => {
+        for (const response of [preparation, savedResponse]) if (predicate(response)) {
+          seenResponses.push(response); return response;
+        }
+        assert.fail('S56 response observer did not match the authentic selected-window request');
+      },
+      getByRole: () => ({ click: async () => {} }),
       request: { get: async url => {
         const path = new URL(url).pathname;
-        assert.ok(['/api/focus', '/api/verify/trials'].includes(path));
+        assert.ok(['/api/focus', '/api/guidance', '/api/verify/trials'].includes(path));
         const payload = path === '/api/focus'
           ? { admission: { state: 'available', active_id: saved.id, focus_pin: { available: true } },
             pinnable_patterns: [offered], focuses: [saved] }
+          : path === '/api/guidance'
+            ? { candidates: [{ subject: offered.subject, collapse: 'collapse_to_member',
+                chosen_member: { subject: 'habit:synthetic-pattern' } }] }
           : { focuses: [{ id: 8, title: 'Another Focus' }, { ...saved, title }] };
         return { status: () => 200, text: async () => JSON.stringify(payload), json: async () => payload };
       } },
       locator: selector => ({
         filter() { return this; }, first() { return this; },
-        waitFor: async () => {}, click: async () => {}, count: async () => 0,
+        waitFor: async () => {}, click: async () => {
+          if (selector.startsWith('[data-start-focus=')) location = 'http://127.0.0.1:8765/v2/changes?window=720-1080';
+        }, count: async () => 0,
         innerText: async () => {
           assert.equal(selector, '.gf-stage-focus');
           assert.ok(reloaded, 'the saved Focus title must survive reload');
           return stageText;
         },
       }),
+      _seenResponses: seenResponses,
     };
   };
-  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S56(pageFor(offered.subject))), /served Focus title/);
-  await C3_STORIES.S56(pageFor(title));
+  const missing = pageFor(offered.subject);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S56(missing)), /served Focus title/);
+  const passing = pageFor(title);
+  await C3_STORIES.S56(passing);
+  assert.equal(passing._seenResponses.length, 2, 'S56 observes both selected-window preparation and Focus save responses');
+  assert.deepEqual(passing._seenResponses[1].request().postDataJSON().outcome_window,
+    { start_min: 720, end_min: 1080 }, 'S56 submits the authentic selected Diagnose scope before its reload assertion');
 });
 
 test('one invocation selects the generated case each story needs', () => {
@@ -95,9 +127,9 @@ test('S7 distinguishes the carried Diagnose rail from the paired Changes reading
       },
     }),
   });
-  await C2_STORIES.S7(pageFor(430, 300));
-  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(300, 300))), /carried rail width/);
-  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(430, 430))), /reading-pane width/);
+  await C2_STORIES.S7(pageFor(430, 430));
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(300, 430))), /carried rail width/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(430, 300))), /reading-pane width/);
 });
 
 test('S13 keeps the carried rail at 430px across all four sources', async () => {

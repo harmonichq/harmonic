@@ -249,18 +249,47 @@ class PreparedCases:
             comparisons = source["comparisons"]
             source_window = source["source_window"]
             summary = source["summary"]
+            report = self.sequence_report["high_carb_sequence"]
+            report_finding = report["finding"]
+            report_window = self.sequence_report["window"]
+            report_comparisons = report["comparisons"]
+            report_scope = report_finding["scope"]
+            report_period = report_finding["period"]
+            report_summary = report_finding["summary"]
         except (KeyError, TypeError):
             raise InconsistentProjection("inconsistent_projection") from None
-        if (not population or any(item.get("period") != period for item in population)
-                or len(comparisons) != 3 or any(item.get("scope") != scope for item in comparisons)):
+        expected_comparisons = [
+            item for item in report_comparisons
+            if isinstance(item, dict) and item.get("scope") == scope
+        ]
+        if (not isinstance(source_window, dict) or source_window != report_window
+                or (scope, period, summary) != (report_scope, report_period, report_summary)
+                or not isinstance(comparisons, list) or comparisons != expected_comparisons
+                or [item.get("period") for item in comparisons
+                    if isinstance(item, dict)] != ["in_sequence", "post_4h", "post_6h"]
+                or not population or any(not isinstance(item, dict)
+                                         or item.get("period") != period
+                                         for item in population)):
             raise InconsistentProjection("inconsistent_projection")
         try:
-            anchored = [(item, datetime.fromisoformat(item["sequence_end"]),
-                         datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
-                        for item in population]
+            anchored = []
+            for item in population:
+                occurrence_id, candidate = item["id"], item["candidate"]
+                if not isinstance(occurrence_id, str) or not isinstance(candidate, bool):
+                    raise TypeError
+                anchored.append((item, datetime.fromisoformat(item["sequence_end"]),
+                                 datetime.fromisoformat(item["start"]),
+                                 datetime.fromisoformat(item["end"])))
         except (KeyError, TypeError, ValueError):
             raise InconsistentProjection("inconsistent_projection") from None
-        if any(end <= start for _, _, start, end in anchored):
+        selected_comparison = next((item for item in comparisons
+                                    if item["period"] == period), None)
+        if (any(end <= start for _, _, start, end in anchored)
+                or selected_comparison is None
+                or selected_comparison.get("high_n") != sum(
+                    item["candidate"] for item in population)
+                or selected_comparison.get("reference_n") != sum(
+                    not item["candidate"] for item in population)):
             raise InconsistentProjection("inconsistent_projection")
         if period == "in_sequence":
             axis_window = (_round_outward(min((start - anchor).total_seconds() / 60

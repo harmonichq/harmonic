@@ -219,3 +219,28 @@ read for the held endpoint, followed by an exact 12:00–21:30 commit. Focused v
 S107 and v2 S101/S103 pass at both sizes with their existing live-read and real
 mouse-gesture assertions. This corrects gesture ownership without changing
 membership, clinical predicates, or ledger retirements.
+
+### Operator-requested Opus design critique
+
+Connor requested Opus 5 at high effort for design critiques and implementation of
+its supported fixes. The critique reviewed the source and fifteen synthetic
+before/after captures. Its first source-only pass could not read the temporary
+images; a same-reviewer visual pass over in-checkout copies completed without
+permission denials and corrected the unsupported initial visual claims.
+
+The resulting #404 correction keeps Filter styled in both shells and shares the
+v2 Window control treatment, with a visible active-Sift state. Focus withholding
+and failed-read reasons are visible and associated with their action; unavailable
+states without a destination are status text rather than dead-end buttons.
+Failed reads do not display a stale admission reason. Day reloads visibly mark
+retained content as loading. The late-conclusion input is named Later conclusion
+so it cannot be confused with the immutable original Conclusion.
+
+Selected event markers never invent a glucose reading when both a marker value
+and usable trace evidence are missing. Missing evidence stays unavailable. In a
+comparison roster grouped by cohort, the heading owns that constant cohort label;
+rows retain their event descriptions without repeating it. Mixed case-roster rows
+keep their individual tier labels and the existing truncation priority. Compact
+control sizing remains grounded in the actual current labels and both locked
+viewports. Clinical readiness, classification, and lifecycle semantics are not
+changed by this design pass.

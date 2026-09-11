@@ -28,7 +28,7 @@ Connor Griffin, 2026-09-10 local time, answered Q2: “Recalculate Pattern count
 
 ### Consequences
 
-The active Pattern roster, served counts, membership and chart evidence need one coherent selected-window contract. Keep existing producer ownership and explicit denominators; do not make the frontend recompute attribution or clinical policy. The remaining consequences for Pattern admission, ranking and Focus entry require grounding before the execution lock. This decision does not authorize rewriting saved historical contexts.
+The active Pattern roster, served counts, membership and chart evidence need one coherent selected-window contract. Keep existing producer ownership and explicit denominators; do not make the frontend recompute attribution or clinical policy. Pattern admission and Focus entry must use the same selected scope; the Focus retention decision below governs follow-up. Producer details still require grounding before the execution lock. This decision does not authorize rewriting saved historical contexts.
 
 ## Reassessment loading
 
@@ -39,3 +39,18 @@ Connor Griffin answered Q3: “Show named loading; compute reassessments when op
 Connor answered Q4: “Keep those values only in Pump settings.” Do not restore current programmed correction factor or carb ratio in the footer.
 
 For Q5 Connor said to deal with historical Pattern naming when/if it happens. Defer Focus-title persistence and legacy title migration from this change; the report remains recorded on #404. The coordinator clarified that the current fallback can also result from a Pattern leaving current results.
+
+
+## ADR 404 — Retain the selected outcome window in Focus
+
+### Decision
+
+A Focus started from a Pattern filtered to a named or drawn clock window retains that window for eligibility and follow-up comparisons. The clock window selects the outcomes being investigated. Preserve the full contributing episodes as evidence, including context before the window. Use the same retained scope in Before and After comparisons; subsequent navigation or a changed Diagnose window does not modify the saved Focus scope.
+
+### Authority
+
+Connor agreed to the retained-window option in Q6, then corrected his illustrative reference from morning to evening. This confirmed the coordinator's explanation that an Evening Focus concerns the contributing behavior associated with evening outcomes, including episodes that began earlier.
+
+### Consequences
+
+The backend must validate admission and save the selected window with the Focus context. The served Pattern population, selected occurrence evidence and follow-up comparison must agree on outcome membership and explicit denominators. Preserve existing episode ownership, attribution and safety predicates. Ground the relevant outcome timestamp in each producer; an exposure anchor is not automatically the outcome landing. Preserve older saved contexts without inventing a selected window. This decision changes the scope of new Focus records, not their classifier thresholds or immutable prior endings.

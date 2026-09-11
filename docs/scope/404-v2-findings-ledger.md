@@ -94,7 +94,7 @@ The completed worker prompts, lifecycle state and raw answers remain in coordina
 
 The ticket carries the decision/reproduction update at https://github.com/harmonichq/harmonic/issues/404#issuecomment-5629691481 .
 
-Q1–Q4 are settled below. Q5 is deferred. Do not repeat those questions. Q6 is pending: whether Focus eligibility and follow-up retain the selected Pattern clock window.
+Q1–Q4 and Q6 are settled below. Q5 is deferred. Do not repeat those questions. Focus retains its selected outcome clock window for eligibility and follow-up.
 
 After these answers, finish the remaining visual choices through the admitted UI Craft revise process, inventory/replay and sanctions. Then settle chunk ownership and the risk contract, author/validate the OpenSpec source, obtain mandatory independent plan review and prepare the execution lock. No unreviewed lock is executable. No application changes or PR were made by this triage session.
 
@@ -118,10 +118,10 @@ Connor answered: “what? Is this like if we make a code change to rename a patt
 
 The follow-up worker found the existing circular half-open WindowQuery and outcome-landing membership rule used by ordinary Finding/sequence populations. Pattern production currently derives count, membership, readiness, price and admission together from whole-day source products, and Pattern case files reject scoped queries. The change must preserve full physiological episode/classifier context and use one scoped population for the displayed Pattern, roster and evidence. Do not merely crop raw CGM or copy an unscoped price onto a scoped rate.
 
-Focus currently saves a Pattern key and validates whole-day guidance; it accepts no clock window. Q6 therefore asks whether a new Focus from a scoped Pattern retains that window for eligibility and follow-up, or whether scoped evidence is investigatory while Focus remains whole-day. This product choice remains pending. Do not rewrite existing saved contexts. Raw grounding is in `/private/tmp/harmonic-404-orchestrate/followup-scoped-patterns.result.json`. No application change was made.
+Focus currently saves a Pattern key and validates whole-day guidance; it accepts no clock window. Q6 therefore asks whether a new Focus from a scoped Pattern retains that window for eligibility and follow-up, or whether scoped evidence is investigatory while Focus remains whole-day. Q6 settles this choice below: retain the selected outcome window. Do not rewrite existing saved contexts. Raw grounding is in `/private/tmp/harmonic-404-orchestrate/followup-scoped-patterns.result.json`. No application change was made.
 
 
-## Consolidated disposition after Q1–Q5
+## Consolidated disposition after Q1–Q6
 
 | Report | Triage disposition |
 | --- | --- |
@@ -154,9 +154,9 @@ The selected ticket's latest decision comment is https://github.com/harmonichq/h
 
 The document worker located the current whole-feed/scoped omission promise in `openspec/specs/behavioral-layer/spec.md` and ADR 395 in `openspec/changes/harmonic-v2/design.md`; the coordinator read both cited statements. The new #404 decision supersedes this behavior. The late-conclusion contract must preserve the existing separation of original ending and reassessment in `openspec/changes/harmonic-v2/contracts.md`. Source admission must express these amendments in the owning new OpenSpec change and explicitly identify any still-active contract updates. Preserve historical decisions and archived records; do not rewrite them as if the new behavior had already existed.
 
-Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 may add the Focus comparison contract. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
+Other candidate document surfaces from the closed search are `openspec/changes/harmonic-v2/specs/surfaces/spec.md` and the existing detail/marker obligation in `openspec/changes/diagnose-finding-case-files/design.md`. This is the located documentation set, not yet an approved execution allowlist. Q6 adds the Focus comparison contract to the required document inventory. The worker's stale claim that Q4/Q5 remain open is superseded by the contemporaneous decision edits above.
 
-The static behavior worker found existing window, occurrence, fullscreen, Day and Changes stories but no measured rail-parity, long-label collision, compact-control or icon-placement assertions. Its result is an inventory, not a fresh passing freeze or complete runtime coverage. `frontend-v2/diagnose.js` currently starts Focus with only subject/from; the coordinator verified the omitted window and the backend's unscoped Focus admission. The new Focus-window contract remains pending Q6.
+The static behavior worker found existing window, occurrence, fullscreen, Day and Changes stories but no measured rail-parity, long-label collision, compact-control or icon-placement assertions. Its result is an inventory, not a fresh passing freeze or complete runtime coverage. `frontend-v2/diagnose.js` currently starts Focus with only subject/from; the coordinator verified the omitted window and the backend's unscoped Focus admission. The new Focus-window contract is settled by Q6 below.
 
 
 ### Passing preservation slice — 2026-09-10
@@ -165,4 +165,11 @@ At planning commit `4135751`, using the already-built unchanged application shel
 
 This establishes a focused preservation baseline around the affected interactions. It does not supersede the S101–S105 negative receipt, prove the new screenshot reports, establish 1440px parity, or complete the fresh behavior freeze. No app, replay, fixture or CI file changed. No active worker or QA server remains owned by this pass.
 
-Current scope frontier: Q6 is awaiting the operator. Preserve all settled decisions and continue from the consolidated disposition; do not reopen Q1–Q5. The reviewed OpenSpec execution lock and triaged status are not yet complete.
+Scope interview decisions are settled. Preserve the consolidated disposition; do not reopen Q1–Q6. The fresh shipped-behavior freeze, reviewed OpenSpec execution lock and triaged status are not yet complete.
+
+
+### Q6 settled — Focus retains the selected outcome window
+
+Connor agreed that a Focus started from a named or drawn Pattern window retains that window for eligibility and follow-up. He clarified his example to evening rather than morning, confirming the coordinator's explanation: the Focus tracks the contributing behavior associated with outcomes in the selected evening window; full contributing episodes remain available even when they begin earlier. The selected window follows the outcome, rather than separately clipping the behavior's onset. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain the selected outcome window in Focus.
+
+Apply the same saved scope to both comparison arms. Changing the live Diagnose window later does not silently change an existing Focus. Preserve original historical contexts; no inferred clock window is backfilled into older Focus records. Exact timestamps and denominator membership must be grounded in the owning producers before task/source admission. Do not silently swap an exposure anchor timestamp for the selected outcome timestamp.

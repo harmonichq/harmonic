@@ -80,3 +80,9 @@ The user authorized resolving the runtime blocker and finishing the PR. Profilin
 Three unprofiled pre-fix case runs took 12.73, 13.66 and 15.03 seconds. Post-fix runs took 10.87, 10.96 and 10.96 seconds; the independent coordinator run took 11.16 seconds. Both new regressions failed before the fix, then 31 focused tests passed. A full comparison equals the forced original computation including confidence intervals. Complete QA output matches except for its wall-clock generation timestamp. Instrumented profile totals did not improve and are not used as budget evidence.
 
 Both review axes converged without findings. The coordinator independently passed the two new regressions and the slow QA case. Final integrated verification resumes after this correction; the earlier budget breach and interrupted full run above remain historical failures rather than being relabeled as passes.
+
+## Final browser readiness corrections
+
+The integrated composition suite passed28cases and exposed two test timing failures: its first request barrier adopted an intermediate drag window, and Pattern capture scrolled a chart host during replacement. Commit `eb7c8b9c` distinguishes completed requests while explicitly asserting the final Morning window; all held-response and stale-adoption assertions remain. Pattern capture waits for a mounted supported series that survives a render frame and matches its host dimensions. Production code is unchanged.
+
+Both corrected cases passed twice, and independently passed once more. Both review axes converged without findings. The full backend passed2525tests with one expected real-database skip in366.24s, below400s; the QA suite passed81tests and20subtests in50.92s, slowestcase11.70s. Remaining browser gates and ledgers are resuming after this correction.

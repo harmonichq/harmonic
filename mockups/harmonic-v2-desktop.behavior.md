@@ -2498,7 +2498,9 @@ S106 · Selecting a served Pattern occurrence draws its exact served glucose
 ```
 S107 · Diagnose, Changes and Day share one reading-rail width; All charts and
        Close place each label before its icon; the focal action stays top-right;
-       long meal occurrence descriptions and cohorts do not overlap.
+       grouped long-meal cohorts name themselves once while each event
+       description stays readable; ordinary verdict rows retain non-overlapping
+       varying tier text.
   element:  .v2-diagnose .inspector, .gf-desk .gf-reading, All charts,
             #chart-headacts, #tile-focal .tile-fullscreen, #level .case-occurrence
   source:   frontend-v2/diagnose.js; frontend-v2/day.js; frontend-v2/plan-view.js;
@@ -2506,7 +2508,8 @@ S107 · Diagnose, Changes and Day share one reading-rail width; All charts and
   lock:     HV2-11; existing density tokens remain authoritative (no pixel target)
   data:     showcase; All charts then finding:meal_bolus_short's long cohort roster
   evidence: C4_STORIES.S107; aggregates every label/rail/focal/row observation,
-            including the catalog's actual Close control and overflow-visible text ink
+            including served grouped-cohort headings, full event-text ink, and
+            ordinary mixed-tier column geometry
   status:   reached its feature assertion and failed at both locked sizes; corrected
             Close/row evidence awaits coordinator reproof; focal top anchoring held
 ```

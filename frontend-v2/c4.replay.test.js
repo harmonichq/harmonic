@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { historicalAbsence, C4_RETIREMENTS } from './c4.replay.mjs';
+import { historicalAbsence, C4_RETIREMENTS, assertS107RosterGeometry } from './c4.replay.mjs';
 import { REGISTRY } from '../frontend/harmonic-v2-desktop-behavior.replay.mjs';
 import { storyCase } from './replay-cases.mjs';
 
@@ -27,6 +27,39 @@ test('S106 and S107 are unique app-only C4 stories with their required manufactu
     assert.equal(entries[0][1].deferred.term, term);
     assert.equal(storyCase(id), expectedCase);
   }
+});
+
+test('S107 keeps a grouped comparison heading distinct from readable mixed-tier case rows', () => {
+  const rect = (left, right, top = 0, bottom = 10) => ({ left, right, top, bottom });
+  const event = { comparisonCohort: 'matched',
+    description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) }, tier: null };
+  const fired = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+    tier: { text: 'Meets criteria', ...rect(280, 360) } };
+  const near = { description: { text: '130 · Completed carb bolus', truncated: false, ...rect(120, 260) },
+    tier: { text: 'Borderline', ...rect(280, 350) } };
+  const expectedCohorts = [
+    { key: 'matched', name: 'Matched' },
+    { key: 'nearly_matched', name: 'Nearly matched' },
+    { key: 'comparison', name: 'Other completed carb-bolus meals' },
+  ];
+  assert.doesNotThrow(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+  }));
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.slice(1).map(cohort => cohort.name), rows: [event] }, tierRows: [fired, near], expectedCohorts,
+  }), /exact served cohorts once/);
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [{ ...event, description: { ...event.description, truncated: true } }] },
+    tierRows: [fired, near], expectedCohorts,
+  }), /fully readable/);
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
+    tierRows: [{ ...fired, tier: { ...fired.tier, truncated: true } }, near], expectedCohorts,
+  }), /fully readable/);
+  assert.throws(() => assertS107RosterGeometry({
+    comparison: { cohortHeadings: expectedCohorts.map(cohort => cohort.name), rows: [event] },
+    tierRows: [{ ...fired, tier: { ...fired.tier, ...rect(240, 360) } }, near], expectedCohorts,
+  }), /columns overlap/);
 });
 
 test('R18 fails before touching the UI when historical input is absent', async () => {

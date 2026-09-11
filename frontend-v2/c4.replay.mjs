@@ -259,7 +259,8 @@ const geometry404 = page => page.evaluate(() => {
     const range = document.createRange(); range.selectNodeContents(node);
     const rect = range.getBoundingClientRect(); const clip = box(node);
     const clipped = getComputedStyle(node).overflowX !== 'visible';
-    return { left: clipped ? Math.max(clip.left, rect.left) : rect.left,
+    return { text: node.textContent.trim(), truncated: node.scrollWidth > node.clientWidth,
+      left: clipped ? Math.max(clip.left, rect.left) : rect.left,
       right: clipped ? Math.min(clip.right, rect.right) : rect.right,
       top: rect.top, bottom: rect.bottom };
   };
@@ -272,13 +273,76 @@ const geometry404 = page => page.evaluate(() => {
       text: button.textContent.trim(), aria: button.getAttribute('aria-label'),
       label: box(button.querySelector('span')), icon: box(button.querySelector('svg')),
     })),
+    cohortHeadings: [...document.querySelectorAll('#level .ev-group > b')]
+      .map(heading => heading.textContent.trim()),
     rows: [...document.querySelectorAll('#level .case-occurrence')].map(row => {
       const only = row.querySelector('.only'); const tier = row.querySelector('.tier');
-      return only && tier ? { label: only.textContent.trim(), cohort: tier.textContent.trim(),
-        only: textBox(only), tier: textBox(tier) } : null;
-    }).filter(Boolean),
+      return { comparisonCohort: row.dataset.comparisonCohort || null,
+        description: only ? textBox(only) : null, tier: tier ? textBox(tier) : null };
+    }),
   };
 });
+
+const overlap404 = (left, right) => ({
+  x: Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left)),
+  y: Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)),
+});
+
+// Comparison membership is grouped by a constant served cohort name. Ordinary
+// case rows instead retain their row-tier column, so the geometry witness must
+// prove both rendered shapes rather than treating one as the other.
+export function assertS107ComparisonGeometry(comparison, expectedCohorts) {
+  assert.deepEqual(comparison.cohortHeadings, expectedCohorts.map(cohort => cohort.name),
+    'S107 comparison headings must name the exact served cohorts once');
+  const groupedRows = comparison.rows.filter(row => row.comparisonCohort);
+  assert.ok(groupedRows.length, 'S107 premise: the long meal chart supplies comparison cohort rows');
+  for (const row of groupedRows) {
+    assert.ok(expectedCohorts.some(cohort => cohort.key === row.comparisonCohort),
+      `S107 comparison row names an unknown cohort: ${row.comparisonCohort}`);
+    assert.equal(row.tier, null, 'S107 comparison rows must not repeat their grouped cohort label');
+    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated,
+      `S107 comparison event text must remain fully readable: ${JSON.stringify(row.description)}`);
+  }
+}
+
+export function assertS107TierGeometry(tierRows) {
+  assert.ok(tierRows.length, 'S107 premise: the same meal case supplies ordinary tier rows');
+  const labels = new Set(tierRows.map(row => row.tier?.text).filter(Boolean));
+  assert.ok(labels.size > 1, `S107 needs mixed ordinary tier labels: ${JSON.stringify([...labels])}`);
+  for (const row of tierRows) {
+    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated
+      && row.tier && !row.tier.truncated,
+      `S107 ordinary event text and tier must remain fully readable: ${JSON.stringify(row)}`);
+    const overlap = overlap404(row.description, row.tier);
+    assert.equal(overlap.x > 0 && overlap.y > 0, false,
+      `S107 ordinary description and tier columns overlap: ${JSON.stringify({ row, overlap })}`);
+  }
+}
+
+export function assertS107RosterGeometry({ comparison, tierRows, expectedCohorts }) {
+  assertS107ComparisonGeometry(comparison, expectedCohorts);
+  assertS107TierGeometry(tierRows);
+}
+
+async function drillMeal404(page, alignment) {
+  const meal = page.locator('#tile-row .evidence-tile[data-chart-id="finding:meal_bolus_short"]');
+  assert.ok(await meal.count(), 'S107 premise: showcase supplies the long meal cohort chart');
+  const response = page.waitForResponse(reply => {
+    const url = new URL(reply.url());
+    return url.pathname === '/api/diagnose/finding-case-file'
+      && url.searchParams.get('finding_id') === 'finding:meal_bolus_short'
+      && url.searchParams.get('alignment') === alignment && reply.ok();
+  }, { timeout: 30000 });
+  await meal.click();
+  const served = await (await response).json();
+  assert.equal(served.projection.alignment, alignment,
+    `S107 meal drill must use the served ${alignment} case`);
+  await page.waitForFunction(id => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === id,
+    'finding:meal_bolus_short', { timeout: 30000 });
+  await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { served, geometry: await geometry404(page) };
+}
+
 async function deskGeometry404(page, destination) {
   await press(page, `nav.v2-nav [data-destination="${destination}"]`);
   await waitForDesk(page);
@@ -472,13 +536,8 @@ export const C4_STORIES = {
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
     await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
     const catalog = await geometry404(page);
-    const meal = page.locator('#tile-row .evidence-tile[data-chart-id="finding:meal_bolus_short"]');
-    assert.ok(await meal.count(), 'S107 premise: showcase supplies the long meal cohort chart');
-    await meal.click();
-    await page.waitForFunction(id => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === id,
-      'finding:meal_bolus_short', { timeout: 30000 });
-    await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
-    const drilled = await geometry404(page);
+    const eventMeal = await drillMeal404(page, 'event');
+    const drilled = eventMeal.geometry;
     const failures = [];
     if (new Set(Object.values(rails)).size !== 1) failures.push({ rails });
     for (const [state, actions, expectedAction] of [
@@ -497,13 +556,8 @@ export const C4_STORIES = {
         focal, expected: 'top-right focal control',
       });
     }
-    assert.ok(drilled.rows.length, 'S107 premise: the long meal chart supplies comparison cohort rows');
-    for (const row of drilled.rows) {
-      const xOverlap = Math.max(0, Math.min(row.only.right, row.tier.right) - Math.max(row.only.left, row.tier.left));
-      const yOverlap = Math.max(0, Math.min(row.only.bottom, row.tier.bottom) - Math.max(row.only.top, row.tier.top));
-      if (xOverlap > 0 && yOverlap > 0) failures.push({ label: row.label, cohort: row.cohort, xOverlap, yOverlap,
-        expected: 'description and cohort text do not overlap' });
-    }
+    assertS107ComparisonGeometry(drilled,
+      eventMeal.served.projection.cohorts.map(({ key, name }) => ({ key, name })));
     assert.deepEqual(failures, [], 'S107 desk geometry must preserve labels, rails, focal placement and long cohort rows');
   },
   async S91(page, ctx) {

@@ -117,4 +117,21 @@ openspec/specs/eating-sequences/spec.md:372: the chosen comparison quintile and 
 mockups/INDEX.md:156: Issue #342 chart baseline: `openspec/changes/eating-sequence-findings/evidence/`;
 mockups/INDEX.md:160: - **Eating-sequence findings (#342):** `eating-sequence-findings.synthetic/payload.json`
 mockups/INDEX.md:162:   Python producers. The real chart lives in `frontend/diagnose-eating-sequences.js`;
+
+Full v2 ledger command inventory (planned; not executed during triage)
+Prerequisites: npm ci && npm run build; uv sync --frozen --extra api
+Browser environment: eval "$(python3 scripts/ensure_browser_gate_env.py)"
+Output root: replay_root=$(mktemp -d /tmp/harmonic-410-final.XXXXXX)
+Run the following eight commands serially, without --base:
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 1/4 --out "$replay_root/1280x720-1-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 2/4 --out "$replay_root/1280x720-2-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 3/4 --out "$replay_root/1280x720-3-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --shard 4/4 --out "$replay_root/1280x720-4-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 1/4 --out "$replay_root/1440x900-1-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 2/4 --out "$replay_root/1440x900-2-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 3/4 --out "$replay_root/1440x900-3-of-4"
+uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --shard 4/4 --out "$replay_root/1440x900-4-of-4"
+Each --out is a fresh directory outside the checkout. Preserve its logs and selection.json.
+Every shard must report executed = selected, failed = 0, deferred = 0;
+the union of the four selections must equal the full registry at each viewport.
 ```

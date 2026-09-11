@@ -66,3 +66,23 @@ for relative in ['DESIGN.md','CONTEXT.md','openspec/specs/surfaces/spec.md',
  for number,line in enumerate((ROOT/relative).read_text().splitlines(),1):
   if any(term in line.lower() for term in ['eating-sequence', 'high-carb', 'quintile']):
    print(f'{relative}:{number}: {line}')
+
+print('\nFull v2 ledger command inventory (planned; not executed during triage)')
+import re
+workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+shards = json.loads(re.search(r"REPLAY_SHARDS: '([^']+)'", workflow).group(1))['full']
+viewports = re.search(r'viewport: \[([^]]+)\]', workflow).group(1).split(', ')
+assert shards == ['1/4', '2/4', '3/4', '4/4']
+assert viewports == ['1280x720', '1440x900']
+print('Prerequisites: npm ci && npm run build; uv sync --frozen --extra api')
+print('Browser environment: eval "$(python3 scripts/ensure_browser_gate_env.py)"')
+print('Output root: replay_root=$(mktemp -d /tmp/harmonic-410-final.XXXXXX)')
+print('Run the following eight commands serially, without --base:')
+for viewport in viewports:
+ for shard in shards:
+  print('uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay'
+        f' --viewport {viewport} --shard {shard}'
+        f' --out "$replay_root/{viewport}-{shard.replace("/", "-of-")}"')
+print('Each --out is a fresh directory outside the checkout. Preserve its logs and selection.json.')
+print('Every shard must report executed = selected, failed = 0, deferred = 0;')
+print('the union of the four selections must equal the full registry at each viewport.')

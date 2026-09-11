@@ -5,12 +5,12 @@
 - Connor confirmed the primary question: “How much worse is my glucose after higher-carb eating?” His answer was “yes exactly”. This settles the purpose, not a layout or behavior retirement. → issue #410
 
 - Filed #410 for the High-carb sequence evidence chart. Related #404 owns other v2 desk findings. → issue #410
-- Classification: code, pending attended scope. No execution lock or implementation authorized by triage. inline
+- Classification: code, scope settled. No execution lock or implementation authorized by triage. inline
 - The current eating-sequences specification compares the highest-carb fifth with the remaining sequences using medians of per-sequence outcomes. Boundaries are user-relative, not treatment thresholds. inline
-- The shipped surface is the revision target. Preserve backend-owned selection, support, periods, unavailable evidence and association-only interpretation. Layout is unsettled. inline
+- The shipped surface is the revision target. Preserve backend-owned selection, support, periods, unavailable evidence and association-only interpretation. The accepted replacement uses the existing response renderer. inline
 - Keep the supplied screenshot and personal health values local. Use generated synthetic evidence for any published reproduction. inline
 
-## Open questions
+## Initial questions (resolved below)
 
 - The existing Pattern response chart is the design precedent. Height and duration can be read together from glucose-over-time cohorts; do not repeat the abstract metric-choice question. Ground the sequence-specific trace contract before admitting implementation.
 - Finish the surface-specific behavior inventory and any required ledger amendments after the metric scope is settled. No complete behavior freeze or execution lock is claimed yet.
@@ -19,7 +19,7 @@
 
 - https://github.com/harmonichq/harmonic/issues/410
 
-Remaining dispositions: none. Triage remains in scope; no executable order has been drafted or posted.
+Remaining dispositions: none. A draft execution order is undergoing independent review; no lock is posted.
 
 ## Grounding and baseline
 
@@ -29,7 +29,7 @@ Remaining dispositions: none. Triage remains in scope; no executable order has b
 - Existing comparison shape: `frontend/diagnose-eating-sequences.js` renders separate time-in-range and glucose-SD rulers, all three periods, cohort counts, selected-period marker, missing evidence and item tooltips. `frontend/diagnose-evidence-charts.js` shares this implementation across sequence charts, minis and fullscreen. `frontend/diagnose-workstation.js` displays the existing summary in `.sequence-comparison`.
 - `ciq_autotune/findings_projection.py` owns the generic served ranking headline. A meaningful stage-title change must honor that backend-owned headline contract instead of quietly overriding it in the browser.
 - `openspec/specs/eating-sequences/spec.md` defines aggregate association only, with a producer-selected period that can be during the sequence. Never relabel an in-sequence comparison as after eating. Time outside range includes both low and high glucose; it cannot be relabeled as time high.
-- Mandatory review has not started. The workflow’s read-only headroom probe completed successfully. It was not a plan review.
+- The workflow’s read-only headroom probe completed successfully; independent review is recorded below.
 
 ## Existing Pattern chart inspection
 
@@ -54,3 +54,10 @@ Connor confirmed the response-comparison direction and backend evidence extensio
 
 Why: this is descriptive evidence that must remain faithful to the user's observations.
 Disposition: → issue #410 and ADR 410.
+
+
+## Independent review — round 1
+
+Terra, read-only, returned one authoring blocker: the design named a full v2 runtime command inventory that the facts appendix did not contain. Verified against the existing acceptance parser, replay selection and CI matrix. The correction adds generated commands for both viewports and all four shards, browser prerequisites, fresh external output directories and full-selection acceptance. The recorded probe stdout matched completely in review. No product-scope objection was raised. Same-reviewer verification is pending.
+
+Connor explicitly authorized the hosted reviewer to receive this ticket worktree and the three manufactured screenshots after automatic approval review required disclosure approval. The supplied personal screenshot is excluded.

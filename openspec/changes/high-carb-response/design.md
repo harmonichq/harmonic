@@ -32,7 +32,9 @@ The new response is computed only on High-carb sequence case requests. No cache-
 
 A narrow adapter presents the response to `eventComparisonChartOption`, `eventComparisonGlucoseValues` and `renderEventSurface`. The renderer remains the owner of glucose curves, target range, support treatment, cursor, keyboard readout and selected trace. The adapter selects fields; it computes no evidence. The existing event-case validator is not weakened to admit sequence populations; `validEatingSequenceCase` validates the additive response and its separate population contract.
 
-The backend owns the High-carb stage headline. Feed the coherent response summary through the existing server headline path; do not override it in a browser-only gate. A sequence-specific field in the exposure population supplies that summary to findings projection. Non-high-carb headlines remain unchanged.
+The backend owns the High-carb stage headline. Use the existing server headline path for the concise glucose-response title and retain the complete coherent response summary in supporting detail. The exposure population retains the selected comparison period and summary for findings projection. Non-high-carb headlines remain unchanged.
+
+On 2026-09-11, Connor reviewed the rendered mobile header and rejected its paragraph-length numerical title. This direct implementation correction supersedes the earlier instruction to put the full comparison summary in the stage headline. Post-sequence views use “Glucose after high-carb eating”; in-sequence views use an accurate during-eating title. The percentages, comparison, sample counts and caveats remain readable in supporting detail. The correction changes presentation, not the underlying comparison.
 
 ## Risk contract
 

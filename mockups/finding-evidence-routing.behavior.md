@@ -4063,3 +4063,25 @@ source scope beside all three aggregate intervals. The report and conclusions
 are unchanged. The shared response assertions check both the short title and
 exact full supporting summary in both shells. All other Finding titles remain
 unchanged. The coordinator records the aggregate OpenSpec amendment.
+
+
+### 2026-09-11 — #410 compact High-carb inspector amendment
+
+Connor explicitly rejected the supporting-detail wall and authorized a compact
+inspector. S155 and S158 now keep two selected-period cohort rows visible, with
+whole-percent TIR and each served integer count. A native “All three periods”
+disclosure starts collapsed; it retains all periods, whole mg/dL glucose SD,
+units, per-row counts, unavailable values and the complete server summary.
+The full summary is accessible when expanded, rather than duplicated initially.
+High-carb uses “During eating”; Repeat eating retains its existing presentation.
+The chart continues to identify its source population independently of the clock
+roster. Redundant High-carb header and roster-group counts are removed; the
+breadcrumb, verdict controls and occurrence total retain their distinct roles.
+
+The shared compact-inspector assertion runs through v1 S155/S158 and the existing
+v2 High-carb selection/scoped/null-period tests. It checks the two served rows,
+compact height, a 44px disclosure target, keyboard expansion, pointer collapse,
+all three periods, no horizontal overflow, full summary access, selection/clear
+persistence and Escape coexistence. Captures explicitly scroll the inspector into
+view in both shells. This is a sanctioned presentation change, not a detector or
+backend evidence change; final aggregate verification remains coordinator-owned.

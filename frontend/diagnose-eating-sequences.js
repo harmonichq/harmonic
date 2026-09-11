@@ -160,7 +160,7 @@ export function eatingSequenceComparison(caseFile) {
     status: detector.status, finding: chosen, window: report.window,
     context: repeat ? `Carb quintile ${chosen?.carb_quintile ?? '—'}` : chosen?.scope,
     periods: comparisons.map((row) => ({
-      period: row.period, label: PERIOD_LABELS[row.period],
+      period: row.period, label: !repeat && row.period === 'in_sequence' ? 'During eating' : PERIOD_LABELS[row.period],
       selected: row.period === chosen?.period, status: row.status,
       reference: row.reference, comparison: repeat ? row.repeat : row.high,
       referenceLabel: repeat ? `${row.reference_band} eating window` : row.reference_cohort,

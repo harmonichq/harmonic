@@ -562,6 +562,7 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
     <div class="statline"><b>${summary.claimed}</b> of <b>${summary.denominator}</b>
       ${FAMILY_LABEL[family]} in ${caseFile.window.label || '24 h'}
       · <b>${summary.denominator - summary.claimed}</b> not attributed</div>`;
+  if (finding.lever === 'high_carb_sequence') box.querySelector('.statline').remove();
   const clock = projection.alignment === 'clock' ? projection.clock : null;
   renderCaseClock(box, clock);
   if (clock) {
@@ -592,7 +593,9 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   host.insertAdjacentHTML('beforeend',
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
   renderOccurrenceRoster(host, [{
-    header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
+    header: caseFile.finding.lever === 'high_carb_sequence'
+      ? `<div class="ev-group"><b>${label}</b></div>`
+      : `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
     rows: rows.map((row) => ({
@@ -3412,35 +3415,61 @@ function boot(root, data, callbacks, signal) {
     renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
     if (caseFile.projection.kind === 'eating-sequence') {
       const comparison = eatingSequenceComparison(caseFile);
-      const caption = document.createElement('div');
-      caption.className = 'statline sequence-comparison';
-      caption.textContent = comparison.finding.summary;
       if (caseFile.finding.lever === 'high_carb_sequence') {
-        const facts = document.createElement('div');
-        facts.className = 'ev-detail case-facts sequence-supporting-detail';
-        const label = document.createElement('div');
-        label.className = 'lab';
-        label.textContent = 'Supporting comparison detail';
-        facts.append(label, caption);
-        for (const row of comparison.periods) {
-          const detail = document.createElement('div');
-          detail.className = 'vd';
-          const timing = row.period === 'in_sequence' ? 'During eating' : row.label;
-          const unavailable = row.status === 'insufficient';
-          const reference = `Other sequences (${row.referenceLabel})`;
-          const comparison = `Highest-carb fifth (${row.comparisonLabel})`;
-          const pip = document.createElement('span');
-          pip.className = 'pip';
-          pip.setAttribute('aria-hidden', 'true');
-          const copy = document.createElement('div');
-          copy.textContent = unavailable
-            ? `${timing} · unavailable · ${reference}: n = ${row.reference.n} · ${comparison}: n = ${row.comparison.n}`
-            : `${timing} · ${reference}: time in range ${row.reference.tir_pct}%, glucose SD ${row.reference.sd_mgdl} mg/dL, n = ${row.reference.n} · ${comparison}: time in range ${row.comparison.tir_pct}%, glucose SD ${row.comparison.sd_mgdl} mg/dL, n = ${row.comparison.n}`;
-          detail.append(pip, copy);
-          facts.append(detail);
-        }
+        const facts = document.createElement('section');
+        facts.className = 'ev-detail case-facts sequence-supporting-detail sequence-comparison';
+        const cohortRow = (row, name, cohort, full) => {
+          const line = document.createElement('div');
+          line.className = 'sequence-cohort';
+          const value = (metric, unit) => row.status === 'insufficient' || cohort[metric] == null
+            ? 'Unavailable' : `${Math.round(cohort[metric])}${unit}`;
+          const label = document.createElement('span');
+          label.textContent = name;
+          const figures = document.createElement('span');
+          figures.textContent = `${value('tir_pct', '% in range')}${full
+            ? ` · SD ${value('sd_mgdl', ' mg/dL')}` : ''}`;
+          const count = document.createElement('span');
+          count.textContent = `n ${cohort.n}`;
+          line.append(label, figures, count);
+          return line;
+        };
+        const periodRows = (row, full) => {
+          const period = document.createElement('div');
+          period.className = full ? 'sequence-period' : 'sequence-current';
+          if (full) period.dataset.period = row.period;
+          const label = document.createElement('div');
+          label.className = 'sequence-cap';
+          label.textContent = `${full ? '' : 'Comparison · '}${row.label}`;
+          period.append(label,
+            cohortRow(row, 'Highest-carb fifth', row.comparison, full),
+            cohortRow(row, 'Other sequences', row.reference, full));
+          return period;
+        };
+        const active = comparison.periods.find((row) => row.selected);
+        facts.append(periodRows(active, false));
+        const disclosure = document.createElement('details');
+        disclosure.open = Boolean(f.sequenceDetailOpen);
+        const control = document.createElement('summary');
+        control.textContent = 'All three periods';
+        control.setAttribute('aria-expanded', String(disclosure.open));
+        disclosure.addEventListener('toggle', () => {
+          f.sequenceDetailOpen = disclosure.open;
+          control.setAttribute('aria-expanded', String(disclosure.open));
+        });
+        disclosure.append(control);
+        for (const row of comparison.periods) disclosure.append(periodRows(row, true));
+        const caption = document.createElement('p');
+        caption.className = 'sequence-summary';
+        caption.textContent = comparison.finding.summary;
+        disclosure.append(caption);
+        facts.append(disclosure);
         host.append(facts);
-      } else host.append(caption);
+      } else {
+        const caption = document.createElement('div');
+        caption.className = 'statline sequence-comparison';
+        caption.textContent = comparison.finding.summary;
+        host.append(caption);
+      }
     }
     const eventComparison = caseFile.projection.alignment === 'event'
       && caseFile.projection.kind !== 'eating-sequence';

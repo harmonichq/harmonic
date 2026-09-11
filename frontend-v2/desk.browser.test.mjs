@@ -1,4 +1,4 @@
-import { captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
+import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -378,6 +378,7 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
       .windows.global.cases['finding:high_carb_sequence']);
     const stored = sequenceFixture.states.high_carb_sequence_in_sequence
       .windows.global.cases['finding:high_carb_sequence'];
+    await assertCompactSequenceDetail(page, stored, 'during');
     await assertSequenceSelection(page, stored, stored.event.occurrences.filter((row) => row.verdict === 'fired')[1]);
     await page.locator('#level .sequence-detail').waitFor();
     assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 1);
@@ -423,6 +424,7 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
     await page.locator('#tile-focal #ec-chart').waitFor();
     const stored = input.windows.global.cases[id];
     await assertSequenceResponse(page, stored);
+    await assertCompactSequenceDetail(page, stored);
     for (const occurrence of [stored.event.occurrences.filter((row) => row.verdict === 'fired')[1],
       stored.event.occurrences.find((row) => row.verdict === 'clean')]) {
       await assertSequenceSelection(page, stored, occurrence);
@@ -725,6 +727,7 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       await row.click();
       await page.locator('#level .sequence-comparison').waitFor();
       await assertSequenceResponse(page, stored);
+      if (name === 'null_period') await assertCompactSequenceDetail(page, stored, 'unavailable');
       await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
       await assertResponseAnchorGeometry(page);
       await captureEvidence(page, `high_carb_sequence-${name}-stage`);

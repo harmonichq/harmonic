@@ -151,3 +151,7 @@ scripts/public_scan_config.txt
 ! frontend-v2/c3.replay.test.js
 ! frontend-v2/c4.replay.test.js
 ! frontend-v2/follow-up.browser.test.mjs
+
+# Generated design-capture parity requires private artifacts. Public analyzer
+# fixture coverage remains in the separate public test module.
+! tests/test_eating_sequence_finding_fixture.py

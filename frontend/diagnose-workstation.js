@@ -3810,13 +3810,24 @@ function boot(root, data, callbacks, signal) {
     }
 
     chartEl.addEventListener('pointerdown', (ev) => begin('draw', ev), { signal });
-    /* Live evidence can repaint the chart's ECharts event target while its
-       root still owns this pointer capture. Keep the gesture's capture on the
-       chart, but observe its active pointer at document scope so that repaint
-       cannot turn a browser `lostpointercapture` into a cancelled window. */
+    /* Observe the active pointer at document scope while ECharts repaints the
+       chart. The chart remains its capture owner, preserving touch cancellation
+       and keeping its renderer from receiving moves on a replaced inner node. */
     document.addEventListener('pointermove', move, { capture: true, signal });
     document.addEventListener('pointerup', finish, { capture: true, signal });
     document.addEventListener('pointercancel', finish, { capture: true, signal });
+    chartEl.addEventListener('lostpointercapture', (ev) => {
+      /* ECharts releases an active mouse capture after setOption() redraws the
+         held chart. Its mouse button is still down, so restore that same chart
+         capture and let the document observer receive the terminal pointer.
+         Touch loss is an explicit cancellation contract and still restores the
+         previous Window through finish(). */
+      if (mode && ev.pointerId === pointerId && pointerType === 'mouse' && ev.buttons !== 0) {
+        chartEl.setPointerCapture(pointerId);
+        return;
+      }
+      finish(ev);
+    }, { signal });
     // the only hover feedback: the cursor says which gesture this press will be
     chartEl.addEventListener('pointermove', (ev) => {
       if (mode || ev.pointerType !== 'mouse') return;

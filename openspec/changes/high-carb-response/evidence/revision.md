@@ -72,3 +72,11 @@ The owned final-run process chain was stopped under the repository's budget rule
 
 Other measured budgets: showcase 1,417,216 bytes (limit25MiB), showcase drift0.31s (limit30s), focused QA58.25s (limit90s). Full pytest's400s ceiling remains unverified on this final revision. The previous full attempt on73212a8e finished in343.96s with2521passed,1failed,1skipped; its public-tree failure is fixed and independently verified in the compact correction, but that earlier run is not a successful full gate.
 
+
+## Runtime budget correction
+
+The user authorized resolving the runtime blocker and finishing the PR. Profiling localized it to the existing profile follow-up mean bootstrap, which performed 4,000 unused standard-deviation calculations. Commit `a06bbfbe` adds an opt-out to the shared metric function and uses it only for mean resampling. Default published panels and variability resampling remain complete; formulas, random seeds, sample counts, clinical decisions and the approved UI are unchanged.
+
+Three unprofiled pre-fix case runs took 12.73, 13.66 and 15.03 seconds. Post-fix runs took 10.87, 10.96 and 10.96 seconds; the independent coordinator run took 11.16 seconds. Both new regressions failed before the fix, then 31 focused tests passed. A full comparison equals the forced original computation including confidence intervals. Complete QA output matches except for its wall-clock generation timestamp. Instrumented profile totals did not improve and are not used as budget evidence.
+
+Both review axes converged without findings. The coordinator independently passed the two new regressions and the slow QA case. Final integrated verification resumes after this correction; the earlier budget breach and interrupted full run above remain historical failures rather than being relabeled as passes.

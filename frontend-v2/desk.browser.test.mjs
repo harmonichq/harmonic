@@ -17,7 +17,7 @@ import test, { after } from 'node:test';
 import { boundedWait } from './c2.replay.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput, populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
@@ -199,6 +199,11 @@ const VIEWPORTS = { '1280x720': { width: 1280, height: 720 }, '1440x900': { widt
 
 const runner = createBrowserRunner(() => chromium.launch());
 after(() => runner.close());
+const capture = async (page, name) => {
+  if (!process.env.OPUS_CAPTURE_DIR) return;
+  mkdirSync(process.env.OPUS_CAPTURE_DIR, { recursive: true });
+  await page.screenshot({ path: `${process.env.OPUS_CAPTURE_DIR}/${name}.png`, fullPage: false });
+};
 
 /** The built desk, served from disk with its API answered above. */
 async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate } = {}) {
@@ -315,13 +320,14 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
   } finally { await close(); }
 });
 
-test('a failed Focus read keeps a short visible Retry beside its explanation at compact width', async () => {
+for (const viewport of ['1280x720', '1440x900']) {
+test(`a failed Focus read keeps a short visible Retry beside its explanation at ${viewport}`, async () => {
   const desk = await openDesk({ beforeNavigate: async page => {
     // A malformed reply rejects the real shared client without adding a browser
     // console error that would conceal the Diagnose surface's own failure UI.
     await page.route('**/api/focus', route => route.fulfill({ status: 200,
       contentType: 'application/json', body: '{' }));
-  } });
+  }, viewport });
   const { page } = desk;
   try {
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
@@ -330,22 +336,34 @@ test('a failed Focus read keeps a short visible Retry beside its explanation at 
     await page.locator('#level .qrow[data-id^="pattern:"]').first().click();
     const status = page.locator('[data-focus-context]');
     const retry = page.locator('[data-focus-retry]');
+    const reason = page.locator('[data-focus-reason]');
     await Promise.all([status.waitFor({ state: 'visible' }), retry.waitFor({ state: 'visible' })]);
     assert.equal((await status.innerText()).trim(), 'Focus status unavailable');
     assert.equal((await retry.innerText()).trim(), 'Retry');
+    assert.equal(await status.getAttribute('role'), 'status');
+    assert.equal((await reason.innerText()).trim(), 'Focus status could not load. Retry the read.');
+    assert.equal(await retry.getAttribute('aria-describedby'), await reason.getAttribute('id'));
+    await capture(page, `focus-read-error-${viewport}`);
     const boxes = await page.evaluate(() => {
       const box = selector => { const rect = document.querySelector(selector)?.getBoundingClientRect(); return rect && { left: rect.left, right: rect.right, width: rect.width }; };
       const status = document.querySelector('[data-focus-context]');
+      const reason = document.querySelector('[data-focus-reason]');
+      const expected = document.createElement('span');
+      expected.style.color = 'var(--mk-warn)'; document.body.append(expected);
       return { crumb: box('.inspector .crumb'), status: box('[data-focus-context]'), retry: box('[data-focus-retry]'),
-        statusClipped: status.scrollWidth > status.clientWidth };
+        statusClipped: status.scrollWidth > status.clientWidth,
+        reasonColor: getComputedStyle(reason).color, warn: getComputedStyle(expected).color };
     });
     assert.ok(boxes.status.width > 0 && boxes.retry.width > 0, `Focus recovery controls must render: ${JSON.stringify(boxes)}`);
     assert.ok(boxes.retry.right <= boxes.crumb.right + 0.5, `Retry must remain within the Findings header: ${JSON.stringify(boxes)}`);
     assert.equal(boxes.statusClipped, false, `Focus explanation must remain readable: ${JSON.stringify(boxes)}`);
+    assert.equal(boxes.reasonColor, boxes.warn, `Focus retry reason must use warn ink: ${JSON.stringify(boxes)}`);
   } finally { await desk.close(); }
 });
+}
 
-test('a pending Plan keeps its reason and a compact View Plan route visible at 1280px', async () => {
+for (const viewport of ['1280x720', '1440x900']) {
+test(`a pending Plan keeps its reason and a compact View Plan route visible at ${viewport}`, async () => {
   const desk = await openDesk({ beforeNavigate: async page => {
     // This is a renderer boundary: the API-shaped admission owns both the
     // withholding decision and its reason. The desk only presents the existing
@@ -359,7 +377,7 @@ test('a pending Plan keeps its reason and a compact View Plan route visible at 1
       focuses: followUp.focuses, pinnable: [], pinnable_patterns: [], input_revision: followUp.input_revision,
       admission: { focus_pin: { available: false, reason: 'pending_plan' } },
     }) }));
-  } });
+  }, viewport });
   const { page } = desk;
   try {
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
@@ -370,6 +388,11 @@ test('a pending Plan keeps its reason and a compact View Plan route visible at 1
     assert.equal((await action.innerText()).trim(), 'View Plan');
     assert.equal(await action.getAttribute('title'),
       'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
+    const reason = page.locator('[data-focus-reason]');
+    assert.equal((await reason.innerText()).trim(),
+      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
+    assert.equal(await action.getAttribute('aria-describedby'), await reason.getAttribute('id'));
+    await capture(page, `focus-pending-plan-${viewport}`);
     assert.equal(await action.evaluate(node => node.scrollWidth > node.clientWidth), false,
       'the compact Plan action must be fully readable in the Findings header');
     await action.click();
@@ -377,6 +400,143 @@ test('a pending Plan keeps its reason and a compact View Plan route visible at 1
     assert.equal(new URL(page.url()).pathname, '/v2/changes');
   } finally { await desk.close(); }
 });
+}
+
+for (const viewport of ['1280x720', '1440x900']) {
+  test(`Filter matches Window while resting, expanded, and Findings-loading at ${viewport}`, async () => {
+    const desk = await openDesk({ viewport });
+    const { page } = desk;
+    const compact = () => page.evaluate(() => {
+      const fields = ['height', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+        'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'borderTopWidth',
+        'borderTopStyle', 'borderTopColor', 'borderRadius', 'backgroundColor', 'color', 'boxShadow'];
+      const read = node => Object.fromEntries(fields.map(field => [field, getComputedStyle(node)[field]]));
+      const filter = document.querySelector('#filter-trigger');
+      const selected = document.querySelector('#seg-window button[aria-pressed="true"]');
+      const resting = [...document.querySelectorAll('#seg-window button')]
+        .find(button => button.getAttribute('aria-pressed') === 'false');
+      return { loading: document.querySelector('#level')?.dataset.loading, filter: read(filter), selected: read(selected), resting: read(resting) };
+    });
+    try {
+      await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+      const resting = await compact();
+      assert.deepEqual(resting.filter, resting.resting, 'resting Filter and Window share compact-control material');
+      await capture(page, `filter-resting-${viewport}`);
+      await page.locator('#filter-trigger').click();
+      const expanded = await compact();
+      assert.deepEqual(expanded.filter, expanded.selected, 'expanded Filter and selected Window share compact-control material');
+      await capture(page, `filter-expanded-${viewport}`);
+      await page.locator('#filter-trigger').click();
+      let arrive;
+      const arrived = new Promise(resolve => { arrive = resolve; });
+      const gate = new Promise(() => {});
+      await page.route('**/api/diagnose/finding-case-file-preparation*', async route => { arrive(); await gate; await route.fallback(); });
+      try {
+        await page.getByRole('button', { name: 'Morning', exact: true }).click();
+        await arrived;
+        await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'true', null, { timeout: 30000 });
+        const loading = await compact();
+        assert.equal(loading.loading, 'true');
+        assert.deepEqual(loading.filter, loading.resting, 'loading Filter keeps Window compact-control material');
+        await capture(page, `filter-loading-${viewport}`);
+      } finally {
+        await page.unroute('**/api/diagnose/finding-case-file-preparation*');
+      }
+    } finally { await desk.close(); }
+  });
+}
+
+for (const viewport of ['1280x720', '1440x900']) {
+test(`an unrouted Focus withholding is status text with its served reason, never a dead-end button at ${viewport}`, async () => {
+  const desk = await openDesk({ beforeNavigate: async page => {
+    await page.route('**/api/guidance', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      disposition: 'none', selected: null, input_revision: followUp.input_revision,
+      candidates: [{ subject: 'pattern:over-treated-low', kind: 'pattern', title: 'Over-treated low',
+        collapse: 'remain_pattern', members: [{ subject: 'habit:over_treated_low' }] }],
+    }) }));
+    await page.route('**/api/focus', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      focuses: followUp.focuses, pinnable: [], pinnable_patterns: [], input_revision: followUp.input_revision,
+      admission: { focus_pin: { available: false, reason: 'served_unknown_reason' } },
+    }) }));
+  }, viewport });
+  const { page } = desk;
+  try {
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
+    const status = page.locator('[data-focus-context]');
+    await status.waitFor({ state: 'visible' });
+    assert.equal(await status.evaluate(node => node.tagName), 'SPAN');
+    assert.equal(await status.getAttribute('role'), 'status');
+    assert.equal(await status.getAttribute('aria-describedby'), await page.locator('[data-focus-reason]').getAttribute('id'));
+    assert.equal((await page.locator('[data-focus-reason]').innerText()).trim(),
+      'Harmonic is not offering a Focus from this read.');
+    await capture(page, `focus-unrouted-status-${viewport}`);
+  } finally { await desk.close(); }
+});
+}
+
+for (const viewport of ['1280x720', '1440x900']) {
+test(`a grouped comparison owns its cohort label once at ${viewport}`, async () => {
+  const desk = await openDesk({ viewport });
+  const { page } = desk;
+  try {
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#level .qrow[data-id^="pattern:"]').first().click();
+    await page.locator('#level [data-comparison-cohort]').first().waitFor({ state: 'visible' });
+    const rendered = await page.evaluate(() => ({
+      headings: [...document.querySelectorAll('#level .ev-group')].map(node => node.textContent?.trim()),
+      rows: [...document.querySelectorAll('#level [data-comparison-cohort]')].map(node => ({
+        description: node.querySelector('.only')?.textContent?.trim(), tier: node.querySelector('.tier')?.textContent?.trim(),
+      })),
+    }));
+    assert.ok(rendered.headings.some(Boolean), 'the grouped comparison keeps its served cohort heading');
+    assert.ok(rendered.rows.every(row => row.description && row.tier == null),
+      `cohort rows reserve their description cell instead of repeating the heading: ${JSON.stringify(rendered)}`);
+    await capture(page, `grouped-comparison-${viewport}`);
+  } finally { await desk.close(); }
+});
+}
+
+const EXPIRED_TRIAL_ID = 'expired-trial-synthetic';
+const expiredTrial = {
+  id: EXPIRED_TRIAL_ID, parameter: 'carb_ratio', slot: '12:00', changed_at: '2026-09-01 00:00:00', before: 5, after: 4.4,
+  original: {
+    context: { state: 'unavailable', reason: 'not_recorded' },
+    ending: { version: '386:1', state: 'available', kind: 'expired_unreviewed',
+      effective_at: '2026-09-08 00:00:00', recorded_at: '2026-09-08 00:00:00', conclusion: null,
+      assessment: { state: 'unavailable', reason: 'not_recorded' } },
+    late_conclusion: { state: 'unavailable' },
+  },
+};
+const expiredTrialRoster = {
+  input_revision: 7, admission: { state: 'unavailable', reason: 'not_recorded', focus_pin: { available: false, reason: 'not_recorded' } },
+  trials: [{ id: EXPIRED_TRIAL_ID, parameter: 'carb_ratio', slot: '12:00', changed_at: '2026-09-01 00:00:00', before: 5, after: 4.4,
+    ending: expiredTrial.original.ending, watch_disposition: 'expired' }], focuses: [],
+};
+for (const viewport of ['1280x720', '1440x900']) {
+test(`an expired Trial distinguishes its Later conclusion input from the immutable ending at ${viewport}`, async () => {
+  const desk = await openDesk({ viewport, address: `/v2/changes?subject=history&occurrence=record%3Atrial%3A${EXPIRED_TRIAL_ID}`,
+    beforeNavigate: async page => {
+      await page.route('**/api/verify/trials*', route => {
+        const selected = new URL(route.request().url()).searchParams.get('selected');
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(selected
+          ? { ...expiredTrialRoster, selected: expiredTrial }
+          : expiredTrialRoster) });
+      });
+    } });
+  const { page } = desk;
+  try {
+    const form = page.locator('[data-form="late-conclusion"]');
+    await form.waitFor({ state: 'visible', timeout: 30000 });
+    assert.equal((await form.locator('label').innerText()).trim(), 'Later conclusion');
+    assert.equal((await page.locator('[data-record-part="ending"] dt').filter({ hasText: 'Conclusion' }).count()), 1,
+      'the immutable ending keeps the only plain Conclusion label');
+    await capture(page, `late-conclusion-${viewport}`);
+  } finally { await desk.close(); }
+});
+}
 
 test('the chrome holds still across every destination, and one is current at a time', async () => {
   const { page, close } = await openDesk();
@@ -450,6 +610,32 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
     assert.equal(await page.getAttribute(`.gf-log-row[data-day-row="${rows[0].t}"]`, 'aria-pressed'), 'false');
   } finally { await close(); }
 });
+
+for (const viewport of ['1280x720', '1440x900']) {
+test(`a retained Day frame visibly marks its own loading work without unmounting the reading context at ${viewport}`, async () => {
+  const { page, close } = await openDesk({ address: '/v2/day', viewport });
+  try {
+    await page.locator('.gf-stage-day').waitFor({ state: 'visible' });
+    const previous = page.locator('[data-day="prev"]');
+    assert.equal(await previous.isDisabled(), false, 'the manufactured Day has a prior recorded day');
+    let arrive;
+    const arrived = new Promise(resolve => { arrive = resolve; });
+    const gate = new Promise(() => {});
+    await page.route('**/api/model-view*', async route => { arrive(); await gate; await route.fallback(); });
+    try {
+      await previous.click();
+      await arrived;
+      const retained = await page.evaluate(() => {
+        const stage = document.querySelector('.gf-stage-day');
+        return { busy: stage?.getAttribute('aria-busy'), loading: stage?.querySelector('.gf-day-loading')?.getAttribute('aria-label'),
+          reading: Boolean(document.querySelector('.gf-reading')), navigation: Boolean(document.querySelector('#gf-nav')) };
+      });
+      assert.deepEqual(retained, { busy: 'true', loading: 'Loading Day', reading: true, navigation: true });
+      await capture(page, `day-retained-loading-${viewport}`);
+    } finally { await page.unroute('**/api/model-view*'); }
+  } finally { await close(); }
+});
+}
 
 test('a canonical Day address reloads through the built shell and returns through its canonical Diagnose door', async () => {
   const address = `/v2/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;

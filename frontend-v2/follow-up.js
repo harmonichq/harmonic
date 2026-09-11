@@ -459,10 +459,10 @@ export function maturitySection(detail) {
  * mouth: the control stays disabled until the text is non-blank, and nothing is
  * pre-filled (HV2-25).
  */
-export function conclusionForm(state, { label, note, form = 'finish' }) {
+export function conclusionForm(state, { label, note, form = 'finish', fieldLabel = 'Conclusion' }) {
   const written = state.conclusion || '';
   const field = form === 'finish' ? 'conclusion' : `${form}-conclusion`;
-  return `<form id="${e(form)}-form" data-form="${e(form)}"><label for="${e(field)}">Conclusion</label><textarea id="${e(field)}" required aria-required="true">${e(written)}</textarea><div class="gf-actions"><button class="gf-btn primary" type="submit" ${written.trim() ? '' : 'disabled'}>${e(label)}</button></div></form><p class="gf-note">${e(note)}</p>`;
+  return `<form id="${e(form)}-form" data-form="${e(form)}"><label for="${e(field)}">${e(fieldLabel)}</label><textarea id="${e(field)}" required aria-required="true">${e(written)}</textarea><div class="gf-actions"><button class="gf-btn primary" type="submit" ${written.trim() ? '' : 'disabled'}>${e(label)}</button></div></form><p class="gf-note">${e(note)}</p>`;
 }
 
 /**

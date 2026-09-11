@@ -68,6 +68,23 @@ test('selected detail describes its glucose trace in product language', () => {
   assert.doesNotMatch(source, /Occurrence's server-owned trace/);
 });
 
+test('#404 · grouped comparison names its cohort once while case rosters keep their varying tier', () => {
+  const source = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+  const comparison = source.slice(source.indexOf('function renderEventComparisonRoster'),
+    source.indexOf('function renderClearTrace'));
+  const cases = source.slice(source.indexOf('function renderCaseRoster'),
+    source.indexOf('function renderEventComparisonRoster'));
+  assert.ok(comparison && cases, 'the two roster owners remain distinct');
+  assert.match(comparison, /<b>\$\{cohort\.name\}<\/b>/,
+    'the grouped comparison owns the constant cohort label in its heading');
+  assert.match(comparison, /html: `<span class="when">\$\{when\}<\/span><span class="only">\$\{detail\}<\/span>`/,
+    'comparison rows reserve their compact description column for occurrence evidence');
+  assert.doesNotMatch(comparison, /<span class="tier">\$\{cohort\.name\}<\/span>/,
+    'comparison rows do not repeat the cohort that their heading already names');
+  assert.match(cases, /<span class="tier">\$\{label\}<\/span>/,
+    'case rows keep their row-varying tier label');
+});
+
 test('C44/C56 replay poses enter the existing Findings queue once', () => {
   const source = readFileSync(new URL('./diagnose-workstation-behavior.replay.mjs', import.meta.url), 'utf8');
   for (const story of ['C44', 'C56']) {

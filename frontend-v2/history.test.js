@@ -163,6 +163,7 @@ test('an expired Trial exposes a separately dated conclusion form, but an ordina
   assert.match(pending, /data-late-conclusion="pending"/);
   assert.match(pending, /data-form="late-conclusion"/);
   assert.match(pending, /id="late-conclusion-conclusion"/);
+  assert.match(pending, /<label for="late-conclusion-conclusion">Later conclusion<\/label>/);
   assert.match(pending, /A later synthetic observation\./);
   assert.match(pending, /does not change its saved ending or resume the Trial/);
   assert.equal(lateConclusionSection({ state: 'unavailable' }), '');

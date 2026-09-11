@@ -2214,6 +2214,13 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       const page = await openApp(browser, { state: 'drawn', appSource: 'fixture' });
       const trigger = page.getByRole('button', { name: /Filter/ });
       const drawnBefore = await page.locator('#seg-window [data-follow]').innerText();
+      const resting = await trigger.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { border: style.borderTopWidth, background: style.backgroundColor, padding: style.paddingTop };
+      });
+      assert.equal(resting.border, '1px', 'the v1 Filter keeps its shipped outlined resting control');
+      assert.notEqual(resting.background, 'rgba(0, 0, 0, 0)', 'the v1 Filter is not a browser-default bare word');
+      await shot(page, 'opus-design', 'v1-filter-resting', { width: 1280, height: 720 });
       await trigger.click();
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
@@ -2229,6 +2236,10 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       assert.equal(await page.getByRole('menu').isVisible(), true,
         'Space changes a Sift choice without closing the menu');
       assert.equal(await trigger.innerText(), 'Filter 1');
+      assert.equal(await trigger.getAttribute('data-filter-active'), '',
+        'an active Sift is carried as an explicit visual state, not only a digit in the label');
+      const active = await trigger.evaluate((node) => getComputedStyle(node).boxShadow);
+      assert.notEqual(active, 'none', 'the active Sift count has visible weight');
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Lows ')), true);

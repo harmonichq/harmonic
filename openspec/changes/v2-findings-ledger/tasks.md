@@ -71,4 +71,4 @@ change's source, evidence ledger and INDEX updates. Base capability specs are
 folded from these deltas during the established post-merge archive; do not
 rewrite them early. Historical decisions retain their original text.
 
-- [ ] 3.6 Apply the operator-requested Opus 5 high design critique, preserve inherited behavior, and verify the revised states with synthetic captures and public-interface checks.
+- [x] 3.6 Apply the operator-requested Opus 5 high design critique, preserve inherited behavior, and verify the revised states with synthetic captures and public-interface checks.

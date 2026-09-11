@@ -416,6 +416,14 @@ test('the conclusion is required and nothing is put in the wearer’s mouth', ()
   assert.doesNotMatch(written, /type="submit" disabled/);
 });
 
+test('a separately dated conclusion can name its input without changing the ordinary ending form', () => {
+  const form = conclusionForm({ conclusion: '' }, {
+    form: 'late-conclusion', label: 'Record later conclusion', fieldLabel: 'Later conclusion', note: 'x',
+  });
+  assert.match(form, /<label for="late-conclusion-conclusion">Later conclusion<\/label>/);
+  assert.match(form, />Record later conclusion<\/button>/);
+});
+
 test('a failed write keeps the wearer’s words and offers a Retry, recording nothing', () => {
   const html = saveErrorBlock({
     conclusion: 'It held overnight.',

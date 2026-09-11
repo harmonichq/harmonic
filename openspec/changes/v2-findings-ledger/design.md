@@ -244,3 +244,11 @@ keep their individual tier labels and the existing truncation priority. Compact
 control sizing remains grounded in the actual current labels and both locked
 viewports. Clinical readiness, classification, and lifecycle semantics are not
 changed by this design pass.
+
+Focused synthetic browser evidence covers the revised Filter in resting,
+expanded, and Findings-loading states; the visible retry, routed withholding,
+and non-routed status states; grouped comparison and Later conclusion; and the
+retained Day frame at both locked desktop sizes. No Filter caret was added: the
+corrected visual review found no resting affordance problem once the control
+shared the compact Window treatment. Existing Filter keyboard and drawn-Window
+Escape behavior remains independently covered.

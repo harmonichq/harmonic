@@ -326,6 +326,11 @@ owns rendered direction review and the three-viewport evidence matrix.
 
 Window and Filter share compact control material in resting, expanded, and
 Findings-loading states. Diagnose, Changes, and Day share one reading rail;
-served long roster text truncates before its cohort; and selected Pattern glucose
-and markers render only from the served case file. Focus admission remains
-backend-owned: a withheld child offers only its uniquely served parent context.
+grouped comparison headings own their constant cohort label so each row keeps
+its event description, while mixed case rows retain their varying tier before
+their long text truncates. Selected Pattern glucose and markers render only from
+the served case file. Focus admission remains backend-owned: a withheld child
+offers only its uniquely served parent context and states the served reason.
+The 2026-09-11 operator request for Filter to match the resized Window control
+is carried by this revise record; no new caret is needed because visual review
+found the resting v2 control readable as Window's peer.

@@ -98,12 +98,16 @@ export function mount(host, deps = {}) {
   if (state.loading) { host.innerHTML = loadingFrame('Focus'); return; }
   const offered = entry.candidate(subject);
   const candidate = state.source?.candidates?.find(row => row.subject === subject);
-  const copy = offered
+  const copy = state.readFailure
+    ? 'Focus status could not load. Retry the read.'
+    : offered
     ? `${e(candidate?.title || offered.subject)}. This Pattern is ready to start a Focus.`
     : e(state.roster?.admission?.focus_pin?.reason || 'This Pattern is not currently offered as a Focus.');
   host.innerHTML = emptyFrame('Changes', 'Start a Pattern Focus', copy,
     `${offered ? `<button class="gf-btn primary" data-focus="${state.failure ? 'retry-pin' : 'pin'}" ${state.saving ? 'disabled' : ''}>${state.failure ? 'Retry' : 'Start Focus'}</button>` : '<button class="gf-btn" data-focus="refresh">Retry read</button>'}<button class="gf-btn" data-destination-action="changes">Cancel</button>`,
-    state.failure ? `Starting the Focus failed: ${e(state.failure.message)}. No successful pin was confirmed.` : 'No pump setting changes.');
+    state.readFailure ? 'Focus status could not load. Retry the read.'
+      : state.failure ? `Starting the Focus failed: ${e(state.failure.message)}. No successful pin was confirmed.`
+        : 'No pump setting changes.');
   const start = host.querySelector('[data-focus="pin"], [data-focus="retry-pin"]');
   if (start) start.onclick = async () => {
     if (state.failure) await entry.read();

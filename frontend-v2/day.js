@@ -475,12 +475,12 @@ function mount(host, { context, retainFrame = false }) {
   const held = monthKey(memory.date);
   if (!memory.months.has(held)) {
     read(`month:${held}`, () => loadMonth(held));
-    if (retainFrame) { host.querySelector('.gf-stage-day')?.setAttribute('aria-busy', 'true'); return; }
+    if (retainFrame) { markRetainedFrameLoading(host); return; }
     host.innerHTML = loadingFrame('Day'); return;
   }
   if (memory.day?.iso !== memory.date) {
     read(`day:${memory.date}`, () => loadDay(memory.date));
-    if (retainFrame) { host.querySelector('.gf-stage-day')?.setAttribute('aria-busy', 'true'); return; }
+    if (retainFrame) { markRetainedFrameLoading(host); return; }
     host.innerHTML = loadingFrame('Day'); return;
   }
 
@@ -488,6 +488,18 @@ function mount(host, { context, retainFrame = false }) {
   if (!(retainFrame && patchDayFrame(host, markup))) host.innerHTML = markup;
   bind(host);
   mountCharts(host);
+}
+
+function markRetainedFrameLoading(host) {
+  const stage = host.querySelector('.gf-stage-day');
+  if (!stage) return;
+  stage.setAttribute('aria-busy', 'true');
+  if (stage.querySelector('.gf-day-loading')) return;
+  const loading = stage.ownerDocument.createElement('div');
+  loading.className = 'gf-loading gf-day-loading';
+  loading.setAttribute('role', 'status');
+  loading.setAttribute('aria-label', 'Loading Day');
+  stage.append(loading);
 }
 
 /** Seat the Day desk on the shell. Called once, by the entry module. */

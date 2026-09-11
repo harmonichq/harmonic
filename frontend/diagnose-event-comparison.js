@@ -92,15 +92,21 @@ function selectedSeries(surface, detail) {
      Its trace and each served marker therefore travel together into the focal
      option.  A marker without its own glucose value seats at the nearest
      observed selected-trace point; the server still owns its time and kind. */
-  const atMinute = (minute) => detail.glucose.reduce((nearest, point) => (
+  const observed = detail.glucose.filter((point) => Number.isFinite(point?.minute)
+    && Number.isFinite(point?.bg));
+  const atMinute = (minute) => observed.reduce((nearest, point) => (
     !nearest || Math.abs(point.minute - minute) < Math.abs(nearest.minute - minute) ? point : nearest
-  ), null)?.bg ?? 120;
-  const markers = (detail.markers || []).map((marker, index) => ({
-    id: `selected:marker:${index}`, name: `Selected ${marker.kind} marker`, type: 'scatter',
-    silent: true, symbol: 'circle', symbolSize: 7,
-    data: [[marker.minute, Number.isFinite(marker.bg) ? marker.bg : atMinute(marker.minute)]],
-    itemStyle: { color: css(surface, '--ec-focus') }, z: 7,
-  }));
+  ), null)?.bg;
+  const markers = (detail.markers || []).flatMap((marker, index) => {
+    const bg = Number.isFinite(marker.bg) ? marker.bg : atMinute(marker.minute);
+    // A marker may name an event without a glucose reading. The focal chart
+    // does not fabricate a clinical value to place it; it draws only served
+    // glucose or a real observed point from the selected trace.
+    if (!Number.isFinite(bg)) return [];
+    return [{ id: `selected:marker:${index}`, name: `Selected ${marker.kind} marker`, type: 'scatter',
+      silent: true, symbol: 'circle', symbolSize: 7,
+      data: [[marker.minute, bg]], itemStyle: { color: css(surface, '--ec-focus') }, z: 7 }];
+  });
   return [...trace, ...markers];
 }
 

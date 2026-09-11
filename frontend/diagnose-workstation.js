@@ -628,8 +628,10 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
         return {
           id: row.id,
           dataset: { comparisonCohort: cohort.key },
-          html: `<span class="when">${when}</span><span class="only">${detail}</span>
-            <span class="tier">${cohort.name}</span>`,
+          // The cohort heading already owns this constant label. Keeping only
+          // the occurrence description here leaves the narrow rail room for
+          // the evidence that changes from row to row.
+          html: `<span class="when">${when}</span><span class="only">${detail}</span>`,
         };
       }),
       empty: '<div class="empty">No occurrences in this population.</div>',
@@ -3109,6 +3111,7 @@ function boot(root, data, callbacks, signal) {
 
     const active = filterActiveGroups();
     trigger.textContent = active ? `Filter ${active}` : 'Filter';
+    trigger.toggleAttribute('data-filter-active', active > 0);
     trigger.setAttribute('aria-label', active
       ? `Filter, ${active} active ${active === 1 ? 'group' : 'groups'}`
       : 'Filter, no active groups');

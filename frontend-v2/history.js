@@ -246,7 +246,8 @@ export function lateConclusionSection(conclusion, { eligible = false, state = {}
   return `<section class="gf-section" data-record-part="late-conclusion" data-late-conclusion="pending"><h3>Later conclusion <span class="meta">after expiry</span></h3>
     <p class="gf-meta">Record what you observed after this Trial expired. This does not change its saved ending or resume the Trial.</p>
     ${saveErrorBlock(formState, { form: 'late-conclusion' })}
-    ${conclusionForm(formState, { form: 'late-conclusion', label: 'Record later conclusion', note: 'Nothing here is sent to your pump.' })}</section>`;
+    ${conclusionForm(formState, { form: 'late-conclusion', label: 'Record later conclusion',
+      fieldLabel: 'Later conclusion', note: 'Nothing here is sent to your pump.' })}</section>`;
 }
 
 /** The observed change: the setting, and what it became. */

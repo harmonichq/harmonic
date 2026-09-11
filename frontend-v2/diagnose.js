@@ -220,6 +220,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root?.querySelector('[data-start-focus]')?.remove();
     root?.querySelector('[data-focus-context]')?.remove();
     root?.querySelector('[data-focus-retry]')?.remove();
+    root?.querySelector('[data-focus-reason]')?.remove();
     root?.querySelector('[data-action="watch"]')?.remove();
     if (!seated) return;
     if (entry.from === 'changes' && payload?.watched) {
@@ -235,6 +236,11 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     if (!offered) {
       if (!context) return;
       const crumb = root.querySelector('header.crumb');
+      const reason = root.ownerDocument.createElement('span');
+      reason.className = 'focus-reason'; reason.id = 'focus-context-reason';
+      reason.dataset.focusReason = context.subject;
+      reason.dataset.focusReasonKind = context.retry ? 'retry' : 'withheld';
+      reason.textContent = context.reason;
       if (context.retry) {
         // A read error needs an explanation and a reachable recovery action.
         // Keeping Retry its own compact control prevents a long status label
@@ -242,19 +248,23 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         const status = root.ownerDocument.createElement('span');
         status.className = 'focus-context'; status.dataset.focusContext = context.subject;
         status.textContent = 'Focus status unavailable'; status.title = context.reason;
+        status.setAttribute('role', 'status');
         const retry = root.ownerDocument.createElement('button');
         retry.className = 'gf-btn focus-retry'; retry.dataset.focusRetry = context.subject;
         retry.textContent = 'Retry'; retry.title = context.reason;
+        retry.setAttribute('aria-describedby', reason.id);
         retry.onclick = () => readFocusOptions().then(showFocusAction);
-        crumb?.append(status, retry);
+        crumb?.append(status, retry, reason);
       } else {
-        const button = root.ownerDocument.createElement('button');
-        button.className = 'gf-btn focus-context'; button.dataset.focusContext = context.subject;
-        button.textContent = context.action;
-        button.title = context.reason;
-        button.onclick = () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
-          window: selectedWindow });
-        crumb?.append(button);
+        const action = root.ownerDocument.createElement(context.route ? 'button' : 'span');
+        action.className = context.route ? 'gf-btn focus-context' : 'focus-context';
+        action.dataset.focusContext = context.subject;
+        action.textContent = context.action;
+        action.title = context.reason;
+        action.setAttribute('aria-describedby', reason.id);
+        if (context.route) action.onclick = () => navigate('changes', context.route);
+        else action.setAttribute('role', 'status');
+        crumb?.append(action, reason);
       }
       return;
     }

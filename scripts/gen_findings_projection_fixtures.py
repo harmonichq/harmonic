@@ -73,6 +73,7 @@ from ciq_autotune.findings_projection import (  # noqa: E402
     WindowQuery,
     prepare_findings_projection,
 )
+from ciq_autotune.window_membership import outcome_minute  # noqa: E402
 from ciq_autotune.model import _slot_label  # noqa: E402
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow  # noqa: E402
 from ciq_autotune.insulin import InsulinActivity, basal_microdoses  # noqa: E402
@@ -614,12 +615,16 @@ def exposures():
                 "attributed_levers",
                 [item["cause_lever"]] if item["cause_lever"] is not None else [],
             )
-    return {
+    payload = {
         "window": {"start": (DAY - timedelta(days=WINDOW_DAYS)).isoformat(),
                    "end": DAY.isoformat()},
         "exposures": {name: _rollup(occurrences, driven)
                       for name, occurrences in families.items()},
     }
+    over_treated["fired"]["outcome_minute"] = outcome_minute(
+        over_treated["fired"], payload,
+    )
+    return payload
 
 
 def _rollup(occurrences, driven):

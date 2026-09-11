@@ -241,6 +241,11 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
 
         import ciq_autotune.window_membership as module
 
+        next(
+            occurrence
+            for occurrence in self.projection._exposures["exposures"]["lows"]["occurrences"]
+            if occurrence["cause_lever"] == Lever.OVER_TREATED_LOW.value
+        ).pop("outcome_minute")
         with patch.object(module, "outcome_kind", lambda lever: None):
             rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
         self.assertIn("Over-treated low", _titles(rows, "finding"))
@@ -1591,6 +1596,9 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
+        self.assertEqual(fired["t"], "2026-08-13 13:55:00")
+        self.assertEqual(rebound["t"], "2026-08-13 14:35:00")
+        self.assertEqual(fired["outcome_minute"], 14 * 60 + 35)
 
 
 class HeadlineTest(unittest.TestCase):
@@ -2054,6 +2062,25 @@ class ExplicitOutcomeWitnessTest(unittest.TestCase):
             for extra in ({}, {"outcome_minute": None}):
                 self.assertIsNone(outcome_minute(
                     {"cause_lever": "high_carb_sequence", "t": "2026-08-01 12:00:00", **extra}, {}))
+
+    def test_fallback_uses_latest_timestamp_across_midnight_not_largest_clock_minute(self):
+        from ciq_autotune.window_membership import outcome_minute
+
+        occurrence = {
+            "cause_lever": "over_treated_low", "ep_id": "overnight-rebound",
+            "t": "2026-08-01 22:30:00",
+        }
+        exposures = {"exposures": {
+            "lows": {"occurrences": [occurrence]},
+            "highs": {"occurrences": [
+                {"ep_id": "overnight-rebound", "kind": "high",
+                 "t": "2026-08-01 23:30:00"},
+                {"ep_id": "overnight-rebound", "kind": "high",
+                 "t": "2026-08-02 00:30:00"},
+            ]},
+        }}
+
+        self.assertEqual(outcome_minute(occurrence, exposures), 30)
 
     def test_habit_only_member_is_nested_without_becoming_a_rate_lever(self):
         projection = gen.projection()

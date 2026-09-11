@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from .analyzers.scenario.evaluation import evaluate, SEQUENCE_LEVERS
 from .rescue_evidence import eligible_carb_entries
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
-from .analyzers.scenario.levers import Lever, title
+from .analyzers.scenario.levers import Lever, outcome_kind, title
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.model_view import _build_episode_view, _is_driver
 from .analyzers.scenario_config import ScenarioConfig
@@ -114,6 +114,16 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
     for index, evaluated_episode in enumerate(evaluated.episodes):
         episode_anchors = evaluated_episode.anchors
         attribution = evaluated_episode.attribution
+        landing_kind = outcome_kind(attribution.lever)
+        landing = max(
+            (item for item in episode_anchors.anchors
+             if item.kind.value == landing_kind),
+            key=lambda item: item.t,
+            default=None,
+        )
+        outcome_minute = (
+            landing.t.hour * 60 + landing.t.minute if landing is not None else None
+        )
         episode = _build_episode_view(
             index, episode_anchors, window_cgm, window_bolus, window_basal,
             isf=isf, scenario_config=scenario_config,
@@ -130,7 +140,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             ), None)
             if meal is not None:
                 target_attributions.append(
-                    ("meals", meal.t, attribution.lever.value)
+                    ("meals", meal.t, attribution.lever.value,
+                     outcome_minute)
                 )
         elif attribution.lever is Lever.CORRECTION_STACKING:
             reached_low = min(
@@ -145,7 +156,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
             )
             if reached_low is not None:
                 target_attributions.append(
-                    ("lows", reached_low.t, attribution.lever.value)
+                    ("lows", reached_low.t, attribution.lever.value,
+                     outcome_minute)
                 )
         for source_anchor, anchor in zip(
             sorted(episode_anchors.anchors, key=lambda item: item.t), episode["anchors"],
@@ -185,11 +197,13 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
                 ],
                 "ep_id": episode["id"],
             }
+            if lever is not None and outcome_minute is not None:
+                occurrence["outcome_minute"] = outcome_minute
             if cause_occurrence_id is not None:
                 occurrence["cause_occurrence_id"] = cause_occurrence_id
             family["occurrences"].append(occurrence)
 
-    for family_name, target_t, lever in target_attributions:
+    for family_name, target_t, lever, outcome_minute in target_attributions:
         target = next(
             (
                 item for item in families[family_name]["occurrences"]
@@ -199,6 +213,8 @@ def build_exposures(store, *, window_days: int = 30) -> dict:
         )
         if target is not None and lever not in target["attributed_levers"]:
             target["attributed_levers"].append(lever)
+            if outcome_minute is not None:
+                target["outcome_minute"] = outcome_minute
 
     for owned in sequence_associations:
         for meal in families["meals"]["occurrences"]:

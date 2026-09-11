@@ -604,6 +604,63 @@ def test_pattern_case_uses_one_exposure_population_and_existing_member_states():
     assert prepared.case("finding:late_bolus", "event", None) is not None
 
 
+def test_circular_pattern_projection_and_case_share_explicit_population():
+    def meal(ep_id, stamp, outcome_minute, lever=None):
+        return {
+            "ep_id": ep_id, "t": stamp, "date": stamp[:10], "kind": "meal",
+            "label": "Meal", "bg": 120, "worst_bg": 220,
+            "state": "fired" if lever else "clean", "attributed": lever is not None,
+            "attributed_levers": [lever] if lever else [], "cause_lever": lever,
+            "cause_title": lever.replace("_", " ").title() if lever else None,
+            "text": "Synthetic bounded episode evidence.", "verdicts": [],
+            "outcome_minute": outcome_minute,
+        }
+
+    occurrences = [
+        meal("included-at-start", "2026-08-01 22:00:00", 23 * 60 + 30,
+             "carb_undercount"),
+        meal("included-after-midnight", "2026-08-01 23:30:00", 0, "late_bolus"),
+        meal("excluded-at-end", "2026-08-01 23:45:00", 60, "carb_undercount"),
+        meal("excluded-before-start", "2026-08-02 00:15:00", 23 * 60 + 29),
+    ]
+    exposures = {"exposures": {"meals": {
+        "n": 4, "attributed": 3, "clean": 1, "uncaused": 1,
+        "levers": ["carb_undercount", "late_bolus"],
+        "by_cause": {"Carb Undercount": 2, "Late Bolus": 1},
+        "occurrences": occurrences,
+    }}}
+    scenarios = {"patterns": [
+        {
+            "lever": lever, "priority": priority,
+            "confidence": {"k": 12, "n": 20, "lo": 0.39, "hi": 0.78},
+            "guidance": {"action_id": lever, "seriousness": "moderate"},
+        }
+        for lever, priority in (("carb_undercount", 40), ("late_bolus", 35))
+    ], "low_confidence": [], "episodes": {}}
+    query = WindowQuery.clock(23 * 60 + 30, 60)
+
+    with Store.open(":memory:") as store:
+        prepared = finding_case_file.prepare(
+            store, query=query, version=0, analysis={"window_days": 30},
+            exposures=exposures, scenarios=scenarios,
+            analysis_generation="circular-pattern:0",
+        )
+
+    row = next(row for row in prepared.findings["rows"]
+               if row["id"] == "pattern:highs_after_meals")
+    assert (row["pattern"]["k"], row["pattern"]["n"]) == (2, 2)
+    case = prepared.case("pattern:highs_after_meals", "clock", None)
+    assert case["summary"] == {"claimed": 2, "denominator": 2, "noun": "meals"}
+    assert [item["anchor"]["t"] for item in case["occurrences"]] == [
+        "2026-08-01 22:00:00", "2026-08-01 23:30:00",
+    ]
+    selected = prepared.case(
+        "pattern:highs_after_meals", "clock", case["occurrences"][1]["id"],
+    )
+    assert selected["selection"]["state"] == "selected"
+    assert selected["selection"]["detail"]["anchor"]["t"] == "2026-08-01 23:30:00"
+
+
 def test_pattern_case_is_chartless_without_a_served_habit_or_population():
     setting_only = _pattern_findings(
         "overnight_lows_no_iob", (), k=1, n=8, rate_levers=(),

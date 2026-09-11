@@ -115,26 +115,26 @@ def outcome_window_exposures(exposures: dict, query: WindowQuery) -> dict:
     return scoped
 
 
-def _episode_anchors(families: dict) -> Dict[str, List[Tuple[int, str]]]:
-    anchors: Dict[str, List[Tuple[int, str]]] = {}
+def _episode_anchors(families: dict) -> Dict[str, List[Tuple[str, str]]]:
+    anchors: Dict[str, List[Tuple[str, str]]] = {}
     for family, payload in families.items():
         kind = _KIND_FOR_FAMILY.get(family, family)
         for occurrence in payload.get("occurrences") or []:
             anchors.setdefault(occurrence.get("ep_id"), []).append(
-                (_minute_of(occurrence["t"]), occurrence.get("kind", kind)))
+                (occurrence["t"], occurrence.get("kind", kind)))
     return anchors
 
 
-def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[int, str]]]) -> Optional[int]:
+def _outcome_minute(occurrence: dict, anchors: Dict[str, List[Tuple[str, str]]]) -> Optional[int]:
     if occurrence.get("outcome_minute") is not None:
         return occurrence["outcome_minute"]
     kind = outcome_kind(occurrence.get("cause_lever"))
     if kind == "sequence":
         return None
     if kind is not None:
-        landings = [minute for minute, anchor_kind
+        landings = [stamp for stamp, anchor_kind
                     in anchors.get(occurrence.get("ep_id"), [])
                     if anchor_kind == kind]
         if landings:
-            return max(landings)
+            return _minute_of(max(landings))
     return _minute_of(occurrence["t"])

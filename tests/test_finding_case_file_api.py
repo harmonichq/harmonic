@@ -183,7 +183,7 @@ class FindingCaseFileRouteTest(unittest.TestCase):
         from scripts.qa_e2e_cases import QA_CASES, execute_case, materialize_case
 
         qa_case = next(case for case in QA_CASES if case.name == "pattern-near-tie")
-        query = WindowQuery.clock(14 * 60, 21 * 60)
+        query = WindowQuery.clock(18 * 60, 24 * 60)
         with tempfile.NamedTemporaryFile(suffix=".sqlite") as database:
             with Store.open(database.name) as store:
                 materialize_case(store, qa_case)
@@ -214,6 +214,13 @@ class FindingCaseFileRouteTest(unittest.TestCase):
             "claimed": row["pattern"]["k"], "denominator": row["pattern"]["n"],
             "noun": "meals",
         })
+        self.assertEqual(case["summary"], {
+            "claimed": 3, "denominator": 3, "noun": "meals",
+        })
+        self.assertEqual(
+            [item["anchor"]["t"] for item in case["occurrences"]],
+            ["2024-05-24 19:00:00", "2024-05-25 19:00:00", "2024-05-27 19:00:00"],
+        )
         self.assertEqual(len(case["occurrences"]), row["pattern"]["n"])
         self.assertEqual(case["window"], query.to_dict())
         selected_id = case["occurrences"][0]["id"]

@@ -159,3 +159,27 @@ alter admission or clinical policy, prewarm, add a recovery endpoint, or make a
 GET mutate state. A committed input write invalidates the cache even if its
 subsequent reconciliation fails. The shared v2 router canonically writes
 `/v2/diagnose`, `/v2/changes`, and `/v2/day`; legacy `?to=` links remain reads.
+
+## Review correction evidence — 2026-09-11
+
+The review correction closes the late-conclusion reader journey through the
+existing authenticated client on the exact expired Trial record. Its retry
+re-reads that record before retrying, retains one request identity, and returns
+to that same record after success. A changed conclusion under a new request
+identity is an explicit conflict; only the same saved payload is idempotent.
+
+Scoped Pattern member rows now derive their ownership and count from the
+producer-owned selected outcome population. This prevents a scoped parent from
+claiming a child that exists only in another outcome window.
+
+The shared evidence-return context prefers a retained `outcome_window`,
+including circular spans. The built shell serves all canonical v2 destinations;
+legacy query links remain accepted. Desk render cleanup also retains one
+utility strip across canonical reload/return cycles. Focus status failures are
+honest at both cold and refresh reads: no stale offer survives, and a selected
+Pattern receives a compact Retry. Pending-Plan and active-Focus withholding use
+the existing plain-language owner and route to their existing contexts.
+
+Focused synthetic Node, backend, and built-shell browser checks cover these
+corrections. The coordinator's complete two-size ledger, generator, and
+delivery proof remains pending; task 3.5 deliberately remains open.

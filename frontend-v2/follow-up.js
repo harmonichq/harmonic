@@ -459,19 +459,20 @@ export function maturitySection(detail) {
  * mouth: the control stays disabled until the text is non-blank, and nothing is
  * pre-filled (HV2-25).
  */
-export function conclusionForm(state, { label, note }) {
+export function conclusionForm(state, { label, note, form = 'finish' }) {
   const written = state.conclusion || '';
-  return `<form id="finish-form" data-form="finish"><label for="conclusion">Conclusion</label><textarea id="conclusion" required aria-required="true">${e(written)}</textarea><div class="gf-actions"><button class="gf-btn primary" type="submit" ${written.trim() ? '' : 'disabled'}>${e(label)}</button></div></form><p class="gf-note">${e(note)}</p>`;
+  const field = form === 'finish' ? 'conclusion' : `${form}-conclusion`;
+  return `<form id="${e(form)}-form" data-form="${e(form)}"><label for="${e(field)}">Conclusion</label><textarea id="${e(field)}" required aria-required="true">${e(written)}</textarea><div class="gf-actions"><button class="gf-btn primary" type="submit" ${written.trim() ? '' : 'disabled'}>${e(label)}</button></div></form><p class="gf-note">${e(note)}</p>`;
 }
 
 /**
  * A failed durable write, shown as a failure. The form, the wearer's own words
  * and a Retry all stay; nothing is recorded, and nothing claims to be.
  */
-export function saveErrorBlock(state) {
+export function saveErrorBlock(state, { form = 'finish' } = {}) {
   const failure = state.failure;
   if (!failure) return '';
-  return `<div class="gf-status" role="alert" data-save-error="${e(failure.operation)}"><p class="gf-error">${e(failure.headline)}: ${e(failure.message)}</p><p class="gf-meta">Nothing was recorded. Your conclusion is still here.</p><div class="gf-actions"><button class="gf-btn primary" type="submit" form="finish-form" data-retry-save="${e(failure.operation)}" ${(state.conclusion || '').trim() ? '' : 'disabled'}>Retry</button></div></div>`;
+  return `<div class="gf-status" role="alert" data-save-error="${e(failure.operation)}"><p class="gf-error">${e(failure.headline)}: ${e(failure.message)}</p><p class="gf-meta">Nothing was recorded. Your conclusion is still here.</p><div class="gf-actions"><button class="gf-btn primary" type="submit" form="${e(form)}-form" data-retry-save="${e(failure.operation)}" ${(state.conclusion || '').trim() ? '' : 'disabled'}>Retry</button></div></div>`;
 }
 
 /* ================================ the state =============================== */
@@ -804,7 +805,11 @@ export function retainedEvidenceContext(detail) {
   const span = first?.span || first;
   const slot = change?.slot?.match(/^(\d{2}):(\d{2})/);
   const start = span?.start_min ?? (slot ? Number(slot[1]) * 60 + Number(slot[2]) : null);
-  return { subject, from: 'changes', occurrence: '',
-    window: start === null || start === undefined ? '' : `${start}-${span?.end_min ?? start + 30}`,
+  const retainedWindow = context.outcome_window;
+  const window = retainedWindow && Number.isInteger(retainedWindow.start_min)
+    && Number.isInteger(retainedWindow.end_min)
+    ? `${retainedWindow.start_min}-${retainedWindow.end_min}`
+    : start === null || start === undefined ? '' : `${start}-${span?.end_min ?? start + 30}`;
+  return { subject, from: 'changes', occurrence: '', window,
     lever: change?.parameter || detail?.lever || '', focus: '#crumb-trail' };
 }

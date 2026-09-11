@@ -55,6 +55,14 @@ not prewarmed, and SHALL remain distinct from the late conclusion.
 - **THEN** the conflict is explicit or the idempotent saved result is returned
 - **AND** the next cached read reflects only the committed record
 
+#### Scenario: Changed late conclusion is a conflict
+
+- **GIVEN** an expired Trial already has a saved late conclusion
+- **WHEN** a later request uses a different request identity but different
+  conclusion text
+- **THEN** the public write returns an explicit conflict
+- **AND** the original ending and saved late conclusion remain unchanged
+
 ### Requirement: Local writes reconcile a stale follow-up frontier
 
 After a committed carb or prompt write, and on startup when the retained

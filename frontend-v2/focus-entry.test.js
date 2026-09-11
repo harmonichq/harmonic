@@ -85,10 +85,38 @@ test('a failed Focus refresh retains its served parent and makes retry visible',
   await entry.read();
   failRefresh = true;
   await entry.read();
-  assert.deepEqual(entry.contextForCase(selected), { subject: offered.subject, offered,
+  assert.deepEqual(entry.contextForCase(selected), { subject: offered.subject, offered: null,
     title: 'Served Pattern', reason: 'Focus status could not load. Retry the read.',
     label: 'Focus status unavailable', retry: true });
   assert.match(entry.state().failure.message, /Synthetic Focus read failed/);
+});
+
+test('a first Focus read failure still gives a selected Pattern a visible retry, never a stale offer', async () => {
+  const entry = createFocusEntry({ readGuidance: async () => { throw new Error('Synthetic cold read failed'); },
+    api: { fetchFocuses: async () => roster } });
+  const selected = { subject: offered.subject, finding: { lever: 'served-lever' } };
+  await entry.read();
+  assert.equal(entry.forCase(selected), null);
+  assert.deepEqual(entry.contextForCase(selected), { subject: offered.subject, offered: null,
+    title: offered.subject, reason: 'Focus status could not load. Retry the read.',
+    label: 'Focus status unavailable', retry: true });
+});
+
+test('pending Plan and active Focus context use served plain copy and their existing routes', async () => {
+  const g = { ...source, candidates: [{ subject: offered.subject, title: 'Served Pattern' }] };
+  for (const [reason, label, route] of [
+    ['pending_plan', 'Plan awaiting confirmation', { subject: 'plan' }],
+    ['active_focus', 'Focus in progress', { subject: 'focus' }],
+  ]) {
+    const entry = createFocusEntry({ readGuidance: async () => g, api: {
+      fetchFocuses: async () => ({ ...roster, admission: { focus_pin: { available: false, reason } } }),
+    } });
+    await entry.read();
+    const context = entry.contextForCase({ subject: offered.subject });
+    assert.equal(context.label, label);
+    assert.deepEqual(context.route, route);
+    assert.doesNotMatch(context.reason, new RegExp(reason));
+  }
 });
 
 test('a child case reaches only its backend-published Pattern owner', async () => {

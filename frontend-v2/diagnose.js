@@ -221,7 +221,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
         : `Focus unavailable: ${context.label}`;
       button.title = context.reason;
       button.onclick = context.retry ? () => readFocusOptions().then(showFocusAction)
-        : () => navigate('changes', { subject: context.subject, from: 'diagnose',
+        : () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
           window: `${selected.window.start_min}-${selected.window.end_min}` });
       root.querySelector('header.crumb')?.append(button);
       return;

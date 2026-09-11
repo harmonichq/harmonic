@@ -175,6 +175,10 @@ export function render() {
   // thing the desk last put it on. See the focus step at the end.
   const carried = placed && placed.element === document.activeElement ? placed.selector : null;
   disposeDesk();
+  // Utilities sit beside the current desk rather than inside its frame. Clear
+  // the prior surface-owned strip before its seat owner paints the one current
+  // strip, so a return or reload cannot accumulate stale launchers.
+  for (const strip of surface.querySelectorAll('.gf-utility-strip')) strip.remove();
 
   for (const button of document.querySelectorAll('[data-destination]')) {
     if (button.dataset.destination === destination) button.setAttribute('aria-current', 'page');

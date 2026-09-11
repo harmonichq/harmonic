@@ -15,8 +15,9 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
   let pending = null;
   let attempt = null;
   let failure = null;
+  let readFailure = null;
   let saving = false;
-  const candidate = subject => roster?.admission?.focus_pin?.available === true
+  const candidate = subject => !readFailure && roster?.admission?.focus_pin?.available === true
     ? roster.pinnable_patterns?.find(row => row.subject === subject) || null : null;
   const parentSubject = (selected) => {
     if (!selected) return null;
@@ -41,24 +42,26 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
       return subject ? candidate(subject) : null;
     },
     contextForCase(selected) {
-      const subject = parentSubject(selected);
-      if (!subject || !roster) return null;
+      const subject = parentSubject(selected)
+        || (selected?.subject?.startsWith('pattern:') ? selected.subject : '');
+      if (!subject && !readFailure) return null;
       const parent = source?.candidates?.find(row => row.subject === subject) || null;
       const offered = candidate(subject);
-      if (failure) return { subject, offered, title: parent?.title || offered?.subject || subject,
+      if (readFailure) return { subject, offered, title: parent?.title || offered?.subject || subject,
         reason: 'Focus status could not load. Retry the read.', label: 'Focus status unavailable', retry: true };
+      if (!roster) return null;
       const admission = roster.admission?.focus_pin?.reason || parent?.readiness?.reason;
       const copy = admissionReason(admission);
       return { subject, offered, title: parent?.title || offered?.subject || subject,
-        reason: copy.said, label: copy.label, retry: false };
+        reason: copy.said, label: copy.label, ...(copy.route ? { route: copy.route } : {}), retry: false };
     },
-    state: () => ({ source, roster, failure, saving, loading: Boolean(pending) }),
+    state: () => ({ source, roster, failure, readFailure, saving, loading: Boolean(pending) }),
     read() {
       if (pending) return pending;
       pending = Promise.all([api.fetchFocuses(), readGuidance()]).then(([f, g]) => {
         if (!g || f.input_revision !== g.input_revision) throw new Error('The Focus source changed. Retry the read.');
-        roster = f; source = g; failure = null;
-      }).catch(error => { failure = error; })
+        roster = f; source = g; failure = null; readFailure = null;
+      }).catch(error => { failure = error; readFailure = error; })
         .finally(() => { pending = null; changed(); });
       return pending;
     },
@@ -67,7 +70,7 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
       const offered = candidate(subject);
       if (!offered || !source) return null;
       if (!attempt || attempt.subject !== subject) attempt = { subject, id: crypto.randomUUID() };
-      saving = true; failure = null; changed();
+      saving = true; failure = null; readFailure = null; changed();
       try {
         const saved = await api.pinFocus(null, { pattern_key: offered.key, subject: offered.subject,
           outcome_window: outcomeWindow,

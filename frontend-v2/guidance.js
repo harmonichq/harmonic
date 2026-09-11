@@ -145,18 +145,30 @@ export const planDraft = () => memory.read?.draft || null;
 
 // The one reason an admission can be unavailable for (#387 contracts, and
 // api.py's guidance_payload copies it verbatim into `unavailable`). The served
-// token is a code; this is the sentence for it, and the code is still shown
-// beside it so nothing is hidden behind a friendlier word.
+// token stays at the API boundary; this owner maps known tokens to reader copy
+// and leaves unknown reasons honestly unavailable rather than inventing one.
 const REASON_SAID = {
   reconciliation_required:
     'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
   active_trial:
     'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
+  active_focus:
+    'A Focus is already being watched, so Harmonic is not offering another Focus from this read.',
+  pending_plan:
+    'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.',
 };
 
 const REASON_LABEL = {
   reconciliation_required: 'Waiting for reconciliation',
   active_trial: 'Trial in progress',
+  active_focus: 'Focus in progress',
+  pending_plan: 'Plan awaiting confirmation',
+};
+
+const REASON_ROUTE = {
+  active_trial: { subject: 'trial' },
+  active_focus: { subject: 'focus' },
+  pending_plan: { subject: 'plan' },
 };
 
 /** Product copy for a served admission reason without exposing its API token. */
@@ -164,6 +176,7 @@ export function admissionReason(reason) {
   return {
     said: REASON_SAID[reason] || 'Harmonic is not offering a Focus from this read.',
     label: REASON_LABEL[reason] || 'Unavailable from this read',
+    route: REASON_ROUTE[reason] || null,
   };
 }
 

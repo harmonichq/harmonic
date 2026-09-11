@@ -129,3 +129,21 @@ accepting legacy query links.
   status and reachable Retry action
 - **AND** it does not erase the parent, expose a backend token, or infer a
   Focus admission
+
+#### Scenario: A first Focus-status read fails for a selected Pattern
+
+- **GIVEN** Diagnose has selected a visible parent Pattern
+- **WHEN** the first Focus-status read fails
+- **THEN** Diagnose renders a reachable Retry status for that Pattern
+- **AND** it renders neither a stale Start Focus action nor an inferred
+  admission
+
+#### Scenario: A served Plan or Focus withholds another Focus
+
+- **GIVEN** backend admission withholds a visible parent Pattern for a pending
+  Plan or active Focus
+- **WHEN** Diagnose renders the parent or one unambiguous child
+- **THEN** it uses plain language and a compact route to the existing Plan or
+  Focus context
+- **AND** other unavailable patterns do not claim that readiness caused the
+  withholding

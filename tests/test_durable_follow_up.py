@@ -154,8 +154,16 @@ class DurableApiTest(unittest.TestCase):
         retry = self.client.post(f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
                                  json={**body, 'request_id': 'late-conclusion-retry',
                                        'conclusion': 'Different words'})
-        self.assertEqual(retry.status_code, 200, retry.text)
-        self.assertEqual(retry.json()['record']['late_conclusion'], saved['late_conclusion'])
+        self.assertEqual(retry.status_code, 409, retry.text)
+        self.assertEqual(retry.json()['detail']['code'], 'late_conclusion_mismatch')
+        # A new request identity is only idempotent when it carries the saved
+        # immutable conclusion verbatim; it cannot turn a conflict into a
+        # misleading success.
+        same_payload = self.client.post(
+            f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+            json={**body, 'request_id': 'late-conclusion-same-payload'})
+        self.assertEqual(same_payload.status_code, 200, same_payload.text)
+        self.assertEqual(same_payload.json()['record']['late_conclusion'], saved['late_conclusion'])
         after = self.client.get('/api/verify/trials', headers=self.headers, params=selected)
         self.assertEqual(after.status_code, 200, after.text)
         self.assertEqual(after.json()['selected']['original']['ending'], record['ending'])

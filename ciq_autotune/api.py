@@ -1611,6 +1611,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if operation in ("finish", "resolve") and "kind" in record["ending"]:
                     return record
                 if operation == "conclude" and record.get("late_conclusion", {}).get("state") == "available":
+                    if record["late_conclusion"]["conclusion"] != payload["conclusion"]:
+                        raise FollowUpConflict("late_conclusion_mismatch", store.input_data_revision())
                     return record
             return None
 

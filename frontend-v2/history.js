@@ -27,7 +27,7 @@
 //   mount(host, deps)        the record destination's content
 //   openRecord(kind, id)     open one record on itself, before anything else
 //   selectedRecord()         which record is open, or null
-import { fetchVerifyTrials } from './client.js';
+import { concludeTrial, fetchVerifyTrials } from './client.js';
 import { desk, e, emptyFrame, errorFrame, loadingFrame, nameplate, readingHeader, stamp } from './frame.js';
 import { hold, navigate, render, view } from './routes.js';
 // The comparison itself is the follow-up's evidence, and one record is a read of
@@ -36,7 +36,7 @@ import { hold, navigate, render, view } from './routes.js';
 // Changes composition is handed both mounts by the entry module.
 import {
   comparisonTables, evidenceFigure, figureColors, mountComparisonChart,
-  periodsSection, readinessSection, retainedEvidenceContext,
+  conclusionForm, periodsSection, readinessSection, retainedEvidenceContext, saveErrorBlock,
 } from './follow-up.js';
 
 // The backend's own ending vocabulary, rendered as the words a reader reads.
@@ -82,7 +82,7 @@ export function settingValue(parameter, value) {
 
 const memory = {
   roster: null, error: null, open: null, mode: 'original',
-  record: null, loading: null,
+  record: null, loading: null, conclusion: '', conclusionFailure: null, conclusionAttempt: null,
 };
 
 export const selectedRecord = () => memory.open;
@@ -236,10 +236,17 @@ export function endingSection(ending, { kind }) {
     <p class="gf-meta">An observation period may end without a clear answer. Nothing here required a favourable result.</p></section>`;
 }
 
-export function lateConclusionSection(conclusion) {
-  if (conclusion?.state !== 'available') return '';
-  return `<section class="gf-section" data-record-part="late-conclusion" data-late-conclusion="available"><h3>Later conclusion <span class="meta">recorded after expiry</span></h3>
-    <p data-late-conclusion-text>${e(conclusion.conclusion)}</p><p class="gf-meta">Recorded ${e(stamp(conclusion.recorded_at))}. This does not change the saved ending or resume the Trial.</p></section>`;
+export function lateConclusionSection(conclusion, { eligible = false, state = {} } = {}) {
+  if (conclusion?.state === 'available') {
+    return `<section class="gf-section" data-record-part="late-conclusion" data-late-conclusion="available"><h3>Later conclusion <span class="meta">recorded after expiry</span></h3>
+      <p data-late-conclusion-text>${e(conclusion.conclusion)}</p><p class="gf-meta">Recorded ${e(stamp(conclusion.recorded_at))}. This does not change the saved ending or resume the Trial.</p></section>`;
+  }
+  if (!eligible) return '';
+  const formState = { conclusion: state.conclusion || '', failure: state.failure || null };
+  return `<section class="gf-section" data-record-part="late-conclusion" data-late-conclusion="pending"><h3>Later conclusion <span class="meta">after expiry</span></h3>
+    <p class="gf-meta">Record what you observed after this Trial expired. This does not change its saved ending or resume the Trial.</p>
+    ${saveErrorBlock(formState, { form: 'late-conclusion' })}
+    ${conclusionForm(formState, { form: 'late-conclusion', label: 'Record later conclusion', note: 'Nothing here is sent to your pump.' })}</section>`;
 }
 
 /** The observed change: the setting, and what it became. */
@@ -335,7 +342,10 @@ function recordFrame(state) {
   const reading = `<aside class="pane gf-reading" aria-label="${e(pane)}">${readingHeader(pane, e(label))}<div class="gf-pane-body">
     ${originalSection(detail.original || {})}
     ${endingSection(ending, { kind })}
-    ${lateConclusionSection((detail.original || {}).late_conclusion)}
+    ${lateConclusionSection((detail.original || {}).late_conclusion, {
+      eligible: kind === 'trial' && ending.kind === 'expired_unreviewed',
+      state: { conclusion: memory.conclusion, failure: memory.conclusionFailure },
+    })}
     ${periodsSection(shown.comparison, kind)}
     ${changeSection({ ...detail, kind })}
     ${readinessSection(shown.comparison, { kind, heading: 'Evidence accrued' })}
@@ -352,6 +362,40 @@ function recordTitle(detail) {
   return change.before == null
     ? `${name} · ${settingValue(change.parameter, change.after)}`
     : `${name} · ${settingValue(change.parameter, change.before)} → ${settingValue(change.parameter, change.after)}`;
+}
+
+const conclusionAttemptId = () => {
+  if (memory.conclusionAttempt) return memory.conclusionAttempt;
+  memory.conclusionAttempt = `conclude:${globalThis.crypto?.randomUUID?.()
+    || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+  return memory.conclusionAttempt;
+};
+
+const conclusionFailureMessage = error => error?.detail?.code
+  ? `${error.detail.code} (${error.status})`
+  : error?.detail || error?.message || 'no response from the store';
+
+async function submitLateConclusion({ retry = false } = {}) {
+  const state = memory.record;
+  const detail = state?.detail;
+  const conclusion = (memory.conclusion || '').trim();
+  if (!detail || state.kind !== 'trial' || !conclusion) return;
+  try {
+    if (retry) {
+      const fresh = await fetchVerifyTrials({ kind: 'trial', selected: state.id });
+      memory.record = { ...state, detail: { ...detail, ...fresh.selected, revision: fresh.input_revision } };
+      memory.roster.revision = fresh.input_revision;
+    }
+    const body = { request_id: conclusionAttemptId(), input_revision: memory.record.detail.revision, conclusion };
+    await concludeTrial(state.id, body);
+    memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
+    memory.roster = null; memory.record = null;
+  } catch (error) {
+    memory.conclusionFailure = { operation: 'conclude', headline: 'Recording the later conclusion failed',
+      message: conclusionFailureMessage(error) };
+    view.focusAfterRender = '[data-retry-save="conclude"]';
+  }
+  render();
 }
 
 /* ------------------------------------------------------------------- binding */
@@ -391,6 +435,17 @@ function bind(host) {
   }
   const retry = host.querySelector('[data-retry]');
   if (retry) retry.onclick = () => { memory.error = null; render(); };
+  const lateText = host.querySelector('#late-conclusion-conclusion');
+  if (lateText) lateText.oninput = event => {
+    memory.conclusion = event.target.value;
+    const submit = host.querySelector('[data-form="late-conclusion"] [type="submit"]');
+    if (submit) submit.disabled = !memory.conclusion.trim();
+  };
+  const lateForm = host.querySelector('[data-form="late-conclusion"]');
+  if (lateForm) lateForm.onsubmit = event => {
+    event.preventDefault();
+    submitLateConclusion({ retry: Boolean(memory.conclusionFailure) });
+  };
 }
 
 /** The record destination's content. */
@@ -400,6 +455,7 @@ export function mount(host, { hold: holdCleanup = hold, context = {} } = {}) {
   if (open?.id !== memory.open?.id || open?.kind !== memory.open?.kind) {
     readGeneration += 1;
     memory.open = open; memory.record = null; memory.error = null; memory.loading = null;
+    memory.conclusion = ''; memory.conclusionFailure = null; memory.conclusionAttempt = null;
   }
   if (memory.error) { host.innerHTML = errorFrame('Changes', 'The change records'); bind(host); return; }
   if (!memory.roster) { load('roster', loadRoster); host.innerHTML = loadingFrame('Changes'); return; }

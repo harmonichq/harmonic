@@ -156,6 +156,18 @@ test('a late Trial conclusion is separate from the immutable expired ending', ()
   assert.match(html, /does not change the saved ending or resume the Trial/);
 });
 
+test('an expired Trial exposes a separately dated conclusion form, but an ordinary ending does not', () => {
+  const pending = lateConclusionSection({ state: 'unavailable' }, {
+    eligible: true, state: { conclusion: 'A later synthetic observation.' },
+  });
+  assert.match(pending, /data-late-conclusion="pending"/);
+  assert.match(pending, /data-form="late-conclusion"/);
+  assert.match(pending, /id="late-conclusion-conclusion"/);
+  assert.match(pending, /A later synthetic observation\./);
+  assert.match(pending, /does not change its saved ending or resume the Trial/);
+  assert.equal(lateConclusionSection({ state: 'unavailable' }), '');
+});
+
 test('a preempted Focus is dropped, kept, and explicitly never resumed', () => {
   const html = endingSection(PREEMPTED_ENDING, { kind: 'focus' });
   assert.match(html, /data-ending-kind="trial_preempted"/);

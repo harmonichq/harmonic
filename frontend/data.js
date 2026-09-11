@@ -227,6 +227,14 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     });
   }
 
+  /** Record an additive conclusion on one expired Trial. */
+  function concludeTrial(id, durable) {
+    return api('/api/verify/trials/' + encodeURIComponent(id) + '/conclusion', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(durable),
+    });
+  }
+
   /** GET /api/explore/time-of-day — fixed server-owned 30-day aggregate. */
   function fetchExploreTimeOfDay() { return api('/api/explore/time-of-day'); }
   /** GET /api/diagnose/eating-sequences — fixed Diagnose aggregate evidence. */
@@ -556,6 +564,7 @@ export function makeDeps({ fetch: _fetch = globalThis.fetch } = {}) {
     fetchOutcomesTrend,
     fetchVerifyTrials,
     finishTrial,
+    concludeTrial,
     fetchExploreTimeOfDay,
     fetchEatingSequences,
     fetchExploreExposures,
@@ -611,6 +620,7 @@ export const fetchDayNavigator = _defaults.fetchDayNavigator;
 export const fetchOutcomesTrend = _defaults.fetchOutcomesTrend;
 export const fetchVerifyTrials = _defaults.fetchVerifyTrials;
 export const finishTrial = _defaults.finishTrial;
+export const concludeTrial = _defaults.concludeTrial;
 export const fetchExploreTimeOfDay = _defaults.fetchExploreTimeOfDay;
 export const fetchEatingSequences = _defaults.fetchEatingSequences;
 export const fetchExploreExposures = _defaults.fetchExploreExposures;

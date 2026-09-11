@@ -351,7 +351,8 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
   try {
     assert.equal(await countOf(page, '.gf-stage-day'), 1);
     assert.equal(await countOf(page, '.gf-reading'), 1, 'Day is a paired state');
-    assert.equal(Math.round((await box(page, '.gf-desk > .gf-reading')).w), 300);
+    assert.equal(Math.round((await box(page, '.gf-desk > .gf-reading')).w), 430,
+      'Day uses the same reference rail as Diagnose and Changes');
     // Direct entry invents no prior subject and offers no return.
     assert.equal(await countOf(page, '[data-day="return"]'), 0);
 
@@ -384,6 +385,27 @@ test('Day owns its chronology, its week ribbon, its month and the Episode Log', 
     assert.equal(await page.getAttribute(`.gf-log-row[data-day-row="${rows[0].t}"]`, 'aria-pressed'), 'true');
     await press(page, `.gf-log-row[data-day-row="${rows[0].t}"]`);
     assert.equal(await page.getAttribute(`.gf-log-row[data-day-row="${rows[0].t}"]`, 'aria-pressed'), 'false');
+  } finally { await close(); }
+});
+
+test('a canonical Day address reloads through the built shell and returns through its canonical Diagnose door', async () => {
+  const address = `/v2/day?date=${DAY}&subject=pattern%3Aserved-pattern&window=1320-120&from=diagnose`;
+  const { page, close } = await openDesk({ address });
+  try {
+    assert.equal(await currentDestination(page), 'day');
+    assert.equal(await countOf(page, '[data-day="return"]'), 1);
+    assert.equal(await page.evaluate(() => location.pathname), '/v2/day');
+    await page.reload();
+    await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
+    assert.equal(await currentDestination(page), 'day');
+    assert.equal(await countOf(page, '[data-day="return"]'), 1,
+      'reload retains the contextual return rather than falling back to a bare Day');
+    await press(page, '[data-day="return"]');
+    assert.equal(await currentDestination(page), 'diagnose');
+    assert.equal(await page.evaluate(() => location.pathname), '/v2/diagnose');
+    const returned = await page.evaluate(() => Object.fromEntries(new URLSearchParams(location.search)));
+    assert.equal(returned.subject, 'pattern:served-pattern');
+    assert.equal(returned.window, '1320-120');
   } finally { await close(); }
 });
 
@@ -446,7 +468,7 @@ test('a utility\'s own Day entry keeps the utility open and returns into it', as
     assert.equal(await currentDestination(page), 'day');
     assert.equal(await countOf(page, '.gf-utility[data-utility="questions"]'), 1);
     const address = await page.evaluate(() => location.pathname + location.search);
-    assert.match(address, /^\/v2\/\?to=day/);
+    assert.match(address, /^\/v2\/day/);
     assert.match(address, /date=2024-06-26/);
     assert.match(address, /from=diagnose\.questions/);
 

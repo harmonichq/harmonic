@@ -83,3 +83,22 @@ No application or replay source changed for these additions. The temporary synth
 ### Q1 settled — Trial expiry and late conclusion
 
 Connor selected: “Keep the expiry; surface the record and allow a late conclusion (Recommended).” Keep the existing 28-day expiry and watch-admission behavior. Make the expired Trial prominent and reachable in Changes. A late conclusion is separately dated and cannot overwrite the original expiry, ending time, or saved ending assessment. Why: recover an understandable history path without silently extending the active watch. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain expiry and record a late conclusion separately.
+
+## Orchestrated grounding and current frontier
+
+Three bounded Luna workers completed read-only grounding for chart evidence, layout, and follow-up/history. Coordinator spot-checked the Pattern handoff, comparison selection renderer, history endpoint and immutable expiry, scoped-Pattern test, shared rail width variable, and count-free loading assertion. A v1/v2 replay-ID mix-up in the chart report was reproduced and corrected by resuming the same worker. In particular, the v1 S102/S103 story numbers are not #404 coverage: #404's prospective stories are `frontend-v2/c4.replay.mjs` S101–S105, registered by `frontend/harmonic-v2-desktop-behavior.replay.mjs`.
+
+Additional verified gap: `eventComparisonChartOption` adds selected glucose but does not paint served `detail.markers`, despite the detail pane's promise that the canvas shows those markers. Include selected marker rendering in the new trace/detail acceptance. Do not mistake marker counts or highlighted rows for chart evidence.
+
+The completed worker prompts, lifecycle state and raw answers remain in coordinator session scratch `/private/tmp/harmonic-404-orchestrate/`; `dispatches.json` names the three initial locators, and `charts-followup.result.json` corrects the replay mapping. No worker changed files or posted comments. These are grounding reports, not mandatory plan-review verdicts.
+
+The ticket carries the decision/reproduction update at https://github.com/harmonichq/harmonic/issues/404#issuecomment-5629691481 .
+
+Pending operator questions already sent (do not infer answers or repeat settled Q1):
+
+- Q2: keep explicitly whole-day Patterns visible with a window-focused chart (recommended), recalculate scoped Pattern semantics, or explain their absence and offer 24 h.
+- Q3: named reassessment loading with computation on open (recommended), or named loading plus prewarming recent retained reassessments.
+- Q4: restore current programmed correction factor/carb ratio in the footer (recommended), or keep them only in Pump settings.
+- Q5: preserve saved Pattern titles for future Focus records and label genuinely missing legacy titles honestly (recommended), or continue generic Focus titles after retirement.
+
+After these answers, finish the remaining visual choices through the admitted UI Craft revise process, inventory/replay and sanctions. Then settle chunk ownership and the risk contract, author/validate the OpenSpec source, obtain mandatory independent plan review and prepare the execution lock. No unreviewed lock is executable. No application changes or PR were made by this triage session.

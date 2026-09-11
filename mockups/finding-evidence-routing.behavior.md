@@ -3895,6 +3895,24 @@ hand-set.
 Revision evidence and chart-direction review remain pending with the coordinator.
 The issued inventory is 183, with 168 active IDs and 15 retired IDs.
 
+## Amendment — 2026-09-11, issue #410 High-carb response replacement
+
+S153, S155 and S158 keep their issued identities and their Repeat eating arms.
+High-carb sequence now uses the existing response renderer for its queue mini,
+All charts cell, stage and fullscreen: observed glucose is aligned to the end of
+eating, and the legend names `Highest-carb fifth` and `Other sequences` with
+their served support. Its stage uses the renderer's body-only mount inside the
+existing tile header; it does not nest the standalone response pane or duplicate
+its generic title. The parent Pattern remains the same independent case chart.
+
+S153 checks the served response curves in the mini and All charts cell rather
+than the retired aggregate scatters. S155 retains keyboard and pointer drill,
+selected sequence, fullscreen return, focus and clock window; the selected trace
+still comes only from the served case. S158 retains no-substitute thin states and
+keeps an unavailable aggregate period in supporting detail while the response
+curves remain visible. No ranking, detector, eligibility, ownership, support or
+Repeat eating behavior changes.
+
 ## Amendment — 2026-09-10, issue #389 coordinator amendment 11
 
 The 2026-09-08 retirement in `895b596b` remains in force: Connor Griffin,

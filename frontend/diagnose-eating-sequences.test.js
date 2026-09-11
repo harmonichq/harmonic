@@ -106,46 +106,12 @@ const sequenceFixture = expandSequenceFixture(JSON.parse(readFileSync(
   new URL('../mockups/eating-sequence-findings.synthetic/payload.json', import.meta.url), 'utf8',
 )));
 
-const withHighCarbResponse = (source) => {
-  if (source.finding.lever !== 'high_carb_sequence') return source;
-  const data = structuredClone(source);
-  const ids = data.occurrences.map((row) => row.id);
-  const points = [0, 5, 10].map((minute) => ({ minute, n: 1, support: 'limited',
-    median: 120 + minute, p25: 115 + minute, p75: 125 + minute }));
-  data.projection.response = {
-    schema: 'high-carb-sequence-response-v1', alignment: 'event',
-    anchor: { kind: 'sequence_end', label: 'End of eating sequence' }, window_min: [0, 15],
-    source_window: data.projection.report.window,
-    scope: data.projection.report.high_carb_sequence.finding.scope,
-    period: data.projection.report.high_carb_sequence.finding.period,
-    summary: data.projection.report.high_carb_sequence.finding.summary,
-    comparisons: data.projection.report.high_carb_sequence.comparisons
-      .filter((row) => row.scope === data.projection.report.high_carb_sequence.finding.scope),
-    comparison: { name: 'Other sequences', state: 'available' },
-    cohorts: [
-      { key: 'matched', name: 'Highest-carb fifth', routed_count: 1, usable_count: 1,
-        support: 'limited', occurrence_ids: ids.slice(0, 1), points },
-      { key: 'comparison', name: 'Other sequences', routed_count: ids.length - 1,
-        usable_count: ids.length - 1, support: 'supported', occurrence_ids: ids.slice(1),
-        points: points.map((row) => ({ ...row, n: ids.length - 1, support: 'supported',
-          median: row.median - 10, p25: row.p25 - 10, p75: row.p75 - 10 })), },
-    ],
-  };
-  if (data.selection.state === 'selected') {
-    const id = data.selection.detail.id;
-    data.selection.detail = { ...data.selection.detail,
-      comparison_cohort: ids[0] === id ? 'matched' : 'comparison',
-      glucose: [{ t: data.selection.detail.anchor.t, minute: 0, bg: 120 }] };
-  }
-  return data;
-};
-
 test('public sequence cases select the dedicated chart before the generic response chart', () => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
     for (const state of ['covered', 'empty', 'multiple']) {
       const generated = sequenceFixture.states[`${lever}_${state}`].windows.global;
       const prepared = generated.preparation;
-      const data = withHighCarbResponse(generated.cases[`finding:${lever}`].event);
+      const data = generated.cases[`finding:${lever}`].event;
       assert.equal(validEatingSequenceCase(data), true);
       assert.equal(data.analysis_generation, prepared.findings.analysis_generation);
       const descriptors = descriptorsFromFindings({
@@ -191,9 +157,11 @@ test('public sequence cases select the dedicated chart before the generic respon
 
 test('selection validation retains exact served sequence details and rejects malformed cases', () => {
   const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'];
-  assert.equal(validEatingSequenceCase(stored.event), false,
+  const aggregateOnly = structuredClone(stored.event);
+  delete aggregateOnly.projection.response;
+  assert.equal(validEatingSequenceCase(aggregateOnly), false,
     'the aggregate-only predecessor cannot masquerade as a response case');
-  const selected = withHighCarbResponse({ ...stored.event, selection: Object.values(stored.selections)[0] });
+  const selected = { ...stored.event, selection: Object.values(stored.selections)[0] };
   assert.equal(validEatingSequenceCase(selected), true);
   for (const mutate of [
     (c) => { c.summary.claimed = c.summary.denominator + 1; },
@@ -208,23 +176,19 @@ test('selection validation retains exact served sequence details and rejects mal
   }
 });
 
-test('response points stop before the excluded post-sequence and in-sequence endpoints', () => {
+test('producer-derived responses stop before their endpoint', () => {
   const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global
     .cases['finding:high_carb_sequence'].event;
-  const post = withHighCarbResponse(stored);
+  const post = structuredClone(stored);
   assert.equal(validHighCarbResponse(post), true);
   post.projection.response.cohorts[0].points[2].minute = 15;
   assert.equal(validHighCarbResponse(post), false);
 
-  const during = withHighCarbResponse(stored);
-  during.projection.report.high_carb_sequence.finding.period = 'in_sequence';
-  during.projection.response.period = 'in_sequence';
-  during.projection.response.window_min = [-10, 5];
-  for (const cohort of during.projection.response.cohorts) {
-    cohort.points = cohort.points.map((point, index) => ({ ...point, minute: -10 + (index * 5) }));
-  }
+  const during = structuredClone(sequenceFixture.states.high_carb_sequence_in_sequence
+    .windows.global.cases['finding:high_carb_sequence'].event);
   assert.equal(validHighCarbResponse(during), true);
-  during.projection.response.cohorts[1].points[2].minute = 5;
+  const last = during.projection.response.cohorts[1].points.length - 1;
+  during.projection.response.cohorts[1].points[last].minute += 5;
   assert.equal(validHighCarbResponse(during), false);
 });
 
@@ -244,7 +208,7 @@ test('thin source cohorts produce no substitute finding and adapter nulls remain
 
 test('a supported case keeps a null period visible without a zero-filled point', () => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
-    const data = withHighCarbResponse(sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event);
+    const data = sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event;
     assert.equal(validEatingSequenceCase(data), true);
     if (lever === 'high_carb_sequence') continue;
     const option = eatingSequenceChartOption(data);
@@ -266,10 +230,10 @@ test('expanded sequence fixtures satisfy preparation and selection transport con
         key === 'global' ? null : { start_min: 0, end_min: 360 }));
       for (const stored of Object.values(window.cases)) {
         if (stored.event.family !== 'sequences') continue;
-        assert.equal(validEatingSequenceCase(withHighCarbResponse(stored.event)), true);
-        assert.equal(validEatingSequenceCase(withHighCarbResponse(stored.clock)), true);
+        assert.equal(validEatingSequenceCase(stored.event), true);
+        assert.equal(validEatingSequenceCase(stored.clock), true);
         for (const selection of Object.values(stored.selections)) {
-          assert.equal(validEatingSequenceCase(withHighCarbResponse({ ...stored.event, selection })), true);
+          assert.equal(validEatingSequenceCase({ ...stored.event, selection }), true);
         }
       }
     }

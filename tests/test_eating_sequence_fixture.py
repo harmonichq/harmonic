@@ -115,3 +115,21 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
             case = source["windows"]["global"]["cases"][f"finding:{lever}"]["event"]
             self.assertGreater(sum(len(r["episodes"]) for r in case["occurrences"] if r["attributed"]), 8)
             self.assertEqual(case["summary"]["claimed"], 8)
+
+    def test_sequence_cases_retain_one_real_fired_selection(self):
+        for state in self.fixture["states"].values():
+            for window in state["windows"].values():
+                for stored in window["cases"].values():
+                    event = stored["event"]
+                    if event["family"] != "sequences":
+                        continue
+                    self.assertEqual(len(stored["selections"]), 1)
+                    selected_id = next(iter(stored["selections"]))
+                    selected = next(row for row in event["occurrences"] if row["id"] == selected_id)
+                    self.assertEqual(selected["verdict"], "fired")
+
+    def test_high_carb_in_sequence_response_is_producer_derived(self):
+        case = self.fixture["states"]["high_carb_sequence_in_sequence"]["windows"]["global"]["cases"][
+            "finding:high_carb_sequence"]["event"]
+        self.assertEqual(case["projection"]["response"]["period"], "in_sequence")
+        self.assertEqual(case["projection"]["response"]["window_min"], [0, 5])

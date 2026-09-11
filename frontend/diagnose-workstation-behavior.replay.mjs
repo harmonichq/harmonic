@@ -59,11 +59,22 @@ const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
 async function captureEvidence(page, label) {
   if (!evidenceDir) return;
+  const expected = evidenceViewport().split('x').map(Number);
+  const viewport = page.viewportSize();
+  if (!viewport || viewport.width !== expected[0] || viewport.height !== expected[1]) {
+    fail(`evidence viewport for ${label}: expected ${evidenceViewport()}, got ${viewport
+      ? `${viewport.width}x${viewport.height}` : 'unavailable'}`);
+  }
   await mkdir(evidenceDir, { recursive: true });
-  await page.screenshot({
+  const image = await page.screenshot({
     path: join(evidenceDir, `${label}-${evidenceViewport()}.png`),
     fullPage: false,
   });
+  const actual = [image.readUInt32BE(16), image.readUInt32BE(20)];
+  if (actual[0] !== expected[0] || actual[1] !== expected[1]) {
+    fail(`evidence PNG for ${label}: expected ${evidenceViewport()}, got ${actual.join('x')}`);
+  }
+  console.log(`evidence ${label}: viewport ${viewport.width}x${viewport.height}; PNG ${actual.join('x')}`);
 }
 
 /* ---------------------------------------------------------------- assertions */
@@ -5769,31 +5780,47 @@ export const S152 = async (page) => {
 
 async function sequenceCharts(page, lever) {
   const input = await sequenceState(page, `${lever}_empty`);
-  const { id, data, readSeries } = await waitForReplayAssertion(async seen => {
+  const { id, data, mini, readSeries } = await waitForReplayAssertion(async seen => {
     const id = `finding:${lever}`;
     const data = input.windows.global.cases[id].event;
     const mini = `#level .qrow[data-id="${id}"] .mini`;
     const readSeries = async (selector) => (await (await page.waitForFunction((selector) => {
       const host = document.querySelector(selector);
       const chart = host && window.echarts.getInstanceByDom(host);
-      return chart?.getOption().series?.some((s) => s.id.startsWith('sequence:'))
+      const prefix = selector.includes('high_carb_sequence') ? /^(matched|comparison):/
+        : /^sequence:/;
+      return chart?.getOption().series?.some((s) => prefix.test(s.id || ''))
         ? chart.getOption().series : false;
     }, selector)).jsonValue());
     const miniSeries = seen(await readSeries(mini));
-    is(miniSeries.length, 4, 'mounted mini draws two served cohorts on two unit rulers');
-    return { id, data, readSeries };
+    is(miniSeries.filter((series) => lever === 'high_carb_sequence'
+      ? /^(matched|comparison):/.test(series.id || '') : /^sequence:/.test(series.id || '')).length,
+    4,
+    'mounted mini draws the served cohort comparison');
+    return { id, data, mini, readSeries };
   }, "sequenceCharts");
+  await page.locator(mini).scrollIntoViewIfNeeded();
+  await captureEvidence(page, `${lever}-mini`);
   await openAllCharts(page);
   await waitForReplayAssertion(async seen => {
     const tile = `#tile-row .evidence-tile[data-chart-id="${id}"]`;
     const cellSeries = seen(await readSeries(`${tile} .tile-chart`));
-    const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
-    const periods = detector.comparisons.filter((r) => lever === 'repeat_eating'
-      ? r.carb_quintile === detector.finding.carb_quintile : r.scope === detector.finding.scope);
-    is(cellSeries[0].data.map((p) => p.value[1]), periods.map((p) => p.reference.tir_pct),
-      'All charts retains exact served reference values');
-    is(cellSeries[1].data.map((p) => p.value[1]), periods.map((p) =>
-      (lever === 'repeat_eating' ? p.repeat : p.high).tir_pct), 'All charts retains exact served candidate values');
+    if (lever === 'high_carb_sequence') {
+      const response = data.projection.response;
+      for (const cohort of response.cohorts) {
+        const line = cellSeries.find((series) => series.id === `${cohort.key}:line:supported`);
+        ok(line, `${cohort.name} response curve mounts in All charts`);
+        is(line.data, cohort.points.filter((point) => point.support === 'supported')
+          .map((point) => [point.minute, point.median]), `${cohort.name} curve retains served glucose`);
+      }
+    } else {
+      const detector = data.projection.report.repeat_eating_amplifier;
+      const periods = detector.comparisons.filter((row) => row.carb_quintile === detector.finding.carb_quintile);
+      is(cellSeries[0].data.map((p) => p.value[1]), periods.map((p) => p.reference.tir_pct),
+        'All charts retains exact served reference values');
+      is(cellSeries[1].data.map((p) => p.value[1]), periods.map((p) => p.repeat.tir_pct),
+        'All charts retains exact served candidate values');
+    }
     const parent = page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]');
     is(seen(await parent.count()), 1, 'parent retains its independent chart');
     const parentSeries = seen(await parent.locator('.tile-chart').evaluate((host) =>
@@ -5801,6 +5828,9 @@ async function sequenceCharts(page, lever) {
     ok(parentSeries.length > 0 && !parentSeries.some((s) => s.id?.startsWith('sequence:')),
       'parent still renders its Pattern case file');
   }, "sequenceCharts");
+  await page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]')
+    .scrollIntoViewIfNeeded();
+  await captureEvidence(page, `${lever}-pattern-reference`);
 };
 
 // STORY:finding-evidence-routing:S153
@@ -5817,7 +5847,17 @@ async function sequenceDrill(page, lever) {
   await page.locator('#level .sequence-comparison').waitFor();
   await waitForReplayAssertion(async seen => {
     is(seen(await focalId(page)), id, 'keyboard drill uses the canonical finding id');
+    if (lever === 'high_carb_sequence') {
+      is(seen(await page.locator('#tile-focal .ec-panes').count()), 0,
+        'stage uses the shared response body without nesting its standalone pane');
+      ok(seen(await page.locator('#tile-focal #ec-chart').isVisible())
+        && seen(await page.locator('#tile-focal #ec-chart-key').isVisible()),
+      'stage keeps the shared response chart and legend visible');
+    }
   }, "sequenceDrill");
+  await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(100);
+  await captureEvidence(page, `${lever}-stage`);
   const first = page.locator('#level .case-occurrence').first();
   await first.click();
   await page.locator('#level .sequence-detail').waitFor();
@@ -5826,6 +5866,7 @@ async function sequenceDrill(page, lever) {
     is(seen(await page.locator('#level .clear-trace').innerText()), 'Clear trace', 'sequence selection uses the shared clear label');
     return { detail };
   }, "sequenceDrill");
+  await captureEvidence(page, `${lever}-selected`);
   const windowBefore = (await state(page)).pressed;
   const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
   await control.click();
@@ -5892,20 +5933,53 @@ export const S158 = async (page) => {
           'below-floor source has no supported substitute finding');
       }, "S158");
     }
+    if (lever === 'high_carb_sequence') {
+      await sequenceState(page, `${lever}_in_sequence`);
+      await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
+      await page.locator('#tile-focal #ec-chart').waitFor();
+      await waitForReplayAssertion(async seen => {
+        const response = seen(await (await page.waitForFunction(() => {
+          const chart = window.echarts.getInstanceByDom(document.querySelector('#tile-focal #ec-chart'));
+          return chart?.getOption().xAxis?.[0] ? chart.getOption() : false;
+        })).jsonValue());
+        is([response.xAxis[0].min, response.xAxis[0].max], [0, 5],
+          'served in-sequence interval retains its own endpoints');
+        ok(seen(await page.locator('#tile-focal #ec-chart-key').innerText()).includes('During eating'),
+          'served in-sequence period remains named in the response scope');
+      }, 'S158');
+      await captureEvidence(page, `${lever}-in-sequence`);
+    }
     await sequenceState(page, `${lever}_null_period`);
     await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
     await page.locator('#level .sequence-comparison').waitFor();
     await waitForReplayAssertion(async seen => {
-      const option = seen(await page.locator('#tile-focal .tile-chart').evaluate((host) =>
-        window.echarts.getInstanceByDom(host).getOption()));
-      ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
-        'unlike units have separate labeled rulers');
-      ok(option.xAxis[0].data.some((label) => label.startsWith('● ')), 'served active period is identified');
-      ok(option.legend[0].data.every((label) => label.includes('n =')), 'cohort labels retain served counts');
-      is(option.series[0].data[0].value[1], null, 'reference null stays null in the mounted chart');
-      is(option.series[1].data[0].value[1], null, 'candidate null stays null in the mounted chart');
-      const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
-      ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
+      const host = lever === 'high_carb_sequence' ? '#tile-focal #ec-chart' : '#tile-focal .tile-chart';
+      const option = seen(await (await page.waitForFunction((selector) => {
+        const chart = window.echarts.getInstanceByDom(document.querySelector(selector));
+        return chart?.getOption().series?.length ? chart.getOption() : false;
+      }, host)).jsonValue());
+      if (lever === 'high_carb_sequence') {
+        const labels = seen(await page.locator('#tile-focal .ec-key-item').allInnerTexts());
+        ok(labels.some((label) => label.includes('Highest-carb fifth'))
+          && labels.some((label) => label.includes('Other sequences')), 'response names both served cohorts');
+        ok(option.series.some((series) => series.id === 'matched:line:supported')
+          && option.series.some((series) => series.id === 'comparison:line:supported'),
+        'response curves remain mounted while aggregate detail is unavailable');
+        const detail = seen(await page.locator('#level .sequence-supporting-detail').innerText());
+        ok(detail.includes('During eating · unavailable')
+          && detail.includes('Other sequences (Q1-Q4)')
+          && detail.includes('Highest-carb fifth (Q5)'),
+          'null aggregate period stays explicitly unavailable in supporting detail');
+      } else {
+        ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
+          'unlike units have separate labeled rulers');
+        ok(option.xAxis[0].data.some((label) => label.startsWith('● ')), 'served active period is identified');
+        ok(option.legend[0].data.every((label) => label.includes('n =')), 'cohort labels retain served counts');
+        is(option.series[0].data[0].value[1], null, 'reference null stays null in the mounted chart');
+        is(option.series[1].data[0].value[1], null, 'candidate null stays null in the mounted chart');
+        const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
+        ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
+      }
       const text = seen(await page.locator('#level .sequence-comparison').innerText());
       ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
     }, "S158");

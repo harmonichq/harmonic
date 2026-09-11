@@ -66,6 +66,10 @@ if (missing.length) {
 const { createBrowserRunner } = require('./browser-runner.js');
 const runner = createBrowserRunner(() => chromium.launch({ executablePath: EXEC || undefined }));
 after(() => runner.close());
+const evidenceViewport = () => {
+  const [width, height] = (process.env.VIEWPORT || '').split('x').map(Number);
+  return Number.isInteger(width) && Number.isInteger(height) ? { width, height } : undefined;
+};
 
 const FINDINGS_FIXTURE = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
@@ -858,7 +862,9 @@ for (const [id, story, sequenceState] of [
 ]) {
   test(`eating-sequence composition ${id} uses generated Python transports`, async () => {
     const browser = await runner.browser();
-    const page = await openApp(browser, { appSource: 'fixture', sequenceState });
+    const page = await openApp(browser, {
+      appSource: 'fixture', sequenceState, viewport: evidenceViewport(),
+    });
     try { await story(page); } finally { await page.close(); }
   });
 }

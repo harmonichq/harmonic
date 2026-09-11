@@ -733,7 +733,8 @@ function renderBehavioralFullscreen(host, f) {
 
 function renderHighCarbStage(host, caseFile, range) {
   const previous = window.__diagnoseEventComparison;
-  const mounted = renderEventSurface(host, highCarbResponseCase(caseFile), { range });
+  const headline = host.closest('.evidence-tile')?.querySelector('.tile-head');
+  const mounted = renderEventSurface(host, highCarbResponseCase(caseFile), { range, headline });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;
@@ -3424,9 +3425,16 @@ function boot(root, data, callbacks, signal) {
           detail.className = 'vd';
           const timing = row.period === 'in_sequence' ? 'During eating' : row.label;
           const unavailable = row.status === 'insufficient';
-          detail.textContent = unavailable
-            ? `${timing} · unavailable · ${row.referenceLabel} n = ${row.reference.n} · ${row.comparisonLabel} n = ${row.comparison.n}`
-            : `${timing} · time in range ${row.reference.tir_pct}% / ${row.comparison.tir_pct}% · glucose SD ${row.reference.sd_mgdl} / ${row.comparison.sd_mgdl} mg/dL · n = ${row.reference.n} / ${row.comparison.n}`;
+          const reference = `Other sequences (${row.referenceLabel})`;
+          const comparison = `Highest-carb fifth (${row.comparisonLabel})`;
+          const pip = document.createElement('span');
+          pip.className = 'pip';
+          pip.setAttribute('aria-hidden', 'true');
+          const copy = document.createElement('div');
+          copy.textContent = unavailable
+            ? `${timing} · unavailable · ${reference}: n = ${row.reference.n} · ${comparison}: n = ${row.comparison.n}`
+            : `${timing} · ${reference}: time in range ${row.reference.tir_pct}%, glucose SD ${row.reference.sd_mgdl} mg/dL, n = ${row.reference.n} · ${comparison}: time in range ${row.comparison.tir_pct}%, glucose SD ${row.comparison.sd_mgdl} mg/dL, n = ${row.comparison.n}`;
+          detail.append(pip, copy);
           facts.append(detail);
         }
         host.append(facts);

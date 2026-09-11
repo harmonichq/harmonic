@@ -165,7 +165,7 @@ function option(surface, caseFile, selected, range, mini = false) {
   return { animation: false, backgroundColor: 'transparent',
     grid: mini ? { left: 6, right: 6, top: 6, bottom: 6 } : { left: GRID.left, right: 34, top: 26, bottom: 42 },
     tooltip: mini ? { show: false } : { trigger: 'axis', showContent: false },
-    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
+    xAxis: { type: 'value', min: projection.window_min[0], max: projection.window_min[1], interval: 60, axisLine: { show: !mini, onZero: false, lineStyle: { color: css(surface, '--mk-line') } }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .48 } }, axisLabel: { show: !mini, align: 'left', color: css(surface, '--mk-muted'), fontSize: 10, formatter: (minute) => axisLabel(minute, projection.anchor.label) } },
     yAxis: { type: 'value', min: drawn[0], max: drawn[1], interval: 60, name: mini ? undefined : 'mg/dL', nameLocation: 'end', nameTextStyle: { color: css(surface, '--mk-muted'), fontSize: 9 }, nameGap: 8, axisLine: { show: false }, axisTick: { show: false }, splitLine: { show: !mini, lineStyle: { color: css(surface, '--mk-line'), opacity: .58 } }, axisLabel: { show: !mini, color: css(surface, '--mk-muted'), fontSize: 10 } }, series };
 }
 

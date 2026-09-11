@@ -160,5 +160,6 @@ contract remains `finding-evidence-routing.behavior.md` and its app-only replay.
 - **Eating-sequence findings (#342):** `eating-sequence-findings.synthetic/payload.json`
   is manufactured by `scripts/gen_eating_sequence_fixtures.py` through public
   Python producers. The real chart lives in `frontend/diagnose-eating-sequences.js`;
-  the component harness and S151–S158 consume these transports directly.
-  This is generated test input, not a mock implementation. Render review is pending.
+  the component harness and S151–S158 consume these transports directly. High-carb
+  sequence uses the shared response renderer; Repeat eating keeps its aggregate chart.
+  This is generated test input, not a mock implementation.

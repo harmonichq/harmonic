@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import re
 import sys
 from collections import Counter
 from datetime import timedelta
@@ -49,11 +48,12 @@ def payload() -> dict:
 FINDINGS_OUT = ROOT / "mockups/eating-sequence-findings.synthetic/payload.json"
 
 
-def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False):
+def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False,
+             during=False):
     """Manufacture source events, then call the same public served producers."""
     bolus, cgm, log, basal = sequence_episode_stream(
         "repeat_eating" if lever == "both" else lever,
-        covered=covered, competitor=competitor, multi=multi)
+        covered=covered, competitor=competitor, multi=multi, during=during)
     sequences = build_sequences(bolus, config=EatingSequenceConfig())
     if lever == "both":
         # Lower single-window excursions keep their high-carb price below the
@@ -93,6 +93,7 @@ def findings_payload():
             ("thin_reference", {"covered": True, "thin": False}),
             ("losing", {"competitor": "severe"}),
             ("multiple", {"multi": True}),
+            ("in_sequence", {"during": True}),
             ("null_period", {"null_period": True}),
         ):
             if lever == "both" and name != "covered":
@@ -122,16 +123,24 @@ def findings_payload():
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
                             continue
-                        # Selection detail is stored separately to avoid duplicating
-                        # the same aggregate report for every occurrence.
+                        # The fixture needs one reachable selected trace, not a
+                        # duplicate case-file response for every roster member.
+                        # The replay activates the first served occurrence; all
+                        # other identities still exercise the public unavailable
+                        # selection path in its route handler.
                         event = prepared.case(row["id"], "event", None)
                         if event is None:
                             continue
+                        selected = next((row for row in event["occurrences"]
+                                         if row["verdict"] == "fired"), event["occurrences"][0])
                         cases[row["id"]] = {
                             "event": event,
                             "clock": prepared.case(row["id"], "clock", None),
-                            "selections": {o["id"]: prepared.case(row["id"], "event", o["id"])["selection"]
-                                           for o in event["occurrences"] if event["family"] == "sequences"},
+                            "selections": (
+                                {selected["id"]: prepared.case(
+                                    row["id"], "event", selected["id"])["selection"]}
+                                if event["family"] == "sequences" else {}
+                            ),
                         }
                     windows[window_key] = {"preparation": wrapped, "cases": cases}
                 states[key] = {
@@ -199,9 +208,10 @@ def main() -> int:
     args = parser.parse_args()
     stale = False
     for path, body in ((OUT, payload()), (FINDINGS_OUT, compact_findings_payload(findings_payload()))):
-        rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
-        # A shared-value reference fits on one line; keep its surrounding data indented.
-        rendered = re.sub(r'\{\n\s*"\$ref": (\d+)\n\s*\}', r'{"$ref": \1}', rendered)
+        if path == FINDINGS_OUT:
+            rendered = json.dumps(body, separators=(",", ":"), sort_keys=True) + "\n"
+        else:
+            rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
         if args.check:
             if (path.read_text() if path.exists() else "") != rendered:
                 print(f"stale fixture: {path} — rerun scripts/gen_eating_sequence_fixtures.py")

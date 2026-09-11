@@ -312,12 +312,13 @@ when its winning episode covers no meal. The parent keeps its meals denominator
 and Pattern case chart.
 
 The sixth registry family, eating-sequence, reuses the shared tile, mini mount,
-All charts and fullscreen shell. Its cohort aggregate dots use the shipped
-comparison/matched colors with diamond/circle redundancy. Time in range (%) and
-glucose SD (mg/dL) have separate labeled rulers. Three served intervals remain
-visible; a labeled dot identifies the producer-selected period. Cohort counts
-come from that comparison. Nulls stay absent numeric points with an explicit
-unavailable label. Mini rank omits axis furniture and interaction.
-The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js.
+All charts and fullscreen shell. Repeat eating uses cohort aggregate dots with
+the shipped comparison/matched colors and diamond/circle redundancy. High-carb
+sequence uses the shared response renderer: observed glucose in mg/dL over time
+from the end of eating, the target range, named highest-carb and other-sequence
+curves, cohort support and source scope. Its supporting detail retains all three
+served aggregate intervals, including explicit unavailable cells. The mini rank
+omits axis furniture and interaction.
+The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js. It retains one fired selected trace per sequence case, the exact row the replay opens, instead of duplicating every roster trace.
 The component harness reads generator-owned public Python cases. The coordinator
 owns rendered direction review and the three-viewport evidence matrix.

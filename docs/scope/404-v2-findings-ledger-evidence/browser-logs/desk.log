@@ -1,0 +1,40 @@
+(node:98059) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/404/frontend/eating-sequence-fixture.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/404/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the desk opens on Diagnose behind its persistent chrome (319.289917ms)
+✔ a failed Focus read keeps a short visible Retry beside its explanation at 1280x720 (572.511208ms)
+✔ a failed Focus read keeps a short visible Retry beside its explanation at 1440x900 (563.431125ms)
+✔ a pending Plan keeps its reason and a compact View Plan route visible at 1280x720 (612.17325ms)
+✔ a pending Plan keeps its reason and a compact View Plan route visible at 1440x900 (583.810583ms)
+✔ Filter matches Window while resting, expanded, and Findings-loading at 1280x720 (350.39575ms)
+✔ Filter matches Window while resting, expanded, and Findings-loading at 1440x900 (350.435959ms)
+✔ an unrouted Focus withholding is status text with its served reason, never a dead-end button at 1280x720 (586.364042ms)
+✔ an unrouted Focus withholding is status text with its served reason, never a dead-end button at 1440x900 (565.379042ms)
+✔ a grouped comparison owns its cohort label once at 1280x720 (565.235709ms)
+✔ a grouped comparison owns its cohort label once at 1440x900 (566.989417ms)
+✔ an expired Trial distinguishes its Later conclusion input from the immutable ending at 1280x720 (166.064375ms)
+✔ an expired Trial distinguishes its Later conclusion input from the immutable ending at 1440x900 (167.350291ms)
+✔ the chrome holds still across every destination, and one is current at a time (904.700541ms)
+✔ the shell rows and scroll containment hold at 1280x720 (245.431292ms)
+✔ the shell rows and scroll containment hold at 1440x900 (243.785417ms)
+✔ Day owns its chronology, its week ribbon, its month and the Episode Log (1654.733166ms)
+✔ a retained Day frame visibly marks its own loading work without unmounting the reading context at 1280x720 (283.866083ms)
+✔ a retained Day frame visibly marks its own loading work without unmounting the reading context at 1440x900 (268.896875ms)
+✔ a canonical Day address reloads through the built shell and returns through its canonical Diagnose door (478.247708ms)
+✔ a utility takes the reading pane's seat, marks its launcher, and gives focus back on Close (629.893167ms)
+✔ Escape leaves a utility from inside its own field, and steps a Guide article back first (1561.057875ms)
+✔ a utility's own Day entry keeps the utility open and returns into it (1158.825541ms)
+✔ repeated entry and exit leaves no duplicate chart, pane or utility behind (3002.607ms)
+✔ c2 carries one Findings composition, Patterns and all basal slots at 1280x720 (2065.931625ms)
+✔ c2 carries one Findings composition, Patterns and all basal slots at 1440x900 (2051.535584ms)
+✔ shared tile resolved after v2 teardown cannot repaint removed hosts (626.082375ms)
+✔ shared tile rejected after v2 teardown cannot repaint removed hosts (650.886167ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22022.516708

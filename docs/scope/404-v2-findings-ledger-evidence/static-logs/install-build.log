@@ -1,0 +1,47 @@
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: undefined,
+npm warn EBADENGINE   required: { node: '22.x' },
+npm warn EBADENGINE   current: { node: 'v26.7.0', npm: '11.19.0' }
+npm warn EBADENGINE }
+
+added 39 packages, and audited 40 packages in 607ms
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+1 moderate severity vulnerability
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   fsevents@2.3.3 (install: (install scripts present))
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+
+> build
+> vite build && vite build --config vite.config.v2.mjs
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 611 modules transformed.
+rendering chunks...
+computing gzip size...
+frontend/dist/assets/favicon-CW_IcLGp.svg      0.63 kB │ gzip:   0.43 kB
+frontend/dist/index.html                     169.69 kB │ gzip:  38.07 kB
+frontend/dist/assets/index-BvXzb0df.css      180.95 kB │ gzip:  50.54 kB
+frontend/dist/assets/index-CtTxgx2T.js     3,336.89 kB │ gzip: 807.19 kB
+
+✓ built in 224ms
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 611 modules transformed.
+rendering chunks...
+computing gzip size...
+frontend-v2/dist/assets/favicon-CW_IcLGp.svg      0.63 kB │ gzip:   0.43 kB
+frontend-v2/dist/index.html                       0.78 kB │ gzip:   0.48 kB
+frontend-v2/dist/assets/index-BiRxC2eQ.css      488.69 kB │ gzip: 276.48 kB
+frontend-v2/dist/assets/index-820DzZuh.js     2,936.35 kB │ gzip: 716.17 kB
+
+✓ built in 153ms

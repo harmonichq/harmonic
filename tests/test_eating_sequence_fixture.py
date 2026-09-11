@@ -111,21 +111,20 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
                 state = self.fixture["states"][f"{lever}_{name}"]
                 rows = state["windows"]["global"]["preparation"]["rendered_rows"]
                 self.assertNotIn(f"finding:{lever}", {r["id"] for r in rows})
-            if lever == "repeat_eating":
-                source = self.fixture["states"][f"{lever}_multiple"]
-                case = source["windows"]["global"]["cases"][f"finding:{lever}"]["event"]
-                self.assertGreater(sum(len(r["episodes"]) for r in case["occurrences"] if r["attributed"]), 8)
-                self.assertEqual(case["summary"]["claimed"], 8)
+            source = self.fixture["states"][f"{lever}_multiple"]
+            case = source["windows"]["global"]["cases"][f"finding:{lever}"]["event"]
+            self.assertGreater(sum(len(r["episodes"]) for r in case["occurrences"] if r["attributed"]), 8)
+            self.assertEqual(case["summary"]["claimed"], 8)
 
-    def test_sequence_cases_retain_every_real_fired_selection(self):
+    def test_sequence_cases_retain_every_public_roster_selection(self):
         for state in self.fixture["states"].values():
             for window in state["windows"].values():
                 for stored in window["cases"].values():
                     event = stored["event"]
                     if event["family"] != "sequences":
                         continue
-                    fired = {row["id"] for row in event["occurrences"] if row["verdict"] == "fired"}
-                    self.assertEqual(set(stored["selections"]), fired)
+                    roster = {row["id"] for row in event["occurrences"]}
+                    self.assertEqual(set(stored["selections"]), roster)
 
     def test_high_carb_in_sequence_response_is_producer_derived(self):
         from scripts.gen_eating_sequence_fixtures import products
@@ -141,3 +140,69 @@ class EatingSequenceFindingFixtureTest(unittest.TestCase):
             for sequence in varied
         }
         self.assertGreater(len(durations), 1)
+
+    def test_high_carb_selections_equal_the_public_producer(self):
+        from scripts.gen_eating_sequence_fixtures import products
+        from ciq_autotune import finding_case_file
+        from ciq_autotune.store import Store
+        from ciq_autotune.window_membership import WindowQuery
+        from tests.test_findings_projection import seed_sequence_store
+        projection, (bolus, cgm, log, _) = products("high_carb_sequence")
+        stored = self.fixture["states"]["high_carb_sequence_empty"]["windows"]["global"]["cases"][
+            "finding:high_carb_sequence"]
+        with Store.open(":memory:") as store:
+            seed_sequence_store(store, bolus, cgm, log)
+            prepared = finding_case_file.prepare(
+                store, query=WindowQuery.whole_day(), version=0,
+                analysis=projection._analysis, exposures=projection._exposures,
+                scenarios=projection._scenarios, analysis_generation="synthetic-342:0")
+            roster = prepared.case("finding:high_carb_sequence", "event", None)["occurrences"]
+            self.assertEqual(len(roster), 40)
+            for row in roster:
+                expected = prepared.case("finding:high_carb_sequence", "event", row["id"])["selection"]
+                self.assertEqual(expected["state"], "selected")
+                self.assertEqual(stored["selections"].get(row["id"]), expected, row["id"])
+
+    def test_browser_expansion_equals_python_transport(self):
+        import subprocess
+        script = """
+          import { readFileSync } from 'node:fs';
+          import { expandSequenceFixture } from './frontend/eating-sequence-fixture.js';
+          const payload = expandSequenceFixture(JSON.parse(readFileSync(
+            'mockups/eating-sequence-findings.synthetic/payload.json', 'utf8')));
+          delete payload.shared;
+          process.stdout.write(JSON.stringify(payload));
+        """
+        result = subprocess.run(["node", "--input-type=module", "-e", script],
+                                cwd=self.root, capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout), self.fixture)
+
+    def test_limited_support_and_missing_points_keep_literal_observed_values(self):
+        def response(name):
+            return self.fixture["states"][f"high_carb_sequence_{name}"]["windows"]["global"][
+                "cases"]["finding:high_carb_sequence"]["event"]["projection"]["response"]
+        limited = response("limited")
+        self.assertEqual(limited["window_min"], [-30, 5])
+        self.assertEqual([[(p["minute"], p["median"], p["n"], p["support"]) for p in c["points"]]
+                          for c in limited["cohorts"]], [
+            [(minute, 190.0, 8, "supported") for minute in range(-30, 1, 5)],
+            [(minute, 110.0, 12, "limited") for minute in range(-30, 0, 5)]
+            + [(0, 110.0, 32, "supported")]])
+        for cohort in response("null_period")["cohorts"]:
+            self.assertEqual(cohort["points"][0], {
+                "minute": 0, "median": None, "p25": None, "p75": None,
+                "n": 0, "support": "withheld"})
+            self.assertEqual(cohort["points"][1]["minute"], 5)
+            self.assertEqual(cohort["points"][1]["median"], 110.0)
+
+    def test_short_headlines_keep_the_full_comparison_in_the_case(self):
+        for name, title in (("empty", "Glucose after high-carb eating"),
+                            ("in_sequence", "Glucose during high-carb eating")):
+            window = self.fixture["states"][f"high_carb_sequence_{name}"]["windows"]["global"]
+            row = next(row for row in window["preparation"]["rendered_rows"]
+                       if row["id"] == "finding:high_carb_sequence")
+            response = window["cases"][row["id"]]["event"]["projection"]["response"]
+            self.assertEqual(row["headline"], title)
+            self.assertIn("%", response["summary"])
+            self.assertIn("n = 8 vs 32", response["summary"])
+            self.assertEqual(len(response["comparisons"]), 3)

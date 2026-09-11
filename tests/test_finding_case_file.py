@@ -893,7 +893,8 @@ def test_high_carb_sequence_case_serves_the_retained_response_evidence():
                for point in detail["glucose"])
     row = next(row for row in wrap(prepared)["findings"]["rows"]
                if row["id"] == "finding:high_carb_sequence")
-    assert row["headline"] == response["summary"]
+    assert row["headline"] == "Glucose after high-carb eating"
+    assert "%" in response["summary"] and "n = 8 vs 32" in response["summary"]
 
 
 def test_high_carb_response_rejects_missing_or_incoherent_retained_metadata():

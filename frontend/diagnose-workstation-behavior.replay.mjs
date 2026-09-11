@@ -57,7 +57,7 @@ const CARB_RATIO_BLOCK_EVIDENCE = JSON.parse(await readFile(
 
 const evidenceDir = process.env.DIAGNOSE_EVIDENCE_DIR || null;
 const evidenceViewport = () => process.env.VIEWPORT || '1440x900';
-async function captureEvidence(page, label) {
+export async function captureEvidence(page, label) {
   if (!evidenceDir) return;
   const expected = evidenceViewport().split('x').map(Number);
   const viewport = page.viewportSize();
@@ -698,6 +698,7 @@ export async function openApp(browser, {
       let body;
       if (path === '/api/diagnose/findings' || path === '/api/diagnose/finding-case-file-preparation') {
         if (!window) fail(`Missing generated sequence window: ${sequenceName}/${key}`);
+        if (path.endsWith('preparation')) caseScenario?.preparation?.({ url });
         body = path.endsWith('preparation') ? window.preparation
           : { ...window.preparation.findings, rows: window.preparation.rendered_rows };
       }
@@ -712,6 +713,7 @@ export async function openApp(browser, {
           || { state: 'unavailable', requested_id: occ, detail: null });
         if (caseScenario?.case) {
           const response = await caseScenario.case({ request: ++caseRequests, url, body, caseFiles: retained });
+          if (response.status >= 400) expectResponse(page, new RegExp(`^${path}$`), response.status);
           return route.fulfill({ status: response.status || 200, contentType: 'application/json',
             body: JSON.stringify(response.body) });
         }
@@ -4739,7 +4741,7 @@ const openCanvas = async (page) => {
   await page.waitForTimeout(700);
 };
 
-const openAllCharts = async (page) => {
+export const openAllCharts = async (page) => {
   if (await page.locator('#tile-field').getAttribute('data-explorer') === null) {
     await page.getByRole('button', { name: 'All charts', exact: true }).click();
     await page.locator('#tile-field[data-explorer]').waitFor();
@@ -5799,6 +5801,13 @@ async function sequenceCharts(page, lever) {
     'mounted mini draws the served cohort comparison');
     return { id, data, mini, readSeries };
   }, "sequenceCharts");
+  if (lever === 'high_carb_sequence') {
+    ok(await page.locator(mini).evaluate((host) => {
+      const option = window.echarts.getInstanceByDom(host).getOption();
+      return !option.tooltip[0].show && !option.xAxis[0].axisLabel.show
+        && !option.yAxis[0].axisLabel.show && option.series.every((series) => series.silent);
+    }), 'the default miniature retains its inert rank');
+  }
   await page.locator(mini).scrollIntoViewIfNeeded();
   await captureEvidence(page, `${lever}-mini`);
   await openAllCharts(page);
@@ -5828,6 +5837,11 @@ async function sequenceCharts(page, lever) {
     ok(parentSeries.length > 0 && !parentSeries.some((s) => s.id?.startsWith('sequence:')),
       'parent still renders its Pattern case file');
   }, "sequenceCharts");
+  if (lever === 'high_carb_sequence') {
+    await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"]`).scrollIntoViewIfNeeded();
+    await assertResponseAnchorGeometry(page, `#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
+    await captureEvidence(page, `${lever}-all-charts`);
+  }
   await page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]')
     .scrollIntoViewIfNeeded();
   await captureEvidence(page, `${lever}-pattern-reference`);
@@ -5837,6 +5851,192 @@ async function sequenceCharts(page, lever) {
 export const S153 = (page) => sequenceCharts(page, 'high_carb_sequence');
 // STORY:finding-evidence-routing:S154
 export const S154 = (page) => sequenceCharts(page, 'repeat_eating');
+
+/** Faults are applied at the API boundary; recovery remains owned by the app. */
+export function highCarbFailureScenario(defect) {
+  const scenario = { armed: false, cases: [], preparations: 0,
+    preparation() { if (scenario.armed) scenario.preparations += 1; },
+    case({ url, body }) {
+      if (!scenario.armed || body.finding.lever !== 'high_carb_sequence') return { body };
+      scenario.cases.push(url.searchParams.get('alignment'));
+      if (defect.startsWith('stale')) {
+        if (defect === 'stale-recover' && scenario.cases.length > 1) return { body };
+        return { status: 409, body: { detail: { code: 'stale_projection',
+          message: 'Evidence changed. Refresh findings.' } } };
+      }
+      if (defect === 'missing') delete body.projection.response;
+      if (defect === 'malformed') body.projection.response.cohorts[0].points[0].median = 'broken';
+      if (defect === 'inconsistent') body.projection.response.scope = 'evening';
+      return { body };
+    } };
+  return scenario;
+}
+
+export async function assertHighCarbFailure(page, scenario, defect, stored) {
+  await page.getByRole('button', { name: '24 h', exact: true }).click();
+  const row = '#level .qrow[data-id="finding:high_carb_sequence"]';
+  await page.locator(row).waitFor();
+  scenario.armed = true;
+  await page.locator(row).click();
+  if (defect === 'stale-recover') {
+    await page.locator('#level .sequence-comparison').waitFor();
+    is(scenario.cases, ['event', 'event'], 'stale response retries the same High-carb case once');
+    is(scenario.preparations, 1, 'stale response refreshes preparation once');
+    is(await page.locator('#level .case-file-error').count(), 0, 'successful refresh clears the error');
+    await assertSequenceResponse(page, stored);
+  } else {
+    const error = page.locator('#level .case-file-error');
+    await error.waitFor();
+    is(await error.getAttribute('data-code'), defect === 'stale-error'
+      ? 'stale_projection' : 'inconsistent_projection', 'High-carb errors stay visibly typed');
+    is(await page.locator('#level .sequence-comparison').count(), 0, 'invalid response is no result');
+    is(scenario.cases, defect === 'stale-error' ? ['event', 'event'] : ['event'],
+      'no hidden clock fallback or unbounded retry');
+    is(scenario.preparations, defect === 'stale-error' ? 1 : 0, 'only typed stale refreshes automatically');
+    await captureEvidence(page, `high_carb_sequence-${defect}`);
+    scenario.armed = false;
+    await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+    await page.locator(row).click();
+    await page.locator('#level .sequence-comparison').waitFor();
+    is(await page.locator('#level .case-file-error').count(), 0, 'manual reopen recovers with valid response');
+    await assertSequenceResponse(page, stored);
+  }
+}
+
+export async function assertResponseAnchorGeometry(page, selector = '#tile-focal #ec-chart') {
+  const geometry = await page.locator(selector).evaluate((host) => {
+    const chart = window.echarts.getInstanceByDom(host);
+    const labels = chart.getZr().storage.getDisplayList().filter((item) => item.type === 'tspan')
+      .map((item) => {
+        const rect = item.getBoundingRect().clone();
+        if (item.transform) rect.applyTransform(item.transform);
+        return { text: item.style.text, x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      });
+    return { width: host.clientWidth, labels };
+  });
+  const anchor = geometry.labels.filter((label) => ['End of eating', 'sequence'].includes(label.text));
+  is(anchor.length, 2, 'both lines of the High-carb end anchor paint');
+  for (const label of anchor) {
+    ok(label.x >= 0 && label.x + label.width <= geometry.width, 'anchor fits the rendered chart');
+    for (const tick of geometry.labels.filter((item) => /^\+\d.*h$/.test(item.text))) {
+      if (label.y < tick.y + tick.height && tick.y < label.y + label.height) {
+        ok(tick.x - (label.x + label.width) >= 6,
+          `anchor has reading space before ${tick.text}: ${JSON.stringify({ label, tick })}`);
+      }
+    }
+  }
+  console.log(`High-carb anchor geometry ${JSON.stringify({ width: geometry.width, labels: geometry.labels.filter((label) => anchor.includes(label) || /^\+/.test(label.text)) })}`);
+}
+
+/** Compare the mounted shared renderer with the complete served response. */
+export async function assertSequenceResponse(page, stored, selector = '#tile-focal #ec-chart') {
+  const response = stored.event.projection.response;
+  if (selector === '#tile-focal #ec-chart' && await page.locator('#tile-field').getAttribute('data-fullscreen-tile') === null) {
+    is(await page.locator('#tile-focal h3').innerText(), response.period === 'in_sequence'
+      ? 'Glucose during high-carb eating' : 'Glucose after high-carb eating', 'stage uses the concise served title');
+    is(await page.locator('#level .sequence-supporting-detail .sequence-comparison').innerText(),
+      response.summary, 'supporting detail retains the complete numerical association');
+  }
+  const option = await page.locator(selector).evaluate((host) =>
+    window.echarts.getInstanceByDom(host).getOption());
+  is([option.xAxis[0].min, option.xAxis[0].max], response.window_min, 'served response endpoints');
+  for (const cohort of response.cohorts) {
+    for (const support of ['supported', 'limited']) {
+      if (!cohort.points.some((point) => point.support === support)) continue;
+      const line = option.series.find((series) => series.id === `${cohort.key}:line:${support}`);
+      is(line?.data, cohort.points.map((point) =>
+        [point.minute, point.support === support ? point.median : null]),
+      `${cohort.name} ${support} points and gaps equal the public producer`);
+      is(line.connectNulls, false, 'missing evidence is never interpolated');
+      const isolated = cohort.points.filter((point, index, points) => point.support === support
+        && points[index - 1]?.support !== support && points[index + 1]?.support !== support);
+      if (isolated.length) {
+        is(option.series.find((series) => series.id === `${cohort.key}:point:${support}`)?.data,
+          isolated.map((point) => [point.minute, point.median]), 'isolated marks carry served glucose');
+      }
+    }
+  }
+  return { series: option.series.map(({ id, data }) => ({ id, data })),
+    x: [option.xAxis[0].min, option.xAxis[0].max], y: [option.yAxis[0].min, option.yAxis[0].max] };
+}
+
+export async function assertSequenceSelection(page, stored, occurrence) {
+  const band = page.locator(`#level .vband .key[data-verdict="${occurrence.verdict}"]`);
+  if (await band.getAttribute('aria-pressed') !== 'true') await band.click();
+  await page.locator(`#level .case-occurrence[data-occurrence-id="${occurrence.id}"]`).click();
+  await page.locator('#level .sequence-detail').waitFor();
+  await waitForReplayAssertion(async () => {
+    const option = await page.locator('#tile-focal #ec-chart').evaluate((host) =>
+      window.echarts.getInstanceByDom(host).getOption());
+    is(option.series.find((series) => series.id === 'selected:trace')?.data,
+      stored.selections[occurrence.id].detail.glucose.map((point) => [point.minute, point.bg]),
+      `${occurrence.verdict} selection retains every observed point`);
+  }, 'sequence selection');
+}
+
+async function assertSequenceReadout(page, stored, selector) {
+  const readout = page.locator(selector);
+  await page.waitForFunction((selector) => {
+    let node = document.querySelector(selector);
+    if (!node?.textContent) return false;
+    for (; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (Number(style.opacity) < 1 || style.visibility !== 'visible') return false;
+    }
+    return true;
+  }, selector);
+  const shown = await readout.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const items = [...node.children].map((child) => ({ text: child.textContent,
+      box: child.getBoundingClientRect().toJSON() }));
+    return { box: box.toJSON(), items, time: node.querySelector('.rd-time').textContent,
+      pairs: [...node.querySelectorAll('.rd-pair')].map((pair) => ({
+        name: pair.querySelector('.k').textContent, value: pair.querySelector('.v').textContent })) };
+  });
+  const response = stored.event.projection.response;
+  is(shown.pairs, response.cohorts.map((cohort) => {
+    const point = cohort.points.find((point) => point.minute === response.window_min[0]);
+    return { name: cohort.name, value: !point || point.support === 'withheld'
+      ? 'unavailable' : `${Math.round(point.median)} · n${point.n}` };
+  }), 'visible cursor values equal the served observations and support');
+  for (const item of shown.items) {
+    ok(item.box.left >= shown.box.left - 1 && item.box.right <= shown.box.right + 1
+      && item.box.top >= shown.box.top - 1 && item.box.bottom <= shown.box.bottom + 1,
+    `readout is readable inside its header: ${JSON.stringify(shown)}`);
+  }
+  console.log(`High-carb readout geometry ${JSON.stringify(shown)}`);
+}
+
+export async function assertSequenceFullscreen(page, stored) {
+  const chart = page.locator('#tile-focal #ec-chart');
+  const before = await assertSequenceResponse(page, stored);
+  await assertResponseAnchorGeometry(page);
+  await chart.press('Home');
+  const readout = await page.locator('#tile-focal #ec-readout').innerText();
+  await assertSequenceReadout(page, stored, '#tile-focal #ec-readout');
+  await captureEvidence(page, 'high_carb_sequence-stage-readout');
+  const label = await chart.getAttribute('aria-label');
+  const control = page.locator('#tile-focal .tile-fullscreen');
+  await control.click();
+  await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+  is(await assertSequenceResponse(page, stored), before, 'fullscreen preserves response, trace and range');
+  await assertResponseAnchorGeometry(page);
+  await chart.press('Home');
+  is(await chart.getAttribute('aria-label'), label, 'fullscreen accessible readout parity');
+  is(await page.locator('#canvas-fullhead #ec-readout').innerText(), readout,
+    'fullscreen visible readout parity');
+  await assertSequenceReadout(page, stored, '#canvas-fullhead #ec-readout');
+  await captureEvidence(page, 'high_carb_sequence-fullscreen');
+  await chart.press('End');
+  is(await page.locator('#canvas-fullhead .rd-time').innerText(), '+6 h',
+    'End reaches the actual six-hour upper endpoint');
+  is(await page.locator('#canvas-fullhead .rd-pair .v').allTextContents(),
+    ['unavailable', 'unavailable'], 'the excluded upper endpoint has no invented observations');
+  await page.keyboard.press('Escape');
+  await page.locator('#tile-field:not([data-fullscreen-tile])').waitFor();
+  is(await assertSequenceResponse(page, stored), before, 'return preserves response, trace and range');
+  ok(await control.evaluate((node) => node === document.activeElement), 'return focuses the opener');
+}
 
 async function sequenceDrill(page, lever) {
   const input = await sequenceState(page, `${lever}_empty`);
@@ -5869,15 +6069,15 @@ async function sequenceDrill(page, lever) {
   await captureEvidence(page, `${lever}-selected`);
   if (lever === 'high_carb_sequence') {
     await page.locator('#level .clear-trace').click();
-    const second = Object.keys(input.windows.global.cases[id].selections)[1];
-    await page.locator(`#level .case-occurrence[data-occurrence-id="${second}"]`).click();
-    await waitForReplayAssertion(async seen => {
-      is(seen(await page.locator('#level .case-selection-state').count()), 0,
-        'every fired roster occurrence retains its served selection');
-      ok(seen(await page.locator('#level .sequence-detail').isVisible()),
-        'the second fired occurrence exposes its observed sequence detail');
-      detail = seen(await page.locator('#level .sequence-detail').innerText());
-    }, 'sequenceDrill');
+    const stored = input.windows.global.cases[id];
+    const second = stored.event.occurrences.filter((row) => row.verdict === 'fired')[1];
+    await assertSequenceSelection(page, stored, second);
+    await page.locator('#level .clear-trace').click();
+    await assertSequenceSelection(page, stored,
+      stored.event.occurrences.find((row) => row.verdict === 'clean'));
+    detail = await page.locator('#level .sequence-detail').innerText();
+    await captureEvidence(page, `${lever}-clean-selected`);
+    await assertSequenceFullscreen(page, stored);
   }
   const windowBefore = (await state(page)).pressed;
   const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
@@ -5932,6 +6132,22 @@ export const S157 = async (page) => {
       is(seen(await node.count()), 1, 'witnessed scoped cause renders');
       is(seen(await page.locator('#level .qitem.claimed').count()), 0, 'scoped rail invents no nesting');
     }, "S157");
+    if (lever === 'high_carb_sequence') {
+      await page.locator(`#level .qrow[data-id="${source.id}"]`).click();
+      await page.locator('#tile-focal #ec-chart').waitFor();
+      const scoped = input.windows['0-360'].cases[source.id];
+      is(scoped.event.projection.response, input.windows.global.cases[source.id].event.projection.response,
+        'clock roster retains the complete source response population');
+      ok(scoped.event.occurrences.length < input.windows.global.cases[source.id].event.occurrences.length,
+        'the clock roster is actually narrower');
+      await assertSequenceResponse(page, scoped);
+      is(await page.locator('#level .case-occurrence').count(),
+        Math.min(5, scoped.event.occurrences.filter((row) => row.verdict === 'fired').length),
+        'opened roster uses the scoped public membership');
+      ok((await page.locator('#tile-focal #ec-chart-key').innerText()).includes('Source population'),
+        'the distinct response population is visibly named');
+      await captureEvidence(page, 'high_carb_sequence-scoped');
+    }
   }
 };
 
@@ -5946,7 +6162,7 @@ export const S158 = async (page) => {
       }, "S158");
     }
     if (lever === 'high_carb_sequence') {
-      await sequenceState(page, `${lever}_in_sequence`);
+      const singleton = await sequenceState(page, `${lever}_in_sequence`);
       await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
       await page.locator('#tile-focal #ec-chart').waitFor();
       await waitForReplayAssertion(async seen => {
@@ -5963,9 +6179,14 @@ export const S158 = async (page) => {
             .filter((item) => item.type === 'path').length));
         is(marks, 2, 'isolated supported cohort observations paint two visible marks');
       }, 'S158');
+      await assertSequenceResponse(page, singleton.windows.global.cases[`finding:${lever}`]);
+      is(singleton.windows.global.cases[`finding:${lever}`].event.projection.response.cohorts
+        .map((cohort) => cohort.points.filter((point) => point.support === 'supported')
+          .map(({ minute, median, n }) => [minute, median, n])),
+      [[[0, 270, 8]], [[0, 110, 32]]], 'singleton marks represent 270/110 mg/dL with actual support');
       await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
       await captureEvidence(page, `${lever}-in-sequence`);
-      await sequenceState(page, `${lever}_limited`);
+      const limited = await sequenceState(page, `${lever}_limited`);
       await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
       await page.locator('#tile-focal #ec-chart').waitFor();
       await waitForReplayAssertion(async seen => {
@@ -5974,9 +6195,11 @@ export const S158 = async (page) => {
         ok(option.series.some((series) => series.id === 'comparison:line:limited'),
           'limited point support is rendered without removing its supported Finding');
       }, 'S158');
+      await assertSequenceResponse(page, limited.windows.global.cases[`finding:${lever}`]);
+      await assertResponseAnchorGeometry(page);
       await captureEvidence(page, `${lever}-limited`);
     }
-    await sequenceState(page, `${lever}_null_period`);
+    const nullPeriod = await sequenceState(page, `${lever}_null_period`);
     await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
     await page.locator('#level .sequence-comparison').waitFor();
     await waitForReplayAssertion(async seen => {
@@ -6012,6 +6235,8 @@ export const S158 = async (page) => {
       const text = seen(await page.locator('#level .sequence-comparison').innerText());
       ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
     }, "S158");
+    if (lever === 'high_carb_sequence') await assertSequenceResponse(page,
+      nullPeriod.windows.global.cases[`finding:${lever}`]);
     await captureEvidence(page, `${lever}-period-units-labels`);
   }
 };

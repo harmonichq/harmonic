@@ -99,8 +99,7 @@ def findings_payload():
             ("null_period", {"null_period": True}),
         ):
             if (lever == "both" and name != "covered") or (
-                    name in {"in_sequence", "limited"} and lever != "high_carb_sequence") or (
-                    lever == "high_carb_sequence" and name == "multiple"):
+                    name in {"in_sequence", "limited"} and lever != "high_carb_sequence"):
                 continue
             key = f"{lever}_{name}"
             projection, (bolus, cgm, log, _) = products(lever, **options)
@@ -127,9 +126,7 @@ def findings_payload():
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
                             continue
-                        # Keep every fired selection the public case endpoint
-                        # can serve. Non-fired roster entries remain explicitly
-                        # unavailable through the same route response.
+                        # Preserve every roster selection the public endpoint serves.
                         event = prepared.case(row["id"], "event", None)
                         if event is None:
                             continue
@@ -139,8 +136,7 @@ def findings_payload():
                             "selections": (
                                 {occurrence["id"]: prepared.case(
                                     row["id"], "event", occurrence["id"])["selection"]
-                                 for occurrence in event["occurrences"]
-                                 if occurrence["verdict"] == "fired"}
+                                 for occurrence in event["occurrences"]}
                                 if event["family"] == "sequences" else {}
                             ),
                         }
@@ -155,25 +151,26 @@ def findings_payload():
 
 
 def compact_findings_payload(body):
-    """Intern repeated JSON containers without changing any served value."""
+    """Intern repeated JSON values without changing any served value."""
     counts = Counter()
 
     def identity(value):
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
     def count(value):
-        if isinstance(value, (dict, list)):
+        if isinstance(value, (dict, list, str)):
             key = identity(value)
-            if len(key) > 120:
+            if len(key) > 16:
                 counts[key] += 1
+        if isinstance(value, (dict, list)):
             for child in value.values() if isinstance(value, dict) else value:
                 count(child)
 
     count(body["states"])
-    shared, indices = [], {}
+    shared, indices, shapes = [], {}, {}
 
     def pack(value):
-        if not isinstance(value, (dict, list)):
+        if not isinstance(value, (dict, list, str)):
             return value
         key = identity(value)
         if counts[key] > 1:
@@ -181,25 +178,78 @@ def compact_findings_payload(body):
                 packed = walk(value)
                 indices[key] = len(shared)
                 shared.append(packed)
-            return {"$ref": indices[key]}
+            return ["$ref", indices[key]]
         return walk(value)
 
     def walk(value):
-        return ({key: pack(child) for key, child in value.items()}
-                if isinstance(value, dict) else [pack(child) for child in value])
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            keys = tuple(sorted(value))
+            children = [pack(value[key]) for key in keys]
+            # Repeated object field names dominate observation and roster rows.
+            # Share the field layout as well as identical values; no value is dropped.
+            if len(identity(keys)) > 30:
+                if keys not in shapes:
+                    shapes[keys] = len(shared)
+                    shared.append(list(keys))
+                return ["$ref", shapes[keys], children]
+            return dict(zip(keys, children))
+        return [pack(child) for child in value]
 
     states = pack(body["states"])
-    return {**body, "states": states, "shared": shared}
+    # Parent interning can leave a child reference used only once. Inline those
+    # children and renumber the retained table instead of paying for both forms.
+    uses = Counter()
+
+    def references(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                uses[value[1]] += 1
+            for child in value:
+                references(child)
+        elif isinstance(value, dict):
+            for child in value.values():
+                references(child)
+
+    references(states)
+    for value in shared:
+        references(value)
+    retained, remap = [], {}
+
+    def trim(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                index = value[1]
+                if len(value) == 2 and uses[index] == 1:
+                    return trim(shared[index])
+                if index not in remap:
+                    packed = trim(shared[index])
+                    remap[index] = len(retained)
+                    retained.append(packed)
+                return ["$ref", remap[index], *([trim(value[2])] if len(value) == 3 else [])]
+            return [trim(child) for child in value]
+        if isinstance(value, dict):
+            return {key: trim(child) for key, child in value.items()}
+        return value
+
+    states = trim(states)
+    return {**body, "states": states, "shared": retained}
 
 
 def expand_findings_payload(body):
     """Restore independent transports for producer equality tests."""
     def expand(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                referenced = body["shared"][value[1]]
+                if len(value) == 3:
+                    return dict(zip(referenced, map(expand, value[2])))
+                return expand(referenced)
+            return [expand(child) for child in value]
         if isinstance(value, dict):
-            if set(value) == {"$ref"}:
-                return expand(body["shared"][value["$ref"]])
             return {key: expand(child) for key, child in value.items()}
-        return [expand(child) for child in value] if isinstance(value, list) else value
+        return value
 
     return {key: expand(value) for key, value in body.items() if key != "shared"}
 

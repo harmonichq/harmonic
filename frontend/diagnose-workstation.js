@@ -3415,14 +3415,13 @@ function boot(root, data, callbacks, signal) {
       const caption = document.createElement('div');
       caption.className = 'statline sequence-comparison';
       caption.textContent = comparison.finding.summary;
-      host.append(caption);
       if (caseFile.finding.lever === 'high_carb_sequence') {
         const facts = document.createElement('div');
         facts.className = 'ev-detail case-facts sequence-supporting-detail';
         const label = document.createElement('div');
         label.className = 'lab';
         label.textContent = 'Supporting comparison detail';
-        facts.append(label);
+        facts.append(label, caption);
         for (const row of comparison.periods) {
           const detail = document.createElement('div');
           detail.className = 'vd';
@@ -3441,7 +3440,7 @@ function boot(root, data, callbacks, signal) {
           facts.append(detail);
         }
         host.append(facts);
-      }
+      } else host.append(caption);
     }
     const eventComparison = caseFile.projection.alignment === 'event'
       && caseFile.projection.kind !== 'eating-sequence';

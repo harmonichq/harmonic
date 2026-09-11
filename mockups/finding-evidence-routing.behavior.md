@@ -3960,16 +3960,17 @@ The chart-specific inventory maps registry seating and minis to S153, row/All
 charts entry and fullscreen/focus/selection return to S155, window membership
 to S157, and periods/units/nulls/cohort support to S158. S151 keeps nesting and
 sequence counting. The imported shared mount owns resize and disposal. The
-ECharts legend's cohort visibility and item tooltip are retained behaviors; the
-revision's response cursor and explicit cohort visibility controls must cover
-them in the amended replay. The miniature remains inert.
+legend names the cohorts and their support. Live stage/fullscreen label clicks
+left the ECharts selected map unchanged; no durable visibility toggle is
+claimed. The revision uses the sibling response chart's pointer/keyboard
+readout to disclose values in place of the item-tooltip option. The miniature remains inert.
 
 Connor approved the existing Pattern response-comparison presentation for the
 High-carb sequence chart: “yep.” The selected direction and source boundaries
 are recorded in ADR 410 in `openspec/changes/high-carb-response/design.md`.
 The aggregate dot panels are the replaced presentation, not a retirement of
 their evidence: all three periods, units, values, counts and unavailable states
-remain in supporting detail. No navigation or cohort-visibility behavior is
+remain in supporting detail. No navigation behavior is
 retired. Repeat eating retains the current S152/S154/S156 and S158 branches.
 
 Implementation amends S153/S155/S158 for the new High-carb presentation and adds

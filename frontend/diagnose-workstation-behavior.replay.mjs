@@ -5931,6 +5931,12 @@ export async function assertResponseAnchorGeometry(page, selector = '#tile-focal
 /** Compare the mounted shared renderer with the complete served response. */
 export async function assertSequenceResponse(page, stored, selector = '#tile-focal #ec-chart') {
   const response = stored.event.projection.response;
+  if (selector === '#tile-focal #ec-chart') {
+    const legend = await page.locator('#tile-focal #ec-chart-key').innerText();
+    ok(legend.includes(response.scope === 'evening' ? 'Evening sequences' : 'Sequences at all times of day'),
+      'legend describes the source comparison scope in plain language');
+    ok(!legend.includes('pooled'), 'legend does not expose the internal scope term');
+  }
   if (selector === '#tile-focal #ec-chart' && await page.locator('#tile-field').getAttribute('data-fullscreen-tile') === null) {
     is(await page.locator('#tile-focal h3').innerText(), response.period === 'in_sequence'
       ? 'Glucose during high-carb eating' : 'Glucose after high-carb eating', 'stage uses the concise served title');

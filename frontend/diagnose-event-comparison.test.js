@@ -79,3 +79,18 @@ test('fractional-hour cursor labels use whole minutes without decimal-hour speec
     assert.equal(label(0), source.projection.anchor.label);
   } finally { Object.assign(globalThis, prior); }
 });
+
+test('selected singleton observations paint while dense selected traces omit markers', () => {
+  const source = Object.values(caseFiles().cases['finding:missed_meal'].selected_event)
+    .find((row) => row.selection.detail.glucose.length > 1);
+  const selected = (row) => eventComparisonChartOption(row, GLUCOSE_ENVELOPE).series
+    .find((series) => series.id === 'selected:trace');
+  assert.equal(selected(source).showSymbol, false);
+  const singleton = structuredClone(source);
+  singleton.selection.detail.glucose = [singleton.selection.detail.glucose[0]];
+  const mark = selected(singleton);
+  assert.equal(mark.showSymbol, true);
+  assert.equal(mark.symbol, 'circle');
+  assert.ok(mark.symbolSize > 0);
+  assert.deepEqual(mark.data, singleton.selection.detail.glucose.map((point) => [point.minute, point.bg]));
+});

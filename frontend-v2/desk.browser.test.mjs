@@ -376,8 +376,32 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
     await assertSequenceSelection(page, stored, stored.event.occurrences.filter((row) => row.verdict === 'fired')[1]);
     await page.locator('#level .sequence-detail').waitFor();
     assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 1);
-    assert.ok(await chart.evaluate((host) => window.echarts.getInstanceByDom(host).getOption().series
-      .some((series) => series.id === 'selected:trace')));
+    const assertSelectedMark = async (rank) => {
+      const mark = await chart.evaluate((host) => {
+        const chart = window.echarts.getInstanceByDom(host);
+        const index = chart.getOption().series.findIndex((series) => series.id === 'selected:trace');
+        const graphic = chart.getModel().getSeriesByIndex(index).getData().getItemGraphicEl(0);
+        const painted = [];
+        graphic?.traverse((item) => {
+          if (item.type !== 'path' || !chart.getZr().storage.getDisplayList().includes(item)) return;
+          const box = item.getBoundingRect().clone();
+          if (item.transform) box.applyTransform(item.transform);
+          painted.push({ width: box.width, height: box.height, opacity: item.style.opacity ?? 1 });
+        });
+        return { data: chart.getOption().series[index].data, painted };
+      });
+      assert.deepEqual(mark.data, [[0, 270]], 'selected singleton is the served observation');
+      assert.ok(mark.painted.some((item) => item.width > 0 && item.height > 0 && item.opacity > 0),
+        `${rank} selected singleton paints a visible mark: ${JSON.stringify(mark)}`);
+      console.log(`Selected singleton ${rank} ${JSON.stringify(mark)}`);
+      await captureEvidence(page, `high_carb_sequence-selected-singleton-${rank}`);
+    };
+    await assertSelectedMark('stage');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    await assertSelectedMark('fullscreen');
+    await page.keyboard.press('Escape');
+    await page.locator('#tile-field:not([data-fullscreen-tile])').waitFor();
     await press(page, '#level .clear-trace');
     assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 0);
   } finally { await close(); }

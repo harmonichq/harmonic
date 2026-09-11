@@ -102,7 +102,9 @@ function episodeSeries(surface, cohort, selectedCohort) {
 function selectedSeries(surface, detail) {
   if (!detail) return [];
   return [{ id: 'selected:trace', name: 'Selected trace', type: 'line', silent: true,
-    showSymbol: false, data: detail.glucose.map((point) => [point.minute, point.bg]),
+    showSymbol: detail.glucose.length === 1, symbol: 'circle', symbolSize: 7,
+    itemStyle: { color: css(surface, '--ec-focus') },
+    data: detail.glucose.map((point) => [point.minute, point.bg]),
     lineStyle: { color: css(surface, '--ec-focus'), width: 2.5 }, z: 6 }];
 }
 
@@ -122,7 +124,8 @@ function legend(surface, caseFile, selected) {
     const period = caseFile.projection.period === 'in_sequence' ? 'During eating'
       : caseFile.projection.period === 'post_4h' ? 'Next 4 h' : 'Next 6 h';
     const window = caseFile.projection.source_window;
-    key.insertAdjacentHTML('beforeend', `<span class="ec-comparison-unavailable">Source population · ${caseFile.projection.scope} scope · ${window.days} days · ${period}</span>`);
+    const scope = caseFile.projection.scope === 'evening' ? 'Evening sequences' : 'Sequences at all times of day';
+    key.insertAdjacentHTML('beforeend', `<span class="ec-comparison-unavailable">Source population · ${scope} · ${window.days} days · ${period}</span>`);
   }
   if (caseFile.projection.comparison.state === 'unavailable') key.insertAdjacentHTML('beforeend',
     `<span class="ec-comparison-unavailable" role="status">${caseFile.projection.comparison.name} is unavailable for comparison.</span>`);

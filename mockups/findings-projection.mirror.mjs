@@ -519,6 +519,7 @@ function findingRows(exposures, scenarios, query) {
     if (!claimed.length) continue;
     const counts = Object.fromEntries(VERDICT_CATEGORIES.map((state) =>
       [state, population.filter((item) => item.verdict === state).length]));
+    const response = exposures.sequence_evidence[lever].response;
     rows.push(stampedRow({
       id: `finding:${lever}`, register: 'finding', kind: 'habit', lever,
       title: { high_carb_sequence: 'High-carb sequence', repeat_eating: 'Repeat eating' }[lever],
@@ -527,6 +528,8 @@ function findingRows(exposures, scenarios, query) {
       episodes: claimed.length, evidence: population, verdict_counts: counts,
       verdict_counts_by_family: { sequences: counts },
       event_chart: { lever, window: { ...query.dict } },
+      response_headline: response ? (response.period === 'in_sequence'
+        ? 'Glucose during high-carb eating' : 'Glucose after high-carb eating') : null,
     }));
   }
   return rows;
@@ -721,6 +724,7 @@ function icHeadline(r) {
 }
 
 export function findingHeadline(r) {
+  if (r.response_headline != null) return r.response_headline;
   // findRows in this mirror never publishes a row without an appearance
   // (transcribed from `_finding_rows`'s `by_lever` construction), so this
   // is never null.

@@ -645,7 +645,9 @@ class FindingsProjection:
                 episodes=len(claimed), evidence=population,
                 verdict_counts=counts, verdict_counts_by_family={"sequences": counts},
                 event_chart={"lever": lever, "window": query.to_dict()},
-                response_summary=response.get("summary") if response is not None else None,
+                response_headline=("Glucose during high-carb eating"
+                                   if response["period"] == "in_sequence"
+                                   else "Glucose after high-carb eating") if response is not None else None,
             ))
         return rows
 
@@ -927,8 +929,8 @@ def _finding_headline(row: dict) -> str:
     # only created in the same iteration that appends its first appearance
     # (`findings_projection.py`'s `_finding_rows`), and the recurrence branch
     # replaces the list with exactly one element, never empties it.
-    if row.get("response_summary") is not None:
-        return row["response_summary"]
+    if row.get("response_headline") is not None:
+        return row["response_headline"]
     appearance = row["appearances"][0]
     verdict = ("Ranks among this window's findings" if row.get("tier") in _RANKING_TIERS
                else "Not ranked in this window yet")

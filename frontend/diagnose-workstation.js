@@ -69,7 +69,7 @@ import { watchDockView, paintWatchDock } from './watched-change-dock.js';
    from this module too; the cycle is safe because neither side calls the
    other's import at module-evaluation time, only from inside functions run
    later, after both modules have finished loading. */
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { eventComparisonGlucoseValues, renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -733,7 +733,11 @@ function renderBehavioralFullscreen(host, f) {
 
 function renderHighCarbStage(host, caseFile, range) {
   const previous = window.__diagnoseEventComparison;
-  const mounted = renderEventSurface(host, highCarbResponseCase(caseFile), { range });
+  const headline = host.closest('.evidence-tile')?.querySelector('.tile-head');
+  const response = highCarbResponseCase(caseFile);
+  const mounted = renderEventSurface(host, response, {
+    range: glucoseRange([...range, ...eventComparisonGlucoseValues(response)]), headline,
+  });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;
@@ -3411,26 +3415,32 @@ function boot(root, data, callbacks, signal) {
       const caption = document.createElement('div');
       caption.className = 'statline sequence-comparison';
       caption.textContent = comparison.finding.summary;
-      host.append(caption);
       if (caseFile.finding.lever === 'high_carb_sequence') {
         const facts = document.createElement('div');
         facts.className = 'ev-detail case-facts sequence-supporting-detail';
         const label = document.createElement('div');
         label.className = 'lab';
         label.textContent = 'Supporting comparison detail';
-        facts.append(label);
+        facts.append(label, caption);
         for (const row of comparison.periods) {
           const detail = document.createElement('div');
           detail.className = 'vd';
           const timing = row.period === 'in_sequence' ? 'During eating' : row.label;
           const unavailable = row.status === 'insufficient';
-          detail.textContent = unavailable
-            ? `${timing} · unavailable · ${row.referenceLabel} n = ${row.reference.n} · ${row.comparisonLabel} n = ${row.comparison.n}`
-            : `${timing} · time in range ${row.reference.tir_pct}% / ${row.comparison.tir_pct}% · glucose SD ${row.reference.sd_mgdl} / ${row.comparison.sd_mgdl} mg/dL · n = ${row.reference.n} / ${row.comparison.n}`;
+          const reference = `Other sequences (${row.referenceLabel})`;
+          const comparison = `Highest-carb fifth (${row.comparisonLabel})`;
+          const pip = document.createElement('span');
+          pip.className = 'pip';
+          pip.setAttribute('aria-hidden', 'true');
+          const copy = document.createElement('div');
+          copy.textContent = unavailable
+            ? `${timing} · unavailable · ${reference}: n = ${row.reference.n} · ${comparison}: n = ${row.comparison.n}`
+            : `${timing} · ${reference}: time in range ${row.reference.tir_pct}%, glucose SD ${row.reference.sd_mgdl} mg/dL, n = ${row.reference.n} · ${comparison}: time in range ${row.comparison.tir_pct}%, glucose SD ${row.comparison.sd_mgdl} mg/dL, n = ${row.comparison.n}`;
+          detail.append(pip, copy);
           facts.append(detail);
         }
         host.append(facts);
-      }
+      } else host.append(caption);
     }
     const eventComparison = caseFile.projection.alignment === 'event'
       && caseFile.projection.kind !== 'eating-sequence';

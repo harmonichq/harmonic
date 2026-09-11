@@ -30,6 +30,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  captureEvidence, openAllCharts, highCarbFailureScenario, assertHighCarbFailure,
   S151, S152, S153, S154, S155, S156, S157, S158,
   drawWindow, waitForPreparationWindow,
   generatedFindingPose,
@@ -66,6 +67,10 @@ if (missing.length) {
 const { createBrowserRunner } = require('./browser-runner.js');
 const runner = createBrowserRunner(() => chromium.launch({ executablePath: EXEC || undefined }));
 after(() => runner.close());
+const evidenceViewport = () => {
+  const [width, height] = (process.env.VIEWPORT || '').split('x').map(Number);
+  return Number.isInteger(width) && Number.isInteger(height) ? { width, height } : undefined;
+};
 
 const FINDINGS_FIXTURE = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
@@ -858,7 +863,9 @@ for (const [id, story, sequenceState] of [
 ]) {
   test(`eating-sequence composition ${id} uses generated Python transports`, async () => {
     const browser = await runner.browser();
-    const page = await openApp(browser, { appSource: 'fixture', sequenceState });
+    const page = await openApp(browser, {
+      appSource: 'fixture', sequenceState, viewport: evidenceViewport(),
+    });
     try { await story(page); } finally { await page.close(); }
   });
 }
@@ -885,3 +892,60 @@ for (const defect of ['generation', 'counts']) {
     } finally { await page.close(); }
   });
 }
+
+for (const defect of ['missing', 'malformed', 'inconsistent', 'stale-recover', 'stale-error']) {
+  test(`High-carb response ${defect} preserves the existing recovery boundary`, async () => {
+    const scenario = highCarbFailureScenario(defect);
+    const browser = await runner.browser();
+    const page = await openApp(browser, { appSource: 'fixture',
+      sequenceState: 'high_carb_sequence_empty', viewport: evidenceViewport(), caseScenario: scenario });
+    try {
+      const { expandSequenceFixture } = await import('./eating-sequence-fixture.js');
+      const fixture = expandSequenceFixture(JSON.parse(await readFile(
+        join(ROOT, 'mockups/eating-sequence-findings.synthetic/payload.json'), 'utf8')));
+      await assertHighCarbFailure(page, scenario, defect,
+        fixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']);
+    } finally { await page.close(); }
+  });
+}
+
+// The same generated Pattern input can also inspect the source-read-only baseline
+// shell for paired revision evidence, without changing the shipped test default.
+test('High-carb same Pattern reference preserves the shared presentation', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { appSource: 'fixture', sequenceState: 'high_carb_sequence_empty',
+    viewport: evidenceViewport(), frontendRoot: process.env.PATTERN_REFERENCE_ROOT || null });
+  const id = 'pattern:highs_after_meals';
+  const capture = async (rank, selector) => {
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    const actual = await page.locator(selector).evaluate((host) => {
+      const chart = window.echarts.getInstanceByDom(host);
+      const option = chart.getOption();
+      const labels = chart.getZr().storage.getDisplayList().filter((item) => item.type === 'tspan')
+        .map((item) => {
+          const box = item.getBoundingRect().clone();
+          if (item.transform) box.applyTransform(item.transform);
+          return { text: item.style.text, x: box.x, y: box.y, width: box.width, height: box.height };
+        });
+      return { width: host.clientWidth, height: host.clientHeight,
+        align: option.xAxis[0].axisLabel.align ?? null, labels,
+        series: option.series.map(({ id, data }) => ({ id, data })) };
+    });
+    assert.equal(actual.align, null, 'Pattern retains the original default label alignment');
+    console.log(`Pattern reference ${rank} ${JSON.stringify(actual)}`);
+    await captureEvidence(page, `pattern-${rank}`);
+  };
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await openAllCharts(page);
+    await capture('all-charts', `#tile-row [data-chart-id="${id}"] .tile-chart`);
+    await page.keyboard.press('Escape');
+    await page.locator(`#level .qrow[data-id="${id}"]`).click();
+    await page.locator('#tile-focal .tile-chart').waitFor();
+    await capture('stage', '#tile-focal .tile-chart');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    await page.waitForTimeout(150);
+    await capture('fullscreen', '#tile-focal .tile-chart');
+  } finally { await page.close(); }
+});

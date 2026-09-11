@@ -2087,3 +2087,28 @@
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`
    owns only the one-chart field geometry. */
+
+/* High-carb uses the shared readout in its existing headline. Overlaying that
+   readout keeps pointer inspection from moving the Full control before a click. */
+.tile-head:has(> .high-carb-readout) { position: relative; }
+.tile-head > .high-carb-readout {
+  position: absolute; inset: 8px 34px 8px var(--ck-grid-left);
+  display: flex; flex-wrap: wrap; align-content: center; align-items: baseline;
+  gap: 6px 14px; visibility: hidden; pointer-events: none;
+  font-family: var(--ck-mono); font-size: var(--ck-data);
+}
+.tile-head[data-hover="1"]:has(> .high-carb-readout) > .tile-id { visibility: hidden; }
+.tile-head[data-hover="1"] > .high-carb-readout { visibility: visible; }
+.high-carb-readout > * { flex-shrink: 0; }
+.canvas-head[data-full] .head-full:has(> .high-carb-readout) { position: relative; }
+.canvas-head[data-full] .head-full > .high-carb-readout {
+  position: absolute; inset: 0; flex-wrap: wrap; align-content: center;
+  gap: 6px 14px; pointer-events: none; white-space: normal;
+}
+.head-full[data-hover="1"]:has(> .high-carb-readout) > #full-title { visibility: hidden; }
+@media (max-width: 600px) {
+  .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+    > .tile-focal > .evidence-tile > .tile-head:has(> .high-carb-readout) { min-height: 72px; }
+  .canvas-head:has(.high-carb-readout) > .head-swap { min-height: 62px; }
+  .canvas-head .high-carb-readout .rd-pair { gap: 4px; }
+}

@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import re
 import sys
 from collections import Counter
 from datetime import timedelta
@@ -49,11 +48,13 @@ def payload() -> dict:
 FINDINGS_OUT = ROOT / "mockups/eating-sequence-findings.synthetic/payload.json"
 
 
-def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False):
+def products(lever, *, covered=False, competitor="mild", multi=False, thin=None, null_period=False,
+             during=False, varied_duration=False):
     """Manufacture source events, then call the same public served producers."""
     bolus, cgm, log, basal = sequence_episode_stream(
         "repeat_eating" if lever == "both" else lever,
-        covered=covered, competitor=competitor, multi=multi)
+        covered=covered, competitor=competitor, multi=multi, during=during,
+        varied_duration=varied_duration)
     sequences = build_sequences(bolus, config=EatingSequenceConfig())
     if lever == "both":
         # Lower single-window excursions keep their high-carb price below the
@@ -93,9 +94,12 @@ def findings_payload():
             ("thin_reference", {"covered": True, "thin": False}),
             ("losing", {"competitor": "severe"}),
             ("multiple", {"multi": True}),
+            ("in_sequence", {"during": True}),
+            ("limited", {"during": True, "varied_duration": True}),
             ("null_period", {"null_period": True}),
         ):
-            if lever == "both" and name != "covered":
+            if (lever == "both" and name != "covered") or (
+                    name in {"in_sequence", "limited"} and lever != "high_carb_sequence"):
                 continue
             key = f"{lever}_{name}"
             projection, (bolus, cgm, log, _) = products(lever, **options)
@@ -122,16 +126,19 @@ def findings_payload():
                     for row in wrapped["rendered_rows"]:
                         if not row.get("case_header"):
                             continue
-                        # Selection detail is stored separately to avoid duplicating
-                        # the same aggregate report for every occurrence.
+                        # Preserve every roster selection the public endpoint serves.
                         event = prepared.case(row["id"], "event", None)
                         if event is None:
                             continue
                         cases[row["id"]] = {
                             "event": event,
                             "clock": prepared.case(row["id"], "clock", None),
-                            "selections": {o["id"]: prepared.case(row["id"], "event", o["id"])["selection"]
-                                           for o in event["occurrences"] if event["family"] == "sequences"},
+                            "selections": (
+                                {occurrence["id"]: prepared.case(
+                                    row["id"], "event", occurrence["id"])["selection"]
+                                 for occurrence in event["occurrences"]}
+                                if event["family"] == "sequences" else {}
+                            ),
                         }
                     windows[window_key] = {"preparation": wrapped, "cases": cases}
                 states[key] = {
@@ -144,25 +151,26 @@ def findings_payload():
 
 
 def compact_findings_payload(body):
-    """Intern repeated JSON containers without changing any served value."""
+    """Intern repeated JSON values without changing any served value."""
     counts = Counter()
 
     def identity(value):
         return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
     def count(value):
-        if isinstance(value, (dict, list)):
+        if isinstance(value, (dict, list, str)):
             key = identity(value)
-            if len(key) > 120:
+            if len(key) > 16:
                 counts[key] += 1
+        if isinstance(value, (dict, list)):
             for child in value.values() if isinstance(value, dict) else value:
                 count(child)
 
     count(body["states"])
-    shared, indices = [], {}
+    shared, indices, shapes = [], {}, {}
 
     def pack(value):
-        if not isinstance(value, (dict, list)):
+        if not isinstance(value, (dict, list, str)):
             return value
         key = identity(value)
         if counts[key] > 1:
@@ -170,25 +178,78 @@ def compact_findings_payload(body):
                 packed = walk(value)
                 indices[key] = len(shared)
                 shared.append(packed)
-            return {"$ref": indices[key]}
+            return ["$ref", indices[key]]
         return walk(value)
 
     def walk(value):
-        return ({key: pack(child) for key, child in value.items()}
-                if isinstance(value, dict) else [pack(child) for child in value])
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            keys = tuple(sorted(value))
+            children = [pack(value[key]) for key in keys]
+            # Repeated object field names dominate observation and roster rows.
+            # Share the field layout as well as identical values; no value is dropped.
+            if len(identity(keys)) > 30:
+                if keys not in shapes:
+                    shapes[keys] = len(shared)
+                    shared.append(list(keys))
+                return ["$ref", shapes[keys], children]
+            return dict(zip(keys, children))
+        return [pack(child) for child in value]
 
     states = pack(body["states"])
-    return {**body, "states": states, "shared": shared}
+    # Parent interning can leave a child reference used only once. Inline those
+    # children and renumber the retained table instead of paying for both forms.
+    uses = Counter()
+
+    def references(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                uses[value[1]] += 1
+            for child in value:
+                references(child)
+        elif isinstance(value, dict):
+            for child in value.values():
+                references(child)
+
+    references(states)
+    for value in shared:
+        references(value)
+    retained, remap = [], {}
+
+    def trim(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                index = value[1]
+                if len(value) == 2 and uses[index] == 1:
+                    return trim(shared[index])
+                if index not in remap:
+                    packed = trim(shared[index])
+                    remap[index] = len(retained)
+                    retained.append(packed)
+                return ["$ref", remap[index], *([trim(value[2])] if len(value) == 3 else [])]
+            return [trim(child) for child in value]
+        if isinstance(value, dict):
+            return {key: trim(child) for key, child in value.items()}
+        return value
+
+    states = trim(states)
+    return {**body, "states": states, "shared": retained}
 
 
 def expand_findings_payload(body):
     """Restore independent transports for producer equality tests."""
     def expand(value):
+        if isinstance(value, list):
+            if value and value[0] == "$ref":
+                referenced = body["shared"][value[1]]
+                if len(value) == 3:
+                    return dict(zip(referenced, map(expand, value[2])))
+                return expand(referenced)
+            return [expand(child) for child in value]
         if isinstance(value, dict):
-            if set(value) == {"$ref"}:
-                return expand(body["shared"][value["$ref"]])
             return {key: expand(child) for key, child in value.items()}
-        return [expand(child) for child in value] if isinstance(value, list) else value
+        return value
 
     return {key: expand(value) for key, value in body.items() if key != "shared"}
 
@@ -199,9 +260,10 @@ def main() -> int:
     args = parser.parse_args()
     stale = False
     for path, body in ((OUT, payload()), (FINDINGS_OUT, compact_findings_payload(findings_payload()))):
-        rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
-        # A shared-value reference fits on one line; keep its surrounding data indented.
-        rendered = re.sub(r'\{\n\s*"\$ref": (\d+)\n\s*\}', r'{"$ref": \1}', rendered)
+        if path == FINDINGS_OUT:
+            rendered = json.dumps(body, separators=(",", ":"), sort_keys=True) + "\n"
+        else:
+            rendered = json.dumps(body, indent=1, sort_keys=True) + "\n"
         if args.check:
             if (path.read_text() if path.exists() else "") != rendered:
                 print(f"stale fixture: {path} — rerun scripts/gen_eating_sequence_fixtures.py")

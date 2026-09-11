@@ -52,10 +52,17 @@ def carb_entry(t):
     return CarbEntry(t, 17.3, "exact", "manual")
 
 
-def sequence_episode_stream(lever, *, covered=False, competitor="mild", multi=False):
+def sequence_episode_stream(lever, *, covered=False, competitor="mild", multi=False,
+                            during=False, varied_duration=False):
     factory = high_carb_stream if lever == "high_carb_sequence" else repeat_eating_stream
     bolus, _, carbs, basal = factory()
     bolus = [replace(b, insulin=0.5, seq_num=i + 1) for i, b in enumerate(bolus)]
+    if varied_duration and lever == "high_carb_sequence":
+        bolus = [item for index, dose in enumerate(bolus) for item in (
+            [dose, replace(dose, t=dose.t + timedelta(minutes=30), seq_num=10_000 + index)]
+            if index % 2 else [dose]
+        )]
+        bolus.sort(key=lambda dose: dose.t)
     sequences = build_sequences(bolus, config=EatingSequenceConfig())
     cgm = []
     for index, sequence in enumerate(sequences):
@@ -64,7 +71,8 @@ def sequence_episode_stream(lever, *, covered=False, competitor="mild", multi=Fa
         stop = int((sequence.end - sequence.start).total_seconds() / 60) + 360
         for minute in range(-15, stop + 1, 5):
             t = sequence.start + timedelta(minutes=minute)
-            high = sequence.end + timedelta(minutes=delay) <= t < sequence.end + timedelta(minutes=delay + 25)
+            high = (sequence.start <= t < sequence.end + timedelta(minutes=5) if during
+                    else sequence.end + timedelta(minutes=delay) <= t < sequence.end + timedelta(minutes=delay + 25))
             if multi:
                 high = high or sequence.end + timedelta(minutes=245) <= t < sequence.end + timedelta(minutes=260)
             cgm.append(CgmReading(t, 270.0 if adverse and high else 110.0))

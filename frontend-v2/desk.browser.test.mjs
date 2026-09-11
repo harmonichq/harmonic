@@ -1,3 +1,4 @@
+import { captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -21,6 +22,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput, populateFindingCasePreparation } from '../frontend/browser-fixture-population.js';
 import { projectPatternCaseFile } from '../mockups/diagnose-event-comparison.synthetic/project.mjs';
+import { expandSequenceFixture } from '../frontend/eating-sequence-fixture.js';
 
 const require = createRequire(import.meta.url);
 const { createBuiltShell } = require('../frontend/built-shell.js');
@@ -128,6 +130,7 @@ const STATUS = {
 const generated = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const evidence = generated('../mockups/diagnose-workstation.synthetic/payload.json');
 const caseFiles = generated('../mockups/diagnose-workstation.synthetic/finding-case-files.json');
+const sequenceFixture = expandSequenceFixture(generated('../mockups/eating-sequence-findings.synthetic/payload.json'));
 const patternCapture = generated('../mockups/diagnose-event-comparison.synthetic/capture.json');
 const basalEvidence = generated('../frontend/__fixtures__/basal-night-evidence.json').expected;
 const isfEvidence = generated('../mockups/diagnose-workstation.synthetic/isf-rest-window-evidence.capture.json').payload;
@@ -201,18 +204,52 @@ const runner = createBrowserRunner(() => chromium.launch());
 after(() => runner.close());
 
 /** The built desk, served from disk with its API answered above. */
-async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate } = {}) {
+async function openDesk({ viewport = '1280x720', address = '/v2/', beforeNavigate,
+  sequenceState = null, caseScenario = null } = {}) {
   const browser = await runner.browser();
-  const context = await browser.newContext({ viewport: VIEWPORTS[viewport], colorScheme: 'dark' });
+  const [width, height] = viewport.split('x').map(Number);
+  assert.ok(Number.isInteger(width) && width > 0 && Number.isInteger(height) && height > 0);
+  const context = await browser.newContext({ viewport: { width, height }, colorScheme: 'dark' });
   const page = await context.newPage();
   const unstubbed = [];
   const problems = [];
+  const expectedStatuses = new Set();
   page.on('pageerror', (error) => problems.push(String(error)));
-  page.on('console', (message) => { if (message.type() === 'error') problems.push(message.text()); });
+  page.on('console', (message) => { if (message.type() === 'error' && ![...expectedStatuses].some((status) => message.text().includes(`status of ${status}`))) problems.push(message.text()); });
   await page.route('**/*', async (route) => {
     const url = new URL(route.request().url());
     const served = shell.serve(url.pathname);
     if (served) return route.fulfill(served);
+    if (sequenceState) {
+      const state = sequenceFixture.states[sequenceState];
+      const key = url.searchParams.has('start_min')
+        ? `${url.searchParams.get('start_min')}-${url.searchParams.get('end_min')}` : 'global';
+      const window = state?.windows[key];
+      if (url.pathname === '/api/diagnose/findings' || url.pathname === '/api/diagnose/finding-case-file-preparation') {
+        assert.ok(window, `missing generated sequence window ${sequenceState}/${key}`);
+        if (url.pathname.endsWith('preparation')) caseScenario?.preparation?.({ url });
+        const body = url.pathname.endsWith('preparation') ? window.preparation
+          : { ...window.preparation.findings, rows: window.preparation.rendered_rows };
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+      }
+      if (url.pathname === '/api/diagnose/finding-case-file') {
+        const retained = Object.values(state.windows).find((item) =>
+          item.preparation.projection_id === url.searchParams.get('projection_id'));
+        const finding = retained?.cases[url.searchParams.get('finding_id')];
+        assert.ok(finding, 'requested generated sequence case is absent');
+        const body = structuredClone(finding[url.searchParams.get('alignment')]);
+        const occ = url.searchParams.get('occ');
+        if (occ) body.selection = structuredClone(finding.selections[occ]
+          || { state: 'unavailable', requested_id: occ, detail: null });
+        if (caseScenario) {
+          const response = caseScenario.case({ url, body });
+          if (response.status >= 400) expectedStatuses.add(response.status);
+          return route.fulfill({ status: response.status || 200, contentType: 'application/json',
+            body: JSON.stringify(response.body) });
+        }
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+      }
+    }
     if (url.pathname.startsWith('/api/kb/')) {
       return route.fulfill({ contentType: 'text/markdown', body: '# Reading Day\n\nThe **Day** tab is the forensic replay.\n' });
     }
@@ -312,6 +349,68 @@ test('the desk opens on Diagnose behind its persistent chrome', async () => {
     assert.ok(inter.declared > 0, 'the built surface declares no Inter face');
     assert.ok(inter.available, 'Inter is named but not available to render with');
     assert.ok(inter.loaded > 0, `no Inter face loaded (${inter.declared} declared)`);
+  } finally { await close(); }
+});
+
+test('v2 Diagnose renders the generated High-carb response and its selected trace', async () => {
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720', sequenceState: 'high_carb_sequence_in_sequence' });
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
+    await row.click();
+    const chart = page.locator('#tile-focal #ec-chart');
+    await chart.waitFor();
+    const response = await chart.evaluate((host) => {
+      const chart = window.echarts.getInstanceByDom(host);
+      return {
+        anchor: chart.getOption().xAxis[0].axisLabel.formatter(0),
+        marks: chart.getZr().storage.getDisplayList().filter((item) => item.type === 'path').length,
+      };
+    });
+    assert.equal(response.anchor.replace('\n', ' '), 'End of eating sequence');
+    assert.equal(response.marks, 2, 'the two supported singleton observations did not paint');
+    await assertSequenceResponse(page, sequenceFixture.states.high_carb_sequence_in_sequence
+      .windows.global.cases['finding:high_carb_sequence']);
+    const stored = sequenceFixture.states.high_carb_sequence_in_sequence
+      .windows.global.cases['finding:high_carb_sequence'];
+    await assertSequenceSelection(page, stored, stored.event.occurrences.filter((row) => row.verdict === 'fired')[1]);
+    await page.locator('#level .sequence-detail').waitFor();
+    assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 1);
+    assert.ok(await chart.evaluate((host) => window.echarts.getInstanceByDom(host).getOption().series
+      .some((series) => series.id === 'selected:trace')));
+    await press(page, '#level .clear-trace');
+    assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 0);
+  } finally { await close(); }
+});
+
+test('v2 High-carb scoped population, roster selections and fullscreen retain public evidence', async () => {
+  const { page, close } = await openDesk({ viewport: process.env.VIEWPORT || '1280x720',
+    sequenceState: 'high_carb_sequence_empty' });
+  const input = sequenceFixture.states.high_carb_sequence_empty;
+  const id = 'finding:high_carb_sequence';
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator(`#level .qrow[data-id="${id}"]`).click();
+    await page.locator('#tile-focal #ec-chart').waitFor();
+    const stored = input.windows.global.cases[id];
+    await assertSequenceResponse(page, stored);
+    for (const occurrence of [stored.event.occurrences.filter((row) => row.verdict === 'fired')[1],
+      stored.event.occurrences.find((row) => row.verdict === 'clean')]) {
+      await assertSequenceSelection(page, stored, occurrence);
+      await assertSequenceFullscreen(page, stored);
+      await press(page, '#level .clear-trace');
+      assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 0);
+    }
+    await page.getByRole('button', { name: 'Overnight', exact: true }).click();
+    await page.locator('#level .vband .key[data-verdict="fired"]').click();
+    await page.locator('#level .sequence-comparison').waitFor();
+    await page.locator('#tile-focal #ec-chart').waitFor();
+    const scoped = input.windows['0-360'].cases[id];
+    assert.deepEqual(scoped.event.projection.response, stored.event.projection.response);
+    assert.ok(scoped.event.occurrences.length < stored.event.occurrences.length);
+    await assertSequenceResponse(page, scoped);
+    assert.equal(await countOf(page, '#level .case-occurrence'),
+      Math.min(5, scoped.event.occurrences.filter((row) => row.verdict === 'fired').length));
   } finally { await close(); }
 });
 
@@ -550,5 +649,64 @@ for (const outcome of ['resolved', 'rejected']) {
       await boundedWait(page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))), 'shared teardown continuation frames');
       assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
     } finally { await desk.close(); }
+  });
+}
+
+for (const defect of ['missing', 'malformed', 'inconsistent', 'stale-recover', 'stale-error']) {
+  test(`v2 High-carb response ${defect} preserves the existing recovery boundary`, async () => {
+    const scenario = highCarbFailureScenario(defect);
+    const { page, close } = await openDesk({ sequenceState: 'high_carb_sequence_empty',
+      viewport: process.env.VIEWPORT || '1280x720', caseScenario: scenario });
+    try {
+      await assertHighCarbFailure(page, scenario, defect,
+        sequenceFixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']);
+    } finally { await close(); }
+  });
+}
+
+for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
+  test(`v2 High-carb rendered ${name} keeps producer curves and support`, async () => {
+    const sequenceState = `high_carb_sequence_${name}`;
+    const { page, close } = await openDesk({ sequenceState, viewport: process.env.VIEWPORT || '1280x720' });
+    const stored = sequenceFixture.states[sequenceState].windows.global.cases['finding:high_carb_sequence'];
+    try {
+      await page.getByRole('button', { name: '24 h', exact: true }).click();
+      const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
+      await row.waitFor();
+      if (name === 'empty') {
+        const mini = row.locator('.mini');
+        const inert = await mini.evaluate((host) => {
+          const option = window.echarts.getInstanceByDom(host).getOption();
+          return !option.tooltip[0].show && !option.xAxis[0].axisLabel.show
+            && !option.yAxis[0].axisLabel.show && option.series.every((series) => series.silent);
+        });
+        assert.ok(inert, 'queue miniature remains inert');
+        await row.scrollIntoViewIfNeeded();
+        await captureEvidence(page, 'high_carb_sequence-mini');
+        await openAllCharts(page);
+        const selector = '#tile-row [data-chart-id="finding:high_carb_sequence"] .tile-chart';
+        await page.locator(selector).scrollIntoViewIfNeeded();
+        await assertSequenceResponse(page, stored, selector);
+        await assertResponseAnchorGeometry(page, selector);
+        await captureEvidence(page, 'high_carb_sequence-all-charts');
+        await page.locator('#tile-row [data-chart-id="pattern:highs_after_meals"]').scrollIntoViewIfNeeded();
+        await captureEvidence(page, 'high_carb_sequence-pattern-reference');
+        await page.keyboard.press('Escape');
+      }
+      await row.click();
+      await page.locator('#level .sequence-comparison').waitFor();
+      await assertSequenceResponse(page, stored);
+      await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
+      await assertResponseAnchorGeometry(page);
+      await captureEvidence(page, `high_carb_sequence-${name}-stage`);
+      if (name === 'empty') await assertResponseAnchorGeometry(page);
+      if (name === 'in_sequence') {
+        assert.deepEqual(stored.event.projection.response.cohorts.map((cohort) =>
+          cohort.points.map(({ minute, median, n }) => [minute, median, n])), [[[0, 270, 8]], [[0, 110, 32]]]);
+        assert.equal(await page.locator('#tile-focal #ec-chart').evaluate((host) =>
+          window.echarts.getInstanceByDom(host).getZr().storage.getDisplayList()
+            .filter((item) => item.type === 'path').length), 2);
+      }
+    } finally { await close(); }
   });
 }

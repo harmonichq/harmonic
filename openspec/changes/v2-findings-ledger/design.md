@@ -183,3 +183,17 @@ the existing plain-language owner and route to their existing contexts.
 Focused synthetic Node, backend, and built-shell browser checks cover these
 corrections. The coordinator's complete two-size ledger, generator, and
 delivery proof remains pending; task 3.5 deliberately remains open.
+
+### Full-day Focus scope
+
+The 24 h selection is saved explicitly as the half-open interval 0–1440. It
+includes 23:59 in both existing comparison arms and restores the 24 h selection
+when the saved Focus is inspected. Other equal clock endpoints remain invalid.
+An unscoped selected case supplies this explicit full-day scope; an absent scope
+on an older record retains its existing semantics.
+
+The first coordinator API probe against the manufactured `c3-pin` case rejected
+0–1440 with HTTP 422. The former 0–1439 test substitute excluded the final minute.
+The corrected public browser journey covers a 24 h save, reload, saved context,
+and Inspect return; the separate Afternoon journey retains failure/retry scope
+and request-identity coverage.

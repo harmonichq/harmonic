@@ -29,6 +29,17 @@ unavailable state.
 - **AND** its existing comparison semantics remain available where they were
   previously available
 
+#### Scenario: The 24 h selection retains the whole day
+
+- **GIVEN** an eligible Pattern selected from the 24 h view, including a Pattern
+  displayed through its child finding
+- **WHEN** the reader starts and later inspects a Focus
+- **THEN** the saved outcome window is explicitly 0–1440 and Inspect restores 24 h
+- **AND** both comparison arms include outcomes at 23:59 within their existing
+  calendar bounds
+- **AND** other equal clock endpoints remain invalid and older records receive
+  no inferred scope
+
 ### Requirement: A late Trial conclusion is additive to an immutable ending
 
 An expired Trial SHALL retain its original ending kind, effective time and saved

@@ -5,32 +5,32 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
 
 ## 1. Scoped Pattern population, projection and API
 
-- [ ] 1.1 Implement the single producer-owned outcome-window Pattern population
+- [x] 1.1 Implement the single producer-owned outcome-window Pattern population
   required by behavioral-layer **Habit associations preserve bounded episode
   ownership**, using the existing per-family outcome rule without changing
   classifier thresholds, identity, or bounded episode context.
-- [ ] 1.2 Serve scoped Pattern rows and case files from that same population,
+- [x] 1.2 Serve scoped Pattern rows and case files from that same population,
   including count, denominator, readiness, roster, selected occurrence and
   evidence, served labels, glucose and markers through the existing case-file
   response; do not derive membership or policy in the browser.
-- [ ] 1.3 Add public-interface synthetic coverage for named, drawn and circular
+- [x] 1.3 Add public-interface synthetic coverage for named, drawn and circular
   half-open windows, outcome/antecedent boundary pairs, zero/thin denominators,
   and the over-treated-low Low-identity/High-landing rule.
 
 ## 2. Durable Focus scope and Trial history lifecycle
 
-- [ ] 2.1 Implement durable saved scope for a new Focus as required by
+- [x] 2.1 Implement durable saved scope for a new Focus as required by
   durable-follow-up **New Focus records retain the selected outcome window**;
   validate it at admission and apply it inside both existing calendar comparison
   arms without clipping contributing episodes.
-- [ ] 2.2 Preserve old Focus computation semantics when scope is absent, reject
+- [x] 2.2 Preserve old Focus computation semantics when scope is absent, reject
   stale admission, and prevent later Diagnose navigation from mutating saved
   scope.
-- [ ] 2.3 Implement the additive late-conclusion operation required by
+- [x] 2.3 Implement the additive late-conclusion operation required by
   durable-follow-up **A late Trial conclusion is additive to an immutable
   ending**, preserving expiry and original ending across conflict, retry,
   restart, and cache invalidation.
-- [ ] 2.4 Add named on-demand reassessment loading with no prewarm, preserving
+- [x] 2.4 Add named on-demand reassessment loading with no prewarm, preserving
   read-only history and the distinction between reassessment and conclusion.
 
 ## 3. Shipped desk, generated evidence and runtime integration

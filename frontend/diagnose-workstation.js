@@ -3418,16 +3418,18 @@ function boot(root, data, callbacks, signal) {
       if (caseFile.finding.lever === 'high_carb_sequence') {
         const facts = document.createElement('section');
         facts.className = 'ev-detail case-facts sequence-supporting-detail sequence-comparison';
-        const cohortRow = (row, name, cohort, full) => {
+        const cohortRow = (name, cohort, full) => {
           const line = document.createElement('div');
           line.className = 'sequence-cohort';
-          const value = (metric, unit) => row.status === 'insufficient' || cohort[metric] == null
-            ? 'Unavailable' : `${Math.round(cohort[metric])}${unit}`;
+          const value = (metric, unit) => cohort[metric] == null
+            ? 'Not enough data' : `${Math.round(cohort[metric])}${unit}`;
           const label = document.createElement('span');
           label.textContent = name;
           const figures = document.createElement('span');
-          figures.textContent = `${value('tir_pct', '% in range')}${full
-            ? ` · SD ${value('sd_mgdl', ' mg/dL')}` : ''}`;
+          figures.textContent = cohort.tir_pct == null && cohort.sd_mgdl == null
+            ? 'Not enough data'
+            : `${value('tir_pct', '% in range')}${full
+              ? ` · SD ${value('sd_mgdl', ' mg/dL')}` : ''}`;
           const count = document.createElement('span');
           count.textContent = `n ${cohort.n}`;
           line.append(label, figures, count);
@@ -3440,9 +3442,15 @@ function boot(root, data, callbacks, signal) {
           const label = document.createElement('div');
           label.className = 'sequence-cap';
           label.textContent = `${full ? '' : 'Comparison · '}${row.label}`;
-          period.append(label,
-            cohortRow(row, 'Highest-carb fifth', row.comparison, full),
-            cohortRow(row, 'Other sequences', row.reference, full));
+          period.append(label);
+          if ([row.comparison, row.reference].every((cohort) => cohort.tir_pct == null && cohort.sd_mgdl == null)) {
+            const unavailable = document.createElement('div');
+            unavailable.className = 'sequence-unavailable';
+            unavailable.textContent = `Not enough data · Highest-carb fifth n ${row.comparison.n} · Other sequences n ${row.reference.n}`;
+            period.append(unavailable);
+          } else period.append(
+            cohortRow('Highest-carb fifth', row.comparison, full),
+            cohortRow('Other sequences', row.reference, full));
           return period;
         };
         const active = comparison.periods.find((row) => row.selected);

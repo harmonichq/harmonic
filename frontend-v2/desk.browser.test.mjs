@@ -698,7 +698,20 @@ for (const defect of ['missing', 'malformed', 'inconsistent', 'stale-recover', '
 for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
   test(`v2 High-carb rendered ${name} keeps producer curves and support`, async () => {
     const sequenceState = `high_carb_sequence_${name}`;
-    const { page, close } = await openDesk({ sequenceState, viewport: process.env.VIEWPORT || '1280x720' });
+    let partialMetrics = false;
+    const caseScenario = name === 'null_period' ? { case: ({ body }) => {
+      if (partialMetrics && body.finding.lever === 'high_carb_sequence') {
+        // Exercise independently missing metrics at the public response boundary.
+        for (const comparisons of [body.projection.report.high_carb_sequence.comparisons,
+          body.projection.response.comparisons]) {
+          const period = comparisons.find((item) => item.period === 'post_4h' && item.scope === body.projection.response.scope);
+          period.high.sd_mgdl = null;
+          period.reference.tir_pct = null;
+        }
+      }
+      return { body };
+    } } : null;
+    const { page, close } = await openDesk({ sequenceState, caseScenario, viewport: process.env.VIEWPORT || '1280x720' });
     const stored = sequenceFixture.states[sequenceState].windows.global.cases['finding:high_carb_sequence'];
     try {
       await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -731,6 +744,19 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
       await assertResponseAnchorGeometry(page);
       await captureEvidence(page, `high_carb_sequence-${name}-stage`);
+      if (name === 'null_period') {
+        partialMetrics = true;
+        await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+        await row.click();
+        await page.locator('#level .sequence-supporting-detail summary').click();
+        const period = page.locator('#level [data-period="post_4h"]');
+        assert.deepEqual((await period.locator('.sequence-cohort').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim()), [
+          'Highest-carb fifth 100% in range · SD Not enough data n 8',
+          'Other sequences Not enough data · SD 0 mg/dL n 32',
+        ], 'one missing metric never hides the independently available metric');
+        await period.scrollIntoViewIfNeeded();
+        await captureEvidence(page, 'high_carb_sequence-partial-metrics-inspector');
+      }
       if (name === 'empty') await assertResponseAnchorGeometry(page);
       if (name === 'in_sequence') {
         assert.deepEqual(stored.event.projection.response.cohorts.map((cohort) =>

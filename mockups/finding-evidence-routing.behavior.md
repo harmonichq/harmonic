@@ -4085,3 +4085,16 @@ all three periods, no horizontal overflow, full summary access, selection/clear
 persistence and Escape coexistence. Captures explicitly scroll the inspector into
 view in both shells. This is a sanctioned presentation change, not a detector or
 backend evidence change; final aggregate verification remains coordinator-owned.
+
+
+### 2026-09-11 — #410 compact inspector follow-up
+
+The fully unavailable period now says “Not enough data” once and retains both
+cohort counts. A singly missing metric does not hide the other metric. Existing
+compact-inspector browser checks pin literal strings for the known synthetic
+recipes, independently of the renderer; the v2 null-period case additionally
+exercises independently missing TIR and SD at the API boundary.
+Measured desktop inspector content is 405px; complete rows need about 288px at
+the existing readable font size. The same local grid uses a single line when its
+container is at least 390px, while the measured 365px mobile body retains wrapped metrics.
+There is no viewport-based width assumption or JavaScript layout controller.

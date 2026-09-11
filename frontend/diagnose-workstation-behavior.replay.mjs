@@ -5938,15 +5938,22 @@ export async function assertCompactSequenceDetail(page, stored, label = 'compari
   is(await disclosure.evaluate((node) => node.open), false, 'full evidence is collapsed by default');
   const response = stored.event.projection.response;
   const rows = response.comparisons;
-  const active = rows.find((row) => row.period === response.period);
-  const value = (row, cohort, metric, unit) => row.status === 'insufficient' || cohort[metric] == null
-    ? 'Unavailable' : `${Math.round(cohort[metric])}${unit}`;
-  const expectedRows = (row, full = false) => [
-    ['Highest-carb fifth', row.high], ['Other sequences', row.reference],
-  ].map(([name, cohort]) => `${name} ${value(row, cohort, 'tir_pct', '% in range')}${full
-    ? ` · SD ${value(row, cohort, 'sd_mgdl', ' mg/dL')}` : ''} n ${cohort.n}`);
+  // Literal acceptance for the three manufactured recipes used by this helper.
+  // These strings deliberately do not call or transcribe the product formatter.
+  const compact = label === 'during'
+    ? ['Highest-carb fifth 0% in range n 8', 'Other sequences 100% in range n 32']
+    : ['Highest-carb fifth 93% in range n 8', 'Other sequences 100% in range n 32'];
+  const fullRows = label === 'during' ? [
+    ['Highest-carb fifth 0% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 98% in range · SD 23 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 99% in range · SD 19 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+  ] : [
+    label === 'unavailable' ? [] : ['Highest-carb fifth 100% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 100% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 93% in range · SD 41 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+  ];
   is((await section.locator('.sequence-current .sequence-cohort').allInnerTexts()).map((s) => s.replace(/\s+/g, ' ').trim()),
-    expectedRows(active), 'default rows use the actual selected-period values and counts');
+    compact, 'literal compact text for the known synthetic recipe');
   ok(!await section.locator('.sequence-summary').isVisible(), 'the report paragraph is hidden by default');
   const geometry = await section.locator('.sequence-current').boundingBox();
   ok(geometry.height <= 90, `compact comparison height ${geometry.height}`);
@@ -5958,10 +5965,30 @@ export async function assertCompactSequenceDetail(page, stored, label = 'compari
   await page.waitForFunction(() => document.querySelector('#level .sequence-supporting-detail details')?.open
     && document.querySelector('#level .sequence-supporting-detail summary')?.getAttribute('aria-expanded') === 'true');
   is(await control.getAttribute('aria-expanded'), 'true', 'keyboard opens the disclosure');
+  const widths = await section.locator('.sequence-period .sequence-cohort').evaluateAll((lines) => lines.map((line) => {
+    const textWidths = [...line.children].map((child) => {
+      const range = document.createRange(); range.selectNodeContents(child);
+      return range.getBoundingClientRect().width;
+    });
+    return { available: line.clientWidth, required: textWidths.reduce((a, b) => a + b, 0) + 16,
+      text: line.textContent, textWidths, tops: [...line.children].map((child) => child.getBoundingClientRect().top) };
+  }));
+  console.log(`Expanded High-carb widths ${JSON.stringify(widths)}`);
+  for (const row of widths) {
+    if (row.available >= 390) {
+      ok(row.required <= row.available, 'one-line expanded text fits the actual inspector');
+      ok(Math.max(...row.tops) - Math.min(...row.tops) < 2, 'wide inspector uses one readable line');
+    } else ok(row.tops[1] > row.tops[0], 'narrow inspector retains wrapped metrics');
+  }
+
   for (const row of rows) {
     const period = section.locator(`[data-period="${row.period}"]`);
     is((await period.locator('.sequence-cohort').allInnerTexts()).map((s) => s.replace(/\s+/g, ' ').trim()),
-      expectedRows(row, true), 'all periods retain their own TIR, SD, units and counts');
+      fullRows[rows.indexOf(row)], 'all periods retain their own TIR, SD, units and counts');
+  }
+  if (label === 'unavailable') {
+    is(await section.locator('[data-period="in_sequence"] .sequence-unavailable').innerText(),
+      'Not enough data · Highest-carb fifth n 0 · Other sequences n 0', 'literal unavailable text retains actual counts once');
   }
   is(await section.locator('.sequence-summary').innerText(), response.summary, 'complete server summary stays accessible');
   ok(await section.evaluate((node) => node.scrollWidth <= node.clientWidth), 'expanded detail has no horizontal overflow');
@@ -5978,8 +6005,11 @@ export async function assertCompactSequenceDetail(page, stored, label = 'compari
     && document.querySelector('#level .sequence-supporting-detail summary')?.getAttribute('aria-expanded') === 'false');
   is(await control.getAttribute('aria-expanded'), 'false', 'pointer collapses the disclosure');
   await page.locator('#level .clear-trace').click();
+  await page.waitForFunction(() => !document.querySelector('#level .sequence-detail')
+    && window.echarts.getInstanceByDom(document.querySelector('#tile-focal #ec-chart'))?.getOption().series
+      ?.every((series) => series.id !== 'selected:trace'));
   is(await disclosure.evaluate((node) => node.open), false, 'clear selection preserves collapsed state');
-  console.log(`Compact High-carb ${label}: selected rows ${JSON.stringify(expectedRows(active))}; height ${geometry.height}; all ${rows.length} periods verified`);
+  console.log(`Compact High-carb ${label}: selected rows ${JSON.stringify(compact)}; height ${geometry.height}; all ${rows.length} periods verified`);
 }
 
 /** Compare the mounted shared renderer with the complete served response. */
@@ -6309,7 +6339,7 @@ export const S158 = async (page) => {
         const gap = option.series.find((series) => series.id === 'matched:line:supported').data;
         is(gap[0][1], null, 'a missing supported response point remains a true line gap');
         const detail = seen(await page.locator('#level .sequence-supporting-detail').innerText());
-        ok(detail.includes('DURING EATING') && detail.includes('Unavailable')
+        ok(detail.includes('DURING EATING') && detail.includes('Not enough data')
           && detail.includes('Other sequences')
           && detail.includes('Highest-carb fifth'),
           'null aggregate period stays explicitly unavailable in supporting detail');

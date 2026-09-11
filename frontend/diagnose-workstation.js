@@ -1280,6 +1280,7 @@ function boot(root, data, callbacks, signal) {
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
   let dragDisplayWindow = null;                     // monotonic minutes while a drag is live
+  let dragActive = false;                           // keeps async evidence paints off the held chart
   let clockPanOffset = 0;                           // left edge of the unrolled clock display
   /* An EXPLICIT window choice — a preset press or a drag — outranks the window
      a frame would derive. An explicit preset or drawn window survives factor and
@@ -1339,6 +1340,8 @@ function boot(root, data, callbacks, signal) {
   const currentPreparationKey = () => windowKey(findingsWindow());
   let preparationGeneration = 0;
   let preparationInFlight = null;
+  let dragPreparationWait = null;
+  let dragPreparationWantedKey = null;
   const settled = () => loadedKey === currentFindingsKey()
     && pendingKey === null && failedKey === null;
   const requestWindow = () => {
@@ -1805,6 +1808,49 @@ function boot(root, data, callbacks, signal) {
         activeCaseError = caseErrorFrom(error);
         paint();
       });
+  }
+
+  /* Dragging can cross several 15-minute positions before one evidence
+     preparation returns. Keep one request in flight and one replaceable slot
+     for the newest position; intermediate positions have no tile to paint. */
+  function ensurePinnedDragPreparation() {
+    if (canvasLayout.pins.length === 0) {
+      dragPreparationWantedKey = null;
+      return;
+    }
+    dragPreparationWantedKey = currentPreparationKey();
+    if (dragPreparationWait) return;
+
+    const waitFor = (request, requestedKey) => {
+      dragPreparationWait = request;
+      request.then(() => {
+        if (signal.aborted || dragPreparationWait !== request) return;
+        dragPreparationWait = null;
+        const wantedKey = dragPreparationWantedKey;
+        dragPreparationWantedKey = null;
+        if (wantedKey !== null && wantedKey !== requestedKey) {
+          dragPreparationWantedKey = wantedKey;
+          issueLatest();
+        }
+      });
+    };
+
+    const issueLatest = () => {
+      if (canvasLayout.pins.length === 0 || dragPreparationWantedKey === null) {
+        dragPreparationWantedKey = null;
+        return;
+      }
+      if (preparationInFlight) {
+        waitFor(preparationInFlight, pendingKey);
+        return;
+      }
+      const requestedKey = dragPreparationWantedKey;
+      dragPreparationWantedKey = null;
+      const request = ensurePreparation();
+      if (!request) return;
+      waitFor(request, requestedKey);
+    };
+    issueLatest();
   }
 
   function refreshQueueAfterUnavailable(frame, generation, originalError) {
@@ -3577,9 +3623,9 @@ function boot(root, data, callbacks, signal) {
         : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
           : mode);
       markWindowSegment(drawn ? windowSpanText(drawn) : 'Whole day', clearDrawn);
-      /* Evidence preparation repaints the mounted inspector. Commit it only
-         after pointer release below, so that repaint cannot replace the chart
-         holding this gesture's pointer capture. */
+      /* A pin holds chart identity, not stale evidence. The drag coordinator
+         keeps one request live and one latest position queued behind it. */
+      ensurePinnedDragPreparation();
     }
 
     function liveRepaint() {
@@ -3678,6 +3724,7 @@ function boot(root, data, callbacks, signal) {
       if (ev.type !== 'lostpointercapture' && chartEl.hasPointerCapture(captured)) {
         chartEl.releasePointerCapture(captured);
       }
+      dragActive = false;
       // a press that never moved changed nothing, so there is nothing to commit
       // and nothing to undo — leave the panel exactly as the press found it
       if (!dragged) { committedBeforeDrag = null; return; }
@@ -3758,14 +3805,18 @@ function boot(root, data, callbacks, signal) {
       };
       lastX = localX(ev);
       pressMinute = minuteAt(lastX);
+      dragActive = true;
       chartEl.setPointerCapture(pointerId);
     }
 
     chartEl.addEventListener('pointerdown', (ev) => begin('draw', ev), { signal });
-    chartEl.addEventListener('pointermove', move, { signal });
-    chartEl.addEventListener('pointerup', finish, { signal });
-    chartEl.addEventListener('pointercancel', finish, { signal });
-    chartEl.addEventListener('lostpointercapture', finish, { signal });
+    /* Live evidence can repaint the chart's ECharts event target while its
+       root still owns this pointer capture. Keep the gesture's capture on the
+       chart, but observe its active pointer at document scope so that repaint
+       cannot turn a browser `lostpointercapture` into a cancelled window. */
+    document.addEventListener('pointermove', move, { capture: true, signal });
+    document.addEventListener('pointerup', finish, { capture: true, signal });
+    document.addEventListener('pointercancel', finish, { capture: true, signal });
     // the only hover feedback: the cursor says which gesture this press will be
     chartEl.addEventListener('pointermove', (ev) => {
       if (mode || ev.pointerType !== 'mouse') return;
@@ -3816,8 +3867,14 @@ function boot(root, data, callbacks, signal) {
     renderLaneKey(lane);
     paintWatch();
     paintTiles();
-    paintChart();
-    paintBrace();
+    /* Pinned evidence may settle while its chart frame is still held. Its
+       tiles and inspector must refresh now, but re-rendering the overview would
+       replace the pointer-capture owner. `applyDrag()` remains the one live
+       owner of chart and brace paint until `finish()` commits this window. */
+    if (!dragActive) {
+      paintChart();
+      paintBrace();
+    }
     applyPendingFocus();
   }
 

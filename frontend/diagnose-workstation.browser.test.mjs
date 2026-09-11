@@ -2125,24 +2125,38 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
     'no opener problems while proving the wrapped window');
 });
 
-test('#404 · a pinned Finding prepares only after its held brace drag releases', async () => {
+test('#404 · a pinned Finding refreshes during its held brace drag without losing the endpoint', async () => {
   const browser = await runner.browser();
   const before = openerProblems().length;
   const page = await openApp(browser, {
     state: 'typical', viewport: { width: 1280, height: 720 }, appSource: 'fixture',
   });
   const preparations = [];
+  const cases = [];
   const onRequest = (request) => {
     const url = new URL(request.url());
     if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
       preparations.push([url.searchParams.get('start_min'), url.searchParams.get('end_min')]);
     }
+    if (url.pathname === '/api/diagnose/finding-case-file') {
+      cases.push({
+        projection: url.searchParams.get('projection_id'),
+        finding: url.searchParams.get('finding_id'), alignment: url.searchParams.get('alignment'),
+      });
+    }
   };
   page.on('request', onRequest);
   try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settle(page, 450);
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"] .tile-pin').click();
+    await page.keyboard.press('Escape');
+    await settle(page, 450);
     await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
     await settle(page, 450);
     preparations.length = 0;
+    cases.length = 0;
     const grip = await page.locator('#grip-b').boundingBox();
     const first = await page.locator('#grip-a').boundingBox();
     assert.ok(grip && first, 'the visible Afternoon brace exposes both endpoints');
@@ -2155,16 +2169,14 @@ test('#404 · a pinned Finding prepares only after its held brace drag releases'
       assert.equal(seen((await page.locator('#brace-readout').innerText()).trim()), '21:30',
         'the held endpoint reaches 21:30 before release');
     }, '#404 held drawn endpoint');
-    assert.deepEqual(preparations, [],
-      'a held pointer keeps its mounted chart; evidence preparation waits for release');
-    const finalRequest = page.waitForRequest((request) => {
-      const url = new URL(request.url());
-      return url.pathname === '/api/diagnose/finding-case-file-preparation'
-        && url.searchParams.get('start_min') === '720'
-        && url.searchParams.get('end_min') === '1290';
-    }, { timeout: 10_000 });
+    await waitForReplayAssertion(async seen => {
+      const preparation = preparations.some(([start, end]) => start === '720' && end === '1290');
+      const caseRead = cases.some((request) => request.finding === 'finding:over_treated_low'
+        && request.alignment === 'event');
+      assert.equal(seen(preparation && caseRead), true,
+        'the held endpoint refreshes its pinned preparation and matching case file');
+    }, '#404 held pinned refresh');
     await page.mouse.up();
-    await finalRequest;
     await waitForReplayAssertion(async seen => {
       assert.equal(seen((await page.locator('#seg-window [data-follow]').innerText())
         .replace('×', '').trim()), '12:00–21:30',

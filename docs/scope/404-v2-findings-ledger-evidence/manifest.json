@@ -1,0 +1,16 @@
+{
+  "provenance": "All captures use committed manufactured Harmonic QA cases; no operator attachments or real data.",
+  "before_application_commit": "56eb22467b0705c1516f51af06add59bb93979ce",
+  "before_receipt": "docs/scope/404-v2-findings-ledger.md: Full base replay and targeted rendered grounding",
+  "after_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+  "cases": {
+    "pattern-selected": "pattern-near-tie",
+    "meal-comparison-collision": "showcase"
+  },
+  "viewports": [
+    "1280x720",
+    "1440x900"
+  ],
+  "unchanged_control_captures": "e82117737d7f8dce086c164bb8109cb13f8a0f31",
+  "opus_design_captures": "See opus-design/manifest.json; final Day correction is c98f346"
+}

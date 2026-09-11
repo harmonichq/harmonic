@@ -1,0 +1,47 @@
+{
+  "commit": "292f1eabae17a53181db41efa04e71fc4e4b0032",
+  "checks": [
+    {
+      "name": "frontend",
+      "command": "node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'",
+      "exit_code": 0,
+      "seconds": 1.54
+    },
+    {
+      "name": "openspec",
+      "command": "npx --yes @fission-ai/openspec@1 validate --all --strict",
+      "exit_code": 0,
+      "seconds": 1.21
+    },
+    {
+      "name": "adr",
+      "command": "python3 scripts/check_adr_numbers.py",
+      "exit_code": 0,
+      "seconds": 0.06
+    },
+    {
+      "name": "identifiers",
+      "command": "python3 scripts/check_owned_identifiers.py",
+      "exit_code": 0,
+      "seconds": 0.03
+    },
+    {
+      "name": "allowlist",
+      "command": "python3 scripts/check_public_allowlist.py",
+      "exit_code": 0,
+      "seconds": 0.04
+    },
+    {
+      "name": "event-capture",
+      "command": "node mockups/diagnose-event-comparison.synthetic/generate.mjs --check",
+      "exit_code": 0,
+      "seconds": 0.05
+    },
+    {
+      "name": "finding-exploration",
+      "command": "node mockups/finding-evidence-routing.exploration/build.mjs --check",
+      "exit_code": 0,
+      "seconds": 0.07
+    }
+  ]
+}

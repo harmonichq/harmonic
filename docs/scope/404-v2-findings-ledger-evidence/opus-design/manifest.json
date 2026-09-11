@@ -1,0 +1,84 @@
+{
+  "synthetic": true,
+  "source": "Built desk browser tests with manufactured API-shaped responses; v1 inherited synthetic workstation driver",
+  "application_commit": "29f808eafd76ebfab5f6fd30b3e2caf0f8f27f35",
+  "files": [
+    {
+      "path": "day-retained-loading-1280x720.png",
+      "sha256": "43fa8f7aa147f681ec0b4e533307b4f1dffc7318af3338cd874c5637473086af"
+    },
+    {
+      "path": "day-retained-loading-1440x900.png",
+      "sha256": "5aa6faeb07575419c380675a33fc64b549e38838ef3c1698299f8210673edeb4"
+    },
+    {
+      "path": "filter-expanded-1280x720.png",
+      "sha256": "4aeb4b6392b914f5a8c717190ad40ecdf2ee844136f207ae46f2a158b7e3cd6e"
+    },
+    {
+      "path": "filter-expanded-1440x900.png",
+      "sha256": "0c791cbdf6a07a1ffaa64c10a57310a13dd1df10e119905b5771b9160fd432d8"
+    },
+    {
+      "path": "filter-loading-1280x720.png",
+      "sha256": "7f46921ee0a5fc324023e17802b3b0455debbbb359409af43c60b073ad889959"
+    },
+    {
+      "path": "filter-loading-1440x900.png",
+      "sha256": "5482bfa5a39844368aea87c8bf303cc60c31b07449c634bbea6bf68082c4a80c"
+    },
+    {
+      "path": "filter-resting-1280x720.png",
+      "sha256": "c977d5fd4d11667dcb3e6aee52cf1ac157d98e8c7f18f779232be9b18a65d4d0"
+    },
+    {
+      "path": "filter-resting-1440x900.png",
+      "sha256": "b5af5ed0ff182b74a33e9d80ffd3f2e3fe7f20ec7df5edd8c38b63c869bc1504"
+    },
+    {
+      "path": "focus-pending-plan-1280x720.png",
+      "sha256": "47aec5162b1e4215b99d7400f43c2f4b894ca37653fe4f9e2ee85afc84ccd71f"
+    },
+    {
+      "path": "focus-pending-plan-1440x900.png",
+      "sha256": "7745c35133d1c87947e0d7d9e893106c9002b26350bf621a6c207dec22e75d6c"
+    },
+    {
+      "path": "focus-read-error-1280x720.png",
+      "sha256": "6b90cc0e126693901196df31ba312a8259cf88347a92927bb008012d47f86087"
+    },
+    {
+      "path": "focus-read-error-1440x900.png",
+      "sha256": "691081d5cc11dc5bcb0c1d748204b1be75d21f5c08b06a625d2c40ecef7efceb"
+    },
+    {
+      "path": "focus-unrouted-status-1280x720.png",
+      "sha256": "bc2bead0236665433a253c5ec8bee1f5b087d85a5f4c373b2cb979aa41b8e6b2"
+    },
+    {
+      "path": "focus-unrouted-status-1440x900.png",
+      "sha256": "e9773b22d4185af8e908c79ce6b849531a68e9d9143b88adb3a6468341da3353"
+    },
+    {
+      "path": "grouped-comparison-1280x720.png",
+      "sha256": "f2892d9eb1b84a283879e1f0dabc5b8c8cb7756eb9cdaf4c709511557577975b"
+    },
+    {
+      "path": "grouped-comparison-1440x900.png",
+      "sha256": "cda1496fee6b6af72515df773e12a508b3d2f3bd8b13805b5e4fcbebdd6d0490"
+    },
+    {
+      "path": "late-conclusion-1280x720.png",
+      "sha256": "8199745b7acd71f5fad1d7918583f1a1bc68fa609afc73d68f1487d06c12a359"
+    },
+    {
+      "path": "late-conclusion-1440x900.png",
+      "sha256": "82dd09eda27419cd91e4c3200b70cd610a18b2719356a9bd77ea833bf6387801"
+    },
+    {
+      "path": "v1-filter-resting-1440x900.png",
+      "sha256": "4f53733fe00ebcca7367daf9561b95e3c11bc6682ad97e269dff9b36c809f258"
+    }
+  ],
+  "day_correction_commit": "c98f3464344cd49f3baeffe97b908134aec53018"
+}

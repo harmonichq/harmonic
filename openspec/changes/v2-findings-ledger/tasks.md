@@ -54,7 +54,7 @@ coordinator-pinned execution envelope; they are not themselves a posted lock.
   Make the existing S101–S105 regressions pass at their feature assertions,
   repairing the intermittent drawn-window setup without weakening expectations.
   Preserve S100 timing and merged keyboard regressions.
-- [ ] 3.5 Generate only synthetic fixture/case evidence through listed
+- [x] 3.5 Generate only synthetic fixture/case evidence through listed
   producers, run their drift checks, then obtain the coordinator's serial
   public-interface runtime proof at both supported desktop widths. Do not claim
   a freeze or screenshot proof before that admission.

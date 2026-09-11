@@ -1381,18 +1381,21 @@
 .ev-row .worst { color: var(--mk-secondary); text-align: right; }
 .ev-row .delta { color: var(--mk-muted); text-align: right; }
 /* one reading only: the numeric columns give way to a single stated cell */
-.ev-row .only { grid-column: 2 / 6; color: var(--mk-text); white-space: nowrap; }
+.ev-row .only { grid-column: var(--ev-only-column, 2 / 6); color: var(--mk-text); white-space: nowrap; }
 .ev-row .only span { color: var(--mk-muted); font-family: Inter, system-ui, sans-serif; font-size: 10.5px; }
 .ev-row .tier {
-  text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
+  grid-column: var(--ev-tier-column, auto); text-align: right; font-family: Inter, system-ui, sans-serif; font-size: 10.5px;
   color: var(--mk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* Comparison rows have one description and one cohort. Give that pair its
    own two flexible columns so a long served cohort label never overlays the
-   event description it classifies. */
-.ev-row:has(.only) { grid-template-columns: 112px minmax(0, 1fr) auto; }
-.ev-row:has(.only) .only { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.ev-row:has(.only) .tier { grid-column: 3; }
+   event description it classifies. The row's served compact layout owns the
+   grid; `.only` remains the one inline evidence-cell owner. */
+.ev-row.case-compact {
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  --ev-only-column: 2;
+  --ev-tier-column: 3;
+}
 .ev-row[aria-pressed="true"] {
   background: color-mix(in srgb, var(--mk-primary-soft) 55%, transparent);
 }

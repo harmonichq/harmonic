@@ -179,7 +179,9 @@ class PatternReplayTest(unittest.TestCase):
             client = TestClient(create_app(
                 db_path=database.name, token="", enable_fetch_loop=False,
             ))
-            pinned = client.post("/api/focus", json={"pattern_key": "highs_after_meals"})
+            body = {"pattern_key": "highs_after_meals",
+                    "outcome_window": {"start_min": 0, "end_min": 1439}}
+            pinned = client.post("/api/focus", json=body)
             self.assertEqual(pinned.status_code, 200, pinned.text)
             with Store.open(database.name) as store:
                 focus_admission = follow_up_admission(
@@ -194,7 +196,7 @@ class PatternReplayTest(unittest.TestCase):
                     )
                 self.assertEqual(trial_admission["active_kind"], "trial")
                 self.assertIsNone(store.active_focus())
-            refused = client.post("/api/focus", json={"pattern_key": "highs_after_meals"})
+            refused = client.post("/api/focus", json=body)
             self.assertEqual(refused.status_code, 409, refused.text)
 
 

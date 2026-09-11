@@ -589,6 +589,7 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   host.insertAdjacentHTML('beforeend',
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
   renderOccurrenceRoster(host, [{
+    compact: true,
     header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
@@ -614,6 +615,7 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   const groups = cohorts.map((cohort) => {
     const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
     return {
+      compact: true,
       header: `<div class="ev-group"><b>${cohort.name}</b>
         <span class="n">· ${cohort.routed_count} occurrence${cohort.routed_count === 1 ? '' : 's'}</span></div>`,
       servedCount: cohort.routed_count,

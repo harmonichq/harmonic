@@ -14,6 +14,9 @@ from ciq_autotune.store import Store
 from scripts.qa_e2e_cases import QA_CASES, materialize_case
 
 
+WHOLE_DAY_OUTCOME_WINDOW = {"start_min": 0, "end_min": 1439}
+
+
 @unittest.skipIf(TestClient is None, "api extra not installed")
 class GuidanceApiTest(unittest.TestCase):
     def _case_client(self, name):
@@ -42,7 +45,8 @@ class GuidanceApiTest(unittest.TestCase):
             _tmp, app, client = self._case_client("behavioral-carb-undercount")
             before = app.state.result_cache.version
             response = client.post(
-                "/api/focus", json={"pattern_key": "highs_after_meals"},
+                "/api/focus", json={"pattern_key": "highs_after_meals",
+                                     "outcome_window": WHOLE_DAY_OUTCOME_WINDOW},
             )
             active = client.get("/api/guidance").json()["active_watch"]
             listed = client.get("/api/focus").json()["focuses"][0]
@@ -62,7 +66,8 @@ class GuidanceApiTest(unittest.TestCase):
     def test_all_setting_pattern_pin_is_rejected_separately(self):
         _tmp, _app, client = self._case_client("showcase")
         response = client.post(
-            "/api/focus", json={"pattern_key": "overnight_lows_no_iob"},
+            "/api/focus", json={"pattern_key": "overnight_lows_no_iob",
+                                 "outcome_window": WHOLE_DAY_OUTCOME_WINDOW},
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("not pinnable", response.json()["detail"])
@@ -75,7 +80,10 @@ class GuidanceApiTest(unittest.TestCase):
         guidance = client.get("/api/guidance").json()
         patterns = [row for row in guidance["candidates"] if row["kind"] == "pattern"]
         for pattern in patterns:
-            response = client.post("/api/focus", json={"pattern_key": pattern["pattern_key"]})
+            response = client.post("/api/focus", json={
+                "pattern_key": pattern["pattern_key"],
+                "outcome_window": WHOLE_DAY_OUTCOME_WINDOW,
+            })
             self.assertEqual(response.status_code == 200,
                              pattern["pattern_key"] in listed,
                              (pattern["pattern_key"], response.text))
@@ -102,7 +110,8 @@ class GuidanceApiTest(unittest.TestCase):
              patch.object(guidance_module, "build_outcome_patterns", crossing_build):
             tmp, _app, client = self._case_client("behavioral-carb-undercount")
             response = client.post(
-                "/api/focus", json={"pattern_key": "highs_after_meals"},
+                "/api/focus", json={"pattern_key": "highs_after_meals",
+                                     "outcome_window": WHOLE_DAY_OUTCOME_WINDOW},
             )
         self.assertEqual(response.status_code, 409)
         with Store.open(tmp.name) as store:

@@ -176,6 +176,10 @@ class DurableApiTest(unittest.TestCase):
                 'analysis_generation': source['analysis_generation'],
                 'pattern_key': 'highs_after_meals', 'lever': 'high_carb_sequence',
                 'outcome_window': {'start_min': 0, 'end_min': 1439}}
+        absent = self.client.post('/api/focus', headers=self.headers,
+                                  json={key: value for key, value in body.items()
+                                        if key != 'outcome_window'})
+        self.assertEqual(absent.status_code, 422, absent.text)
         invalid = self.client.post('/api/focus', headers=self.headers,
                                    json={**body, 'request_id': 'invalid-scope', 'outcome_window': {}})
         self.assertEqual(invalid.status_code, 422, invalid.text)

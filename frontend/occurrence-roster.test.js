@@ -32,6 +32,7 @@ test('the roster exposes one selected occurrence and selects by opaque id', () =
     const host = new FakeElement();
     const selected = [];
     renderOccurrenceRoster(host, [{
+      compact: true,
       header: '<div class="ev-group">Matched</div>',
       servedCount: 2,
       rows: [
@@ -46,6 +47,7 @@ test('the roster exposes one selected occurrence and selects by opaque id', () =
     });
 
     assert.equal(host.children.length, 2);
+    assert.equal(host.children[0].className, 'ev-row case-occurrence case-compact');
     assert.equal(host.children[0].getAttribute('aria-pressed'), 'false');
     assert.equal(host.children[1].getAttribute('aria-pressed'), 'true');
     host.children[0].click();

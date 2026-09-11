@@ -455,7 +455,8 @@ test('retained selection and durable follow-up writes preserve caller identities
   assert.deepEqual(JSON.parse(calls[3].opts.body), body);
   await api.resolveFocus(4);
   assert.equal(calls[4].opts.body, undefined, 'v1 keeps its legacy bodyless request');
-  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served', analysis_generation: 'g' };
+  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served',
+    outcome_window: { start_min: 720, end_min: 1080 }, analysis_generation: 'g' };
   await api.pinFocus(null, pin);
   assert.deepEqual(JSON.parse(calls[5].opts.body), pin, 'no browser-selected member enters the Pattern pin');
   await api.pinFocus('late_bolus');

@@ -1154,6 +1154,11 @@
       "state": "unavailable",
       "reason": "not_recorded"
      },
+     "late_conclusion": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
      "assessment": {
       "version": "386:1",
       "state": "unavailable",
@@ -2276,6 +2281,11 @@
       "state": "unavailable",
       "reason": "not_recorded"
      },
+     "late_conclusion": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
      "assessment": {
       "version": "386:1",
       "state": "unavailable",
@@ -3381,6 +3391,11 @@
       "reason": "not_recorded"
      },
      "ending": {
+      "version": "386:1",
+      "state": "unavailable",
+      "reason": "not_recorded"
+     },
+     "late_conclusion": {
       "version": "386:1",
       "state": "unavailable",
       "reason": "not_recorded"

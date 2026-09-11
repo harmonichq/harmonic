@@ -6,10 +6,13 @@
 // stories deferred, and one feature-specific negative proof per mock-applicable
 // story. Raw output is retained under mockups/sweep/harmonic-v2-desktop/runs/.
 //
-// Those runs were produced by this file at sha256
-// d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116. This header
-// and the CLI banner below were rewritten afterwards, as metadata only; no
-// story, selector, assertion, opener or registry entry changed.
+// Historical provenance: the original retained runs were produced by the
+// pre-amendment replay at sha256
+// d3ba01e328c32418a2f2e477320ddd95357e2a5fc7a7ec70b41323b1d7819116.
+// That digest identifies the original run input, not this amended file.
+// AMENDED 2026-09-10 · #408: bounded waits and observation timing only;
+// story claims, tolerances and actions remain unchanged. The original frozen
+// runs remain historical evidence; the amended replay requires fresh runs.
 //
 // WHY THIS EXISTS: mockups/harmonic-v2-desktop.lock.md says what the surface
 // looks like across 34 terms. It does not say that pressing the destination
@@ -52,6 +55,7 @@
 //      (harmonic-v2-glucose.css:471) — the visible launcher at a desktop
 //      viewport is the footer's. activate()/visible() now take the first
 //      VISIBLE match and fail loudly when every match is hidden.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -204,17 +208,27 @@ const HARNESS = {
 /** Choose a harness <select> option by a substring of its visible label. */
 export async function harnessSelect(page, key, labelSubstring) {
   const selector = HARNESS[key] ?? fail(`unknown harness control ${key}`);
-  const value = await page.evaluate(([s, needle]) => {
-    const el = document.querySelector(s);
-    if (!el) return { missing: true };
-    const option = [...el.options].find((o) => o.textContent.includes(needle));
-    if (!option) return { options: [...el.options].map((o) => o.textContent) };
-    el.value = option.value;
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-    return { chosen: option.textContent };
-  }, [selector, labelSubstring]);
-  ok(!value.missing, `harness control ${key} (${selector}) is absent on this source`);
-  ok(!value.options, `harness control ${key} has no option matching ${JSON.stringify(labelSubstring)}: ${JSON.stringify(value.options)}`);
+  const value = await waitForReplayAssertion(async seen => {
+    const value = seen(await page.evaluate(([s, needle]) => {
+      const el = document.querySelector(s);
+      if (!el) return { missing: true };
+      const option = [...el.options].find((o) => o.textContent.includes(needle));
+      if (!option) return { options: [...el.options].map((o) => o.textContent) };
+      // Resolve the option and dispatch in one browser turn. Missing-control
+      // attempts never dispatch; this successful attempt returns immediately.
+      el.value = option.value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return { value: option.value, chosen: option.textContent };
+    }, [selector, labelSubstring]));
+    ok(!value.missing, `harness control ${key} (${selector}) is absent on this source`);
+    ok(!value.options, `harness control ${key} has no option matching ${JSON.stringify(labelSubstring)}: ${JSON.stringify(value.options)}`);
+    return value;
+  }, `harnessSelect ${key}`);
+  await waitForReplayAssertion(async seen => {
+    const selected = seen(await page.evaluate(s => document.querySelector(s)?.value ?? null, selector));
+    ok(selected === value.value,
+      `harness control ${key} selected ${JSON.stringify(selected)}, expected ${JSON.stringify(value.value)}`);
+  }, `harnessSelect ${key} selected value`);
   await page.waitForTimeout(250);
   return value.chosen;
 }
@@ -222,14 +236,15 @@ export async function harnessSelect(page, key, labelSubstring) {
 /** Set a harness checkbox, e.g. to install the next save/read failure. */
 export async function harnessCheck(page, key, on) {
   const selector = HARNESS[key] ?? fail(`unknown harness control ${key}`);
-  const found = await page.evaluate(([s, value]) => {
+  await waitForReplayAssertion(async seen => {
+    const found = seen(await page.evaluate(selector => !!document.querySelector(selector), selector));
+    ok(found, `harness control ${key} (${selector}) is absent on this source`);
+  }, `harnessCheck ${key}`);
+  await page.evaluate(([s, value]) => {
     const el = document.querySelector(s);
-    if (!el) return false;
     el.checked = value;
     el.dispatchEvent(new Event('change', { bubbles: true }));
-    return true;
   }, [selector, Boolean(on)]);
-  ok(found, `harness control ${key} (${selector}) is absent on this source`);
   await page.waitForTimeout(120);
 }
 
@@ -284,36 +299,38 @@ export async function openMock(browser, { source = 'journey', state = 'investiga
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
 
   if (unrouted.length) fail(`unrouted external request(s): ${[...new Set(unrouted)].join(', ')}`);
-  ok(!consoleErrors.length, `the mock logged console errors: ${consoleErrors.join(' | ')}`);
+  await waitForReplayAssertion(async seen => {
+    ok(!consoleErrors.length, `the mock logged console errors: ${consoleErrors.join(' | ')}`);
 
-  // §4: the opener asserts the RENDERED state equals the REQUESTED one — and
-  // reads that from the SERVED MARKUP, not only from the toolbar. Checking the
-  // mockbar's source and the scenario select's value alone was cosmetic: they
-  // both agreed while the desk showed something else entirely.
-  const rendered = await page.evaluate(() => {
-    const desk = document.querySelector('.gf');
-    return {
-      source: document.querySelector('.mockbar')?.dataset.source ?? null,
-      state: document.querySelector('[aria-label="Prototype scenario"]')?.value ?? null,
-      destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
-      currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
-      panes: desk ? desk.querySelectorAll('.pane').length : 0,
-      loading: Boolean(desk && desk.querySelector('.gf-loading')),
-    };
-  });
-  ok(rendered.source === source, `requested source=${source} but the mock rendered ${rendered.source}`);
-  ok(rendered.state === state, `requested state=${state} but the mock rendered ${rendered.state}`);
+    // §4: the opener asserts the RENDERED state equals the REQUESTED one — and
+    // reads that from the SERVED MARKUP, not only from the toolbar. Checking the
+    // mockbar's source and the scenario select's value alone was cosmetic: they
+    // both agreed while the desk showed something else entirely.
+    const rendered = seen(await page.evaluate(() => {
+      const desk = document.querySelector('.gf');
+      return {
+        source: document.querySelector('.mockbar')?.dataset.source ?? null,
+        state: document.querySelector('[aria-label="Prototype scenario"]')?.value ?? null,
+        destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
+        currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
+        panes: desk ? desk.querySelectorAll('.pane').length : 0,
+        loading: Boolean(desk && desk.querySelector('.gf-loading')),
+      };
+    }));
+    ok(rendered.source === source, `requested source=${source} but the mock rendered ${rendered.source}`);
+    ok(rendered.state === state, `requested state=${state} but the mock rendered ${rendered.state}`);
 
-  // The frame itself, from the markup the desk actually served.
-  ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
-  ok(rendered.panes > 0, 'the desk rendered no pane');
-  ok(rendered.currentCount === 1,
-    `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
-  // glucose.js:144 seats the initial destination, and the journey source's
-  // arrive() re-seats Overview; only the meals history scenario opens Changes.
-  const expected = source === 'meals' && state === 'history' ? 'changes' : 'overview';
-  ok(rendered.destination === expected,
-    `source=${source} state=${state} should arrive on ${expected}, but the served markup shows ${rendered.destination}`);
+    // The frame itself, from the markup the desk actually served.
+    ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
+    ok(rendered.panes > 0, 'the desk rendered no pane');
+    ok(rendered.currentCount === 1,
+      `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
+    // glucose.js:144 seats the initial destination, and the journey source's
+    // arrive() re-seats Overview; only the meals history scenario opens Changes.
+    const expected = source === 'meals' && state === 'history' ? 'changes' : 'overview';
+    ok(rendered.destination === expected,
+      `source=${source} state=${state} should arrive on ${expected}, but the served markup shows ${rendered.destination}`);
+  }, "openMock");
 
   return { page, context, consoleErrors, unrouted, target: 'mock', source, state, fonts };
 }
@@ -414,25 +431,27 @@ export async function openApp(browser, { source = null, state = 'investigate', v
   if (unrouted.length) {
     fail(`the built app requested ${[...new Set(unrouted)].join(', ')} — production needs no CDN (HV2-01)`);
   }
-  ok(!consoleErrors.length, `the app logged console errors: ${consoleErrors.join(' | ')}`);
+  await waitForReplayAssertion(async seen => {
+    ok(!consoleErrors.length, `the app logged console errors: ${consoleErrors.join(' | ')}`);
 
-  // §4: the opener asserts the RENDERED state equals the REQUESTED one, read
-  // from the served markup rather than from the address.
-  const rendered = await page.evaluate(() => {
-    const surface = document.querySelector('.gf');
-    return {
-      destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
-      currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
-      panes: surface ? surface.querySelectorAll('.pane').length : 0,
-      loading: Boolean(surface && surface.querySelector('.gf-loading')),
-    };
-  });
-  ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
-  ok(rendered.panes > 0, 'the desk rendered no pane');
-  ok(rendered.currentCount === 1,
-    `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
-  ok(rendered.destination === destination,
-    `requested ${destination} but the served markup shows ${rendered.destination}`);
+    // §4: the opener asserts the RENDERED state equals the REQUESTED one, read
+    // from the served markup rather than from the address.
+    const rendered = seen(await page.evaluate(() => {
+      const surface = document.querySelector('.gf');
+      return {
+        destination: document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination ?? null,
+        currentCount: document.querySelectorAll('[data-destination][aria-current="page"]').length,
+        panes: surface ? surface.querySelectorAll('.pane').length : 0,
+        loading: Boolean(surface && surface.querySelector('.gf-loading')),
+      };
+    }));
+    ok(!rendered.loading, 'the desk is still on its loading frame; no served state to assert against');
+    ok(rendered.panes > 0, 'the desk rendered no pane');
+    ok(rendered.currentCount === 1,
+      `exactly one destination must be current on arrival, found ${rendered.currentCount}`);
+    ok(rendered.destination === destination,
+      `requested ${destination} but the served markup shows ${rendered.destination}`);
+  }, "openApp");
 
   return {
     page, context, consoleErrors, unrouted, requests, target: 'app', source, state, viewport,
@@ -494,15 +513,16 @@ export async function visible(page, selector) {
     await control.waitFor({ state: 'visible', timeout: 30000 });
     return control;
   }
-  const all = page.locator(selector);
-  const total = await all.count();
-  ok(total > 0, `no control matched ${selector} — a story must drive the affordance a reader uses`);
-  for (let i = 0; i < total; i += 1) {
-    const candidate = all.nth(i);
-    if (await candidate.isVisible()) return candidate;
-  }
-  fail(`${selector} matched ${total} element(s) and every one is hidden; a reader could press none of them`);
-  return null;
+  return waitForReplayAssertion(async seen => {
+    const all = page.locator(selector);
+    const total = seen(await all.count());
+    ok(total > 0, `no control matched ${selector} — a story must drive the affordance a reader uses`);
+    for (let i = 0; i < total; i += 1) {
+      const candidate = all.nth(i);
+      if (seen(await candidate.isVisible())) return candidate;
+    }
+    fail(`${selector} matched ${total} element(s) and every one is hidden; a reader could press none of them`);
+  }, `visible ${selector}`);
 }
 
 /** Click through the affordance a reader would use. */
@@ -524,8 +544,10 @@ export async function activate(page, selector) {
 export async function goto(page, destination) {
   if (TARGET === 'app') destination = destination === 'explore' ? 'diagnose' : destination === 'overview' ? 'changes' : destination;
   await activate(page, `[data-destination="${destination}"]`);
-  ok(await destinationOf(page) === destination,
-    `pressing ${destination} did not arrive there (still ${await destinationOf(page)})`);
+  await waitForReplayAssertion(async seen => {
+    const actual = seen(await destinationOf(page));
+    if (actual !== destination) fail(`pressing ${destination} did not arrive there (still ${actual})`);
+  }, "goto");
 }
 
 /**
@@ -537,8 +559,10 @@ async function openBasalLane(page) {
   if (TARGET === 'app') return C2_STORIES.openBasalLane(page);
   await goto(page, 'explore');
   await activate(page, '.gf-roster-row[data-row="basal"]');
-  const cells = await countOf(page, '.lane-cell[data-cell]');
-  ok(cells === 48, `the basal lane exposes ${cells} slots, not all 48`);
+  await waitForReplayAssertion(async seen => {
+    const cells = seen(await countOf(page, '.lane-cell[data-cell]'));
+    ok(cells === 48, `the basal lane exposes ${cells} slots, not all 48`);
+  }, "openBasalLane");
 }
 
 /** Open a roster row that is not the setting branch, so the shared
@@ -546,32 +570,41 @@ async function openBasalLane(page) {
 async function openComparisonCase(page) {
   if (TARGET === 'app') return C2_STORIES.openComparisonCase(page);
   await goto(page, 'explore');
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-roster-row[data-row]')]
-    .map((b) => b.dataset.row).filter((id) => id && id.startsWith('finding:')));
-  ok(rows.length > 0, 'the roster serves no finding row to open a comparison from');
+  const { rows } = await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-roster-row[data-row]')]
+      .map((b) => b.dataset.row).filter((id) => id && id.startsWith('finding:'))));
+    ok(rows.length > 0, 'the roster serves no finding row to open a comparison from');
+    return { rows };
+  }, "openComparisonCase");
   await activate(page, `.gf-roster-row[data-row="${rows[0]}"]`);
-  ok(await countOf(page, '.ec-surface[data-chart="comparison"]') === 1,
-    'opening a finding row did not mount the event comparison');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.ec-surface[data-chart="comparison"]')) === 1,
+      'opening a finding row did not mount the event comparison');
+  }, "openComparisonCase");
 }
 
 /** Stage the setting branch and land in Changes, where Plan lives. */
 export async function stageIntoPlan(page) {
   if (TARGET === 'app') return C2_STORIES.stageIntoPlan(page);
   await activate(page, '[data-set="stage"]');
-  ok(await destinationOf(page) === 'changes', 'staging did not land in Changes');
-  ok(await countOf(page, '[data-set="save-draft"], [data-set="record"], [data-set="retry-save"]') > 0,
-    'Changes did not render the Plan controls after staging');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'changes', 'staging did not land in Changes');
+    ok(seen(await countOf(page, '[data-set="save-draft"], [data-set="record"], [data-set="retry-save"]')) > 0,
+      'Changes did not render the Plan controls after staging');
+  }, "stageIntoPlan");
 }
 
 /* ------------------------------------------------------------------ stories */
 
 export const S1 = async (page) => {
-  const order = await page.evaluate(() => [...document.querySelectorAll('nav.v2-nav [data-destination]')].map((b) => b.dataset.destination));
-  ok(JSON.stringify(order) === JSON.stringify(TARGET === 'app' ? ['diagnose', 'changes', 'day'] : ['overview', 'explore', 'changes', 'day']),
-    `the destination order is not the locked one: ${JSON.stringify(order)}`);
-  const current = await page.evaluate(() => [...document.querySelectorAll('[data-destination][aria-current="page"]')].map((b) => b.dataset.destination));
-  ok(JSON.stringify(current) === JSON.stringify([TARGET === 'app' ? 'diagnose' : 'overview']),
-    `Overview is not the sole default destination: ${JSON.stringify(current)}`);
+  await waitForReplayAssertion(async seen => {
+    const order = seen(await page.evaluate(() => [...document.querySelectorAll('nav.v2-nav [data-destination]')].map((b) => b.dataset.destination)));
+    ok(JSON.stringify(order) === JSON.stringify(TARGET === 'app' ? ['diagnose', 'changes', 'day'] : ['overview', 'explore', 'changes', 'day']),
+      `the destination order is not the locked one: ${JSON.stringify(order)}`);
+    const current = seen(await page.evaluate(() => [...document.querySelectorAll('[data-destination][aria-current="page"]')].map((b) => b.dataset.destination)));
+    ok(JSON.stringify(current) === JSON.stringify([TARGET === 'app' ? 'diagnose' : 'overview']),
+      `Overview is not the sole default destination: ${JSON.stringify(current)}`);
+  }, "S1");
 };
 
 export const S2 = async (page) => {
@@ -579,8 +612,10 @@ export const S2 = async (page) => {
   for (const destination of (TARGET === 'app' ? ['changes', 'day', 'diagnose'] : ['explore', 'changes', 'day', 'overview'])) {
     await goto(page, destination);
   }
-  const after = await box(page, 'header.cockpit-topbar');
-  ok(JSON.stringify(before) === JSON.stringify(after), 'the topbar moved across destination changes');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await box(page, 'header.cockpit-topbar'));
+    ok(JSON.stringify(before) === JSON.stringify(after), 'the topbar moved across destination changes');
+  }, "S2");
 };
 
 export const S3 = async (page) => {
@@ -591,110 +626,131 @@ export const S3 = async (page) => {
     await activate(page, '#level .qrow');
     await activate(page, '[data-destination="diagnose"]');
     await page.locator('#level .qrow').first().waitFor();
-    ok(await countOf(page, '#level .qrow') >= rows,
-      're-pressing Diagnose did not restore the shipped Findings index');
-    ok(await countOf(page, '[data-destination="overview"], [data-destination="explore"]') === 0,
-      'a retired destination remains available');
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, '#level .qrow')) >= rows,
+        're-pressing Diagnose did not restore the shipped Findings index');
+      ok(seen(await countOf(page, '[data-destination="overview"], [data-destination="explore"]')) === 0,
+        'a retired destination remains available');
+    }, "S3");
     return;
   }
-  const rows = await countOf(page, '.gf-roster-row[data-row]');
-  ok(rows > 0, 'the journey source rendered no roster rows to drill into');
+  const { rows } = await waitForReplayAssertion(async seen => {
+    const rows = seen(await countOf(page, '.gf-roster-row[data-row]'));
+    ok(rows > 0, 'the journey source rendered no roster rows to drill into');
+    return { rows };
+  }, "S3");
   await activate(page, '.gf-roster-row[data-row]');
   await activate(page, '[data-destination="explore"]');
-  ok(await countOf(page, '.gf-roster-row[data-row]') >= rows,
-    're-pressing Explore did not return to the findings index');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-roster-row[data-row]')) >= rows,
+      're-pressing Explore did not return to the findings index');
+  }, "S3");
 };
 
 export const S4 = async (page) => {
-  const chrome = await page.evaluate(() => ({
-    identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    carbs: document.querySelector('.cockpit-log-carbs')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
-    advisory: document.querySelector('.cockpit-advisory')?.textContent.trim() ?? null,
-    utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
-  }));
-  ok(/Harmonic/.test(chrome.identity || '') && /advisory/i.test(chrome.identity || ''),
-    `the identity mark is not the locked one: ${chrome.identity}`);
-  ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
-    `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
-  ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',
-    `the advisory line drifted: ${JSON.stringify(chrome.advisory)}`);
-  for (const label of ['Guide', 'Settings', 'Glossary']) {
-    ok(chrome.utilities.some((t) => t.includes(label)), `the footer lost ${label}: ${JSON.stringify(chrome.utilities)}`);
-  }
+  await waitForReplayAssertion(async seen => {
+    const chrome = seen(await page.evaluate(() => ({
+      identity: document.querySelector('.cockpit-identity')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+      carbs: document.querySelector('.cockpit-log-carbs')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+      advisory: document.querySelector('.cockpit-advisory')?.textContent.trim() ?? null,
+      utilities: [...document.querySelectorAll('nav.cockpit-utilities button')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()),
+    })));
+    ok(/Harmonic/.test(chrome.identity || '') && /advisory/i.test(chrome.identity || ''),
+      `the identity mark is not the locked one: ${chrome.identity}`);
+    ok((chrome.carbs || '').includes('＋') && /Log carbs/i.test(chrome.carbs || ''),
+      `Log carbs lost its U+FF0B mark: ${JSON.stringify(chrome.carbs)}`);
+    ok(chrome.advisory === 'Advisory only — review with your clinician before changing pump settings.',
+      `the advisory line drifted: ${JSON.stringify(chrome.advisory)}`);
+    for (const label of ['Guide', 'Settings', 'Glossary']) {
+      ok(chrome.utilities.some((t) => t.includes(label)), `the footer lost ${label}: ${JSON.stringify(chrome.utilities)}`);
+    }
+  }, "S4");
 };
 
 export const S5 = async (page, ctx) => {
-  const rows = await computed(page, '.cockpit-shell', 'grid-template-rows');
-  ok(rows, 'the cockpit shell declares no grid-template-rows');
-  const parts = rows.split(/\s+/);
-  const first = Math.round(parseFloat(parts[0]));
-  const last = Math.round(parseFloat(parts[parts.length - 1]));
-  const expected = ctx.viewport === '1440x900' ? [42, 26] : [38, 24];
-  ok(first === expected[0] && last === expected[1],
-    `at ${ctx.viewport} the shell rows are ${first}/${last}, not ${expected[0]}/${expected[1]}`);
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await computed(page, '.cockpit-shell', 'grid-template-rows'));
+    ok(rows, 'the cockpit shell declares no grid-template-rows');
+    const parts = rows.split(/\s+/);
+    const first = Math.round(parseFloat(parts[0]));
+    const last = Math.round(parseFloat(parts[parts.length - 1]));
+    const expected = ctx.viewport === '1440x900' ? [42, 26] : [38, 24];
+    ok(first === expected[0] && last === expected[1],
+      `at ${ctx.viewport} the shell rows are ${first}/${last}, not ${expected[0]}/${expected[1]}`);
+  }, "S5");
 };
 
 export const S6 = async (page) => {
-  const root = await rootScrolls(page);
-  ok(root.v <= 1 && root.h <= 1, `the document scrolls at the root: ${JSON.stringify(root)}`);
-  ok(await countOf(page, '.gf-pane-body') > 0, 'no owned reading-pane body exists to scroll inside');
+  await waitForReplayAssertion(async seen => {
+    const root = seen(await rootScrolls(page));
+    ok(root.v <= 1 && root.h <= 1, `the document scrolls at the root: ${JSON.stringify(root)}`);
+    ok(seen(await countOf(page, '.gf-pane-body')) > 0, 'no owned reading-pane body exists to scroll inside');
+  }, "S6");
 };
 
 export const S7 = async (page) => {
-  const reading = await box(page, '.gf-desk > .gf-reading');
-  ok(reading, 'the paired state has no reading pane');
-  ok(Math.round(reading.w) === 300, `the reading pane is ${reading.w}px, not the locked 300px`);
-  const stage = await box(page, '.gf-desk > .gf-stage');
-  ok(stage && stage.w > reading.w, 'the evidence stage is not the flexible pane beside the reading pane');
+  await waitForReplayAssertion(async seen => {
+    const reading = seen(await box(page, '.gf-desk > .gf-reading'));
+    ok(reading, 'the paired state has no reading pane');
+    ok(Math.round(reading.w) === 300, `the reading pane is ${reading.w}px, not the locked 300px`);
+    const stage = seen(await box(page, '.gf-desk > .gf-stage'));
+    ok(stage && stage.w > reading.w, 'the evidence stage is not the flexible pane beside the reading pane');
+  }, "S7");
 };
 
 export const S7b = async (page) => {
   await goto(page, 'changes');
-  ok(await countOf(page, '.gf-stage-table .gf-empty') > 0, 'the empty Changes state did not render its empty frame');
-  ok(await countOf(page, '.gf-desk > .gf-reading') === 0,
-    'the empty Changes state manufactured a reading pane, which HV2-05 forbids');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-stage-table .gf-empty')) > 0, 'the empty Changes state did not render its empty frame');
+    ok(seen(await countOf(page, '.gf-desk > .gf-reading')) === 0,
+      'the empty Changes state manufactured a reading pane, which HV2-05 forbids');
+  }, "S7b");
 };
 
 export const S8 = async (page) => {
-  const ladder = await page.evaluate(() => {
-    const read = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-    return ['--wk-canvas', '--wk-surface', '--wk-rule', '--wk-ink'].map((n) => [n, read(n)]);
-  });
-  for (const [name, value] of ladder) ok(value, `the shipped dark role token ${name} resolves to nothing`);
-  ok(await countOf(page, '[data-theme], .theme-toggle, [aria-label*="theme" i]') === 0,
-    'a theme control is present; the chooser and its storage are retired');
-  const stored = await page.evaluate(() => Object.keys(localStorage).filter((k) => /theme/i.test(k)));
-  ok(stored.length === 0, `theme storage is present: ${JSON.stringify(stored)}`);
+  await waitForReplayAssertion(async seen => {
+    const ladder = seen(await page.evaluate(() => {
+      const read = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+      return ['--wk-canvas', '--wk-surface', '--wk-rule', '--wk-ink'].map((n) => [n, read(n)]);
+    }));
+    for (const [name, value] of ladder) ok(value, `the shipped dark role token ${name} resolves to nothing`);
+    ok(seen(await countOf(page, '[data-theme], .theme-toggle, [aria-label*="theme" i]')) === 0,
+      'a theme control is present; the chooser and its storage are retired');
+    const stored = seen(await page.evaluate(() => Object.keys(localStorage).filter((k) => /theme/i.test(k))));
+    ok(stored.length === 0, `theme storage is present: ${JSON.stringify(stored)}`);
+  }, "S8");
 };
 
 export const S9 = async (page, ctx) => {
-  const family = await computed(page, '.gf-title', 'font-family');
-  ok(/Inter/i.test(family || ''), `the stage title family is ${family}, not Inter`);
-  // On the app, the family must be RENDERED WITH, not merely declared. The mock
-  // opener runs without the Inter binary by design (its own header says computed
-  // type values are what it asserts), so this half belongs to the built surface,
-  // which packages the font and may reach no CDN for it.
-  if (ctx.target === 'app') {
-    const inter = await page.evaluate(async () => {
-      await document.fonts.ready;
-      const faces = [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Inter');
-      return {
-        available: document.fonts.check('700 18px Inter'),
-        loaded: faces.filter((face) => face.status === 'loaded').map((face) => face.weight),
-        declared: faces.length,
-      };
-    });
-    ok(inter.declared > 0, 'the built surface declares no Inter face at all');
-    ok(inter.available, 'Inter is named but not available to render with; the desk is on a fallback');
-    ok(inter.loaded.length > 0,
-      `no Inter face actually loaded (${inter.declared} declared); the packaged font is not being served`);
-  }
-  const size = parseFloat(await computed(page, '.gf-title', 'font-size'));
-  ok(Math.abs(size - 18.24) < 0.75, `the stage title is ${size}px, not the locked 1.14rem`);
-  ok((await computed(page, '.gf-title', 'font-weight')) === '700', 'the stage title is not weight 700');
-  const oversized = await page.evaluate(() => [...document.querySelectorAll('h1,h2,h3,h4')]
-    .map((el) => parseFloat(getComputedStyle(el).fontSize)).filter((n) => n > 24.5));
-  ok(oversized.length === 0, `headings exceed the 1.5rem ceiling: ${JSON.stringify(oversized)}`);
+  await waitForReplayAssertion(async seen => {
+    const family = seen(await computed(page, '.gf-title', 'font-family'));
+    ok(/Inter/i.test(family || ''), `the stage title family is ${family}, not Inter`);
+    // On the app, the family must be RENDERED WITH, not merely declared. The mock
+    // opener runs without the Inter binary by design (its own header says computed
+    // type values are what it asserts), so this half belongs to the built surface,
+    // which packages the font and may reach no CDN for it.
+    if (ctx.target === 'app') {
+      const inter = seen(await page.evaluate(async () => {
+        await document.fonts.ready;
+        const faces = [...document.fonts].filter((face) => face.family.replace(/["']/g, '') === 'Inter');
+        return {
+          available: document.fonts.check('700 18px Inter'),
+          loaded: faces.filter((face) => face.status === 'loaded').map((face) => face.weight),
+          declared: faces.length,
+        };
+      }));
+      ok(inter.declared > 0, 'the built surface declares no Inter face at all');
+      ok(inter.available, 'Inter is named but not available to render with; the desk is on a fallback');
+      ok(inter.loaded.length > 0,
+        `no Inter face actually loaded (${inter.declared} declared); the packaged font is not being served`);
+    }
+    const size = parseFloat(seen(await computed(page, '.gf-title', 'font-size')));
+    ok(Math.abs(size - 18.24) < 0.75, `the stage title is ${size}px, not the locked 1.14rem`);
+    ok((seen(await computed(page, '.gf-title', 'font-weight'))) === '700', 'the stage title is not weight 700');
+    const oversized = seen(await page.evaluate(() => [...document.querySelectorAll('h1,h2,h3,h4')]
+      .map((el) => parseFloat(getComputedStyle(el).fontSize)).filter((n) => n > 24.5)));
+    ok(oversized.length === 0, `headings exceed the 1.5rem ceiling: ${JSON.stringify(oversized)}`);
+  }, "S9");
 };
 
 export const S10 = async (page) => {
@@ -703,8 +759,10 @@ export const S10 = async (page) => {
   // rule as inherited, and mobile acceptance stays a later gate (tasks 4.1–4.3).
   await page.setViewportSize({ width: 680, height: 720 });
   await page.waitForTimeout(250);
-  ok(await page.evaluate(() => document.querySelector('.gf')?.dataset.sheet ?? null) === 'closed',
-    'crossing the media query left the sheet open');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.evaluate(() => document.querySelector('.gf')?.dataset.sheet ?? null)) === 'closed',
+      'crossing the media query left the sheet open');
+  }, "S10");
   await page.setViewportSize(VIEWPORTS['1280x720']);
   await page.waitForTimeout(250);
 };
@@ -717,23 +775,27 @@ export const S10b = async (page, ctx) => {
   // not widened to a mobile design. HV2-05 keeps the 701–1100 intermediate rule
   // as inherited; mobile acceptance is a later gate.
   await goto(page, 'explore');
-  const presented = await page.evaluate(() => [
-    ...document.querySelectorAll('.gf-sheet-toggle, .gf-sheet-close, .gf-narrow-seat [data-seat], .gf-narrow-seat [data-mode]'),
-  ].filter((el) => el.offsetParent !== null).map((el) => el.className));
-  ok(presented.length === 0,
-    `narrow-only sheet chrome is presented at ${ctx.viewport}: ${JSON.stringify(presented)}`);
-  ok(await countOf(page, '.gf-desk > .gf-stage') === 1 && await countOf(page, '.gf-desk > .gf-reading') === 1,
-    'the desktop desk does not show both panes at once, which is why it needs no sheet');
+  await waitForReplayAssertion(async seen => {
+    const presented = seen(await page.evaluate(() => [
+      ...document.querySelectorAll('.gf-sheet-toggle, .gf-sheet-close, .gf-narrow-seat [data-seat], .gf-narrow-seat [data-mode]'),
+    ].filter((el) => el.offsetParent !== null).map((el) => el.className)));
+    ok(presented.length === 0,
+      `narrow-only sheet chrome is presented at ${ctx.viewport}: ${JSON.stringify(presented)}`);
+    ok(seen(await countOf(page, '.gf-desk > .gf-stage')) === 1 && seen(await countOf(page, '.gf-desk > .gf-reading')) === 1,
+      'the desktop desk does not show both panes at once, which is why it needs no sheet');
+  }, "S10b");
 };
 
 export const S11 = async (page) => {
   const reference = { top: await box(page, 'header.cockpit-topbar'), foot: await box(page, 'footer.cockpit-footer') };
   for (const destination of ['explore', 'changes', 'day']) {
     await goto(page, destination);
-    ok(JSON.stringify(await box(page, 'header.cockpit-topbar')) === JSON.stringify(reference.top),
-      `${destination} moved the topbar against Overview`);
-    ok(JSON.stringify(await box(page, 'footer.cockpit-footer')) === JSON.stringify(reference.foot),
-      `${destination} moved the footer against Overview`);
+    await waitForReplayAssertion(async seen => {
+      ok(JSON.stringify(seen(await box(page, 'header.cockpit-topbar'))) === JSON.stringify(reference.top),
+        `${destination} moved the topbar against Overview`);
+      ok(JSON.stringify(seen(await box(page, 'footer.cockpit-footer'))) === JSON.stringify(reference.foot),
+        `${destination} moved the footer against Overview`);
+    }, "S11");
   }
 };
 
@@ -741,54 +803,75 @@ export const S12 = async (page) => {
   // Corrected: the meals source's Explore IS the investigation frame, so the
   // comparison and its canvas head are present without drilling a roster.
   await goto(page, 'explore');
-  const head = '#gf-fig1-head';
-  const rest = await box(page, head);
-  ok(rest, 'the comparison canvas head is absent');
+  const { head, rest } = await waitForReplayAssertion(async seen => {
+    const head = '#gf-fig1-head';
+    const rest = seen(await box(page, head));
+    ok(rest, 'the comparison canvas head is absent');
+    return { head, rest };
+  }, "S12");
   const chart = await visible(page, '.ec-surface[data-chart="comparison"]');
   await chart.hover({ position: { x: 200, y: 90 } });
   await page.waitForTimeout(300);
-  const active = await box(page, head);
-  ok(Math.abs(active.h - rest.h) < 1,
-    `the canvas head grew on hover (${rest.h} → ${active.h}); it must reserve its space at rest`);
+  await waitForReplayAssertion(async seen => {
+    const active = seen(await box(page, head));
+    ok(Math.abs(active.h - rest.h) < 1,
+      `the canvas head grew on hover (${rest.h} → ${active.h}); it must reserve its space at rest`);
+  }, "S12");
 };
 
 export const S13 = async (page, ctx) => {
-  const widths = [];
-  for (const source of SOURCES) {
-    const opened = await ctx.open({ source, state: 'investigate', viewport: ctx.viewport });
-    try {
+  const sources = [];
+  try {
+    for (const source of SOURCES) {
+      const opened = await ctx.open({ source, state: 'investigate', viewport: ctx.viewport });
+      sources.push({ source, ...opened });
       await goto(opened.page, 'explore');
-      const pane = await box(opened.page, '.gf-desk > .gf-reading');
-      if (pane) widths.push([source, Math.round(pane.w)]);
-    } finally { await opened.context.close(); }
+    }
+    await waitForReplayAssertion(async seen => {
+      const widths = [];
+      for (const { source, page } of sources) {
+        const pane = seen(await box(page, '.gf-desk > .gf-reading'));
+        if (pane) widths.push([source, Math.round(pane.w)]);
+      }
+      ok(widths.length > 1, 'fewer than two sources produced a reading pane to compare');
+      ok(new Set(widths.map(([, w]) => w)).size === 1,
+        `the reading pane resized with the data shape: ${JSON.stringify(widths)}`);
+    }, 'S13 source pane widths');
+  } finally {
+    for (const { context } of sources) await context.close();
   }
-  ok(widths.length > 1, 'fewer than two sources produced a reading pane to compare');
-  ok(new Set(widths.map(([, w]) => w)).size === 1,
-    `the reading pane resized with the data shape: ${JSON.stringify(widths)}`);
 };
 
 export const S14 = async (page) => {
   if (TARGET === 'app') await goto(page, 'changes');
-  const heading = await page.locator('.gf-desk > .gf-reading > header h2').first().textContent();
-  ok((heading || '').trim().length > 0, 'Changes guidance rendered no reading-pane heading');
+  await waitForReplayAssertion(async seen => {
+    const heading = seen(await page.locator('.gf-desk > .gf-reading > header h2').first().textContent());
+    ok((heading || '').trim().length > 0, 'Changes guidance rendered no reading-pane heading');
+  }, "S14");
   const route = await visible(page, '[data-action="explore"]');
-  ok(/^Inspect /i.test(((await route.textContent()) || '').trim()),
-    `the Overview route is not an Inspect route: ${await route.textContent()}`);
-  ok(await countOf(page, '.gf-desk > .gf-reading .gf-roster-row') === 0,
-    'Changes duplicated Diagnose\'s findings roster');
+  await waitForReplayAssertion(async seen => {
+    ok(/^Inspect /i.test(((seen(await route.textContent())) || '').trim()),
+      `the Overview route is not an Inspect route: ${seen(await route.textContent())}`);
+    ok(seen(await countOf(page, '.gf-desk > .gf-reading .gf-roster-row')) === 0,
+      'Changes duplicated Diagnose\'s findings roster');
+  }, "S14");
 };
 
 export const S15 = async (page) => {
   await activate(page, '[data-action="aside"]');
-  ok(await countOf(page, 'form[data-form="aside"]') === 1, 'Set aside did not open its form');
-  const focused = await activeElement(page);
-  ok(focused && focused.id === 'aside-reason', `the reason field did not take focus (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="aside"]')) === 1, 'Set aside did not open its form');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.id === 'aside-reason', `the reason field did not take focus (got ${JSON.stringify(focused)})`);
+  }, "S15");
   await page.fill('#aside-reason', 'not now');
   await (await visible(page, 'form[data-form="aside"] [type="submit"]')).click();
   await page.waitForTimeout(250);
-  ok((await deskText(page)).includes('not now'), 'the recorded set-aside reason is not shown on the acknowledgment');
-  ok(await countOf(page, '[data-action="restore"], [data-restore]') > 0,
-    'the set-aside acknowledgment offers no visible Restore');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await deskText(page))).includes('not now'), 'the recorded set-aside reason is not shown on the acknowledgment');
+    ok(seen(await countOf(page, '[data-action="restore"], [data-restore]')) > 0,
+      'the set-aside acknowledgment offers no visible Restore');
+  }, "S15");
 };
 
 export const S16 = async (page) => {
@@ -796,43 +879,53 @@ export const S16 = async (page) => {
   await (await visible(page, 'form[data-form="aside"] [type="submit"]')).click();
   await page.waitForTimeout(250);
   await activate(page, '[data-action="restore"], [data-restore]');
-  ok(await countOf(page, '[data-action="restore"], [data-restore]') === 0,
-    'Restore left the set-aside state standing');
-  ok(await countOf(page, '[data-action="aside"]') > 0, 'Restore did not return the eligible subject');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-action="restore"], [data-restore]')) === 0,
+      'Restore left the set-aside state standing');
+    ok(seen(await countOf(page, '[data-action="aside"]')) > 0, 'Restore did not return the eligible subject');
+  }, "S16");
 };
 
 export const S17 = async (page) => {
   await activate(page, '[data-action="aside"]');
   await page.fill('#aside-reason', 'typed then cancelled');
   await activate(page, '[data-action="cancel-aside"]');
-  ok(await countOf(page, 'form[data-form="aside"]') === 0, 'Cancel left the set-aside form open');
-  ok(await countOf(page, '[data-action="restore"], [data-restore]') === 0,
-    'Cancel recorded a set-aside that was never submitted');
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.action === 'aside',
-    `Cancel did not return focus to the control that opened it (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="aside"]')) === 0, 'Cancel left the set-aside form open');
+    ok(seen(await countOf(page, '[data-action="restore"], [data-restore]')) === 0,
+      'Cancel recorded a set-aside that was never submitted');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.action === 'aside',
+      `Cancel did not return focus to the control that opened it (got ${JSON.stringify(focused)})`);
+  }, "S17");
 };
 
 export const S18 = async (page) => {
-  const title = await page.locator('.gf-empty .gf-title').first().textContent();
-  ok((title || '').trim() === 'No priority needs action', `the quiet state reads ${JSON.stringify(title)}`);
-  ok(await countOf(page, '[data-action="day"]') > 0, 'the quiet state does not keep Day reachable');
-  ok(!/unavailable/i.test(await page.locator('.gf-empty').first().innerText()),
-    'the quiet state is making a failed-read claim');
+  await waitForReplayAssertion(async seen => {
+    const title = seen(await page.locator('.gf-empty .gf-title').first().textContent());
+    ok((title || '').trim() === 'No priority needs action', `the quiet state reads ${JSON.stringify(title)}`);
+    ok(seen(await countOf(page, '[data-action="day"]')) > 0, 'the quiet state does not keep Day reachable');
+    ok(!/unavailable/i.test(seen(await page.locator('.gf-empty').first().innerText())),
+      'the quiet state is making a failed-read claim');
+  }, "S18");
 };
 
 export const S19 = async (page) => {
-  const title = await page.locator('.gf-empty .gf-title').first().textContent();
-  ok((title || '').trim() === 'Evidence unavailable', `the failed read reads ${JSON.stringify(title)}`);
-  ok(await countOf(page, '[data-action="retry"]') === 1, 'the failed read offers no Retry');
+  await waitForReplayAssertion(async seen => {
+    const title = seen(await page.locator('.gf-empty .gf-title').first().textContent());
+    ok((title || '').trim() === 'Evidence unavailable', `the failed read reads ${JSON.stringify(title)}`);
+    ok(seen(await countOf(page, '[data-action="retry"]')) === 1, 'the failed read offers no Retry');
+  }, "S19");
 };
 
 export const S20 = async (page) => {
   await activate(page, '[data-action="retry"]');
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
-  ok(await page.evaluate(() => document.querySelector('[aria-label="Prototype scenario"]')?.value ?? null) === 'investigate',
-    'Retry did not return the desk to its investigate read');
-  ok(await countOf(page, '[data-action="retry"]') === 0, 'the error frame is still standing after a successful Retry');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.evaluate(() => document.querySelector('[aria-label="Prototype scenario"]')?.value ?? null)) === 'investigate',
+      'Retry did not return the desk to its investigate read');
+    ok(seen(await countOf(page, '[data-action="retry"]')) === 0, 'the error frame is still standing after a successful Retry');
+  }, "S20");
 };
 
 export const S20b = async (page) => {
@@ -846,34 +939,40 @@ export const S20b = async (page) => {
   await harnessSelect(page, 'journeyClock', 'pump captured');
   await goto(page, 'explore');
 
-  ok(await countOf(page, '[data-journey="retry-read"]') > 0,
-    'installing a read failure did not surface the Retry control in the roster');
-  const failedText = await deskText(page);
-  ok(/current read failed/i.test(failedText), 'the failed read does not say the read failed');
-  ok(/last read that answered/i.test(failedText),
-    'the failed read does not distinguish the stale answer from a new result');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-journey="retry-read"]')) > 0,
+      'installing a read failure did not surface the Retry control in the roster');
+    const failedText = seen(await deskText(page));
+    ok(/current read failed/i.test(failedText), 'the failed read does not say the read failed');
+    ok(/last read that answered/i.test(failedText),
+      'the failed read does not distinguish the stale answer from a new result');
+  }, "S20b");
 
   await activate(page, '[data-journey="retry-read"]');
-  ok(await countOf(page, '[data-journey="retry-read"]') === 0,
-    'a successful retry left the failed-read note standing');
-  ok(!/current read failed/i.test(await deskText(page)),
-    'a successful retry still claims the read failed');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-journey="retry-read"]')) === 0,
+      'a successful retry left the failed-read note standing');
+    ok(!/current read failed/i.test(seen(await deskText(page))),
+      'a successful retry still claims the read failed');
+  }, "S20b");
 };
 
 export const S21 = async (page) => {
   await goto(page, 'explore');
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-cohort-row[data-cohort]')].map((b) => ({
-    key: b.dataset.cohort,
-    support: b.dataset.support,
-    mark: !!b.querySelector('.ec-key-item .ec-key-mark'),
-    line: (b.querySelector('small')?.textContent || '').trim(),
-  })));
-  ok(rows.length > 1, `fewer than two cohorts rendered: ${JSON.stringify(rows)}`);
-  for (const row of rows) {
-    ok(row.support, `cohort ${row.key} rendered without its served support state`);
-    ok(row.mark, `cohort ${row.key} lost the comparison key's own mark`);
-    ok(row.line.length > 0, `cohort ${row.key} rendered no support line`);
-  }
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-cohort-row[data-cohort]')].map((b) => ({
+      key: b.dataset.cohort,
+      support: b.dataset.support,
+      mark: !!b.querySelector('.ec-key-item .ec-key-mark'),
+      line: (b.querySelector('small')?.textContent || '').trim(),
+    }))));
+    ok(rows.length > 1, `fewer than two cohorts rendered: ${JSON.stringify(rows)}`);
+    for (const row of rows) {
+      ok(row.support, `cohort ${row.key} rendered without its served support state`);
+      ok(row.mark, `cohort ${row.key} lost the comparison key's own mark`);
+      ok(row.line.length > 0, `cohort ${row.key} rendered no support line`);
+    }
+  }, "S21");
 };
 
 export const S22 = async (page) => {
@@ -884,64 +983,92 @@ export const S22 = async (page) => {
   }));
   const target = keys.find((k) => k !== held) ?? keys[0];
   await activate(page, `.gf-cohort-row[data-cohort="${target}"]`);
-  ok(await pressed(page, `.gf-cohort-row[data-cohort="${target}"]`) === 'true',
-    `pressing cohort ${target} did not hold it`);
-  ok(await countOf(page, '.gf-member-row[aria-pressed="true"]') === 1,
-    'holding a cohort left no single held member');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `.gf-cohort-row[data-cohort="${target}"]`)) === 'true',
+      `pressing cohort ${target} did not hold it`);
+    ok(seen(await countOf(page, '.gf-member-row[aria-pressed="true"]')) === 1,
+      'holding a cohort left no single held member');
+  }, "S22");
 };
 
 export const S23 = async (page) => {
   await goto(page, 'explore');
-  ok(await countOf(page, '.gf-member-row[aria-pressed="true"]') === 1,
-    'the stage opened without a held member');
-  const { ids, held } = await page.evaluate(() => ({
-    ids: [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ),
-    held: document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null,
-  }));
-  ok(ids.length > 1, `the held cohort has ${ids.length} member(s); this story needs at least two`);
+  const { ids, held } = await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-member-row[aria-pressed="true"]')) === 1,
+      'the stage opened without a held member');
+    const { ids, held } = seen(await page.evaluate(() => ({
+      ids: [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ),
+      held: document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null,
+    })));
+    ok(ids.length > 1, `the held cohort has ${ids.length} member(s); this story needs at least two`);
+    return { ids, held };
+  }, "S23");
   const other = ids.find((id) => id !== held);
   await activate(page, `.gf-member-row[data-occ="${other}"]`);
-  ok(await pressed(page, `.gf-member-row[data-occ="${other}"]`) === 'true', 'selecting a member did not hold it');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `.gf-member-row[data-occ="${other}"]`)) === 'true', 'selecting a member did not hold it');
+  }, "S23");
 };
 
 export const S24 = async (page) => {
   await goto(page, 'explore');
   const held = () => page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null);
-  const ids = await page.evaluate(() => [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ));
-  ok(ids.length > 1, 'the held cohort has fewer than two members to step through');
-  const start = await held();
+  const { ids, start } = await waitForReplayAssertion(async seen => {
+    const { ids, selected } = seen(await page.evaluate(() => ({
+      ids: [...document.querySelectorAll('.gf-member-row[data-occ]')].map(b => b.dataset.occ),
+      selected: [...document.querySelectorAll('.gf-member-row[aria-pressed="true"]')].map(b => b.dataset.occ),
+    })));
+    ok(ids.length > 1, 'the held cohort has fewer than two members to step through');
+    ok(selected.length === 1 && ids.includes(selected[0]),
+      'S24 the starting member is the sole held member of the rendered cohort');
+    return { ids, start: selected[0] };
+  }, 'S24 starting member');
   await activate(page, '[data-action="next-meal"]');
-  ok(await held() !== start, 'Next occurrence did not move the held member');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) !== start, 'Next occurrence did not move the held member');
+  }, "S24");
   await activate(page, '[data-action="previous-meal"]');
-  ok(await held() === start, 'Previous occurrence did not return to the prior member');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === start, 'Previous occurrence did not return to the prior member');
+  }, "S24");
   for (let i = 0; i < ids.length; i += 1) await activate(page, '[data-action="next-meal"]');
-  ok(await held() === start, 'stepping a full lap did not wrap back to the starting member');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === start, 'stepping a full lap did not wrap back to the starting member');
+  }, "S24");
 };
 
 export const S25 = async (page) => {
   await goto(page, 'explore');
-  const steps = await countOf(page, '.gf-step-row[data-step]');
-  ok(steps > 0, 'no model steps rendered — this story needs a member with an episode');
+  await waitForReplayAssertion(async seen => {
+    const steps = seen(await countOf(page, '.gf-step-row[data-step]'));
+    ok(steps > 0, 'no model steps rendered — this story needs a member with an episode');
+  }, "S25");
   await activate(page, '.gf-step-row[data-step="0"]');
-  ok(await countOf(page, '.gf-step-row[aria-pressed="true"]') === 1, 'selecting a step did not hold it');
-  const tiers = await page.evaluate(() => [...document.querySelectorAll('.gf-step-row .tier')].map((el) => el.dataset.tier));
-  ok(tiers.every(Boolean), `a model step rendered without its served evidence tier: ${JSON.stringify(tiers)}`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-step-row[aria-pressed="true"]')) === 1, 'selecting a step did not hold it');
+    const tiers = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-step-row .tier')].map((el) => el.dataset.tier)));
+    ok(tiers.every(Boolean), `a model step rendered without its served evidence tier: ${JSON.stringify(tiers)}`);
+  }, "S25");
 };
 
 export const S26 = async (page) => {
   await goto(page, 'explore');
-  ok(await countOf(page, '[data-figure]') >= 2, 'the Figure segment did not render both options');
-  // The Episode control's disabled state is not free-floating: it tracks whether
-  // the held member has a served episode link (harmonic-v2-glucose.js:161-164),
-  // which the reading pane marks on its member rows.
-  const state = await page.evaluate(() => ({
-    disabled: document.querySelector('[data-figure="episode"]')?.disabled ?? null,
-    hasEpisode: (document.querySelector('.gf-member-row[aria-pressed="true"] .n')?.textContent || '').trim() === 'episode',
-  }));
-  ok(state.disabled === !state.hasEpisode,
-    `the Episode control is ${state.disabled ? 'disabled' : 'enabled'} while the held member ${state.hasEpisode ? 'has' : 'has no'} episode`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-figure]')) >= 2, 'the Figure segment did not render both options');
+    // The Episode control's disabled state is not free-floating: it tracks whether
+    // the held member has a served episode link (harmonic-v2-glucose.js:161-164),
+    // which the reading pane marks on its member rows.
+    const state = seen(await page.evaluate(() => ({
+      disabled: document.querySelector('[data-figure="episode"]')?.disabled ?? null,
+      hasEpisode: (document.querySelector('.gf-member-row[aria-pressed="true"] .n')?.textContent || '').trim() === 'episode',
+    })));
+    ok(state.disabled === !state.hasEpisode,
+      `the Episode control is ${state.disabled ? 'disabled' : 'enabled'} while the held member ${state.hasEpisode ? 'has' : 'has no'} episode`);
+  }, "S26");
   await activate(page, '[data-figure="day"]');
-  ok(await pressed(page, '[data-figure="day"]') === 'true', 'the Day figure did not take the seat');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, '[data-figure="day"]')) === 'true', 'the Day figure did not take the seat');
+  }, "S26");
 };
 
 export const S27 = async (page) => {
@@ -949,38 +1076,52 @@ export const S27 = async (page) => {
   const members = () => countOf(page, '.gf-member-row[data-occ]');
   const before = await members();
   await activate(page, '[data-window="full"]');
-  ok(await pressed(page, '[data-window="full"]') === 'true', 'the full window did not take the segment');
-  ok(await members() === before, 'moving the comparison window changed cohort membership');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, '[data-window="full"]')) === 'true', 'the full window did not take the segment');
+    ok(seen(await members()) === before, 'moving the comparison window changed cohort membership');
+  }, "S27");
   await activate(page, '[data-window="near"]');
-  ok(await members() === before, 'returning the window changed cohort membership');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await members()) === before, 'returning the window changed cohort membership');
+  }, "S27");
 };
 
 export const S28 = async (page) => {
   await goto(page, 'explore');
-  ok(await countOf(page, '.ec-surface[data-chart="comparison"]') === 1,
-    'the shipped comparison renderer did not mount exactly once');
-  ok(await countOf(page, '#gf-fig1-head') === 1, 'the comparison headline host is absent or duplicated');
-  const canvases = () => page.evaluate(() => document.querySelectorAll('.ec-surface canvas').length);
-  const first = await canvases();
-  ok(first > 0, 'the comparison mounted no canvas');
+  const { canvases, first } = await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.ec-surface[data-chart="comparison"]')) === 1,
+      'the shipped comparison renderer did not mount exactly once');
+    ok(seen(await countOf(page, '#gf-fig1-head')) === 1, 'the comparison headline host is absent or duplicated');
+    const canvases = () => page.evaluate(() => document.querySelectorAll('.ec-surface canvas').length);
+    const first = seen(await canvases());
+    ok(first > 0, 'the comparison mounted no canvas');
+    return { canvases, first };
+  }, "S28");
   for (let i = 0; i < 3; i += 1) {
     await goto(page, 'changes');
     await goto(page, 'explore');
   }
-  ok(await canvases() === first, `re-entering Explore accumulated chart canvases (${first} → ${await canvases()})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await canvases()) === first, `re-entering Explore accumulated chart canvases (${first} → ${seen(await canvases())})`);
+  }, "S28");
 };
 
 export const S29 = async (page) => {
   await goto(page, 'explore');
-  const { rows, open } = await page.evaluate(() => ({
-    rows: [...document.querySelectorAll('.gf-roster-row[data-row]')].map((b) => b.dataset.row),
-    open: document.querySelector('.gf-roster-row[aria-pressed="true"]')?.dataset.row ?? null,
-  }));
-  ok(rows.length > 1, `the journey roster rendered ${rows.length} rows`);
+  const { rows, open } = await waitForReplayAssertion(async seen => {
+    const { rows, open } = seen(await page.evaluate(() => ({
+      rows: [...document.querySelectorAll('.gf-roster-row[data-row]')].map((b) => b.dataset.row),
+      open: document.querySelector('.gf-roster-row[aria-pressed="true"]')?.dataset.row ?? null,
+    })));
+    ok(rows.length > 1, `the journey roster rendered ${rows.length} rows`);
+    return { rows, open };
+  }, "S29");
   const closed = rows.find((id) => id !== open) ?? rows[rows.length - 1];
   await activate(page, `.gf-roster-row[data-row="${closed}"]`);
-  const focused = await activeElement(page);
-  ok(focused && focused.tag === 'H2', `opening a new subject did not focus the pane head (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.tag === 'H2', `opening a new subject did not focus the pane head (got ${JSON.stringify(focused)})`);
+  }, "S29");
 };
 
 export const S30 = async (page) => {
@@ -988,17 +1129,23 @@ export const S30 = async (page) => {
   // the lane must be in hand first.
   await openBasalLane(page);
   const crumb = await visible(page, '[data-journey="findings"]');
-  ok(((await crumb.textContent()) || '').trim() === 'Findings', 'the parent crumb is not the locked word "Findings"');
+  await waitForReplayAssertion(async seen => {
+    ok(((seen(await crumb.textContent())) || '').trim() === 'Findings', 'the parent crumb is not the locked word "Findings"');
+  }, "S30");
   await crumb.click();
   await page.waitForTimeout(200);
-  ok(await countOf(page, '.gf-roster-row[data-row]') > 0, 'the Findings crumb did not return to the index');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-roster-row[data-row]')) > 0, 'the Findings crumb did not return to the index');
+  }, "S30");
 };
 
 export const S31 = async (page) => {
   await openBasalLane(page);
-  ok(await countOf(page, '.lane-cell[aria-pressed="true"]') === 1, 'the lane holds no single selected slot');
-  ok(await countOf(page, '.lane-cell[data-cell]:not([disabled])') > 1,
-    'the lane exposes only one reachable slot; every slot must stay discoverable');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.lane-cell[aria-pressed="true"]')) === 1, 'the lane holds no single selected slot');
+    ok(seen(await countOf(page, '.lane-cell[data-cell]:not([disabled])')) > 1,
+      'the lane exposes only one reachable slot; every slot must stay discoverable');
+  }, "S31");
 };
 
 export const S32 = async (page) => {
@@ -1008,13 +1155,17 @@ export const S32 = async (page) => {
   await (await visible(page, '.lane-cell[aria-pressed="true"]')).focus();
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(200);
-  const moved = await held();
-  ok(moved !== start, `ArrowRight did not move the held slot (stayed ${start})`);
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.cell === moved, 'the moved-to cell did not take focus');
+  await waitForReplayAssertion(async seen => {
+    const moved = seen(await held());
+    ok(moved !== start, `ArrowRight did not move the held slot (stayed ${start})`);
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.cell === moved, 'the moved-to cell did not take focus');
+  }, "S32");
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(200);
-  ok(await held() === start, 'ArrowLeft did not return the held slot');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === start, 'ArrowLeft did not return the held slot');
+  }, "S32");
 };
 
 /** The selected night's served ordinal, e.g. "night 30 of 30" → [30, 30]. */
@@ -1030,33 +1181,46 @@ export const S33 = async (page) => {
   // heading, so no "night N of M" ordinal exists yet. Establish the same
   // premise S35 does, then traverse.
   await openBasalLane(page);
-  ok(await nightOrdinal(page) === null,
-    'the lane already holds a night before one was selected; this story establishes that selection');
-  ok(await countOf(page, '.case-occurrence') > 1,
-    'the held slot exposes fewer than two mounted supporting nights');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await nightOrdinal(page)) === null,
+      'the lane already holds a night before one was selected; this story establishes that selection');
+    ok(seen(await countOf(page, '.case-occurrence')) > 1,
+      'the held slot exposes fewer than two mounted supporting nights');
+  }, "S33");
 
   await activate(page, '.case-occurrence');
-  const start = await nightOrdinal(page);
-  ok(start, 'selecting a supporting night did not render its served ordinal');
-  ok(start[1] > 1, `the slot serves ${start[1]} night(s); this story needs a roster`);
+  const { start } = await waitForReplayAssertion(async seen => {
+    const start = seen(await nightOrdinal(page));
+    ok(start, 'selecting a supporting night did not render its served ordinal');
+    ok(start[1] > 1, `the slot serves ${start[1]} night(s); this story needs a roster`);
+    return { start };
+  }, "S33");
 
   await (await visible(page, '.case-occurrence')).focus();
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(250);
-  const stepped = await nightOrdinal(page);
-  ok(stepped && stepped[0] !== start[0],
-    `ArrowDown did not step the supporting-night roster (${JSON.stringify(start)} → ${JSON.stringify(stepped)})`);
+  const { stepped } = await waitForReplayAssertion(async seen => {
+    const stepped = seen(await nightOrdinal(page));
+    ok(stepped && stepped[0] !== start[0],
+      `ArrowDown did not step the supporting-night roster (${JSON.stringify(start)} → ${JSON.stringify(stepped)})`);
+    return { stepped };
+  }, "S33");
 
   await activate(page, '[data-basal="previous-night"]');
-  const back = await nightOrdinal(page);
-  ok(back && back[0] === start[0],
-    `the previous-night control did not return the held night (${JSON.stringify(stepped)} → ${JSON.stringify(back)})`);
-  ok(back[1] === start[1], 'the roster size changed while stepping within it');
+  const { back } = await waitForReplayAssertion(async seen => {
+    const back = seen(await nightOrdinal(page));
+    ok(back && back[0] === start[0],
+      `the previous-night control did not return the held night (${JSON.stringify(stepped)} → ${JSON.stringify(back)})`);
+    ok(back[1] === start[1], 'the roster size changed while stepping within it');
+    return { back };
+  }, "S33");
 
   await activate(page, '[data-basal="next-night"]');
-  const forward = await nightOrdinal(page);
-  ok(forward && forward[0] === stepped[0],
-    `the next-night control did not move the held night forward again (${JSON.stringify(back)} → ${JSON.stringify(forward)})`);
+  await waitForReplayAssertion(async seen => {
+    const forward = seen(await nightOrdinal(page));
+    ok(forward && forward[0] === stepped[0],
+      `the next-night control did not move the held night forward again (${JSON.stringify(back)} → ${JSON.stringify(forward)})`);
+  }, "S33");
 };
 
 export const S34 = async (page) => {
@@ -1064,9 +1228,13 @@ export const S34 = async (page) => {
   const held = () => page.evaluate(() => document.querySelector('.lane-cell[aria-pressed="true"]')?.dataset.cell ?? null);
   const start = await held();
   await activate(page, '[data-basal="next-slot"]');
-  ok(await held() !== start, 'next-slot did not move the held slot');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) !== start, 'next-slot did not move the held slot');
+  }, "S34");
   await activate(page, '[data-basal="previous-slot"]');
-  ok(await held() === start, 'previous-slot did not return the held slot');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === start, 'previous-slot did not return the held slot');
+  }, "S34");
 };
 
 export const S35 = async (page) => {
@@ -1075,24 +1243,31 @@ export const S35 = async (page) => {
   // clicked a disabled Night and burned the full 30s locator timeout. Assert the
   // premise first, select a night through its own affordance, then switch.
   await openBasalLane(page);
-  const before = await page.evaluate(() => [...document.querySelectorAll('[data-owner="basal"] [data-figure]')]
-    .map((b) => ({ figure: b.dataset.figure, disabled: b.disabled })));
-  ok(before.length >= 2, `the basal figure segment rendered ${before.length} control(s)`);
-  ok(before.some((f) => f.figure === 'basal' && !f.disabled), 'the Basal figure is not available by default');
-  ok(before.some((f) => f.disabled),
-    'no basal figure control is gated on a selected night; this story asserts that gate');
+  await waitForReplayAssertion(async seen => {
+    const before = seen(await page.evaluate(() => [...document.querySelectorAll('[data-owner="basal"] [data-figure]')]
+      .map((b) => ({ figure: b.dataset.figure, disabled: b.disabled }))));
+    ok(before.length >= 2, `the basal figure segment rendered ${before.length} control(s)`);
+    ok(before.some((f) => f.figure === 'basal' && !f.disabled), 'the Basal figure is not available by default');
+    ok(before.some((f) => f.disabled),
+      'no basal figure control is gated on a selected night; this story asserts that gate');
+  }, "S35");
 
   await activate(page, '.case-occurrence');
-  const after = await page.evaluate(() => [...document.querySelectorAll('[data-owner="basal"] [data-figure]')]
-    .map((b) => ({ figure: b.dataset.figure, disabled: b.disabled, held: b.getAttribute('aria-pressed') })));
-  ok(after.every((f) => !f.disabled),
-    `selecting a night did not enable the figure segment: ${JSON.stringify(after)}`);
+  const { after } = await waitForReplayAssertion(async seen => {
+    const after = seen(await page.evaluate(() => [...document.querySelectorAll('[data-owner="basal"] [data-figure]')]
+      .map((b) => ({ figure: b.dataset.figure, disabled: b.disabled, held: b.getAttribute('aria-pressed') }))));
+    ok(after.every((f) => !f.disabled),
+      `selecting a night did not enable the figure segment: ${JSON.stringify(after)}`);
+    return { after };
+  }, "S35");
 
   const seated = after.find((f) => f.held === 'true');
   const other = after.find((f) => !seated || f.figure !== seated.figure);
   await activate(page, `[data-owner="basal"] [data-figure="${other.figure}"]`);
-  ok(await pressed(page, `[data-owner="basal"] [data-figure="${other.figure}"]`) === 'true',
-    'the basal figure control did not take its own seat');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `[data-owner="basal"] [data-figure="${other.figure}"]`)) === 'true',
+      'the basal figure control did not take its own seat');
+  }, "S35");
 };
 
 export const S36 = async (page) => {
@@ -1101,15 +1276,19 @@ export const S36 = async (page) => {
   // press the reader's control.
   await harnessSelect(page, 'journeyClock', 'Trial, ready to judge');
   const control = await visible(page, '[data-journey="trial-nights"]');
-  ok(/Inspect nights/i.test(((await control.textContent()) || '').trim()),
-    'the Trial\'s evidence route is not named "Inspect nights"');
+  await waitForReplayAssertion(async seen => {
+    ok(/Inspect nights/i.test(((seen(await control.textContent())) || '').trim()),
+      'the Trial\'s evidence route is not named "Inspect nights"');
+  }, "S36");
   await control.click();
   await page.waitForTimeout(350);
-  ok(await countOf(page, '.lane-cell[data-cell]') === 48, 'Inspect nights did not open the slot lane');
-  ok(await countOf(page, '.lane-cell[aria-pressed="true"]') === 1,
-    'Inspect nights did not hold the slot the change moved');
-  ok(/From the Trial/i.test(await deskText(page)),
-    'the lane head does not name its Trial provenance');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.lane-cell[data-cell]')) === 48, 'Inspect nights did not open the slot lane');
+    ok(seen(await countOf(page, '.lane-cell[aria-pressed="true"]')) === 1,
+      'Inspect nights did not hold the slot the change moved');
+    ok(/From the Trial/i.test(seen(await deskText(page))),
+      'the lane head does not name its Trial provenance');
+  }, "S36");
 };
 
 export const S37 = async (page) => {
@@ -1121,15 +1300,19 @@ export const S37 = async (page) => {
   // offer — a named route into the concern's evidence, which lands on it.
   await goto(page, 'changes');
   const route = await visible(page, '.gf-empty [data-action="explore"], [data-action="explore"]');
-  const label = ((await route.textContent()) || '').trim();
-  ok(/^Inspect /i.test(label), `the empty Changes state offers no named evidence route: ${JSON.stringify(label)}`);
-  ok(await countOf(page, '[data-set="stage"]') > 0,
-    'the empty Changes state offers no staging action for the concern it names');
+  await waitForReplayAssertion(async seen => {
+    const label = ((seen(await route.textContent())) || '').trim();
+    ok(/^Inspect /i.test(label), `the empty Changes state offers no named evidence route: ${JSON.stringify(label)}`);
+    ok(seen(await countOf(page, '[data-set="stage"]')) > 0,
+      'the empty Changes state offers no staging action for the concern it names');
+  }, "S37");
   await route.click();
   await page.waitForTimeout(250);
-  ok(await destinationOf(page) === 'explore', 'the named evidence route did not open Explore');
-  ok(await countOf(page, '[data-night], .case-occurrence, .lane-cell[data-cell]') > 0,
-    'the named evidence route did not land on the concern\'s own evidence');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'explore', 'the named evidence route did not open Explore');
+    ok(seen(await countOf(page, '[data-night], .case-occurrence, .lane-cell[data-cell]')) > 0,
+      'the named evidence route did not land on the concern\'s own evidence');
+  }, "S37");
 };
 
 export const S37b = async (page) => {
@@ -1143,20 +1326,24 @@ export const S37b = async (page) => {
   await activate(page, '.gf-roster-row[data-row="basal:180-240"]');
 
   const shortcut = await visible(page, '[data-journey="lane"]');
-  ok(/all basal slots/i.test(((await shortcut.textContent()) || '').trim()),
-    `the lane shortcut is not named for the slots it opens: ${await shortcut.textContent()}`);
+  await waitForReplayAssertion(async seen => {
+    ok(/all basal slots/i.test(((seen(await shortcut.textContent())) || '').trim()),
+      `the lane shortcut is not named for the slots it opens: ${seen(await shortcut.textContent())}`);
+  }, "S37b");
   await shortcut.click();
   await page.waitForTimeout(300);
 
-  ok(await countOf(page, '.lane-cell[data-cell]') === 48,
-    'the lane shortcut did not open all 48 slots');
-  ok(await countOf(page, '.lane-cell[aria-pressed="true"]') === 1,
-    'the lane shortcut left no single held slot');
-  const focused = await activeElement(page);
-  ok(focused && /lane-cell/.test(focused.className || ''),
-    `the lane shortcut did not put the hand on its held cell (got ${JSON.stringify(focused)})`);
-  ok(focused.data && focused.data.cell !== undefined,
-    'the focused element is not a lane cell carrying its slot index');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.lane-cell[data-cell]')) === 48,
+      'the lane shortcut did not open all 48 slots');
+    ok(seen(await countOf(page, '.lane-cell[aria-pressed="true"]')) === 1,
+      'the lane shortcut left no single held slot');
+    const focused = seen(await activeElement(page));
+    ok(focused && /lane-cell/.test(focused.className || ''),
+      `the lane shortcut did not put the hand on its held cell (got ${JSON.stringify(focused)})`);
+    ok(focused.data && focused.data.cell !== undefined,
+      'the focused element is not a lane cell carrying its slot index');
+  }, "S37b");
 };
 
 export const S38 = async (page) => {
@@ -1164,29 +1351,37 @@ export const S38 = async (page) => {
   // (setting.js:177), not to Plan. Staging lands in Changes; the reader steps
   // back to Overview to find the Undo beside "Resume draft"/"Open Changes".
   await stageIntoPlan(page);
-  ok(await countOf(page, '[data-set="unstage"]') === 0,
-    'Plan carries the Undo control; this story asserts it belongs to the priority frame');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-set="unstage"]')) === 0,
+      'Plan carries the Undo control; this story asserts it belongs to the priority frame');
+  }, "S38");
   await goto(page, 'overview');
   const undo = await visible(page, '[data-set="unstage"]');
-  ok(/Undo/i.test(((await undo.textContent()) || '')), 'the staged concern offers no Undo');
-  ok(await countOf(page, '[data-set="changes"]') > 0,
-    'the staged concern offers no route back into its Plan');
+  await waitForReplayAssertion(async seen => {
+    ok(/Undo/i.test(((seen(await undo.textContent())) || '')), 'the staged concern offers no Undo');
+    ok(seen(await countOf(page, '[data-set="changes"]')) > 0,
+      'the staged concern offers no route back into its Plan');
+  }, "S38");
   await undo.click();
   await page.waitForTimeout(250);
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.set === 'stage',
-    `unstaging did not return focus to the stage control (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.set === 'stage',
+      `unstaging did not return focus to the stage control (got ${JSON.stringify(focused)})`);
+  }, "S38");
 };
 
 export const S39 = async (page) => {
   // Corrected: capacity copy lives on the Plan frame (setting.js:259), reached
   // by staging. The earlier run asserted it on the empty Changes frame.
   await stageIntoPlan(page);
-  const copy = await deskText(page);
-  const match = copy.match(/(\d+)\s+of\s+(\d+)\s+segments used/i);
-  ok(match, `the Plan capacity copy is absent or reworded: ${copy.slice(0, 200)}`);
-  ok(Number(match[1]) <= Number(match[2]), `the capacity copy reads ${match[0]}, which overfills its capacity`);
-  ok(/Nothing here is sent to your pump\./i.test(copy), 'the manual-entry line is missing from Plan');
+  await waitForReplayAssertion(async seen => {
+    const copy = seen(await deskText(page));
+    const match = copy.match(/(\d+)\s+of\s+(\d+)\s+segments used/i);
+    ok(match, `the Plan capacity copy is absent or reworded: ${copy.slice(0, 200)}`);
+    ok(Number(match[1]) <= Number(match[2]), `the capacity copy reads ${match[0]}, which overfills its capacity`);
+    ok(/Nothing here is sent to your pump\./i.test(copy), 'the manual-entry line is missing from Plan');
+  }, "S39");
 };
 
 export const S40 = async (page) => {
@@ -1196,17 +1391,22 @@ export const S40 = async (page) => {
   await stageIntoPlan(page);
   await harnessCheck(page, 'settingSaveFails', true);
   await activate(page, '[data-set="save-draft"]');
-  const failed = await deskText(page);
-  ok(/Saving the draft failed/i.test(failed), `installing a save failure did not fail the save: ${failed.slice(0, 200)}`);
-  ok(/no response from the store\./i.test(failed), 'the failed-save message lost its locked continuation');
-  ok(await countOf(page, '[data-set="retry-save"]') === 1, 'a failed draft save offers no Retry');
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.set === 'retry-save', 'the failed save did not focus its Retry');
+  const { failed } = await waitForReplayAssertion(async seen => {
+    const failed = seen(await deskText(page));
+    ok(/Saving the draft failed/i.test(failed), `installing a save failure did not fail the save: ${failed.slice(0, 200)}`);
+    ok(/no response from the store\./i.test(failed), 'the failed-save message lost its locked continuation');
+    ok(seen(await countOf(page, '[data-set="retry-save"]')) === 1, 'a failed draft save offers no Retry');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.set === 'retry-save', 'the failed save did not focus its Retry');
+    return { failed };
+  }, "S40");
 
   await activate(page, '[data-set="retry-save"]');
-  const retried = await deskText(page);
-  ok(!/Saving the draft failed/i.test(retried), 'the retry did not clear the failed save');
-  ok(/Draft saved/i.test(retried), 'a successful retry did not record the draft');
+  await waitForReplayAssertion(async seen => {
+    const retried = seen(await deskText(page));
+    ok(!/Saving the draft failed/i.test(retried), 'the retry did not clear the failed save');
+    ok(/Draft saved/i.test(retried), 'a successful retry did not record the draft');
+  }, "S40");
 };
 
 /** Read one <dt>label</dt><dd>value</dd> pair out of the Decision section. */
@@ -1226,27 +1426,34 @@ export const S41 = async (page) => {
   // field's VALUE reading "Not recorded". Assert the field value and the
   // lifecycle it moves through.
   await stageIntoPlan(page);
-  ok(await decisionField(page, 'Decision recorded') === 'Not recorded',
-    'the Decision recorded field did not start unrecorded');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await decisionField(page, 'Decision recorded')) === 'Not recorded',
+      'the Decision recorded field did not start unrecorded');
+  }, "S41");
 
   await harnessCheck(page, 'settingSaveFails', true);
   await activate(page, '[data-set="record"]');
-  const failed = await deskText(page);
-  ok(/Recording the decision failed/i.test(failed), `installing a save failure did not fail the record: ${failed.slice(0, 200)}`);
-  ok(/no response from the store\./i.test(failed), 'the failed-record message lost its locked continuation');
-  ok(await countOf(page, '[data-set="retry-save"]') === 1, 'a failed decision record offers no Retry');
-  ok(await decisionField(page, 'Decision recorded') === 'Not recorded',
-    'a failed record left the Decision recorded field claiming a write');
-  ok(await decisionField(page, 'On pump') === null,
-    'a failed record exposed an On pump field, which only a recorded decision owns');
+  const { failed } = await waitForReplayAssertion(async seen => {
+    const failed = seen(await deskText(page));
+    ok(/Recording the decision failed/i.test(failed), `installing a save failure did not fail the record: ${failed.slice(0, 200)}`);
+    ok(/no response from the store\./i.test(failed), 'the failed-record message lost its locked continuation');
+    ok(seen(await countOf(page, '[data-set="retry-save"]')) === 1, 'a failed decision record offers no Retry');
+    ok(seen(await decisionField(page, 'Decision recorded')) === 'Not recorded',
+      'a failed record left the Decision recorded field claiming a write');
+    ok(seen(await decisionField(page, 'On pump')) === null,
+      'a failed record exposed an On pump field, which only a recorded decision owns');
+    return { failed };
+  }, "S41");
 
   await activate(page, '[data-set="retry-save"]');
-  ok(!/Recording the decision failed/i.test(await deskText(page)), 'the retry did not clear the failed record');
-  const recorded = await decisionField(page, 'Decision recorded');
-  ok(recorded && recorded !== 'Not recorded',
-    `a successful retry did not record the decision (field reads ${JSON.stringify(recorded)})`);
-  ok(await decisionField(page, 'On pump') !== null,
-    'a recorded decision did not open its pump-evidence field');
+  await waitForReplayAssertion(async seen => {
+    ok(!/Recording the decision failed/i.test(seen(await deskText(page))), 'the retry did not clear the failed record');
+    const recorded = seen(await decisionField(page, 'Decision recorded'));
+    ok(recorded && recorded !== 'Not recorded',
+      `a successful retry did not record the decision (field reads ${JSON.stringify(recorded)})`);
+    ok(seen(await decisionField(page, 'On pump')) !== null,
+      'a recorded decision did not open its pump-evidence field');
+  }, "S41");
 };
 
 export const S42 = async (page) => {
@@ -1256,60 +1463,84 @@ export const S42 = async (page) => {
   await activate(page, '[data-set="record"]');
   await harnessSelect(page, 'pumpCapture', 'Mis-keyed');
   await harnessSelect(page, 'settingClock', 'pump captured');
-  const mismatch = await deskText(page);
-  ok(/doesn't match your plan/i.test(mismatch), `the mis-keyed capture did not reconcile to a mismatch: ${mismatch.slice(0, 200)}`);
+  await waitForReplayAssertion(async seen => {
+    const mismatch = seen(await deskText(page));
+    ok(/doesn't match your plan/i.test(mismatch), `the mis-keyed capture did not reconcile to a mismatch: ${mismatch.slice(0, 200)}`);
+  }, "S42");
   await activate(page, '[data-set="rekey"]');
-  const after = await deskText(page);
-  ok(/Re-key the flagged values on your pump/i.test(after), 'the re-key message is absent');
-  ok(/rechecks on the next fetch/i.test(after), 're-keying does not say when it rechecks');
-  ok(!/sent to your pump/i.test(after.replace(/Nothing here is sent to your pump\./gi, '')),
-    're-keying is claiming Harmonic sent something to the pump');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await deskText(page));
+    ok(/Re-key the flagged values on your pump/i.test(after), 'the re-key message is absent');
+    ok(/rechecks on the next fetch/i.test(after), 're-keying does not say when it rechecks');
+    ok(!/sent to your pump/i.test(after.replace(/Nothing here is sent to your pump\./gi, '')),
+      're-keying is claiming Harmonic sent something to the pump');
+  }, "S42");
 };
 
 export const S43 = async (page) => {
   await goto(page, 'explore');
   // Every claimed control is driven: the slot row, the night row, and the
   // night stepper — not merely counted.
-  const slots = await page.evaluate(() => [...document.querySelectorAll('[data-slot]')]
-    .map((b) => ({ slot: b.dataset.slot, held: b.getAttribute('aria-pressed') })));
-  ok(slots.length > 1, `the setting journey rendered ${slots.length} slot row(s); this story needs a choice`);
+  const { slots } = await waitForReplayAssertion(async seen => {
+    const slots = seen(await page.evaluate(() => [...document.querySelectorAll('[data-slot]')]
+      .map((b) => ({ slot: b.dataset.slot, held: b.getAttribute('aria-pressed') }))));
+    ok(slots.length > 1, `the setting journey rendered ${slots.length} slot row(s); this story needs a choice`);
+    return { slots };
+  }, "S43");
   const otherSlot = slots.find((s) => s.held !== 'true') ?? slots[slots.length - 1];
   await activate(page, `[data-slot="${otherSlot.slot}"]`);
-  ok(await pressed(page, `[data-slot="${otherSlot.slot}"]`) === 'true', 'selecting a slot did not hold it');
+  const { nights } = await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `[data-slot="${otherSlot.slot}"]`)) === 'true', 'selecting a slot did not hold it');
 
-  const nights = await page.evaluate(() => [...document.querySelectorAll('[data-night]')].map((b) => b.dataset.night));
-  ok(nights.length > 1, `the slot exposes ${nights.length} night row(s); this story needs a roster`);
+    const nights = seen(await page.evaluate(() => [...document.querySelectorAll('[data-night]')].map((b) => b.dataset.night)));
+    ok(nights.length > 1, `the slot exposes ${nights.length} night row(s); this story needs a roster`);
+    return { nights };
+  }, "S43");
   const held = () => page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.textContent?.trim() ?? null);
   await activate(page, `[data-night="${nights[nights.length - 1]}"]`);
-  const picked = await held();
-  ok(picked, 'selecting a night row did not hold it');
+  const { picked } = await waitForReplayAssertion(async seen => {
+    const picked = seen(await held());
+    ok(picked, 'selecting a night row did not hold it');
+    return { picked };
+  }, "S43");
 
   await activate(page, '[data-set="next-night"]');
-  ok(await held() !== picked, 'next-night did not move the held night');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) !== picked, 'next-night did not move the held night');
+  }, "S43");
   await activate(page, '[data-set="previous-night"]');
-  ok(await held() === picked, 'previous-night did not return the held night');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === picked, 'previous-night did not return the held night');
+  }, "S43");
 };
 
 export const S44 = async (page) => {
   await goto(page, 'explore');
-  const { options, seated } = await page.evaluate(() => ({
-    options: [...document.querySelectorAll('[data-owner="setting"] [data-figure]')].map((b) => b.dataset.figure),
-    seated: document.querySelector('[data-owner="setting"] [data-figure][aria-pressed="true"]')?.dataset.figure ?? null,
-  }));
-  ok(options.length >= 2, 'the setting journey rendered fewer than two figure controls inside its own stage');
+  const { options, seated } = await waitForReplayAssertion(async seen => {
+    const { options, seated } = seen(await page.evaluate(() => ({
+      options: [...document.querySelectorAll('[data-owner="setting"] [data-figure]')].map((b) => b.dataset.figure),
+      seated: document.querySelector('[data-owner="setting"] [data-figure][aria-pressed="true"]')?.dataset.figure ?? null,
+    })));
+    ok(options.length >= 2, 'the setting journey rendered fewer than two figure controls inside its own stage');
+    return { options, seated };
+  }, "S44");
   const other = options.find((f) => f !== seated) ?? options[options.length - 1];
   await activate(page, `[data-owner="setting"] [data-figure="${other}"]`);
-  ok(await pressed(page, `[data-owner="setting"] [data-figure="${other}"]`) === 'true',
-    'the setting journey\'s own figure control did not take its seat');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `[data-owner="setting"] [data-figure="${other}"]`)) === 'true',
+      'the setting journey\'s own figure control did not take its seat');
+  }, "S44");
 };
 
 export const S45 = async (page) => {
-  ok(await countOf(page, '.gf-stage-trial') === 1, 'the Trial stage did not render');
-  ok(await countOf(page, '[data-trial-chart]') === 1, 'the Trial evidence figure did not mount');
-  ok(await page.evaluate(() => document.querySelectorAll('[data-trial-chart] canvas').length) > 0,
-    'the shipped Verify hero drew no canvas on the Trial stage');
-  ok(((await page.locator('.gf-stage-trial .gf-title').first().textContent()) || '').trim().length > 0,
-    'the Trial nameplate has no title');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-stage-trial')) === 1, 'the Trial stage did not render');
+    ok(seen(await countOf(page, '[data-trial-chart]')) === 1, 'the Trial evidence figure did not mount');
+    ok(seen(await page.evaluate(() => document.querySelectorAll('[data-trial-chart] canvas').length)) > 0,
+      'the shipped Verify hero drew no canvas on the Trial stage');
+    ok(((seen(await page.locator('.gf-stage-trial .gf-title').first().textContent())) || '').trim().length > 0,
+      'the Trial nameplate has no title');
+  }, "S45");
 };
 
 export const S45b = async (page) => {
@@ -1317,39 +1548,51 @@ export const S45b = async (page) => {
   // back to it — the seat is never lost by going to look at the evidence.
   await goto(page, 'explore');
   const back = await visible(page, '[data-action="watch"]');
-  ok(/Return to Trial/i.test(((await back.textContent()) || '').trim()),
-    `the watched concern's route back is not named for its Trial: ${await back.textContent()}`);
-  ok(await countOf(page, '[data-action="aside"]') === 0,
-    'a watched concern still offers Set aside; the active change holds the seat');
+  await waitForReplayAssertion(async seen => {
+    ok(/Return to Trial/i.test(((seen(await back.textContent())) || '').trim()),
+      `the watched concern's route back is not named for its Trial: ${seen(await back.textContent())}`);
+    ok(seen(await countOf(page, '[data-action="aside"]')) === 0,
+      'a watched concern still offers Set aside; the active change holds the seat');
+  }, "S45b");
   await back.click();
   await page.waitForTimeout(300);
-  ok(await destinationOf(page) === 'overview', 'Return to Trial did not land on Overview');
-  ok(await countOf(page, '.gf-stage-trial') === 1, 'Return to Trial did not open the Trial');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'overview', 'Return to Trial did not land on Overview');
+    ok(seen(await countOf(page, '.gf-stage-trial')) === 1, 'Return to Trial did not open the Trial');
+  }, "S45b");
 };
 
 export const S46 = async (page) => {
-  const figure = await page.locator('.gf-figure').first().innerText();
-  const bar = await page.evaluate(() => {
-    const el = document.querySelector('progress[aria-label="Trial progress"]');
-    return el ? { value: el.value, max: el.max } : null;
-  });
-  ok(bar, 'the Trial progress bar is absent');
-  ok(bar.value <= bar.max, `the progress bar is overfilled (${bar.value}/${bar.max}); the B-08 repair has regressed`);
-  ok(/\d+\s+(of\s+\d+\s+)?days/i.test(figure), `the evidence figure is not a served day count: ${JSON.stringify(figure)}`);
-  const maturing = figure.match(/(\d+)\s+of\s+(\d+)\s+days/i);
-  if (maturing) {
-    ok(Number(maturing[1]) <= Number(maturing[2]),
-      `the maturing figure reads "${maturing[0]}" — "15 of 14 days" must not return`);
-  }
+  await waitForReplayAssertion(async seen => {
+    const figure = seen(await page.locator('.gf-figure').first().innerText());
+    const bar = seen(await page.evaluate(() => {
+      const el = document.querySelector('progress[aria-label="Trial progress"]');
+      return el ? { value: el.value, max: el.max } : null;
+    }));
+    ok(bar, 'the Trial progress bar is absent');
+    ok(bar.value <= bar.max, `the progress bar is overfilled (${bar.value}/${bar.max}); the B-08 repair has regressed`);
+    ok(/\d+\s+(of\s+\d+\s+)?days/i.test(figure), `the evidence figure is not a served day count: ${JSON.stringify(figure)}`);
+    const maturing = figure.match(/(\d+)\s+of\s+(\d+)\s+days/i);
+    if (maturing) {
+      ok(Number(maturing[1]) <= Number(maturing[2]),
+        `the maturing figure reads "${maturing[0]}" — "15 of 14 days" must not return`);
+    }
+  }, "S46");
 };
 
 export const S47 = async (page) => {
-  ok(await countOf(page, '[data-mode="summary"]') === 1, 'the Before / Trial view control is absent');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-mode="summary"]')) === 1, 'the Before / Trial view control is absent');
+  }, "S47");
   await activate(page, '[data-mode="daily"]');
-  ok(await pressed(page, '[data-mode="daily"]') === 'true', 'the Available days view did not take the segment');
-  ok(await countOf(page, '[data-select="evidence-day"]') === 1, 'Available days rendered no day select');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, '[data-mode="daily"]')) === 'true', 'the Available days view did not take the segment');
+    ok(seen(await countOf(page, '[data-select="evidence-day"]')) === 1, 'Available days rendered no day select');
+  }, "S47");
   await activate(page, '[data-mode="summary"]');
-  ok(await countOf(page, 'table.gf-table') > 0, 'Before / Trial rendered no evidence table');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'table.gf-table')) > 0, 'Before / Trial rendered no evidence table');
+  }, "S47");
 };
 
 export const S48 = async (page) => {
@@ -1358,13 +1601,18 @@ export const S48 = async (page) => {
   const before = await read();
   await page.selectOption('[data-select="evidence-period"]', 'before_period');
   await page.waitForTimeout(250);
-  const options = await page.evaluate(() => [...document.querySelectorAll('[data-select="evidence-day"] option')].map((o) => o.value));
-  ok(options.length > 1, `the Before period serves ${options.length} available day(s); this story needs at least two`);
+  const { options } = await waitForReplayAssertion(async seen => {
+    const options = seen(await page.evaluate(() => [...document.querySelectorAll('[data-select="evidence-day"] option')].map((o) => o.value)));
+    ok(options.length > 1, `the Before period serves ${options.length} available day(s); this story needs at least two`);
+    return { options };
+  }, "S48");
   await page.selectOption('[data-select="evidence-day"]', options[1]);
   await page.waitForTimeout(250);
-  ok(await read() !== before, 'choosing another available day did not change the read');
-  ok(/is not necessarily a complete day of data/i.test(await page.locator('.gf-day-read').innerText()),
-    'the Available days read dropped its completeness caveat');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await read()) !== before, 'choosing another available day did not change the read');
+    ok(/is not necessarily a complete day of data/i.test(seen(await page.locator('.gf-day-read').innerText())),
+      'the Available days read dropped its completeness caveat');
+  }, "S48");
 };
 
 export const S49 = async (page) => {
@@ -1374,47 +1622,63 @@ export const S49 = async (page) => {
   // own Trial does serve "no meals" and "unavailable" — root's S20b capture
   // shows them — so this uses that existing checkpoint rather than a new mock.
   await harnessSelect(page, 'journeyClock', 'Trial, ready to judge');
-  ok(await countOf(page, '.gf-stage-trial table.gf-table') > 0,
-    'the journey Trial checkpoint rendered no evidence table');
-  const table = await page.locator('.gf-stage-trial table.gf-table').first().innerText();
-  ok(/before/i.test(table) && /trial/i.test(table), `the evidence table lost its two period columns: ${table.slice(0, 160)}`);
-  const forbidden = table.match(/\bnull\b|\bundefined\b|\bNaN\b/);
-  ok(!forbidden, `the evidence table rendered a raw ${forbidden && forbidden[0]}`);
-  ok(/no meals|no readings|unavailable/i.test(table),
-    'no distinct empty-population wording appears; this story needs a fixture with one');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-stage-trial table.gf-table')) > 0,
+      'the journey Trial checkpoint rendered no evidence table');
+    const table = seen(await page.locator('.gf-stage-trial table.gf-table').first().innerText());
+    ok(/before/i.test(table) && /trial/i.test(table), `the evidence table lost its two period columns: ${table.slice(0, 160)}`);
+    const forbidden = table.match(/\bnull\b|\bundefined\b|\bNaN\b/);
+    ok(!forbidden, `the evidence table rendered a raw ${forbidden && forbidden[0]}`);
+    ok(/no meals|no readings|unavailable/i.test(table),
+      'no distinct empty-population wording appears; this story needs a fixture with one');
+  }, "S49");
 };
 
 export const S50 = async (page) => {
-  const legend = await page.locator('[data-trial-chart] .ds-chart-legend').first().innerText();
-  ok(legend.trim().length > 0, 'the Trial figure rendered no legend');
-  const paired = /Trial above Before/i.test(legend);
-  const beforeOnly = /no Trial readings to compare yet/i.test(legend);
-  ok(paired !== beforeOnly,
-    `the Trial legend is neither a paired comparison nor an explicit Before-only figure: ${JSON.stringify(legend)}`);
-  if (beforeOnly) ok(!paired, 'a Before-only figure is claiming a paired comparison');
+  await waitForReplayAssertion(async seen => {
+    const legend = seen(await page.locator('[data-trial-chart] .ds-chart-legend').first().innerText());
+    ok(legend.trim().length > 0, 'the Trial figure rendered no legend');
+    const paired = /Trial above Before/i.test(legend);
+    const beforeOnly = /no Trial readings to compare yet/i.test(legend);
+    ok(paired !== beforeOnly,
+      `the Trial legend is neither a paired comparison nor an explicit Before-only figure: ${JSON.stringify(legend)}`);
+    if (beforeOnly) ok(!paired, 'a Before-only figure is claiming a paired comparison');
+  }, "S50");
 };
 
 export const S51 = async (page) => {
-  ok(await countOf(page, 'form[data-form="finish"]') === 1, 'no conclusion form — this story needs a Trial permitted to finish');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="finish"]')) === 1, 'no conclusion form — this story needs a Trial permitted to finish');
+  }, "S51");
   const submit = await visible(page, 'form[data-form="finish"] [type="submit"]');
-  ok(await submit.isDisabled(), 'the finish control is enabled before a conclusion was written');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await submit.isDisabled()), 'the finish control is enabled before a conclusion was written');
+  }, "S51");
   await page.fill('#conclusion', '   ');
   await page.waitForTimeout(150);
-  ok(await submit.isDisabled(), 'whitespace alone enabled the finish control');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await submit.isDisabled()), 'whitespace alone enabled the finish control');
+  }, "S51");
   await page.fill('#conclusion', 'Ran two weeks; overnight lows stopped.');
   await page.waitForTimeout(150);
-  ok(!(await submit.isDisabled()), 'a written conclusion did not enable the finish control');
-  ok(!(await page.evaluate(() => document.querySelector('#conclusion')?.getAttribute('placeholder'))),
-    'the conclusion field is putting words in the wearer\'s mouth');
+  await waitForReplayAssertion(async seen => {
+    ok(!(seen(await submit.isDisabled())), 'a written conclusion did not enable the finish control');
+    ok(!(seen(await page.evaluate(() => document.querySelector('#conclusion')?.getAttribute('placeholder')))),
+      'the conclusion field is putting words in the wearer\'s mouth');
+  }, "S51");
 };
 
 export const S52 = async (page) => {
-  ok(await countOf(page, 'form[data-form="finish"]') === 1, 'no conclusion form — this story needs a Trial permitted to finish');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="finish"]')) === 1, 'no conclusion form — this story needs a Trial permitted to finish');
+  }, "S52");
   await page.fill('#conclusion', 'Overnight lows stopped.');
   await (await visible(page, 'form[data-form="finish"] [type="submit"]')).click();
   await page.waitForTimeout(400);
-  ok(/Overnight lows stopped\./.test(await deskText(page)), 'the finished record does not show the recorded conclusion');
-  ok(/finished|conclusion/i.test(await deskText(page)), 'the finished record does not acknowledge its own ending');
+  await waitForReplayAssertion(async seen => {
+    ok(/Overnight lows stopped\./.test(seen(await deskText(page))), 'the finished record does not show the recorded conclusion');
+    ok(/finished|conclusion/i.test(seen(await deskText(page))), 'the finished record does not acknowledge its own ending');
+  }, "S52");
 };
 
 // S53 is defined with the deferred stories below: the prototype has no code
@@ -1422,12 +1686,14 @@ export const S52 = async (page) => {
 // HV2-25. See the deferred block for the observed mechanism.
 
 export const S54 = async (page) => {
-  const reading = await page.locator('.gf-desk > .gf-reading').first().innerText();
-  for (const label of ['Earlier decision', 'Conclusion', 'Finished']) {
-    ok(new RegExp(label, 'i').test(reading), `the saved record lost its "${label}" field`);
-  }
-  ok(/Not recorded/i.test(reading), 'an unavailable legacy fact is not shown as explicitly unavailable');
-  ok(/before/i.test(reading) && /trial/i.test(reading), 'the record lost its evidence-period bounds');
+  await waitForReplayAssertion(async seen => {
+    const reading = seen(await page.locator('.gf-desk > .gf-reading').first().innerText());
+    for (const label of ['Earlier decision', 'Conclusion', 'Finished']) {
+      ok(new RegExp(label, 'i').test(reading), `the saved record lost its "${label}" field`);
+    }
+    ok(/Not recorded/i.test(reading), 'an unavailable legacy fact is not shown as explicitly unavailable');
+    ok(/before/i.test(reading) && /trial/i.test(reading), 'the record lost its evidence-period bounds');
+  }, "S54");
 };
 
 export const S54b = async (page) => {
@@ -1436,45 +1702,61 @@ export const S54b = async (page) => {
   // topbar, so the record keeps its subject on the way out.
   await goto(page, 'overview');
   const record = await visible(page, '[data-action="history"]');
-  ok(/View change record/i.test(((await record.textContent()) || '').trim()),
-    `the route into the saved record is not named for it: ${await record.textContent()}`);
-  ok(await countOf(page, '[data-action="day"]') > 0, 'the finished state does not keep Day reachable');
+  await waitForReplayAssertion(async seen => {
+    ok(/View change record/i.test(((seen(await record.textContent())) || '').trim()),
+      `the route into the saved record is not named for it: ${seen(await record.textContent())}`);
+    ok(seen(await countOf(page, '[data-action="day"]')) > 0, 'the finished state does not keep Day reachable');
+  }, "S54b");
   await record.click();
   await page.waitForTimeout(300);
-  ok(await destinationOf(page) === 'changes', 'the saved record did not open in Changes');
-  ok(await countOf(page, '.gf-stage-trial') === 1, 'the saved record rendered no Trial stage');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'changes', 'the saved record did not open in Changes');
+    ok(seen(await countOf(page, '.gf-stage-trial')) === 1, 'the saved record rendered no Trial stage');
+  }, "S54b");
 
   const out = await visible(page, '[data-action="overview"]');
-  ok(/Back to Overview/i.test(((await out.textContent()) || '').trim()),
-    `the record's way out is not named for Overview: ${await out.textContent()}`);
+  await waitForReplayAssertion(async seen => {
+    ok(/Back to Overview/i.test(((seen(await out.textContent())) || '').trim()),
+      `the record's way out is not named for Overview: ${seen(await out.textContent())}`);
+  }, "S54b");
   await out.click();
   await page.waitForTimeout(300);
-  ok(await destinationOf(page) === 'overview', 'Back to Overview did not return to Overview');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'overview', 'Back to Overview did not return to Overview');
+  }, "S54b");
 };
 
 export const S55 = async (page) => {
-  const title = ((await page.locator('.gf-stage-trial .gf-title').first().textContent()) || '').trim();
-  ok(title.length > 0, 'the Trial nameplate rendered no title');
-  ok(/Profile change · \d+ settings/i.test(title) || /·/.test(title),
-    `the Trial title is neither a counted profile change nor a named setting: ${JSON.stringify(title)}`);
+  await waitForReplayAssertion(async seen => {
+    const title = ((seen(await page.locator('.gf-stage-trial .gf-title').first().textContent())) || '').trim();
+    ok(title.length > 0, 'the Trial nameplate rendered no title');
+    ok(/Profile change · \d+ settings/i.test(title) || /·/.test(title),
+      `the Trial title is neither a counted profile change nor a named setting: ${JSON.stringify(title)}`);
+  }, "S55");
 };
 
 export const S56 = async (page) => {
   // Deterministic: the success path is asserted first from a clean pin, then a
   // second page installs the failure. Root's note 4 applies here too.
   await activate(page, '[data-focus="pin"]');
-  ok(await destinationOf(page) === 'overview', 'a successful pin did not land on Overview');
-  ok(await countOf(page, '[data-focus="retry-pin"]') === 0, 'a successful pin left a Retry standing');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'overview', 'a successful pin did not land on Overview');
+    ok(seen(await countOf(page, '[data-focus="retry-pin"]')) === 0, 'a successful pin left a Retry standing');
+  }, "S56");
 };
 
 export const S56b = async (page) => {
   await harnessCheck(page, 'focusSaveFails', true);
   await activate(page, '[data-focus="pin"]');
-  ok(await countOf(page, '[data-focus="retry-pin"]') === 1, 'installing a pin failure did not surface its Retry');
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.focus === 'retry-pin', 'a failed pin did not focus its Retry');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-focus="retry-pin"]')) === 1, 'installing a pin failure did not surface its Retry');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.focus === 'retry-pin', 'a failed pin did not focus its Retry');
+  }, "S56b");
   await activate(page, '[data-focus="retry-pin"]');
-  ok(await countOf(page, '[data-focus="retry-pin"]') === 0, 'the retried pin did not succeed');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-focus="retry-pin"]')) === 0, 'the retried pin did not succeed');
+  }, "S56b");
 };
 
 export const S57 = async (page) => {
@@ -1483,19 +1765,21 @@ export const S57 = async (page) => {
   // behavior" and "Glucose outcomes" (focus.js:170, :178), which is what HV2-26
   // actually contracts.
   await harnessSelect(page, 'focusClock', 'follow-up');
-  ok(await countOf(page, '.gf-stage-focus') === 1, 'the Focus evidence stage did not render');
-  const tables = await page.evaluate(() => [...document.querySelectorAll('.gf-stage-focus table.gf-trend thead th:first-child')]
-    .map((th) => th.textContent.trim()));
-  ok(tables.length === 2, `the Focus stage rendered ${tables.length} trend table(s), not the behavior/outcome pair`);
-  ok(/observed behaviou?r/i.test(tables[0]), `the first Focus table is not observed behavior: ${JSON.stringify(tables[0])}`);
-  ok(/glucose outcomes/i.test(tables[1]), `the second Focus table is not glucose outcomes: ${JSON.stringify(tables[1])}`);
-  const body = await page.locator('.gf-stage-focus').innerText();
-  const forbidden = body.match(/\bnull\b|\bundefined\b|\bNaN\b/);
-  ok(!forbidden, `the Focus surface rendered a raw ${forbidden && forbidden[0]}`);
-  // An empty population says so; it never becomes a rate or a zero.
-  if (/no lows|no nights/i.test(body)) {
-    ok(/unavailable/i.test(body), 'an empty Focus population did not say its measure is unavailable');
-  }
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-stage-focus')) === 1, 'the Focus evidence stage did not render');
+    const tables = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-stage-focus table.gf-trend thead th:first-child')]
+      .map((th) => th.textContent.trim())));
+    ok(tables.length === 2, `the Focus stage rendered ${tables.length} trend table(s), not the behavior/outcome pair`);
+    ok(/observed behaviou?r/i.test(tables[0]), `the first Focus table is not observed behavior: ${JSON.stringify(tables[0])}`);
+    ok(/glucose outcomes/i.test(tables[1]), `the second Focus table is not glucose outcomes: ${JSON.stringify(tables[1])}`);
+    const body = seen(await page.locator('.gf-stage-focus').innerText());
+    const forbidden = body.match(/\bnull\b|\bundefined\b|\bNaN\b/);
+    ok(!forbidden, `the Focus surface rendered a raw ${forbidden && forbidden[0]}`);
+    // An empty population says so; it never becomes a rate or a zero.
+    if (/no lows|no nights/i.test(body)) {
+      ok(/unavailable/i.test(body), 'an empty Focus population did not say its measure is unavailable');
+    }
+  }, "S57");
 };
 
 export const S58 = async (page) => {
@@ -1503,14 +1787,18 @@ export const S58 = async (page) => {
   // where a setting change lands on the pump (focus.js:249-255).
   await harnessSelect(page, 'focusClock', 'correction factor changed on the pump');
   const dropped = await visible(page, '[data-focus="dropped"]');
-  ok(/View Focus record/i.test(((await dropped.textContent()) || '').trim()),
-    'the preempted Focus offers no route to its record');
+  await waitForReplayAssertion(async seen => {
+    ok(/View Focus record/i.test(((seen(await dropped.textContent())) || '').trim()),
+      'the preempted Focus offers no route to its record');
+  }, "S58");
   await dropped.click();
   await page.waitForTimeout(300);
-  ok(await destinationOf(page) === 'changes', 'the dropped Focus did not open in Changes');
-  const copy = await deskText(page);
-  ok(/preempted/i.test(copy), 'the dropped Focus does not name preemption as its reason');
-  ok(!/resumed|resuming/i.test(copy), 'a preempted Focus is claiming it resumed');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'changes', 'the dropped Focus did not open in Changes');
+    const copy = seen(await deskText(page));
+    ok(/preempted/i.test(copy), 'the dropped Focus does not name preemption as its reason');
+    ok(!/resumed|resuming/i.test(copy), 'a preempted Focus is claiming it resumed');
+  }, "S58");
 };
 
 export const S59 = async (page, ctx) => {
@@ -1527,19 +1815,23 @@ export const S59 = async (page, ctx) => {
   // viewport they are absent from the markup entirely — root confirmed that.
   // Absence is the correct desktop fact; demanding a hidden node would invent
   // implementation the prototype never had.
-  const seatsVisible = await page.evaluate(() => [...document.querySelectorAll('[data-focus^="seat-"]')]
-    .filter((b) => b.offsetParent !== null).map((b) => b.dataset.focus));
-  ok(seatsVisible.length === 0,
-    `narrow-only seat controls are presented at ${ctx.viewport}: ${JSON.stringify(seatsVisible)}`);
-  const tables = await countOf(page, '.gf-stage-focus table.gf-trend');
-  ok(tables === 2, `the desktop Focus stage shows ${tables} trend table(s); both must be present without a seat control`);
+  await waitForReplayAssertion(async seen => {
+    const seatsVisible = seen(await page.evaluate(() => [...document.querySelectorAll('[data-focus^="seat-"]')]
+      .filter((b) => b.offsetParent !== null).map((b) => b.dataset.focus)));
+    ok(seatsVisible.length === 0,
+      `narrow-only seat controls are presented at ${ctx.viewport}: ${JSON.stringify(seatsVisible)}`);
+    const tables = seen(await countOf(page, '.gf-stage-focus table.gf-trend'));
+    ok(tables === 2, `the desktop Focus stage shows ${tables} trend table(s); both must be present without a seat control`);
+  }, "S59");
 };
 
 export const S60 = async (page) => {
   await goto(page, 'day');
-  ok(await countOf(page, '.gf-stage-day') === 1, 'the Day desk did not render');
-  ok(await countOf(page, '[data-day="return"]') === 0, 'direct Day entry invented a return target');
-  ok(!/opened from/i.test(await deskText(page)), 'direct Day entry invented a prior subject');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-stage-day')) === 1, 'the Day desk did not render');
+    ok(seen(await countOf(page, '[data-day="return"]')) === 0, 'direct Day entry invented a return target');
+    ok(!/opened from/i.test(seen(await deskText(page))), 'direct Day entry invented a prior subject');
+  }, "S60");
 };
 
 export const S61 = async (page) => {
@@ -1548,12 +1840,16 @@ export const S61 = async (page) => {
   // regex reported it missing.
   await goto(page, 'explore');
   const open = await visible(page, '[data-action="day"][data-date]');
-  const subject = await open.getAttribute('data-subject');
-  ok(subject && subject.trim().length > 0, 'the contextual Open Day carries no canonical subject');
+  await waitForReplayAssertion(async seen => {
+    const subject = seen(await open.getAttribute('data-subject'));
+    ok(subject && subject.trim().length > 0, 'the contextual Open Day carries no canonical subject');
+  }, "S61");
   await open.click();
   await page.waitForTimeout(350);
-  ok(/opened from/i.test(await deskText(page)), 'the contextual Day entry does not name where it came from');
-  ok(await countOf(page, '[data-day="return"]') === 1, 'the contextual Day entry offers no return');
+  await waitForReplayAssertion(async seen => {
+    ok(/opened from/i.test(seen(await deskText(page))), 'the contextual Day entry does not name where it came from');
+    ok(seen(await countOf(page, '[data-day="return"]')) === 1, 'the contextual Day entry offers no return');
+  }, "S61");
 };
 
 export const S62 = async (page) => {
@@ -1563,64 +1859,86 @@ export const S62 = async (page) => {
   // target to '.gf-member-row[aria-pressed="true"]' (glucose.js:214) and
   // day.js:220 focuses it, so "precise" here means that identity, not any row.
   await goto(page, 'explore');
-  const origin = await page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null);
-  ok(origin, 'no occurrence is held to return to');
+  const { origin } = await waitForReplayAssertion(async seen => {
+    const origin = seen(await page.evaluate(() => document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null));
+    ok(origin, 'no occurrence is held to return to');
+    return { origin };
+  }, "S62");
 
   const open = await visible(page, '[data-action="day"][data-date]');
-  const subject = (await open.getAttribute('data-subject') || '').trim();
-  const date = await open.getAttribute('data-date');
-  ok(subject, 'the contextual Open Day carries no canonical subject to return from');
+  const { subject, date } = await waitForReplayAssertion(async seen => {
+    const subject = (seen(await open.getAttribute('data-subject')) || '').trim();
+    const date = seen(await open.getAttribute('data-date'));
+    ok(subject, 'the contextual Open Day carries no canonical subject to return from');
+    return { subject, date };
+  }, "S62");
   await open.click();
   await page.waitForTimeout(350);
 
   // While away, the Day desk names the subject it came from, verbatim.
-  const openedFrom = await page.evaluate(() => {
-    const head = [...document.querySelectorAll('.gf-section h3')].find((h) => /opened from/i.test(h.textContent));
-    return head ? (head.parentElement.querySelector('p')?.textContent || '').trim() : null;
-  });
-  ok(openedFrom === subject,
-    `Day names its origin as ${JSON.stringify(openedFrom)}, not the subject it was opened with ${JSON.stringify(subject)}`);
-  ok((await deskText(page)).includes(date.slice(8).replace(/^0/, '')),
-    'the Day desk did not open on the date the occurrence carried');
+  await waitForReplayAssertion(async seen => {
+    const openedFrom = seen(await page.evaluate(() => {
+      const head = [...document.querySelectorAll('.gf-section h3')].find((h) => /opened from/i.test(h.textContent));
+      return head ? (head.parentElement.querySelector('p')?.textContent || '').trim() : null;
+    }));
+    ok(openedFrom === subject,
+      `Day names its origin as ${JSON.stringify(openedFrom)}, not the subject it was opened with ${JSON.stringify(subject)}`);
+    ok((seen(await deskText(page))).includes(date.slice(8).replace(/^0/, '')),
+      'the Day desk did not open on the date the occurrence carried');
+  }, "S62");
 
   await activate(page, '[data-day="return"]');
-  ok(await destinationOf(page) === 'explore', `the return landed on ${await destinationOf(page)}, not the destination it left`);
-  const restored = await page.evaluate(() => {
-    const el = document.activeElement;
-    return {
-      held: document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null,
-      focusedOcc: el && el.dataset ? el.dataset.occ ?? null : null,
-    };
-  });
-  ok(restored.held === origin,
-    `the return restored occurrence ${JSON.stringify(restored.held)}, not the one it left from ${JSON.stringify(origin)}`);
-  ok(restored.focusedOcc === origin,
-    `the return did not put the hand back on the originating occurrence (focused ${JSON.stringify(restored.focusedOcc)})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'explore', `the return landed on ${seen(await destinationOf(page))}, not the destination it left`);
+    const restored = seen(await page.evaluate(() => {
+      const el = document.activeElement;
+      return {
+        held: document.querySelector('.gf-member-row[aria-pressed="true"]')?.dataset.occ ?? null,
+        focusedOcc: el && el.dataset ? el.dataset.occ ?? null : null,
+      };
+    }));
+    ok(restored.held === origin,
+      `the return restored occurrence ${JSON.stringify(restored.held)}, not the one it left from ${JSON.stringify(origin)}`);
+    ok(restored.focusedOcc === origin,
+      `the return did not put the hand back on the originating occurrence (focused ${JSON.stringify(restored.focusedOcc)})`);
+  }, "S62");
 };
 
 export const S63 = async (page) => {
   await goto(page, 'day');
-  const cols = await page.evaluate(() => [...document.querySelectorAll('.gf-nav-col[data-pick]')].map((b) => ({
-    iso: b.dataset.pick, disabled: b.disabled, label: b.getAttribute('aria-label'),
-  })));
-  ok(cols.length > 0, 'the week ribbon rendered no columns');
-  for (const col of cols) ok(col.label, `a week column has no accessible label: ${col.iso}`);
-  const real = cols.find((c) => !c.disabled);
-  ok(real, 'every week column is disabled; no recorded day is reachable');
-  ok(cols.some((c) => c.disabled), 'no unrecorded day is disabled; this story needs a week with a gap');
+  const { real } = await waitForReplayAssertion(async seen => {
+    const cols = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-nav-col[data-pick]')].map((b) => ({
+      iso: b.dataset.pick, disabled: b.disabled, label: b.getAttribute('aria-label'),
+    }))));
+    ok(cols.length > 0, 'the week ribbon rendered no columns');
+    for (const col of cols) ok(col.label, `a week column has no accessible label: ${col.iso}`);
+    const real = cols.find((c) => !c.disabled);
+    ok(real, 'every week column is disabled; no recorded day is reachable');
+    ok(cols.some((c) => c.disabled), 'no unrecorded day is disabled; this story needs a week with a gap');
+    return { real };
+  }, "S63");
   await activate(page, `.gf-nav-col[data-pick="${real.iso}"]`);
-  ok(await pressed(page, `.gf-nav-col[data-pick="${real.iso}"]`) === 'true', 'picking a recorded day did not hold it');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `.gf-nav-col[data-pick="${real.iso}"]`)) === 'true', 'picking a recorded day did not hold it');
+  }, "S63");
 };
 
 export const S64 = async (page) => {
   await goto(page, 'day');
-  const expanded = () => page.evaluate(() => document.querySelector('.gf-month-toggle')?.getAttribute('aria-expanded'));
-  ok(await expanded() === 'false', 'the month grid claims to be open before it was opened');
+  const { expanded } = await waitForReplayAssertion(async seen => {
+    const expanded = () => page.evaluate(() => document.querySelector('.gf-month-toggle')?.getAttribute('aria-expanded'));
+    ok(seen(await expanded()) === 'false', 'the month grid claims to be open before it was opened');
+    return { expanded };
+  }, "S64");
   await activate(page, '.gf-month-toggle');
-  ok(await expanded() === 'true', 'opening the month did not set aria-expanded');
-  ok(await countOf(page, '.gf-nav-cell[data-pick]') > 0, 'the month grid rendered no cells');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await expanded()) === 'true', 'opening the month did not set aria-expanded');
+    ok(seen(await countOf(page, '.gf-nav-cell[data-pick]')) > 0, 'the month grid rendered no cells');
+  }, "S64");
   await activate(page, '.gf-month-toggle');
-  ok(await expanded() === 'false', 'closing the month did not clear aria-expanded');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await expanded()) === 'false', 'closing the month did not clear aria-expanded');
+  }, "S64");
 };
 
 export const S65 = async (page) => {
@@ -1631,37 +1949,50 @@ export const S65 = async (page) => {
   // stepper moves the month, and the bound stays disabled.
   await goto(page, 'day');
   await activate(page, '.gf-month-toggle');
-  const steppers = await page.evaluate(() => [...document.querySelectorAll('[data-day="prev-month"], [data-day="next-month"]')]
-    .map((b) => ({ day: b.dataset.day, disabled: b.disabled })));
-  ok(steppers.length === 2, `the month stepper rendered ${steppers.length} controls`);
-  const live = steppers.find((s) => !s.disabled);
-  ok(live, `both month steppers are disabled on a source that spans a month bound: ${JSON.stringify(steppers)}`);
-  ok(steppers.some((s) => s.disabled),
-    `neither month stepper is bounded: ${JSON.stringify(steppers)} — the recorded range must stop somewhere`);
+  const { live } = await waitForReplayAssertion(async seen => {
+    const steppers = seen(await page.evaluate(() => [...document.querySelectorAll('[data-day="prev-month"], [data-day="next-month"]')]
+      .map((b) => ({ day: b.dataset.day, disabled: b.disabled }))));
+    ok(steppers.length === 2, `the month stepper rendered ${steppers.length} controls`);
+    const live = steppers.find((s) => !s.disabled);
+    ok(live, `both month steppers are disabled on a source that spans a month bound: ${JSON.stringify(steppers)}`);
+    ok(steppers.some((s) => s.disabled),
+      `neither month stepper is bounded: ${JSON.stringify(steppers)} — the recorded range must stop somewhere`);
+    return { live };
+  }, "S65");
   const before = await page.locator('.gf-stage-day').first().innerText();
   await activate(page, `[data-day="${live.day}"]`);
-  ok(await page.locator('.gf-stage-day').first().innerText() !== before, 'the month stepper did not move the month');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.locator('.gf-stage-day').first().innerText()) !== before, 'the month stepper did not move the month');
+  }, "S65");
 };
 
 export const S66 = async (page) => {
   await goto(page, 'day');
-  const controls = await page.evaluate(() => [...document.querySelectorAll('[data-day="prev"], [data-day="next"], [data-day="latest"]')]
-    .map((b) => ({ day: b.dataset.day, disabled: b.disabled })));
-  ok(controls.length === 3, `the recorded-day stepper rendered ${controls.length} controls`);
-  const live = controls.find((c) => !c.disabled && c.day !== 'latest');
-  ok(live, 'every recorded-day stepper is disabled; this story needs more than one recorded day');
+  const { live } = await waitForReplayAssertion(async seen => {
+    const controls = seen(await page.evaluate(() => [...document.querySelectorAll('[data-day="prev"], [data-day="next"], [data-day="latest"]')]
+      .map((b) => ({ day: b.dataset.day, disabled: b.disabled }))));
+    ok(controls.length === 3, `the recorded-day stepper rendered ${controls.length} controls`);
+    const live = controls.find((c) => !c.disabled && c.day !== 'latest');
+    ok(live, 'every recorded-day stepper is disabled; this story needs more than one recorded day');
+    return { live };
+  }, "S66");
   const held = () => page.evaluate(() => document.querySelector('.gf-nav-col[aria-pressed="true"]')?.dataset.pick ?? null);
   const before = await held();
   await activate(page, `[data-day="${live.day}"]`);
-  ok(await held() !== before, `${live.day} did not move the held day`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) !== before, `${live.day} did not move the held day`);
+  }, "S66");
 };
 
 export const S67 = async (page) => {
   // Corrected: the landed day need not carry a log. Walk the recorded week
   // through the reader's own ribbon until one does, and fail loudly if none does.
   await goto(page, 'day');
-  const days = await page.evaluate(() => [...document.querySelectorAll('.gf-nav-col[data-pick]:not([disabled])')].map((b) => b.dataset.pick));
-  ok(days.length > 0, 'the week ribbon exposes no recorded day');
+  const { days } = await waitForReplayAssertion(async seen => {
+    const days = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-nav-col[data-pick]:not([disabled])')].map((b) => b.dataset.pick)));
+    ok(days.length > 0, 'the week ribbon exposes no recorded day');
+    return { days };
+  }, "S67");
   let rows = [];
   for (const iso of days) {
     await activate(page, `.gf-nav-col[data-pick="${iso}"]`);
@@ -1670,12 +2001,22 @@ export const S67 = async (page) => {
     })));
     if (rows.length) break;
   }
-  ok(rows.length > 0, `no recorded day in this week rendered an Episode Log row (checked ${days.length})`);
-  for (const row of rows) ok(row.state, `a log row rendered without its served state word: ${row.t}`);
+  rows = await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-log-row[data-day-row]')].map((b) => ({
+      t: b.dataset.dayRow, state: b.querySelector('.tier')?.dataset.state ?? null,
+    }))));
+    ok(rows.length > 0, `no recorded day in this week rendered an Episode Log row (checked ${days.length})`);
+    for (const row of rows) ok(row.state, `a log row rendered without its served state word: ${row.t}`);
+    return rows;
+  }, 'S67 recorded day log');
   await activate(page, `.gf-log-row[data-day-row="${rows[0].t}"]`);
-  ok(await pressed(page, `.gf-log-row[data-day-row="${rows[0].t}"]`) === 'true', 'a log row did not take its focused moment');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `.gf-log-row[data-day-row="${rows[0].t}"]`)) === 'true', 'a log row did not take its focused moment');
+  }, "S67");
   await activate(page, `.gf-log-row[data-day-row="${rows[0].t}"]`);
-  ok(await pressed(page, `.gf-log-row[data-day-row="${rows[0].t}"]`) === 'false', 'a log row did not toggle its moment off');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, `.gf-log-row[data-day-row="${rows[0].t}"]`)) === 'false', 'a log row did not toggle its moment off');
+  }, "S67");
 };
 
 export const S68 = async (page) => {
@@ -1683,10 +2024,14 @@ export const S68 = async (page) => {
   // viewport the visible launcher is the footer's. visible() now picks it.
   for (const kind of ['guide', 'glossary', 'settings']) {
     await activate(page, `[data-utility="${kind}"]`);
-    ok(await countOf(page, `.gf-utility[data-utility="${kind}"]`) === 1, `the ${kind} utility did not take the reading seat`);
-    ok(await countOf(page, TARGET === 'app' ? '[data-v2-diagnose] .canvas-pane' : '.gf-stage') >= 1, `opening ${kind} removed the destination underneath it`);
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, `.gf-utility[data-utility="${kind}"]`)) === 1, `the ${kind} utility did not take the reading seat`);
+      ok(seen(await countOf(page, TARGET === 'app' ? '[data-v2-diagnose] .canvas-pane' : '.gf-stage')) >= 1, `opening ${kind} removed the destination underneath it`);
+    }, "S68");
     const launcher = await visible(page, `nav.cockpit-utilities [data-utility="${kind}"]`);
-    ok(await launcher.getAttribute('aria-pressed') === 'true', `the visible ${kind} launcher is not marked pressed`);
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await launcher.getAttribute('aria-pressed')) === 'true', `the visible ${kind} launcher is not marked pressed`);
+    }, "S68");
     await activate(page, '[data-utility-close]');
   }
 };
@@ -1694,48 +2039,66 @@ export const S68 = async (page) => {
 export const S69 = async (page) => {
   await activate(page, '[data-utility="guide"]');
   await activate(page, '[data-utility-close]');
-  ok(await countOf(page, '.gf-utility') === 0, 'Close left the utility open');
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.utility === 'guide',
-    `Close did not return focus to its launcher (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-utility')) === 0, 'Close left the utility open');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.utility === 'guide',
+      `Close did not return focus to its launcher (got ${JSON.stringify(focused)})`);
+  }, "S69");
 };
 
 export const S70 = async (page) => {
   await activate(page, '.cockpit-log-carbs');
-  ok(await countOf(page, '#ut-grams') === 1, 'Log carbs rendered no grams field');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '#ut-grams')) === 1, 'Log carbs rendered no grams field');
+  }, "S70");
   await page.fill('#ut-grams', '');
   await page.waitForTimeout(180);
-  const log = page.locator('[data-utility-log="other"]');
-  ok(await log.count() > 0, 'Log carbs rendered no log control');
-  ok(await log.first().isDisabled(), 'an empty grams entry can be logged');
+  const { log } = await waitForReplayAssertion(async seen => {
+    const log = page.locator('[data-utility-log="other"]');
+    ok(seen(await log.count()) > 0, 'Log carbs rendered no log control');
+    ok(seen(await log.first().isDisabled()), 'an empty grams entry can be logged');
+    return { log };
+  }, "S70");
   await page.fill('#ut-grams', '18');
   await page.waitForTimeout(180);
-  ok(!(await log.first().isDisabled()), 'a valid grams entry cannot be logged');
+  const { whens } = await waitForReplayAssertion(async seen => {
+    ok(!(seen(await log.first().isDisabled())), 'a valid grams entry cannot be logged');
 
-  // The moment controls are pressed, not counted: choosing "custom" opens the
-  // datetime field the draft keeps (utilities.js:136, :261).
-  const whens = await page.evaluate(() => [...document.querySelectorAll('[data-utility-when]')]
-    .map((b) => ({ key: b.dataset.utilityWhen, held: b.getAttribute('aria-pressed') })));
-  ok(whens.length > 1, `Log carbs offers ${whens.length} moment control(s); this story needs a choice`);
-  ok(whens.some((w) => w.key === 'custom'), 'Log carbs offers no custom moment');
+    // The moment controls are pressed, not counted: choosing "custom" opens the
+    // datetime field the draft keeps (utilities.js:136, :261).
+    const whens = seen(await page.evaluate(() => [...document.querySelectorAll('[data-utility-when]')]
+      .map((b) => ({ key: b.dataset.utilityWhen, held: b.getAttribute('aria-pressed') }))));
+    ok(whens.length > 1, `Log carbs offers ${whens.length} moment control(s); this story needs a choice`);
+    ok(whens.some((w) => w.key === 'custom'), 'Log carbs offers no custom moment');
+    return { whens };
+  }, "S70");
   await activate(page, '[data-utility-when="custom"]');
-  ok(await pressed(page, '[data-utility-when="custom"]') === 'true', 'choosing a moment did not hold it');
-  ok(await countOf(page, '#ut-custom') === 1, 'the custom moment opened no time field');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await pressed(page, '[data-utility-when="custom"]')) === 'true', 'choosing a moment did not hold it');
+    ok(seen(await countOf(page, '#ut-custom')) === 1, 'the custom moment opened no time field');
+  }, "S70");
   await page.fill('#ut-custom', '2024-05-15T09:30');
   await page.waitForTimeout(180);
-  ok(await page.inputValue('#ut-custom') === '2024-05-15T09:30', 'the custom moment did not keep what was typed');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.inputValue('#ut-custom')) === '2024-05-15T09:30', 'the custom moment did not keep what was typed');
+  }, "S70");
 
   const other = whens.find((w) => w.key !== 'custom');
   await activate(page, `[data-utility-when="${other.key}"]`);
-  ok(await countOf(page, '#ut-custom') === 0, 'leaving the custom moment left its time field standing');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '#ut-custom')) === 0, 'leaving the custom moment left its time field standing');
+  }, "S70");
 
   // Logging records an entry the pane lists and can act on.
   const entriesBefore = await countOf(page, '.gf-entry-row');
   await activate(page, '[data-utility-log="other"]');
-  ok(await countOf(page, '.gf-entry-row') === entriesBefore + 1,
-    'logging a valid amount recorded no entry');
-  ok(/18 g/.test(await page.locator('.gf-utility').first().innerText()),
-    'the logged entry does not show the amount that was entered');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-entry-row')) === entriesBefore + 1,
+      'logging a valid amount recorded no entry');
+    ok(/18 g/.test(seen(await page.locator('.gf-utility').first().innerText())),
+      'the logged entry does not show the amount that was entered');
+  }, "S70");
 };
 
 export const S71 = async (page, ctx) => {
@@ -1757,16 +2120,21 @@ export const S71 = async (page, ctx) => {
   await page.fill('#ut-grams', '18');
   await page.waitForTimeout(180);
   await activate(page, '[data-utility-log]');
-  const failed = await page.locator('.gf-utility').first().innerText();
-  ok(/fail/i.test(failed), `installing a utility save failure did not fail the save: ${failed.slice(0, 160)}`);
-  ok(await entries() === before, 'the failed save recorded an entry anyway');
-  const retry = page.locator('[data-utility-retry]');
-  ok(await retry.count() > 0, 'the failed utility save offers no Retry');
+  const { retry } = await waitForReplayAssertion(async seen => {
+    const failed = seen(await page.locator('.gf-utility').first().innerText());
+    ok(/fail/i.test(failed), `installing a utility save failure did not fail the save: ${failed.slice(0, 160)}`);
+    ok(seen(await entries()) === before, 'the failed save recorded an entry anyway');
+    const retry = page.locator('[data-utility-retry]');
+    ok(seen(await retry.count()) > 0, 'the failed utility save offers no Retry');
+    return { retry };
+  }, "S71");
   await activate(page, '[data-utility-retry]');
   await page.waitForTimeout(300);
-  ok(!/fail/i.test(await page.locator('.gf-utility').first().innerText()),
-    'the retried utility save still reports a failure');
-  ok(await entries() === before + 1, 'the retry reported success but recorded nothing');
+  await waitForReplayAssertion(async seen => {
+    ok(!/fail/i.test(seen(await page.locator('.gf-utility').first().innerText())),
+      'the retried utility save still reports a failure');
+    ok(seen(await entries()) === before + 1, 'the retry reported success but recorded nothing');
+  }, "S71");
 };
 
 /** Both copies of the open-question count: the footer's and the strip's. */
@@ -1780,31 +2148,38 @@ export const S72 = async (page) => {
   // asserted, and the answered card is identified by its own key so the Undo
   // returns the same question rather than any question.
   await activate(page, '[data-utility="questions"]');
-  const before = await openCounts(page);
-  ok(before.footer !== null && before.strip !== null, 'an open-question count copy is missing');
-  ok(before.footer === before.strip,
-    `the two open-question counts disagree before answering (${before.footer} vs ${before.strip})`);
+  const { before, key } = await waitForReplayAssertion(async seen => {
+    const before = seen(await openCounts(page));
+    ok(before.footer !== null && before.strip !== null, 'an open-question count copy is missing');
+    ok(before.footer === before.strip,
+      `the two open-question counts disagree before answering (${before.footer} vs ${before.strip})`);
 
-  const key = await page.evaluate(() =>
-    document.querySelector('[data-utility-answer]')?.dataset.question ?? null);
-  ok(key, 'no open carb question to answer — this story needs a source serving questions');
+    const key = seen(await page.evaluate(() =>
+      document.querySelector('[data-utility-answer]')?.dataset.question ?? null));
+    ok(key, 'no open carb question to answer — this story needs a source serving questions');
+    return { before, key };
+  }, "S72");
 
   await activate(page, `[data-utility-answer="no"][data-question="${key}"]`);
-  ok(await countOf(page, `[data-utility-undo="${key}"]`) === 1,
-    'answering did not offer that question its own Undo');
-  ok(/answered/i.test(await page.locator(`[data-question-card="${key}"]`).innerText()),
-    'the answered card does not say it was answered');
-  const after = await openCounts(page);
-  ok(after.footer !== before.footer, `the open question count did not follow the answer (${before.footer} → ${after.footer})`);
-  ok(after.footer === after.strip,
-    `the two open-question counts disagree after answering (${after.footer} vs ${after.strip})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, `[data-utility-undo="${key}"]`)) === 1,
+      'answering did not offer that question its own Undo');
+    ok(/answered/i.test(seen(await page.locator(`[data-question-card="${key}"]`).innerText())),
+      'the answered card does not say it was answered');
+    const after = seen(await openCounts(page));
+    ok(after.footer !== before.footer, `the open question count did not follow the answer (${before.footer} → ${after.footer})`);
+    ok(after.footer === after.strip,
+      `the two open-question counts disagree after answering (${after.footer} vs ${after.strip})`);
+  }, "S72");
 
   await activate(page, `[data-utility-undo="${key}"]`);
-  const restored = await openCounts(page);
-  ok(restored.footer === before.footer, 'undoing an answer did not restore the open count');
-  ok(restored.strip === before.strip, 'undoing an answer did not restore the strip copy of the count');
-  ok(await countOf(page, `[data-utility-answer-carbs="${key}"]`) === 1,
-    'undoing did not return that same question to its unanswered controls');
+  await waitForReplayAssertion(async seen => {
+    const restored = seen(await openCounts(page));
+    ok(restored.footer === before.footer, 'undoing an answer did not restore the open count');
+    ok(restored.strip === before.strip, 'undoing an answer did not restore the strip copy of the count');
+    ok(seen(await countOf(page, `[data-utility-answer-carbs="${key}"]`)) === 1,
+      'undoing did not return that same question to its unanswered controls');
+  }, "S72");
 };
 
 export const S72b = async (page) => {
@@ -1812,47 +2187,64 @@ export const S72b = async (page) => {
   // controls, cancel back, reopen, log a synthetic amount, then find that entry
   // in Log carbs and remove it. Every control named here is pressed.
   await activate(page, '[data-utility="questions"]');
-  const before = await openCounts(page);
-  const key = await page.evaluate(() =>
-    document.querySelector('[data-utility-answer-carbs]')?.dataset.utilityAnswerCarbs ?? null);
-  ok(key, 'no open carb question offering the Log carbs answer');
+  const { before, key } = await waitForReplayAssertion(async seen => {
+    const before = seen(await openCounts(page));
+    const key = seen(await page.evaluate(() =>
+      document.querySelector('[data-utility-answer-carbs]')?.dataset.utilityAnswerCarbs ?? null));
+    ok(key, 'no open carb question offering the Log carbs answer');
+    return { before, key };
+  }, "S72b");
 
   await activate(page, `[data-utility-answer-carbs="${key}"]`);
-  ok(await countOf(page, `[data-question-card="${key}"] [data-utility-log]`) > 0,
-    'answering with carbs opened no amount controls on that question');
-  ok(await countOf(page, '[data-utility-cancel-log]') === 1, 'the amount controls offer no Cancel');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, `[data-question-card="${key}"] [data-utility-log]`)) > 0,
+      'answering with carbs opened no amount controls on that question');
+    ok(seen(await countOf(page, '[data-utility-cancel-log]')) === 1, 'the amount controls offer no Cancel');
+  }, "S72b");
 
   await activate(page, '[data-utility-cancel-log]');
-  ok(await countOf(page, `[data-question-card="${key}"] [data-utility-log]`) === 0,
-    'Cancel left the amount controls open');
-  ok(await countOf(page, `[data-utility-answer-carbs="${key}"]`) === 1,
-    'Cancel did not return that question to its answer controls');
-  const cancelled = await openCounts(page);
-  ok(cancelled.footer === before.footer, 'cancelling recorded an answer it should not have');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, `[data-question-card="${key}"] [data-utility-log]`)) === 0,
+      'Cancel left the amount controls open');
+    ok(seen(await countOf(page, `[data-utility-answer-carbs="${key}"]`)) === 1,
+      'Cancel did not return that question to its answer controls');
+    const cancelled = seen(await openCounts(page));
+    ok(cancelled.footer === before.footer, 'cancelling recorded an answer it should not have');
+  }, "S72b");
 
   // Log a preset amount against that question.
   await activate(page, `[data-utility-answer-carbs="${key}"]`);
-  const preset = await page.evaluate((k) => {
-    const button = document.querySelector(`[data-question-card="${k}"] [data-utility-log]:not([data-utility-log="other"]):not([data-utility-log="unknown"])`);
-    return button ? button.dataset.utilityLog : null;
-  }, key);
-  ok(preset, 'the amount controls offer no preset to log');
+  const { preset } = await waitForReplayAssertion(async seen => {
+    const preset = seen(await page.evaluate((k) => {
+      const button = document.querySelector(`[data-question-card="${k}"] [data-utility-log]:not([data-utility-log="other"]):not([data-utility-log="unknown"])`);
+      return button ? button.dataset.utilityLog : null;
+    }, key));
+    ok(preset, 'the amount controls offer no preset to log');
+    return { preset };
+  }, "S72b");
   await activate(page, `[data-question-card="${key}"] [data-utility-log="${preset}"][data-certainty="exact"]`);
-  const answered = await openCounts(page);
-  ok(answered.footer !== before.footer, 'logging carbs against a question did not answer it');
+  await waitForReplayAssertion(async seen => {
+    const answered = seen(await openCounts(page));
+    ok(answered.footer !== before.footer, 'logging carbs against a question did not answer it');
+  }, "S72b");
 
   // That entry is listed in Log carbs, and removing it restores the count.
   await activate(page, '.cockpit-log-carbs');
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-entry-row')]
-    .map((row) => ({ id: row.querySelector('[data-utility-remove]')?.dataset.utilityRemove ?? null, text: row.textContent })));
-  const logged = rows.find((row) => row.text.includes(`${preset} g`) && /carb question/i.test(row.text));
-  ok(logged && logged.id, `the question's logged amount is not listed as an entry: ${JSON.stringify(rows.map((r) => r.text))}`);
+  const { logged } = await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-entry-row')]
+      .map((row) => ({ id: row.querySelector('[data-utility-remove]')?.dataset.utilityRemove ?? null, text: row.textContent }))));
+    const logged = rows.find((row) => row.text.includes(`${preset} g`) && /carb question/i.test(row.text));
+    ok(logged && logged.id, `the question's logged amount is not listed as an entry: ${JSON.stringify(rows.map((r) => r.text))}`);
+    return { logged };
+  }, "S72b");
 
   await activate(page, `[data-utility-remove="${logged.id}"]`);
-  ok(await countOf(page, `[data-utility-remove="${logged.id}"]`) === 0, 'Remove left the entry listed');
-  const removed = await openCounts(page);
-  ok(removed.footer === before.footer,
-    `removing the logged answer did not return the question to the open count (${before.footer} → ${removed.footer})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, `[data-utility-remove="${logged.id}"]`)) === 0, 'Remove left the entry listed');
+    const removed = seen(await openCounts(page));
+    ok(removed.footer === before.footer,
+      `removing the logged answer did not return the question to the open count (${before.footer} → ${removed.footer})`);
+  }, "S72b");
 };
 
 export const S73 = async (page) => {
@@ -1864,18 +2256,26 @@ export const S73 = async (page) => {
   // Same class of gap as S80b: recorded as S73b, an app-opener-only obligation
   // under HV2-32. What the unchanged mock DOES do is asserted here.
   await activate(page, '[data-utility="guide"]');
-  ok(await countOf(page, '[data-utility-slug]') > 0, 'the Guide rendered no articles');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-utility-slug]')) > 0, 'the Guide rendered no articles');
+  }, "S73");
   await activate(page, '[data-utility-slug]');
-  ok(await countOf(page, '.gf-article') === 1, 'the Guide did not open its article');
-  ok(await countOf(page, '.gf-article .gf-title') === 1,
-    'the opened article renders no heading for the handler to target');
-  ok(await page.evaluate(() => document.querySelector('.gf-utility .gf-pane-body')?.scrollTop ?? null) === 0,
-    'the opened article did not bring its pane to the head');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-article')) === 1, 'the Guide did not open its article');
+    ok(seen(await countOf(page, '.gf-article .gf-title')) === 1,
+      'the opened article renders no heading for the handler to target');
+    ok(seen(await page.evaluate(() => document.querySelector('.gf-utility .gf-pane-body')?.scrollTop ?? null)) === 0,
+      'the opened article did not bring its pane to the head');
+  }, "S73");
   const back = await visible(page, '[data-utility-slug=""]');
-  ok(/All articles/i.test(((await back.textContent()) || '')), 'the article offers no route back to its list');
+  await waitForReplayAssertion(async seen => {
+    ok(/All articles/i.test(((seen(await back.textContent())) || '')), 'the article offers no route back to its list');
+  }, "S73");
   await back.click();
   await page.waitForTimeout(250);
-  ok(await countOf(page, '.gf-article') === 0, 'returning did not leave the article');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-article')) === 0, 'returning did not leave the article');
+  }, "S73");
 };
 
 export const S74 = async (page) => {
@@ -1888,9 +2288,11 @@ export const S74 = async (page) => {
   await reveal.click();
   if (TARGET === 'app') await waitForDesk(page);
   else await page.waitForTimeout(180);
-  ok(await typeOf() !== before, 'the reveal control did not toggle the field type');
-  ok(await reveal.getAttribute('aria-pressed') !== pressedBefore,
-    'the reveal control did not flip its own pressed state with the field');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await typeOf()) !== before, 'the reveal control did not toggle the field type');
+    ok(seen(await reveal.getAttribute('aria-pressed')) !== pressedBefore,
+      'the reveal control did not flip its own pressed state with the field');
+  }, "S74");
 };
 
 // PROTOTYPE MEMORY -> PRODUCTION PERSISTENCE. The prototype held these two
@@ -1909,26 +2311,35 @@ export const S75 = async (page, ctx) => {
   // revealed ("Hide") and still "No token saved". Bind to the submit and verify
   // its identity before pressing it.
   await activate(page, '[data-utility="settings"]');
-  ok(await countOf(page, '[data-utility-form="token"]') === 1, 'the Settings utility rendered no token form');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-utility-form="token"]')) === 1, 'the Settings utility rendered no token form');
+  }, "S75");
   const submit = await visible(page, '[data-utility-form="token"] button[type="submit"]');
-  ok(/Save token/i.test(((await submit.textContent()) || '').trim()),
-    `the token form's submit is not the Save token control: ${await submit.textContent()}`);
+  await waitForReplayAssertion(async seen => {
+    ok(/Save token/i.test(((seen(await submit.textContent())) || '').trim()),
+      `the token form's submit is not the Save token control: ${seen(await submit.textContent())}`);
+  }, "S75");
   await page.fill('#ut-token', 'synthetic-token');
   await submit.click();
   if (TARGET === 'app') await page.waitForFunction(() =>
     /Token saved in this browser/.test(document.querySelector('[data-utility-form="token"]')?.textContent || ''),
     null, { timeout: 30000 });
   else await page.waitForTimeout(300);
-  const pane = await page.locator('.gf-utility').first().innerText();
   if (ctx.target === 'app') {
-    ok(/token saved in this browser/i.test(pane), `saving the token reported nothing: ${pane.slice(0, 200)}`);
-    // The durable half the prototype had no way to have: the token is where the
-    // one authenticated client reads it from on every request.
-    ok(await page.evaluate(() => localStorage.getItem('ciq_token')) === 'synthetic-token',
-      'the saved token is not in the storage frontend/data.js reads on every request');
+    await waitForReplayAssertion(async seen => {
+      const pane = seen(await page.locator('.gf-utility').first().innerText());
+      ok(/token saved in this browser/i.test(pane), `saving the token reported nothing: ${pane.slice(0, 200)}`);
+      // The durable half the prototype had no way to have: the token is where the
+      // one authenticated client reads it from on every request.
+      ok(seen(await page.evaluate(() => localStorage.getItem('ciq_token'))) === 'synthetic-token',
+        'the saved token is not in the storage frontend/data.js reads on every request');
+    }, "S75");
     return;
   }
-  ok(/token saved in this page/i.test(pane), 'saving the token reported nothing');
+  await waitForReplayAssertion(async seen => {
+    const pane = seen(await page.locator('.gf-utility').first().innerText());
+    ok(/token saved in this page/i.test(pane), 'saving the token reported nothing');
+  }, 'S75 mock token confirmation');
 };
 
 export const S75b = async (page, ctx) => {
@@ -1936,52 +2347,66 @@ export const S75b = async (page, ctx) => {
   // Every value here is obviously manufactured; these are page-memory handlers
   // in the prototype, not credential storage, and nothing leaves the page.
   await activate(page, '[data-utility="settings"]');
-  ok(await countOf(page, '[data-utility-form="credentials"]') === 1,
-    'the Settings utility rendered no credentials form');
-  const pane = () => page.locator('.gf-utility').first().innerText();
-  ok(/no credentials saved/i.test(await pane()), 'the credentials form did not start unsaved');
+  const { pane } = await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-utility-form="credentials"]')) === 1,
+      'the Settings utility rendered no credentials form');
+    const pane = () => page.locator('.gf-utility').first().innerText();
+    ok(/no credentials saved/i.test(seen(await pane())), 'the credentials form did not start unsaved');
+    return { pane };
+  }, "S75b");
 
   await page.fill('#ut-email', 'wearer@example.test');
   await page.fill('#ut-password', 'synthetic-password');
   await page.selectOption('#ut-region', 'EU');
   if (TARGET === 'app') await waitForDesk(page);
   else await page.waitForTimeout(180);
-  ok(await page.inputValue('#ut-password') === 'synthetic-password', 'the password field did not keep what was typed');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.inputValue('#ut-password')) === 'synthetic-password', 'the password field did not keep what was typed');
+  }, "S75b");
 
   const submit = await visible(page, '[data-utility-form="credentials"] button[type="submit"]');
-  ok(/Save credentials/i.test(((await submit.textContent()) || '').trim()),
-    `the credentials submit is not the Save credentials control: ${await submit.textContent()}`);
+  await waitForReplayAssertion(async seen => {
+    ok(/Save credentials/i.test(((seen(await submit.textContent())) || '').trim()),
+      `the credentials submit is not the Save credentials control: ${seen(await submit.textContent())}`);
+  }, "S75b");
   await submit.click();
   if (TARGET === 'app') await page.waitForFunction(() =>
     /Credentials saved/.test(document.querySelector('[data-utility-form="credentials"]')?.textContent || '')
     && document.querySelector('#ut-password')?.value === '', null, { timeout: 30000 });
   else await page.waitForTimeout(300);
 
-  const saved = await pane();
-  if (ctx.target === 'app') {
-    // The real write lands in the Store, so the confirmation says so without
-    // the prototype's page-memory caveat.
-    ok(/credentials saved/i.test(saved), `saving the credentials reported nothing: ${saved.slice(0, 200)}`);
-    ok(!/in this page/i.test(saved), 'the built app still claims a page-memory save');
-  } else {
-    ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
-  }
-  ok(/EU region/i.test(saved), 'the saved credentials did not keep the chosen region');
-  // The password is cleared from the form once saved (utilities.js:276).
-  ok(await page.inputValue('#ut-password') === '',
-    'the password was left in the form after saving; it must be cleared');
-  ok(await page.inputValue('#ut-email') === 'wearer@example.test',
-    'saving the credentials dropped the email it saved');
+  const { saved } = await waitForReplayAssertion(async seen => {
+    const saved = seen(await pane());
+    if (ctx.target === 'app') {
+      // The real write lands in the Store, so the confirmation says so without
+      // the prototype's page-memory caveat.
+      ok(/credentials saved/i.test(saved), `saving the credentials reported nothing: ${saved.slice(0, 200)}`);
+      ok(!/in this page/i.test(saved), 'the built app still claims a page-memory save');
+    } else {
+      ok(/credentials saved in this page/i.test(saved), 'saving the credentials reported nothing');
+    }
+    ok(/EU region/i.test(saved), 'the saved credentials did not keep the chosen region');
+    // The password is cleared from the form once saved (utilities.js:276).
+    ok(seen(await page.inputValue('#ut-password')) === '',
+      'the password was left in the form after saving; it must be cleared');
+    ok(seen(await page.inputValue('#ut-email')) === 'wearer@example.test',
+      'saving the credentials dropped the email it saved');
+    return { saved };
+  }, "S75b");
 
   // Developer mode is disclosure only, and says so.
   const dev = await visible(page, '[data-utility-form="dev"] input');
-  ok(await dev.isChecked() === false, 'Developer mode did not start off');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await dev.isChecked()) === false, 'Developer mode did not start off');
+  }, "S75b");
   await dev.check();
   if (TARGET === 'app') await waitForDesk(page);
   else await page.waitForTimeout(180);
-  ok(await dev.isChecked(), 'Developer mode did not take the change');
-  ok(/never the analysis/i.test(await pane()),
-    'Developer mode does not say it changes disclosure only');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await dev.isChecked()), 'Developer mode did not take the change');
+    ok(/never the analysis/i.test(seen(await pane())),
+      'Developer mode does not say it changes disclosure only');
+  }, "S75b");
 
   if (ctx.target !== 'app') return;
   // The durable half. A reload throws away every scrap of page state, so what
@@ -1990,11 +2415,13 @@ export const S75b = async (page, ctx) => {
   await page.waitForSelector('.gf .pane', { timeout: 20000 });
   await activate(page, '[data-utility="settings"]');
   await waitForDesk(page);
-  const reloaded = await pane();
-  ok(/credentials saved/i.test(reloaded) && !/no credentials saved/i.test(reloaded),
-    `the saved credentials did not survive a reload: ${reloaded.slice(0, 200)}`);
-  ok(await page.inputValue('#ut-password') === '',
-    'the reloaded form carries a password; a saved credential is never echoed back');
+  await waitForReplayAssertion(async seen => {
+    const reloaded = seen(await pane());
+    ok(/credentials saved/i.test(reloaded) && !/no credentials saved/i.test(reloaded),
+      `the saved credentials did not survive a reload: ${reloaded.slice(0, 200)}`);
+    ok(seen(await page.inputValue('#ut-password')) === '',
+      'the reloaded form carries a password; a saved credential is never echoed back');
+  }, "S75b");
 };
 
 export const S76 = async (page, ctx) => {
@@ -2007,10 +2434,13 @@ export const S76 = async (page, ctx) => {
   // names verbatim, and follows it back.
   await activate(page, '[data-utility="questions"]');
   const open = await visible(page, '.gf-utility [data-action="day"][data-date]');
-  const origin = await open.getAttribute('data-utility-from');
-  ok(origin, 'the utility\'s Open Day carries no utility origin');
-  const label = await open.getAttribute('data-utility-label');
-  ok(label, 'the utility\'s Open Day carries no origin label to return to');
+  const { origin, label } = await waitForReplayAssertion(async seen => {
+    const origin = seen(await open.getAttribute('data-utility-from'));
+    ok(origin, 'the utility\'s Open Day carries no utility origin');
+    const label = seen(await open.getAttribute('data-utility-label'));
+    ok(label, 'the utility\'s Open Day carries no origin label to return to');
+    return { origin, label };
+  }, "S76");
   await open.click();
   if (TARGET === 'app') await waitForDesk(page);
   else await page.waitForTimeout(350);
@@ -2021,35 +2451,45 @@ export const S76 = async (page, ctx) => {
   // seated over it, which is the continuity this story goes on to require.
   if (ctx.target === 'app') await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
 
-  ok(await destinationOf(page) === 'day', 'the utility\'s Open Day did not reach the Day desk');
-  ok(await countOf(page, `.gf-utility[data-utility="${origin}"]`) === 1,
-    'the originating utility did not stay open over Day; that continuity is the return');
-  ok(await countOf(page, '.gf-stage-day') === 1, 'the Day desk is not standing underneath the seated utility');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'day', 'the utility\'s Open Day did not reach the Day desk');
+    ok(seen(await countOf(page, `.gf-utility[data-utility="${origin}"]`)) === 1,
+      'the originating utility did not stay open over Day; that continuity is the return');
+    ok(seen(await countOf(page, '.gf-stage-day')) === 1, 'the Day desk is not standing underneath the seated utility');
+  }, "S76");
 
   await activate(page, '[data-utility-close]');
   const back = await visible(page, '[data-day="return"]');
-  ok(((await back.textContent()) || '').trim() === `Return to ${label}`,
-    `the return control is not named for its origin: ${await back.textContent()}`);
+  await waitForReplayAssertion(async seen => {
+    ok(((seen(await back.textContent())) || '').trim() === `Return to ${label}`,
+      `the return control is not named for its origin: ${seen(await back.textContent())}`);
+  }, "S76");
   await back.click();
   if (TARGET === 'app') await waitForDesk(page);
   else await page.waitForTimeout(350);
-  ok(await countOf(page, `.gf-utility[data-utility="${origin}"]`) === 1,
-    'following the return did not reopen the utility it came from');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, `.gf-utility[data-utility="${origin}"]`)) === 1,
+      'following the return did not reopen the utility it came from');
+  }, "S76");
 };
 
 export const S77 = async (page) => {
   await goto(page, 'changes');
-  ok(await countOf(page, '[data-utility="pump"]') > 0, 'Pump settings is not reachable from Changes');
-  ok(await countOf(page, 'nav.cockpit-utilities [data-utility="pump"]') === 0,
-    'Pump settings appeared in the footer utility strip, which HV2-12 places in Changes');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-utility="pump"]')) > 0, 'Pump settings is not reachable from Changes');
+    ok(seen(await countOf(page, 'nav.cockpit-utilities [data-utility="pump"]')) === 0,
+      'Pump settings appeared in the footer utility strip, which HV2-12 places in Changes');
+  }, "S77");
   // Press the opener this story claims to preserve, and read what it seats.
   await activate(page, '[data-utility="pump"]');
-  ok(await countOf(page, '.gf-utility[data-utility="pump"]') === 1,
-    'Pump settings did not open into the reading pane');
-  const pane = await page.locator('.gf-utility[data-utility="pump"]').innerText();
-  ok(/detected/i.test(pane), 'Pump settings does not name the schedule as detected');
-  ok(/proposed schedule is (the Plan|in Changes)/i.test(pane),
-    'Pump settings does not distinguish the detected schedule from the proposed Plan');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-utility[data-utility="pump"]')) === 1,
+      'Pump settings did not open into the reading pane');
+    const pane = seen(await page.locator('.gf-utility[data-utility="pump"]').innerText());
+    ok(/detected/i.test(pane), 'Pump settings does not name the schedule as detected');
+    ok(/proposed schedule is (the Plan|in Changes)/i.test(pane),
+      'Pump settings does not distinguish the detected schedule from the proposed Plan');
+  }, "S77");
 };
 
 export const S73c = async (page) => {
@@ -2060,38 +2500,49 @@ export const S73c = async (page) => {
   // seated when the link navigates (:257 clears it only when narrow).
   await activate(page, '[data-utility="guide"]');
   await activate(page, '[data-utility-slug="reading-day"]');
-  ok(await countOf(page, '.gf-article') === 1, 'the Guide did not open the article carrying the handoff');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-article')) === 1, 'the Guide did not open the article carrying the handoff');
+  }, "S73c");
 
   const link = await visible(page, '.gf-article [data-utility-go]');
-  const destination = await link.getAttribute('data-utility-go');
-  ok(destination === 'day',
-    `the article's handoff names ${JSON.stringify(destination)}, not the Day surface it links to`);
-  ok(/Day surface/i.test(((await link.textContent()) || '').trim()),
-    `the handoff is not named for what it opens: ${await link.textContent()}`);
-  ok(/\(Day here\)/i.test(await page.locator('.gf-article').innerText()),
-    'the handoff does not say what the v1 tab name reads as on this desk');
+  const { destination } = await waitForReplayAssertion(async seen => {
+    const destination = seen(await link.getAttribute('data-utility-go'));
+    ok(destination === 'day',
+      `the article's handoff names ${JSON.stringify(destination)}, not the Day surface it links to`);
+    ok(/Day surface/i.test(((seen(await link.textContent())) || '').trim()),
+      `the handoff is not named for what it opens: ${seen(await link.textContent())}`);
+    ok(/\(Day here\)/i.test(seen(await page.locator('.gf-article').innerText())),
+      'the handoff does not say what the v1 tab name reads as on this desk');
+    return { destination };
+  }, "S73c");
 
   await link.click();
   await page.waitForTimeout(300);
-  ok(await destinationOf(page) === 'day', 'the handoff did not open the destination it named');
-  ok(await countOf(page, '.gf-utility[data-utility="guide"]') === 1,
-    'the Guide closed behind the handoff; on a desktop desk it stays seated');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await destinationOf(page)) === 'day', 'the handoff did not open the destination it named');
+    ok(seen(await countOf(page, '.gf-utility[data-utility="guide"]')) === 1,
+      'the Guide closed behind the handoff; on a desktop desk it stays seated');
+  }, "S73c");
 };
 
 export const S78 = async (page) => {
   await activate(page, '[data-utility="guide"]');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
-  ok(await countOf(page, '.gf-utility') === 0, 'Escape did not close the seated utility first');
-  const focused = await activeElement(page);
-  ok(focused && focused.data && focused.data.utility === 'guide',
-    `Escape from a utility did not restore its launcher (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.gf-utility')) === 0, 'Escape did not close the seated utility first');
+    const focused = seen(await activeElement(page));
+    ok(focused && focused.data && focused.data.utility === 'guide',
+      `Escape from a utility did not restore its launcher (got ${JSON.stringify(focused)})`);
+  }, "S78");
 
   await activate(page, '[data-action="aside"]');
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
-  ok(await countOf(page, 'form[data-form="aside"]') === 0, 'Escape did not step back out of the set-aside form');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="aside"]')) === 0, 'Escape did not step back out of the set-aside form');
+  }, "S78");
 };
 
 export const S79 = async (page) => {
@@ -2100,9 +2551,11 @@ export const S79 = async (page) => {
   await page.locator('#aside-reason').focus();
   await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
-  ok(await countOf(page, 'form[data-form="aside"]') === 1,
-    'Escape inside the field dropped the draft; a field must own the key');
-  ok(await page.inputValue('#aside-reason') === 'half-written', 'the typed reason was lost');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, 'form[data-form="aside"]')) === 1,
+      'Escape inside the field dropped the draft; a field must own the key');
+    ok(seen(await page.inputValue('#aside-reason')) === 'half-written', 'the typed reason was lost');
+  }, "S79");
 };
 
 export const S80 = async (page) => {
@@ -2118,9 +2571,11 @@ export const S80 = async (page) => {
   // What IS provable in the mock: a destination that owns a reading pane
   // focuses its head.
   await goto(page, 'explore');
-  const focused = await activeElement(page);
-  ok(focused && (focused.tag === 'H2' || /gf-title/.test(focused.className || '')),
-    `arriving at a paired destination did not focus its head (got ${JSON.stringify(focused)})`);
+  await waitForReplayAssertion(async seen => {
+    const focused = seen(await activeElement(page));
+    ok(focused && (focused.tag === 'H2' || /gf-title/.test(focused.className || '')),
+      `arriving at a paired destination did not focus its head (got ${JSON.stringify(focused)})`);
+  }, "S80");
 };
 
 export const S81 = async (page) => {
@@ -2128,33 +2583,40 @@ export const S81 = async (page) => {
   // The basal lane's supporting-night roster does (30 rows in root's capture),
   // and it is reached through the reader's own "All basal slots" row.
   await openBasalLane(page);
-  const scrollable = await page.evaluate(() => {
-    const body = document.querySelector('.gf-pane-body');
-    if (!body || body.scrollHeight <= body.clientHeight + 8) return false;
-    body.scrollTop = 40;
-    return true;
-  });
-  ok(scrollable, 'the reading pane does not overflow even on the dense slot roster');
+  await waitForReplayAssertion(async seen => {
+    const scrollable = seen(await page.evaluate(() => {
+      const body = document.querySelector('.gf-pane-body');
+      return !!body && body.scrollHeight > body.clientHeight + 8;
+    }));
+    ok(scrollable, 'the reading pane does not overflow even on the dense slot roster');
+  }, 'S81 overflow before scroll');
+  await page.evaluate(() => { document.querySelector('.gf-pane-body').scrollTop = 40; });
   await page.waitForTimeout(150);
   const nights = await page.evaluate(() => [...document.querySelectorAll('.case-occurrence')].length);
   if (nights > 1) {
     await activate(page, '.case-occurrence');
-    ok(await page.evaluate(() => document.querySelector('.gf-pane-body')?.scrollTop ?? 0) > 0,
-      'the reading pane lost its scroll while its subject was unchanged');
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await page.evaluate(() => document.querySelector('.gf-pane-body')?.scrollTop ?? 0)) > 0,
+        'the reading pane lost its scroll while its subject was unchanged');
+    }, "S81");
   }
   await goto(page, 'changes');
   await goto(page, 'explore');
-  ok(await page.evaluate(() => document.querySelector('.gf-pane-body')?.scrollTop ?? 0) === 0,
-    'the reading pane kept its scroll across a subject change');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.evaluate(() => document.querySelector('.gf-pane-body')?.scrollTop ?? 0)) === 0,
+      'the reading pane kept its scroll across a subject change');
+  }, "S81");
 };
 
 export const S82 = async (page) => {
   await goto(page, 'explore');
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-cohort-row[data-support]')].map((b) => ({
-    support: b.dataset.support, text: (b.querySelector('small')?.textContent || '').trim(),
-  })));
-  ok(rows.length > 0, 'no support-bearing rows rendered');
-  for (const row of rows) ok(row.text.length > 0, `support state "${row.support}" is conveyed without a text label`);
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-cohort-row[data-support]')].map((b) => ({
+      support: b.dataset.support, text: (b.querySelector('small')?.textContent || '').trim(),
+    }))));
+    ok(rows.length > 0, 'no support-bearing rows rendered');
+    for (const row of rows) ok(row.text.length > 0, `support state "${row.support}" is conveyed without a text label`);
+  }, "S82");
 };
 
 export const S83 = async (page) => {
@@ -2170,41 +2632,51 @@ export const S83 = async (page) => {
     await activate(page, '[data-utility="guide"]');
     await activate(page, '[data-utility-close]');
   }
-  const last = await counts();
-  ok(last.canvases === first.canvases, `charts accumulated across re-entry (${first.canvases} → ${last.canvases})`);
-  ok(last.utilities === 0, 'a utility pane survived its own close');
+  await waitForReplayAssertion(async seen => {
+    const last = seen(await counts());
+    ok(last.canvases === first.canvases, `charts accumulated across re-entry (${first.canvases} → ${last.canvases})`);
+    ok(last.utilities === 0, 'a utility pane survived its own close');
+  }, "S83");
 };
 
 export const S84 = async (page, ctx) => {
-  const before = await page.evaluate(() => document.querySelectorAll('canvas').length);
-  ok(before > 0, 'no charts were mounted to dispose');
+  await waitForReplayAssertion(async seen => {
+    const before = seen(await page.evaluate(() => document.querySelectorAll('canvas').length));
+    ok(before > 0, 'no charts were mounted to dispose');
+  }, "S84");
   const seen = ctx.consoleErrors.length;
   await page.evaluate(() => { window.dispatchEvent(new Event('pagehide')); });
   await page.waitForTimeout(300);
-  const raised = ctx.consoleErrors.slice(seen);
-  ok(raised.length === 0, `pagehide disposal raised: ${raised.join(' | ')}`);
-  const live = await page.evaluate(() => {
-    if (!globalThis.echarts) return null;
-    return [...document.querySelectorAll('canvas')]
-      .map((c) => c.parentElement)
-      .filter((el) => el && globalThis.echarts.getInstanceByDom(el)).length;
-  });
-  ok(live === null || live === 0, `pagehide left ${live} live ECharts instance(s) attached`);
+  await waitForReplayAssertion(async seen => {
+    const raised = ctx.consoleErrors.slice(seen);
+    ok(raised.length === 0, `pagehide disposal raised: ${raised.join(' | ')}`);
+    const live = seen(await page.evaluate(() => {
+      if (!globalThis.echarts) return null;
+      return [...document.querySelectorAll('canvas')]
+        .map((c) => c.parentElement)
+        .filter((el) => el && globalThis.echarts.getInstanceByDom(el)).length;
+    }));
+    ok(live === null || live === 0, `pagehide left ${live} live ECharts instance(s) attached`);
+  }, "S84");
 };
 
 export const S85 = async (page, ctx) => {
   const harness = Object.values(HARNESS).concat('.gf-review-notes');
   if (ctx.target === 'app') {
-    for (const selector of harness) {
-      ok(await countOf(page, selector) === 0, `prototype instrumentation reached production: ${selector}`);
-    }
+    await waitForReplayAssertion(async seen => {
+      for (const selector of harness) {
+        ok(seen(await countOf(page, selector)) === 0, `prototype instrumentation reached production: ${selector}`);
+      }
+    }, "S85");
     return;
   }
-  for (const selector of harness) {
-    const outside = await page.evaluate((s) => [...document.querySelectorAll(s)].filter((el) => !el.closest('.mockbar')).length, selector);
-    ok(outside === 0, `prototype control ${selector} appears outside .mockbar, in a product frame`);
-  }
-  ok(await countOf(page, '.mockbar') === 1, 'the mock bar is absent; the harness controls could not be located');
+  await waitForReplayAssertion(async seen => {
+    for (const selector of harness) {
+      const outside = seen(await page.evaluate((s) => [...document.querySelectorAll(s)].filter((el) => !el.closest('.mockbar')).length, selector));
+      ok(outside === 0, `prototype control ${selector} appears outside .mockbar, in a product frame`);
+    }
+    ok(seen(await countOf(page, '.mockbar')) === 1, 'the mock bar is absent; the harness controls could not be located');
+  }, "S85");
 };
 
 /* ------------------------------------------------- deferred: app opener only */
@@ -2234,26 +2706,29 @@ export const S86 = appOnly('HV2-01', 'Python serves /v2/ and /v2/assets/ with no
     // Everything the surface loaded came from the packaged runtime, at the two
     // paths it declares. The opener already aborts any off-origin request; this
     // reads back that nothing tried.
-    ok(ctx.unrouted.length === 0, `the built app reached off-origin: ${ctx.unrouted.join(', ')}`);
-    const shell = ctx.requests.filter((request) => request.path === '/v2/');
-    ok(shell.length > 0 && shell[0].status === 200, 'the desk was not served from /v2/');
-    ok(shell[0].headers['cache-control'] === 'no-cache',
-      `the shell must revalidate, not cache: ${shell[0].headers['cache-control']}`);
-    const assets = ctx.requests.filter((request) => request.path !== '/v2/' && !request.path.startsWith('/api/'));
-    ok(assets.length > 0, 'the desk loaded no packaged asset at all');
-    for (const asset of assets) {
-      ok(asset.path.startsWith('/v2/assets/'), `${asset.path} is served outside /v2/assets/`);
-      ok(asset.status === 200, `${asset.path} answered ${asset.status}`);
-      ok(asset.headers['cache-control'] === 'public, max-age=31536000, immutable',
-        `${asset.path} is fingerprinted but not immutable: ${asset.headers['cache-control']}`);
-    }
-    // Nothing in the served document names a CDN, which is the other half of
-    // "no CDN in production" — the packaged image itself is task 3.5's proof.
-    const sources = await page.evaluate(() => [...document.querySelectorAll('script[src], link[href]')]
-      .map((element) => element.getAttribute('src') || element.getAttribute('href')));
-    for (const source of sources) {
-      ok(!/^https?:/i.test(source), `the served shell names an external source: ${source}`);
-    }
+    const { shell, assets } = await waitForReplayAssertion(async seen => {
+      ok(ctx.unrouted.length === 0, `the built app reached off-origin: ${ctx.unrouted.join(', ')}`);
+      const shell = ctx.requests.filter((request) => request.path === '/v2/');
+      ok(shell.length > 0 && shell[0].status === 200, 'the desk was not served from /v2/');
+      ok(shell[0].headers['cache-control'] === 'no-cache',
+        `the shell must revalidate, not cache: ${shell[0].headers['cache-control']}`);
+      const assets = ctx.requests.filter((request) => request.path !== '/v2/' && !request.path.startsWith('/api/'));
+      ok(assets.length > 0, 'the desk loaded no packaged asset at all');
+      for (const asset of assets) {
+        ok(asset.path.startsWith('/v2/assets/'), `${asset.path} is served outside /v2/assets/`);
+        ok(asset.status === 200, `${asset.path} answered ${asset.status}`);
+        ok(asset.headers['cache-control'] === 'public, max-age=31536000, immutable',
+          `${asset.path} is fingerprinted but not immutable: ${asset.headers['cache-control']}`);
+      }
+      // Nothing in the served document names a CDN, which is the other half of
+      // "no CDN in production" — the packaged image itself is task 3.5's proof.
+      const sources = seen(await page.evaluate(() => [...document.querySelectorAll('script[src], link[href]')]
+        .map((element) => element.getAttribute('src') || element.getAttribute('href'))));
+      for (const source of sources) {
+        ok(!/^https?:/i.test(source), `the served shell names an external source: ${source}`);
+      }
+      return { shell, assets };
+    }, "S86");
     // The non-API route set is closed: a path the server never declared is a
     // 404, not the shell.
     const closed = await page.evaluate(async () => {
@@ -2315,12 +2790,14 @@ export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authentica
     await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.gf .pane', { timeout: 20000 });
     await settle();
-    const anonymous = since(mark);
-    ok(anonymous.length > 0, 'the v2 desk made no API read at all on Day; it cannot show an authenticated boundary');
-    ok(anonymous.every((read) => !read.authorization),
-      'a read carried an Authorization header before any token was stored');
-    ok(anonymous.every((read) => read.status === 401),
-      `the token-protected API admitted an unauthenticated v2 read: ${JSON.stringify(anonymous.map((r) => [r.path, r.status]))}`);
+    await waitForReplayAssertion(async seen => {
+      const anonymous = seen(since(mark));
+      ok(anonymous.length > 0, 'the v2 desk made no API read at all on Day; it cannot show an authenticated boundary');
+      ok(anonymous.every((read) => !read.authorization),
+        'a read carried an Authorization header before any token was stored');
+      ok(anonymous.every((read) => read.status === 401),
+        `the token-protected API admitted an unauthenticated v2 read: ${JSON.stringify(anonymous.map((r) => [r.path, r.status]))}`);
+    }, 'S87 anonymous reads');
 
     // 2. With the token stored, the desk's own client reads succeed and carry it.
     await page.evaluate((value) => localStorage.setItem('ciq_token', value), AUTH_TOKEN);
@@ -2328,32 +2805,41 @@ export const S87 = appOnly('HV2-02', 'v1 and /v2/ coexist against one authentica
     await page.goto(`${AUTH_BASE_URL}/v2/?to=day`, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.gf-stage-day', { timeout: 20000 });
     await settle();
-    const v2Reads = since(mark);
-    ok(v2Reads.length > 0, 'the v2 desk made no API read with a token stored');
-    ok(v2Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
-      `the v2 desk did not send the stored token: ${JSON.stringify(v2Reads.map((r) => [r.path, r.authorization]))}`);
-    ok(v2Reads.every((read) => read.status === 200),
-      `an authenticated v2 read was refused: ${JSON.stringify(v2Reads.map((r) => [r.path, r.status]))}`);
-    const v2Status = v2Reads.find((read) => read.path === '/api/status');
-    ok(v2Status, 'the v2 desk did not read /api/status, so there is no shared read to compare');
+    const v2Status = await waitForReplayAssertion(async seen => {
+      const v2Reads = seen(since(mark));
+      ok(v2Reads.length > 0, 'the v2 desk made no API read with a token stored');
+      ok(v2Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+        `the v2 desk did not send the stored token: ${JSON.stringify(v2Reads.map((r) => [r.path, r.authorization]))}`);
+      ok(v2Reads.every((read) => read.status === 200),
+        `an authenticated v2 read was refused: ${JSON.stringify(v2Reads.map((r) => [r.path, r.status]))}`);
+      const v2Status = v2Reads.find((read) => read.path === '/api/status');
+      ok(v2Status, 'the v2 desk did not read /api/status, so there is no shared read to compare');
+      ok(v2Status.body !== null, 'S87 the shared v2 status body has arrived');
+      return v2Status;
+    }, 'S87 authenticated v2 reads');
 
     // 3. V1 is still served on its own routes, is a different shell, and reads
     //    the same API and the same database with the same stored token.
     mark = reads.length;
     const v1 = await page.goto(`${AUTH_BASE_URL}/`, { waitUntil: 'domcontentloaded' });
-    ok(v1 && v1.ok(), `v1 is no longer served: ${v1 && v1.status()}`);
-    const v1Html = await v1.text();
-    ok(!v1Html.includes('/v2/assets/'), 'the root path served the v2 shell; this change admits no cutover');
-    ok(v1Html.includes('/assets/'), 'the root path did not serve the v1 shell');
+    await waitForReplayAssertion(async seen => {
+      ok(v1 && v1.ok(), `v1 is no longer served: ${v1 && v1.status()}`);
+      const v1Html = seen(await v1.text());
+      ok(!v1Html.includes('/v2/assets/'), 'the root path served the v2 shell; this change admits no cutover');
+      ok(v1Html.includes('/assets/'), 'the root path did not serve the v1 shell');
+    }, "S87");
     await settle();
-    const v1Reads = since(mark);
-    ok(v1Reads.length > 0, 'v1 made no API read');
-    ok(v1Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
-      `v1 did not send the same stored token: ${JSON.stringify(v1Reads.map((r) => [r.path, r.authorization]))}`);
-    const v1Status = v1Reads.find((read) => read.path === '/api/status' && read.status === 200);
-    ok(v1Status, `v1 did not read /api/status successfully: ${JSON.stringify(v1Reads.map((r) => [r.path, r.status]))}`);
-    ok(v1Status.body === v2Status.body,
-      `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
+    await waitForReplayAssertion(async seen => {
+      const v1Reads = seen(since(mark));
+      ok(v1Reads.length > 0, 'v1 made no API read');
+      ok(v1Reads.every((read) => read.authorization === `Bearer ${AUTH_TOKEN}`),
+        `v1 did not send the same stored token: ${JSON.stringify(v1Reads.map((r) => [r.path, r.authorization]))}`);
+      const v1Status = v1Reads.find((read) => read.path === '/api/status' && read.status === 200);
+      ok(v1Status, `v1 did not read /api/status successfully: ${JSON.stringify(v1Reads.map((r) => [r.path, r.status]))}`);
+      ok(v1Status.body !== null, 'S87 the shared v1 status body has arrived');
+      ok(v1Status.body === v2Status.body,
+        `the two surfaces read different databases:\n  /v2/: ${v2Status.body}\n  /   : ${v1Status.body}`);
+    }, 'S87 shared authenticated database');
   });
 export const S88 = appOnly('HV2-16', 'Set aside and Restore are durable Store writes surviving reload', async (page) => {
   await goto(page, 'changes');
@@ -2371,17 +2857,21 @@ export const S88 = appOnly('HV2-16', 'Set aside and Restore are durable Store wr
   await page.locator('[data-restore]').first().waitFor();
   await page.reload();
   await page.locator('[data-restore]').first().waitFor();
-  let read = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
-  ok(read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
-    'S88 Set aside did not survive the new page read');
+  await waitForReplayAssertion(async seen => {
+    const read = seen(await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json());
+    ok(read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
+      'S88 Set aside did not survive the new page read');
+  }, 'S88 durable Set aside');
   const restored = page.waitForResponse(response => response.request().method() === 'GET'
     && new URL(response.url()).pathname === '/api/guidance');
   await page.locator(`[data-restore="${subject}"]`).first().click();
   await restored;
   await page.reload();
-  read = await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json();
-  ok(!read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
-    'S88 Restore did not survive reload');
+  await waitForReplayAssertion(async seen => {
+    const read = seen(await (await page.request.get(`${APP_BASE_URL}/api/guidance`)).json());
+    ok(!read.candidates.find(row => row.subject === subject)?.preference?.set_aside,
+      'S88 Restore did not survive reload');
+  }, 'S88 durable Restore');
 });
 export const S89 = appOnly('HV2-20', 'Plan draft, decision, reconciliation and withdrawal persist', C2_STORIES.S89);
 export const S90 = appOnly('HV2-21', 'capacity copy is served by the Plan deliverable contract, not memorized', async (page) => {
@@ -2394,11 +2884,13 @@ export const S90 = appOnly('HV2-21', 'capacity copy is served by the Plan delive
   await activate(page, '[data-set="stage"]');
   await activate(page, '[data-set="open-plan"]');
   await page.waitForSelector('.gf-plan');
-  const acceptedItems = candidate.action.flatMap(row => (row.member_start_mins || [row.start_min])
-    .map(start_min => ({ type: PLAN_PARAM_FAMILY[row.parameter || candidate.parameter], start_min, value: row.recommended })));
-  const expected = segmentCapacity(buildDeliverable({ activeProfile: pump.profile, acceptedItems }));
-  ok((await page.locator('.gf-head .gf-sub').innerText()).includes(expected.text),
-    `S90 Plan does not render its shared owner's capacity: ${expected.text}`);
+  await waitForReplayAssertion(async seen => {
+    const acceptedItems = candidate.action.flatMap(row => (row.member_start_mins || [row.start_min])
+      .map(start_min => ({ type: PLAN_PARAM_FAMILY[row.parameter || candidate.parameter], start_min, value: row.recommended })));
+    const expected = segmentCapacity(buildDeliverable({ activeProfile: pump.profile, acceptedItems }));
+    ok((seen(await page.locator('.gf-head .gf-sub').innerText())).includes(expected.text),
+      `S90 Plan does not render its shared owner's capacity: ${expected.text}`);
+  }, "S90");
 });
 export const S91 = deferred('S91', 'HV2-22', 'readiness renders the record comparison fields; setting and Focus arms differ');
 export const S92 = deferred('S92', 'HV2-23', 'pre-ready values come from the second assessment=retained request');
@@ -2440,14 +2932,16 @@ export const S80b = appOnly('HV2-32',
   'a full-width empty destination (Changes with no change underway) focuses its own heading rather than leaving focus on the pressed navigation button',
   async (page) => {
     await goto(page, 'changes');
-    ok(await countOf(page, '.gf-desk > .gf-reading') === 0,
-      'this story needs the full-width empty state; a reading pane rendered instead');
-    ok(await countOf(page, '.gf-stage-table .gf-empty') === 1, 'the empty frame did not render');
-    const focused = await activeElement(page);
-    ok(focused && /gf-title/.test(focused.className || ''),
-      `arrival left focus on ${JSON.stringify(focused)} instead of the frame's own heading`);
-    ok(!(focused.data && focused.data.destination),
-      'focus stayed on the pressed navigation button, which is the gap S80b records');
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, '.gf-desk > .gf-reading')) === 0,
+        'this story needs the full-width empty state; a reading pane rendered instead');
+      ok(seen(await countOf(page, '.gf-stage-table .gf-empty')) === 1, 'the empty frame did not render');
+      const focused = seen(await activeElement(page));
+      ok(focused && /gf-title/.test(focused.className || ''),
+        `arrival left focus on ${JSON.stringify(focused)} instead of the frame's own heading`);
+      ok(!(focused.data && focused.data.destination),
+        'focus stayed on the pressed navigation button, which is the gap S80b records');
+    }, "S80b");
   });
 // Same class, found in run 2: the Guide's article handler names the precise
 // target `.gf-article .gf-title` (utilities.js:258) and the markup renders it,
@@ -2457,21 +2951,25 @@ export const S73b = appOnly('HV2-32',
   'opening a Guide article moves focus to the article heading the handler already targets, rather than dropping focus to the document body',
   async (page) => {
     await activate(page, '[data-utility="guide"]');
-    ok(await countOf(page, '.gf-utility[data-utility="guide"]') === 1, 'the Guide did not open');
-    ok(await countOf(page, '.gf-guide-row') > 0, 'the Guide listed no article to open');
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, '.gf-utility[data-utility="guide"]')) === 1, 'the Guide did not open');
+      ok(seen(await countOf(page, '.gf-guide-row')) > 0, 'the Guide listed no article to open');
+    }, "S73b");
     await activate(page, '.gf-guide-row');
     // An authored article's text is SERVED (/api/kb/<slug>), so the press
     // renders a loading state first and the heading arrives one read later.
     // The caller's focus target has to survive that, which is the whole point
     // of this story against the app.
     await page.waitForSelector('.gf-article .gf-title', { timeout: 15000 });
-    ok(await countOf(page, '.gf-article .gf-title') === 1, 'the article did not open');
-    const focused = await activeElement(page);
-    ok(focused && focused.tag === 'H2' && /gf-title/.test(focused.className || ''),
-      `opening an article left focus on ${JSON.stringify(focused)}, not the article heading`);
-    const heading = await page.locator('.gf-article .gf-title').innerText();
-    ok(focused.text && heading.toLowerCase().startsWith(focused.text.toLowerCase().slice(0, 20)),
-      `the focused heading ${JSON.stringify(focused.text)} is not the opened article ${JSON.stringify(heading)}`);
+    await waitForReplayAssertion(async seen => {
+      ok(seen(await countOf(page, '.gf-article .gf-title')) === 1, 'the article did not open');
+      const focused = seen(await activeElement(page));
+      ok(focused && focused.tag === 'H2' && /gf-title/.test(focused.className || ''),
+        `opening an article left focus on ${JSON.stringify(focused)}, not the article heading`);
+      const heading = seen(await page.locator('.gf-article .gf-title').innerText());
+      ok(focused.text && heading.toLowerCase().startsWith(focused.text.toLowerCase().slice(0, 20)),
+        `the focused heading ${JSON.stringify(focused.text)} is not the opened article ${JSON.stringify(heading)}`);
+    }, "S73b");
   });
 // A durable Trial finish that fails keeps the form, its written conclusion and
 // a Retry, and the retry records the ending. The prototype cannot show it:
@@ -2516,12 +3014,14 @@ const printSanction = (id) => {
 // RETIRED:Connor Griffin:2026-09-01
 export const R1 = async (page) => {
   printSanction('R1');
-  ok(await countOf(page, '[data-theme], .theme-toggle, [aria-label*="theme" i]') === 0,
-    'R1 replayed-fail: a theme control is present again');
-  ok((await page.evaluate(() => Object.keys(localStorage).filter((k) => /theme/i.test(k)))).length === 0,
-    'R1 replayed-fail: theme storage is present again');
-  ok(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--wk-canvas').trim()),
-    'R1 premise failed: the dark role ladder no longer resolves — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-theme], .theme-toggle, [aria-label*="theme" i]')) === 0,
+      'R1 replayed-fail: a theme control is present again');
+    ok((seen(await page.evaluate(() => Object.keys(localStorage).filter((k) => /theme/i.test(k))))).length === 0,
+      'R1 replayed-fail: theme storage is present again');
+    ok(seen(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--wk-canvas').trim())),
+      'R1 premise failed: the dark role ladder no longer resolves — re-settle, not a fail');
+  }, "R1");
 };
 
 // RETIRED:Connor Griffin:2026-08-18
@@ -2532,12 +3032,14 @@ export const R2 = async (page) => {
   // reporting a dead premise from the initial Overview, where the in-place case
   // successor had simply not been opened yet.
   await openComparisonCase(page);
-  ok(await countOf(page, '#occurrenceModal, .occurrence-modal') === 0,
-    'R2 replayed-fail: the occurrence modal is present again');
-  ok(!/occurrenceModal/.test(await page.evaluate(() => location.hash)),
-    'R2 replayed-fail: the occurrence hash route is present again');
-  ok(await countOf(page, '.gf-member-row[data-occ]') > 0,
-    'R2 premise failed: the in-place case successor is absent — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '#occurrenceModal, .occurrence-modal')) === 0,
+      'R2 replayed-fail: the occurrence modal is present again');
+    ok(!/occurrenceModal/.test(seen(await page.evaluate(() => location.hash))),
+      'R2 replayed-fail: the occurrence hash route is present again');
+    ok(seen(await countOf(page, '.gf-member-row[data-occ]')) > 0,
+      'R2 premise failed: the in-place case successor is absent — re-settle, not a fail');
+  }, "R2");
 };
 
 // RETIRED:Connor Griffin:2026-08-25
@@ -2548,9 +3050,11 @@ export const R3 = async (page) => {
   const windowOf = () => page.evaluate(() => document.querySelector('[data-window][aria-pressed="true"]')?.dataset.window ?? null);
   const before = await windowOf();
   await activate(page, '.gf-cohort-row[data-cohort]');
-  ok(await windowOf() === before, 'R3 replayed-fail: a drill rewrote the clock window');
-  ok(await countOf(page, '.gf-member-row[data-occ]') > 0,
-    'R3 premise failed: the drilled findings are no longer reachable — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await windowOf()) === before, 'R3 replayed-fail: a drill rewrote the clock window');
+    ok(seen(await countOf(page, '.gf-member-row[data-occ]')) > 0,
+      'R3 premise failed: the drilled findings are no longer reachable — re-settle, not a fail');
+  }, "R3");
 };
 
 // RETIRED:Connor Griffin:2026-08-19
@@ -2558,14 +3062,19 @@ export const R4 = async (page) => {
   printSanction('R4');
   if (TARGET === 'app') return C4_RETIREMENTS.R4(page);
   await goto(page, 'explore');
-  const windowOf = () => page.evaluate(() => document.querySelector('[data-window][aria-pressed="true"]')?.dataset.window ?? null);
-  const before = await windowOf();
-  const rows = await page.evaluate(() => [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ));
-  ok(rows.length > 1, 'R4 needs more than one member to select');
+  const { windowOf, before, rows } = await waitForReplayAssertion(async seen => {
+    const windowOf = () => page.evaluate(() => document.querySelector('[data-window][aria-pressed="true"]')?.dataset.window ?? null);
+    const before = seen(await windowOf());
+    const rows = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-member-row[data-occ]')].map((b) => b.dataset.occ)));
+    ok(rows.length > 1, 'R4 needs more than one member to select');
+    return { windowOf, before, rows };
+  }, "R4");
   await activate(page, `.gf-member-row[data-occ="${rows[1]}"]`);
-  ok(await windowOf() === before, 'R4 replayed-fail: occurrence selection rewrote the clock window');
-  ok(await countOf(page, '[data-window]') > 0,
-    'R4 premise failed: the window is no longer independently settable — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await windowOf()) === before, 'R4 replayed-fail: occurrence selection rewrote the clock window');
+    ok(seen(await countOf(page, '[data-window]')) > 0,
+      'R4 premise failed: the window is no longer independently settable — re-settle, not a fail');
+  }, "R4");
 };
 
 // RETIRED:Connor Griffin:2026-08-23
@@ -2575,17 +3084,23 @@ export const R5 = async (page) => {
   // Corrected: the vertical roster is the slot lane's supporting-night list,
   // reached through Explore's "All basal slots" row.
   await openBasalLane(page);
-  const nights = await countOf(page, '.case-occurrence');
-  ok(nights > 1, 'R5 needs a roster of more than one night to step');
+  await waitForReplayAssertion(async seen => {
+    const nights = seen(await countOf(page, '.case-occurrence'));
+    ok(nights > 1, 'R5 needs a roster of more than one night to step');
+  }, "R5");
   const held = () => page.evaluate(() => document.querySelector('.case-occurrence[aria-pressed="true"]')?.textContent?.trim() ?? null);
   await (await visible(page, '.case-occurrence')).focus();
   const before = await held();
   await page.keyboard.press('ArrowLeft');
   await page.waitForTimeout(180);
-  ok(await held() === before, 'R5 replayed-fail: the old horizontal roster key model is back');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) === before, 'R5 replayed-fail: the old horizontal roster key model is back');
+  }, "R5");
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(180);
-  ok(await held() !== before, 'R5 premise failed: the roster no longer steps vertically — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await held()) !== before, 'R5 premise failed: the roster no longer steps vertically — re-settle, not a fail');
+  }, "R5");
 };
 
 // RETIRED:Connor Griffin:2026-08-23
@@ -2593,15 +3108,19 @@ export const R6 = async (page) => {
   printSanction('R6');
   await goto(page, 'explore');
   const seg = await visible(page, '.seg[role="group"]');
-  ok(await seg.locator('button').count() > 0, 'R6 premise failed: the segmented control has no Tab stops — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await seg.locator('button').count()) > 0, 'R6 premise failed: the segmented control has no Tab stops — re-settle, not a fail');
+  }, "R6");
   const first = seg.locator('button').first();
   await first.focus();
   await page.waitForFunction((button) => document.activeElement === button,
     await first.elementHandle(), { timeout: 10000 });
   await page.keyboard.press('Home');
   await page.waitForTimeout(150);
-  ok(await first.evaluate((button) => document.activeElement === button),
-    'R6 replayed-fail: installSegKeys-style Home/End navigation is back');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await first.evaluate((button) => document.activeElement === button)),
+      'R6 replayed-fail: installSegKeys-style Home/End navigation is back');
+  }, "R6");
 };
 
 // RETIRED:Connor Griffin:2026-08-27
@@ -2609,18 +3128,20 @@ export const R7 = async (page) => {
   printSanction('R7');
   if (TARGET === 'app') return C4_RETIREMENTS.R7(page);
   await goto(page, 'explore');
-  const series = await page.evaluate(() => {
-    const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
-    if (!el || !globalThis.echarts) return null;
-    const chart = globalThis.echarts.getInstanceByDom(el);
-    return chart ? (chart.getOption().series || []).map((s) => String(s.id || s.name || '')) : null;
-  });
-  if (series) {
-    ok(!series.some((n) => /occurrence[- ]?dot/i.test(n)),
-      `R7 replayed-fail: an occurrence-dot series is drawn again: ${JSON.stringify(series)}`);
-  }
-  ok(await countOf(page, '.gf-member-row[data-occ], .gf-roster-row[data-row]') > 0,
-    'R7 premise failed: occurrences are no longer reachable from the findings panel — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    const series = seen(await page.evaluate(() => {
+      const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
+      if (!el || !globalThis.echarts) return null;
+      const chart = globalThis.echarts.getInstanceByDom(el);
+      return chart ? (chart.getOption().series || []).map((s) => String(s.id || s.name || '')) : null;
+    }));
+    if (series) {
+      ok(!series.some((n) => /occurrence[- ]?dot/i.test(n)),
+        `R7 replayed-fail: an occurrence-dot series is drawn again: ${JSON.stringify(series)}`);
+    }
+    ok(seen(await countOf(page, '.gf-member-row[data-occ], .gf-roster-row[data-row]')) > 0,
+      'R7 premise failed: occurrences are no longer reachable from the findings panel — re-settle, not a fail');
+  }, "R7");
 };
 
 // RETIRED:Connor Griffin:2026-08-27
@@ -2628,18 +3149,20 @@ export const R8 = async (page) => {
   printSanction('R8');
   if (TARGET === 'app') return C4_RETIREMENTS.R8(page);
   await goto(page, 'explore');
-  const series = await page.evaluate(() => {
-    const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
-    if (!el || !globalThis.echarts) return null;
-    const chart = globalThis.echarts.getInstanceByDom(el);
-    return chart ? (chart.getOption().series || []).map((s) => String(s.id || s.name || '')) : null;
-  });
-  if (series) {
-    ok(!series.some((n) => /meal[- ]?(glyph|marker)/i.test(n)),
-      `R8 replayed-fail: a meal-marker series is drawn again: ${JSON.stringify(series)}`);
-  }
-  ok(await countOf(page, '.ec-surface[data-chart="comparison"]') > 0,
-    'R8 premise failed: meal evidence is no longer available through the comparison — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    const series = seen(await page.evaluate(() => {
+      const el = document.querySelector('.gf-fig2 .gf-chart, [data-chart="day"] .gf-chart');
+      if (!el || !globalThis.echarts) return null;
+      const chart = globalThis.echarts.getInstanceByDom(el);
+      return chart ? (chart.getOption().series || []).map((s) => String(s.id || s.name || '')) : null;
+    }));
+    if (series) {
+      ok(!series.some((n) => /meal[- ]?(glyph|marker)/i.test(n)),
+        `R8 replayed-fail: a meal-marker series is drawn again: ${JSON.stringify(series)}`);
+    }
+    ok(seen(await countOf(page, '.ec-surface[data-chart="comparison"]')) > 0,
+      'R8 premise failed: meal evidence is no longer available through the comparison — re-settle, not a fail');
+  }, "R8");
 };
 
 // RETIRED:Connor Griffin:2026-08-19
@@ -2647,10 +3170,12 @@ export const R9 = async (page) => {
   printSanction('R9');
   if (TARGET === 'app') return C4_RETIREMENTS.R9(page);
   await goto(page, 'explore');
-  ok(await countOf(page, '.occurrence-level, .drill-level, .counter-example-subgroup') === 0,
-    'R9 replayed-fail: a separate drill level or nested subgroup is back');
-  ok(await countOf(page, '.gf-desk > .gf-reading') > 0,
-    'R9 premise failed: there is no standing screen for a detail to mutate — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.occurrence-level, .drill-level, .counter-example-subgroup')) === 0,
+      'R9 replayed-fail: a separate drill level or nested subgroup is back');
+    ok(seen(await countOf(page, '.gf-desk > .gf-reading')) > 0,
+      'R9 premise failed: there is no standing screen for a detail to mutate — re-settle, not a fail');
+  }, "R9");
 };
 
 // RETIRED:Connor Griffin:2026-08-19
@@ -2660,10 +3185,12 @@ export const R10 = async (page) => {
   // Corrected: reach the queue/case successor first. The premise is about the
   // successor route existing, not about whatever the initial Overview showed.
   await goto(page, 'explore');
-  ok(await countOf(page, '.ic-lane, [data-lane="ic"]') === 0,
-    'R10 replayed-fail: the standalone I:C lane is back');
-  ok(await countOf(page, '.gf-roster-row[data-row], .gf-cohort-row[data-cohort]') > 0,
-    'R10 premise failed: the queue/case successor route is absent — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.ic-lane, [data-lane="ic"]')) === 0,
+      'R10 replayed-fail: the standalone I:C lane is back');
+    ok(seen(await countOf(page, '.gf-roster-row[data-row], .gf-cohort-row[data-cohort]')) > 0,
+      'R10 premise failed: the queue/case successor route is absent — re-settle, not a fail');
+  }, "R10");
 };
 
 // RETIRED:Connor Griffin:2026-08-19
@@ -2671,11 +3198,13 @@ export const R11 = async (page) => {
   printSanction('R11');
   if (TARGET === 'app') return C4_RETIREMENTS.R11(page);
   await goto(page, 'explore');
-  const chevrons = await page.evaluate(() => [...document.querySelectorAll('.gf-row')]
-    .filter((el) => /[›»❯]/.test(el.textContent || '')).length);
-  ok(chevrons === 0, 'R11 replayed-fail: redundant evidence-row chevrons are back');
-  ok(await countOf(page, '.gf-row[aria-pressed]') > 0,
-    'R11 premise failed: evidence rows are no longer activatable — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    const chevrons = seen(await page.evaluate(() => [...document.querySelectorAll('.gf-row')]
+      .filter((el) => /[›»❯]/.test(el.textContent || '')).length));
+    ok(chevrons === 0, 'R11 replayed-fail: redundant evidence-row chevrons are back');
+    ok(seen(await countOf(page, '.gf-row[aria-pressed]')) > 0,
+      'R11 premise failed: evidence rows are no longer activatable — re-settle, not a fail');
+  }, "R11");
 };
 
 // RETIRED:Connor Griffin:2026-08-19
@@ -2683,10 +3212,12 @@ export const R12 = async (page) => {
   printSanction('R12');
   if (TARGET === 'app') return C4_RETIREMENTS.R12(page);
   await goto(page, 'explore');
-  ok(await countOf(page, '.lens-inspector, [data-lens]') === 0,
-    'R12 replayed-fail: the standalone lens inspector is back');
-  ok(await countOf(page, '.gf-desk > .gf-reading') > 0 && await countOf(page, '[data-action="day"]') > 0,
-    'R12 premise failed: the shared inspector or the Day route is absent — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.lens-inspector, [data-lens]')) === 0,
+      'R12 replayed-fail: the standalone lens inspector is back');
+    ok(seen(await countOf(page, '.gf-desk > .gf-reading')) > 0 && seen(await countOf(page, '[data-action="day"]')) > 0,
+      'R12 premise failed: the shared inspector or the Day route is absent — re-settle, not a fail');
+  }, "R12");
 };
 
 // RETIRED:Connor Griffin:2026-08-25
@@ -2694,45 +3225,55 @@ export const R13 = async (page) => {
   printSanction('R13');
   if (TARGET === 'app') return C4_RETIREMENTS.R13(page);
   await goto(page, 'explore');
-  ok(await countOf(page, '[data-filter="event-charts"], .event-charts-root, [data-control="by-event"]') === 0,
-    'R13 replayed-fail: the global Event-charts filter or By event control is back');
-  ok(await countOf(page, '.ec-surface[data-chart="comparison"]') > 0,
-    'R13 premise failed: comparison evidence is not reachable through the case-file tile — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-filter="event-charts"], .event-charts-root, [data-control="by-event"]')) === 0,
+      'R13 replayed-fail: the global Event-charts filter or By event control is back');
+    ok(seen(await countOf(page, '.ec-surface[data-chart="comparison"]')) > 0,
+      'R13 premise failed: comparison evidence is not reachable through the case-file tile — re-settle, not a fail');
+  }, "R13");
 };
 
 // RETIRED:ADR 215 amendment:2026-08-26
 export const R14 = async (page) => {
   printSanction('R14');
-  ok(await countOf(page, '[data-seat-index], .dock-seat') === 0,
-    'R14 replayed-fail: fixed dock seat mechanics are back');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-seat-index], .dock-seat')) === 0,
+      'R14 replayed-fail: fixed dock seat mechanics are back');
+  }, "R14");
 };
 
 // RETIRED:ADR 215 amendment:2026-08-26
 export const R15 = async (page) => {
   printSanction('R15');
   if (TARGET === 'app') return C4_RETIREMENTS.R15(page);
-  ok(await countOf(page, '[data-dock-mode], .dock-layout-toggle, .duplicate-tile') === 0,
-    'R15 replayed-fail: the old mode/layout/duplicate-tile mechanics are back');
-  ok(await countOf(page, '[data-destination="explore"]') === 1,
-    'R15 historical premise failed: the ADR 348 Explore destination is gone');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '[data-dock-mode], .dock-layout-toggle, .duplicate-tile')) === 0,
+      'R15 replayed-fail: the old mode/layout/duplicate-tile mechanics are back');
+    ok(seen(await countOf(page, '[data-destination="explore"]')) === 1,
+      'R15 historical premise failed: the ADR 348 Explore destination is gone');
+  }, "R15");
 };
 
 // RETIRED:Connor Griffin:2026-08-26
 export const R16 = async (page) => {
   printSanction('R16');
-  ok(await countOf(page, '.provenance-chip, [data-provenance-chip]') === 0,
-    'R16 replayed-fail: the duplicate provenance word chip is back');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await countOf(page, '.provenance-chip, [data-provenance-chip]')) === 0,
+      'R16 replayed-fail: the duplicate provenance word chip is back');
+  }, "R16");
 };
 
 // RETIRED:ADR 340:2026-09-04
 export const R17 = async (page) => {
   printSanction('R17');
   if (TARGET === 'app') return C4_RETIREMENTS.R17(page);
-  const keep = await page.evaluate(() => [...document.querySelectorAll('button')]
-    .filter((b) => (b.textContent || '').trim() === 'Keep').length);
-  ok(keep === 0, 'R17 replayed-fail: the session-only Trial Keep action is back');
-  ok(/Conclusion|Revert/i.test(await deskText(page)),
-    'R17 premise failed: neither Revert-to-Plan nor the durable conclusion is present — re-settle, not a fail');
+  await waitForReplayAssertion(async seen => {
+    const keep = seen(await page.evaluate(() => [...document.querySelectorAll('button')]
+      .filter((b) => (b.textContent || '').trim() === 'Keep').length));
+    ok(keep === 0, 'R17 replayed-fail: the session-only Trial Keep action is back');
+    ok(/Conclusion|Revert/i.test(seen(await deskText(page))),
+      'R17 premise failed: neither Revert-to-Plan nor the durable conclusion is present — re-settle, not a fail');
+  }, "R17");
 };
 
 export const R18 = appOnly('HV2-31', 'historical input absent while current evidence and retained records remain', historicalAbsence);

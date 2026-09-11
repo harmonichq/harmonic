@@ -6,6 +6,7 @@
 // after the fixture's server-owned support facts were computed, proving the
 // app leg derives support from the occurrences themselves rather than echoing
 // a stale capture stamp.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { access, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -458,13 +459,17 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
   const chart = page.locator(
     `#tile-focal .evidence-tile[data-chart-id="${findingId}"] #ec-chart`,
   );
-  ok(await chart.isVisible(),
-    'the successor comparison tile is not visible');
-  ok(await chart.getAttribute('tabindex') === '0',
-    'the spotlight comparison chart is not keyboard focusable');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await chart.isVisible()),
+      'the successor comparison tile is not visible');
+    ok(seen(await chart.getAttribute('tabindex')) === '0',
+      'the spotlight comparison chart is not keyboard focusable');
+  }, 'S100 / Event S8 chart');
   await chart.focus();
-  ok(await chart.evaluate((element) => document.activeElement === element),
-    'the spotlight comparison chart did not take keyboard focus');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await chart.evaluate((element) => document.activeElement === element)),
+      'the spotlight comparison chart did not take keyboard focus');
+  }, 'S100 / Event S8 focus');
 
   const caseFile = page.__comparisonServedByFinding.get(findingId);
   const cursorMinute = 15;
@@ -481,29 +486,31 @@ export const S8 = async (open, browser) => use(open, browser, {}, async (page) =
   for (let step = 0; step < 3; step += 1) {
     await chart.press('ArrowRight');
   }
-  const cursorLabel = '+15 min'; // #389 HV2-32 / amended Event S8
-  const readout = page.locator('#canvas-head[data-full] #canvas-fullhead #ec-readout');
-  ok(await readout.isVisible(), 'the keyboard cursor did not reveal its on-screen readout');
-  const shown = await readout.evaluate((element) => ({
-    time: element.querySelector('.rd-time')?.textContent ?? null,
-    cohorts: [...element.querySelectorAll('.rd-pair')].map((pair) => ({
-      name: pair.querySelector('.k')?.textContent ?? null,
-      value: pair.querySelector('.v')?.textContent ?? null,
-    })),
-  }));
-  ok(shown.time === cursorLabel,
-    `the keyboard cursor did not move three five-minute points: ${shown.time}`);
-  ok(JSON.stringify(shown.cohorts) === JSON.stringify(expected.map((row) => ({
-    name: row.name, value: row.readout,
-  }))), `the on-screen cursor readout diverged from served cohort evidence: ${JSON.stringify(shown.cohorts)}`);
-  const expectedLabel = `${caseFile.finding.title} response comparison. ${cursorLabel}. `
-    + `${expected.map((row) => `${row.name} ${row.label}`).join('. ')}.`;
-  const inspectedLabel = await chart.getAttribute('aria-label');
-  ok(inspectedLabel !== restingLabel && inspectedLabel === expectedLabel,
-    `the accessible cursor label diverged from served cohort evidence: ${inspectedLabel}`);
-  ok(await page.locator('#ec-chart').evaluateAll((charts) => charts.length > 0
-    && charts.every((element) => Boolean(element.closest('.evidence-tile')))),
-  'the retired global comparison canvas became user-reachable again outside a tile');
+  await waitForReplayAssertion(async seen => {
+    const cursorLabel = '+15 min'; // #389 HV2-32 / amended Event S8
+    const readout = page.locator('#canvas-head[data-full] #canvas-fullhead #ec-readout');
+    ok(seen(await readout.isVisible()), 'the keyboard cursor did not reveal its on-screen readout');
+    const shown = seen(await readout.evaluate((element) => ({
+      time: element.querySelector('.rd-time')?.textContent ?? null,
+      cohorts: [...element.querySelectorAll('.rd-pair')].map((pair) => ({
+        name: pair.querySelector('.k')?.textContent ?? null,
+        value: pair.querySelector('.v')?.textContent ?? null,
+      })),
+    })));
+    ok(shown.time === cursorLabel,
+      `the keyboard cursor did not move three five-minute points: ${shown.time}`);
+    ok(JSON.stringify(shown.cohorts) === JSON.stringify(expected.map((row) => ({
+      name: row.name, value: row.readout,
+    }))), `the on-screen cursor readout diverged from served cohort evidence: ${JSON.stringify(shown.cohorts)}`);
+    const expectedLabel = `${caseFile.finding.title} response comparison. ${cursorLabel}. `
+      + `${expected.map((row) => `${row.name} ${row.label}`).join('. ')}.`;
+    const inspectedLabel = seen(await chart.getAttribute('aria-label'));
+    ok(inspectedLabel !== restingLabel && inspectedLabel === expectedLabel,
+      `the accessible cursor label diverged from served cohort evidence: ${inspectedLabel}`);
+    ok(seen(await page.locator('#ec-chart').evaluateAll((charts) => charts.length > 0
+      && charts.every((element) => Boolean(element.closest('.evidence-tile'))))),
+    'the retired global comparison canvas became user-reachable again outside a tile');
+  }, 'S100 / Event S8 cursor readout and accessible label');
   process.stdout.write(`UNRETIRED S8 — ${SPOTLIGHT_CURSOR_SANCTION}\n`);
 });
 

@@ -78,6 +78,7 @@ import {
 } from './diagnose-workstation-behavior.replay.mjs';
 import { projectFindings } from '../mockups/findings-projection.mirror.mjs';
 import { populateFindingsProjectionInput } from './browser-fixture-population.js';
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 
 const require = createRequire(import.meta.url);
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -130,11 +131,13 @@ after(() => runner.close());
 // this is the same wait, kept local rather than widening that file's surface.
 const settle = (page, ms = 350) => page.waitForTimeout(ms);
 
-async function touchTap(page, locator) {
-  await locator.scrollIntoViewIfNeeded();
-  const box = await locator.boundingBox();
-  assert.ok(box, 'touch target is rendered');
-  await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+async function touchTap(locator) {
+  await waitForReplayAssertion(async seen => {
+    assert.ok(seen(await locator.boundingBox()), 'touch target is rendered');
+  }, `touch target ${locator}`);
+  // Locator.tap re-resolves a target replaced while scrolling or stabilizing.
+  // Dispatch once, outside the observation retry, with native touch semantics.
+  await locator.tap({ timeout: 30000 });
 }
 
 async function shot(page, family, state_, viewport) {
@@ -598,54 +601,70 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
   });
   try {
     await settle(page, 450);
-    await touchTap(page, page.getByRole('button', { name: '24 h', exact: true }));
+    await touchTap(page.getByRole('button', { name: '24 h', exact: true }));
     await page.waitForFunction(() => document.querySelectorAll(
       '#level .mini[data-preview-kind] canvas',
     ).length === 5);
 
     await touchScroll(page, { x: 180, y: 700 });
     await page.locator('#chart').scrollIntoViewIfNeeded();
-    const chart = await page.locator('#chart').boundingBox();
-    assert.ok(chart && chart.width > 260 && chart.height >= 150,
-      `the overview is a usable touch surface: ${JSON.stringify(chart)}`);
+    const chart = await waitForReplayAssertion(async seen => {
+      const box = seen(await page.locator('#chart').boundingBox());
+      assert.ok(box && box.width > 260 && box.height >= 150,
+        `the overview is a usable touch surface: ${JSON.stringify(box)}`);
+      return box;
+    }, '#341 touch overview geometry');
     await touchDrag(page,
       { x: chart.x + chart.width * .28, y: chart.y + chart.height * .45 },
       { x: chart.x + chart.width * .72, y: chart.y + chart.height * .45 },
       { steps: 8 });
     await settle(page);
-    const drawnWindow = (await page.locator('#seg-window [data-follow]').innerText())
-      .replace('×', '').trim();
-    assert.match(drawnWindow, /^Window \d\d:\d\d–\d\d:\d\d$/,
-      'the touch drag commits the shown time range');
+    const drawnWindow = await waitForReplayAssertion(async seen => {
+      const value = seen((await page.locator('#seg-window [data-follow]').innerText())
+        .replace('×', '').trim());
+      assert.match(value, /^Window \d\d:\d\d–\d\d:\d\d$/,
+        'the touch drag commits the shown time range');
+      return value;
+    }, '#341 touch drag window');
     await page.waitForFunction(() => {
       const previews = [...document.querySelectorAll('#level .qrow.priced > .mini')];
       return previews.length > 0 && previews.every((preview) => preview.querySelector('canvas'));
     });
 
-    await touchTap(page, page.getByRole('button', { name: 'All charts', exact: true }));
+    await touchTap(page.getByRole('button', { name: 'All charts', exact: true }));
     await page.locator('#tile-field[data-explorer]').waitFor();
-    await touchTap(page, page.getByRole('button', { name: 'Close', exact: true }));
-    assert.equal(await page.locator('#tile-field[data-explorer]').count(), 0,
-      'touch dismisses All charts');
-    assert.equal((await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim(),
-      drawnWindow, 'All charts dismissal preserves the drawn window');
+    await touchTap(page.getByRole('button', { name: 'Close', exact: true }));
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#tile-field[data-explorer]').count()), 0,
+        'touch dismisses All charts');
+      assert.equal(seen((await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim()),
+        drawnWindow, 'All charts dismissal preserves the drawn window');
+    }, '#341 touch All charts dismissal');
 
     await settle(page, 450);
     const rows = page.locator('#level .qrow.priced');
-    assert.ok(await rows.count() > 1, 'the touch path has a lower-ranked finding');
-    await touchTap(page, rows.nth(1));
-    await page.waitForFunction(() => document.querySelector('#crumb-trail button')?.textContent
-      .includes('Findings'));
-    assert.ok((await page.locator('#crumb-trail').innerText()).includes('Findings'),
-      'touch opens the lower-ranked finding immediately');
+    await waitForReplayAssertion(async seen => {
+      assert.ok(seen(await rows.count()) > 1, 'the touch path has a lower-ranked finding');
+    }, '#341 touch lower-ranked finding');
+    await touchTap(rows.nth(1));
+    await waitForReplayAssertion(async seen => {
+      assert.ok((seen(await page.locator('#crumb-trail button').first().innerText())).includes('Findings'),
+        'the first breadcrumb button returns to Findings');
+      assert.ok((seen(await page.locator('#crumb-trail').innerText())).includes('Findings'),
+        'touch opens the lower-ranked finding immediately');
+    }, '#341 touch finding breadcrumb');
     await settle(page);
-    await touchTap(page, page.locator('#crumb-trail button', { hasText: 'Findings' }));
+    await touchTap(page.locator('#crumb-trail button', { hasText: 'Findings' }));
     const first = page.locator('#level .qrow.priced').first();
-    assert.ok(await first.evaluate((row) => {
-      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
-      const title = row.querySelector('.lab').getBoundingClientRect();
-      return title.top >= viewport.top && title.bottom <= viewport.bottom;
-    }), 'touch return puts rank one back in view');
+    await waitForReplayAssertion(async seen => {
+      const geometry = seen(await first.evaluate((row) => {
+        const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+        const title = row.querySelector('.lab').getBoundingClientRect();
+        return { top: title.top, bottom: title.bottom, viewportTop: viewport.top, viewportBottom: viewport.bottom };
+      }));
+      assert.ok(geometry.top >= geometry.viewportTop && geometry.bottom <= geometry.viewportBottom,
+        'touch return puts rank one back in view');
+    }, '#341 touch return rank one');
 
     const watching = page.locator('#watch-dock');
     for (let step = 0; step < 12 && !await watching.evaluate((node) => {
@@ -655,16 +674,18 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
     }); step += 1) {
       await touchScroll(page, { x: 180, y: 700 });
     }
-    const reached = await watching.evaluate((node) => {
-      const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
-      const box = node.getBoundingClientRect();
-      return { top: box.top, bottom: box.bottom, viewportTop: viewport.top,
-        viewportBottom: viewport.bottom,
-        mainScroll: document.querySelector('.cockpit-stage > .main-content').scrollTop };
-    });
-    assert.ok(reached.mainScroll > 0 && reached.top >= reached.viewportTop - 1
-      && reached.bottom <= reached.viewportBottom + 1,
-    `touch scrolling reaches complete Watching content: ${JSON.stringify(reached)}`);
+    await waitForReplayAssertion(async seen => {
+      const reached = seen(await watching.evaluate((node) => {
+        const viewport = document.querySelector('.cockpit-stage > .main-content').getBoundingClientRect();
+        const box = node.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom, viewportTop: viewport.top,
+          viewportBottom: viewport.bottom,
+          mainScroll: document.querySelector('.cockpit-stage > .main-content').scrollTop };
+      }));
+      assert.ok(reached.mainScroll > 0 && reached.top >= reached.viewportTop - 1
+        && reached.bottom <= reached.viewportBottom + 1,
+      `touch scrolling reaches complete Watching content: ${JSON.stringify(reached)}`);
+    }, '#341 touch Watching content');
   } finally {
     await page.close();
   }

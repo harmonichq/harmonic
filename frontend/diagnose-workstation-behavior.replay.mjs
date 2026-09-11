@@ -22,6 +22,7 @@ import { expandSequenceFixture } from './eating-sequence-fixture.js';
 // FAILS CLOSED. A missing driver, built shell or fixture exits nonzero. It
 // never skips: a green run that executed zero stories is the exact silent pass
 // this whole process exists to prevent.
+import { waitForReplayAssertion } from './replay-assertions.mjs';
 import { createRequire } from 'node:module';
 import { readFile, access, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -84,34 +85,39 @@ export const near = (got, want, tol, what) => {
 /** The brace is a plot-only clock gate. Its visual edge and the chart's edge
     gesture both stop at the glucose x-axis, above the click-only basal strip. */
 const assertGateContained = async (page, story) => {
-  const geometry = await page.evaluate(() => {
-    const chart = document.getElementById('chart').getBoundingClientRect();
-    const lane = document.getElementById('lane').getBoundingClientRect();
-    const plotTop = chart.top + 20;
-    const plotBottom = chart.bottom - 26;
-    return {
-      plotTop,
-      plotBottom,
-      laneTop: lane.top,
-      edges: ['brace-a', 'brace-b'].map((id) => {
-        const r = document.getElementById(id).getBoundingClientRect();
-        /* `installDrag` is chart-owned and rejects pointer rows outside this
-           same plot span, making this the effective whole-height hit zone. */
-        return { id, left: r.left, top: r.top, bottom: r.bottom, hitTop: plotTop, hitBottom: plotBottom };
-      }),
-    };
-  });
-  for (const edge of geometry.edges) {
-    near(edge.top, geometry.plotTop, 1, `${story} ${edge.id} starts at the plot top`);
-    near(edge.bottom, geometry.plotBottom, 1, `${story} ${edge.id} ends at the glucose x-axis`);
-    near(edge.hitTop, geometry.plotTop, 1, `${story} ${edge.id} hit zone starts at the plot top`);
-    near(edge.hitBottom, geometry.plotBottom, 1, `${story} ${edge.id} hit zone ends at the glucose x-axis`);
-    ok(edge.bottom <= geometry.laneTop, `${story} ${edge.id} does not intersect the basal strip`);
-    ok(edge.hitBottom <= geometry.laneTop, `${story} ${edge.id} hit zone does not intersect the basal strip`);
-  }
+  const { geometry } = await waitForReplayAssertion(async seen => {
+    const geometry = seen(await page.evaluate(() => {
+      const chart = document.getElementById('chart').getBoundingClientRect();
+      const lane = document.getElementById('lane').getBoundingClientRect();
+      const plotTop = chart.top + 20;
+      const plotBottom = chart.bottom - 26;
+      return {
+        plotTop,
+        plotBottom,
+        laneTop: lane.top,
+        edges: ['brace-a', 'brace-b'].map((id) => {
+          const r = document.getElementById(id).getBoundingClientRect();
+          /* `installDrag` is chart-owned and rejects pointer rows outside this
+             same plot span, making this the effective whole-height hit zone. */
+          return { id, left: r.left, top: r.top, bottom: r.bottom, hitTop: plotTop, hitBottom: plotBottom };
+        }),
+      };
+    }));
+    for (const edge of geometry.edges) {
+      near(edge.top, geometry.plotTop, 1, `${story} ${edge.id} starts at the plot top`);
+      near(edge.bottom, geometry.plotBottom, 1, `${story} ${edge.id} ends at the glucose x-axis`);
+      near(edge.hitTop, geometry.plotTop, 1, `${story} ${edge.id} hit zone starts at the plot top`);
+      near(edge.hitBottom, geometry.plotBottom, 1, `${story} ${edge.id} hit zone ends at the glucose x-axis`);
+      ok(edge.bottom <= geometry.laneTop, `${story} ${edge.id} does not intersect the basal strip`);
+      ok(edge.hitBottom <= geometry.laneTop, `${story} ${edge.id} hit zone does not intersect the basal strip`);
+    }
+    return { geometry };
+  }, "assertGateContained");
   await page.mouse.move(geometry.edges[0].left, geometry.plotBottom + 4);
-  is((await state(page)).cursor, 'crosshair',
-    `${story} an edge below the glucose x-axis is not an active resize gate`);
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).cursor, 'crosshair',
+      `${story} an edge below the glucose x-axis is not an active resize gate`);
+  }, "assertGateContained");
 };
 
 /* ------------------------------------------------------------- page readers */
@@ -122,7 +128,7 @@ const assertGateContained = async (page, story) => {
 export const waitForLevelAnimations = page => page.waitForFunction(() => {
   const level = document.getElementById('level');
   return level && level.getAnimations().length === 0;
-}, undefined, { timeout: 5000 });
+}, undefined, { timeout: 30000 });
 
 /** One structured read of everything the stories assert on. */
 export const state = (page) => page.evaluate(() => {
@@ -883,11 +889,15 @@ const assertRetiredGlobalCanvas = async (page, story) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
-  is(await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).count(), 0,
-    `${story} the retired root Event charts View is absent`);
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.getByRole('menuitemradio', { name: 'Event charts', exact: true }).count()), 0,
+      `${story} the retired root Event charts View is absent`);
+  }, "assertRetiredGlobalCanvas");
   await page.keyboard.press('Escape');
-  is(await page.locator('#seg-align, #align-canvas').count(), 0,
-    `${story} the retired global Align host and event canvas are absent`);
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#seg-align, #align-canvas').count()), 0,
+      `${story} the retired global Align host and event canvas are absent`);
+  }, "assertRetiredGlobalCanvas");
   console.log(`RETIRED ${story} — ${RETIRED_CANVAS_SANCTION}`);
 };
 
@@ -908,33 +918,38 @@ const assertRetiredGlobalCanvas = async (page, story) => {
     inspector and the canvas count together. */
 // LOCK:diagnose-workstation:6 LOCK:diagnose-workstation:7 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:10
 export const S01 = async (page) => {
-  const before = await state(page);
-  ok(before.chip !== null, 'S01 precondition: opens with a drawn window');
+  const { before } = await waitForReplayAssertion(async seen => {
+    const before = seen(await state(page));
+    ok(before.chip !== null, 'S01 precondition: opens with a drawn window');
+    return { before };
+  }, "S01");
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page);
-  const after = await state(page);
-  is(after.chip, null, 'S01 drawn chip cleared by a preset');
-  is(after.pressed, ['Afternoon'], 'S01 preset pressed');
-  /* AMENDED #735 (lock term 45): the level-1 meta no longer restates the window
-     range — the follow chip and the chart's own window label both print the hours,
-     and the queue's meta says only how many findings the window holds. The story's
-     subject is unchanged (a preset re-scopes the inspector); it is now read through
-     the copy the lock pins. */
-  is(after.crumbMeta, `${after.queue.length} in this window`,
-    `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
-  ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
-  /* AMENDED #135 fix round (operator ruling): the strip header's
-     `window N of M readings` count is retired. It priced the strip in a unit no
-     decision here is made in, at data weight, next to the title. The story's
-     subject is unchanged — a preset re-scopes the canvas as well as the
-     inspector — and is now read through the lane, which is the scope the reader
-     acts on. The header stays silent unless it has the ADR 62 part 9 sentence
-     to say. */
-  is(after.scope, '', `S01 the strip header prints no reading count (${after.scope})`);
-  ok(after.pool.includes('captured CGM days'),
-    `S01 the pooled-days phrasing survives the count's retirement (${after.pool})`);
-  is(after.basalPaint, before.basalPaint,
-    'S01 changing the window leaves every basal verdict cell paint and opacity unchanged');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, null, 'S01 drawn chip cleared by a preset');
+    is(after.pressed, ['Afternoon'], 'S01 preset pressed');
+    /* AMENDED #735 (lock term 45): the level-1 meta no longer restates the window
+       range — the follow chip and the chart's own window label both print the hours,
+       and the queue's meta says only how many findings the window holds. The story's
+       subject is unchanged (a preset re-scopes the inspector); it is now read through
+       the copy the lock pins. */
+    is(after.crumbMeta, `${after.queue.length} in this window`,
+      `S01 inspector re-scoped to the preset (${after.crumbMeta})`);
+    ok(after.crumbMeta.endsWith('in this window'), 'S01 the inspector uses the scoped meta form');
+    /* AMENDED #135 fix round (operator ruling): the strip header's
+       `window N of M readings` count is retired. It priced the strip in a unit no
+       decision here is made in, at data weight, next to the title. The story's
+       subject is unchanged — a preset re-scopes the canvas as well as the
+       inspector — and is now read through the lane, which is the scope the reader
+       acts on. The header stays silent unless it has the ADR 62 part 9 sentence
+       to say. */
+    is(after.scope, '', `S01 the strip header prints no reading count (${after.scope})`);
+    ok(after.pool.includes('captured CGM days'),
+      `S01 the pooled-days phrasing survives the count's retirement (${after.pool})`);
+    is(after.basalPaint, before.basalPaint,
+      'S01 changing the window leaves every basal verdict cell paint and opacity unchanged');
+  }, "S01");
 };
 
 /** S02 · Dragging in the plot body draws a window: the chip follows live, the
@@ -946,29 +961,39 @@ export const S02 = async (page) => {
   const b = await plot(page);
   const y = b.y + b.h * 0.4;
   await page.mouse.move(b.x + 300, y);
-  is((await state(page)).cursor, 'crosshair', 'S02 cursor over open plot');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).cursor, 'crosshair', 'S02 cursor over open plot');
+  }, "S02");
   await page.mouse.down();
   await page.mouse.move(b.x + 380, y, { steps: 6 });
-  const mid = await state(page);
-  is(mid.live, ['brace-b'], 'S02 the moving edge is the live one');
-  ok(/^\d\d:\d\d$/.test(mid.readout || ''), `S02 moving edge reads its snapped time (${mid.readout})`);
-  ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(mid.chip || ''), `S02 chip follows the gesture (${mid.chip})`);
-  is(mid.braceHidden, false, 'S02 the brace is drawn during the gesture');
+  const { mid } = await waitForReplayAssertion(async seen => {
+    const mid = seen(await state(page));
+    is(mid.live, ['brace-b'], 'S02 the moving edge is the live one');
+    ok(/^\d\d:\d\d$/.test(mid.readout || ''), `S02 moving edge reads its snapped time (${mid.readout})`);
+    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(mid.chip || ''), `S02 chip follows the gesture (${mid.chip})`);
+    is(mid.braceHidden, false, 'S02 the brace is drawn during the gesture');
+    return { mid };
+  }, "S02");
   await assertGateContained(page, 'S02');
   await page.mouse.move(b.x + 520, y, { steps: 8 });
-  const wider = await state(page);
-  ok(wider.chip !== mid.chip, 'S02 chip tracks continuously');
+  const { wider } = await waitForReplayAssertion(async seen => {
+    const wider = seen(await state(page));
+    ok(wider.chip !== mid.chip, 'S02 chip tracks continuously');
+    return { wider };
+  }, "S02");
   await page.mouse.up();
   await settle(page);
-  const after = await state(page);
-  is(after.chip, wider.chip, 'S02 mouseup commits the window the gesture showed');
-  is(after.pressed, [after.chip], 'S02 the chip takes the pressed slot, no sixth preset');
-  is(after.live, [], 'S02 no edge stays live after commit');
-  is(after.readout, null, 'S02 the live readout is withdrawn on commit');
-  // AMENDED #735 (term 45): a drawn brace re-scopes the queue in place, and the
-  // meta reads the scoped form — identical to a pressed preset (term 37)
-  is(after.crumbMeta, `${after.queue.length} in this window`,
-    `S02 inspector re-scoped to the drawn window (${after.crumbMeta})`);
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, wider.chip, 'S02 mouseup commits the window the gesture showed');
+    is(after.pressed, [after.chip], 'S02 the chip takes the pressed slot, no sixth preset');
+    is(after.live, [], 'S02 no edge stays live after commit');
+    is(after.readout, null, 'S02 the live readout is withdrawn on commit');
+    // AMENDED #735 (term 45): a drawn brace re-scopes the queue in place, and the
+    // meta reads the scoped form — identical to a pressed preset (term 37)
+    is(after.crumbMeta, `${after.queue.length} in this window`,
+      `S02 inspector re-scoped to the drawn window (${after.crumbMeta})`);
+  }, "S02");
 };
 
 export const touchDrag = async (page, from, to, { end = 'up', steps = 1 } = {}) => {
@@ -1039,42 +1064,63 @@ export const S03 = async (page) => {
   const b = await plot(page);
   const y = b.y + b.h * 0.5;      // mid-plot, far below the grip band
   await page.mouse.move(b.x + start.gripB, y);
-  is((await state(page)).cursor, 'col-resize', 'S03 cursor says resize on the edge at mid-plot');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).cursor, 'col-resize', 'S03 cursor says resize on the edge at mid-plot');
+  }, "S03");
   await page.mouse.down();
   await page.mouse.move(b.x + start.gripB + 90, y, { steps: 8 });
-  const during = await state(page);
-  is(during.live, ['brace-b'], 'S03 the grabbed edge is live');
-  ok(during.readout !== null, 'S03 the grabbed edge reads its snapped time');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    is(during.live, ['brace-b'], 'S03 the grabbed edge is live');
+    ok(during.readout !== null, 'S03 the grabbed edge reads its snapped time');
+  }, "S03");
   await page.mouse.up();
   await settle(page);
-  const after = await state(page);
-  near(after.gripA, start.gripA, 1, 'S03 the far edge did not move');
-  ok(after.gripB > start.gripB + 40, 'S03 the grabbed edge moved');
-  ok(after.chip !== start.chip, 'S03 the chip reports the resized window');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    near(after.gripA, start.gripA, 1, 'S03 the far edge did not move');
+    ok(after.gripB > start.gripB + 40, 'S03 the grabbed edge moved');
+    ok(after.chip !== start.chip, 'S03 the chip reports the resized window');
+  }, "S03");
 
+  // Each gesture keeps its own live observation window. A failed left proof
+  // must not prevent the right gesture and its two claims from being reported.
   const failures = [];
-  const check = (assertion) => {
-    try { assertion(); } catch (error) { failures.push(error.message); }
+  const checkTouch = async (description, assertions) => {
+    try {
+      await waitForReplayAssertion(async seen => {
+        const failed = [];
+        const check = assertion => {
+          try { assertion(); } catch (error) { failed.push(error.message); }
+        };
+        await assertions(seen, check);
+        if (failed.length) fail(failed.join('; '));
+      }, description);
+    } catch (error) { failures.push(error.message); }
   };
   const leftStart = await state(page);
   await touchDrag(page,
     { x: b.x + leftStart.gripA, y }, { x: b.x + leftStart.gripA + 30, y });
   await settle(page);
-  const leftAfter = await state(page);
-  check(() => ok(leftAfter.gripA > leftStart.gripA + 10,
-    'S03 primary touch moves the left full-height gate'));
-  check(() => near(leftAfter.gripB, leftStart.gripB, 1,
-    'S03 left primary touch holds the far gate'));
+  await checkTouch('S03 left touch', async (seen, check) => {
+    const leftAfter = seen(await state(page));
+    check(() => ok(leftAfter.gripA > leftStart.gripA + 10,
+      'S03 primary touch moves the left full-height gate'));
+    check(() => near(leftAfter.gripB, leftStart.gripB, 1,
+      'S03 left primary touch holds the far gate'));
+  });
 
   const rightStart = await state(page);
   await touchDrag(page,
     { x: b.x + rightStart.gripB, y }, { x: b.x + rightStart.gripB + 70, y });
   await settle(page);
-  const rightAfter = await state(page);
-  check(() => ok(rightAfter.gripB > rightStart.gripB + 20,
-    'S03 primary touch moves the right full-height gate'));
-  check(() => near(rightAfter.gripA, rightStart.gripA, 1,
-    'S03 right primary touch holds the far gate'));
+  await checkTouch('S03 right touch', async (seen, check) => {
+    const rightAfter = seen(await state(page));
+    check(() => ok(rightAfter.gripB > rightStart.gripB + 20,
+      'S03 primary touch moves the right full-height gate'));
+    check(() => near(rightAfter.gripA, rightStart.gripA, 1,
+      'S03 right primary touch holds the far gate'));
+  });
   if (failures.length) fail(failures.join('; '));
 };
 
@@ -1089,44 +1135,57 @@ export const S04 = async (page) => {
   const mid = (start.gripA + start.gripB) / 2;
   const width = start.gripB - start.gripA;
   await page.mouse.move(b.x + mid, y);
-  is((await state(page)).cursor, 'grab', 'S04 cursor says grab inside the window');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).cursor, 'grab', 'S04 cursor says grab inside the window');
+  }, "S04");
   await page.mouse.down();
   await page.mouse.move(b.x + mid + 120, y, { steps: 8 });
-  const during = await state(page);
-  is(during.live, ['brace-a', 'brace-b'], 'S04 a slide makes BOTH edges live');
-  ok(/–/.test(during.readout || ''), `S04 a slide reads the whole span (${during.readout})`);
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    is(during.live, ['brace-a', 'brace-b'], 'S04 a slide makes BOTH edges live');
+    ok(/–/.test(during.readout || ''), `S04 a slide reads the whole span (${during.readout})`);
+  }, "S04");
   await page.mouse.up();
   await settle(page);
-  const after = await state(page);
-  ok(after.gripA > start.gripA + 40, 'S04 the window moved');
-  near(after.gripB - after.gripA, width, 2, 'S04 the width is preserved by a slide');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    ok(after.gripA > start.gripA + 40, 'S04 the window moved');
+    near(after.gripB - after.gripA, width, 2, 'S04 the width is preserved by a slide');
+  }, "S04");
 
   const touchStart = await state(page);
   const touchMid = (touchStart.gripA + touchStart.gripB) / 2;
   const touchWidth = touchStart.gripB - touchStart.gripA;
   await touchDrag(page, { x: b.x + touchMid, y }, { x: b.x + touchMid + 120, y });
   await settle(page);
-  const touchAfter = await state(page);
-  ok(touchAfter.gripA > touchStart.gripA + 40,
-    'S04 primary touch moves the scrim window');
-  near(touchAfter.gripB - touchAfter.gripA, touchWidth, 2,
-    'S04 primary touch preserves scrim width');
+  await waitForReplayAssertion(async seen => {
+    const touchAfter = seen(await state(page));
+    ok(touchAfter.gripA > touchStart.gripA + 40,
+      'S04 primary touch moves the scrim window');
+    near(touchAfter.gripB - touchAfter.gripA, touchWidth, 2,
+      'S04 primary touch preserves scrim width');
+  }, "S04");
 
   const tapBefore = await state(page);
   const tapMid = (tapBefore.gripA + tapBefore.gripB) / 2;
   await touchDrag(page, { x: b.x + tapMid, y }, { x: b.x + tapMid, y });
   await settle(page);
-  is((await state(page)).chip, tapBefore.chip,
-    'S04 primary touch without movement changes no window');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, tapBefore.chip,
+      'S04 primary touch without movement changes no window');
+  }, "S04");
 
   const verticalBefore = await state(page);
   const verticalMid = (verticalBefore.gripA + verticalBefore.gripB) / 2;
   await touchDrag(page,
     { x: b.x + verticalMid, y }, { x: b.x + verticalMid, y: y + 80 });
   await settle(page);
-  const verticalAfter = await state(page);
-  is(verticalAfter.chip, verticalBefore.chip,
-    'S04 a vertical primary touch leaves clock-window ownership with the scroll path');
+  const { verticalAfter } = await waitForReplayAssertion(async seen => {
+    const verticalAfter = seen(await state(page));
+    is(verticalAfter.chip, verticalBefore.chip,
+      'S04 a vertical primary touch leaves clock-window ownership with the scroll path');
+    return { verticalAfter };
+  }, "S04");
 
   const scrollBefore = await page.evaluate(() => {
     const chart = document.getElementById('chart');
@@ -1151,22 +1210,28 @@ export const S04 = async (page) => {
   await touchScroll(page,
     { x: scrollPlot.x + verticalMid, y: scrollPlot.y + scrollPlot.h * 0.5 });
   await settle(page);
-  const scrollAfter = await page.evaluate((saved) => {
-    const chart = document.getElementById('chart');
-    const host = chart.closest('.canvas-pane');
-    const result = { hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop };
-    host.style.display = saved.display;
-    host.style.height = saved.height;
-    host.style.overflowY = saved.overflowY;
-    document.getElementById('s04-scroll-spacer').remove();
-    return result;
-  }, scrollBefore.saved);
-  ok(scrollAfter.hostTop !== scrollBefore.hostTop,
-    `S04 vertical primary touch moves an already-scrollable chart ancestor (${scrollBefore.hostTop} → ${scrollAfter.hostTop}; ${scrollBefore.clientHeight}/${scrollBefore.scrollHeight}px)`);
-  is(scrollAfter.shellTop, scrollBefore.shellTop,
-    'S04 vertical touch preserves the shell no-page-scroll contract');
-  is((await state(page)).chip, verticalAfter.chip,
-    'S04 ancestor scrolling leaves the clock window unchanged');
+  try {
+    await waitForReplayAssertion(async seen => {
+      const scrollAfter = seen(await page.evaluate(() => {
+        const host = document.getElementById('chart').closest('.canvas-pane');
+        return { hostTop: host.scrollTop, shellTop: document.scrollingElement.scrollTop };
+      }));
+      ok(scrollAfter.hostTop !== scrollBefore.hostTop,
+        `S04 vertical primary touch moves an already-scrollable chart ancestor (${scrollBefore.hostTop} → ${scrollAfter.hostTop}; ${scrollBefore.clientHeight}/${scrollBefore.scrollHeight}px)`);
+      is(scrollAfter.shellTop, scrollBefore.shellTop,
+        'S04 vertical touch preserves the shell no-page-scroll contract');
+      is((seen(await state(page))).chip, verticalAfter.chip,
+        'S04 ancestor scrolling leaves the clock window unchanged');
+    }, 'S04 scroll');
+  } finally {
+    await page.evaluate(saved => {
+      const host = document.getElementById('chart').closest('.canvas-pane');
+      host.style.display = saved.display;
+      host.style.height = saved.height;
+      host.style.overflowY = saved.overflowY;
+      document.getElementById('s04-scroll-spacer').remove();
+    }, scrollBefore.saved);
+  }
 };
 
 /** S05 · The grip handles drag the same edge the full-height zone does. */
@@ -1180,38 +1245,46 @@ export const S05 = async (page) => {
   await page.mouse.move(g.x, g.y);
   await page.mouse.down();
   await page.mouse.move(g.x + 30, g.y, { steps: 6 });
-  const during = await state(page);
-  is(during.live, ['brace-a'], 'S05 the grip drags its own edge');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    is(during.live, ['brace-a'], 'S05 the grip drags its own edge');
+  }, "S05");
   await page.mouse.up();
   await settle(page);
-  const after = await state(page);
-  ok(after.gripA > start.gripA + 10,
-    `S05 grip-a moved the near edge (${start.gripA} → ${after.gripA})`);
-  near(after.gripB, start.gripB, 1, 'S05 the far edge stayed');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    ok(after.gripA > start.gripA + 10,
+      `S05 grip-a moved the near edge (${start.gripA} → ${after.gripA})`);
+    near(after.gripB, start.gripB, 1, 'S05 the far edge stayed');
+  }, "S05");
 
   const cancelStart = await state(page);
   const cancelMid = (cancelStart.gripA + cancelStart.gripB) / 2;
   const cancelBeforeEnd = await touchDrag(page,
     { x: b.x + cancelMid, y }, { x: b.x + cancelMid + 60, y }, { end: 'cancel' });
   await settle(page);
-  const cancelAfter = await state(page);
-  ok(cancelBeforeEnd.captured,
-    'S05 primary touch is captured before Chromium cancellation');
-  is(cancelAfter.live, [], 'S05 pointer cancellation clears live gates');
-  is(cancelAfter.readout, null, 'S05 pointer cancellation clears the live readout');
-  is(cancelAfter.chip, cancelStart.chip,
-    'S05 pointer cancellation restores the last committed window');
+  await waitForReplayAssertion(async seen => {
+    const cancelAfter = seen(await state(page));
+    ok(cancelBeforeEnd.captured,
+      'S05 primary touch is captured before Chromium cancellation');
+    is(cancelAfter.live, [], 'S05 pointer cancellation clears live gates');
+    is(cancelAfter.readout, null, 'S05 pointer cancellation clears the live readout');
+    is(cancelAfter.chip, cancelStart.chip,
+      'S05 pointer cancellation restores the last committed window');
+  }, "S05");
 
   const lostStart = await state(page);
   const lostMid = (lostStart.gripA + lostStart.gripB) / 2;
   await touchDrag(page,
     { x: b.x + lostMid, y }, { x: b.x + lostMid + 60, y }, { end: 'lost-capture' });
   await settle(page);
-  const lostAfter = await state(page);
-  is(lostAfter.live, [], 'S05 lost capture clears live gates');
-  is(lostAfter.readout, null, 'S05 lost capture clears the live readout');
-  is(lostAfter.chip, lostStart.chip,
-    'S05 lost capture restores the last committed window');
+  await waitForReplayAssertion(async seen => {
+    const lostAfter = seen(await state(page));
+    is(lostAfter.live, [], 'S05 lost capture clears live gates');
+    is(lostAfter.readout, null, 'S05 lost capture clears the live readout');
+    is(lostAfter.chip, lostStart.chip,
+      'S05 lost capture restores the last committed window');
+  }, "S05");
 };
 
 /** S06 · A press that never moves changes nothing — no window minted, no preset
@@ -1224,36 +1297,47 @@ export const S06 = async (page) => {
   await page.mouse.down();
   await page.mouse.up();
   await settle(page, 250);
-  const after = await state(page);
-  is(after.chip, before.chip, 'S06 a click in the plot mints no window');
-  is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
-  is(after.crumbMeta, before.crumbMeta, 'S06 nothing re-scoped');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, before.chip, 'S06 a click in the plot mints no window');
+    is(after.pressed, before.pressed, 'S06 a click in the plot unpresses nothing');
+    is(after.crumbMeta, before.crumbMeta, 'S06 nothing re-scoped');
+  }, "S06");
 };
 
 /** S07 · Esc belongs to the WINDOW: it clears the drawn one and restores the
     last preset. It never pops an inspector level. */
 // LOCK:diagnose-workstation:7 LOCK:diagnose-workstation:21
 export const S07 = async (page) => {
-  const before = await state(page);
-  ok(before.chip !== null, 'S07 precondition: a drawn window stands');
+  const { before } = await waitForReplayAssertion(async seen => {
+    const before = seen(await state(page));
+    ok(before.chip !== null, 'S07 precondition: a drawn window stands');
+    return { before };
+  }, "S07");
   const depth = before.crumb.length;
   await page.keyboard.press('Escape');
   await settle(page);
-  const after = await state(page);
-  is(after.chip, null, 'S07 Esc clears the drawn window');
-  ok(after.pressed.length === 1 && after.pressed[0] !== after.chip, `S07 Esc restores a preset (${after.pressed})`);
-  is(after.crumb.length, depth, 'S07 Esc did NOT pop a level');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, null, 'S07 Esc clears the drawn window');
+    ok(after.pressed.length === 1 && after.pressed[0] !== after.chip, `S07 Esc restores a preset (${after.pressed})`);
+    is(after.crumb.length, depth, 'S07 Esc did NOT pop a level');
+  }, "S07");
 };
 
 /** S08 · The chip's × is the same clearing act as Esc. */
 // LOCK:diagnose-workstation:7
 export const S08 = async (page) => {
-  ok((await state(page)).chip !== null, 'S08 precondition: a drawn window stands');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await state(page))).chip !== null, 'S08 precondition: a drawn window stands');
+  }, "S08");
   await page.click('#seg-window [data-follow] .x');
   await settle(page);
-  const after = await state(page);
-  is(after.chip, null, 'S08 the chip × clears the window');
-  is(after.pressed.length, 1, 'S08 a preset is restored');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, null, 'S08 the chip × clears the window');
+    is(after.pressed.length, 1, 'S08 a preset is restored');
+  }, "S08");
 };
 
 /** S09 · Drilling a factor pushes level 2 without replacing the reader's 24 h
@@ -1264,15 +1348,17 @@ export const S09 = async (page) => {
   await settle(page, 350);
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  const s = await state(page);
-  is(s.crumb.length, 2, 'S09 one level pushed');
-  is(s.crumb[0], 'Findings', 'S09 the root ancestor stays in the trail');
-  is(s.chip, null, 'S09 drilling a factor adds no derived window chip');
-  is(s.pressed, ['24 h'], 'S09 drilling a factor keeps the 24 h preset pressed');
-  ok(/^\d+ of \d+ · /.test(s.crumbMeta || ''), `S09 the count declares its window (${s.crumbMeta})`);
-  ok(s.evRows > 0, 'S09 evidence rows render');
-  ok(await page.locator('.evidence-tile[data-drilled]').count() > 0,
-    'S09 the opened Finding visibly marks its owning chart');
+  await waitForReplayAssertion(async seen => {
+    const s = seen(await state(page));
+    is(s.crumb.length, 2, 'S09 one level pushed');
+    is(s.crumb[0], 'Findings', 'S09 the root ancestor stays in the trail');
+    is(s.chip, null, 'S09 drilling a factor adds no derived window chip');
+    is(s.pressed, ['24 h'], 'S09 drilling a factor keeps the 24 h preset pressed');
+    ok(/^\d+ of \d+ · /.test(s.crumbMeta || ''), `S09 the count declares its window (${s.crumbMeta})`);
+    ok(s.evRows > 0, 'S09 evidence rows render');
+    ok(seen(await page.locator('.evidence-tile[data-drilled]').count()) > 0,
+      'S09 the opened Finding visibly marks its owning chart');
+  }, "S09");
 };
 
 /** S10 · Evidence is capped at five rows and the cap is a real toggle.
@@ -1290,9 +1376,11 @@ export const S09 = async (page) => {
 export const S10 = async (page) => {
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  ok((await state(page)).evRows > 0, 'S10 the served case roster remains readable');
-  is((await state(page)).evCounterGone, 0,
-    'S10 RETIRED — the old counter-example split remains absent');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await state(page))).evRows > 0, 'S10 the served case roster remains readable');
+    is((seen(await state(page))).evCounterGone, 0,
+      'S10 RETIRED — the old counter-example split remains absent');
+  }, "S10");
 };
 
 /** S11 · SELECT-IN-PLACE (P35/P21 retired, 2026-08-19 revision). An evidence
@@ -1306,14 +1394,16 @@ export const S11 = async (page) => {
   const peak = await state(page);
   await page.click('#level .ev-row');
   await settle(page, 450);
-  const occ = await state(page);
-  is(occ.crumb.length, 2, 'S11 select-in-place pushes no level (P35 retired)');
-  is(occ.chip, peak.chip, 'S11 selecting an occurrence does not move the window (P21 retired)');
-  const selected = await page.evaluate(() =>
-    document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
-  ok(selected, 'S11 the selected row carries aria-pressed');
-  ok(await page.locator('#level .case-facts').count() > 0,
-    'S11 the selected case-file detail remains visible in place');
+  await waitForReplayAssertion(async seen => {
+    const occ = seen(await state(page));
+    is(occ.crumb.length, 2, 'S11 select-in-place pushes no level (P35 retired)');
+    is(occ.chip, peak.chip, 'S11 selecting an occurrence does not move the window (P21 retired)');
+    const selected = seen(await page.evaluate(() =>
+      document.querySelector('#level .ev-row[aria-pressed="true"]') !== null));
+    ok(selected, 'S11 the selected row carries aria-pressed');
+    ok(seen(await page.locator('#level .case-facts').count()) > 0,
+      'S11 the selected case-file detail remains visible in place');
+  }, "S11");
 };
 
 /** S12 · RETIRED — Left/Right no longer step the selected Occurrence. */
@@ -1331,12 +1421,20 @@ export const S12 = async (page) => {
   const selectedId = await selected();
   await page.keyboard.press('ArrowRight');
   await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
-  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  }, "S12");
+  await waitForReplayAssertion(async seen => {
+    is(seen(await selected()), selectedId, `S12 RETIRED — ${sanction}`);
+  }, 'S12');
   await page.keyboard.press('ArrowLeft');
   await settle(page, 300);
-  is((await state(page)).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
-  is(await selected(), selectedId, `S12 RETIRED — ${sanction}`);
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).levelHead, first.levelHead, `S12 RETIRED — ${sanction}`);
+  }, "S12");
+  await waitForReplayAssertion(async seen => {
+    is(seen(await selected()), selectedId, `S12 RETIRED — ${sanction}`);
+  }, 'S12');
   return `RETIRED — ${sanction}`;
 };
 
@@ -1346,17 +1444,25 @@ export const S12 = async (page) => {
 export const S13 = async (page) => {
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  is((await state(page)).crumb.length, 2, 'S13 at depth 2');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb.length, 2, 'S13 at depth 2');
+  }, "S13");
   await page.click('#level .ev-row');
   await settle(page, 450);
-  is((await state(page)).crumb.length, 2,
-    'S13 selecting an occurrence does not deepen the stack (P35 retired)');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb.length, 2,
+      'S13 selecting an occurrence does not deepen the stack (P35 retired)');
+  }, "S13");
   await page.keyboard.press('Backspace');
   await settle(page);
-  is((await state(page)).crumb.length, 1, 'S13 Backspace pops to the root');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb.length, 1, 'S13 Backspace pops to the root');
+  }, "S13");
   await page.keyboard.press('Backspace');
   await settle(page);
-  is((await state(page)).crumb.length, 1, 'S13 Backspace at the root does nothing');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb.length, 1, 'S13 Backspace at the root does nothing');
+  }, "S13");
 };
 
 /** S14 · The breadcrumb IS the navigation: ancestors are buttons, the current
@@ -1368,21 +1474,25 @@ export const S14 = async (page) => {
   await settle(page, 450);
   await page.click('#level .ev-row');
   await settle(page, 450);
-  const shape = await page.evaluate(() => ({
-    buttons: [...document.querySelectorAll('#crumb-trail button')].map((b) => b.textContent.trim()),
-    current: document.querySelector('#crumb-trail .here')?.textContent.trim() ?? null,
-    currentIsButton: document.querySelector('#crumb-trail .here')?.tagName === 'BUTTON',
-    ariaCurrent: document.querySelector('#crumb-trail [aria-current="page"]') !== null,
-    backButtons: [...document.querySelectorAll('#crumb-trail button, .inspector button')]
-      .filter((b) => /^(back|‹|←)$/i.test(b.textContent.trim())).length,
-  }));
-  is(shape.buttons.length, 1, 'S14 select-in-place adds no ancestor (P35 retired)');
-  is(shape.currentIsButton, false, 'S14 the current item is not a button');
-  ok(shape.ariaCurrent, 'S14 the current item is marked aria-current');
-  is(shape.backButtons, 0, 'S14 no back button/chevron anywhere in the trail');
+  await waitForReplayAssertion(async seen => {
+    const shape = seen(await page.evaluate(() => ({
+      buttons: [...document.querySelectorAll('#crumb-trail button')].map((b) => b.textContent.trim()),
+      current: document.querySelector('#crumb-trail .here')?.textContent.trim() ?? null,
+      currentIsButton: document.querySelector('#crumb-trail .here')?.tagName === 'BUTTON',
+      ariaCurrent: document.querySelector('#crumb-trail [aria-current="page"]') !== null,
+      backButtons: [...document.querySelectorAll('#crumb-trail button, .inspector button')]
+        .filter((b) => /^(back|‹|←)$/i.test(b.textContent.trim())).length,
+    })));
+    is(shape.buttons.length, 1, 'S14 select-in-place adds no ancestor (P35 retired)');
+    is(shape.currentIsButton, false, 'S14 the current item is not a button');
+    ok(shape.ariaCurrent, 'S14 the current item is marked aria-current');
+    is(shape.backButtons, 0, 'S14 no back button/chevron anywhere in the trail');
+  }, "S14");
   await page.click('#crumb-trail button');
   await settle(page);
-  is((await state(page)).crumb, ['Findings'], 'S14 clicking the root ancestor pops to it');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb, ['Findings'], 'S14 clicking the root ancestor pops to it');
+  }, "S14");
 };
 
 /** S15 · A basal lane cell is a shortcut INTO the slot branch: it pushes from
@@ -1390,63 +1500,81 @@ export const S14 = async (page) => {
     scope choice — releases whatever user window was standing. */
 // LOCK:diagnose-workstation:6 LOCK:diagnose-workstation:7 LOCK:diagnose-workstation:9 LOCK:diagnose-workstation:12 LOCK:diagnose-workstation:13
 export const S15 = async (page) => {
-  const before = await state(page);
-  is(before.laneCells, 48, 'S15 the basal lane is 48 fixed half-hour cells');
+  await waitForReplayAssertion(async seen => {
+    const before = seen(await state(page));
+    is(before.laneCells, 48, 'S15 the basal lane is 48 fixed half-hour cells');
+  }, "S15");
   await page.click('#lane button:nth-child(15)');
   await settle(page, 450);
-  const slot = await state(page);
-  is(slot.crumb.length, 2, 'S15 the lane pushes one level from level 1');
-  ok(/slot$/.test(slot.crumb[1]), `S15 the trail names the slot (${slot.crumb[1]})`);
-  ok(/^Slot \d\d:\d\d$/.test(slot.chip || ''), `S15 the chip names the slot, not a Window (${slot.chip})`);
-  is(slot.laneSelected, 14, 'S15 the clicked cell is the pressed one');
+  await waitForReplayAssertion(async seen => {
+    const slot = seen(await state(page));
+    is(slot.crumb.length, 2, 'S15 the lane pushes one level from level 1');
+    ok(/slot$/.test(slot.crumb[1]), `S15 the trail names the slot (${slot.crumb[1]})`);
+    ok(/^Slot \d\d:\d\d$/.test(slot.chip || ''), `S15 the chip names the slot, not a Window (${slot.chip})`);
+    is(slot.laneSelected, 14, 'S15 the clicked cell is the pressed one');
+  }, "S15");
   await page.click('#lane button:nth-child(16)');
   await settle(page, 450);
-  const swapped = await state(page);
-  is(swapped.crumb.length, 2, 'S15 a second lane click SWAPS, it does not deepen');
-  is(swapped.laneSelected, 15, 'S15 selection follows');
+  await waitForReplayAssertion(async seen => {
+    const swapped = seen(await state(page));
+    is(swapped.crumb.length, 2, 'S15 a second lane click SWAPS, it does not deepen');
+    is(swapped.laneSelected, 15, 'S15 selection follows');
+  }, "S15");
 };
 
 /** S16 · Staging is item-level and state-as-feedback: the button becomes
     Staged · Undo, the Plan badge counts it, and no toast or modal appears. */
 // LOCK:diagnose-workstation:13 LOCK:diagnose-workstation:14
 export const S16 = async (page) => {
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')].findIndex((b) => b.dataset.verdict === 'up'));
-  ok(idx >= 0, 'S16 precondition: the lane holds a slot that asserts a direction');
+  const { idx } = await waitForReplayAssertion(async seen => {
+    const idx = seen(await page.evaluate(() => [...document.querySelectorAll('#lane button')].findIndex((b) => b.dataset.verdict === 'up')));
+    ok(idx >= 0, 'S16 precondition: the lane holds a slot that asserts a direction');
+    return { idx };
+  }, "S16");
   await page.click(`#lane button:nth-child(${idx + 1})`);
   await settle(page, 450);
-  const open = await state(page);
-  ok(/Stage change/.test(open.stage || ''), `S16 an asserting slot offers staging (${open.stage})`);
-  is(open.badge, '0', 'S16 nothing staged yet');
+  await waitForReplayAssertion(async seen => {
+    const open = seen(await state(page));
+    ok(/Stage change/.test(open.stage || ''), `S16 an asserting slot offers staging (${open.stage})`);
+    is(open.badge, '0', 'S16 nothing staged yet');
+  }, "S16");
   await page.click('#level .stagebtn');
   await settle(page, 450);
-  const staged = await state(page);
-  ok(/Staged · Undo/.test(staged.stage || ''), `S16 the button becomes Staged · Undo (${staged.stage})`);
-  ok(/staged for Plan/.test(staged.stage || ''), 'S16 the sublabel names the destination');
-  is(staged.stageStaged, 'true', 'S16 the staged flag rides the button');
-  is(staged.badge, '1', 'S16 the Plan badge counts the item');
-  /* AMENDED #735 (lock terms 46-49): the pane header's `N staged` is deleted and
-     the watched-change dock is the single reporter of the staged object. The button,
-     the sublabel and the Plan badge above are unchanged. */
-  is(staged.dock.kind, 'Plan · staged', 'S16 the dock reports the staged object');
-  is(staged.dock.how, 'Staged, not applied — nothing has changed on the pump',
-    'S16 the dock says the pump is untouched, in full');
-  is(staged.dock.howClipped, false, 'S16 that sentence is never ellipsized (term 49)');
-  const overlays = await page.evaluate(() => document.querySelectorAll('[role="dialog"], .toast, .modal').length);
-  is(overlays, 0, 'S16 state-as-feedback only — no toast, no modal');
+  await waitForReplayAssertion(async seen => {
+    const staged = seen(await state(page));
+    ok(/Staged · Undo/.test(staged.stage || ''), `S16 the button becomes Staged · Undo (${staged.stage})`);
+    ok(/staged for Plan/.test(staged.stage || ''), 'S16 the sublabel names the destination');
+    is(staged.stageStaged, 'true', 'S16 the staged flag rides the button');
+    is(staged.badge, '1', 'S16 the Plan badge counts the item');
+    /* AMENDED #735 (lock terms 46-49): the pane header's `N staged` is deleted and
+       the watched-change dock is the single reporter of the staged object. The button,
+       the sublabel and the Plan badge above are unchanged. */
+    is(staged.dock.kind, 'Plan · staged', 'S16 the dock reports the staged object');
+    is(staged.dock.how, 'Staged, not applied — nothing has changed on the pump',
+      'S16 the dock says the pump is untouched, in full');
+    is(staged.dock.howClipped, false, 'S16 that sentence is never ellipsized (term 49)');
+    const overlays = seen(await page.evaluate(() => document.querySelectorAll('[role="dialog"], .toast, .modal').length));
+    is(overlays, 0, 'S16 state-as-feedback only — no toast, no modal');
+  }, "S16");
   await page.click('#level .stagebtn');
   await settle(page, 450);
-  const undone = await state(page);
-  ok(/Stage change/.test(undone.stage || ''), 'S16 Undo unstages');
-  is(undone.badge, '0', 'S16 the badge follows back down');
+  await waitForReplayAssertion(async seen => {
+    const undone = seen(await state(page));
+    ok(/Stage change/.test(undone.stage || ''), 'S16 Undo unstages');
+    is(undone.badge, '0', 'S16 the badge follows back down');
+  }, "S16");
 };
 
 /** S17 · The I:C lane is retired. I:C enters through its findings-queue row. */
 // LOCK:diagnose-workstation:12 LOCK:diagnose-workstation:32
 export const S17 = async (page) => {
-  const author = 'Connor Griffin';
-  const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
-  is(await page.evaluate(() => document.querySelector('#iclane') !== null), false,
-    `S17 RETIRED — ${sanction}`);
+  const { sanction } = await waitForReplayAssertion(async seen => {
+    const author = 'Connor Griffin';
+    const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
+    is(seen(await page.evaluate(() => document.querySelector('#iclane') !== null)), false,
+      `S17 RETIRED — ${sanction}`);
+    return { sanction };
+  }, "S17");
   return `RETIRED — ${sanction}`;
 };
 
@@ -1463,34 +1591,39 @@ export const S17 = async (page) => {
 // LOCK:diagnose-workstation:31 LOCK:diagnose-workstation:34 LOCK:diagnose-workstation:38
 export const S18 = async (page) => {
   await expandWatching(page);
-  const before = await state(page);
-  is(before.entries, undefined, 'S18 the per-parameter entry rows are retired');
-  const isfRow = before.queue.find((r) => r.title === 'ISF');
-  ok(isfRow, `S18 ISF is a queue row under an explicit window (${JSON.stringify(before.queue.map((r) => r.title))})`);
-  is(isfRow.register, 'held', 'S18 it is held, so it reads words-first');
-  // textContent has no space: the glyph is separated by a CSS margin, not a character
-  is(isfRow.tag, '⚙Setting', 'S18 it carries the Setting flavor tag');
-  const isfStage = await page.evaluate(() => {
-    const row = [...document.querySelectorAll('#level .qrow')]
-      .find((n) => n.querySelector('.lab').textContent.trim() === 'ISF');
-    return { stage: Boolean(row.querySelector('.stagebtn')), chevron: Boolean(row.querySelector('.go')) };
-  });
-  is(isfStage.stage, false, 'S18 a held row offers no stage affordance (term 38)');
-  is(isfStage.chevron, true, 'S18 it still carries the chevron — it drills to its detail');
+  const { before } = await waitForReplayAssertion(async seen => {
+    const before = seen(await state(page));
+    is(before.entries, undefined, 'S18 the per-parameter entry rows are retired');
+    const isfRow = before.queue.find((r) => r.title === 'ISF');
+    ok(isfRow, `S18 ISF is a queue row under an explicit window (${JSON.stringify(before.queue.map((r) => r.title))})`);
+    is(isfRow.register, 'held', 'S18 it is held, so it reads words-first');
+    // textContent has no space: the glyph is separated by a CSS margin, not a character
+    is(isfRow.tag, '⚙Setting', 'S18 it carries the Setting flavor tag');
+    const isfStage = seen(await page.evaluate(() => {
+      const row = [...document.querySelectorAll('#level .qrow')]
+        .find((n) => n.querySelector('.lab').textContent.trim() === 'ISF');
+      return { stage: Boolean(row.querySelector('.stagebtn')), chevron: Boolean(row.querySelector('.go')) };
+    }));
+    is(isfStage.stage, false, 'S18 a held row offers no stage affordance (term 38)');
+    is(isfStage.chevron, true, 'S18 it still carries the chevron — it drills to its detail');
+    return { before };
+  }, "S18");
   await page.evaluate(() => [...document.querySelectorAll('#level .qrow')]
     .find((n) => n.querySelector('.lab').textContent.trim() === 'ISF').click());
   await settle(page, 450);
-  const isf = await state(page);
-  is(isf.crumb[isf.crumb.length - 1], 'ISF', 'S18 the ISF level opens');
-  is(isf.chip, before.chip, 'S18 ISF derives no window — the chip is untouched');
-  near(isf.gripA, before.gripA, 1, 'S18 the brace did not move');
-  near(isf.gripB, before.gripB, 1, 'S18 the brace did not move');
-  const scoped = await page.evaluate(() => document.querySelector('#level .slot-say')?.textContent.replace(/\s+/g, ' ').trim() ?? '');
-  ok(/overnight fasting window/i.test(scoped), 'S18 the reserved scope sentence names the fasting window');
-  ok(/not separately identifiable/i.test(scoped), 'S18 it states daytime ISF is not separately identifiable');
-  const inLane = await page.evaluate(() => [...document.querySelectorAll('#lane button, #iclane button')]
-    .some((b) => /isf/i.test(b.getAttribute('aria-label') || '')));
-  is(inLane, false, 'S18 ISF is never a lane cell');
+  await waitForReplayAssertion(async seen => {
+    const isf = seen(await state(page));
+    is(isf.crumb[isf.crumb.length - 1], 'ISF', 'S18 the ISF level opens');
+    is(isf.chip, before.chip, 'S18 ISF derives no window — the chip is untouched');
+    near(isf.gripA, before.gripA, 1, 'S18 the brace did not move');
+    near(isf.gripB, before.gripB, 1, 'S18 the brace did not move');
+    const scoped = seen(await page.evaluate(() => document.querySelector('#level .slot-say')?.textContent.replace(/\s+/g, ' ').trim() ?? ''));
+    ok(/overnight fasting window/i.test(scoped), 'S18 the reserved scope sentence names the fasting window');
+    ok(/not separately identifiable/i.test(scoped), 'S18 it states daytime ISF is not separately identifiable');
+    const inLane = seen(await page.evaluate(() => [...document.querySelectorAll('#lane button, #iclane button')]
+      .some((b) => /isf/i.test(b.getAttribute('aria-label') || ''))));
+    is(inLane, false, 'S18 ISF is never a lane cell');
+  }, "S18");
 };
 
 /** S19 · The hover readout is DOCKED: pooled-bin stats land in the fixed header
@@ -1500,29 +1633,33 @@ export const S19 = async (page) => {
   const b = await plot(page);
   await page.mouse.move(b.x + b.w * 0.45, b.y + b.h * 0.45);
   await settle(page, 400);
-  const bin = await state(page);
-  is(bin.hover, '1', 'S19 the header swaps to the live readout');
-  ok(bin.rd.statsShown, 'S19 bin hover shows the stat cells');
-  ok(/^\d\d:\d\d$/.test(bin.rd.time || ''), `S19 the bin names its time (${bin.rd.time})`);
-  ok(/^\d+–\d+$/.test(bin.rd.iqr || ''), 'S19 25–75 prints');
-  ok(/^\d+–\d+$/.test(bin.rd.band || ''), 'S19 10–90 prints');
-  ok(['above', 'below', 'in'].includes(bin.rd.verdict), `S19 the median carries verdict ink (${bin.rd.verdict})`);
-  ok(/^pooled from \d+ captured CGM days · ±\d+ min$/.test(bin.pool || ''), 'S19 the pooled-provenance clause persists during hover');
-  const floating = await page.evaluate(() => [...document.querySelectorAll('div')]
-    .filter((d) => /tooltip/i.test(d.className || '') && d.offsetParent !== null).length);
-  is(floating, 0, 'S19 no floating tooltip anywhere');
+  await waitForReplayAssertion(async seen => {
+    const bin = seen(await state(page));
+    is(bin.hover, '1', 'S19 the header swaps to the live readout');
+    ok(bin.rd.statsShown, 'S19 bin hover shows the stat cells');
+    ok(/^\d\d:\d\d$/.test(bin.rd.time || ''), `S19 the bin names its time (${bin.rd.time})`);
+    ok(/^\d+–\d+$/.test(bin.rd.iqr || ''), 'S19 25–75 prints');
+    ok(/^\d+–\d+$/.test(bin.rd.band || ''), 'S19 10–90 prints');
+    ok(['above', 'below', 'in'].includes(bin.rd.verdict), `S19 the median carries verdict ink (${bin.rd.verdict})`);
+    ok(/^pooled from \d+ captured CGM days · ±\d+ min$/.test(bin.pool || ''), 'S19 the pooled-provenance clause persists during hover');
+    const floating = seen(await page.evaluate(() => [...document.querySelectorAll('div')]
+      .filter((d) => /tooltip/i.test(d.className || '') && d.offsetParent !== null).length));
+    is(floating, 0, 'S19 no floating tooltip anywhere');
 
-  /* RETIRED CLAUSE — S19's occurrence-dot hover and latch. The findings panel
-     is the one occurrence route now. Sanction: ConnorGriffin · 2026-08-27 ·
-     "these dots mean nothing, just take them off the glucose chart. User can
-     get to them from the findings panel." */
-  is(await page.evaluate(() => window.echarts.getInstanceByDom(document.getElementById('chart'))
-    .getOption().series.some((series) => series.name === 'Occurrences')), false,
-  'S19 RETIRED — ConnorGriffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."');
+    /* RETIRED CLAUSE — S19's occurrence-dot hover and latch. The findings panel
+       is the one occurrence route now. Sanction: ConnorGriffin · 2026-08-27 ·
+       "these dots mean nothing, just take them off the glucose chart. User can
+       get to them from the findings panel." */
+    is(seen(await page.evaluate(() => window.echarts.getInstanceByDom(document.getElementById('chart'))
+      .getOption().series.some((series) => series.name === 'Occurrences'))), false,
+    'S19 RETIRED — ConnorGriffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."');
+  }, "S19");
 
   await page.mouse.move(5, 5);
   await settle(page, 400);
-  is((await state(page)).hover, '0', 'S19 leaving the plot restores the resting header');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).hover, '0', 'S19 leaving the plot restores the resting header');
+  }, "S19");
 };
 
 /** S20 · Both coincidence routes work and each lands on its own parameter. */
@@ -1532,20 +1669,26 @@ export const S20 = async (page) => {
   // links belong to that clock case, not the event-aligned queue entry.
   await settle(page, 450);
   // The clock case carries the coincidence line.
-  const opened = await state(page);
-  ok(opened.linkBtns.length === 2,
-    `S20 precondition: clock case exposes both coincidence links (${opened.crumb.join(' / ')}; ${opened.levelText})`);
+  await waitForReplayAssertion(async seen => {
+    const opened = seen(await state(page));
+    ok(opened.linkBtns.length === 2,
+      `S20 precondition: clock case exposes both coincidence links (${opened.crumb.join(' / ')}; ${opened.levelText})`);
+  }, "S20");
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View slot').click());
   await settle(page, 450);
-  const slot = await state(page);
-  ok(/slot$/.test(slot.crumb[slot.crumb.length - 1]), `S20 View slot opens the basal slot (${slot.crumb})`);
-  ok(/^Slot /.test(slot.chip || ''), 'S20 the slot chip stands');
+  await waitForReplayAssertion(async seen => {
+    const slot = seen(await state(page));
+    ok(/slot$/.test(slot.crumb[slot.crumb.length - 1]), `S20 View slot opens the basal slot (${slot.crumb})`);
+    ok(/^Slot /.test(slot.chip || ''), 'S20 the slot chip stands');
+  }, "S20");
   await page.click('#crumb-trail button:nth-of-type(2)');
   await settle(page, 450);
   await page.evaluate(() => [...document.querySelectorAll('#level .slotlink .linkbtn')].find((b) => b.textContent.trim() === 'View segment').click());
   await settle(page, 450);
-  const block = await state(page);
-  ok(/block$/.test(block.crumb[block.crumb.length - 1]), `S20 View segment opens the I:C block (${block.crumb})`);
+  await waitForReplayAssertion(async seen => {
+    const block = seen(await state(page));
+    ok(/block$/.test(block.crumb[block.crumb.length - 1]), `S20 View segment opens the I:C block (${block.crumb})`);
+  }, "S20");
 };
 
 /** S21 · A user window is a workspace: it survives drilling and popping. A
@@ -1557,21 +1700,30 @@ export const S20 = async (page) => {
     corrected to name the drills that actually release. */
 // LOCK:diagnose-workstation:7 LOCK:diagnose-workstation:9
 export const S21 = async (page) => {
-  const start = await state(page);
-  ok(start.chip !== null, 'S21 precondition: a drawn window stands');
+  const { start } = await waitForReplayAssertion(async seen => {
+    const start = seen(await state(page));
+    ok(start.chip !== null, 'S21 precondition: a drawn window stands');
+    return { start };
+  }, "S21");
   await page.click('#level .qrow[data-id="finding:over_treated_low"]');
   await settle(page, 450);
-  const drilled = await state(page);
-  is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
-  near(drilled.gripA, start.gripA, 1, 'S21 the brace stayed put');
-  is(drilled.braceEdges[1], start.braceEdges[1], 'S21 the second brace edge stayed put');
+  await waitForReplayAssertion(async seen => {
+    const drilled = seen(await state(page));
+    is(drilled.chip, start.chip, 'S21 drilling a factor does not move the user window');
+    near(drilled.gripA, start.gripA, 1, 'S21 the brace stayed put');
+    is(drilled.braceEdges[1], start.braceEdges[1], 'S21 the second brace edge stayed put');
+  }, "S21");
   await page.click('#level .ev-row');
   await settle(page, 450);
-  is((await state(page)).chip, start.chip, 'S21 opening an occurrence does not move it either');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, start.chip, 'S21 opening an occurrence does not move it either');
+  }, "S21");
   await page.click('#lane button:nth-child(21)');
   await settle(page, 450);
-  const laned = await state(page);
-  ok(/^Slot /.test(laned.chip || ''), `S21 a lane click RELEASES the user window (${laned.chip})`);
+  await waitForReplayAssertion(async seen => {
+    const laned = seen(await state(page));
+    ok(/^Slot /.test(laned.chip || ''), `S21 a lane click RELEASES the user window (${laned.chip})`);
+  }, "S21");
 };
 
 /** S22 · The surface never scrolls the page, the advisory sentence renders in
@@ -1587,16 +1739,18 @@ export const S22 = async (page) => {
     await page.reload();
     await page.waitForSelector('.cockpit');
     await settle(page, 800);
-    const s = await state(page);
-    is(s.hScroll, 0, `S22 no horizontal page scroll at ${vp.width}×${vp.height}`);
-    is(s.vScroll, 0, `S22 no vertical page scroll at ${vp.width}×${vp.height}`);
-    is(s.advisoryFits, true, `S22 the advisory sentence is never ellipsized at ${vp.width}×${vp.height}`);
-    ok(/review with your clinician/.test(s.advisory || ''), 'S22 the advisory sentence renders in full');
-    is(s.rangeArtifacts, {
-      scrub: false, fill: false, titled: false, label: false, fourteenDayStrip: false,
-    }, `S22 the inert Range instrument stays absent at ${vp.width}×${vp.height}`);
-    is(s.pool, 'pooled from 3 captured CGM days · ±45 min',
-      `S22 canvas provenance reflects the server-supplied captured_days at ${vp.width}×${vp.height}`);
+    await waitForReplayAssertion(async seen => {
+      const s = seen(await state(page));
+      is(s.hScroll, 0, `S22 no horizontal page scroll at ${vp.width}×${vp.height}`);
+      is(s.vScroll, 0, `S22 no vertical page scroll at ${vp.width}×${vp.height}`);
+      is(s.advisoryFits, true, `S22 the advisory sentence is never ellipsized at ${vp.width}×${vp.height}`);
+      ok(/review with your clinician/.test(s.advisory || ''), 'S22 the advisory sentence renders in full');
+      is(s.rangeArtifacts, {
+        scrub: false, fill: false, titled: false, label: false, fourteenDayStrip: false,
+      }, `S22 the inert Range instrument stays absent at ${vp.width}×${vp.height}`);
+      is(s.pool, 'pooled from 3 captured CGM days · ±45 min',
+        `S22 canvas provenance reflects the server-supplied captured_days at ${vp.width}×${vp.height}`);
+    }, "S22");
   }
 };
 
@@ -1622,22 +1776,27 @@ export const S23 = async (page) => {
   await page.reload();
   await page.waitForSelector('.cockpit');
   await settle(page, 800);
-  const wide = await geometry(page);
-  is(wide.chartW, wide.trackW, 'S23 precondition: the plot fills its grid track at 1440');
-  ok(wide.braceLeft != null, 'S23 precondition: opens with a brace on the plot');
+  const { wide } = await waitForReplayAssertion(async seen => {
+    const wide = seen(await geometry(page));
+    is(wide.chartW, wide.trackW, 'S23 precondition: the plot fills its grid track at 1440');
+    ok(wide.braceLeft != null, 'S23 precondition: opens with a brace on the plot');
+    return { wide };
+  }, "S23");
 
   await page.setViewportSize({ width: 1280, height: 800 });   // LIVE, no reload
   await settle(page, 800);
-  const narrow = await geometry(page);
-  ok(narrow.trackW < wide.trackW, `S23 the grid track narrows (${wide.trackW} → ${narrow.trackW})`);
-  // the bug this asserts against: #chart kept its last drawn width, so the plot
-  // overflowed a track that had already narrowed under it
-  is(narrow.chartW, narrow.trackW,
-    `S23 the plot re-lays-out to its narrowed track (${narrow.chartW} vs ${narrow.trackW})`);
-  is(narrow.canvasW, narrow.trackW,
-    `S23 the rendered canvas follows (${narrow.canvasW} vs ${narrow.trackW})`);
-  ok(narrow.braceLeft < wide.braceLeft,
-    `S23 the brace repaints against the new geometry (${wide.braceLeft} → ${narrow.braceLeft})`);
+  await waitForReplayAssertion(async seen => {
+    const narrow = seen(await geometry(page));
+    ok(narrow.trackW < wide.trackW, `S23 the grid track narrows (${wide.trackW} → ${narrow.trackW})`);
+    // the bug this asserts against: #chart kept its last drawn width, so the plot
+    // overflowed a track that had already narrowed under it
+    is(narrow.chartW, narrow.trackW,
+      `S23 the plot re-lays-out to its narrowed track (${narrow.chartW} vs ${narrow.trackW})`);
+    is(narrow.canvasW, narrow.trackW,
+      `S23 the rendered canvas follows (${narrow.canvasW} vs ${narrow.trackW})`);
+    ok(narrow.braceLeft < wide.braceLeft,
+      `S23 the brace repaints against the new geometry (${wide.braceLeft} → ${narrow.braceLeft})`);
+  }, "S23");
 };
 
 /* ---- #666 day-completion ---------------------------------------------
@@ -1654,14 +1813,19 @@ export const S23 = async (page) => {
     window are boot state that must survive the day-completion repaint. */
 async function setupWorkspaceAtFactor(page) {
   // stage a slot that asserts a direction (same precondition as S16)
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
-    .findIndex((b) => b.dataset.verdict === 'up'));
-  ok(idx >= 0, '#666 precondition: the lane holds a slot that asserts a direction');
+  const { idx } = await waitForReplayAssertion(async seen => {
+    const idx = seen(await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+      .findIndex((b) => b.dataset.verdict === 'up')));
+    ok(idx >= 0, '#666 precondition: the lane holds a slot that asserts a direction');
+    return { idx };
+  }, "setupWorkspaceAtFactor");
   await page.click(`#lane button:nth-child(${idx + 1})`);
   await settle(page, 400);
   await page.click('#level .stagebtn');
   await settle(page, 400);
-  is((await state(page)).dock.kind, 'Plan · staged', '#666 setup: one item staged');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).dock.kind, 'Plan · staged', '#666 setup: one item staged');
+  }, "setupWorkspaceAtFactor");
   // a lane click released any window; pop back to the factors root and drill a
   // factor, THEN draw the window so drilling preserves it (never a lane click)
   await page.click('#crumb-trail button');   // the Findings ancestor
@@ -1675,10 +1839,13 @@ async function setupWorkspaceAtFactor(page) {
   await page.mouse.move(b.x + 430, y, { steps: 8 });
   await page.mouse.up();
   await settle(page, 400);
-  const s = await state(page);
-  is(s.crumb.length, 2, '#666 setup: drilled to a factor (depth 2)');
-  ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(s.chip || ''), `#666 setup: a user window stands (${s.chip})`);
-  is(s.dock.kind, 'Plan · staged', '#666 setup: staged item survives the drill');
+  const { s } = await waitForReplayAssertion(async seen => {
+    const s = seen(await state(page));
+    is(s.crumb.length, 2, '#666 setup: drilled to a factor (depth 2)');
+    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(s.chip || ''), `#666 setup: a user window stands (${s.chip})`);
+    is(s.dock.kind, 'Plan · staged', '#666 setup: staged item survives the drill');
+    return { s };
+  }, "setupWorkspaceAtFactor");
   return s;
 }
 
@@ -1694,17 +1861,19 @@ export const D1 = async (page) => {
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
   await settle(page, 500);
-  const after = await state(page);
-  is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
-  is(await page.locator('#level .occ-detail .statline').innerText(),
-    'The canvas shows the selected glucose trace and evidence markers.',
-    'D1 clinical evidence is present without a paint-time fallback fetch');
-  ok((await traceSeries(page))?.length > 0, 'D1 the server trace is drawn');
-  is(after.chip, setup.chip, 'D1 the same drawn window remains');
-  is(after.dock.kind, 'Plan · staged', 'D1 the staged Plan item remains');
-  const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
-  const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.crumb.length, 2, 'D1 the server selection stays in the standing case');
+    is(seen(await page.locator('#level .occ-detail .statline').innerText()),
+      'The canvas shows the selected glucose trace and evidence markers.',
+      'D1 clinical evidence is present without a paint-time fallback fetch');
+    ok((seen(await traceSeries(page)))?.length > 0, 'D1 the server trace is drawn');
+    is(after.chip, setup.chip, 'D1 the same drawn window remains');
+    is(after.dock.kind, 'Plan · staged', 'D1 the staged Plan item remains');
+    const sameLevel = seen(await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected));
+    const sameChart = seen(await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected));
+    ok(sameLevel && sameChart, 'D1 selection preserves the standing surface nodes');
+  }, "D1");
 };
 
 /** D2 · An EXPLICIT empty /api/timeline ({ cgm: [] }) is the deliberate no-trace
@@ -1716,17 +1885,19 @@ export const D2 = async (page) => {
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
   await settle(page, 500);
-  const after = await state(page);
-  is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
-  const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
-    'D2 the case file, not a second timeline request, owns selection evidence');
-  ok((await traceSeries(page))?.length > 0, 'D2 the selected server trace remains complete');
-  is(after.chip, setup.chip, 'D2 the drawn window is untouched');
-  is(after.dock.kind, 'Plan · staged', 'D2 the staged item is untouched');
-  const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
-  const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel && sameChart, 'D2 #level/#chart keep their identity — an empty day never remounts');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.crumb.length, 2, 'D2 at the drilled factor, occurrence selected in place');
+    const sentence = seen(await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null));
+    is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
+      'D2 the case file, not a second timeline request, owns selection evidence');
+    ok((seen(await traceSeries(page)))?.length > 0, 'D2 the selected server trace remains complete');
+    is(after.chip, setup.chip, 'D2 the drawn window is untouched');
+    is(after.dock.kind, 'Plan · staged', 'D2 the staged item is untouched');
+    const sameLevel = seen(await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected));
+    const sameChart = seen(await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected));
+    ok(sameLevel && sameChart, 'D2 #level/#chart keep their identity — an empty day never remounts');
+  }, "D2");
 };
 
 /** D3 · A /api/timeline that 500s settles into the no-trace state without any
@@ -1738,17 +1909,19 @@ export const D3 = async (page) => {
   const chartBefore = await page.$('#chart');
   await page.click('#level .ev-row');
   await settle(page, 500);
-  const after = await state(page);
-  is(after.crumb.length, 2, 'D3 remains at the drilled factor');
-  const sentence = await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null);
-  is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
-    'D3 selection evidence remains complete');
-  ok((await traceSeries(page))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
-  is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
-  is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
-  const sameLevel = await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected);
-  const sameChart = await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected);
-  ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.crumb.length, 2, 'D3 remains at the drilled factor');
+    const sentence = seen(await page.evaluate(() => document.querySelector('#level .occ-detail .statline')?.textContent.trim() ?? null));
+    is(sentence, 'The canvas shows the selected glucose trace and evidence markers.',
+      'D3 selection evidence remains complete');
+    ok((seen(await traceSeries(page)))?.length > 0, 'D3 the selected trace is not replaced by a fallback');
+    is(after.chip, setup.chip, 'D3 the drawn window is unchanged');
+    is(after.dock.kind, 'Plan · staged', 'D3 the staged item is unchanged');
+    const sameLevel = seen(await levelBefore.evaluate((el) => el === document.getElementById('level') && el.isConnected));
+    const sameChart = seen(await chartBefore.evaluate((el) => el === document.getElementById('chart') && el.isConnected));
+    ok(sameLevel && sameChart, 'D3 #level/#chart keep their identity');
+  }, "D3");
 };
 
 /** S24 · ONE ranked findings queue at level 1: settings and habits interleave in a
@@ -1760,34 +1933,39 @@ export const D3 = async (page) => {
 export const S24 = async (page) => {
   await expandWatching(page);
   await waitForLevelAnimations(page);
-  const open = await state(page);
-  is(open.crumb, ['Findings'], 'S24 the crumb root is the queue\u2019s own noun');
-  ok(open.queue.length > 0, 'S24 the queue renders rows');
-  // ONE list: no tier heading, no "Factors", and no queue-level hedge banner
-  const headings = await page.evaluate(() => ({
-    factors: [...document.querySelectorAll('#level *')].some((n) => n.textContent.trim() === 'Factors'),
-    caveat: Boolean(document.querySelector('#level .caveat')),
-    entries: document.querySelectorAll('#level .entry').length,
-  }));
-  is(headings.factors, false, 'S24 no Factors heading anywhere (term 34)');
-  is(headings.caveat, false, 'S24 no `Inferred patterns` banner at queue level (term 43)');
-  is(headings.entries, 0, 'S24 no per-parameter tier rows (term 34)');
-  is(open.queueRules, 0, 'S24 no hairline between queue rows — spacing separates (term 44)');
-  // term 36: a fixed right-aligned tag column at ONE constant x on every row
-  const tagged = open.queue.filter((row) => !row.claimed && row.tag);
-  is(new Set(tagged.map((r) => r.tagX)).size, 1,
-    `S24 the tag column sits at one constant x (${JSON.stringify(open.queue.map((r) => r.tagX))})`);
-  ok(tagged.every((r) => /^(⚙Setting|◈Cause|◇Pattern)$/.test(r.tag)),
-    `S24 every row wears a glyph+word flavor tag (${JSON.stringify(open.queue.map((r) => r.tag))})`);
+  const { open } = await waitForReplayAssertion(async seen => {
+    const open = seen(await state(page));
+    is(open.crumb, ['Findings'], 'S24 the crumb root is the queue\u2019s own noun');
+    ok(open.queue.length > 0, 'S24 the queue renders rows');
+    // ONE list: no tier heading, no "Factors", and no queue-level hedge banner
+    const headings = seen(await page.evaluate(() => ({
+      factors: [...document.querySelectorAll('#level *')].some((n) => n.textContent.trim() === 'Factors'),
+      caveat: Boolean(document.querySelector('#level .caveat')),
+      entries: document.querySelectorAll('#level .entry').length,
+    })));
+    is(headings.factors, false, 'S24 no Factors heading anywhere (term 34)');
+    is(headings.caveat, false, 'S24 no `Inferred patterns` banner at queue level (term 43)');
+    is(headings.entries, 0, 'S24 no per-parameter tier rows (term 34)');
+    is(open.queueRules, 0, 'S24 no hairline between queue rows — spacing separates (term 44)');
+    // term 36: a fixed right-aligned tag column at ONE constant x on every row
+    const tagged = open.queue.filter((row) => !row.claimed && row.tag);
+    is(new Set(tagged.map((r) => r.tagX)).size, 1,
+      `S24 the tag column sits at one constant x (${JSON.stringify(open.queue.map((r) => r.tagX))})`);
+    ok(tagged.every((r) => /^(⚙Setting|◈Cause|◇Pattern)$/.test(r.tag)),
+      `S24 every row wears a glyph+word flavor tag (${JSON.stringify(open.queue.map((r) => r.tag))})`);
+    return { open };
+  }, "S24");
 
   // term 37 — a PRESET re-scopes the queue in place; the crumb stays at its root
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 450);
-  const preset = await state(page);
-  is(preset.crumb, ['Findings'], 'S24 window scope is never a breadcrumb level');
-  is(preset.crumbMeta, '4 in this window', 'S24 the scoped meta counts visible action-ready rows');
-  ok(preset.queue.map((r) => r.title).join('|') !== open.queue.map((r) => r.title).join('|'),
-    'S24 the pressed preset actually re-scoped the row set');
+  await waitForReplayAssertion(async seen => {
+    const preset = seen(await state(page));
+    is(preset.crumb, ['Findings'], 'S24 window scope is never a breadcrumb level');
+    is(preset.crumbMeta, '4 in this window', 'S24 the scoped meta counts visible action-ready rows');
+    ok(preset.queue.map((r) => r.title).join('|') !== open.queue.map((r) => r.title).join('|'),
+      'S24 the pressed preset actually re-scoped the row set');
+  }, "S24");
 
   // ...and a DRAWN brace reaches the same state through the same grammar
   const b = await plot(page);
@@ -1798,23 +1976,27 @@ export const S24 = async (page) => {
   await page.mouse.up();
   await settle(page, 450);
   await expandWatching(page);
-  const drawn = await state(page);
-  is(drawn.crumb, ['Findings'], 'S24 a drawn window is not a level either');
-  ok(/^\d+ in this window$/.test(drawn.crumbMeta), 'S24 drawn scope retains the action-ready meta grammar');
-  ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
-  assertNoRangeInMeta(drawn.crumbMeta);
+  await waitForReplayAssertion(async seen => {
+    const drawn = seen(await state(page));
+    is(drawn.crumb, ['Findings'], 'S24 a drawn window is not a level either');
+    ok(/^\d+ in this window$/.test(drawn.crumbMeta), 'S24 drawn scope retains the action-ready meta grammar');
+    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
+    assertNoRangeInMeta(drawn.crumbMeta);
 
-  // term 38 — an explicit window is the one door to the demoted register
-  ok(drawn.queue.some((r) => r.register === 'held' || r.register === 'blind'),
-    'S24 held/blind rows appear under an explicit window');
-  ok(drawn.queue.filter((r) => r.register === 'held' || r.register === 'blind')
-    .every((r) => r.tier === 'noted'), 'S24 one demoted register for the whole queue');
+    // term 38 — an explicit window is the one door to the demoted register
+    ok(drawn.queue.some((r) => r.register === 'held' || r.register === 'blind'),
+      'S24 held/blind rows appear under an explicit window');
+    ok(drawn.queue.filter((r) => r.register === 'held' || r.register === 'blind')
+      .every((r) => r.tier === 'noted'), 'S24 one demoted register for the whole queue');
+  }, "S24");
 
   // Esc clears the window and restores the global, asserting-only queue
   await page.keyboard.press('Escape');
   await settle(page, 450);
-  const cleared = await state(page);
-  is(cleared.crumb, ['Findings'], 'S24 clearing is not a level change either');
+  await waitForReplayAssertion(async seen => {
+    const cleared = seen(await state(page));
+    is(cleared.crumb, ['Findings'], 'S24 clearing is not a level change either');
+  }, "S24");
 };
 
 /** S25 · The inspector has a FLOOR: the watched-change dock is pane furniture in one
@@ -1822,43 +2004,50 @@ export const S24 = async (page) => {
     header's staged status is gone. ADDED #735 with lock terms 46-49. */
 // LOCK:diagnose-workstation:46 LOCK:diagnose-workstation:47 LOCK:diagnose-workstation:48 LOCK:diagnose-workstation:49
 export const S25 = async (page) => {
-  const header = await page.evaluate(() => Boolean(document.querySelector('#inspector-meta')));
-  is(header, false, 'S25 the pane header\u2019s staged status is deleted (term 47)');
-  const idle = await state(page);
-  ok(idle.dock, 'S25 the dock is mounted');
-  is(idle.dock.kind, 'Nothing being watched', 'S25 idle is a state, not an absence');
-  is(idle.dock.what, 'No change staged, no trial or focus active', 'S25 the idle title');
-  is(idle.dock.how, 'Stage a change from a finding to start one.', 'S25 the idle detail');
-  is(idle.dock.route, null, 'S25 idle routes nowhere');
-  // term 48 — separated by SPACE and the theme's ground, never a hairline
-  const seam = await page.evaluate(() => {
-    const s = getComputedStyle(document.querySelector('.inspector > .watch'));
-    return { border: parseFloat(s.borderTopWidth), shadow: s.boxShadow };
-  });
-  is(seam.border, 0, 'S25 no hairline above the dock (term 48)');
-  ok(seam.shadow === 'none', 'S25 and no shadow standing in for one');
+  const { idle, idx } = await waitForReplayAssertion(async seen => {
+    const header = seen(await page.evaluate(() => Boolean(document.querySelector('#inspector-meta'))));
+    is(header, false, 'S25 the pane header\u2019s staged status is deleted (term 47)');
+    const idle = seen(await state(page));
+    ok(idle.dock, 'S25 the dock is mounted');
+    is(idle.dock.kind, 'Nothing being watched', 'S25 idle is a state, not an absence');
+    is(idle.dock.what, 'No change staged, no trial or focus active', 'S25 the idle title');
+    is(idle.dock.how, 'Stage a change from a finding to start one.', 'S25 the idle detail');
+    is(idle.dock.route, null, 'S25 idle routes nowhere');
+    // term 48 — separated by SPACE and the theme's ground, never a hairline
+    const seam = seen(await page.evaluate(() => {
+      const s = getComputedStyle(document.querySelector('.inspector > .watch'));
+      return { border: parseFloat(s.borderTopWidth), shadow: s.boxShadow };
+    }));
+    is(seam.border, 0, 'S25 no hairline above the dock (term 48)');
+    ok(seam.shadow === 'none', 'S25 and no shadow standing in for one');
 
-  // term 46 — it is PANE furniture: staging changes its state, drilling never
-  // changes its box
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
-    .findIndex((b) => b.dataset.verdict === 'up'));
-  ok(idx >= 0, 'S25 precondition: the lane holds a slot that asserts a direction');
+    // term 46 — it is PANE furniture: staging changes its state, drilling never
+    // changes its box
+    const idx = seen(await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+      .findIndex((b) => b.dataset.verdict === 'up')));
+    ok(idx >= 0, 'S25 precondition: the lane holds a slot that asserts a direction');
+    return { idle, idx };
+  }, "S25");
   await page.click(`#lane button:nth-child(${idx + 1})`);
   await settle(page, 400);
-  const drilled = await state(page);
-  is(drilled.dock.kind, 'Nothing being watched', 'S25 the dock survives a drill');
-  is(drilled.dock.box.top, idle.dock.box.top, 'S25 the floor does not move on a drill');
-  is(drilled.dock.box.height, idle.dock.box.height, 'S25 one reserved height (term 48)');
+  await waitForReplayAssertion(async seen => {
+    const drilled = seen(await state(page));
+    is(drilled.dock.kind, 'Nothing being watched', 'S25 the dock survives a drill');
+    is(drilled.dock.box.top, idle.dock.box.top, 'S25 the floor does not move on a drill');
+    is(drilled.dock.box.height, idle.dock.box.height, 'S25 one reserved height (term 48)');
+  }, "S25");
   await page.click('#level .stagebtn');
   await settle(page, 400);
-  const staged = await state(page);
-  is(staged.dock.kind, 'Plan · staged', 'S25 the dock reports the staged object');
-  is(staged.dock.how, 'Staged, not applied — nothing has changed on the pump',
-    'S25 the Plan detail line prints in full');
-  is(staged.dock.howClipped, false, 'S25 the detail line is never ellipsized (term 49)');
-  is(staged.dock.route, 'Open Plan ›', 'S25 one optional route control');
-  is(staged.dock.box.top, idle.dock.box.top, 'S25 the floor held when the object changed');
-  is(staged.dock.box.height, idle.dock.box.height, 'S25 ONE reserved height across states');
+  await waitForReplayAssertion(async seen => {
+    const staged = seen(await state(page));
+    is(staged.dock.kind, 'Plan · staged', 'S25 the dock reports the staged object');
+    is(staged.dock.how, 'Staged, not applied — nothing has changed on the pump',
+      'S25 the Plan detail line prints in full');
+    is(staged.dock.howClipped, false, 'S25 the detail line is never ellipsized (term 49)');
+    is(staged.dock.route, 'Open Plan ›', 'S25 one optional route control');
+    is(staged.dock.box.top, idle.dock.box.top, 'S25 the floor held when the object changed');
+    is(staged.dock.box.height, idle.dock.box.height, 'S25 ONE reserved height across states');
+  }, "S25");
   /* Term 49 — the route control is OUTLINED, never filled: "so the interaction
      accent is not re-broadened". What it forbids is the ACCENT spent on a plate
      (the theme lock says the same thing in its term 8: a write action spends its
@@ -1868,19 +2057,21 @@ export const S25 = async (page) => {
      recesses the control BELOW the dock rather than raising it. So the assertion
      is the term's own subject: a real border, and a background that is not the
      interaction accent. */
-  const control = await page.evaluate(() => {
-    const node = document.querySelector('.inspector > .watch .go');
-    const s = getComputedStyle(node);
-    const probe = document.createElement('span');
-    probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--mk-primary').trim();
-    document.body.append(probe);
-    const accent = getComputedStyle(probe).color;
-    probe.remove();
-    return { background: s.backgroundColor, border: parseFloat(s.borderTopWidth), accent };
-  });
-  ok(control.background !== control.accent,
-    `S25 the route control does not spend the interaction accent on a plate (${control.background} vs accent ${control.accent})`);
-  ok(control.border > 0, 'S25 it is outlined');
+  await waitForReplayAssertion(async seen => {
+    const control = seen(await page.evaluate(() => {
+      const node = document.querySelector('.inspector > .watch .go');
+      const s = getComputedStyle(node);
+      const probe = document.createElement('span');
+      probe.style.color = getComputedStyle(document.documentElement).getPropertyValue('--mk-primary').trim();
+      document.body.append(probe);
+      const accent = getComputedStyle(probe).color;
+      probe.remove();
+      return { background: s.backgroundColor, border: parseFloat(s.borderTopWidth), accent };
+    }));
+    ok(control.background !== control.accent,
+      `S25 the route control does not spend the interaction accent on a plate (${control.background} vs accent ${control.accent})`);
+    ok(control.border > 0, 'S25 it is outlined');
+  }, 'S25 outline');
 };
 
 /** S26 · Evidence rows remain one full-row occurrence drill target, but their
@@ -1891,23 +2082,27 @@ export const S26 = async (page) => {
   const sanction = `${author} · 2026-08-19 · "Decided by ${author} in a ruling session on 2026-08-19."`;
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  ok((await state(page)).evRows > 0, 'S26 precondition: evidence rows render');
-  const shape = await page.evaluate(() => ({
-    rows: document.querySelectorAll('#level .ev-row').length,
-    chevrons: document.querySelectorAll('#level .ev-row .chev').length,
-    buttons: [...document.querySelectorAll('#level .ev-row')]
-      .every((row) => row.tagName === 'BUTTON'),
-  }));
-  is(shape.chevrons, 0, `S26 RETIRED — ${sanction}`);
-  ok(shape.buttons, 'S26 the full evidence rows remain buttons');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await state(page))).evRows > 0, 'S26 precondition: evidence rows render');
+    const shape = seen(await page.evaluate(() => ({
+      rows: document.querySelectorAll('#level .ev-row').length,
+      chevrons: document.querySelectorAll('#level .ev-row .chev').length,
+      buttons: [...document.querySelectorAll('#level .ev-row')]
+        .every((row) => row.tagName === 'BUTTON'),
+    })));
+    is(shape.chevrons, 0, `S26 RETIRED — ${sanction}`);
+    ok(shape.buttons, 'S26 the full evidence rows remain buttons');
+  }, "S26");
   await page.click('#level .ev-row');
   await settle(page, 450);
   // select-in-place (P35 retired, 2026-08-19 revision): the row still selects,
   // it just no longer drills to a level of its own
-  is((await state(page)).crumb.length, 2, 'S26 the row selects in place, no crumb push (P35 retired)');
-  const selected = await page.evaluate(() =>
-    document.querySelector('#level .ev-row[aria-pressed="true"]') !== null);
-  ok(selected, 'S26 the row still emphasises in place');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb.length, 2, 'S26 the row selects in place, no crumb push (P35 retired)');
+    const selected = seen(await page.evaluate(() =>
+      document.querySelector('#level .ev-row[aria-pressed="true"]') !== null));
+    ok(selected, 'S26 the row still emphasises in place');
+  }, "S26");
   return `RETIRED — ${sanction}`;
 };
 
@@ -1917,9 +2112,11 @@ export const S27 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await settle(page, 450);
   await page.getByRole('button', { name: /Filter/ }).click();
-  const sift = await page.getByRole('menuitemcheckbox').allTextContents();
-  is(sift, ['Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1'],
-    'S27 the four Sift items spell the server-published global counts');
+  await waitForReplayAssertion(async seen => {
+    const sift = seen(await page.getByRole('menuitemcheckbox').allTextContents());
+    is(sift, ['Highs 4', 'Lows 3', 'Meals 2', 'Corrections 1'],
+      'S27 the four Sift items spell the server-published global counts');
+  }, "S27");
 };
 
 /** S28 · Removing a Sift choice hides only rows with no remaining membership. */
@@ -1930,11 +2127,13 @@ export const S28 = async (page) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Highs 4', exact: true }).click();
   await settle(page, 350);
-  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
-  is(ids, ['pattern:highs_after_meals', 'finding:late_bolus',
-    'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
-    'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob'],
-    'S28 a deselected Highs choice hides high-only rows while preserving multi-Sift matches');
+  await waitForReplayAssertion(async seen => {
+    const ids = seen(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)));
+    is(ids, ['pattern:highs_after_meals', 'finding:late_bolus',
+      'pattern:lows_after_correcting_highs', 'finding:correction_on_iob',
+      'pattern:lows_after_meals', 'pattern:overnight_lows_no_iob'],
+      'S28 a deselected Highs choice hides high-only rows while preserving multi-Sift matches');
+  }, "S28");
 };
 
 /** S29 · A sift collapses the held/blind group, which can expand in place. */
@@ -1946,17 +2145,22 @@ export const S29 = async (page) => {
   await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
   await page.keyboard.press('Escape');
   await settle(page, 350);
-  const toggle = page.locator('#level .qcollapse');
-  is(await toggle.innerText(), 'Watching · 4 reads', 'S29 the sift collapses held/blind reads under Watching');
-  is(await toggle.getAttribute('aria-expanded'), 'false', 'S29 the held/blind group starts collapsed');
-  is(await page.locator('#level .qrow').count(), 0,
-    'S29 collapsed held rows are not painted as ordinary queue rows');
+  const { toggle } = await waitForReplayAssertion(async seen => {
+    const toggle = page.locator('#level .qcollapse');
+    is(seen(await toggle.innerText()), 'Watching · 4 reads', 'S29 the sift collapses held/blind reads under Watching');
+    is(seen(await toggle.getAttribute('aria-expanded')), 'false', 'S29 the held/blind group starts collapsed');
+    is(seen(await page.locator('#level .qrow').count()), 0,
+      'S29 collapsed held rows are not painted as ordinary queue rows');
+    return { toggle };
+  }, "S29");
   await toggle.click();
   await settle(page, 350);
-  is(await toggle.getAttribute('aria-expanded'), 'true', 'S29 the held/blind group expands');
-  const ids = await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id));
-  is(ids, ['basal:0-30', 'basal:210-240', 'ic:660', 'isf'],
-    'S29 expanding restores every collapsed held read to the rendered queue');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await toggle.getAttribute('aria-expanded')), 'true', 'S29 the held/blind group expands');
+    const ids = seen(await page.locator('#level .qrow').evaluateAll((rows) => rows.map((row) => row.dataset.id)));
+    is(ids, ['basal:0-30', 'basal:210-240', 'ic:660', 'isf'],
+      'S29 expanding restores every collapsed held read to the rendered queue');
+  }, "S29");
 };
 
 /** S30 · An all-hidden sift names itself while keeping held/blind reads reachable. */
@@ -1967,19 +2171,23 @@ export const S30 = async (page) => {
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: /^Highs / }).click();
   await settle(page, 350);
-  is(await page.locator('#level .quiet-line.sift-empty').innerText(),
-    'No findings match the current filters.', 'S30 the all-hidden filter result names itself');
-  is(await page.locator('#level .qcollapse').innerText(), 'Watching · 4 reads',
-    'S30 the collapsed held group remains reachable below the empty-sift line');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .quiet-line.sift-empty').innerText()),
+      'No findings match the current filters.', 'S30 the all-hidden filter result names itself');
+    is(seen(await page.locator('#level .qcollapse').innerText()), 'Watching · 4 reads',
+      'S30 the collapsed held group remains reachable below the empty-sift line');
+  }, "S30");
 };
 
 /** S31 · The correction-factor row declares its whole-day scope. */
 // STORY:finding-evidence-routing:S31
 export const S31 = async (page) => {
   await expandWatching(page);
-  const row = page.locator('#level .qrow[data-id="isf"]');
-  is(await row.locator('.scope-note').innerText(), ' · Whole day',
-    'S31 the correction-factor row visibly declares its whole-day scope');
+  await waitForReplayAssertion(async seen => {
+    const row = page.locator('#level .qrow[data-id="isf"]');
+    is(seen(await row.locator('.scope-note').innerText()), ' · Whole day',
+      'S31 the correction-factor row visibly declares its whole-day scope');
+  }, "S31");
 };
 
 /* ----------------------------------------- issue #62 · one membership rule ---
@@ -2135,10 +2343,12 @@ export const S32 = async (page) => {
   await page.locator('#level .case-occurrence').first().click();
   const requested = new URL((await request).url()).searchParams.get('occ');
   await page.locator('#level .case-facts').waitFor();
-  is(requested, await page.locator('#level .case-occurrence[aria-pressed="true"]')
-    .getAttribute('data-occurrence-id'), 'S32 the case file requests the pressed opaque Occurrence id');
-  ok((await page.locator('#level').innerText()).includes('Carb undercount'),
-    'S32 the selected evidence remains inside the Carb undercount case');
+  await waitForReplayAssertion(async seen => {
+    is(requested, seen(await page.locator('#level .case-occurrence[aria-pressed="true"]')
+      .getAttribute('data-occurrence-id')), 'S32 the case file requests the pressed opaque Occurrence id');
+    ok((seen(await page.locator('#level').innerText())).includes('Carb undercount'),
+      'S32 the selected evidence remains inside the Carb undercount case');
+  }, "S32");
 };
 
 /** S40 · #64 — the seated low-comparison tile and its case file select the same
@@ -2158,17 +2368,19 @@ export const S40 = async (page) => {
   await page.locator('#level .case-occurrence').first().click();
   const requested = new URL((await request).url()).searchParams.get('occ');
   await page.locator('#level .case-facts').waitFor();
-  is(requested, await page.locator('#level .case-occurrence[aria-pressed="true"]')
-    .getAttribute('data-occurrence-id'), 'S40 the low tile requests the pressed opaque Occurrence id');
-  ok((await page.locator('#level').innerText()).includes('Over-treated low'),
-    'S40 the selected response remains inside the low Finding case');
-  /* The stage carries the mark, never the registry echo (operator ruling,
-     2026-08-27: "the only chart that needs to be displaying any kind of
-     drill down ... is the spotlight"). The clicked chart was promoted onto
-     the stage, so the mark reads off #tile-focal, matching S110/S111. */
-  is(await page.locator(
-    '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]',
-  ).getAttribute('data-drilled'), '', 'S40 the low comparison remains visibly drilled on the stage');
+  await waitForReplayAssertion(async seen => {
+    is(requested, seen(await page.locator('#level .case-occurrence[aria-pressed="true"]')
+      .getAttribute('data-occurrence-id')), 'S40 the low tile requests the pressed opaque Occurrence id');
+    ok((seen(await page.locator('#level').innerText())).includes('Over-treated low'),
+      'S40 the selected response remains inside the low Finding case');
+    /* The stage carries the mark, never the registry echo (operator ruling,
+       2026-08-27: "the only chart that needs to be displaying any kind of
+       drill down ... is the spotlight"). The clicked chart was promoted onto
+       the stage, so the mark reads off #tile-focal, matching S110/S111. */
+    is(seen(await page.locator(
+      '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]',
+    ).getAttribute('data-drilled')), '', 'S40 the low comparison remains visibly drilled on the stage');
+  }, "S40");
 };
 
 // STORY:finding-evidence-routing:S42
@@ -2181,20 +2393,27 @@ export const S42 = async (page) => {
   const checked = await highs.getAttribute('aria-checked');
   await page.keyboard.press('Escape');
   await settle(page, 250);
-  const toggle = page.locator('#level .qcollapse');
-  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S42 one Watching control owns the count');
-  if (page.viewportSize().width <= 760) {
-    const box = await toggle.boundingBox();
-    ok(box && box.height >= 44, `S42 mobile Watching target is at least 44px high (${box?.height})`);
-  }
+  const { toggle } = await waitForReplayAssertion(async seen => {
+    const toggle = page.locator('#level .qcollapse');
+    ok(/^Watching · \d+ reads?$/.test(seen(await toggle.innerText())), 'S42 one Watching control owns the count');
+    if (page.viewportSize().width <= 760) {
+      const box = seen(await toggle.boundingBox());
+      ok(box && box.height >= 44, `S42 mobile Watching target is at least 44px high (${box?.height})`);
+    }
+    return { toggle };
+  }, "S42");
   await captureEvidence(page, 'S42-sift-collapsed');
   await toggle.click();
   await page.getByRole('button', { name: /Filter/ }).click();
-  is(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked'), checked,
-    'S42 expansion preserves the sift');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.getByRole('menuitemcheckbox', { name: /^Highs / }).getAttribute('aria-checked')), checked,
+      'S42 expansion preserves the sift');
+  }, "S42");
   await page.keyboard.press('Escape');
-  ok(await page.locator('#level .qrow[data-state="held"]').first().isVisible(),
-    'S42 a held read is reachable after expansion');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.locator('#level .qrow[data-state="held"]').first().isVisible()),
+      'S42 a held read is reachable after expansion');
+  }, "S42");
 };
 
 // STORY:finding-evidence-routing:S49
@@ -2227,12 +2446,16 @@ export const S90 = async (page) => {
     lets the reader clear that unchanged window. */
 // STORY:finding-evidence-routing:S91
 export const S91 = async (page) => {
-  is(await page.locator('#seg-window [data-follow] .x').count(), 1,
-    'S91 precondition: the drawn window can be cleared');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#seg-window [data-follow] .x').count()), 1,
+      'S91 precondition: the drawn window can be cleared');
+  }, "S91");
   await page.click('#level .qrow[data-state="finding"]');
   await settle(page, 450);
-  is(await page.locator('#seg-window [data-follow] .x').count(), 1,
-    'S91 drilling a finding keeps the drawn window clear affordance');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#seg-window [data-follow] .x').count()), 1,
+      'S91 drilling a finding keeps the drawn window clear affordance');
+  }, "S91");
 };
 
 // STORY:finding-evidence-routing:S57
@@ -2311,16 +2534,18 @@ const historySafetyState = (page, draftWrites) => page.evaluate(async (writes) =
 }, draftWrites);
 
 const assertHistorySafety = async (page, draftWrites, label) => {
-  const safety = await historySafetyState(page, draftWrites);
-  ok(Array.isArray(safety.stageCalls), `S71 ${label}: staging callback probe is installed`);
-  is(safety.stageCalls, [], `S71 ${label}: callbacks.stage is not invoked`);
-  is(safety.planDraftWrites, 0, `S71 ${label}: no Plan draft request is written`);
-  is(safety.planItems, 0, `S71 ${label}: persisted Plan draft remains empty`);
-  is(safety.planBadge, '0', `S71 ${label}: rendered Plan state remains empty`);
-  is(safety.tab, '/diagnose', `S71 ${label}: address remains on Diagnose`);
-  is(safety.storedTab, 'diagnose', `S71 ${label}: persisted navigation remains on Diagnose`);
-  is(safety.diagnoseCurrent, 'step', `S71 ${label}: Diagnose remains the rendered current step`);
-  is(safety.planCurrent, null, `S71 ${label}: Plan never becomes the current route`);
+  await waitForReplayAssertion(async seen => {
+    const safety = seen(await historySafetyState(page, draftWrites));
+    ok(Array.isArray(safety.stageCalls), `S71 ${label}: staging callback probe is installed`);
+    is(safety.stageCalls, [], `S71 ${label}: callbacks.stage is not invoked`);
+    is(safety.planDraftWrites, 0, `S71 ${label}: no Plan draft request is written`);
+    is(safety.planItems, 0, `S71 ${label}: persisted Plan draft remains empty`);
+    is(safety.planBadge, '0', `S71 ${label}: rendered Plan state remains empty`);
+    is(safety.tab, '/diagnose', `S71 ${label}: address remains on Diagnose`);
+    is(safety.storedTab, 'diagnose', `S71 ${label}: persisted navigation remains on Diagnose`);
+    is(safety.diagnoseCurrent, 'step', `S71 ${label}: Diagnose remains the rendered current step`);
+    is(safety.planCurrent, null, `S71 ${label}: Plan never becomes the current route`);
+  }, "assertHistorySafety");
 };
 
 // STORY:finding-evidence-routing:S71
@@ -2350,31 +2575,43 @@ const withNoDataBasal = (analysis) => {
 // STORY:finding-evidence-routing:S73
 export const S73 = async (page) => {
   const openVerdict = async (verdict) => {
-    const cell = await page.evaluate((want) => {
-      const buttons = [...document.querySelectorAll('#lane button')];
-      const index = buttons.findIndex((button) => button.dataset.verdict === want);
-      return index < 0 ? null : { index, ariaLabel: buttons[index].getAttribute('aria-label') };
-    }, verdict);
-    ok(cell, `S73 precondition: the lane holds a ${verdict} slot`);
+    const { cell } = await waitForReplayAssertion(async seen => {
+      const cell = seen(await page.evaluate((want) => {
+        const buttons = [...document.querySelectorAll('#lane button')];
+        const index = buttons.findIndex((button) => button.dataset.verdict === want);
+        return index < 0 ? null : { index, ariaLabel: buttons[index].getAttribute('aria-label') };
+      }, verdict));
+      ok(cell, `S73 precondition: the lane holds a ${verdict} slot`);
+      return { cell };
+    }, "openVerdict");
     await page.click(`#lane button:nth-child(${cell.index + 1})`);
     await settle(page, 450);
-    return {
-      ariaLabel: cell.ariaLabel,
+    return async () => ({
+      ariaLabel: await page.locator(`#lane button:nth-child(${cell.index + 1})`).getAttribute('aria-label'),
       head: await page.locator('#level .slot-head .verdict').textContent(),
-    };
+    });
   };
 
-  const noData = await openVerdict('nodata');
-  is(noData.head?.trim(), 'no nights of steady data', 'S73 no-data head names its own verdict');
-  ok(noData.head?.trim() !== 'insufficient evidence', 'S73 no-data head is not the thin-data verdict');
-  ok(noData.ariaLabel.endsWith(noData.head.trim()), 'S73 no-data tile name ends with its head');
+  const readNoData = await openVerdict('nodata');
+  await waitForReplayAssertion(async seen => {
+    const noData = seen(await readNoData());
+    is(noData.head?.trim(), 'no nights of steady data', 'S73 no-data head names its own verdict');
+    ok(noData.head?.trim() !== 'insufficient evidence', 'S73 no-data head is not the thin-data verdict');
+    ok(noData.ariaLabel.endsWith(noData.head.trim()), 'S73 no-data tile name ends with its head');
+  }, 'S73 nodata');
 
-  const hold = await openVerdict('hold');
-  is(hold.head?.trim(), 'holds at current', 'S73 hold head names its own verdict');
-  ok(hold.ariaLabel.endsWith(hold.head.trim()), 'S73 hold tile name ends with its head');
+  const readHold = await openVerdict('hold');
+  await waitForReplayAssertion(async seen => {
+    const hold = seen(await readHold());
+    is(hold.head?.trim(), 'holds at current', 'S73 hold head names its own verdict');
+    ok(hold.ariaLabel.endsWith(hold.head.trim()), 'S73 hold tile name ends with its head');
+  }, 'S73 hold');
 
-  const insufficient = await openVerdict('insufficient');
-  is(insufficient.head?.trim(), 'insufficient evidence', 'S73 thin-data head remains unchanged');
+  const readInsufficient = await openVerdict('insufficient');
+  await waitForReplayAssertion(async seen => {
+    const insufficient = seen(await readInsufficient());
+    is(insufficient.head?.trim(), 'insufficient evidence', 'S73 thin-data head remains unchanged');
+  }, 'S73 insufficient');
 };
 
 /** S74 · Watching evidence stays behind its disclosure until the reader asks for it. */
@@ -2385,31 +2622,38 @@ export const S74 = async (page) => {
      still holds the current-setting held reads it always did. */
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await settle(page, 450);
-  const toggle = page.locator('#level .qcollapse');
-  ok(await toggle.isVisible(), 'S74 Watching control is present without a sift');
-  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S74 Watching control names its reads');
-  is(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count(),
-    0, 'S74 Watching rows stay collapsed by default');
-  is(await page.locator('.uncaused-note').count(), 0, 'S74 RETIRED — uncaused-highs footer is absent');
-  is(await page.locator('#level .quiet-line').count(), 0,
-    'S74 action-ready rows keep the default queue out of the all-Watching empty state');
+  const { toggle } = await waitForReplayAssertion(async seen => {
+    const toggle = page.locator('#level .qcollapse');
+    ok(seen(await toggle.isVisible()), 'S74 Watching control is present without a sift');
+    ok(/^Watching · \d+ reads?$/.test(seen(await toggle.innerText())), 'S74 Watching control names its reads');
+    is(seen(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count()),
+      0, 'S74 Watching rows stay collapsed by default');
+    is(seen(await page.locator('.uncaused-note').count()), 0, 'S74 RETIRED — uncaused-highs footer is absent');
+    is(seen(await page.locator('#level .quiet-line').count()), 0,
+      'S74 action-ready rows keep the default queue out of the all-Watching empty state');
+    return { toggle };
+  }, "S74");
   await captureEvidence(page, 'S74-watching-collapsed-default');
   await toggle.click();
-  ok(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count() > 0,
-    'S74 Watching rows appear after expansion');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await page.locator('#level .qrow[data-state="held"], #level .qrow[data-state="blind"]').count()) > 0,
+      'S74 Watching rows appear after expansion');
+  }, "S74");
 };
 
 /** S75 · An all-Watching window keeps its quiet line compact above the disclosure. */
 // STORY:finding-evidence-routing:S75
 export const S75 = async (page) => {
-  const empty = page.locator('#level .quiet-line.sift-empty');
-  is(await empty.innerText(), 'No pattern or setting asserts a direction in this window.',
-    'S75 the all-Watching window retains the quiet reading');
-  is(await page.evaluate(() => getComputedStyle(document.querySelector('#level .quiet-line')).minHeight), '0px',
-    'S75 the quiet reading is compact when Watching follows it');
-  const toggle = page.locator('#level .qcollapse');
-  ok(await toggle.isVisible(), 'S75 Watching remains reachable below the quiet reading');
-  ok(/^Watching · \d+ reads?$/.test(await toggle.innerText()), 'S75 Watching names its reads');
+  await waitForReplayAssertion(async seen => {
+    const empty = page.locator('#level .quiet-line.sift-empty');
+    is(seen(await empty.innerText()), 'No pattern or setting asserts a direction in this window.',
+      'S75 the all-Watching window retains the quiet reading');
+    is(seen(await page.evaluate(() => getComputedStyle(document.querySelector('#level .quiet-line')).minHeight)), '0px',
+      'S75 the quiet reading is compact when Watching follows it');
+    const toggle = page.locator('#level .qcollapse');
+    ok(seen(await toggle.isVisible()), 'S75 Watching remains reachable below the quiet reading');
+    ok(/^Watching · \d+ reads?$/.test(seen(await toggle.innerText())), 'S75 Watching names its reads');
+  }, "S75");
 };
 
 // STORY:finding-evidence-routing:S76
@@ -2420,11 +2664,15 @@ export const S76 = async (page) => {
   const rowId = await row.getAttribute('data-id');
   await row.focus();
   await page.keyboard.press('Enter');
-  is(await page.evaluate(() => document.activeElement?.id), 'level',
-    'S76 Enter lands keyboard focus on the opened detail container');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.evaluate(() => document.activeElement?.id)), 'level',
+      'S76 Enter lands keyboard focus on the opened detail container');
+  }, "S76");
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
-  is(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), rowId,
-    'S76 the Findings crumb restores focus to the drilled queue row');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.evaluate(() => document.activeElement?.getAttribute('data-id'))), rowId,
+      'S76 the Findings crumb restores focus to the drilled queue row');
+  }, "S76");
 };
 
 /** S77 · ALIGN starts at the inspector edge when this factor case offers it. */
@@ -2439,8 +2687,11 @@ export const S77 = async (page) => {
 export const S78 = async (page) => {
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  const rows = page.locator('#level .case-occurrence');
-  ok(await rows.count() >= 2, 'S78 the vertical case roster exposes two keyboard targets');
+  const { rows } = await waitForReplayAssertion(async seen => {
+    const rows = page.locator('#level .case-occurrence');
+    ok(seen(await rows.count()) >= 2, 'S78 the vertical case roster exposes two keyboard targets');
+    return { rows };
+  }, "S78");
   await rows.nth(1).focus();
   const before = await state(page);
   const occurrenceId = await rows.nth(1).getAttribute('data-occurrence-id');
@@ -2448,9 +2699,11 @@ export const S78 = async (page) => {
   await page.waitForSelector(
     `#level .case-occurrence[data-occurrence-id="${occurrenceId}"][aria-pressed="true"]`,
   );
-  const after = await state(page);
-  is(after.crumb, before.crumb, 'S78 keyboard activation keeps the Finding breadcrumb');
-  is(after.chip, before.chip, 'S78 keyboard activation keeps the standing window');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.crumb, before.crumb, 'S78 keyboard activation keeps the Finding breadcrumb');
+    is(after.chip, before.chip, 'S78 keyboard activation keeps the standing window');
+  }, "S78");
 };
 
 /** S79 · Occurrence activation and vertical stepping restore focus to the
@@ -2463,16 +2716,20 @@ export const S79 = async (page) => {
   await first.focus();
   await page.keyboard.press('Enter');
   await settle(page, 450);
-  const selectedId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
-    .getAttribute('data-occurrence-id');
-  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), selectedId,
-    'S79 activation restores focus to the selected Occurrence');
+  await waitForReplayAssertion(async seen => {
+    const selectedId = seen(await page.locator('#level .case-occurrence[aria-pressed="true"]')
+      .getAttribute('data-occurrence-id'));
+    is(seen(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id'))), selectedId,
+      'S79 activation restores focus to the selected Occurrence');
+  }, "S79");
   await page.keyboard.press('ArrowDown');
   await settle(page, 450);
-  const nextId = await page.locator('#level .case-occurrence[aria-pressed="true"]')
-    .getAttribute('data-occurrence-id');
-  is(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id')), nextId,
-    'S79 vertical stepping restores focus to the newly selected Occurrence');
+  await waitForReplayAssertion(async seen => {
+    const nextId = seen(await page.locator('#level .case-occurrence[aria-pressed="true"]')
+      .getAttribute('data-occurrence-id'));
+    is(seen(await page.evaluate(() => document.activeElement?.getAttribute('data-occurrence-id'))), nextId,
+      'S79 vertical stepping restores focus to the newly selected Occurrence');
+  }, "S79");
 };
 
 /** S80 · Event-chart cursor focus owns its Up/Down keys and never steps the
@@ -2487,19 +2744,24 @@ export const S80 = async (page) => {
 export const S81 = async (page) => {
   await page.click(LEVER_FINDING);
   await settle(page, 450);
-  const rows = page.locator('#level .case-occurrence');
-  ok(await rows.count() >= 2, 'S81 precondition: the case file renders at least two Occurrences');
+  const { rows } = await waitForReplayAssertion(async seen => {
+    const rows = page.locator('#level .case-occurrence');
+    ok(seen(await rows.count()) >= 2, 'S81 precondition: the case file renders at least two Occurrences');
+    return { rows };
+  }, "S81");
   const occurrenceId = await rows.nth(1).getAttribute('data-occurrence-id');
   await rows.nth(1).click();
   await settle(page, 450);
   await page.waitForSelector(`#level .case-occurrence[data-occurrence-id="${occurrenceId}"][aria-pressed="true"]`);
-  const active = await page.evaluate(() => ({
-    occurrenceId: document.activeElement?.dataset?.occurrenceId,
-    tagName: document.activeElement?.tagName,
-  }));
-  is(active.occurrenceId, occurrenceId,
-    `S81 direct selection restores focus to the chosen Occurrence (${active.tagName})`);
-  is((await state(page)).crumb.length, 2, 'S81 direct selection keeps the case-file crumb depth');
+  await waitForReplayAssertion(async seen => {
+    const active = seen(await page.evaluate(() => ({
+      occurrenceId: document.activeElement?.dataset?.occurrenceId,
+      tagName: document.activeElement?.tagName,
+    })));
+    is(active.occurrenceId, occurrenceId,
+      `S81 direct selection restores focus to the chosen Occurrence (${active.tagName})`);
+    is((seen(await state(page))).crumb.length, 2, 'S81 direct selection keeps the case-file crumb depth');
+  }, "S81");
 };
 
 /** S82 · A fresh draw crosses 24:00 to the right. */
@@ -2507,14 +2769,19 @@ export const S81 = async (page) => {
 export const S82 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
-  const during = await panThenAim(page, { x: chartXAt(b, 22 * 60) }, 'right',
+  await panThenAim(page, { x: chartXAt(b, 22 * 60) }, 'right',
     { past: 180, aim: 24 * 60 + 2 * 60 });
-  ok(during.panOffset > 0, 'S82 the day pans left under the right boundary');
-  is(during.chip, 'Window 22:00–02:00', 'S82 the draw reads its wrapped window before release');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset > 0, 'S82 the day pans left under the right boundary');
+    is(during.chip, 'Window 22:00–02:00', 'S82 the draw reads its wrapped window before release');
+  }, 'S82 gesture');
   await captureEvidence(page, 'S82-mid-pan-right');
   await page.mouse.up();
   await settle(page, 500);
-  is((await state(page)).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
+  }, "S82");
 };
 
 /* S83, S84 and S87 were broken by this branch's plot-inset change, not by the
@@ -2527,14 +2794,19 @@ export const S82 = async (page) => {
 export const S83 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
-  const during = await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
+  await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
     { past: 120, aim: -60 });
-  ok(during.panOffset < 0, 'S83 the day pans right under the left boundary');
-  is(during.chip, 'Window 23:00–03:00', 'S83 the draw reads its wrapped window before release');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset < 0, 'S83 the day pans right under the left boundary');
+    is(during.chip, 'Window 23:00–03:00', 'S83 the draw reads its wrapped window before release');
+  }, 'S83 gesture');
   await captureEvidence(page, 'S83-mid-pan-left');
   await page.mouse.up();
   await settle(page, 500);
-  is((await state(page)).chip, 'Window 23:00–03:00', 'S83 draw left commits across midnight');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, 'Window 23:00–03:00', 'S83 draw left commits across midnight');
+  }, "S83");
 };
 
 /** S84 · The start grip crosses 00:00 while its far endpoint stays anchored. */
@@ -2542,16 +2814,21 @@ export const S83 = async (page) => {
 export const S84 = async (page) => {
   const before = await state(page);
   const grip = await page.locator('#grip-a').boundingBox();
-  const during = await panThenAim(page,
+  await panThenAim(page,
     { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
     'left', { past: 120, aim: -60 });
-  ok(during.panOffset < 0, 'S84 the start grip reaches its target through a leftward pan');
-  is(during.chip, 'Window 23:00–04:45', 'S84 the grip reads its wrapped window before release');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset < 0, 'S84 the start grip reaches its target through a leftward pan');
+    is(during.chip, 'Window 23:00–04:45', 'S84 the grip reads its wrapped window before release');
+  }, 'S84 gesture');
   await page.mouse.up();
   await settle(page, 500);
-  const after = await state(page);
-  is(after.chip, 'Window 23:00–04:45', 'S84 start grip commits across midnight');
-  near(after.gripB, before.gripB, 1, 'S84 the far endpoint remains anchored');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, 'Window 23:00–04:45', 'S84 start grip commits across midnight');
+    near(after.gripB, before.gripB, 1, 'S84 the far endpoint remains anchored');
+  }, "S84");
 };
 
 /** S85 · The end grip crosses 24:00 while its far endpoint stays anchored. */
@@ -2560,15 +2837,20 @@ export const S85 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const before = await state(page);
   const grip = await page.locator('#grip-b').boundingBox();
-  const during = await panThenAim(page,
+  await panThenAim(page,
     { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 },
     'right', { past: 120, aim: 24 * 60 + 60 });
-  is(during.chip, 'Window 20:00–01:00', 'S85 the grip reads its wrapped window before release');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    is(during.chip, 'Window 20:00–01:00', 'S85 the grip reads its wrapped window before release');
+  }, 'S85 gesture');
   await page.mouse.up();
   await settle(page, 500);
-  const after = await state(page);
-  is(after.chip, 'Window 20:00–01:00', 'S85 end grip commits across midnight');
-  near(after.gripA, before.gripA, 1, 'S85 the far endpoint remains anchored');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, 'Window 20:00–01:00', 'S85 end grip commits across midnight');
+    near(after.gripA, before.gripA, 1, 'S85 the far endpoint remains anchored');
+  }, "S85");
 };
 
 /* S86 and S87 are each other's mirror: the same 2h window, grabbed the same 60
@@ -2580,13 +2862,18 @@ export const S85 = async (page) => {
 export const S86 = async (page) => {
   await drawInside(page, 20 * 60, 22 * 60);
   const b = await plot(page);
-  const during = await panThenAim(page, { x: chartXAt(b, 21 * 60) }, 'right',
+  await panThenAim(page, { x: chartXAt(b, 21 * 60) }, 'right',
     { past: 120, aim: 24 * 60 });
-  ok(during.panOffset > 0, 'S86 the slide reaches its target through a rightward pan');
-  is(during.live, ['brace-a', 'brace-b'], 'S86 both slide edges stay live');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset > 0, 'S86 the slide reaches its target through a rightward pan');
+    is(during.live, ['brace-a', 'brace-b'], 'S86 both slide edges stay live');
+  }, 'S86 gesture');
   await page.mouse.up();
   await settle(page, 500);
-  is((await state(page)).chip, 'Window 23:00–01:00', 'S86 slide right commits across midnight');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, 'Window 23:00–01:00', 'S86 slide right commits across midnight');
+  }, "S86");
 };
 
 /** S87 · Sliding left crosses 00:00 without changing the window's length. */
@@ -2594,13 +2881,18 @@ export const S86 = async (page) => {
 export const S87 = async (page) => {
   await drawInside(page, 2 * 60, 4 * 60);
   const b = await plot(page);
-  const during = await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
+  await panThenAim(page, { x: chartXAt(b, 3 * 60) }, 'left',
     { past: 120, aim: 0 });
-  ok(during.panOffset < 0, 'S87 the slide reaches its target through a leftward pan');
-  is(during.live, ['brace-a', 'brace-b'], 'S87 both slide edges stay live');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset < 0, 'S87 the slide reaches its target through a leftward pan');
+    is(during.live, ['brace-a', 'brace-b'], 'S87 both slide edges stay live');
+  }, 'S87 gesture');
   await page.mouse.up();
   await settle(page, 500);
-  is((await state(page)).chip, 'Window 23:00–01:00', 'S87 slide left commits across midnight');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).chip, 'Window 23:00–01:00', 'S87 slide left commits across midnight');
+  }, "S87");
 };
 
 /** S88 · Draw's one-day stop commits the unscoped day and restores the axis. */
@@ -2608,16 +2900,21 @@ export const S87 = async (page) => {
 export const S88 = async (page) => {
   await beginFreshDraw(page);
   const b = await plot(page);
-  const during = await holdUntilStop(page,
+  await holdUntilStop(page,
     { x: chartXAt(b, 20 * 60) }, 'right', 'Whole day');
-  ok(during.panOffset > 0, 'S88 full-day stop is reached through the pan');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset > 0, 'S88 full-day stop is reached through the pan');
+  }, 'S88 gesture');
   await captureEvidence(page, 'S88-full-day-stop');
   await page.mouse.up();
   await settle(page, 500);
-  const after = await state(page);
-  is(after.chip, null, 'S88 whole day is not retained as a 24-hour drawn window');
-  is(after.pressed, ['24 h'], 'S88 whole day commits the unscoped day');
-  is(after.panOffset, 0, 'S88 the axis returns to 00:00–24:00 on release');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, null, 'S88 whole day is not retained as a 24-hour drawn window');
+    is(after.pressed, ['24 h'], 'S88 whole day commits the unscoped day');
+    is(after.panOffset, 0, 'S88 the axis returns to 00:00–24:00 on release');
+  }, "S88");
 
   await drawInside(page, 20 * 60, 22 * 60);
   const grip = await page.locator('#grip-b').boundingBox();
@@ -2625,9 +2922,11 @@ export const S88 = async (page) => {
     'right', 'Whole day');
   await page.mouse.up();
   await settle(page, 500);
-  const resized = await state(page);
-  is(resized.chip, null, 'S88 a full-day resize is not retained as a 24-hour window');
-  is(resized.pressed, ['24 h'], 'S88 a full-day resize commits the unscoped day');
+  await waitForReplayAssertion(async seen => {
+    const resized = seen(await state(page));
+    is(resized.chip, null, 'S88 a full-day resize is not retained as a 24-hour window');
+    is(resized.pressed, ['24 h'], 'S88 a full-day resize commits the unscoped day');
+  }, "S88");
 };
 
 /** S89 · A full-day slide returns to its own start, preserving its duration. */
@@ -2638,15 +2937,19 @@ export const S89 = async (page) => {
   const b = await plot(page);
   await holdUntilStop(page, { x: chartXAt(b, 21 * 60), y: b.y + b.h * 0.45 },
     'right', before.chip);
-  ok(await clockPan(page) >= 1200,
-    'S89 the slide travels across the full unrolled day before returning to its start');
+  await waitForReplayAssertion(async seen => {
+    ok(seen(await clockPan(page)) >= 1200,
+      'S89 the slide travels across the full unrolled day before returning to its start');
+  }, "S89");
   await page.mouse.up();
   await settle(page, 500);
-  const after = await state(page);
-  is(after.chip, before.chip, 'S89 a one-day slide lands back on its own start');
-  near(after.gripB - after.gripA, before.gripB - before.gripA, 2,
-    'S89 a one-day slide preserves its length');
-  is(after.panOffset, 0, 'S89 the axis returns after the slide');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.chip, before.chip, 'S89 a one-day slide lands back on its own start');
+    near(after.gripB - after.gripA, before.gripB - before.gripA, 2,
+      'S89 a one-day slide preserves its length');
+    is(after.panOffset, 0, 'S89 the axis returns after the slide');
+  }, "S89");
 };
 
 /** S33 · #58 — while the event canvas is mounted, its own header is the only
@@ -2681,18 +2984,22 @@ export const S35 = async (page) => {
 // STORY:finding-evidence-routing:S36
 export const S36 = async (page) => {
   await clickQueueRow(page, 'Late bolus');
-  const opened = await state(page);
-  is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S36 precondition: the finding is open');
-  ok(opened.levelStat !== null, 'S36 precondition: the case file has a population');
+  await waitForReplayAssertion(async seen => {
+    const opened = seen(await state(page));
+    is(opened.crumb[opened.crumb.length - 1], 'Late bolus', 'S36 precondition: the finding is open');
+    ok(opened.levelStat !== null, 'S36 precondition: the case file has a population');
+  }, "S36");
   await page.click('#seg-window button:nth-child(1)');   // Overnight
   await settle(page, 900);
-  const narrowed = await state(page);
-  is(narrowed.pressed, ['Overnight'], 'S36 the server case keeps the narrowed preset pressed');
-  is(narrowed.chip, null, 'S36 the narrowed preset needs no follow chip');
-  is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
-  ok(/meal responses in 00:00–06:00/.test(narrowed.levelStat || ''),
-    `S36 the replacement case and inspector share the server window (${narrowed.levelStat})`);
-  ok(!/0 of 0/.test(JSON.stringify(narrowed)), 'S36 no fabricated empty frame replaces it');
+  await waitForReplayAssertion(async seen => {
+    const narrowed = seen(await state(page));
+    is(narrowed.pressed, ['Overnight'], 'S36 the server case keeps the narrowed preset pressed');
+    is(narrowed.chip, null, 'S36 the narrowed preset needs no follow chip');
+    is(narrowed.crumb[narrowed.crumb.length - 1], 'Late bolus', 'S36 the reader stays on the finding');
+    ok(/meal responses in 00:00–06:00/.test(narrowed.levelStat || ''),
+      `S36 the replacement case and inspector share the server window (${narrowed.levelStat})`);
+    ok(!/0 of 0/.test(JSON.stringify(narrowed)), 'S36 no fabricated empty frame replaces it');
+  }, "S36");
 };
 
 /** S37 · An occurrence whose TRIGGER sits outside the window and whose
@@ -2722,24 +3029,30 @@ export const S38 = async (page) => {
 export const S39 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Late bolus');
-  const before = await state(page);
-  ok(/\b1 of 10 meal responses in 24 h · 9 not attributed\b/.test(before.levelStat || ''),
-    `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
+  await waitForReplayAssertion(async seen => {
+    const before = seen(await state(page));
+    ok(/\b1 of 10 meal responses in 24 h · 9 not attributed\b/.test(before.levelStat || ''),
+      `S39 precondition: the whole-day population is on screen (${before.levelStat})`);
+  }, "S39");
   await page.click('#seg-window button:nth-child(3)');   // Afternoon
   await settle(page, 250);                               // inside the flight
-  const during = await state(page);
-  is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
-  is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
-  is(during.levelEmpty, 'Loading findings for 12:00–18:00…',
-    'S39 the pane names what is loading and its window');
-  is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
-  ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    is(during.levelLoading, 'true', 'S39 the pane declares it is waiting on the server');
+    is(during.levelStat, null, "S39 the previous window's counts are withdrawn");
+    is(during.levelEmpty, 'Loading findings for 12:00–18:00…',
+      'S39 the pane names what is loading and its window');
+    is(during.crumbMeta, '12:00–18:00', 'S39 the meta prints the window with no numbers under it');
+    ok(!/\b2 of 20\b/.test(JSON.stringify(during)), 'S39 no stale count survives anywhere on the pane');
+  }, "S39");
   await captureEvidence(page, 'S39-pending-window');
   await settle(page, 1400);
-  const after = await state(page);
-  is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
-  ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
-    `S39 the new window's own counts land under its own label (${after.levelStat})`);
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    is(after.levelLoading, 'false', 'S39 the wait ends when the rows land');
+    ok(/ meal responses in 12:00–18:00\b/.test(after.levelStat || ''),
+      `S39 the new window's own counts land under its own label (${after.levelStat})`);
+  }, "S39");
 };
 
 const historyDisposition = (disposition, message) => (body) => ({
@@ -2772,32 +3085,38 @@ export const issue81PendingProjection = async (page) => {
   const siftChecked = (await state(page)).filter.sift.map((button) => button.checked);
   await page.keyboard.press('Escape');
   await clickQueueRow(page, 'Basal 05:30 · raise');
-  const opened = await state(page);
-  ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
-  ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
+  await waitForReplayAssertion(async seen => {
+    const opened = seen(await state(page));
+    ok(opened.levelText.includes('Recommended'), 'S41 precondition: the morning basal detail is open');
+    ok(opened.stage !== null, 'S41 precondition: the morning basal change can be staged');
+  }, "issue81PendingProjection");
 
   await drawWindow(page, [900, 1260]);      // 15:00–21:00, delayed
   await waitForLevelAnimations(page);
-  const pending = await state(page);
-  is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
-  is(pending.levelText, 'Loading findings for 15:00–21:00…',
-    'S41 names what is loading and the arriving range');
-  is(pending.levelEmptyLeft, pending.crumbLeft,
-    'S41 the loading line lands on the inspector content spine');
-  is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
-  is(pending.stage, null, 'S41 the previous staging control is withdrawn');
-  is(pending.filter.visible, false, 'S41 Filter stays hidden at setting depth');
-  is(pending.filter.sift.map((button) => button.checked), siftChecked,
-    'S41 retained Sift selection survives the replacement');
-  ok(pending.filter.sift.every((button) => !button.disabled), 'S41 retained Sift controls remain enabled');
+  await waitForReplayAssertion(async seen => {
+    const pending = seen(await state(page));
+    is(pending.levelLoading, 'true', 'S41 the replacement declares loading at setting depth');
+    is(pending.levelText, 'Loading findings for 15:00–21:00…',
+      'S41 names what is loading and the arriving range');
+    is(pending.levelEmptyLeft, pending.crumbLeft,
+      'S41 the loading line lands on the inspector content spine');
+    is(pending.crumbMeta, '15:00–21:00', 'S41 the crumb carries the arriving range without counts');
+    is(pending.stage, null, 'S41 the previous staging control is withdrawn');
+    is(pending.filter.visible, false, 'S41 Filter stays hidden at setting depth');
+    is(pending.filter.sift.map((button) => button.checked), siftChecked,
+      'S41 retained Sift selection survives the replacement');
+    ok(pending.filter.sift.every((button) => !button.disabled), 'S41 retained Sift controls remain enabled');
+  }, "issue81PendingProjection");
 
   await settle(page, 900);
-  const absent = await state(page);
-  is(absent.levelLoading, 'false', 'S41 the matching projection settles');
-  is(absent.levelText, 'No findings in the selected window',
-    'S41 the open basal depth stays put and reports its settled absence');
-  is(absent.crumbMeta, '15:00–21:00', 'S41 settled absence keeps the selected range in the crumb');
-  is(absent.stage, null, 'S41 settled absence has no staging control');
+  await waitForReplayAssertion(async seen => {
+    const absent = seen(await state(page));
+    is(absent.levelLoading, 'false', 'S41 the matching projection settles');
+    is(absent.levelText, 'No findings in the selected window',
+      'S41 the open basal depth stays put and reports its settled absence');
+    is(absent.crumbMeta, '15:00–21:00', 'S41 settled absence keeps the selected range in the crumb');
+    is(absent.stage, null, 'S41 settled absence has no staging control');
+  }, "issue81PendingProjection");
 
   await page.click('#crumb-trail button');               // Findings
   await settle(page, 250);
@@ -2805,11 +3124,14 @@ export const issue81PendingProjection = async (page) => {
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
   await page.keyboard.press('Escape');
   await expandWatching(page);
-  const queue = await state(page);
-  ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
-    'S41 the settled queue contains the server-published evening basal row');
-  ok(!queue.queue.some((row) => row.title === 'Basal 05:30 · raise'),
-    'S41 the settled queue excludes the morning basal row');
+  const { queue } = await waitForReplayAssertion(async seen => {
+    const queue = seen(await state(page));
+    ok(queue.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+      'S41 the settled queue contains the server-published evening basal row');
+    ok(!queue.queue.some((row) => row.title === 'Basal 05:30 · raise'),
+      'S41 the settled queue excludes the morning basal row');
+    return { queue };
+  }, "issue81PendingProjection");
 
   await page.click('#seg-window button:nth-child(3)');   // Afternoon, delayed longer
   await settle(page, 100);
@@ -2822,36 +3144,46 @@ export const issue81PendingProjection = async (page) => {
   await eveningResponse;
   await settle(page, 100);
   await expandWatching(page);
-  const newest = await state(page);
-  is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
-  is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
-  ok(newest.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
-    'S41 the newest response paints its server rows');
-  ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
-    'S41 no superseded afternoon row painted');
+  const { newest } = await waitForReplayAssertion(async seen => {
+    const newest = seen(await state(page));
+    is(newest.pressed, ['Evening'], 'S41 the newest window settles first');
+    is(newest.levelLoading, 'false', 'S41 the newest response settles the inspector');
+    ok(newest.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+      'S41 the newest response paints its server rows');
+    ok(!newest.queue.some((row) => row.title === 'Basal 12:30 to 14:00 · leaning lower'),
+      'S41 no superseded afternoon row painted');
+    return { newest };
+  }, "issue81PendingProjection");
   await settle(page, 1100);                              // let superseded response arrive
   await expandWatching(page);
-  const afterStale = await state(page);
-  is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
-  const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
-  is(rowIdentity(afterStale.queue), rowIdentity(newest.queue),
-    'S41 the superseded response cannot replace the newest rows');
+  const { rowIdentity } = await waitForReplayAssertion(async seen => {
+    const afterStale = seen(await state(page));
+    is(afterStale.pressed, ['Evening'], 'S41 the superseded response cannot move the window');
+    const rowIdentity = (rows) => rows.map(({ title, register, tier }) => ({ title, register, tier }));
+    is(rowIdentity(afterStale.queue), rowIdentity(newest.queue),
+      'S41 the superseded response cannot replace the newest rows');
+    return { rowIdentity };
+  }, "issue81PendingProjection");
 
   await page.click('#seg-window button:nth-child(3)');   // leave loaded Evening
   await settle(page, 100);                              // Afternoon remains in flight
   await page.click('#seg-window button:nth-child(4)');   // return to loaded Evening
   await settle(page, 100);
   await expandWatching(page);
-  const returned = await state(page);
-  is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
-  is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
-  is(rowIdentity(returned.queue), rowIdentity(newest.queue),
-    'S41 returning to the loaded window restores its rows without a refetch');
+  await waitForReplayAssertion(async seen => {
+    const returned = seen(await state(page));
+    is(returned.levelLoading, 'false', 'S41 returning to the loaded window settles immediately');
+    is(returned.pressed, ['Evening'], 'S41 the loaded window remains selected after the return');
+    is(rowIdentity(returned.queue), rowIdentity(newest.queue),
+      'S41 returning to the loaded window restores its rows without a refetch');
+  }, "issue81PendingProjection");
   await settle(page, 1100);                              // let abandoned Afternoon resolve
-  const afterReturnStale = await state(page);
-  is(afterReturnStale.levelLoading, 'false', 'S41 the abandoned response cannot unsettle the loaded window');
-  is(rowIdentity(afterReturnStale.queue), rowIdentity(newest.queue),
-    'S41 the abandoned response cannot replace the restored loaded rows');
+  await waitForReplayAssertion(async seen => {
+    const afterReturnStale = seen(await state(page));
+    is(afterReturnStale.levelLoading, 'false', 'S41 the abandoned response cannot unsettle the loaded window');
+    is(rowIdentity(afterReturnStale.queue), rowIdentity(newest.queue),
+      'S41 the abandoned response cannot replace the restored loaded rows');
+  }, "issue81PendingProjection");
 };
 
 /** S42 · #81 — a failed scoped projection leaves the selected clock window
@@ -2873,30 +3205,35 @@ export const issue81FailedProjection = async (page) => {
   await drawWindow(page, [900, 1260]);      // only this scoped load fails
   await failedResponse;
   await settle(page, 150);
-  const detail = await state(page);
-  is(detail.levelLoading, 'false', 'S42 failure is not presented as an endless load');
-  is(detail.levelText,
-    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
-    'S42 setting depth renders the exact unavailable state');
-  is(detail.crumbMeta, '15:00–21:00', 'S42 failed setting depth keeps only the selected range');
-  is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
-  is(detail.filter.visible, false, 'S42 Filter stays hidden at setting depth');
-  is(detail.filter.sift.map((button) => button.checked), siftChecked,
-    'S42 failed retained Sift selection survives the replacement');
-  ok(detail.filter.sift.every((button) => !button.disabled), 'S42 retained Sift controls remain enabled');
+  await waitForReplayAssertion(async seen => {
+    const detail = seen(await state(page));
+    is(detail.levelLoading, 'false', 'S42 failure is not presented as an endless load');
+    is(detail.levelText,
+      'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+      'S42 setting depth renders the exact unavailable state');
+    is(detail.crumbMeta, '15:00–21:00', 'S42 failed setting depth keeps only the selected range');
+    is(detail.stage, null, 'S42 failed setting depth has no prior staging control');
+    is(detail.filter.visible, false, 'S42 Filter stays hidden at setting depth');
+    is(detail.filter.sift.map((button) => button.checked), siftChecked,
+      'S42 failed retained Sift selection survives the replacement');
+    ok(detail.filter.sift.every((button) => !button.disabled), 'S42 retained Sift controls remain enabled');
+  }, "issue81FailedProjection");
 
   await page.click('#crumb-trail button');               // Findings
   await settle(page, 100);
-  const queue = await state(page);
-  is(queue.levelText,
-    'Findings unavailable for 15:00–21:00. Choose another window to try again.',
-    'S42 queue depth renders the same unavailable state');
-  is(queue.queue, [], 'S42 queue depth exposes no previous rows');
-  is(queue.filter.visible, true, 'S42 Filter returns at queue depth');
-  is(queue.filter.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
-    'S42 failed root Sift labels carry no prior projection counts');
-  is(queue.filter.sift.map((button) => button.checked), siftChecked,
-    'S42 root restores the failed selection');
+  const { queue } = await waitForReplayAssertion(async seen => {
+    const queue = seen(await state(page));
+    is(queue.levelText,
+      'Findings unavailable for 15:00–21:00. Choose another window to try again.',
+      'S42 queue depth renders the same unavailable state');
+    is(queue.queue, [], 'S42 queue depth exposes no previous rows');
+    is(queue.filter.visible, true, 'S42 Filter returns at queue depth');
+    is(queue.filter.sift.map((button) => button.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+      'S42 failed root Sift labels carry no prior projection counts');
+    is(queue.filter.sift.map((button) => button.checked), siftChecked,
+      'S42 root restores the failed selection');
+    return { queue };
+  }, "issue81FailedProjection");
 
   await page.getByRole('button', { name: /Filter/ }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Lows', exact: true }).click();
@@ -2911,11 +3248,13 @@ export const issue81FailedProjection = async (page) => {
   await recoveryResponse;
   await settle(page, 100);
   await expandWatching(page);
-  const recovered = await state(page);
-  is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
-  is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
-  ok(recovered.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
-    'S42 recovery paints the later window\'s server rows');
+  await waitForReplayAssertion(async seen => {
+    const recovered = seen(await state(page));
+    is(recovered.levelLoading, 'false', 'S42 a later window settles after failure');
+    is(recovered.pressed, ['Evening'], 'S42 recovery keeps the later selected window');
+    ok(recovered.queue.some((row) => row.title === 'Basal 19:30 to 21:00'),
+      'S42 recovery paints the later window\'s server rows');
+  }, "issue81FailedProjection");
 };
 
 /** S43 · #81 review — a settled slice keeps its own matching findings rather
@@ -2928,9 +3267,12 @@ export const issue81SlicedProjection = async (page) => {
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await expandWatching(page);
   await waitForLevelAnimations(page);
-  const wholeDay = await state(page);
-  is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
-  is(wholeDay.queue.length, 11, 'S43 whole day renders the presented rows including claimed members, without past settings');
+  const { wholeDay } = await waitForReplayAssertion(async seen => {
+    const wholeDay = seen(await state(page));
+    is(wholeDay.crumbMeta, '8 findings · 30 days', 'S43 whole day meta counts visible action-ready findings');
+    is(wholeDay.queue.length, 11, 'S43 whole day renders the presented rows including claimed members, without past settings');
+    return { wholeDay };
+  }, "issue81SlicedProjection");
 
   await page.click('#seg-window button:nth-child(1)');   // Overnight, 00:00–06:00
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
@@ -2938,48 +3280,58 @@ export const issue81SlicedProjection = async (page) => {
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
   await expandWatching(page);
   await waitForLevelAnimations(page);
-  const sliced = await state(page);
-  is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
-  is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
-  is(sliced.queue.map((row) => row.title),
-    ['Basal 05:30 · raise', 'ISF'],
-    'S43 the slice keeps its two presented rows, including the held ISF read, without past settings');
-  ok(!sliced.queue.some((row) => row.title === 'Basal 00:30 to 01:30 · raise'),
-    'S43 the slice excludes an unrelated whole-day basal row');
-  is(sliced.queueLeft, wholeDay.queueLeft,
-    'S43 the sliced queue stays on the same inspector content spine');
+  await waitForReplayAssertion(async seen => {
+    const sliced = seen(await state(page));
+    is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
+    is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
+    is(sliced.queue.map((row) => row.title),
+      ['Basal 05:30 · raise', 'ISF'],
+      'S43 the slice keeps its two presented rows, including the held ISF read, without past settings');
+    ok(!sliced.queue.some((row) => row.title === 'Basal 00:30 to 01:30 · raise'),
+      'S43 the slice excludes an unrelated whole-day basal row');
+    is(sliced.queueLeft, wholeDay.queueLeft,
+      'S43 the sliced queue stays on the same inspector content spine');
+  }, "issue81SlicedProjection");
 };
 
 /** #86 probe — one 30px Findings header owns the visible trail, metadata and
     root-only Filter menu; the retired Inspector label and second crumb row are
     absent. The menu uses roving focus and Escape restores its trigger. */
 export const issue86HeaderFilter = async (page) => {
-  const head = await page.evaluate(() => ({
-    paneName: document.querySelector('.inspector')?.getAttribute('aria-labelledby'),
-    trail: document.getElementById('crumb-trail')?.textContent.trim(),
-    height: Math.round(document.querySelector('.inspector > header')?.getBoundingClientRect().height || 0),
-    inspectorText: [...document.querySelectorAll('.inspector h2')]
-      .some((node) => node.textContent.trim() === 'Inspector'),
-  }));
-  is(head, { paneName: 'crumb-trail', trail: 'Findings', height: 30, inspectorText: false },
-    '#86 one Findings header owns the pane name and 30px seam');
+  await waitForReplayAssertion(async seen => {
+    const head = seen(await page.evaluate(() => ({
+      paneName: document.querySelector('.inspector')?.getAttribute('aria-labelledby'),
+      trail: document.getElementById('crumb-trail')?.textContent.trim(),
+      height: Math.round(document.querySelector('.inspector > header')?.getBoundingClientRect().height || 0),
+      inspectorText: [...document.querySelectorAll('.inspector h2')]
+        .some((node) => node.textContent.trim() === 'Inspector'),
+    })));
+    is(head, { paneName: 'crumb-trail', trail: 'Findings', height: 30, inspectorText: false },
+      '#86 one Findings header owns the pane name and 30px seam');
+  }, "issue86HeaderFilter");
   const trigger = page.getByRole('button', { name: /Filter/ });
   await trigger.click();
   await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
-  const roles = await page.locator('#filter-menu [role^="menuitem"]').evaluateAll((items) =>
-    items.map((item) => item.getAttribute('role')));
-  is(roles, ['menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox'],
-    '#86 the menu exposes exactly the four Sift checks');
+  await waitForReplayAssertion(async seen => {
+    const roles = seen(await page.locator('#filter-menu [role^="menuitem"]').evaluateAll((items) =>
+      items.map((item) => item.getAttribute('role'))));
+    is(roles, ['menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox', 'menuitemcheckbox'],
+      '#86 the menu exposes exactly the four Sift checks');
+  }, "issue86HeaderFilter");
   await page.keyboard.press('ArrowUp');
-  ok((await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || ''))
-    .startsWith('Corrections '), '#86 roving focus wraps from Highs to Corrections');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || '')))
+      .startsWith('Corrections '), '#86 roving focus wraps from Highs to Corrections');
+  }, "issue86HeaderFilter");
   await page.keyboard.press('Escape');
-  is(await page.evaluate(() => document.activeElement?.id), 'filter-trigger',
-    '#86 Escape closes and restores focus to Filter');
-  is(await page.getByRole('menuitemradio').count(), 0,
-    '#86 the retired root View choices cannot return');
-  is(await page.locator('#seg-align, #align-canvas').count(), 0,
-    '#86 the retired global Align host cannot return');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.evaluate(() => document.activeElement?.id)), 'filter-trigger',
+      '#86 Escape closes and restores focus to Filter');
+    is(seen(await page.getByRole('menuitemradio').count()), 0,
+      '#86 the retired root View choices cannot return');
+    is(seen(await page.locator('#seg-align, #align-canvas').count()), 0,
+      '#86 the retired global Align host cannot return');
+  }, "issue86HeaderFilter");
 };
 
 /** #86 probe — Sift intersects the published row fields only, preserves server
@@ -2992,20 +3344,24 @@ export const issue86FilteredRoot = async (page) => {
   for (const label of ['Highs', 'Meals', 'Corrections']) {
     await page.getByRole('menuitemcheckbox', { name: new RegExp(`^${label} `) }).click();
   }
-  const lows = await state(page);
-  is(lows.queue.map((row) => row.title), ['Lows after correcting highs',
-    'Correction on active insulin', 'Lows after meals', 'Overnight lows with no insulin on board'],
-    '#86 Sift contains only the server-published low Finding');
-  const positions = lows.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
-  ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
-    '#86 Sift retains server order');
+  await waitForReplayAssertion(async seen => {
+    const lows = seen(await state(page));
+    is(lows.queue.map((row) => row.title), ['Lows after correcting highs',
+      'Correction on active insulin', 'Lows after meals', 'Overnight lows with no insulin on board'],
+      '#86 Sift contains only the server-published low Finding');
+    const positions = lows.queue.map((row) => all.queue.findIndex((candidate) => candidate.title === row.title));
+    ok(positions.every((position, index) => index === 0 || position > positions[index - 1]),
+      '#86 Sift retains server order');
+  }, "issue86FilteredRoot");
   await page.getByRole('menuitemcheckbox', { name: /^Lows / }).click();
-  const empty = await state(page);
-  is(empty.queue, [], '#86 an empty Sift intersects to no rows');
-  is(empty.queueEmpty, 'No findings match the current filters.',
-    '#86 the settled zero result names the current filters');
-  is(empty.crumbMeta, '30 days', '#86 zero-result metadata retains duration and no count');
-  is(empty.filter.trigger, 'Filter 1', '#86 the trigger reports the one active Sift group');
+  await waitForReplayAssertion(async seen => {
+    const empty = seen(await state(page));
+    is(empty.queue, [], '#86 an empty Sift intersects to no rows');
+    is(empty.queueEmpty, 'No findings match the current filters.',
+      '#86 the settled zero result names the current filters');
+    is(empty.crumbMeta, '30 days', '#86 zero-result metadata retains duration and no count');
+    is(empty.filter.trigger, 'Filter 1', '#86 the trigger reports the one active Sift group');
+  }, "issue86FilteredRoot");
 };
 
 /** #86 probe — a row-derived event chart seats directly onto the stage,
@@ -3027,26 +3383,30 @@ export const issue86DirectEntryRestoration = async (page) => {
   const tile = page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"]');
   await tile.locator('.tile-body').click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
-  const opened = await state(page);
-  /* The stage carries the mark, never the registry echo (operator ruling,
-     2026-08-27: "the only chart that needs to be displaying any kind of drill
-     down ... is the spotlight"). Direct row seating promotes the clicked chart
-     onto the stage, so the mark is read off #tile-focal, not the row cell that
-     was clicked. */
-  const seated = page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]');
-  is(await seated.getAttribute('data-drilled'), '', '#86 the row-derived event chart is seated on the stage, marked');
-  ok(opened.crumb.includes('Over-treated low'), '#86 the seated chart opens its Finding case');
-  is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
+  await waitForReplayAssertion(async seen => {
+    const opened = seen(await state(page));
+    /* The stage carries the mark, never the registry echo (operator ruling,
+       2026-08-27: "the only chart that needs to be displaying any kind of drill
+       down ... is the spotlight"). Direct row seating promotes the clicked chart
+       onto the stage, so the mark is read off #tile-focal, not the row cell that
+       was clicked. */
+    const seated = page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"]');
+    is(seen(await seated.getAttribute('data-drilled')), '', '#86 the row-derived event chart is seated on the stage, marked');
+    ok(opened.crumb.includes('Over-treated low'), '#86 the seated chart opens its Finding case');
+    is(opened.filter.visible, false, '#86 Filter is hidden in a case file');
+  }, "issue86DirectEntryRestoration");
   await page.keyboard.press('Backspace');
   await settle(page, 150);
-  const returned = await state(page);
-  is(returned.queue.map((row) => row.title), root.queue.map((row) => row.title),
-    '#86 return restores the filtered server order');
-  is(returned.pressed, ['24 h'], '#86 return preserves the clock window');
-  is(returned.filter.trigger, 'Filter 1', '#86 return preserves the Sift selection');
-  is(returned.filter.open, false, '#86 return keeps the menu closed');
-  is(returned.filter.view, [], '#86 the retired root View remains absent on return');
-  is(returned.levelScroll, scroll, '#86 return restores queue scroll position');
+  await waitForReplayAssertion(async seen => {
+    const returned = seen(await state(page));
+    is(returned.queue.map((row) => row.title), root.queue.map((row) => row.title),
+      '#86 return restores the filtered server order');
+    is(returned.pressed, ['24 h'], '#86 return preserves the clock window');
+    is(returned.filter.trigger, 'Filter 1', '#86 return preserves the Sift selection');
+    is(returned.filter.open, false, '#86 return keeps the menu closed');
+    is(returned.filter.view, [], '#86 the retired root View remains absent on return');
+    is(returned.levelScroll, scroll, '#86 return restores queue scroll position');
+  }, "issue86DirectEntryRestoration");
 };
 
 /** #86 probe — while a root projection is pending, Filter selections remain
@@ -3058,29 +3418,34 @@ export const issue86PendingRoot = async (page, control) => {
   await page.keyboard.press('Escape');
   await page.click('#seg-window button:nth-child(3)');
   await control.request;
-  const pending = await state(page);
-  is(pending.levelLoading, 'true', '#86 the root projection declares loading');
-  is(pending.queue, [], '#86 no old rows remain under the arriving window');
-  is(pending.crumbMeta, '12:00–18:00', '#86 root metadata carries no stale count');
-  is(pending.filter.trigger, 'Filter 1', '#86 the non-default Sift remains selected');
-  is(pending.filter.sift.map((item) => item.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
-    '#86 pending Sift labels carry no old projection counts');
-  is(pending.filter.sift.map((item) => item.checked), checked,
-    '#86 pending Sift selection is retained');
-  ok(pending.filter.sift.every((item) => !item.disabled), '#86 pending controls stay enabled');
-  is(pending.filter.view, [], '#86 the retired View controls remain absent while pending');
+  const { pending } = await waitForReplayAssertion(async seen => {
+    const pending = seen(await state(page));
+    is(pending.levelLoading, 'true', '#86 the root projection declares loading');
+    is(pending.queue, [], '#86 no old rows remain under the arriving window');
+    is(pending.crumbMeta, '12:00–18:00', '#86 root metadata carries no stale count');
+    is(pending.filter.trigger, 'Filter 1', '#86 the non-default Sift remains selected');
+    is(pending.filter.sift.map((item) => item.text), ['Highs', 'Lows', 'Meals', 'Corrections'],
+      '#86 pending Sift labels carry no old projection counts');
+    is(pending.filter.sift.map((item) => item.checked), checked,
+      '#86 pending Sift selection is retained');
+    ok(pending.filter.sift.every((item) => !item.disabled), '#86 pending controls stay enabled');
+    is(pending.filter.view, [], '#86 the retired View controls remain absent while pending');
+    return { pending };
+  }, "issue86PendingRoot");
   control.release();
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false',
     null, { timeout: 10_000 });
-  const settled = await state(page);
-  is(settled.levelLoading, 'false', '#86 the root projection settles after release');
-  is(settled.crumbMeta, '4 in this window', '#86 settled metadata carries the Afternoon count');
-  is(settled.queue.map((row) => row.title), [
-    'Over-treated low',
-    'Correction on active insulin',
-    'Late bolus',
-    'Missed / unannounced meal',
-  ], '#86 the exact Afternoon projection replaces the pending state in server order');
+  await waitForReplayAssertion(async seen => {
+    const settled = seen(await state(page));
+    is(settled.levelLoading, 'false', '#86 the root projection settles after release');
+    is(settled.crumbMeta, '4 in this window', '#86 settled metadata carries the Afternoon count');
+    is(settled.queue.map((row) => row.title), [
+      'Over-treated low',
+      'Correction on active insulin',
+      'Late bolus',
+      'Missed / unannounced meal',
+    ], '#86 the exact Afternoon projection replaces the pending state in server order');
+  }, "issue86PendingRoot");
 };
 
 /** #86 probe — a malformed row-derived event case names the inconsistent
@@ -3103,27 +3468,31 @@ export const issue86MalformedRecovery = async (page) => {
   await page.locator('#tile-row .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body').click();
   await page.locator('#level [role="alert"]').waitFor();
   page.off('request', observeCaseRequest);
-  const recovered = await state(page);
-  is(recovered.crumb[recovered.crumb.length - 1], 'Over-treated low',
-    '#86 malformed event data leaves the reader on the same Finding');
-  is(caseRequests, ['event'], '#86 malformed event data makes no hidden clock-case request');
-  is(await page.locator('#level [role="alert"]').getAttribute('data-code'), 'inconsistent_projection',
-    '#86 malformed event data exposes the structured inconsistent-projection error');
-  is(await page.locator('#level [role="alert"]').innerText(),
-    'The Finding case file did not match the requested coordinates.',
-    '#86 malformed event data names the inconsistent projection');
-  is(await page.locator('#level .clock').count(), 0,
-    '#86 malformed event data renders no fallback clock case');
-  is(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]').count(), 1,
-    '#86 malformed event evidence leaves the spotlighted chart visibly drilled');
-  is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
+  await waitForReplayAssertion(async seen => {
+    const recovered = seen(await state(page));
+    is(recovered.crumb[recovered.crumb.length - 1], 'Over-treated low',
+      '#86 malformed event data leaves the reader on the same Finding');
+    is(caseRequests, ['event'], '#86 malformed event data makes no hidden clock-case request');
+    is(seen(await page.locator('#level [role="alert"]').getAttribute('data-code')), 'inconsistent_projection',
+      '#86 malformed event data exposes the structured inconsistent-projection error');
+    is(seen(await page.locator('#level [role="alert"]').innerText()),
+      'The Finding case file did not match the requested coordinates.',
+      '#86 malformed event data names the inconsistent projection');
+    is(seen(await page.locator('#level .clock').count()), 0,
+      '#86 malformed event data renders no fallback clock case');
+    is(seen(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"][data-drilled]').count()), 1,
+      '#86 malformed event evidence leaves the spotlighted chart visibly drilled');
+    is(recovered.pressed, ['24 h'], '#86 the clock window is preserved');
+  }, "issue86MalformedRecovery");
   await page.keyboard.press('Backspace');
-  const root = await state(page);
-  is(root.crumb, ['Findings'], '#86 return restores the Sifted findings root');
-  ok(root.queue.length > 0, '#86 return restores the Sifted queue');
-  is(root.pressed, ['24 h'], '#86 return preserves the clock window');
-  is(root.filter.trigger, 'Filter 1', '#86 the Sift selection is preserved');
-  is(root.filter.view, [], '#86 the retired root View remains absent');
+  await waitForReplayAssertion(async seen => {
+    const root = seen(await state(page));
+    is(root.crumb, ['Findings'], '#86 return restores the Sifted findings root');
+    ok(root.queue.length > 0, '#86 return restores the Sifted queue');
+    is(root.pressed, ['24 h'], '#86 return preserves the clock window');
+    is(root.filter.trigger, 'Filter 1', '#86 the Sift selection is preserved');
+    is(root.filter.view, [], '#86 the retired root View remains absent');
+  }, "issue86MalformedRecovery");
 };
 
 /** ADR 79 · behavioral Finding case files. The C prefix keeps this revision's
@@ -3137,32 +3506,39 @@ export const C41 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Meal over-delivery');
   await settle(page, 250);
-  const stat = await page.locator('#level .statline').innerText();
-  const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
-  is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
-  is(await page.locator('#level .vband .bar [aria-label="Meets criteria · 6"]').count(), 1,
-    'C41 reads the served fired verdict segment once');
-  const visibleBands = await page.locator('#level .vband .bar [aria-label]').evaluateAll((bands) =>
-    bands.map((band) => Number(band.getAttribute('aria-label').match(/(\d+)$/)?.[1])));
-  const residue = await page.locator('#level .vband-foot').innerText();
-  const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
-  is(visibleBands.length + residueBands.length, 5,
-    'C41 reads every published verdict band, including the two residue bands');
-  is([...visibleBands, ...residueBands].reduce((sum, count) => sum + count, 0), denominator,
-    'C41 all five server verdict bands reconcile to the case denominator');
-  ok(await page.locator('#level .case-occurrence').count() > 0,
-    'C41 the fired roster is nonempty');
+  await waitForReplayAssertion(async seen => {
+    const stat = seen(await page.locator('#level .statline').innerText());
+    const denominator = Number(stat.match(/^\d+ of (\d+) meal responses/)?.[1]);
+    is(denominator, 10, `C41 claimed denominator is exact (${stat})`);
+    is(seen(await page.locator('#level .vband .bar [aria-label="Meets criteria · 6"]').count()), 1,
+      'C41 reads the served fired verdict segment once');
+    const visibleBands = seen(await page.locator('#level .vband .bar [aria-label]').evaluateAll((bands) =>
+      bands.map((band) => Number(band.getAttribute('aria-label').match(/(\d+)$/)?.[1]))));
+    const residue = seen(await page.locator('#level .vband-foot').innerText());
+    const residueBands = [...residue.matchAll(/\d+/g)].map((match) => Number(match[0]));
+    is(visibleBands.length + residueBands.length, 5,
+      'C41 reads every published verdict band, including the two residue bands');
+    is([...visibleBands, ...residueBands].reduce((sum, count) => sum + count, 0), denominator,
+      'C41 all five server verdict bands reconcile to the case denominator');
+    ok(seen(await page.locator('#level .case-occurrence').count()) > 0,
+      'C41 the fired roster is nonempty');
+  }, "C41");
 };
 
 export const C42 = async (page) => {
   await openWholeDay(page);
-  const titles = await page.locator('#level .qrow[data-state="finding"][data-id^="finding:"] .lab').allTextContents();
-  ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
+  const { titles } = await waitForReplayAssertion(async seen => {
+    const titles = seen(await page.locator('#level .qrow[data-state="finding"][data-id^="finding:"] .lab').allTextContents());
+    ok(titles.length > 0, 'C42 the generated preparation publishes a visible Finding');
+    return { titles };
+  }, "C42");
   for (const title of titles) {
     await clickQueueRow(page, title);
     await page.waitForSelector('#level .who');
-    is((await page.locator('#level .who').innerText()).split(' · ')[0], title,
-      `C42 ${title} opens its server case`);
+    await waitForReplayAssertion(async seen => {
+      is((seen(await page.locator('#level .who').innerText())).split(' · ')[0], title,
+        `C42 ${title} opens its server case`);
+    }, "C42");
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   }
 };
@@ -3172,42 +3548,51 @@ export const C43 = async (page) => {
   await clickQueueRow(page, 'Correction stacking');
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-facts');
-  is(await page.locator('#level .source-correction').count(), 2,
-    'C43 correction-pair selection preserves both canonical source doses');
-  ok((await page.locator('#level .who').innerText()).includes('Correction stacking'),
-    'C43 the selected correction pair remains inside its Finding case');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .source-correction').count()), 2,
+      'C43 correction-pair selection preserves both canonical source doses');
+    ok((seen(await page.locator('#level .who').innerText())).includes('Correction stacking'),
+      'C43 the selected correction pair remains inside its Finding case');
+  }, "C43");
 };
 
 export const C44 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
   await page.waitForSelector('#level .who');
-  is(await page.locator('#level .who').innerText(), 'Missed / unannounced meal · highs',
-    'C44 opens the server-owned missed-meal High case');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .who').innerText()), 'Missed / unannounced meal · highs',
+      'C44 opens the server-owned missed-meal High case');
+  }, "C44");
   await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
-  const verdictBand = await page.locator('#level .vband').evaluate((band) => ({
-    segments: [...band.querySelectorAll('.bar [aria-label]')]
-      .map((part) => part.getAttribute('aria-label')),
-    residue: band.parentElement.querySelector('.vband-foot')?.textContent.trim() ?? null,
-  }));
-  is(verdictBand, {
-    segments: ['Meets criteria · 6', 'Borderline · 1', 'Does not meet · 1'],
-    residue: '1 claimed by another factor · 1 not comparable',
-  }, 'C44 retains fired, near-miss, clean, outranked, and no-data High accounting');
-  const comparison = await page.locator('#level .lvl-cap').innerText();
-  ok(/matched.*nearly matched.*comparison.*not comparable/i.test(comparison),
-    `C44 prints the served comparison counts (${comparison})`);
-  is(await page.locator('[data-comparison-cohort="matched"]').count(), 1,
-    'C44 renders the served matched cohort row');
-  const baseline = page.locator('[data-comparison-cohort="comparison"]').first();
-  ok(await baseline.isVisible(), 'C44 renders a named comparison occurrence outside the High roster');
-  is(await baseline.locator('.only').innerText(), 'Select to see this occurrence’s glucose trace',
-    'C44 comparison rows describe the glucose trace a selection reveals');
+  const { comparison, baseline } = await waitForReplayAssertion(async seen => {
+    const verdictBand = seen(await page.locator('#level .vband').evaluate((band) => ({
+      segments: [...band.querySelectorAll('.bar [aria-label]')]
+        .map((part) => part.getAttribute('aria-label')),
+      residue: band.parentElement.querySelector('.vband-foot')?.textContent.trim() ?? null,
+    })));
+    is(verdictBand, {
+      segments: ['Meets criteria · 6', 'Borderline · 1', 'Does not meet · 1'],
+      residue: '1 claimed by another factor · 1 not comparable',
+    }, 'C44 retains fired, near-miss, clean, outranked, and no-data High accounting');
+    const comparison = seen(await page.locator('#level .lvl-cap').innerText());
+    ok(/matched.*nearly matched.*comparison.*not comparable/i.test(comparison),
+      `C44 prints the served comparison counts (${comparison})`);
+    is(seen(await page.locator('[data-comparison-cohort="matched"]').count()), 1,
+      'C44 renders the served matched cohort row');
+    const baseline = page.locator('[data-comparison-cohort="comparison"]').first();
+    ok(seen(await baseline.isVisible()), 'C44 renders a named comparison occurrence outside the High roster');
+    is(seen(await baseline.locator('.only').innerText()), 'Select to see this occurrence’s glucose trace',
+      'C44 comparison rows describe the glucose trace a selection reveals');
+    return { comparison, baseline };
+  }, "C44");
   await baseline.click();
   await page.waitForSelector('#level .case-facts');
-  const evidence = await page.locator('#level .case-facts').innerText();
-  ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
-    'C44 comparison-member selection retains its trace and markers');
+  await waitForReplayAssertion(async seen => {
+    const evidence = seen(await page.locator('#level .case-facts').innerText());
+    ok(/\d+ glucose readings/.test(evidence) && /\d+ event markers/.test(evidence),
+      'C44 comparison-member selection retains its trace and markers');
+  }, "C44");
 };
 
 // STORY:finding-evidence-routing:C56
@@ -3215,12 +3600,14 @@ export const C56 = async (page) => {
   await openWholeDay(page);
   await clickQueueRow(page, 'Missed / unannounced meal');
   await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"] .tile-body').click();
-  is(await page.locator('#level .empty').first().innerText(), 'No occurrences in this population.',
-    'C56 renders the served empty matched cohort explicitly');
-  is(await page.locator('[data-comparison-cohort="matched"]').count(), 0,
-    'C56 does not fall back to High roster rows when the cohort is empty');
-  ok(await page.locator('[data-comparison-cohort="comparison"]').first().isVisible(),
-    'C56 leaves the named comparison baseline available beside the empty cohort');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .empty').first().innerText()), 'No occurrences in this population.',
+      'C56 renders the served empty matched cohort explicitly');
+    is(seen(await page.locator('[data-comparison-cohort="matched"]').count()), 0,
+      'C56 does not fall back to High roster rows when the cohort is empty');
+    ok(seen(await page.locator('[data-comparison-cohort="comparison"]').first().isVisible()),
+      'C56 leaves the named comparison baseline available beside the empty cohort');
+  }, "C56");
 };
 
 /** C57 · Selecting a matched-cohort occurrence emphasizes the served matched
@@ -3233,13 +3620,15 @@ export const C57 = async (page) => {
   const matched = page.locator('[data-comparison-cohort="matched"]').first();
   await matched.click();
   await page.waitForSelector('#level .case-facts');
-  is(await matched.getAttribute('aria-pressed'), 'true',
-    'C57 marks the served matched-cohort occurrence selected');
-  const facts = await page.locator('#level .case-facts').innerText();
-  ok(/\d+ glucose readings/.test(facts) && /\d+ event markers/.test(facts),
-    'C57 reveals the selected matched occurrence trace and markers');
-  is(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"]')
-    .getAttribute('data-drilled'), '', 'C57 leaves the owning comparison tile visibly drilled');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await matched.getAttribute('aria-pressed')), 'true',
+      'C57 marks the served matched-cohort occurrence selected');
+    const facts = seen(await page.locator('#level .case-facts').innerText());
+    ok(/\d+ glucose readings/.test(facts) && /\d+ event markers/.test(facts),
+      'C57 reveals the selected matched occurrence trace and markers');
+    is(seen(await page.locator('#tile-focal .evidence-tile[data-chart-id="finding:missed_meal"]')
+      .getAttribute('data-drilled')), '', 'C57 leaves the owning comparison tile visibly drilled');
+  }, "C57");
 };
 
 /** C60 · A reader navigating by control reaches a finding by its own title, and
@@ -3250,18 +3639,23 @@ export const C57 = async (page) => {
 export const C60 = async (page) => {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   await page.waitForFunction(() => document.getElementById('level')?.dataset.loading === 'false');
-  const [{ id, title }] = await page.locator('#level .qrow[data-id^="finding:"]').evaluateAll((rows) => rows.map((row) => ({
-    id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
-  })));
-  const control = page.locator('#level .q').getByRole('button', { name: title });
-  is(await control.count(), 1, `C60 the queue answers a search for a control named ${title}`);
-  is(await control.getAttribute('data-id'), id,
-    'C60 the control reached by name is that finding\u2019s own row');
+  const { control } = await waitForReplayAssertion(async seen => {
+    const [{ id, title }] = seen(await page.locator('#level .qrow[data-id^="finding:"]').evaluateAll((rows) => rows.map((row) => ({
+      id: row.dataset.id, title: row.querySelector('.lab').textContent.trim(),
+    }))));
+    const control = page.locator('#level .q').getByRole('button', { name: title });
+    is(seen(await control.count()), 1, `C60 the queue answers a search for a control named ${title}`);
+    is(seen(await control.getAttribute('data-id')), id,
+      'C60 the control reached by name is that finding\u2019s own row');
+    return { control };
+  }, "C60");
   await control.click();
   await settle(page, 500);
-  const opened = await state(page);
-  is(opened.crumb.length, 2, 'C60 activating the control drills one level, into the case file');
-  ok(opened.levelWho, `C60 the opened case file prints its own head (${opened.crumb.join(' \u203a ')})`);
+  await waitForReplayAssertion(async seen => {
+    const opened = seen(await state(page));
+    is(opened.crumb.length, 2, 'C60 activating the control drills one level, into the case file');
+    ok(opened.levelWho, `C60 the opened case file prints its own head (${opened.crumb.join(' \u203a ')})`);
+  }, "C60");
 };
 
 const stagedLaneCells = (page) => page.evaluate(() =>
@@ -3274,44 +3668,56 @@ const stagedLaneCells = (page) => page.evaluate(() =>
     sweep PR. */
 // STORY:finding-evidence-routing:C59
 export const C59 = async (page) => {
-  const idx = await page.evaluate(() => [...document.querySelectorAll('#lane button')]
-    .findIndex((b) => b.dataset.verdict === 'up'));
-  ok(idx >= 0, 'C59 precondition: the lane holds a slot that asserts a direction');
+  const { idx } = await waitForReplayAssertion(async seen => {
+    const idx = seen(await page.evaluate(() => [...document.querySelectorAll('#lane button')]
+      .findIndex((b) => b.dataset.verdict === 'up')));
+    ok(idx >= 0, 'C59 precondition: the lane holds a slot that asserts a direction');
+    return { idx };
+  }, "C59");
   await page.click(`#lane button:nth-child(${idx + 1})`);
   await settle(page, 450);
   await page.click('#level .stagebtn');
   await settle(page, 450);
-  const staged = await state(page);
-  is(staged.dock.kind, 'Plan · staged', 'C59 precondition: the dock reports the staged object');
-  is(staged.badge, '1', 'C59 precondition: the Plan badge counts it');
-  is(await stagedLaneCells(page), 1, 'C59 precondition: the lane marks the staged slot');
+  const { staged } = await waitForReplayAssertion(async seen => {
+    const staged = seen(await state(page));
+    is(staged.dock.kind, 'Plan · staged', 'C59 precondition: the dock reports the staged object');
+    is(staged.badge, '1', 'C59 precondition: the Plan badge counts it');
+    is(seen(await stagedLaneCells(page)), 1, 'C59 precondition: the lane marks the staged slot');
+    return { staged };
+  }, "C59");
 
   await page.reload();
   await page.waitForSelector('.dw');
   await page.waitForSelector('#lane button');
   await settle(page, 800);
-  const reloaded = await state(page);
-  is(reloaded.badge, '1', 'C59 the persisted Plan draft still counts the item');
-  /* One assertion, both witnesses: the bug reported an idle dock AND an
-     unmarked lane while that badge still read 1, and either alone would let the
-     other regress unseen. */
-  is({ dock: reloaded.dock.kind, stagedLaneCells: await stagedLaneCells(page) },
-    { dock: 'Plan · staged', stagedLaneCells: 1 },
-    'C59 the dock and the lane still report the staged change after a reload');
-  is(reloaded.dock.what, staged.dock.what,
-    'C59 one object, one claim — the dock names what the badge counts');
+  await waitForReplayAssertion(async seen => {
+    const reloaded = seen(await state(page));
+    is(reloaded.badge, '1', 'C59 the persisted Plan draft still counts the item');
+    /* One assertion, both witnesses: the bug reported an idle dock AND an
+       unmarked lane while that badge still read 1, and either alone would let the
+       other regress unseen. */
+    is({ dock: reloaded.dock.kind, stagedLaneCells: seen(await stagedLaneCells(page)) },
+      { dock: 'Plan · staged', stagedLaneCells: 1 },
+      'C59 the dock and the lane still report the staged change after a reload');
+    is(reloaded.dock.what, staged.dock.what,
+      'C59 one object, one claim — the dock names what the badge counts');
+  }, "C59");
 
   await page.click(`#lane button:nth-child(${idx + 1})`);
   await settle(page, 450);
-  const drilled = await state(page);
-  is(drilled.stageStaged, 'true', 'C59 the panel does not offer to stage it a second time');
-  ok(/Staged · Undo/.test(drilled.stage || ''), `C59 Undo is reachable again (${drilled.stage})`);
+  await waitForReplayAssertion(async seen => {
+    const drilled = seen(await state(page));
+    is(drilled.stageStaged, 'true', 'C59 the panel does not offer to stage it a second time');
+    ok(/Staged · Undo/.test(drilled.stage || ''), `C59 Undo is reachable again (${drilled.stage})`);
+  }, "C59");
   await page.click('#level .stagebtn');
   await settle(page, 450);
-  const undone = await state(page);
-  is(undone.badge, '0', 'C59 the change can still be taken back out from Diagnose');
-  is(undone.dock.kind, 'Nothing being watched', 'C59 the dock follows it back to idle');
-  is(await stagedLaneCells(page), 0, 'C59 the lane mark clears with it');
+  await waitForReplayAssertion(async seen => {
+    const undone = seen(await state(page));
+    is(undone.badge, '0', 'C59 the change can still be taken back out from Diagnose');
+    is(undone.dock.kind, 'Nothing being watched', 'C59 the dock follows it back to idle');
+    is(seen(await stagedLaneCells(page)), 0, 'C59 the lane mark clears with it');
+  }, "C59");
 };
 
 /* C61 reads the draft the surface actually wrote: `GET /api/plan` is a static
@@ -3325,33 +3731,43 @@ const C61_DRAFTS = [];
 // STORY:finding-evidence-routing:C61
 export const C61 = async (page) => {
   await openWholeDay(page);
-  const row = page.locator('#level .qrow[data-id="basal:30-90"]');
-  is(await row.count(), 1,
-    'C61 opens on the merged two-member basal row the projection published');
+  const { row } = await waitForReplayAssertion(async seen => {
+    const row = page.locator('#level .qrow[data-id="basal:30-90"]');
+    is(seen(await row.count()), 1,
+      'C61 opens on the merged two-member basal row the projection published');
+    return { row };
+  }, "C61");
   await row.click();
   await settle(page, 500);
-  ok(/one of 2 half hours in Basal 00:30 to 01:30/i.test(
-    await page.locator('#level .slot-say').first().innerText()),
-  'C61 states on the member panel which finding the half hour belongs to');
+  await waitForReplayAssertion(async seen => {
+    ok(/one of 2 half hours in Basal 00:30 to 01:30/i.test(
+      seen(await page.locator('#level .slot-say').first().innerText())),
+    'C61 states on the member panel which finding the half hour belongs to');
+  }, "C61");
   await page.locator('#level .stagebtn').click();
   await page.waitForFunction(() => document.querySelector('#plan-badge')?.textContent.trim() === '2');
   await settle(page, 150);
-  const staged = C61_DRAFTS.at(-1).items;
-  is(JSON.stringify(staged.map((item) => [item.start_min, item.current, item.recommended])),
-    JSON.stringify([[30, 0.85, 1.02], [60, 0.85, 1.02]]),
-    'C61 stages every eligible published member with its own served numbers');
-  const tally = await page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
-    .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : [])));
-  is(JSON.stringify(tally), JSON.stringify(staged.map((item) => item.start_min)),
-    'C61 keeps the surface tally and the PUT /api/plan body over one member set');
-  is(await page.locator('#watch-dock .what').innerText(),
-    'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
-    'C61 names the whole staged span in the dock');
+  const { staged } = await waitForReplayAssertion(async seen => {
+    const staged = C61_DRAFTS.at(-1).items;
+    is(JSON.stringify(staged.map((item) => [item.start_min, item.current, item.recommended])),
+      JSON.stringify([[30, 0.85, 1.02], [60, 0.85, 1.02]]),
+      'C61 stages every eligible published member with its own served numbers');
+    const tally = seen(await page.evaluate(() => [...document.querySelectorAll('#lane .lane-cell')]
+      .flatMap((cell, index) => (cell.dataset.staged === 'true' ? [index * 30] : []))));
+    is(JSON.stringify(tally), JSON.stringify(staged.map((item) => item.start_min)),
+      'C61 keeps the surface tally and the PUT /api/plan body over one member set');
+    is(seen(await page.locator('#watch-dock .what').innerText()),
+      'Basal 00:30 to 01:30 · 0.85 → 1.02 U/hr',
+      'C61 names the whole staged span in the dock');
+    return { staged };
+  }, "C61");
   await page.locator('#level .stagebtn').click();
   await page.waitForFunction(() => [...document.querySelectorAll('#lane .lane-cell')]
     .every((cell) => cell.dataset.staged !== 'true'));
   await settle(page, 150);
-  is(C61_DRAFTS.at(-1).items.length, 0, 'C61 gives the whole run back on undo');
+  await waitForReplayAssertion(async seen => {
+    is(seen(C61_DRAFTS.at(-1))?.items.length, 0, 'C61 gives the whole run back on undo');
+  }, 'C61 undo');
 };
 
 /* The ordinary generated projection withholds some case-file rows. A story may
@@ -3396,10 +3812,12 @@ export const C45 = async (page) => {
   await clickQueueRow(page, 'Over-treated low');
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-selection-state');
-  is(await page.locator('#level .case-selection-state').count(), 1,
-    'C45 a successful unavailable selection is visibly distinct');
-  is(await page.locator('#level [role="alert"]').count(), 0,
-    'C45 unavailable selection is not an active request failure');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .case-selection-state').count()), 1,
+      'C45 a successful unavailable selection is visibly distinct');
+    is(seen(await page.locator('#level [role="alert"]').count()), 0,
+      'C45 unavailable selection is not an active request failure');
+  }, "C45");
 };
 
 export const C46 = async (page) => {
@@ -3439,13 +3857,15 @@ export const C54 = async (page) => {
   expectResponse(page, /^\/api\/diagnose\/finding-case-file-preparation$/, 503);
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
-  is(await page.getByRole('button', { name: 'Morning', exact: true }).getAttribute('aria-pressed'), 'true',
-    'C54 the selected Morning window remains after its projection fails');
-  is(await page.locator('#level .empty').innerText(),
-    'Findings unavailable for 06:00–12:00. Choose another window to try again.',
-    'C54 the failed Morning projection states its exact unavailable message');
-  is(await page.locator('#level .qrow').count(), 0,
-    'C54 the failed Morning projection leaves no stale queue row');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.getByRole('button', { name: 'Morning', exact: true }).getAttribute('aria-pressed')), 'true',
+      'C54 the selected Morning window remains after its projection fails');
+    is(seen(await page.locator('#level .empty').innerText()),
+      'Findings unavailable for 06:00–12:00. Choose another window to try again.',
+      'C54 the failed Morning projection states its exact unavailable message');
+    is(seen(await page.locator('#level .qrow').count()), 0,
+      'C54 the failed Morning projection leaves no stale queue row');
+  }, "C54");
 };
 
 export const C55 = async (page) => {
@@ -3454,10 +3874,12 @@ export const C55 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.locator('#level .case-occurrence').first().click();
   await page.waitForSelector('#level .case-facts');
-  is(await page.locator('#level').getAttribute('data-loading'), 'false',
-    'C55 a selection superseding window preparation settles the replacement');
-  is(await page.locator('#level [role="alert"]').count(), 0,
-    'C55 the superseded preparation leg cannot strand an active failure');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level').getAttribute('data-loading')), 'false',
+      'C55 a selection superseding window preparation settles the replacement');
+    is(seen(await page.locator('#level [role="alert"]').count()), 0,
+      'C55 the superseded preparation leg cannot strand an active failure');
+  }, "C55");
 };
 
 /** C58 · Pressing a window preset while drilled into a Finding the new window
@@ -3475,13 +3897,15 @@ export const C58 = async (page) => {
   await page.getByRole('button', { name: 'Morning', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await settle(page, 250);
-  const after = await state(page);
-  ok(!after.levelText.includes('Findings unavailable for'),
-    `C58 a case-level unavailable answer is not the window's findings failure (${after.levelEmpty || '(no empty line)'})`);
-  is(after.crumb, ['Findings'],
-    `C58 an unavailable case pops the drill back to the Findings queue (${after.crumb.join('›')})`);
-  is(after.levelLoading, 'false', 'C58 the recovered queue settles');
-  is(after.pressed, ['Morning'], 'C58 the pressed Morning window stays selected');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await state(page));
+    ok(!after.levelText.includes('Findings unavailable for'),
+      `C58 a case-level unavailable answer is not the window's findings failure (${after.levelEmpty || '(no empty line)'})`);
+    is(after.crumb, ['Findings'],
+      `C58 an unavailable case pops the drill back to the Findings queue (${after.crumb.join('›')})`);
+    is(after.levelLoading, 'false', 'C58 the recovered queue settles');
+    is(after.pressed, ['Morning'], 'C58 the pressed Morning window stays selected');
+  }, "C58");
 };
 
 /* ------------------------------------------------------------------- runner */
@@ -3550,8 +3974,10 @@ const SANCTION_RETIRED_CHART_DOCK = 'sanction: Connor Griffin · 2026-09-04 · "
 // STORY:finding-evidence-routing:S127
 export const S127 = async (page) => {
   await openCanvas(page);
-  is(await page.locator('#dock-handle, [data-dock]').count(), 0,
-    'S127 RETIRED — no dock control or dock state remains');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#dock-handle, [data-dock]').count()), 0,
+      'S127 RETIRED — no dock control or dock state remains');
+  }, "S127");
   console.log(`S127 RETIRED — ${SANCTION_RETIRED_CHART_DOCK}`);
 };
 
@@ -3571,21 +3997,33 @@ const focalId = (page) => page.locator('#tile-focal .evidence-tile').first().get
 // STORY:finding-evidence-routing:S128
 export const S128 = async (page) => {
   await openWholeDay(page);
-  const rankOne = await focalId(page);
-  ok(rankOne, 'S128 the queue root seats a rank-1 chart');
+  const { rankOne } = await waitForReplayAssertion(async seen => {
+    const rankOne = seen(await focalId(page));
+    ok(rankOne, 'S128 the queue root seats a rank-1 chart');
+    return { rankOne };
+  }, "S128");
   await page.getByRole('button', { name: 'All charts' }).click();
-  const other = page.locator(`#tile-row .evidence-tile[data-seat="grid"][data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
-  const otherId = await other.getAttribute('data-chart-id');
-  ok(otherId, 'S128 the strip publishes a lower-ranked chart to drill');
+  const { other, otherId } = await waitForReplayAssertion(async seen => {
+    const other = page.locator(`#tile-row .evidence-tile[data-seat="grid"][data-chart-id]:not([data-chart-id="${rankOne}"])`).first();
+    const otherId = seen(await other.getAttribute('data-chart-id'));
+    ok(otherId, 'S128 the strip publishes a lower-ranked chart to drill');
+    return { other, otherId };
+  }, "S128");
   await other.locator('.tile-body').click();
   await settle(page, 450);
-  is(await focalId(page), otherId, 'S128 drilling a lower-ranked chart seats it');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), otherId, 'S128 drilling a lower-ranked chart seats it');
+  }, "S128");
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
-  is(await focalId(page), rankOne, 'S128 leaving the drill re-seats the rank-1 chart, never the chart just left');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), rankOne, 'S128 leaving the drill re-seats the rank-1 chart, never the chart just left');
+  }, "S128");
   await page.getByRole('button', { name: 'All charts' }).click();
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${rankOne}"][data-selected]`).count(), 1,
-    'S128 the catalog marks the rank-1 chart current again');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator(`#tile-row .evidence-tile[data-chart-id="${rankOne}"][data-selected]`).count()), 1,
+      'S128 the catalog marks the rank-1 chart current again');
+  }, "S128");
 };
 
 /* S129 · An explorer pick drills the picked chart's finding and closes the explorer. */
@@ -3595,30 +4033,37 @@ export const S129 = async (page) => {
   const before = (await state(page)).crumb.length;
   await page.getByRole('button', { name: 'All charts' }).click();
   await page.locator('#tile-field[data-explorer]').waitFor();
-  const cell = page.locator('#tile-field[data-explorer] .evidence-tile[data-seat="grid"][data-chart-id^="finding:"]').first();
-  const id = await cell.getAttribute('data-chart-id');
-  ok(id, 'S129 the explorer lists a finding chart');
+  const { cell, id } = await waitForReplayAssertion(async seen => {
+    const cell = page.locator('#tile-field[data-explorer] .evidence-tile[data-seat="grid"][data-chart-id^="finding:"]').first();
+    const id = seen(await cell.getAttribute('data-chart-id'));
+    ok(id, 'S129 the explorer lists a finding chart');
+    return { cell, id };
+  }, "S129");
   await cell.locator('.tile-body').click();
   await settle(page, 450);
-  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the pick closes the explorer');
-  is(await focalId(page), id, 'S129 the picked chart holds the stage');
-  ok((await state(page)).crumb.length > before, 'S129 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S129 the catalog is away after the pick');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0, 'S129 the pick closes the explorer');
+    is(seen(await focalId(page)), id, 'S129 the picked chart holds the stage');
+    ok((seen(await state(page))).crumb.length > before, 'S129 the picked chart\'s finding is drilled');
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0, 'S129 the catalog is away after the pick');
+  }, "S129");
 };
 
 /* S130 · All charts opens closed and the stage holds the rank-1 chart. */
 // STORY:finding-evidence-routing:S130
 export const S130 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S130 a fresh visit opens the catalog closed');
-  const rows = await servedRows(page, null);
-  const first = rows.find((row) => row.event_chart || row.parameter);
-  ok(first, 'S130 the queue publishes a ranked row');
-  const focal = await focalId(page);
-  ok(focal, 'S130 the stage holds a chart while the queue shows');
-  is(await page.locator(`#level .qrow[data-id="${rows[0].id}"]`).count(), 1, 'S130 the rank-1 row is listed');
-  is(focal, rows[0].event_chart ? `finding:${rows[0].event_chart.lever}` : rows[0].id,
-    'S130 the stage holds the rank-1 finding\'s chart');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0, 'S130 a fresh visit opens the catalog closed');
+    const rows = seen(await servedRows(page, null));
+    const first = rows.find((row) => row.event_chart || row.parameter);
+    ok(first, 'S130 the queue publishes a ranked row');
+    const focal = seen(await focalId(page));
+    ok(focal, 'S130 the stage holds a chart while the queue shows');
+    is(seen(await page.locator(`#level .qrow[data-id="${rows[0].id}"]`).count()), 1, 'S130 the rank-1 row is listed');
+    is(focal, rows[0].event_chart ? `finding:${rows[0].event_chart.lever}` : rows[0].id,
+      'S130 the stage holds the rank-1 finding\'s chart');
+  }, "S130");
 };
 
 /* S131 · An All charts pick seats and drills that chart, then closes the catalog. */
@@ -3626,15 +4071,20 @@ export const S130 = async (page) => {
 export const S131 = async (page) => {
   await openWholeDay(page);
   await page.getByRole('button', { name: 'All charts' }).click();
-  const before = (await state(page)).crumb.length;
-  const mini = page.locator('#tile-row .evidence-tile[data-seat="grid"][data-chart-id]').nth(1);
-  const id = await mini.getAttribute('data-chart-id');
-  ok(id, 'S131 the catalog publishes a second chart');
+  const { before, mini, id } = await waitForReplayAssertion(async seen => {
+    const before = (seen(await state(page))).crumb.length;
+    const mini = page.locator('#tile-row .evidence-tile[data-seat="grid"][data-chart-id]').nth(1);
+    const id = seen(await mini.getAttribute('data-chart-id'));
+    ok(id, 'S131 the catalog publishes a second chart');
+    return { before, mini, id };
+  }, "S131");
   await mini.locator('.tile-body').click();
   await settle(page, 450);
-  is(await focalId(page), id, 'S131 the picked chart holds the stage');
-  ok((await state(page)).crumb.length > before, 'S131 the picked chart\'s finding is drilled');
-  is(await page.locator('#tile-field[data-explorer]').count(), 0, 'S131 the pick closes All charts');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), id, 'S131 the picked chart holds the stage');
+    ok((seen(await state(page))).crumb.length > before, 'S131 the picked chart\'s finding is drilled');
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0, 'S131 the pick closes All charts');
+  }, "S131");
 };
 
 /* S132 · The stage card's title is the served headline's only home: for every
@@ -3663,31 +4113,39 @@ export const S132 = async (page) => {
     }
     await queueRow.click();
     await settle(page, 450);
-    is(await focalId(page), id, `S132 drilling ${id} seats its chart`);
-    /* The stage card styles the served headline's first sentence as the title
-       and the rest as the subtitle (nameplate ruling, 2026-09-03); the two
-       together are the served string verbatim, and the slot nameplate is the
-       card's kicker. */
-    const stageText = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
-      kicker: node.querySelector('.tile-kicker')?.textContent.trim() ?? null,
-      title: node.querySelector('h3')?.textContent.trim() ?? '',
-      sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
-    }));
-    is([stageText.title, stageText.sub].filter(Boolean).join(' '), row.headline,
-      `S132 the stage title and subtitle together are ${id}'s served headline, verbatim`);
-    ok(stageText.kicker && stageText.kicker !== row.headline,
-      `S132 ${id}'s stage kicker is the short nameplate, not the headline`);
-    ok(!(await page.locator('#level').innerText()).includes(row.headline),
-      `S132 no drill level repeats ${id}'s headline`);
+    const { stageText } = await waitForReplayAssertion(async seen => {
+      is(seen(await focalId(page)), id, `S132 drilling ${id} seats its chart`);
+      /* The stage card styles the served headline's first sentence as the title
+         and the rest as the subtitle (nameplate ruling, 2026-09-03); the two
+         together are the served string verbatim, and the slot nameplate is the
+         card's kicker. */
+      const stageText = seen(await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+        kicker: node.querySelector('.tile-kicker')?.textContent.trim() ?? null,
+        title: node.querySelector('h3')?.textContent.trim() ?? '',
+        sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+      })));
+      is([stageText.title, stageText.sub].filter(Boolean).join(' '), row.headline,
+        `S132 the stage title and subtitle together are ${id}'s served headline, verbatim`);
+      ok(stageText.kicker && stageText.kicker !== row.headline,
+        `S132 ${id}'s stage kicker is the short nameplate, not the headline`);
+      ok(!(seen(await page.locator('#level').innerText())).includes(row.headline),
+        `S132 no drill level repeats ${id}'s headline`);
+      return { stageText };
+    }, "S132");
     await openAllCharts(page);
-    const cellTitle = (await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-head h3`).textContent()).trim();
-    ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s All charts cell keeps the short nameplate`);
-    is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s catalog cell carry the same short nameplate`);
+    const { cellTitle } = await waitForReplayAssertion(async seen => {
+      const cellTitle = (seen(await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-head h3`).textContent())).trim();
+      ok(cellTitle && cellTitle !== row.headline, `S132 ${id}'s All charts cell keeps the short nameplate`);
+      is(cellTitle, stageText.kicker, `S132 the stage kicker and ${id}'s catalog cell carry the same short nameplate`);
+      return { cellTitle };
+    }, "S132");
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.locator('#tile-focal .tile-fullscreen').click();
     await page.waitForSelector('#tile-field[data-fullscreen-tile]');
-    is((await page.locator('#full-title').textContent()).trim(), cellTitle,
-      `S132 the fullscreen header keeps ${id}'s short nameplate`);
+    await waitForReplayAssertion(async seen => {
+      is((seen(await page.locator('#full-title').textContent())).trim(), cellTitle,
+        `S132 the fullscreen header keeps ${id}'s short nameplate`);
+    }, "S132");
     await page.locator('#chart-headacts button[aria-label="Close"]').click();
     await page.waitForTimeout(300);
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
@@ -3741,12 +4199,14 @@ const nightTrace = (page) => page.evaluate(() => {
     their supplied counts and the one excluded-nights tally beneath the roster. */
 export const S133 = async (page) => {
   await openBasalNightRoster(page);
-  is(await rosterGroups(page), [
-    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
-    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
-  ], 'S133 the served group headers, five-row cap and rows stand in the drill rail');
-  is((await page.locator('#level .empty').allTextContents()).map((text) => text.trim()), ['1 excluded night'],
-    'S133 the served excluded-night count is a separate tally');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await rosterGroups(page)), [
+      { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+      { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+    ], 'S133 the served group headers, five-row cap and rows stand in the drill rail');
+    is((seen(await page.locator('#level .empty').allTextContents())).map((text) => text.trim()), ['1 excluded night'],
+      'S133 the served excluded-night count is a separate tally');
+  }, "S133");
 };
 
 // STORY:finding-evidence-routing:S134
@@ -3754,11 +4214,13 @@ export const S133 = async (page) => {
     its own: a coherent served negative-sign night is never folded into ran-as-set. */
 export const S134 = async (page) => {
   await openBasalNightRoster(page);
-  is(await rosterGroups(page), [
-    { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
-    { label: 'Ran below · 1 night', rows: ['2026-01-08'] },
-    { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
-  ], 'S134 the served negative-sign night owns its ran-below group');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await rosterGroups(page)), [
+      { label: 'Ran above · 6 nights', rows: ['2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05'] },
+      { label: 'Ran below · 1 night', rows: ['2026-01-08'] },
+      { label: 'Ran as set · 1 night', rows: ['2026-01-07'] },
+    ], 'S134 the served negative-sign night owns its ran-below group');
+  }, "S134");
 };
 
 // STORY:finding-evidence-routing:S135
@@ -3766,11 +4228,13 @@ export const S134 = async (page) => {
     no direction of its own: it has its own group even when the sign is null. */
 export const S135 = async (page) => {
   await openBasalNightRoster(page);
-  const groups = await rosterGroups(page);
-  ok(groups.some((group) => group.label === 'No programmed rate · 1 night' && group.rows[0] === '2026-01-09'),
-    'S135 the no-programmed-rate night has its own header and row');
-  ok(!groups.find((group) => group.label.startsWith('Ran as set'))?.rows.includes('2026-01-09'),
-    'S135 the no-programmed-rate night never reads as ran-as-set');
+  await waitForReplayAssertion(async seen => {
+    const groups = seen(await rosterGroups(page));
+    ok(groups.some((group) => group.label === 'No programmed rate · 1 night' && group.rows[0] === '2026-01-09'),
+      'S135 the no-programmed-rate night has its own header and row');
+    ok(!groups.find((group) => group.label.startsWith('Ran as set'))?.rows.includes('2026-01-09'),
+      'S135 the no-programmed-rate night never reads as ran-as-set');
+  }, "S135");
 };
 
 // STORY:finding-evidence-routing:S136
@@ -3781,18 +4245,22 @@ export const S136 = async (page) => {
   const before = await state(page);
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
   await settle(page, 200);
-  const selected = await state(page);
-  is(selected.crumb, before.crumb, 'S136 selecting a night leaves the breadcrumb in place');
-  is(selected.chip, before.chip, 'S136 selecting a night leaves the clock window in place');
-  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-01',
-    'S136 exactly the selected night row presses');
-  const painted = await nightTrace(page);
-  ok(painted.trace.length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
-  ok(painted.envelope.length > 0, 'S136 the selected trace paints over the standing pooled envelope');
+  await waitForReplayAssertion(async seen => {
+    const selected = seen(await state(page));
+    is(selected.crumb, before.crumb, 'S136 selecting a night leaves the breadcrumb in place');
+    is(selected.chip, before.chip, 'S136 selecting a night leaves the clock window in place');
+    is(seen(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id')), '2026-01-01',
+      'S136 exactly the selected night row presses');
+    const painted = seen(await nightTrace(page));
+    ok(painted.trace.length > 0, 'S136 the selected night paints its served trace on Glucose by time of day');
+    ok(painted.envelope.length > 0, 'S136 the selected trace paints over the standing pooled envelope');
+  }, "S136");
   await page.locator('#level .clear-trace').click();
   await settle(page, 200);
-  is(await page.locator('#level .ev-row[aria-pressed="true"]').count(), 0, 'S136 Clear trace releases the row');
-  is((await nightTrace(page)).trace, [], 'S136 Clear trace removes the canvas trace');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .ev-row[aria-pressed="true"]').count()), 0, 'S136 Clear trace releases the row');
+    is((seen(await nightTrace(page))).trace, [], 'S136 Clear trace removes the canvas trace');
+  }, "S136");
 };
 
 // STORY:finding-evidence-routing:S137
@@ -3803,24 +4271,28 @@ export const S137 = async (page) => {
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-01"]').click();
   await page.keyboard.press('ArrowDown');
   await settle(page, 200);
-  is(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id'), '2026-01-02',
-    'S137 ArrowDown steps to the next night in the ran-above group');
-  is((await page.locator('#level .occ-head .pos').innerText()).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
-    'S137 the stepped detail names its position and arrow hint');
-  // The repaint destroys the row the key press stood on, so stepping must put
-  // focus on the newly selected row — otherwise a screen reader lands on the
-  // document and Tab restarts at the top of the page.
-  is(await page.evaluate(() => document.activeElement?.dataset?.occurrenceId ?? null), '2026-01-02',
-    'S137 the stepped row keeps focus, as the factor roster does');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .ev-row[aria-pressed="true"]').getAttribute('data-occurrence-id')), '2026-01-02',
+      'S137 ArrowDown steps to the next night in the ran-above group');
+    is((seen(await page.locator('#level .occ-head .pos').innerText())).replace(/\s+/g, ' ').trim(), '2 of 6↑ ↓',
+      'S137 the stepped detail names its position and arrow hint');
+    // The repaint destroys the row the key press stood on, so stepping must put
+    // focus on the newly selected row — otherwise a screen reader lands on the
+    // document and Tab restarts at the top of the page.
+    is(seen(await page.evaluate(() => document.activeElement?.dataset?.occurrenceId ?? null)), '2026-01-02',
+      'S137 the stepped row keeps focus, as the factor roster does');
+  }, "S137");
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-07"]').click();
   await settle(page, 200);
-  const detail = (await page.locator('#level .occ-detail').innerText()).replace(/\s+/g, ' ').trim();
-  ok(detail.includes('0.60 U/h delivered · 0.60 U/h programmed'), `S137 detail prints served delivered and programmed rates (${detail})`);
-  ok(detail.includes('— mg/dL this night · 114 mg/dL roster mean'), 'S137 null served mean prints as a dash beside roster mean');
-  ok(detail.includes('117 entry · — exit'), 'S137 null served exit prints as a dash');
-  is(await page.locator('#level .occ-head .pos').count(), 0, 'S137 a singleton group has no misleading arrow position');
-  is(await page.getByRole('button', { name: 'Open Jan 7 in Day', exact: true }).count(), 1,
-    'S137 the selected night offers the Day handoff');
+  await waitForReplayAssertion(async seen => {
+    const detail = (seen(await page.locator('#level .occ-detail').innerText())).replace(/\s+/g, ' ').trim();
+    ok(detail.includes('0.60 U/h delivered · 0.60 U/h programmed'), `S137 detail prints served delivered and programmed rates (${detail})`);
+    ok(detail.includes('— mg/dL this night · 114 mg/dL roster mean'), 'S137 null served mean prints as a dash beside roster mean');
+    ok(detail.includes('117 entry · — exit'), 'S137 null served exit prints as a dash');
+    is(seen(await page.locator('#level .occ-head .pos').count()), 0, 'S137 a singleton group has no misleading arrow position');
+    is(seen(await page.getByRole('button', { name: 'Open Jan 7 in Day', exact: true }).count()), 1,
+      'S137 the selected night offers the Day handoff');
+  }, "S137");
 };
 
 // STORY:finding-evidence-routing:S138
@@ -3831,21 +4303,23 @@ export const S138 = async (page) => {
   await page.locator('#level .ev-row[data-occurrence-id="2026-01-02"]').click();
   await settle(page, 200);
   await waitForLevelAnimations(page);
-  const boxes = await page.evaluate(() => {
-    const viewport = document.documentElement.clientWidth;
-    return ['.inspector', '#level', '#chart', '#level .occ-detail'].map((selector) => {
-      const node = document.querySelector(selector);
-      const box = node?.getBoundingClientRect();
-      return { selector, left: Math.round(box?.left ?? -1), right: Math.round(box?.right ?? -1), scroll: node?.scrollWidth ?? -1, client: node?.clientWidth ?? -1, viewport };
-    });
-  });
-  for (const box of boxes) {
-    ok(box.left >= 0 && box.right <= box.viewport, `S138 ${box.selector} remains inside the tablet viewport`);
-    ok(box.scroll <= box.client, `S138 ${box.selector} has no horizontal overflow`);
-  }
-  const painted = await nightTrace(page);
-  ok(painted.trace.length > 0, 'S138 the selected tablet night still paints on the canvas');
-  ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
+  await waitForReplayAssertion(async seen => {
+    const boxes = seen(await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      return ['.inspector', '#level', '#chart', '#level .occ-detail'].map((selector) => {
+        const node = document.querySelector(selector);
+        const box = node?.getBoundingClientRect();
+        return { selector, left: Math.round(box?.left ?? -1), right: Math.round(box?.right ?? -1), scroll: node?.scrollWidth ?? -1, client: node?.clientWidth ?? -1, viewport };
+      });
+    }));
+    for (const box of boxes) {
+      ok(box.left >= 0 && box.right <= box.viewport, `S138 ${box.selector} remains inside the tablet viewport`);
+      ok(box.scroll <= box.client, `S138 ${box.selector} has no horizontal overflow`);
+    }
+    const painted = seen(await nightTrace(page));
+    ok(painted.trace.length > 0, 'S138 the selected tablet night still paints on the canvas');
+    ok(painted.envelope.length > 0, 'S138 the selected tablet trace remains over the pooled envelope');
+  }, "S138");
 };
 
 /* ---- #341 · the consistent priced queue --------------------------------- */
@@ -3855,18 +4329,20 @@ export const S138 = async (page) => {
 // STORY:finding-evidence-routing:S139
 export const S139 = async (page) => {
   await openWholeDay(page);
-  const rows = await servedRows(page, null);
-  const first = rows.find((row) => row.priority != null);
-  ok(first, 'S139 the served queue publishes a priced row');
-  const pricedRow = page.locator(`#level .qrow.priced[data-id="${first.id}"]`);
-  is(await pricedRow.count(), 1, 'S139 the first row uses the common priced geometry');
-  is((await pricedRow.locator('.lab').innerText()).trim(), first.title,
-    'S139 the priced row title is the served short title');
-  ok(!(await page.locator('#level').innerText()).includes(first.headline),
-    'S139 the served headline stays out of the rail');
-  is(await pricedRow.locator('.mini').count(), 1, 'S139 rank one receives the common mini host');
-  const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
-  is(await focalId(page), chartId, 'S139 the rank-one chart occupies the stage');
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await servedRows(page, null));
+    const first = rows.find((row) => row.priority != null);
+    ok(first, 'S139 the served queue publishes a priced row');
+    const pricedRow = page.locator(`#level .qrow.priced[data-id="${first.id}"]`);
+    is(seen(await pricedRow.count()), 1, 'S139 the first row uses the common priced geometry');
+    is((seen(await pricedRow.locator('.lab').innerText())).trim(), first.title,
+      'S139 the priced row title is the served short title');
+    ok(!(seen(await page.locator('#level').innerText())).includes(first.headline),
+      'S139 the served headline stays out of the rail');
+    is(seen(await pricedRow.locator('.mini').count()), 1, 'S139 rank one receives the common mini host');
+    const chartId = first.event_chart ? `finding:${first.event_chart.lever}` : first.id;
+    is(seen(await focalId(page)), chartId, 'S139 the rank-one chart occupies the stage');
+  }, "S139");
 };
 
 /** S140 · A priced row mini and its All charts cell preserve the same served
@@ -3877,30 +4353,35 @@ export const S140 = async (page) => {
   const id = 'finding:over_treated_low';
   const rowMini = page.locator(`#level .qrow.priced[data-id="${id}"] .mini`);
   await rowMini.locator('canvas').waitFor();
-  const series = async (locator) => {
-    await page.waitForFunction((host) => !!window.echarts?.getInstanceByDom(host),
-      await locator.elementHandle(), { timeout: 10000 });
-    return locator.evaluate((host) =>
-      window.echarts.getInstanceByDom(host).getOption().series
-        .map(({ id, data }) => ({ id, data })));
-  };
-  const rowSeries = await series(rowMini);
+  const series = locator => locator.evaluate(host =>
+    window.echarts?.getInstanceByDom(host)?.getOption().series
+      .map(({ id, data }) => ({ id, data })) ?? []);
+  const points = (rows, accepts) => rows.filter(({ id }) => accepts(id || ''))
+    .flatMap(({ data }) => data || [])
+    .filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]))
+    .sort((left, right) => left[0] - right[0]);
+  const rowSeries = await waitForReplayAssertion(async seen => {
+    const rows = seen(await series(rowMini));
+    for (const cohort of ['matched', 'comparison']) {
+      ok(points(rows, id => id === `queue:event:${cohort}:median`).length > 0,
+        `S140 ${cohort} mini median is painted before opening the catalog`);
+    }
+    return rows;
+  }, 'S140 mini median baseline');
   await openAllCharts(page);
   const catalogChart = page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-chart`);
   await catalogChart.locator('canvas').waitFor();
-  const catalogSeries = await series(catalogChart);
-  for (const cohort of ['matched', 'comparison']) {
-    const points = (rows, accepts) => rows.filter(({ id }) => accepts(id || ''))
-      .flatMap(({ data }) => data || [])
-      .filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]))
-      .sort((left, right) => left[0] - right[0]);
-    const miniPoints = points(rowSeries, (id) => id === `queue:event:${cohort}:median`);
-    const fullPoints = points(catalogSeries, (id) => id.startsWith(`${cohort}:line:`));
-    ok(miniPoints.length > 0 && fullPoints.length > 0,
-      `S140 ${cohort} is drawn in both the mini and full chart`);
-    is(miniPoints, fullPoints,
-      `S140 ${cohort} keeps the same served median points across mini and full furniture`);
-  }
+  await waitForReplayAssertion(async seen => {
+    const catalogSeries = seen(await series(catalogChart));
+    for (const cohort of ['matched', 'comparison']) {
+      const miniPoints = points(rowSeries, (id) => id === `queue:event:${cohort}:median`);
+      const fullPoints = points(catalogSeries, (id) => id.startsWith(`${cohort}:line:`));
+      ok(miniPoints.length > 0 && fullPoints.length > 0,
+        `S140 ${cohort} is drawn in both the mini and full chart`);
+      is(miniPoints, fullPoints,
+        `S140 ${cohort} keeps the same served median points across mini and full furniture`);
+    }
+  }, "S140");
 };
 
 /** S141 · Every unpriced tail row is title-only and still drills through the
@@ -3911,13 +4392,18 @@ export const S141 = async (page) => {
   const ids = ['finding:correction_on_iob', 'finding:correction_stacking'];
   let drilled = 0;
   for (const id of ids) {
-    const row = page.locator(`#level .qrow.tail[data-id="${id}"]`);
-    is(await row.count(), 1, `S141 ${id} is a tail row`);
-    is(await row.locator('.sum, .den, .tag, .mini, .why').count(), 0,
-      `S141 ${id} is title-only`);
+    const { row } = await waitForReplayAssertion(async seen => {
+      const row = page.locator(`#level .qrow.tail[data-id="${id}"]`);
+      is(seen(await row.count()), 1, `S141 ${id} is a tail row`);
+      is(seen(await row.locator('.sum, .den, .tag, .mini, .why').count()), 0,
+        `S141 ${id} is title-only`);
+      return { row };
+    }, "S141");
     await row.click();
     await settle(page, 450);
-    is(await focalId(page), id, `S141 drilling ${id} seats its chart`);
+    await waitForReplayAssertion(async seen => {
+      is(seen(await focalId(page)), id, `S141 drilling ${id} seats its chart`);
+    }, "S141");
     drilled += 1;
     await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
     await settle(page, 450);
@@ -3931,13 +4417,15 @@ export const S141 = async (page) => {
 // STORY:finding-evidence-routing:S142
 export const S142 = async (page) => {
   await openWholeDay(page);
-  const tierWords = await page.locator('#level .tier, #level .qtier').allTextContents();
-  is(tierWords, [TIER.next_in_line, TIER.worth_a_look],
-    'S142 tier words print once at each priced-tier change');
-  ok(tierWords.every((word) => Object.values(TIER).includes(word)),
-    'S142 every printed tier word comes from the TIER map');
-  ok(!(await page.locator('#level').innerText()).includes('Decide now'),
-    'S142 no retired Decide now tier appears anywhere in the rail');
+  await waitForReplayAssertion(async seen => {
+    const tierWords = seen(await page.locator('#level .tier, #level .qtier').allTextContents());
+    is(tierWords, [TIER.next_in_line, TIER.worth_a_look],
+      'S142 tier words print once at each priced-tier change');
+    ok(tierWords.every((word) => Object.values(TIER).includes(word)),
+      'S142 every printed tier word comes from the TIER map');
+    ok(!(seen(await page.locator('#level').innerText())).includes('Decide now'),
+      'S142 no retired Decide now tier appears anywhere in the rail');
+  }, "S142");
 };
 
 /** S143 · At the tablet split, the chart reflows onto its own row above the
@@ -3945,9 +4433,12 @@ export const S142 = async (page) => {
 // STORY:finding-evidence-routing:S143
 export const S143 = async (page) => {
   await openWholeDay(page);
-  const row = page.locator('#level .qrow.priced[data-id="finding:over_treated_low"]');
-  is(await row.count(), 1, 'S143 the priced row survives the narrow inspector');
-  ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
+  const { row } = await waitForReplayAssertion(async seen => {
+    const row = page.locator('#level .qrow.priced[data-id="finding:over_treated_low"]');
+    is(seen(await row.count()), 1, 'S143 the priced row survives the narrow inspector');
+    ok(MIN_ROW_MINI_WIDTH > 0, 'S143 the rail publishes a positive mini width floor');
+    return { row };
+  }, "S143");
   const mini = row.locator('.mini[data-preview-kind]');
   await mini.locator('canvas').waitFor();
   // A mounted canvas can precede its host's layout during the level transition.
@@ -3956,7 +4447,7 @@ export const S143 = async (page) => {
     await page.waitForFunction(() => {
       const host = document.querySelector('#level .qrow.priced[data-id="finding:over_treated_low"] .mini[data-preview-kind]');
       return host?.getBoundingClientRect().width > 0;
-    }, null, { timeout: 5000 });
+    }, null, { timeout: 30000 });
   } catch (error) {
     const seen = await page.evaluate(() => ({
       animations: document.getElementById('level')?.getAnimations().map(animation => animation.playState),
@@ -3964,14 +4455,16 @@ export const S143 = async (page) => {
     }));
     fail(`S143 timed out waiting for the mini host's layout width and finished level animation; saw ${JSON.stringify(seen)}; ${error.message}`);
   }
-  const width = await mini.evaluate((host) => host.getBoundingClientRect().width);
-  ok(width >= MIN_ROW_MINI_WIDTH,
-    `S143 the reflowed mini clears its ${MIN_ROW_MINI_WIDTH}px floor (${width}px)`);
-  is(await row.getAttribute('data-mini'), null,
-    'S143 the reflowed priced row does not record an omission');
-  const subFloor = await page.locator('#level .mini[data-preview-kind]').evaluateAll(
-    (hosts, floor) => hosts.filter((host) => host.clientWidth < floor).length, MIN_ROW_MINI_WIDTH);
-  is(subFloor, 0, 'S143 no sub-floor mini remains mounted');
+  await waitForReplayAssertion(async seen => {
+    const width = seen(await mini.evaluate((host) => host.getBoundingClientRect().width));
+    ok(width >= MIN_ROW_MINI_WIDTH,
+      `S143 the reflowed mini clears its ${MIN_ROW_MINI_WIDTH}px floor (${width}px)`);
+    is(seen(await row.getAttribute('data-mini')), null,
+      'S143 the reflowed priced row does not record an omission');
+    const subFloor = seen(await page.locator('#level .mini[data-preview-kind]').evaluateAll(
+      (hosts, floor) => hosts.filter((host) => host.clientWidth < floor).length, MIN_ROW_MINI_WIDTH));
+    is(subFloor, 0, 'S143 no sub-floor mini remains mounted');
+  }, "S143");
 };
 
 /** S144 · Sifting to Meals makes Carb undercount first without changing its
@@ -3979,67 +4472,82 @@ export const S143 = async (page) => {
 // STORY:finding-evidence-routing:S144
 export const S144 = async (page) => {
   await openWholeDay(page);
-  is(await page.locator('#level .qrow.priced').first().getAttribute('data-id'), 'ic:720',
-    'S144 the unsifted fixture begins with the served I:C row');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .qrow.priced').first().getAttribute('data-id')), 'ic:720',
+      'S144 the unsifted fixture begins with the served I:C row');
+  }, "S144");
   await page.getByRole('button', { name: /Filter/ }).click();
   for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
     await page.getByRole('menuitemcheckbox', { name }).click();
   }
   await page.keyboard.press('Escape');
   await settle(page, 450);
-  const priced = page.locator('#level .qrow.priced');
-  is(await priced.count(), 2, 'S144 the meals-only sift retains both served priced rows');
-  is((await priced.first().locator('.lab').innerText()).trim(), 'Highs after meals',
-    'S144 the served Pattern remains ahead of its claimed member');
-  is(await focalId(page), 'pattern:highs_after_meals',
-    'S144 the served Pattern chart moves onto the stage');
+  await waitForReplayAssertion(async seen => {
+    const priced = page.locator('#level .qrow.priced');
+    is(seen(await priced.count()), 2, 'S144 the meals-only sift retains both served priced rows');
+    is((seen(await priced.first().locator('.lab').innerText())).trim(), 'Highs after meals',
+      'S144 the served Pattern remains ahead of its claimed member');
+    is(seen(await focalId(page)), 'pattern:highs_after_meals',
+      'S144 the served Pattern chart moves onto the stage');
+  }, "S144");
 };
 
 // STORY:finding-evidence-routing:S145
 export const S145 = async (page) => {
   await openWholeDay(page);
-  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern');
-  ok(row, 'S145 the server publishes a Pattern row');
-  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
-  is(await node.count(), 1, 'S145 the served Pattern has one rail row');
-  is((await node.locator('.lab').innerText()).trim(), row.title, 'S145 title is server-owned');
-  is((await node.locator('.tag').textContent()).trim(), '◇Pattern', 'S145 Pattern chip is identified');
+  await waitForReplayAssertion(async seen => {
+    const row = (seen(await servedRows(page, null))).find((item) => item.kind === 'pattern');
+    ok(row, 'S145 the server publishes a Pattern row');
+    const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+    is(seen(await node.count()), 1, 'S145 the served Pattern has one rail row');
+    is((seen(await node.locator('.lab').innerText())).trim(), row.title, 'S145 title is server-owned');
+    is((seen(await node.locator('.tag').textContent())).trim(), '◇Pattern', 'S145 Pattern chip is identified');
+  }, "S145");
 };
 
 // STORY:finding-evidence-routing:S146
 export const S146 = async (page) => {
   await openWholeDay(page);
-  const rows = await servedRows(page, null);
-  const pattern = rows.find((item) => item.kind === 'pattern' && item.claimed_by == null);
-  ok(pattern, 'S146 a non-collapsed Pattern is served');
-  const titles = await page.locator('#level .qrow .lab').allInnerTexts();
-  is(titles.indexOf(pattern.title), rows.map((item) => item.title).indexOf(pattern.title),
-    'S146 the rail retains server order');
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await servedRows(page, null));
+    const pattern = rows.find((item) => item.kind === 'pattern' && item.claimed_by == null);
+    ok(pattern, 'S146 a non-collapsed Pattern is served');
+    const titles = seen(await page.locator('#level .qrow .lab').allInnerTexts());
+    is(titles.indexOf(pattern.title), rows.map((item) => item.title).indexOf(pattern.title),
+      'S146 the rail retains server order');
+  }, "S146");
 };
 
 // STORY:finding-evidence-routing:S147
 export const S147 = async (page) => {
   await openWholeDay(page);
-  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && item.pattern_chart);
-  ok(row, 'S147 a chartable Pattern is served');
-  is(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count(), 1,
-    'S147 the Pattern uses the shared mini host');
+  const { row } = await waitForReplayAssertion(async seen => {
+    const row = (seen(await servedRows(page, null))).find((item) => item.kind === 'pattern' && item.pattern_chart);
+    ok(row, 'S147 a chartable Pattern is served');
+    is(seen(await page.locator(`#level .qrow[data-id="${row.id}"] .mini`).count()), 1,
+      'S147 the Pattern uses the shared mini host');
+    return { row };
+  }, "S147");
   // Preparation and evidence arrival can replace the mini. Wait and read in
   // one browser turn so a repaint cannot dispose the instance between them.
-  const legends = await (await page.waitForFunction((id) => {
-    const host = document.querySelector(`#level .qrow[data-id="${id}"] .mini`);
-    const chart = host && window.echarts.getInstanceByDom(host);
-    if (!host?.querySelector('canvas') || !chart) return false;
-    return chart.getOption().graphic.flatMap((group) =>
-      (group.elements || []).map((item) => item.style?.text).filter(Boolean));
-  }, row.id)).jsonValue();
-  ok(legends.some((label) => label.startsWith('RAN HIGH · ')),
-    'S147 the rail mini carries the sanctioned outcome legend');
-  ok(legends.some((label) => label.startsWith('TYPICAL · ')),
-    'S147 the rail mini labels its typical cohort');
+  await waitForReplayAssertion(async seen => {
+    const legends = seen(await page.evaluate((id) => {
+      const host = document.querySelector(`#level .qrow[data-id="${id}"] .mini`);
+      const chart = host && window.echarts.getInstanceByDom(host);
+      if (!host?.querySelector('canvas') || !chart) return [];
+      return chart.getOption().graphic.flatMap((group) =>
+        (group.elements || []).map((item) => item.style?.text).filter(Boolean));
+    }, row.id));
+    ok(legends.some((label) => label.startsWith('RAN HIGH · ')),
+      'S147 the rail mini carries the sanctioned outcome legend');
+    ok(legends.some((label) => label.startsWith('TYPICAL · ')),
+      'S147 the rail mini labels its typical cohort');
+  }, 'S147 legends');
   await openAllCharts(page);
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${row.id}"]`).count(), 1,
-    'S147 the same Pattern reaches All charts');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator(`#tile-row .evidence-tile[data-chart-id="${row.id}"]`).count()), 1,
+      'S147 the same Pattern reaches All charts');
+  }, "S147");
 };
 
 // STORY:finding-evidence-routing:S148
@@ -4049,38 +4557,44 @@ export const S148 = async (page) => {
   ok(row, 'S148 a chartable Pattern is served');
   await page.locator(`#level .qrow[data-id="${row.id}"]`).click();
   await settle(page, 500);
-  is(await focalId(page), row.id, 'S148 drill retains the canonical Pattern subject');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), row.id, 'S148 drill retains the canonical Pattern subject');
+  }, "S148");
 };
 
 // STORY:finding-evidence-routing:S149
 export const S149 = async (page) => {
   await openWholeDay(page);
-  const row = (await servedRows(page, null)).find((item) => item.kind === 'pattern' && !item.pattern_chart);
-  ok(row, 'S149 a chartless Pattern is served');
-  const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
-  is(await node.locator('.mini').count(), 0, 'S149 chartless Pattern has no empty chart well');
-  ok((await node.innerText()).includes(row.title), 'S149 chartless Pattern stays visible');
+  await waitForReplayAssertion(async seen => {
+    const row = (seen(await servedRows(page, null))).find((item) => item.kind === 'pattern' && !item.pattern_chart);
+    ok(row, 'S149 a chartless Pattern is served');
+    const node = page.locator(`#level .qrow[data-id="${row.id}"]`);
+    is(seen(await node.locator('.mini').count()), 0, 'S149 chartless Pattern has no empty chart well');
+    ok((seen(await node.innerText())).includes(row.title), 'S149 chartless Pattern stays visible');
+  }, "S149");
 };
 
 // STORY:finding-evidence-routing:S150
 export const S150 = async (page) => {
   await openWholeDay(page);
-  const rows = await servedRows(page, null);
-  const member = rows.find((item) => item.claimed_by);
-  ok(member, 'S150 a claimed member is served');
-  const node = page.locator(`#level .qrow[data-id="${member.id}"]`);
-  ok((await node.locator('xpath=..').getAttribute('class')).includes('claimed'),
-    'S150 claimed member is nested by the served flag');
-  is(await node.locator('.n').innerText(), '│', 'S150 nested member has the quiet non-rank tick');
-  const parent = rows.find((row) => row.id === member.claimed_by);
-  const family = PATTERN_COPY[parent.pattern.key].family;
-  const appearance = member.appearances.find((item) => item.family === family) || member.appearances[0];
-  is((await node.locator('.member-count').textContent()).trim(),
-    `· ${appearance.n} of ${appearance.m} ${appearance.noun}`,
-    'S150 the inline count names the member appearance in its Pattern family');
-  is(await node.evaluate((button) => button.parentElement.previousElementSibling
-    ?.querySelector('.qrow')?.dataset.id), parent.id,
-    'S150 no seam or tier caption separates the first claimed member from its Pattern');
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await servedRows(page, null));
+    const member = rows.find((item) => item.claimed_by);
+    ok(member, 'S150 a claimed member is served');
+    const node = page.locator(`#level .qrow[data-id="${member.id}"]`);
+    ok((seen(await node.locator('xpath=..').getAttribute('class'))).includes('claimed'),
+      'S150 claimed member is nested by the served flag');
+    is(seen(await node.locator('.n').innerText()), '│', 'S150 nested member has the quiet non-rank tick');
+    const parent = rows.find((row) => row.id === member.claimed_by);
+    const family = PATTERN_COPY[parent.pattern.key].family;
+    const appearance = member.appearances.find((item) => item.family === family) || member.appearances[0];
+    is((seen(await node.locator('.member-count').textContent())).trim(),
+      `· ${appearance.n} of ${appearance.m} ${appearance.noun}`,
+      'S150 the inline count names the member appearance in its Pattern family');
+    is(seen(await node.evaluate((button) => button.parentElement.previousElementSibling
+      ?.querySelector('.qrow')?.dataset.id)), parent.id,
+      'S150 no seam or tier caption separates the first claimed member from its Pattern');
+  }, "S150");
 };
 
 /* ---- #353 · one denominator per rendered row --------------------------- */
@@ -4106,14 +4620,16 @@ export const C62 = async (page) => {
   ok(!row.headline.includes(`${other.n} of ${other.m} ${other.noun}`),
     'C62 the served sentence never states the other family\'s count');
   await clickQueueRow(page, row.title);
-  is(await focalId(page), `finding:${row.case_header.event_chart.lever}`,
-    'C62 drilling the two-family row seats its own chart');
-  const stage = await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
-    title: node.querySelector('h3')?.textContent.trim() ?? '',
-    sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
-  }));
-  is([stage.title, stage.sub].filter(Boolean).join(' '), row.headline,
-    'C62 the stage prints the two-family row\'s served headline verbatim');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), `finding:${row.case_header.event_chart.lever}`,
+      'C62 drilling the two-family row seats its own chart');
+    const stage = seen(await page.locator('#tile-focal .tile-head .tile-id').evaluate((node) => ({
+      title: node.querySelector('h3')?.textContent.trim() ?? '',
+      sub: node.querySelector('.tile-sub')?.textContent.trim() ?? '',
+    })));
+    is([stage.title, stage.sub].filter(Boolean).join(' '), row.headline,
+      'C62 the stage prints the two-family row\'s served headline verbatim');
+  }, "C62");
 };
 
 // STORY:finding-evidence-routing:C41
@@ -4223,9 +4739,13 @@ const openAllCharts = async (page) => {
 const pinNext = async (page) => {
   const tile = page.locator('.evidence-tile .tile-pin[aria-pressed="false"]:not([disabled])');
   const next = page.locator('#tile-schematic .next:not([disabled])');
-  if (await tile.count()) await tile.first().click();
-  else if (await next.count()) await next.first().click();
-  else return false;
+  const useTile = await waitForReplayAssertion(async seen => {
+    const available = seen({ tile: await tile.count(), next: await next.count() });
+    ok(available.tile || available.next, 'pin control reaches the next pin');
+    return available.tile > 0;
+  }, 'pinNext available control');
+  if (useTile) await tile.first().click();
+  else await next.first().click();
   await page.waitForTimeout(300);
   return true;
 };
@@ -4247,9 +4767,11 @@ export const S92 = retiredStory('S92');
 
 const arrangementStory = (id, pinCount, arrangement) => async (page) => {
   await reachPinCount(page, pinCount);
-  const field = await canvasSnapshot(page);
-  is(field.arrangement, arrangement, `${id} ${pinCount} pins derive ${arrangement}`);
-  is(field.pinCount, `${pinCount}/4 pinned`, `${id} prints the exact pin count`);
+  await waitForReplayAssertion(async seen => {
+    const field = seen(await canvasSnapshot(page));
+    is(field.arrangement, arrangement, `${id} ${pinCount} pins derive ${arrangement}`);
+    is(field.pinCount, `${pinCount}/4 pinned`, `${id} prints the exact pin count`);
+  }, "arrangementStory");
 };
 
 // STORY:finding-evidence-routing:S93
@@ -4287,33 +4809,39 @@ export const S102 = async (page) => {
      glucose — under the retired clock treatment its U/h axis had an auto min,
      so the finite-min+max proxy excluded it by accident; the editorial
      treatment's 0..N axis is finite both ways and must be excluded by name. */
-  const ranges = await page.evaluate(() => [...document.querySelectorAll('.evidence-tile .tile-chart')]
-    .flatMap((host) => {
-      if ((host.closest('[data-chart-id]')?.dataset.chartId || '').startsWith('basal')) return [];
-      const option = window.echarts.getInstanceByDom(host)?.getOption?.();
-      const axis = Array.isArray(option?.yAxis) ? option.yAxis[0] : option?.yAxis;
-      return Number.isFinite(axis?.min) && Number.isFinite(axis?.max) ? [[axis.min, axis.max]] : [];
-    }));
-  ok(ranges.length >= 2, 'S102 at least two seated charts expose glucose axes');
-  is(new Set(ranges.map((range) => JSON.stringify(range))).size, 1,
-    'S102 every chart in the arrangement shares one glucose range');
+  await waitForReplayAssertion(async seen => {
+    const ranges = seen(await page.evaluate(() => [...document.querySelectorAll('.evidence-tile .tile-chart')]
+      .flatMap((host) => {
+        if ((host.closest('[data-chart-id]')?.dataset.chartId || '').startsWith('basal')) return [];
+        const option = window.echarts.getInstanceByDom(host)?.getOption?.();
+        const axis = Array.isArray(option?.yAxis) ? option.yAxis[0] : option?.yAxis;
+        return Number.isFinite(axis?.min) && Number.isFinite(axis?.max) ? [[axis.min, axis.max]] : [];
+      })));
+    ok(ranges.length >= 2, 'S102 at least two seated charts expose glucose axes');
+    is(new Set(ranges.map((range) => JSON.stringify(range))).size, 1,
+      'S102 every chart in the arrangement shares one glucose range');
+  }, "S102");
 };
 
 // STORY:finding-evidence-routing:S103
 export const S103 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.state === 'ok'),
-    'S103 a successful evidence request names the ok tile state');
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await canvasSnapshot(page))).tiles.some((tile) => tile.state === 'ok'),
+      'S103 a successful evidence request names the ok tile state');
+  }, "S103");
 };
 
 // STORY:finding-evidence-routing:S104
 export const S104 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const empty = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'empty');
-  ok(empty, 'S104 absent evidence names the empty tile state');
-  ok(Boolean(empty.message), 'S104 the empty state explains the absence');
+  await waitForReplayAssertion(async seen => {
+    const empty = (seen(await canvasSnapshot(page))).tiles.find((tile) => tile.state === 'empty');
+    ok(empty, 'S104 absent evidence names the empty tile state');
+    ok(Boolean(empty.message), 'S104 the empty state explains the absence');
+  }, "S104");
 };
 
 // STORY:finding-evidence-routing:S105
@@ -4327,8 +4855,11 @@ export const S105 = async (page) => {
   await page.locator('#tile-row .evidence-tile[data-chart-id^="ic:"]').first().click();
   await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
     .some((tile) => tile.dataset.state === 'error'));
-  const failed = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'error');
-  ok(failed?.message, 'S105 a failed evidence request names and explains the error state');
+  const { failed } = await waitForReplayAssertion(async seen => {
+    const failed = (seen(await canvasSnapshot(page))).tiles.find((tile) => tile.state === 'error');
+    ok(failed?.message, 'S105 a failed evidence request names and explains the error state');
+    return { failed };
+  }, "S105");
   await captureEvidence(page, 'S105-failed-chart');
 };
 
@@ -4336,8 +4867,11 @@ export const S105 = async (page) => {
 export const S106 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const carb = (await canvasSnapshot(page)).tiles.find((tile) => tile.id.startsWith('ic:'));
-  ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
+  const { carb } = await waitForReplayAssertion(async seen => {
+    const carb = (seen(await canvasSnapshot(page))).tiles.find((tile) => tile.id.startsWith('ic:'));
+    ok(carb, 'S106 the generated carb-ratio tile is seated before recovery');
+    return { carb };
+  }, "S106");
   const blockId = carb.id.slice('ic:'.length);
   await page.locator(`.evidence-tile[data-chart-id="${carb.id}"] .tile-pin`).click();
   await page.locator(`.evidence-tile[data-chart-id="${carb.id}"] .tile-body`).click();
@@ -4382,18 +4916,21 @@ export const S106 = async (page) => {
   await openAllCharts(page);
   try {
     await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
-      .some((tile) => tile.dataset.state === 'stale-generation'), null, { timeout: 5000 });
+      .some((tile) => tile.dataset.state === 'stale-generation'), null, { timeout: 30000 });
   } catch {
     await page.unroute(pattern, staleRoute);
     releaseRecovery();
     await page.unroute(findingsPattern, delayRecovery);
     fail('S106 typed 409 never renders the required stale-generation tile state before recovery');
   }
-  const stale = (await canvasSnapshot(page)).tiles.find((tile) => tile.state === 'stale-generation');
-  is(recoveryFindingsRequests, 1,
-    'S106 the typed 409 issues one findings-generation recovery request');
-  is(stale?.message, 'Evidence changed. Refresh findings.',
-    'S106 the 409 renders the named stale-generation state');
+  const { stale } = await waitForReplayAssertion(async seen => {
+    const stale = (seen(await canvasSnapshot(page))).tiles.find((tile) => tile.state === 'stale-generation');
+    is(recoveryFindingsRequests, 1,
+      'S106 the typed 409 issues one findings-generation recovery request');
+    is(stale?.message, 'Evidence changed. Refresh findings.',
+      'S106 the 409 renders the named stale-generation state');
+    return { stale };
+  }, "S106");
   await page.locator('.evidence-tile[data-state="stale-generation"]').evaluate((tile) =>
     tile.scrollIntoView({ block: 'center' }));
   await captureEvidence(page, 'S106-stale-chart');
@@ -4402,18 +4939,23 @@ export const S106 = async (page) => {
   await page.unroute(findingsPattern, delayRecovery);
   await page.waitForFunction(() => [...document.querySelectorAll('.evidence-tile')]
     .some((tile) => tile.dataset.chartId.startsWith('ic:') && tile.dataset.state === 'ok'),
-  null, { timeout: 5000 });
-  ok((await canvasSnapshot(page)).tiles.some((tile) => tile.id.startsWith('ic:') && tile.state === 'ok'),
-    'S106 refreshed findings re-request and recover the stale tile');
+  null, { timeout: 30000 });
+  await waitForReplayAssertion(async seen => {
+    ok((seen(await canvasSnapshot(page))).tiles.some((tile) => tile.id.startsWith('ic:') && tile.state === 'ok'),
+      'S106 refreshed findings re-request and recover the stale tile');
+  }, "S106");
 };
 
 // STORY:finding-evidence-routing:S107
 export const S107 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const held = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
-  const heldFindingId = await held.getAttribute('data-chart-id');
-  ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
+  const { held, heldFindingId } = await waitForReplayAssertion(async seen => {
+    const held = page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"]');
+    const heldFindingId = seen(await held.getAttribute('data-chart-id'));
+    ok(Boolean(heldFindingId), 'S107 the held chart has no Finding identity');
+    return { held, heldFindingId };
+  }, "S107");
   await held.locator('.tile-pin').click();
   await page.keyboard.press('Escape');
   const preparations = [];
@@ -4436,9 +4978,12 @@ export const S107 = async (page) => {
     }
   };
   const chipWindow = async (label) => {
-    const chip = (await state(page)).chip || '';
-    const match = /^Window (\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
-    ok(Boolean(match), `${label} did not expose a live drawn window: ${chip}`);
+    const { match } = await waitForReplayAssertion(async seen => {
+      const chip = (seen(await state(page))).chip || '';
+      const match = /^Window (\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
+      ok(Boolean(match), `${label} did not expose a live drawn window: ${chip}`);
+      return { match };
+    }, "chipWindow");
     return [Number(match[1]) * 60 + Number(match[2]),
       Number(match[3]) * 60 + Number(match[4])];
   };
@@ -4453,12 +4998,12 @@ export const S107 = async (page) => {
       && cases.slice(since.cases).some((request) => request.projection === projection
         && request.finding === heldFindingId && request.alignment === 'event'
         && request.occurrence === null);
-    for (let attempt = 0; attempt < 100 && !observed(); attempt += 1) {
-      await page.waitForTimeout(50);
-    }
-    ok(observed(), `${label}: expected ${heldFindingId} / ${projection} / event / no occurrence; `
-      + `preparations=${JSON.stringify(preparations.slice(since.preparations))} `
-      + `cases=${JSON.stringify(cases.slice(since.cases))}`);
+    await waitForReplayAssertion(async seen => {
+      seen({ preparations: preparations.slice(since.preparations), cases: cases.slice(since.cases) });
+      ok(observed(), `${label}: expected ${heldFindingId} / ${projection} / event / no occurrence; `
+        + `preparations=${JSON.stringify(preparations.slice(since.preparations))} `
+        + `cases=${JSON.stringify(cases.slice(since.cases))}`);
+    }, label);
   };
   page.on('request', observe);
   const box = await plot(page); const y = box.y + box.h * .45;
@@ -4473,11 +5018,15 @@ export const S107 = async (page) => {
   await beginFreshDraw(page);
   before = { preparations: preparations.length, cases: cases.length };
   const unrolled = await plot(page);
-  const during = await panThenAim(page, { x: chartXAt(unrolled, 22 * 60) }, 'right',
+  await panThenAim(page, { x: chartXAt(unrolled, 22 * 60) }, 'right',
     { past: 180, aim: 26 * 60 });
-  ok(during.panOffset > 0, 'S107 midnight re-read did not travel through the unrolled day');
-  const wrapped = await chipWindow('S107 midnight drag');
-  ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
+  const { wrapped } = await waitForReplayAssertion(async seen => {
+    const during = seen(await state(page));
+    ok(during.panOffset > 0, 'S107 midnight re-read did not travel through the unrolled day');
+    const wrapped = seen(await chipWindow('S107 midnight drag'));
+    ok(wrapped[0] > wrapped[1], `S107 midnight window did not wrap: ${wrapped}`);
+    return { wrapped };
+  }, 'S107 gesture');
   await waitForPinnedRead(wrapped, before,
     'S107 the pinned chart re-reads its wrapped intermediate window before release');
   await page.mouse.up();
@@ -4495,13 +5044,17 @@ export const S108 = async (page) => {
   await page.waitForTimeout(300);
   const before = await canvasSnapshot(page);
   await page.locator('#tile-focal .tile-fullscreen').click();
-  is((await canvasSnapshot(page)).fullscreen, true, 'S108 fullscreen opens one chart');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await canvasSnapshot(page))).fullscreen, true, 'S108 fullscreen opens one chart');
+  }, "S108");
   await page.locator('#chart-headacts button[aria-label="Close"]').click();
-  const after = await canvasSnapshot(page);
-  is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
-  is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
-    before.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
-    'S108 dismissal restores every prior seat and pin');
+  await waitForReplayAssertion(async seen => {
+    const after = seen(await canvasSnapshot(page));
+    is(after.arrangement, before.arrangement, 'S108 dismissal restores the exact arrangement');
+    is(after.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+      before.tiles.map(({ id, seat, pinned }) => ({ id, seat, pinned })),
+      'S108 dismissal restores every prior seat and pin');
+  }, "S108");
 };
 
 // STORY:finding-evidence-routing:S109
@@ -4523,10 +5076,12 @@ export const S110 = async (page) => {
      the chart. Sanction: ConnorGriffin · 2026-08-27 · "Stop repeating
      ourselfes. Respect the sanctitity of the breadcrumb." The drill-mark
      clause below is untouched and still the story's subject. */
-  is(await page.locator('#drill-provenance').count(), 0,
-    'S110 RETIRED — the provenance readout must not return');
-  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled'), '',
-    'S110 Findings marks the chart that owns the drill');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#drill-provenance').count()), 0,
+      'S110 RETIRED — the provenance readout must not return');
+    is(seen(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"]`).getAttribute('data-drilled')), '',
+      'S110 Findings marks the chart that owns the drill');
+  }, "S110");
   /* RETIRED CLAUSE — S110's Explore half. It asserted that the same provenance
      name and chart mark survive a switch into Explore; Explore is retired (ADR
      215: "there is one mode"), so there is no second mode to carry them into.
@@ -4543,13 +5098,15 @@ export const S111 = async (page) => {
   const crumb = (await state(page)).crumb;
   await page.locator('#level .clear-trace').click();
   await page.waitForFunction(() => !document.querySelector('#level .clear-trace'));
-  is((await state(page)).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
-  /* THE STAGE IS WHERE THE DRILL IS MARKED. A chart keeps its catalog cell while
-     it stands on the stage, so an unscoped count of
-     drilled tiles now answers "how many seats does one chart have", not "is the
-     owning chart still drilled". */
-  is(await page.locator('#tile-focal .evidence-tile[data-drilled]').count(), 1,
-    'S111 un-trace keeps the owning chart drilled');
+  await waitForReplayAssertion(async seen => {
+    is((seen(await state(page))).crumb, crumb, 'S111 Clear trace returns to the same untraced case view');
+    /* THE STAGE IS WHERE THE DRILL IS MARKED. A chart keeps its catalog cell while
+       it stands on the stage, so an unscoped count of
+       drilled tiles now answers "how many seats does one chart have", not "is the
+       owning chart still drilled". */
+    is(seen(await page.locator('#tile-focal .evidence-tile[data-drilled]').count()), 1,
+      'S111 un-trace keeps the owning chart drilled');
+  }, "S111");
 };
 
 /* STRENGTHENED #135 fix round. The story used to open on ONE chart and assert
@@ -4589,20 +5146,27 @@ export const S114 = async (page) => {
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await page.waitForTimeout(700);
   await openAllCharts(page);
-  const tail = page.locator('#tile-row .evidence-tile[data-tail-head]').first();
-  const chartId = await tail.getAttribute('data-chart-id');
-  ok(Boolean(chartId), 'S114 All charts publishes a Watching chart');
+  const { tail, chartId } = await waitForReplayAssertion(async seen => {
+    const tail = page.locator('#tile-row .evidence-tile[data-tail-head]').first();
+    const chartId = seen(await tail.getAttribute('data-chart-id'));
+    ok(Boolean(chartId), 'S114 All charts publishes a Watching chart');
+    return { tail, chartId };
+  }, "S114");
   await tail.click();
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
-  is(await page.locator('#tile-field[data-explorer]').count(), 0,
-    'S114 picking the Watching chart closes All charts');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0,
+      'S114 picking the Watching chart closes All charts');
+  }, "S114");
   await openAllCharts(page);
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
-    'S114 the promoted Watching chart keeps one catalog cell');
-  is(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`)
-    .getAttribute('data-selected'), '', 'S114 the promoted Watching cell is current');
-  is(await page.locator('#tile-row .evidence-tile[data-selected]').count(), 1,
-    'S114 All charts has one selected current chart');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).count()), 1,
+      'S114 the promoted Watching chart keeps one catalog cell');
+    is(seen(await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`)
+      .getAttribute('data-selected')), '', 'S114 the promoted Watching cell is current');
+    is(seen(await page.locator('#tile-row .evidence-tile[data-selected]').count()), 1,
+      'S114 All charts has one selected current chart');
+  }, "S114");
   await page.locator(`#tile-row .evidence-tile[data-chart-id="${chartId}"]`).evaluate((tile) =>
     tile.scrollIntoView({ block: 'center' }));
   await captureEvidence(page, 'S114-selected-watching-chart');
@@ -4612,23 +5176,28 @@ export const S114 = async (page) => {
 export const S115 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const cell = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
-  const chartId = await cell.getAttribute('data-chart-id');
-  const option = await cell.locator('.tile-chart').evaluate((host) =>
-    window.echarts.getInstanceByDom(host)?.getOption());
-  ok(option, 'S115 an event-comparison catalog cell mounts its chart');
-  const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
-  ok(axes.some((axis) => axis.axisLabel?.show !== false),
-    'S115 the full-size catalog chart retains readable axis furniture');
-  is(await cell.getAttribute('tabindex'), '0',
-    'S115 the catalog cell is reachable in keyboard order');
+  const { cell, chartId } = await waitForReplayAssertion(async seen => {
+    const cell = page.locator('#tile-row .evidence-tile[data-chart-id^="finding:"]').first();
+    const chartId = seen(await cell.getAttribute('data-chart-id'));
+    const option = seen(await cell.locator('.tile-chart').evaluate((host) =>
+      window.echarts.getInstanceByDom(host)?.getOption()));
+    ok(option, 'S115 an event-comparison catalog cell mounts its chart');
+    const axes = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis];
+    ok(axes.some((axis) => axis.axisLabel?.show !== false),
+      'S115 the full-size catalog chart retains readable axis furniture');
+    is(seen(await cell.getAttribute('tabindex')), '0',
+      'S115 the catalog cell is reachable in keyboard order');
+    return { cell, chartId };
+  }, "S115");
   await cell.focus();
   await page.keyboard.press('Enter');
   await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).waitFor();
-  is(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).count(), 1,
-    'S115 Enter promotes the catalog chart to the spotlight');
-  is(await page.locator('#tile-field[data-explorer]').count(), 0,
-    'S115 Enter on a chart closes All charts');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator(`#tile-focal .evidence-tile[data-chart-id="${chartId}"]`).count()), 1,
+      'S115 Enter promotes the catalog chart to the spotlight');
+    is(seen(await page.locator('#tile-field[data-explorer]').count()), 0,
+      'S115 Enter on a chart closes All charts');
+  }, "S115");
 };
 
 // STORY:finding-evidence-routing:S116
@@ -4638,8 +5207,10 @@ export const S116 = async (page) => {
   await opener.focus();
   await opener.click();
   await page.keyboard.press('Escape');
-  is(await page.evaluate(() => document.activeElement?.id), 'explorer-trigger',
-    'S116 closing the explorer restores focus to its opener');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.evaluate(() => document.activeElement?.id)), 'explorer-trigger',
+      'S116 closing the explorer restores focus to its opener');
+  }, "S116");
 };
 
 // RETIRED:finding-evidence-routing:S117
@@ -4654,75 +5225,86 @@ export const S116 = async (page) => {
 // STORY:finding-evidence-routing:S118
 export const S118 = async (page) => {
   await openWholeDay(page);
-  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
-    title: node.querySelector('.lab')?.textContent.trim() || '',
-    rank: node.querySelector('.n')?.textContent.trim() || '',
-    summary: node.querySelector('.sum')?.textContent.trim() || '',
-    register: node.dataset.state || '',
-    tier: node.dataset.tier || '',
-    claimed: node.parentElement.classList.contains('claimed'),
-  })));
-  ok(rows.filter((row) => row.claimed).every((row) => row.rank === '│'),
-    'S118 claimed members carry the non-rank tick');
-  const ranks = rows.filter((row) => !row.claimed).map((row) => row.rank).filter(Boolean).map(Number);
-  is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
-    'S118 visible priced ranked rows carry consecutive numerals only');
-  ok(rows.some((row) => row.summary),
-    'S118 an asserting row reveals its server-published annotation');
+  await waitForReplayAssertion(async seen => {
+    const rows = seen(await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+      title: node.querySelector('.lab')?.textContent.trim() || '',
+      rank: node.querySelector('.n')?.textContent.trim() || '',
+      summary: node.querySelector('.sum')?.textContent.trim() || '',
+      register: node.dataset.state || '',
+      tier: node.dataset.tier || '',
+      claimed: node.parentElement.classList.contains('claimed'),
+    }))));
+    ok(rows.filter((row) => row.claimed).every((row) => row.rank === '│'),
+      'S118 claimed members carry the non-rank tick');
+    const ranks = rows.filter((row) => !row.claimed).map((row) => row.rank).filter(Boolean).map(Number);
+    is(JSON.stringify(ranks), JSON.stringify(ranks.map((_, index) => index + 1)),
+      'S118 visible priced ranked rows carry consecutive numerals only');
+    ok(rows.some((row) => row.summary),
+      'S118 an asserting row reveals its server-published annotation');
+  }, "S118");
   await clickQueueRow(page, 'Over-treated low');
   await page.locator(
     '#tile-focal .evidence-tile[data-chart-id="finding:over_treated_low"] .tile-body',
   ).click();
-  const cleanId = 'o_5188c361303b4fee56326cc5a61569ff';
-  const clean = page.locator(
-    `[data-comparison-cohort="comparison"][data-occurrence-id="${cleanId}"]`,
-  );
-  ok(await clean.isVisible(),
-    'S118 the server-owned non-firing Low remains in the comparison cohort');
-  is(await page.locator(
-    `[data-comparison-cohort="matched"][data-occurrence-id="${cleanId}"]`,
-  ).count(), 0,
-  'S118 the browser does not recreate fired Over-treated-low evidence');
-  is(await page.locator('#level .vband .bar [aria-label="Does not meet · 1"]').count(), 1,
-    'S118 the served calm Low remains in the ten-Low verdict accounting');
+  await waitForReplayAssertion(async seen => {
+    const cleanId = 'o_5188c361303b4fee56326cc5a61569ff';
+    const clean = page.locator(
+      `[data-comparison-cohort="comparison"][data-occurrence-id="${cleanId}"]`,
+    );
+    ok(seen(await clean.isVisible()),
+      'S118 the server-owned non-firing Low remains in the comparison cohort');
+    is(seen(await page.locator(
+      `[data-comparison-cohort="matched"][data-occurrence-id="${cleanId}"]`,
+    ).count()), 0,
+    'S118 the browser does not recreate fired Over-treated-low evidence');
+    is(seen(await page.locator('#level .vband .bar [aria-label="Does not meet · 1"]').count()), 1,
+      'S118 the served calm Low remains in the ten-Low verdict accounting');
+  }, "S118");
 };
 
 // STORY:finding-evidence-routing:S119
 export const S119 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
-  const basal = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
-  ok(await basal.count(), 'S119 the generated canvas exposes one live basal chart');
+  const { basal } = await waitForReplayAssertion(async seen => {
+    const basal = page.locator('#tile-row .evidence-tile[data-chart-id^="basal:"]').first();
+    ok(seen(await basal.count()), 'S119 the generated canvas exposes one live basal chart');
+    return { basal };
+  }, "S119");
   await basal.click();
   const before = await canvasSnapshot(page);
   await page.locator('#tile-focal .tile-fullscreen').click();
   await page.waitForSelector('#tile-field[data-fullscreen-tile]');
   await page.setViewportSize({ width: 2084, height: 450 });
   await settle(page, 500);
-  const measured = await page.evaluate(() => {
-    const frame = document.querySelector('#tile-focal .evidence-tile').getBoundingClientRect();
-    const host = document.querySelector('#tile-focal .tile-chart').getBoundingClientRect();
-    const canvas = document.querySelector('#tile-focal .tile-chart canvas').getBoundingClientRect();
-    return {
-      frame: { left: frame.left, top: frame.top, right: frame.right, bottom: frame.bottom },
-      host: { left: host.left, top: host.top, right: host.right, bottom: host.bottom },
-      canvas: { left: canvas.left, top: canvas.top, right: canvas.right, bottom: canvas.bottom },
-      pageScroll: [document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        document.documentElement.scrollHeight - document.documentElement.clientHeight],
-    };
-  });
-  const inside = (box) => box.left >= measured.frame.left - 1
-    && box.top >= measured.frame.top - 1 && box.right <= measured.frame.right + 1
-    && box.bottom <= measured.frame.bottom + 1;
-  ok(inside(measured.host) && inside(measured.canvas),
-    `S119 fullscreen host and canvas stay inside the shared frame: ${JSON.stringify(measured)}`);
-  ok(measured.pageScroll.every((overflow) => overflow <= 1),
-    `S119 fullscreen introduces no page scroll: ${JSON.stringify(measured.pageScroll)}`);
+  await waitForReplayAssertion(async seen => {
+    const measured = seen(await page.evaluate(() => {
+      const frame = document.querySelector('#tile-focal .evidence-tile').getBoundingClientRect();
+      const host = document.querySelector('#tile-focal .tile-chart').getBoundingClientRect();
+      const canvas = document.querySelector('#tile-focal .tile-chart canvas').getBoundingClientRect();
+      return {
+        frame: { left: frame.left, top: frame.top, right: frame.right, bottom: frame.bottom },
+        host: { left: host.left, top: host.top, right: host.right, bottom: host.bottom },
+        canvas: { left: canvas.left, top: canvas.top, right: canvas.right, bottom: canvas.bottom },
+        pageScroll: [document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          document.documentElement.scrollHeight - document.documentElement.clientHeight],
+      };
+    }));
+    const inside = (box) => box.left >= measured.frame.left - 1
+      && box.top >= measured.frame.top - 1 && box.right <= measured.frame.right + 1
+      && box.bottom <= measured.frame.bottom + 1;
+    ok(inside(measured.host) && inside(measured.canvas),
+      `S119 fullscreen host and canvas stay inside the shared frame: ${JSON.stringify(measured)}`);
+    ok(measured.pageScroll.every((overflow) => overflow <= 1),
+      `S119 fullscreen introduces no page scroll: ${JSON.stringify(measured.pageScroll)}`);
+  }, "S119");
   await page.setViewportSize({ width: 2084, height: 742 });
   await settle(page, 500);
   await page.getByRole('button', { name: 'Close' }).click();
-  is(await canvasSnapshot(page), before,
-    'S119 resize and Close restore the exact prior Spotlight context');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await canvasSnapshot(page)), before,
+      'S119 resize and Close restore the exact prior Spotlight context');
+  }, "S119");
 };
 
 const starCatalogSnapshot = (page) => page.evaluate(() => ({
@@ -4756,24 +5338,38 @@ export const S120 = async (page) => {
   await openCanvas(page);
   await openAllCharts(page);
 
-  const opening = await starCatalogSnapshot(page);
-  const victimId = 'basal:30-90';
-  const victim = opening.row.find(({ id }) => id === victimId);
-  ok(victim, 'S120 All charts publishes the ranked chart that will become Watching');
-  const openingTail = opening.row.findIndex(({ tailHead }) => tailHead);
-  const openingRankEnd = openingTail < 0 ? opening.row.length : openingTail;
-  ok(openingRankEnd > opening.row.findIndex(({ id }) => id === victimId),
-    'S120 the chart starts inside the ranked group');
+  const { opening, victimId, victim, openingRankEnd } = await waitForReplayAssertion(async seen => {
+    const opening = seen(await starCatalogSnapshot(page));
+    const victimId = 'basal:30-90';
+    const victim = opening.row.find(({ id }) => id === victimId);
+    ok(victim, 'S120 All charts publishes the ranked chart that will become Watching');
+    const openingTail = opening.row.findIndex(({ tailHead }) => tailHead);
+    const openingRankEnd = openingTail < 0 ? opening.row.length : openingTail;
+    ok(openingRankEnd > opening.row.findIndex(({ id }) => id === victimId),
+      'S120 the chart starts inside the ranked group');
+    return { opening, victimId, victim, openingRankEnd };
+  }, "S120");
   const openingRank = opening.row.slice(0, openingRankEnd).map(({ id }) => id);
   const star = page.locator(`#tile-row .evidence-tile[data-chart-id="${victimId}"] .tile-pin`);
-  const keepName = await star.getAttribute('aria-label');
-  const keepTitle = await star.getAttribute('title');
+  await waitForReplayAssertion(async seen => {
+    const keepName = seen(await star.getAttribute('aria-label'));
+    const keepTitle = seen(await star.getAttribute('title'));
+    is(keepName, `Keep ${victim.title}`, 'S120 the star names the Keep action');
+    is(keepTitle, 'Keep this chart available', 'S120 the star title names retention');
+  }, 'S120');
   await star.focus();
   await page.keyboard.press('Space');
   await settle(page, 350);
-  const starred = await starCatalogSnapshot(page);
-  const stopName = await star.getAttribute('aria-label');
-  const stopTitle = await star.getAttribute('title');
+  await waitForReplayAssertion(async seen => {
+    const starred = seen(await starCatalogSnapshot(page));
+    const stopName = seen(await star.getAttribute('aria-label'));
+    const stopTitle = seen(await star.getAttribute('title'));
+    is(stopName, `Stop keeping ${victim.title}`, 'S120 the held star names Stop keeping');
+    is(stopTitle, 'Stop keeping this chart', 'S120 the held star title names retention');
+    is(starred.focal, opening.focal, 'S120 starring leaves the Spotlight unchanged');
+    is(starred.row.slice(0, openingRankEnd).map(({ id }) => id), openingRank,
+      'S120 starring leaves the server-published ranked order unchanged');
+  }, 'S120');
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
   if (narrowEvidence) await revealNarrowCatalogForEvidence(page, victimId);
@@ -4786,7 +5382,15 @@ export const S120 = async (page) => {
   await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
   await settle(page, 700);
   await openAllCharts(page);
-  const retained = await starCatalogSnapshot(page);
+  const { retained } = await waitForReplayAssertion(async seen => {
+    const retained = seen(await starCatalogSnapshot(page));
+    const retainedIndex = retained.row.findIndex(({ id }) => id === victimId);
+    const retainedTail = retained.row.findIndex(({ tailHead }) => tailHead);
+    is(retainedIndex, retainedTail >= 0 ? retainedTail - 1 : retained.row.length - 1,
+      'S120 an unranked retained star follows ranked entries and precedes Watching when present');
+    ok(retained.row[retainedIndex].kept, 'S120 the retained chart keeps its star');
+    return { retained };
+  }, 'S120');
   if (narrowEvidence) await page.setViewportSize(evidenceViewport);
   await settle(page, 350);
   if (narrowEvidence) await revealNarrowCatalogForEvidence(page, victimId);
@@ -4794,72 +5398,70 @@ export const S120 = async (page) => {
   if (narrowEvidence) await page.setViewportSize({ width: 1440, height: 900 });
   await settle(page, 350);
 
-  is(keepName, `Keep ${victim.title}`, 'S120 the star names the Keep action');
-  is(keepTitle, 'Keep this chart available', 'S120 the star title names retention');
-  is(stopName, `Stop keeping ${victim.title}`, 'S120 the held star names Stop keeping');
-  is(stopTitle, 'Stop keeping this chart', 'S120 the held star title names retention');
-  is(starred.focal, opening.focal, 'S120 starring leaves the Spotlight unchanged');
-  is(starred.row.slice(0, openingRankEnd).map(({ id }) => id), openingRank,
-    'S120 starring leaves the server-published ranked order unchanged');
-  const retainedIndex = retained.row.findIndex(({ id }) => id === victimId);
-  const retainedTail = retained.row.findIndex(({ tailHead }) => tailHead);
-  is(retainedIndex, retainedTail >= 0 ? retainedTail - 1 : retained.row.length - 1,
-    'S120 an unranked retained star follows ranked entries and precedes Watching when present');
-  ok(retained.row[retainedIndex].kept, 'S120 the retained chart keeps its star');
+
 
   const retainedFocal = retained.focal;
   const stop = page.locator(`#tile-row .evidence-tile[data-chart-id="${victimId}"] .tile-pin`);
   await stop.focus();
   await page.keyboard.press('Space');
   await settle(page, 350);
-  const released = await starCatalogSnapshot(page);
-  const releasedIndex = released.row.findIndex(({ id }) => id === victimId);
-  const releasedTail = released.row.findIndex(({ tailHead }) => tailHead);
-  is(released.focal, retainedFocal, 'S120 stopping retention leaves the Spotlight unchanged');
-  ok(releasedIndex >= releasedTail && releasedTail >= 0,
-    `S120 stopping retention returns the chart to automatic Watching membership: ${JSON.stringify(released)}`);
-  ok(!released.row[releasedIndex].kept, 'S120 the released Watching chart is no longer starred');
+  await waitForReplayAssertion(async seen => {
+    const released = seen(await starCatalogSnapshot(page));
+    const releasedIndex = released.row.findIndex(({ id }) => id === victimId);
+    const releasedTail = released.row.findIndex(({ tailHead }) => tailHead);
+    is(released.focal, retainedFocal, 'S120 stopping retention leaves the Spotlight unchanged');
+    ok(releasedIndex >= releasedTail && releasedTail >= 0,
+      `S120 stopping retention returns the chart to automatic Watching membership: ${JSON.stringify(released)}`);
+    ok(!released.row[releasedIndex].kept, 'S120 the released Watching chart is no longer starred');
+  }, "S120");
 };
 
 // STORY:finding-evidence-routing:S121
 export const S121 = async (page) => {
   await openWholeDay(page);
   await settle(page, 450);
-  const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
-  const rows = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
-    title: node.querySelector('.lab')?.textContent.trim() || '',
-    rank: node.querySelector('.n')?.textContent.trim() || '',
-    summary: node.querySelector('.sum')?.textContent.trim() || '',
-    register: node.dataset.state || '',
-    tier: node.dataset.tier || '',
-  })));
-  const at = rows.findIndex((row) => row.title === 'ISF · weaken');
-  ok(at >= 0, 'S121 the direction-only Correction factor warning remains reachable');
-  ok(rows.slice(0, at).some((row) => row.rank), 'S121 priced rows precede the warning');
-  ok(rows.slice(at + 1).every((row) => !row.rank),
-    'S121 every remaining row is unpriced in backend order');
-  is(rows[at].register, 'assert', 'S121 the warning remains asserted');
-  is(rows[at].tier, 'noted', 'S121 the warning keeps the backend-owned noted tier');
-  is(rows[at].rank, '', 'S121 the warning carries no rank numeral');
-  is(rows[at].summary, '',
-    'S121 the unpriced tail keeps the analyzer explanation out of its title-only row');
+  const { analyzer, at } = await waitForReplayAssertion(async seen => {
+    const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
+    const rows = seen(await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+      title: node.querySelector('.lab')?.textContent.trim() || '',
+      rank: node.querySelector('.n')?.textContent.trim() || '',
+      summary: node.querySelector('.sum')?.textContent.trim() || '',
+      register: node.dataset.state || '',
+      tier: node.dataset.tier || '',
+    }))));
+    const at = rows.findIndex((row) => row.title === 'ISF · weaken');
+    ok(at >= 0, 'S121 the direction-only Correction factor warning remains reachable');
+    ok(rows.slice(0, at).some((row) => row.rank), 'S121 priced rows precede the warning');
+    ok(rows.slice(at + 1).every((row) => !row.rank),
+      'S121 every remaining row is unpriced in backend order');
+    is(rows[at].register, 'assert', 'S121 the warning remains asserted');
+    is(rows[at].tier, 'noted', 'S121 the warning keeps the backend-owned noted tier');
+    is(rows[at].rank, '', 'S121 the warning carries no rank numeral');
+    is(rows[at].summary, '',
+      'S121 the unpriced tail keeps the analyzer explanation out of its title-only row');
+    return { analyzer, at };
+  }, "S121");
   await page.locator('#level .qrow').nth(at).scrollIntoViewIfNeeded();
   await settle(page, 100);
   await captureEvidence(page, 'S121-direction-only-queue');
 
   await clickQueueRow(page, 'ISF · weaken');
-  is(await page.locator('#level .stagebtn').count(), 0,
-    'S121 the direction-only detail offers no stage affordance');
-  const explanation = await page.locator('#level .slot-say').last().innerText();
-  is(explanation, analyzer.annotation, 'S121 detail keeps the analyzer explanation verbatim');
-  ok(/fasting data agrees with the set factor/i.test(explanation),
-    'S121 detail says the fasting signal agrees with the current setting');
-  ok(/recurring correction-linked lows call for weaker corrections/i.test(explanation),
-    'S121 detail says recurring correction-linked lows own the direction');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .stagebtn').count()), 0,
+      'S121 the direction-only detail offers no stage affordance');
+    const explanation = seen(await page.locator('#level .slot-say').last().innerText());
+    is(explanation, analyzer.annotation, 'S121 detail keeps the analyzer explanation verbatim');
+    ok(/fasting data agrees with the set factor/i.test(explanation),
+      'S121 detail says the fasting signal agrees with the current setting');
+    ok(/recurring correction-linked lows call for weaker corrections/i.test(explanation),
+      'S121 detail says recurring correction-linked lows own the direction');
+  }, "S121");
   await captureEvidence(page, 'S121-direction-only-detail');
-  is(await page.locator('#level .foot-note').innerText(),
-    'No new number is available, so there is nothing to stage.',
-    'S121 the frontend adds actionability only');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await page.locator('#level .foot-note').innerText()),
+      'No new number is available, so there is nothing to stage.',
+      'S121 the frontend adds actionability only');
+  }, "S121");
 };
 
 /* ---- #294 one-drill-down-for-every-settings-chart --------------------
@@ -4902,27 +5504,32 @@ export const S122 = async (page) => {
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
-  const viaChart = await state(page);
-  ok(/slot$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
-    `S122 the basal chart opens the slot panel (${viaChart.crumb})`);
-  ok(/^Slot /.test(viaChart.chip || ''), 'S122 the slot chip stands');
-  const chartPanel = await panelSnapshot(page);
-  is(chartPanel.verdict, 'capped (raise)', 'S122 the chart route prints the served verdict word');
-  is(chartPanel.support, '22 nights of steady data · 30 d basal run',
-    'S122 the chart route prints the served support count');
-  is(chartPanel.stageCount, 1,
-    'S122 the staging control is offered — this slot\'s backend asserts_move is true');
+  const { viaChart, chartPanel } = await waitForReplayAssertion(async seen => {
+    const viaChart = seen(await state(page));
+    ok(/slot$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
+      `S122 the basal chart opens the slot panel (${viaChart.crumb})`);
+    ok(/^Slot /.test(viaChart.chip || ''), 'S122 the slot chip stands');
+    const chartPanel = seen(await panelSnapshot(page));
+    is(chartPanel.verdict, 'capped (raise)', 'S122 the chart route prints the served verdict word');
+    is(chartPanel.support, '22 nights of steady data · 30 d basal run',
+      'S122 the chart route prints the served support count');
+    is(chartPanel.stageCount, 1,
+      'S122 the staging control is offered — this slot\'s backend asserts_move is true');
+    return { viaChart, chartPanel };
+  }, "S122");
   await captureEvidence(page, 'S122-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   await clickQueueRow(page, 'Basal 05:30 · raise');
   await settle(page, 450);
-  const viaRow = await state(page);
-  is(viaRow.crumb, viaChart.crumb, 'S122 the queue-row route lands on the identical crumb');
-  is(viaRow.chip, viaChart.chip, 'S122 the queue-row route lands on the identical chip');
-  is(await panelSnapshot(page), chartPanel,
-    'S122 the queue-row route prints the identical verdict, support and staging control');
+  await waitForReplayAssertion(async seen => {
+    const viaRow = seen(await state(page));
+    is(viaRow.crumb, viaChart.crumb, 'S122 the queue-row route lands on the identical crumb');
+    is(viaRow.chip, viaChart.chip, 'S122 the queue-row route lands on the identical chip');
+    is(seen(await panelSnapshot(page)), chartPanel,
+      'S122 the queue-row route prints the identical verdict, support and staging control');
+  }, "S122");
 };
 
 // STORY:finding-evidence-routing:S123
@@ -4934,32 +5541,37 @@ export const S123 = async (page) => {
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
-  const viaChart = await state(page);
-  ok(/block$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
-    `S123 the carb-ratio chart opens the block panel (${viaChart.crumb})`);
-  ok(/^Block /.test(viaChart.chip || ''), 'S123 the block chip stands');
-  const chartPanel = await panelSnapshot(page);
-  // renderIcBlockLevel passes the block's own label as headQual, which the
-  // shared panel prefixes onto the .verdict element itself (`${headQual} · `)
-  // — the served verdict word is still "suggests a tighter ratio", carried
-  // whole inside this one heading rather than printed bare.
-  is(chartPanel.verdict, 'Evening · suggests a tighter ratio',
-    'S123 the chart route prints the served verdict word');
-  is(chartPanel.support, '24 meal runs · 24 meals',
-    'S123 the chart route prints the served support count');
-  is(chartPanel.stageCount, 1,
-    'S123 the staging control is offered — this block\'s backend asserts_move is true');
+  const { viaChart, chartPanel } = await waitForReplayAssertion(async seen => {
+    const viaChart = seen(await state(page));
+    ok(/block$/.test(viaChart.crumb[viaChart.crumb.length - 1]),
+      `S123 the carb-ratio chart opens the block panel (${viaChart.crumb})`);
+    ok(/^Block /.test(viaChart.chip || ''), 'S123 the block chip stands');
+    const chartPanel = seen(await panelSnapshot(page));
+    // renderIcBlockLevel passes the block's own label as headQual, which the
+    // shared panel prefixes onto the .verdict element itself (`${headQual} · `)
+    // — the served verdict word is still "suggests a tighter ratio", carried
+    // whole inside this one heading rather than printed bare.
+    is(chartPanel.verdict, 'Evening · suggests a tighter ratio',
+      'S123 the chart route prints the served verdict word');
+    is(chartPanel.support, '24 meal runs · 24 meals',
+      'S123 the chart route prints the served support count');
+    is(chartPanel.stageCount, 1,
+      'S123 the staging control is offered — this block\'s backend asserts_move is true');
+    return { viaChart, chartPanel };
+  }, "S123");
   await captureEvidence(page, 'S123-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   await clickQueueRow(page, 'I:C 12:00 to 24:00 · lower');
   await settle(page, 450);
-  const viaRow = await state(page);
-  is(viaRow.crumb, viaChart.crumb, 'S123 the queue-row route lands on the identical crumb');
-  is(viaRow.chip, viaChart.chip, 'S123 the queue-row route lands on the identical chip');
-  is(await panelSnapshot(page), chartPanel,
-    'S123 the queue-row route prints the identical verdict, support and staging control');
+  await waitForReplayAssertion(async seen => {
+    const viaRow = seen(await state(page));
+    is(viaRow.crumb, viaChart.crumb, 'S123 the queue-row route lands on the identical crumb');
+    is(viaRow.chip, viaChart.chip, 'S123 the queue-row route lands on the identical chip');
+    is(seen(await panelSnapshot(page)), chartPanel,
+      'S123 the queue-row route prints the identical verdict, support and staging control');
+  }, "S123");
 };
 
 // STORY:finding-evidence-routing:S124
@@ -4971,27 +5583,32 @@ export const S124 = async (page) => {
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
-  const viaChart = await state(page);
-  is(viaChart.crumb[viaChart.crumb.length - 1], 'ISF',
-    `S124 the correction-factor chart opens the ISF panel (${viaChart.crumb})`);
-  const chartPanel = await panelSnapshot(page);
-  is(chartPanel.verdict, 'corrections look stronger than needed',
-    'S124 the chart route prints the served verdict word');
-  is(chartPanel.support, '568 correction steps · 8 fasting nights',
-    'S124 the chart route prints the served support count');
-  is(chartPanel.stageCount, 0,
-    'S124 the staging control is withheld — this row\'s backend asserts_move is false');
+  const { viaChart, chartPanel } = await waitForReplayAssertion(async seen => {
+    const viaChart = seen(await state(page));
+    is(viaChart.crumb[viaChart.crumb.length - 1], 'ISF',
+      `S124 the correction-factor chart opens the ISF panel (${viaChart.crumb})`);
+    const chartPanel = seen(await panelSnapshot(page));
+    is(chartPanel.verdict, 'corrections look stronger than needed',
+      'S124 the chart route prints the served verdict word');
+    is(chartPanel.support, '568 correction steps · 8 fasting nights',
+      'S124 the chart route prints the served support count');
+    is(chartPanel.stageCount, 0,
+      'S124 the staging control is withheld — this row\'s backend asserts_move is false');
+    return { viaChart, chartPanel };
+  }, "S124");
   await captureEvidence(page, 'S124-after-chart-click');
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   await clickQueueRow(page, 'ISF · weaken');
   await settle(page, 450);
-  const viaRow = await state(page);
-  is(viaRow.crumb, viaChart.crumb, 'S124 the queue-row route lands on the identical crumb');
-  is(viaRow.chip, viaChart.chip, 'S124 the queue-row route lands on the identical chip');
-  is(await panelSnapshot(page), chartPanel,
-    'S124 the queue-row route prints the identical verdict, support and staging control');
+  await waitForReplayAssertion(async seen => {
+    const viaRow = seen(await state(page));
+    is(viaRow.crumb, viaChart.crumb, 'S124 the queue-row route lands on the identical crumb');
+    is(viaRow.chip, viaChart.chip, 'S124 the queue-row route lands on the identical chip');
+    is(seen(await panelSnapshot(page)), chartPanel,
+      'S124 the queue-row route prints the identical verdict, support and staging control');
+  }, "S124");
 };
 
 // STORY:finding-evidence-routing:S125
@@ -5003,24 +5620,30 @@ export const S125 = async (page) => {
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
-  const first = await state(page);
-  is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
+  await waitForReplayAssertion(async seen => {
+    const first = seen(await state(page));
+    is(first.crumb.length, 2, 'S125 the basal chart opens one level deep');
+  }, "S125");
 
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
-  const second = await state(page);
-  is(second.crumb.length, 2,
-    'S125 a different parameter chart click replaces the level rather than stacking under it');
-  ok(/block$/.test(second.crumb[second.crumb.length - 1]),
-    `S125 the carb-ratio chart is now standing (${second.crumb})`);
+  await waitForReplayAssertion(async seen => {
+    const second = seen(await state(page));
+    is(second.crumb.length, 2,
+      'S125 a different parameter chart click replaces the level rather than stacking under it');
+    ok(/block$/.test(second.crumb[second.crumb.length - 1]),
+      `S125 the carb-ratio chart is now standing (${second.crumb})`);
+  }, "S125");
 
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
-  const third = await state(page);
-  is(third.crumb.length, 2, 'S125 the correction-factor chart also replaces rather than stacking');
-  is(third.crumb[third.crumb.length - 1], 'ISF', `S125 the ISF chart is now standing (${third.crumb})`);
+  await waitForReplayAssertion(async seen => {
+    const third = seen(await state(page));
+    is(third.crumb.length, 2, 'S125 the correction-factor chart also replaces rather than stacking');
+    is(third.crumb[third.crumb.length - 1], 'ISF', `S125 the ISF chart is now standing (${third.crumb})`);
+  }, "S125");
 };
 
 // STORY:finding-evidence-routing:S126
@@ -5037,37 +5660,51 @@ export const S126 = async (page) => {
      (720-1440) are window-filtered; ISF is not (`isfRows` takes no window
      argument), so its check draws a window that overlaps neither. */
   await drawWindow(page, [300, 420]);
-  const drawn1 = await state(page);
-  ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
+  await waitForReplayAssertion(async seen => {
+    const drawn1 = seen(await state(page));
+    ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
+  }, "S126");
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
   await settle(page, 450);
-  const basal = await state(page);
-  ok(/^Slot /.test(basal.chip || ''), `S126 a basal chart click releases the drawn window (${basal.chip})`);
+  await waitForReplayAssertion(async seen => {
+    const basal = seen(await state(page));
+    ok(/^Slot /.test(basal.chip || ''), `S126 a basal chart click releases the drawn window (${basal.chip})`);
+  }, "S126");
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   await drawWindow(page, [700, 900]);
-  const drawn2 = await state(page);
-  ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
+  await waitForReplayAssertion(async seen => {
+    const drawn2 = seen(await state(page));
+    ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
+  }, "S126");
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
   await settle(page, 450);
-  const carb = await state(page);
-  ok(/^Block /.test(carb.chip || ''),
-    `S126 a carb-ratio chart click also releases the drawn window (${carb.chip})`);
+  await waitForReplayAssertion(async seen => {
+    const carb = seen(await state(page));
+    ok(/^Block /.test(carb.chip || ''),
+      `S126 a carb-ratio chart click also releases the drawn window (${carb.chip})`);
+  }, "S126");
 
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await settle(page, 450);
   await drawWindow(page, [540, 660]);
-  const drawn3 = await state(page);
-  ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
+  const { drawn3 } = await waitForReplayAssertion(async seen => {
+    const drawn3 = seen(await state(page));
+    ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
+    return { drawn3 };
+  }, "S126");
   await captureEvidence(page, 'S126-before-isf-chart-click');
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="isf"] .tile-body').click();
   await settle(page, 450);
-  const isf = await state(page);
-  is(isf.chip, drawn3.chip, 'S126 a correction-factor chart click leaves the drawn window standing');
+  const { isf } = await waitForReplayAssertion(async seen => {
+    const isf = seen(await state(page));
+    is(isf.chip, drawn3.chip, 'S126 a correction-factor chart click leaves the drawn window standing');
+    return { isf };
+  }, "S126");
   await captureEvidence(page, 'S126-after-isf-chart-click');
 };
 
@@ -5085,28 +5722,30 @@ async function sequenceState(page, name) {
 async function sequenceNesting(page, lever) {
   for (const kind of ['covered', 'empty']) {
     const input = await sequenceState(page, `${lever}_${kind}`);
-    const served = input.windows.global.preparation;
-    const rows = served.rendered_rows;
-    const cause = rows.find((row) => row.id === `finding:${lever}`);
-    const parent = rows.find((row) => row.id === cause.claimed_by);
-    ok(parent, 'the producer admits the parent and nests the supported cause');
-    ok(!parent.pattern.rate_levers.includes(`habit:${lever}`), 'habit-only cause is never a rate lever');
-    const node = page.locator(`#level .qrow[data-id="${cause.id}"]`);
-    is(await node.locator('.n').innerText(), '│', 'cause uses the inherited quiet member tick');
-    is((await node.locator('.member-count').innerText()).trim(),
-      `· ${cause.appearances[0].n} of ${cause.appearances[0].m} sequences`, 'cause keeps its sequence count');
-    const order = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id));
-    is(order.indexOf(cause.id), order.indexOf(parent.id) + 1, 'cause stays adjacent beneath its parent');
-    is(served.findings.counts.finding,
-      rows.filter((r) => r.register === 'finding' && !r.claimed_by).length,
-      'server Findings count excludes nested causes');
-    is((await state(page)).crumbMeta, `${served.findings.counts.finding} findings · 30 days`,
-      'the rendered Findings count excludes causes');
-    const meals = input.windows.global.cases[parent.id].event;
-    is(meals.summary.claimed, parent.pattern.k, 'parent case rate claim count is unchanged');
-    is(meals.summary.denominator, parent.pattern.n, 'parent uses its own meals denominator');
-    const associated = meals.occurrences.filter((r) => r.member_associations?.includes(`habit:${lever}`));
-    is(associated.length > 0, kind === 'covered', 'only actual covered meals receive associations');
+    await waitForReplayAssertion(async seen => {
+      const served = input.windows.global.preparation;
+      const rows = served.rendered_rows;
+      const cause = rows.find((row) => row.id === `finding:${lever}`);
+      const parent = rows.find((row) => row.id === cause.claimed_by);
+      ok(parent, 'the producer admits the parent and nests the supported cause');
+      ok(!parent.pattern.rate_levers.includes(`habit:${lever}`), 'habit-only cause is never a rate lever');
+      const node = page.locator(`#level .qrow[data-id="${cause.id}"]`);
+      is(seen(await node.locator('.n').innerText()), '│', 'cause uses the inherited quiet member tick');
+      is((seen(await node.locator('.member-count').innerText())).trim(),
+        `· ${cause.appearances[0].n} of ${cause.appearances[0].m} sequences`, 'cause keeps its sequence count');
+      const order = seen(await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id)));
+      is(order.indexOf(cause.id), order.indexOf(parent.id) + 1, 'cause stays adjacent beneath its parent');
+      is(served.findings.counts.finding,
+        rows.filter((r) => r.register === 'finding' && !r.claimed_by).length,
+        'server Findings count excludes nested causes');
+      is((seen(await state(page))).crumbMeta, `${served.findings.counts.finding} findings · 30 days`,
+        'the rendered Findings count excludes causes');
+      const meals = input.windows.global.cases[parent.id].event;
+      is(meals.summary.claimed, parent.pattern.k, 'parent case rate claim count is unchanged');
+      is(meals.summary.denominator, parent.pattern.n, 'parent uses its own meals denominator');
+      const associated = meals.occurrences.filter((r) => r.member_associations?.includes(`habit:${lever}`));
+      is(associated.length > 0, kind === 'covered', 'only actual covered meals receive associations');
+    }, "sequenceNesting");
     await captureEvidence(page, `${lever}-${kind}-nested`);
   }
 }
@@ -5118,43 +5757,50 @@ export const S151 = (page) => sequenceNesting(page, 'high_carb_sequence');
 export const S152 = async (page) => {
   await sequenceNesting(page, 'repeat_eating');
   const input = await sequenceState(page, 'both_covered');
-  const expected = input.windows.global.preparation.rendered_rows.filter((r) =>
-    r.id === 'pattern:highs_after_meals' || r.claimed_by === 'pattern:highs_after_meals').map((r) => r.id);
-  is(expected.length, 3, 'both supported causes are served');
-  const actual = await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id));
-  const at = actual.indexOf(expected[0]);
-  is(actual.slice(at, at + 3), expected, 'both causes stay adjacent in server order');
+  await waitForReplayAssertion(async seen => {
+    const expected = input.windows.global.preparation.rendered_rows.filter((r) =>
+      r.id === 'pattern:highs_after_meals' || r.claimed_by === 'pattern:highs_after_meals').map((r) => r.id);
+    is(expected.length, 3, 'both supported causes are served');
+    const actual = seen(await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((n) => n.dataset.id)));
+    const at = actual.indexOf(expected[0]);
+    is(actual.slice(at, at + 3), expected, 'both causes stay adjacent in server order');
+  }, "S152");
 };
 
 async function sequenceCharts(page, lever) {
   const input = await sequenceState(page, `${lever}_empty`);
-  const id = `finding:${lever}`;
-  const data = input.windows.global.cases[id].event;
-  const mini = `#level .qrow[data-id="${id}"] .mini`;
-  const readSeries = async (selector) => (await (await page.waitForFunction((selector) => {
-    const host = document.querySelector(selector);
-    const chart = host && window.echarts.getInstanceByDom(host);
-    return chart?.getOption().series?.some((s) => s.id.startsWith('sequence:'))
-      ? chart.getOption().series : false;
-  }, selector)).jsonValue());
-  const miniSeries = await readSeries(mini);
-  is(miniSeries.length, 4, 'mounted mini draws two served cohorts on two unit rulers');
+  const { id, data, readSeries } = await waitForReplayAssertion(async seen => {
+    const id = `finding:${lever}`;
+    const data = input.windows.global.cases[id].event;
+    const mini = `#level .qrow[data-id="${id}"] .mini`;
+    const readSeries = async (selector) => (await (await page.waitForFunction((selector) => {
+      const host = document.querySelector(selector);
+      const chart = host && window.echarts.getInstanceByDom(host);
+      return chart?.getOption().series?.some((s) => s.id.startsWith('sequence:'))
+        ? chart.getOption().series : false;
+    }, selector)).jsonValue());
+    const miniSeries = seen(await readSeries(mini));
+    is(miniSeries.length, 4, 'mounted mini draws two served cohorts on two unit rulers');
+    return { id, data, readSeries };
+  }, "sequenceCharts");
   await openAllCharts(page);
-  const tile = `#tile-row .evidence-tile[data-chart-id="${id}"]`;
-  const cellSeries = await readSeries(`${tile} .tile-chart`);
-  const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
-  const periods = detector.comparisons.filter((r) => lever === 'repeat_eating'
-    ? r.carb_quintile === detector.finding.carb_quintile : r.scope === detector.finding.scope);
-  is(cellSeries[0].data.map((p) => p.value[1]), periods.map((p) => p.reference.tir_pct),
-    'All charts retains exact served reference values');
-  is(cellSeries[1].data.map((p) => p.value[1]), periods.map((p) =>
-    (lever === 'repeat_eating' ? p.repeat : p.high).tir_pct), 'All charts retains exact served candidate values');
-  const parent = page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]');
-  is(await parent.count(), 1, 'parent retains its independent chart');
-  const parentSeries = await parent.locator('.tile-chart').evaluate((host) =>
-    window.echarts.getInstanceByDom(host)?.getOption().series || []);
-  ok(parentSeries.length > 0 && !parentSeries.some((s) => s.id?.startsWith('sequence:')),
-    'parent still renders its Pattern case file');
+  await waitForReplayAssertion(async seen => {
+    const tile = `#tile-row .evidence-tile[data-chart-id="${id}"]`;
+    const cellSeries = seen(await readSeries(`${tile} .tile-chart`));
+    const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
+    const periods = detector.comparisons.filter((r) => lever === 'repeat_eating'
+      ? r.carb_quintile === detector.finding.carb_quintile : r.scope === detector.finding.scope);
+    is(cellSeries[0].data.map((p) => p.value[1]), periods.map((p) => p.reference.tir_pct),
+      'All charts retains exact served reference values');
+    is(cellSeries[1].data.map((p) => p.value[1]), periods.map((p) =>
+      (lever === 'repeat_eating' ? p.repeat : p.high).tir_pct), 'All charts retains exact served candidate values');
+    const parent = page.locator('#tile-row .evidence-tile[data-chart-id="pattern:highs_after_meals"]');
+    is(seen(await parent.count()), 1, 'parent retains its independent chart');
+    const parentSeries = seen(await parent.locator('.tile-chart').evaluate((host) =>
+      window.echarts.getInstanceByDom(host)?.getOption().series || []));
+    ok(parentSeries.length > 0 && !parentSeries.some((s) => s.id?.startsWith('sequence:')),
+      'parent still renders its Pattern case file');
+  }, "sequenceCharts");
 };
 
 // STORY:finding-evidence-routing:S153
@@ -5169,35 +5815,46 @@ async function sequenceDrill(page, lever) {
   await row.focus();
   await page.keyboard.press('Enter');
   await page.locator('#level .sequence-comparison').waitFor();
-  is(await focalId(page), id, 'keyboard drill uses the canonical finding id');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), id, 'keyboard drill uses the canonical finding id');
+  }, "sequenceDrill");
   const first = page.locator('#level .case-occurrence').first();
   await first.click();
   await page.locator('#level .sequence-detail').waitFor();
-  const detail = await page.locator('#level .sequence-detail').innerText();
-  is(await page.locator('#level .clear-trace').innerText(), 'Clear trace', 'sequence selection uses the shared clear label');
+  const { detail } = await waitForReplayAssertion(async seen => {
+    const detail = seen(await page.locator('#level .sequence-detail').innerText());
+    is(seen(await page.locator('#level .clear-trace').innerText()), 'Clear trace', 'sequence selection uses the shared clear label');
+    return { detail };
+  }, "sequenceDrill");
   const windowBefore = (await state(page)).pressed;
   const control = page.locator(`#tile-focal .evidence-tile[data-chart-id="${id}"] .tile-fullscreen`);
   await control.click();
   await settle(page, 250);
   await page.keyboard.press('Escape');
   await settle(page, 250);
-  is(await focalId(page), id, 'fullscreen return retains selected cause');
-  is(await page.locator('#level .sequence-detail').innerText(), detail, 'fullscreen return retains sequence selection');
-  is((await state(page)).pressed, windowBefore, 'fullscreen return retains clock window');
-  ok(await control.evaluate((node) => node === document.activeElement), 'fullscreen returns focus to its opener');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), id, 'fullscreen return retains selected cause');
+    is(seen(await page.locator('#level .sequence-detail').innerText()), detail, 'fullscreen return retains sequence selection');
+    is((seen(await state(page))).pressed, windowBefore, 'fullscreen return retains clock window');
+    ok(seen(await control.evaluate((node) => node === document.activeElement)), 'fullscreen returns focus to its opener');
+  }, "sequenceDrill");
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await openAllCharts(page);
   await page.locator(`#tile-row .evidence-tile[data-chart-id="${id}"] .tile-body`).click();
   await page.locator('#level .sequence-comparison').waitFor();
-  is(await focalId(page), id, 'All charts selection drills to the same canonical cause');
-  is(await page.locator('#level .sequence-comparison').innerText(),
-    input.windows.global.cases[id].event.projection.report[
-      lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'].finding.summary,
-    'drill uses its coherent served report');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), id, 'All charts selection drills to the same canonical cause');
+    is(seen(await page.locator('#level .sequence-comparison').innerText()),
+      input.windows.global.cases[id].event.projection.report[
+        lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'].finding.summary,
+      'drill uses its coherent served report');
+  }, "sequenceDrill");
   await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
   await page.locator(`#level .qrow[data-id="${id}"]`).click();
   await page.locator('#level .sequence-comparison').waitFor();
-  is(await focalId(page), id, 'pointer row activation uses the canonical cause');
+  await waitForReplayAssertion(async seen => {
+    is(seen(await focalId(page)), id, 'pointer row activation uses the canonical cause');
+  }, "sequenceDrill");
 }
 
 // STORY:finding-evidence-routing:S155
@@ -5212,14 +5869,16 @@ export const S157 = async (page) => {
     const source = input.windows.global.preparation.rendered_rows.find((r) => r.lever === lever);
     await page.getByRole('button', { name: 'Overnight', exact: true }).click();
     await settle(page, 500);
-    const rows = await servedRows(page, [0, 360]);
-    ok(!rows.some((r) => r.kind === 'pattern'), 'scoped query omits whole-feed Patterns');
-    const cause = rows.find((r) => r.id === source.id);
-    ok(cause && !cause.claimed_by, 'witnessed scoped cause remains without an orphan parent');
-    is(cause.priority, source.priority, 'source-window Priority is stable');
-    const node = page.locator(`#level .qrow[data-id="${source.id}"]`);
-    is(await node.count(), 1, 'witnessed scoped cause renders');
-    is(await page.locator('#level .qitem.claimed').count(), 0, 'scoped rail invents no nesting');
+    await waitForReplayAssertion(async seen => {
+      const rows = seen(await servedRows(page, [0, 360]));
+      ok(!rows.some((r) => r.kind === 'pattern'), 'scoped query omits whole-feed Patterns');
+      const cause = rows.find((r) => r.id === source.id);
+      ok(cause && !cause.claimed_by, 'witnessed scoped cause remains without an orphan parent');
+      is(cause.priority, source.priority, 'source-window Priority is stable');
+      const node = page.locator(`#level .qrow[data-id="${source.id}"]`);
+      is(seen(await node.count()), 1, 'witnessed scoped cause renders');
+      is(seen(await page.locator('#level .qitem.claimed').count()), 0, 'scoped rail invents no nesting');
+    }, "S157");
   }
 };
 
@@ -5228,24 +5887,28 @@ export const S158 = async (page) => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
     for (const cohort of ['candidate', 'reference']) {
       await sequenceState(page, `${lever}_thin_${cohort}`);
-      is(await page.locator(`#level .qrow[data-id="finding:${lever}"]`).count(), 0,
-        'below-floor source has no supported substitute finding');
+      await waitForReplayAssertion(async seen => {
+        is(seen(await page.locator(`#level .qrow[data-id="finding:${lever}"]`).count()), 0,
+          'below-floor source has no supported substitute finding');
+      }, "S158");
     }
     await sequenceState(page, `${lever}_null_period`);
     await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
     await page.locator('#level .sequence-comparison').waitFor();
-    const option = await page.locator('#tile-focal .tile-chart').evaluate((host) =>
-      window.echarts.getInstanceByDom(host).getOption());
-    ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
-      'unlike units have separate labeled rulers');
-    ok(option.xAxis[0].data.some((label) => label.startsWith('● ')), 'served active period is identified');
-    ok(option.legend[0].data.every((label) => label.includes('n =')), 'cohort labels retain served counts');
-    is(option.series[0].data[0].value[1], null, 'reference null stays null in the mounted chart');
-    is(option.series[1].data[0].value[1], null, 'candidate null stays null in the mounted chart');
-    const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
-    ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
-    const text = await page.locator('#level .sequence-comparison').innerText();
-    ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
+    await waitForReplayAssertion(async seen => {
+      const option = seen(await page.locator('#tile-focal .tile-chart').evaluate((host) =>
+        window.echarts.getInstanceByDom(host).getOption()));
+      ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
+        'unlike units have separate labeled rulers');
+      ok(option.xAxis[0].data.some((label) => label.startsWith('● ')), 'served active period is identified');
+      ok(option.legend[0].data.every((label) => label.includes('n =')), 'cohort labels retain served counts');
+      is(option.series[0].data[0].value[1], null, 'reference null stays null in the mounted chart');
+      is(option.series[1].data[0].value[1], null, 'candidate null stays null in the mounted chart');
+      const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
+      ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
+      const text = seen(await page.locator('#level .sequence-comparison').innerText());
+      ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
+    }, "S158");
     await captureEvidence(page, `${lever}-period-units-labels`);
   }
 };

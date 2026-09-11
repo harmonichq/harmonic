@@ -1,6 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { withReplayAssertionTimeout } from '../frontend/replay-assertions.mjs';
 import { storyCase, createCaseServer } from './replay-cases.mjs';
+
+test('S37b waits for the retained basal drill without a URL subject', async () => {
+  const { C2_STORIES } = await import('./c2.replay.mjs');
+  const row = { id: 'basal:180-210' };
+  const pageFor = ids => {
+    let reads = 0;
+    return {
+      url: () => 'http://127.0.0.1:8765/v2/?to=diagnose',
+      request: { get: async () => ({ ok: () => true, status: () => 200,
+        json: async () => ({ rendered_rows: [row] }) }) },
+      waitForFunction: async () => {},
+      getByRole: () => ({ click: async () => {} }),
+      locator: selector => ({
+        filter() { return this; }, first() { return this; },
+        waitFor: async () => {}, click: async () => {},
+        count: async () => selector.includes('aria-pressed') ? 1 : 48,
+      }),
+      evaluate: async () => ids[Math.min(reads++, ids.length - 1)],
+    };
+  };
+  await C2_STORIES.S37b(pageFor([null, row.id]));
+  for (const id of [null, 'ic:720', 'basal:210-240']) {
+    await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S37b(pageFor([id]))), error => {
+      assert.match(error.message, /Timed out after 10 ms: S37b; saw/);
+      assert.ok(error.message.includes(String(id)));
+      assert.doesNotMatch(error.message, /Cannot read properties/);
+      return true;
+    });
+  }
+});
 
 test('S56 requires the saved Focus title after reload, rather than its raw subject', async () => {
   const { C3_STORIES } = await import('./c3.replay.mjs');
@@ -32,7 +63,7 @@ test('S56 requires the saved Focus title after reload, rather than its raw subje
       }),
     };
   };
-  await assert.rejects(C3_STORIES.S56(pageFor(offered.subject)), /served Focus title/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C3_STORIES.S56(pageFor(offered.subject))), /served Focus title/);
   await C3_STORIES.S56(pageFor(title));
 });
 
@@ -65,8 +96,8 @@ test('S7 distinguishes the carried Diagnose rail from the paired Changes reading
     }),
   });
   await C2_STORIES.S7(pageFor(430, 300));
-  await assert.rejects(C2_STORIES.S7(pageFor(300, 300)), /carried rail width/);
-  await assert.rejects(C2_STORIES.S7(pageFor(430, 430)), /reading-pane width/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(300, 300))), /carried rail width/);
+  await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S7(pageFor(430, 430))), /reading-pane width/);
 });
 
 test('S13 keeps the carried rail at 430px across all four sources', async () => {
@@ -184,7 +215,7 @@ test('S98 rejects a substituted subject, an unserved staging control, unnamed st
     [{ canvasCount: 1 }, /named stale state replaces the old canvas/],
   ]) {
     const { page, routes } = icReplacementDriver(state);
-    await assert.rejects(C2_STORIES.S98(page), expected);
+    await assert.rejects(withReplayAssertionTimeout(10, () => C2_STORIES.S98(page)), expected);
     assert.equal(routes.size, 0, 'negative assertion still cleans up the story routes');
   }
 });

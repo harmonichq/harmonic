@@ -165,6 +165,15 @@ const REASON_LABEL = {
   pending_plan: 'Plan awaiting confirmation',
 };
 
+// The Findings header is compact. A withheld state keeps its full explanation
+// in the action's title while this label names the reachable record without
+// crowding out the selected finding.
+const REASON_ACTION = {
+  active_trial: 'View Trial',
+  active_focus: 'View Focus',
+  pending_plan: 'View Plan',
+};
+
 const REASON_ROUTE = {
   active_trial: { subject: 'trial' },
   active_focus: { subject: 'focus' },
@@ -176,6 +185,7 @@ export function admissionReason(reason) {
   return {
     said: REASON_SAID[reason] || 'Harmonic is not offering a Focus from this read.',
     label: REASON_LABEL[reason] || 'Unavailable from this read',
+    action: REASON_ACTION[reason] || 'Focus unavailable',
     route: REASON_ROUTE[reason] || null,
   };
 }

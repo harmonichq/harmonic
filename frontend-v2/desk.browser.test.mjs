@@ -345,6 +345,39 @@ test('a failed Focus read keeps a short visible Retry beside its explanation at 
   } finally { await desk.close(); }
 });
 
+test('a pending Plan keeps its reason and a compact View Plan route visible at 1280px', async () => {
+  const desk = await openDesk({ beforeNavigate: async page => {
+    // This is a renderer boundary: the API-shaped admission owns both the
+    // withholding decision and its reason. The desk only presents the existing
+    // Changes route; it does not manufacture a Plan or calculate eligibility.
+    await page.route('**/api/guidance', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      disposition: 'pending_plan', selected: null, input_revision: followUp.input_revision,
+      candidates: [{ subject: 'pattern:over-treated-low', kind: 'pattern', title: 'Over-treated low',
+        collapse: 'remain_pattern', members: [{ subject: 'habit:over_treated_low' }] }],
+    }) }));
+    await page.route('**/api/focus', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({
+      focuses: followUp.focuses, pinnable: [], pinnable_patterns: [], input_revision: followUp.input_revision,
+      admission: { focus_pin: { available: false, reason: 'pending_plan' } },
+    }) }));
+  } });
+  const { page } = desk;
+  try {
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await page.locator('#level .qrow[data-id="finding:over_treated_low"]').click();
+    const action = page.locator('[data-focus-context]');
+    await action.waitFor({ state: 'visible' });
+    assert.equal((await action.innerText()).trim(), 'View Plan');
+    assert.equal(await action.getAttribute('title'),
+      'A Plan is awaiting confirmation, so Harmonic is not offering a Focus from this read.');
+    assert.equal(await action.evaluate(node => node.scrollWidth > node.clientWidth), false,
+      'the compact Plan action must be fully readable in the Findings header');
+    await action.click();
+    await page.waitForFunction(() => document.querySelector('[data-destination][aria-current="page"]')?.dataset.destination === 'changes');
+    assert.equal(new URL(page.url()).pathname, '/v2/changes');
+  } finally { await desk.close(); }
+});
+
 test('the chrome holds still across every destination, and one is current at a time', async () => {
   const { page, close } = await openDesk();
   try {

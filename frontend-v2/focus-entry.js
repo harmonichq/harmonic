@@ -53,7 +53,8 @@ export function createFocusEntry({ api = client, readGuidance = async () => {
       const admission = roster.admission?.focus_pin?.reason || parent?.readiness?.reason;
       const copy = admissionReason(admission);
       return { subject, offered, title: parent?.title || offered?.subject || subject,
-        reason: copy.said, label: copy.label, ...(copy.route ? { route: copy.route } : {}), retry: false };
+        reason: copy.said, label: copy.label, action: copy.action,
+        ...(copy.route ? { route: copy.route } : {}), retry: false };
     },
     state: () => ({ source, roster, failure, readFailure, saving, loading: Boolean(pending) }),
     read() {

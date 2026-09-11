@@ -60,7 +60,7 @@ test('a served unavailable admission remains discoverable without granting a pin
   const context = entry.contextForCase({ subject: offered.subject, finding: { lever: 'served-lever' } });
   assert.deepEqual(context, { subject: offered.subject, offered: null, title: 'Served Pattern',
     reason: 'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
-    label: 'Waiting for reconciliation', retry: false });
+    label: 'Waiting for reconciliation', action: 'Focus unavailable', retry: false });
   assert.equal(entry.forCase({ subject: offered.subject }), null);
 });
 
@@ -102,11 +102,12 @@ test('a first Focus read failure still gives a selected Pattern a visible retry,
     label: 'Focus status unavailable', retry: true });
 });
 
-test('pending Plan and active Focus context use served plain copy and their existing routes', async () => {
+test('pending Plan and active Focus context use compact actions, plain copy, and their existing routes', async () => {
   const g = { ...source, candidates: [{ subject: offered.subject, title: 'Served Pattern' }] };
-  for (const [reason, label, route] of [
-    ['pending_plan', 'Plan awaiting confirmation', { subject: 'plan' }],
-    ['active_focus', 'Focus in progress', { subject: 'focus' }],
+  for (const [reason, label, action, route] of [
+    ['pending_plan', 'Plan awaiting confirmation', 'View Plan', { subject: 'plan' }],
+    ['active_focus', 'Focus in progress', 'View Focus', { subject: 'focus' }],
+    ['active_trial', 'Trial in progress', 'View Trial', { subject: 'trial' }],
   ]) {
     const entry = createFocusEntry({ readGuidance: async () => g, api: {
       fetchFocuses: async () => ({ ...roster, admission: { focus_pin: { available: false, reason } } }),
@@ -114,6 +115,7 @@ test('pending Plan and active Focus context use served plain copy and their exis
     await entry.read();
     const context = entry.contextForCase({ subject: offered.subject });
     assert.equal(context.label, label);
+    assert.equal(context.action, action);
     assert.deepEqual(context.route, route);
     assert.doesNotMatch(context.reason, new RegExp(reason));
   }
@@ -146,5 +148,5 @@ test('a remain-pattern child keeps its withheld parent context without a Focus p
   assert.deepEqual(entry.contextForCase(selected), { subject: offered.subject, offered: null,
     title: 'Highs after meals',
     reason: 'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
-    label: 'Waiting for reconciliation', retry: false });
+    label: 'Waiting for reconciliation', action: 'Focus unavailable', retry: false });
 });

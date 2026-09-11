@@ -232,7 +232,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       } else {
         const button = root.ownerDocument.createElement('button');
         button.className = 'gf-btn focus-context'; button.dataset.focusContext = context.subject;
-        button.textContent = `Focus unavailable: ${context.label}`;
+        button.textContent = context.action;
         button.title = context.reason;
         button.onclick = () => navigate('changes', context.route || { subject: context.subject, from: 'diagnose',
           window: `${selected.window.start_min}-${selected.window.end_min}` });

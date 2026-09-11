@@ -226,15 +226,15 @@ test('Focus admission copy translates known backend tokens without inventing adm
   const { guidance } = await withClient(() => guidancePayload());
   assert.deepEqual(guidance.admissionReason('reconciliation_required'), {
     said: 'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
-    label: 'Waiting for reconciliation', route: null,
+    label: 'Waiting for reconciliation', action: 'Focus unavailable', route: null,
   });
   assert.deepEqual(guidance.admissionReason('active_trial'), {
     said: 'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
-    label: 'Trial in progress', route: { subject: 'trial' },
+    label: 'Trial in progress', action: 'View Trial', route: { subject: 'trial' },
   });
   assert.deepEqual(guidance.admissionReason('new_backend_reason'), {
     said: 'Harmonic is not offering a Focus from this read.',
-    label: 'Unavailable from this read', route: null,
+    label: 'Unavailable from this read', action: 'Focus unavailable', route: null,
   });
 });
 

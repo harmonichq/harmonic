@@ -17,7 +17,7 @@ jobs:
   backend-tests:
     name: pytest shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -51,7 +51,7 @@ jobs:
   generators:
     name: generator drift checks
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v5
       - name: Set up Node
@@ -291,7 +291,7 @@ jobs:
             timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test frontend/diagnose-canvas-composition.browser.test.mjs
           - gate: Cockpit shell
-            timeout: 5
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" node --test frontend/cockpit-shell.browser.test.mjs
       # #554: the shared browser-runner.js front door itself — proves it
       # launches Chromium once per command and still isolates scenarios.
@@ -328,7 +328,7 @@ jobs:
       # leg) has been archived; the anti-drift guarantee lives on in these
       # stories replaying against the built app forever.
           - gate: Diagnose workstation behaviour ledger
-            timeout: 20
+            timeout: 21
             server: true
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" BASE_URL=http://127.0.0.1:8765 TARGET=app PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node frontend/diagnose-workstation-behavior.replay.mjs
       # #677/#694: Meals/Lows extend Diagnose with an eleven-story contract.
@@ -339,7 +339,7 @@ jobs:
       # (S1–S12). It fails closed when browser infrastructure or a fixture is
       # absent (#672).
           - gate: Diagnose event comparisons
-            timeout: 5
+            timeout: 6
             command: PLAYWRIGHT_MODULE="$RUNNER_TEMP/ciq-playwright/node_modules/playwright" TARGET=app node frontend/diagnose-event-comparison-behavior.replay.mjs
           - gate: Diagnose comparison support audit
             timeout: 5
@@ -434,7 +434,7 @@ jobs:
     name: browser gates — V2 ${{ needs.v2-ledger-plan.outputs.mode }} ledger ${{ matrix.viewport }} ${{ matrix.shard }} (${{ needs.v2-ledger-plan.outputs.count }} selected)
     needs: [browser-gate-setup, v2-ledger-plan]
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 18 || 60 }}
+    timeout-minutes: ${{ needs.v2-ledger-plan.outputs.mode == 'full' && 21 || 60 }}
     env:
       PLAYWRIGHT_VERSION: "1.61.1"
     strategy:

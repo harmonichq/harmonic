@@ -210,8 +210,10 @@ written timeout rationale; ci.yml holds the executable values. Measurements
 are from ubuntu-latest jobs on 2026-09-10 in runs
 [34528197575](https://github.com/harmonichq/harmonic/actions/runs/34528197575),
 [34534519065](https://github.com/harmonichq/harmonic/actions/runs/34534519065),
-and completed legs of
-[34537427194](https://github.com/harmonichq/harmonic/actions/runs/34537427194).
+completed legs of
+[34537427194](https://github.com/harmonichq/harmonic/actions/runs/34537427194),
+and the sharded run
+[34545568885](https://github.com/harmonichq/harmonic/actions/runs/34545568885).
 Use the largest observed whole-job duration across those samples. A cancelled
 or failed run is identified explicitly; it is not a successful timing proof.
 
@@ -220,41 +222,53 @@ or failed run is identified explicitly; it is not a successful timing proof.
 | Day lifecycle | 0m57s | 5 min | 4m03s |
 | Diagnose workstation | 4m37s | 10 min | 5m23s |
 | Diagnose canvas composition | 2m32s | 6 min | 3m28s |
-| Cockpit shell | 1m04s | 5 min | 3m56s |
+| Cockpit shell | 1m10s | 6 min | 4m50s |
 | Browser runner lifecycle | 0m26s | 5 min | 4m34s |
 | V2 desk | 0m47s | 5 min | 4m13s |
-| V2 Trial and Pattern Focus | 10m27s successful; later cancelled at 15m14s | 30 min | 14m46s above the later lower bound |
-| V2 full ledger, each shard at either size | Measured-derived: 1575 / 4 = 393.75 s (see calculation below) | 18 min | 686.25 s above the derived shard time |
+| V2 Trial and Pattern Focus | 11m44s successful; an earlier run cancelled at 15m14s | 30 min | 14m46s above the interrupted lower bound |
+| V2 full ledger, each shard at either size | Measured shards: 276–569 s (eight jobs; two story failures) | 21 min | 691 s above the slowest measured shard |
 | V2 PR smoke, each size | Historical expanded smoke jobs: 1917 s / 1905 s, with story failures; complete selections now use full shards | 60 min | 1683 s above the longer measured job; a partial selection can still approach the full count |
 | First-plan reconcile | 0m38s | 5 min | 4m22s |
-| Diagnose workstation behaviour ledger | 10m13s successful; 10m16s failed | 20 min | 9m44s above the longer sample |
-| Diagnose event comparisons | 1m28s | 5 min | 3m32s |
+| Diagnose workstation behaviour ledger | 10m32s successful | 21 min | 10m28s |
+| Diagnose event comparisons | 1m29s | 6 min | 4m31s |
 | Diagnose comparison support audit | 0m48s | 5 min | 4m12s |
 | Verify behaviour ledger | 0m36s | 5 min | 4m24s |
 
-The full-ledger replay process ceiling is 780 seconds for a shard, leaving five
+The full-ledger replay process ceiling is 960 seconds for a shard, leaving five
 minutes inside its CI job for setup, server teardown and retention. Unsharded
 local runs and partial PR smoke runs use 3000 seconds; their jobs reserve ten
 minutes outside the process ceiling. A PR selecting every story uses the full
-shard inventory and its shorter process/job ceilings. Other acceptance commands keep their existing limits.
+shard inventory and its shorter process/job ceilings.
 
-The coordinator measured complete unsharded jobs in CI run
-[34539350410](https://github.com/harmonichq/harmonic/actions/runs/34539350410)
-on e331cb2e: 1430 s at 1280×720 (128/130 passed) and 1575 s at 1440×900
-(129/130 passed). These are measured runner durations with story failures,
-not green acceptance evidence. The measured-derived shard time is
-`1575 / 4 = 393.75 s`. Preserve the prior 372.55 s process headroom allowance:
-`393.75 + 372.55 = 766.30 s`, rounded up to a whole minute gives 780 s.
-Adding the same five-minute setup/teardown/retention allowance gives an
-18-minute job. The actual process headroom after rounding is 386.25 s.
-The older local shard measurement remains 195.91 s for shard 1/4 at 1280×720
-on 9652979a, with build excluded and all 32 stories passing; it is no longer
-the basis of the runner derivation.
+Run 34545568885 supplies actual sharded runner measurements, replacing the
+unsharded-run division used before. Whole-job seconds in numeric shard order:
 
-Contiguous partitions have equal counts, not proven equal cost. The coordinator
-must record the first sharded PR's actual timings in the receipt and retain the
-full local run before claiming the CI latency improvement. No runner tier,
-story body or assertion changes accompany these CI scheduling changes.
+| Size | Shard 1 | Shard 2 | Shard 3 | Shard 4 |
+| --- | ---: | ---: | ---: | ---: |
+| 1280×720 | 532 | 276 | 569 | 516 (R6 failed) |
+| 1440×900 | 534 | 361 (S32 failed) | 554 | 543 |
+
+The slowest shard completed successfully in 569 s. Preserve the prior 372.55 s
+process headroom allowance, using that whole-job measurement conservatively:
+`569 + 372.55 = 941.55 s`, rounded up to a whole minute gives 960 s. Adding the
+same five-minute setup/teardown/retention allowance gives a 21-minute job.
+The process has 391 s above the measured whole-job duration. The previous
+unsharded measurements (1430/1575 s in run 34539350410) and local shard
+measurement (195.91 s on 9652979a, build excluded) are historical comparisons,
+not the current ceiling basis. The two failed shards remain failures; their
+wall times are not green acceptance evidence.
+
+Every ceiling was checked against the new job list. Preserve each previously
+stated headroom allowance and round up to a whole minute when the current
+ceiling no longer fits it. Cockpit shell now needs `70 + 236 = 306 s`, rounded
+to six minutes; event comparisons need `89 + 212 = 301 s`, also six minutes;
+the v1 ledger needs `632 + 584 = 1216 s`, rounded to 21 minutes. All other
+browser matrix ceilings retain at least their stated allowance. Browser setup
+measured 23 s against 15 minutes; the browser aggregate measured 4 s against
+five minutes. Partial smoke was not exercised by this run and retains its
+prior full-count comparison and ceiling. Contiguous partitions have equal
+counts, not equal cost. The full local coordinator run remains required for
+its separate browser proof.
 
 
 The first PR run on this branch,
@@ -267,28 +281,42 @@ expansion: that same escalation uses main's full shard inventory. These numbers
 are historical full-selection timings, not measurements of the new shards.
 
 
-The backend timing sources are the same two #405 runs above: 34534519065 and
-34537427194. Pytest alone completed in 948 s and 959 s. Guidance/Plan parity
-completed in 4 s, the I:C fixture check in 1 s, and the evidence-canvas check in
-under one second. Both jobs stopped during the v2 exploration check at 228 s;
-subsequent checks did not run. Those are interrupted durations, not a measured
-complete generator-job total.
+The same sharded run measured backend jobs at 222 / 568 / 220 s (the order's
+rounded summary calls the first approximately 220 s), generator checks at
+337 s, and selection at 16 s. All passed. The corresponding pytest processes
+took 204.76 / 545.18 / 196.60 s. These complete measurements replace the old
+959-second suite division and interrupted generator lower bound.
 
-| New job | Timing basis | Job ceiling | Allowance |
-| --- | --- | --- | --- |
-| Each backend test shard | 959 s divided by the configured test shards, approximately 320 s before setup | 15 min | Approximately 580 s for uneven file cost, setup and retention |
-| Generator drift checks | 233 s observed before the interruption above | 10 min | 367 s for remaining drifts, wrapper/cache checks and setup |
-| Backend aggregate | Only compares the two job results | 3 min | Runner startup and one shell command |
-| Nightly result aggregate | Only compares backend, docs, frontend and browser results | 3 min | Runner startup and one Python command |
-| Latest nightly | Run and aggregate-job API lookups, each bounded at 30 s | 3 min | Checkout, requests and receipt retention |
-| V2 ledger selection | Browser-free inventory and dependency scan; local tests complete within seconds | 5 min | Checkout, npm install, selection and receipt retention; first runner timing pending |
-| Refresh nightly status | PR enumeration and status requests, each bounded at 30 s | 5 min | Derived operational allowance; first scheduled run supplies total timing |
+| Job | Measured whole-job seconds | Job ceiling | Headroom above sample |
+| --- | ---: | --- | --- |
+| Backend shard 1/3 | 222 | 20 min | 978 s |
+| Backend shard 2/3 | 568 | 20 min | 632 s |
+| Backend shard 3/3 | 220 | 20 min | 980 s |
+| Generator drift checks | 337 | 12 min | 383 s |
+| Backend aggregate | 4 | 3 min | 176 s |
+| Latest nightly bootstrap | 9 | 3 min | 171 s; aggregate lookup still unmeasured |
+| V2 ledger selection | 16 | 5 min | 284 s |
+| ADR/public-tree guards | 37 | 10 min | 563 s |
+| Frontend Node checks | 19 | 10 min | 581 s |
+| Packaged-runtime check | 32 | 10 min | 568 s |
 
-The backend wrapper process has an 840-second ceiling. Test-file sizes do not
-prove equal runtime; the first CI run must record each shard's actual duration.
-The cited generator runs ended before later steps, so its ceiling is derived
-from a lower bound with explicit allowance. The original thirty-minute stopgap
-from e331cb2e was cherry-picked before replacing the serial backend job.
+The backend allowance stays approximately 580 s: `568 + 580 = 1148 s`, rounded
+up to 20 minutes. The wrapper process ceiling becomes 1140 s, retaining the
+one-minute outer allowance. The generator allowance stays 367 s:
+`337 + 367 = 704 s`, rounded up to 12 minutes. The QA drift step recorded 0 s
+at job-list timestamp resolution inside its three-minute ceiling. Selection and aggregate jobs retain their
+ceilings; their previous allowances were operational budgets, not ratios.
+Scheduled nightly aggregation (three minutes), status publication (five
+minutes), and main image publication (ten minutes) were skipped in this PR
+run and retain their previous operational budgets without a new measurement.
+
+Round-robin backend partitioning stays. The retained pytest logs and command
+records contain only shard totals, without per-test/per-file durations or
+JUnit timing data; the job list cannot assign the 568 s to individual files.
+The wrapper can pass a weighted partition, but this evidence cannot produce a
+measured weight table. Guessing from test counts would replace deterministic
+round-robin with unmeasured weights. A future measured table must be the sole
+partition weight authority; none is invented here.
 
 The case transport already generated each raw case once per run. It now also
 reconciles that template once, then copies it for every story. Each copy clears

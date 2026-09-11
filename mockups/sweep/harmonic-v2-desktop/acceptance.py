@@ -283,7 +283,7 @@ def pytest_shard(run, shard=None):
     (run.out / "test-files.json").write_text(json.dumps(files, indent=2) + "\n")
     # pytest exits 5 on zero collected tests. Run.command rejects every nonzero
     # status, including collection/import failures; no success-shaped skip.
-    run.command("pytest", ["uv", "run", "python", "-m", "pytest", *files], timeout=840)
+    run.command("pytest", ["uv", "run", "python", "-m", "pytest", *files], timeout=1140)
 
 
 def recipe_graph(source):
@@ -517,7 +517,7 @@ def replay(run, viewport, shard=None, base=None):
         env["ONLY"] = ",".join(selected_ids)
     with auth_server(run):
         # ACCEPTANCE.md's Fast-gates measurements and ceilings states the timing basis.
-        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=780 if shard and not base else 3000)
+        _, output = run.command("complete-replay", ["node", "frontend/harmonic-v2-desktop-behavior.replay.mjs"], env=env, timeout=960 if shard and not base else 3000)
     match = re.search(r"# executed (\d+) · failed (\d+) · deferred (\d+) · selected (\d+)", output)
     require(match is not None, "replay returned no execution summary")
     executed, failed, deferred, selected = map(int, match.groups())

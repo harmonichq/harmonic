@@ -2594,11 +2594,13 @@ export const R6 = async (page) => {
   await goto(page, 'explore');
   const seg = await visible(page, '.seg[role="group"]');
   ok(await seg.locator('button').count() > 0, 'R6 premise failed: the segmented control has no Tab stops — re-settle, not a fail');
-  await seg.locator('button').first().focus();
-  const before = await activeElement(page);
+  const first = seg.locator('button').first();
+  await first.focus();
+  await page.waitForFunction((button) => document.activeElement === button,
+    await first.elementHandle(), { timeout: 10000 });
   await page.keyboard.press('Home');
   await page.waitForTimeout(150);
-  ok(JSON.stringify(before) === JSON.stringify(await activeElement(page)),
+  ok(await first.evaluate((button) => document.activeElement === button),
     'R6 replayed-fail: installSegKeys-style Home/End navigation is back');
 };
 

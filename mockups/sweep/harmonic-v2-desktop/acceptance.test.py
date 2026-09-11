@@ -175,7 +175,7 @@ class ReplayWrapperTest(unittest.TestCase):
 
     def test_wrapper_applies_both_ceilings_stated_in_acceptance(self):
         self.replay(expected_timeout=3000)
-        self.replay((1, 1), expected_timeout=780)
+        self.replay((1, 1), expected_timeout=960)
 
     def test_shards_concatenate_to_the_complete_registry_without_overlap(self):
         # Read the CI shard inventory; this test does not own a second list.
@@ -394,7 +394,7 @@ class BackendShardTest(unittest.TestCase):
                 self.assertEqual(child.call_args.args[0], ['uv', 'run', 'python', '-m', 'pytest',
                                                           'tests/test_empty.py'])
                 # Pin the actual process ceiling stated in ACCEPTANCE.md.
-                child.return_value.wait.assert_called_once_with(timeout=840)
+                child.return_value.wait.assert_called_once_with(timeout=1140)
 
 
 class SmokeSelectionTest(unittest.TestCase):

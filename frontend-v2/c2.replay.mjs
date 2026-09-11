@@ -719,9 +719,15 @@ export const C2_STORIES = {
   S37: async page => { await go(page, 'changes'); const g = await read(page, '/api/guidance'); check(g.selected); await press(page, '[data-action="explore"]'); await settled(page); await waitForReplayAssertion(async seen => {
     assert.equal(new URL(seen(page.url())).searchParams.get('subject'), g.selected.subject);
   }, "S37"); await page.getByText(g.selected.title, { exact: false }).first().waitFor(); },
-  S37b: async page => { await openBasalLane(page); await waitForReplayAssertion(async seen => {
-    const row = seen({ id: new URL(page.url()).searchParams.get('subject') });
-    check(row.id.startsWith('basal:')); assert.equal(seen(await page.locator('#lane > button').count()), 48); assert.equal(seen(await page.locator('#lane > button[aria-pressed="true"]').count()), 1);
+  S37b: async page => { const row = await openBasalLane(page); await waitForReplayAssertion(async seen => {
+    // An in-place drill retains the row on the focal tile; only a destination
+    // handoff publishes subject in the URL. Re-read the current drill each poll.
+    const id = seen(await page.evaluate(() => document.querySelector(
+      '#tile-field .evidence-tile[data-drilled]',
+    )?.dataset.chartId ?? null));
+    check(id, 'the retained basal row is rendered');
+    check(id.startsWith('basal:')); assert.equal(id, row.id);
+    assert.equal(seen(await page.locator('#lane > button').count()), 48); assert.equal(seen(await page.locator('#lane > button[aria-pressed="true"]').count()), 1);
   }, "S37b"); },
   S38: async page => { await go(page, 'changes'); await press(page, '[data-set="stage"]'); await page.locator('[data-set="unstage"]').waitFor(); await waitForReplayAssertion(async seen => {
     check(seen(await page.locator('[data-set="open-plan"]').count()));

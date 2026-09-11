@@ -135,6 +135,11 @@ class TestCheckAgainstRealRepo(unittest.TestCase):
         ]:
             self.assertTrue(allowlist.disposition(path)[0], f"{path} should be cleared")
 
+    def test_sequence_fixture_tests_follow_their_artifact_visibility(self) -> None:
+        allowlist = allowlist_rules.load()
+        self.assertTrue(allowlist.disposition("tests/test_eating_sequence_fixture.py")[0])
+        self.assertFalse(allowlist.disposition("tests/test_eating_sequence_finding_fixture.py")[0])
+
     def test_committed_allowlist_excludes_known_contamination(self) -> None:
         allowlist = allowlist_rules.load()
         for path in [

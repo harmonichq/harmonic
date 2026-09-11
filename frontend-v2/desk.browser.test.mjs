@@ -1,4 +1,4 @@
-import { captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
+import { assertCompactSequenceDetail, captureEvidence, openAllCharts, assertResponseAnchorGeometry, highCarbFailureScenario, assertHighCarbFailure, assertSequenceResponse, assertSequenceSelection, assertSequenceFullscreen } from '../frontend/diagnose-workstation-behavior.replay.mjs';
 // #389 chunk 1 — the v2 desk's own browser gate: the chrome that must not move,
 // the three destinations, the Day desk, every utility, the layered Escape and the
 // teardown. It is the first suite under this source root, and its CI matrix step
@@ -378,6 +378,7 @@ test('v2 Diagnose renders the generated High-carb response and its selected trac
       .windows.global.cases['finding:high_carb_sequence']);
     const stored = sequenceFixture.states.high_carb_sequence_in_sequence
       .windows.global.cases['finding:high_carb_sequence'];
+    await assertCompactSequenceDetail(page, stored, 'during');
     await assertSequenceSelection(page, stored, stored.event.occurrences.filter((row) => row.verdict === 'fired')[1]);
     await page.locator('#level .sequence-detail').waitFor();
     assert.equal(await countOf(page, '#ec-chart-key [data-cohort="selected"]'), 1);
@@ -423,6 +424,7 @@ test('v2 High-carb scoped population, roster selections and fullscreen retain pu
     await page.locator('#tile-focal #ec-chart').waitFor();
     const stored = input.windows.global.cases[id];
     await assertSequenceResponse(page, stored);
+    await assertCompactSequenceDetail(page, stored);
     for (const occurrence of [stored.event.occurrences.filter((row) => row.verdict === 'fired')[1],
       stored.event.occurrences.find((row) => row.verdict === 'clean')]) {
       await assertSequenceSelection(page, stored, occurrence);
@@ -696,7 +698,20 @@ for (const defect of ['missing', 'malformed', 'inconsistent', 'stale-recover', '
 for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
   test(`v2 High-carb rendered ${name} keeps producer curves and support`, async () => {
     const sequenceState = `high_carb_sequence_${name}`;
-    const { page, close } = await openDesk({ sequenceState, viewport: process.env.VIEWPORT || '1280x720' });
+    let partialMetrics = false;
+    const caseScenario = name === 'null_period' ? { case: ({ body }) => {
+      if (partialMetrics && body.finding.lever === 'high_carb_sequence') {
+        // Exercise independently missing metrics at the public response boundary.
+        for (const comparisons of [body.projection.report.high_carb_sequence.comparisons,
+          body.projection.response.comparisons]) {
+          const period = comparisons.find((item) => item.period === 'post_4h' && item.scope === body.projection.response.scope);
+          period.high.sd_mgdl = null;
+          period.reference.tir_pct = null;
+        }
+      }
+      return { body };
+    } } : null;
+    const { page, close } = await openDesk({ sequenceState, caseScenario, viewport: process.env.VIEWPORT || '1280x720' });
     const stored = sequenceFixture.states[sequenceState].windows.global.cases['finding:high_carb_sequence'];
     try {
       await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -725,9 +740,23 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       await row.click();
       await page.locator('#level .sequence-comparison').waitFor();
       await assertSequenceResponse(page, stored);
+      if (name === 'null_period') await assertCompactSequenceDetail(page, stored, 'unavailable');
       await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
       await assertResponseAnchorGeometry(page);
       await captureEvidence(page, `high_carb_sequence-${name}-stage`);
+      if (name === 'null_period') {
+        partialMetrics = true;
+        await page.locator('#crumb-trail button', { hasText: 'Findings' }).click();
+        await row.click();
+        await page.locator('#level .sequence-supporting-detail summary').click();
+        const period = page.locator('#level [data-period="post_4h"]');
+        assert.deepEqual((await period.locator('.sequence-cohort').allInnerTexts()).map((text) => text.replace(/\s+/g, ' ').trim()), [
+          'Highest-carb fifth 100% in range · SD Not enough data n 8',
+          'Other sequences Not enough data · SD 0 mg/dL n 32',
+        ], 'one missing metric never hides the independently available metric');
+        await period.scrollIntoViewIfNeeded();
+        await captureEvidence(page, 'high_carb_sequence-partial-metrics-inspector');
+      }
       if (name === 'empty') await assertResponseAnchorGeometry(page);
       if (name === 'in_sequence') {
         assert.deepEqual(stored.event.projection.response.cohorts.map((cohort) =>

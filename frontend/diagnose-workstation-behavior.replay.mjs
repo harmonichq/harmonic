@@ -5928,6 +5928,90 @@ export async function assertResponseAnchorGeometry(page, selector = '#tile-focal
   console.log(`High-carb anchor geometry ${JSON.stringify({ width: geometry.width, labels: geometry.labels.filter((label) => anchor.includes(label) || /^\+/.test(label.text)) })}`);
 }
 
+/** Exercise the compact inspector through its native disclosure and roster. */
+export async function assertCompactSequenceDetail(page, stored, label = 'comparison') {
+  const section = page.locator('#level .sequence-supporting-detail');
+  const disclosure = section.locator('details');
+  const control = disclosure.locator('summary');
+  await section.waitFor();
+  is(await disclosure.count(), 1, 'High-carb detail has one native disclosure');
+  is(await disclosure.evaluate((node) => node.open), false, 'full evidence is collapsed by default');
+  const response = stored.event.projection.response;
+  const rows = response.comparisons;
+  // Literal acceptance for the three manufactured recipes used by this helper.
+  // These strings deliberately do not call or transcribe the product formatter.
+  const compact = label === 'during'
+    ? ['Highest-carb fifth 0% in range n 8', 'Other sequences 100% in range n 32']
+    : ['Highest-carb fifth 93% in range n 8', 'Other sequences 100% in range n 32'];
+  const fullRows = label === 'during' ? [
+    ['Highest-carb fifth 0% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 98% in range · SD 23 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 99% in range · SD 19 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+  ] : [
+    label === 'unavailable' ? [] : ['Highest-carb fifth 100% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 100% in range · SD 0 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+    ['Highest-carb fifth 93% in range · SD 41 mg/dL n 8', 'Other sequences 100% in range · SD 0 mg/dL n 32'],
+  ];
+  is((await section.locator('.sequence-current .sequence-cohort').allInnerTexts()).map((s) => s.replace(/\s+/g, ' ').trim()),
+    compact, 'literal compact text for the known synthetic recipe');
+  ok(!await section.locator('.sequence-summary').isVisible(), 'the report paragraph is hidden by default');
+  const geometry = await section.locator('.sequence-current').boundingBox();
+  ok(geometry.height <= 90, `compact comparison height ${geometry.height}`);
+  ok((await control.boundingBox()).height >= 44, 'disclosure has a mobile tap target');
+  await section.evaluate((node) => node.scrollIntoView({ block: 'start' }));
+  await captureEvidence(page, `high_carb_sequence-${label}-inspector-closed`);
+  await control.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelector('#level .sequence-supporting-detail details')?.open
+    && document.querySelector('#level .sequence-supporting-detail summary')?.getAttribute('aria-expanded') === 'true');
+  is(await control.getAttribute('aria-expanded'), 'true', 'keyboard opens the disclosure');
+  const widths = await section.locator('.sequence-period .sequence-cohort').evaluateAll((lines) => lines.map((line) => {
+    const textWidths = [...line.children].map((child) => {
+      const range = document.createRange(); range.selectNodeContents(child);
+      return range.getBoundingClientRect().width;
+    });
+    return { available: line.clientWidth, required: textWidths.reduce((a, b) => a + b, 0) + 16,
+      text: line.textContent, textWidths, tops: [...line.children].map((child) => child.getBoundingClientRect().top) };
+  }));
+  console.log(`Expanded High-carb widths ${JSON.stringify(widths)}`);
+  for (const row of widths) {
+    if (row.available >= 390) {
+      ok(row.required <= row.available, 'one-line expanded text fits the actual inspector');
+      ok(Math.max(...row.tops) - Math.min(...row.tops) < 2, 'wide inspector uses one readable line');
+    } else ok(row.tops[1] > row.tops[0], 'narrow inspector retains wrapped metrics');
+  }
+
+  for (const row of rows) {
+    const period = section.locator(`[data-period="${row.period}"]`);
+    is((await period.locator('.sequence-cohort').allInnerTexts()).map((s) => s.replace(/\s+/g, ' ').trim()),
+      fullRows[rows.indexOf(row)], 'all periods retain their own TIR, SD, units and counts');
+  }
+  if (label === 'unavailable') {
+    is(await section.locator('[data-period="in_sequence"] .sequence-unavailable').innerText(),
+      'Not enough data · Highest-carb fifth n 0 · Other sequences n 0', 'literal unavailable text retains actual counts once');
+  }
+  is(await section.locator('.sequence-summary').innerText(), response.summary, 'complete server summary stays accessible');
+  ok(await section.evaluate((node) => node.scrollWidth <= node.clientWidth), 'expanded detail has no horizontal overflow');
+  await section.evaluate((node) => node.scrollIntoView({ block: 'start' }));
+  await captureEvidence(page, `high_carb_sequence-${label}-inspector-open`);
+  await page.locator('#level .case-occurrence').first().click();
+  await page.locator('#level .sequence-detail').waitFor();
+  is(await disclosure.evaluate((node) => node.open), true, 'selection preserves open disclosure');
+  await control.focus();
+  await page.keyboard.press('Escape');
+  is(await disclosure.evaluate((node) => node.open), true, 'Escape does not consume disclosure state');
+  await control.click();
+  await page.waitForFunction(() => !document.querySelector('#level .sequence-supporting-detail details')?.open
+    && document.querySelector('#level .sequence-supporting-detail summary')?.getAttribute('aria-expanded') === 'false');
+  is(await control.getAttribute('aria-expanded'), 'false', 'pointer collapses the disclosure');
+  await page.locator('#level .clear-trace').click();
+  await page.waitForFunction(() => !document.querySelector('#level .sequence-detail')
+    && window.echarts.getInstanceByDom(document.querySelector('#tile-focal #ec-chart'))?.getOption().series
+      ?.every((series) => series.id !== 'selected:trace'));
+  is(await disclosure.evaluate((node) => node.open), false, 'clear selection preserves collapsed state');
+  console.log(`Compact High-carb ${label}: selected rows ${JSON.stringify(compact)}; height ${geometry.height}; all ${rows.length} periods verified`);
+}
+
 /** Compare the mounted shared renderer with the complete served response. */
 export async function assertSequenceResponse(page, stored, selector = '#tile-focal #ec-chart') {
   const response = stored.event.projection.response;
@@ -5940,7 +6024,7 @@ export async function assertSequenceResponse(page, stored, selector = '#tile-foc
   if (selector === '#tile-focal #ec-chart' && await page.locator('#tile-field').getAttribute('data-fullscreen-tile') === null) {
     is(await page.locator('#tile-focal h3').innerText(), response.period === 'in_sequence'
       ? 'Glucose during high-carb eating' : 'Glucose after high-carb eating', 'stage uses the concise served title');
-    is(await page.locator('#level .sequence-supporting-detail .sequence-comparison').innerText(),
+    is(await page.locator('#level .sequence-summary').textContent(),
       response.summary, 'supporting detail retains the complete numerical association');
   }
   const option = await page.locator(selector).evaluate((host) =>
@@ -6087,6 +6171,7 @@ async function sequenceDrill(page, lever) {
       'stage keeps the shared response chart and legend visible');
     }
   }, "sequenceDrill");
+  if (lever === 'high_carb_sequence') await assertCompactSequenceDetail(page, input.windows.global.cases[id]);
   await page.locator('#tile-focal .tile-head').scrollIntoViewIfNeeded();
   await page.waitForTimeout(100);
   await captureEvidence(page, `${lever}-stage`);
@@ -6129,7 +6214,7 @@ async function sequenceDrill(page, lever) {
   await page.locator('#level .sequence-comparison').waitFor();
   await waitForReplayAssertion(async seen => {
     is(seen(await focalId(page)), id, 'All charts selection drills to the same canonical cause');
-    is(seen(await page.locator('#level .sequence-comparison').innerText()),
+    is(seen(await page.locator(lever === 'high_carb_sequence' ? '#level .sequence-summary' : '#level .sequence-comparison').textContent()),
       input.windows.global.cases[id].event.projection.report[
         lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'].finding.summary,
       'drill uses its coherent served report');
@@ -6234,6 +6319,10 @@ export const S158 = async (page) => {
     const nullPeriod = await sequenceState(page, `${lever}_null_period`);
     await page.locator(`#level .qrow[data-id="finding:${lever}"]`).click();
     await page.locator('#level .sequence-comparison').waitFor();
+    if (lever === 'high_carb_sequence') {
+      await assertCompactSequenceDetail(page, nullPeriod.windows.global.cases[`finding:${lever}`], 'unavailable');
+      await page.locator('#level .sequence-supporting-detail summary').click();
+    }
     await waitForReplayAssertion(async seen => {
       const host = lever === 'high_carb_sequence' ? '#tile-focal #ec-chart' : '#tile-focal .tile-chart';
       const option = seen(await (await page.waitForFunction((selector) => {
@@ -6250,9 +6339,9 @@ export const S158 = async (page) => {
         const gap = option.series.find((series) => series.id === 'matched:line:supported').data;
         is(gap[0][1], null, 'a missing supported response point remains a true line gap');
         const detail = seen(await page.locator('#level .sequence-supporting-detail').innerText());
-        ok(detail.includes('During eating · unavailable')
-          && detail.includes('Other sequences (Q1-Q4)')
-          && detail.includes('Highest-carb fifth (Q5)'),
+        ok(detail.includes('DURING EATING') && detail.includes('Not enough data')
+          && detail.includes('Other sequences')
+          && detail.includes('Highest-carb fifth'),
           'null aggregate period stays explicitly unavailable in supporting detail');
       } else {
         ok(option.title.some((t) => t.text.includes('%')) && option.title.some((t) => t.text.includes('mg/dL')),
@@ -6264,7 +6353,7 @@ export const S158 = async (page) => {
         const graphic = option.graphic.flatMap((g) => g.elements || []).map((g) => g.style?.text || '').join(' ');
         ok(graphic.includes('Unavailable: During sequence'), 'null period is explicitly labeled unavailable');
       }
-      const text = seen(await page.locator('#level .sequence-comparison').innerText());
+      const text = seen(await page.locator(lever === 'high_carb_sequence' ? '#level .sequence-summary' : '#level .sequence-comparison').textContent());
       ok(text.length > 100 && !text.includes('undefined'), 'long served comparison remains readable text');
     }, "S158");
     if (lever === 'high_carb_sequence') await assertSequenceResponse(page,

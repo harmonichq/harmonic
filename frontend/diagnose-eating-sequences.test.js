@@ -240,3 +240,20 @@ test('expanded sequence fixtures satisfy preparation and selection transport con
     }
   }
 });
+
+
+test('High-carb period copy and counts follow each served comparison; Repeat eating keeps its labels', () => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    const data = sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event;
+    const view = eatingSequenceComparison(data);
+    assert.equal(view.periods[0].label, lever === 'high_carb_sequence' ? 'During eating' : 'During sequence');
+    const detector = data.projection.report[lever === 'high_carb_sequence' ? 'high_carb_sequence' : 'repeat_eating_amplifier'];
+    for (const row of view.periods) {
+      const source = detector.comparisons.find((item) => item.period === row.period && (lever === 'high_carb_sequence'
+        ? item.scope === detector.finding.scope : item.carb_quintile === detector.finding.carb_quintile));
+      assert.deepEqual(row.reference, source.reference);
+      assert.deepEqual(row.comparison, lever === 'high_carb_sequence' ? source.high : source.repeat);
+    }
+    assert.equal(view.periods[0].reference.tir_pct, null);
+  }
+});

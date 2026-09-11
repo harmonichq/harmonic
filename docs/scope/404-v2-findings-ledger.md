@@ -58,3 +58,24 @@ All five defects reached their named feature assertion in at least one viewport.
 Both runs exited 1 and reported `executed 0 / failed 5 / deferred 0 / selected 5 / chromium launches 1`. The driver increments executed only after a story passes; its trailing zero-executed message does not erase the feature assertions above. These are negative reproductions, never green acceptance.
 
 Raw local evidence: `/private/tmp/harmonic-404-triage-1280.log` and `/private/tmp/harmonic-404-triage-1440.log`. Synthetic case-store logs remain under `/private/tmp/harmonic-404-triage-01a08ec1/cases/`. No personal data was read or captured. The existing installed Playwright drove both runs; a stalled optional browser-cache provisioner was cancelled without changing repository files.
+
+## Operator additions — 2026-09-10 local time
+
+Recorded on the selected ticket: https://github.com/harmonichq/harmonic/issues/404#issuecomment-5629632508 . The tracker comment carries all seven new items and the operator's direction. Source screenshots remain local; no screenshot, record-level value or health history is copied here or to GitHub.
+
+### Settled directions
+
+- All charts and Close labels go left of their icons. The icons retain the fixed top-right position. `inline`
+- Chart-header expansion controls align top-right even when the title/header becomes taller. `inline`
+- Window controls must match the desk's tighter control density while preserving named/custom-window behavior and accessible interaction. Exact geometry belongs to the visual round. `inline`
+- Changes and Day inherit the widened Diagnose right rail; the same-viewport divider stays aligned across all three. The screenshot calls the Findings destination Overview, but the current route is Diagnose. `inline`
+- Continue logging observations on #404 before resuming triage. Do not turn each new screenshot into an implementation session. `inline`
+
+### New evidence obligations
+
+- Pattern/meal occurrence selection must actually draw the selected trace. The working low-event chart is a comparison case, not proof of every family. Source inspection found `tileCaseFile` forwards the active selected response for event-comparison and eating-sequence but omits pattern-case-file. New browser reproduction and a failing-first public-interface assertion remain owed.
+- Resolve sparse meal/event detail: the roster currently renders only anchor glucose and a generic anchor label. A null anchor value is not proof of missing CGM. Inventory served detail and markers before deciding what to display; do not fabricate unavailable values.
+- Prevent occurrence text and long cohort labels from overlapping. The shared `.only` cell spans fixed numeric columns with nowrap and no overflow containment. Reproduce with long synthetic labels, expanded rosters and selected rows.
+- Match right-rail geometry across all destinations at both viewports, including loaded and loading frames and the detected-settings table.
+
+No application or replay source changed for these additions. The temporary synthetic QA server was stopped when the operator directed logging-first. The visual round, completed evidence inventory, remaining product decisions and mandatory plan review still precede the execution lock.

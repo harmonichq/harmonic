@@ -24,7 +24,7 @@ The CI workflow and acceptance wrapper select and shard the v2 ledger. During tr
 
 ## Open questions
 
-1. Trial expiry: keep the 28-day ending and make the expired record obvious with a separately retained late conclusion, or keep an unreviewed trial active beyond 28 days? The latter changes admission and when another watch can start. Neither is silently selected.
+1. Trial expiry settled by Q1 below: keep expiry, surface its record and allow a separately dated late conclusion. Details of where it appears belong to the visual round.
 2. Scoped Patterns: show whole-day Patterns with explicit whole-day meaning and a windowed chart, introduce genuinely scoped Pattern semantics, or explain their absence with a route back to 24 h?
 3. Rail visual round: settle parent-owned expandable Cause members and mini placement together in the running app after the behavior sweep. Preserve member-specific evidence and served ownership.
 4. Response mini labels: retain the served event label, deciding on a short backend noun only if the measured layout needs it.
@@ -79,3 +79,7 @@ Recorded on the selected ticket: https://github.com/harmonichq/harmonic/issues/4
 - Match right-rail geometry across all destinations at both viewports, including loaded and loading frames and the detected-settings table.
 
 No application or replay source changed for these additions. The temporary synthetic QA server was stopped when the operator directed logging-first. The visual round, completed evidence inventory, remaining product decisions and mandatory plan review still precede the execution lock.
+
+### Q1 settled — Trial expiry and late conclusion
+
+Connor selected: “Keep the expiry; surface the record and allow a late conclusion (Recommended).” Keep the existing 28-day expiry and watch-admission behavior. Make the expired Trial prominent and reachable in Changes. A late conclusion is separately dated and cannot overwrite the original expiry, ending time, or saved ending assessment. Why: recover an understandable history path without silently extending the active watch. → ADR, discharged in `openspec/changes/v2-findings-ledger/design.md`, ADR 404 — Retain expiry and record a late conclusion separately.

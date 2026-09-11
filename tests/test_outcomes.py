@@ -92,6 +92,18 @@ class MetricsMathTest(unittest.TestCase):
         m = compute_metrics(readings)
         self.assertEqual(m.n_readings, 2)
 
+    def test_omitting_unused_cv_preserves_every_other_panel_value(self):
+        from dataclasses import replace
+        from unittest.mock import patch
+
+        for values in ([], [100], [50, 70, 100.25, 180, 260]):
+            readings = _series(values) + [CgmReading(datetime(2026, 6, 2), bg=None)]
+            full = compute_metrics(readings)
+            with patch("ciq_autotune.outcomes.statistics.stdev",
+                       side_effect=AssertionError("unused CV was computed")):
+                self.assertEqual(compute_metrics(readings, include_cv=False),
+                                 replace(full, cv=None))
+
 
 class CoverageGateTest(unittest.TestCase):
     def test_full_14d_at_over_70pct_clears_consensus(self):

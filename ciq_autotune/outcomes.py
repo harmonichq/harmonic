@@ -225,12 +225,15 @@ def _pct(count: int, total: int) -> Optional[float]:
     return round(100.0 * count / total, 1) if total else None
 
 
-def compute_metrics(readings) -> GlycemicMetrics:
+def compute_metrics(readings, *, include_cv: bool = True) -> GlycemicMetrics:
     """The 2019 consensus / AGP glycemic panel from a sequence of CGM readings.
 
     ``readings`` are :class:`~ciq_autotune.events.CgmReading` (or anything with a
     ``.bg``); ``None`` bg values are dropped. Pure function of its inputs — no
     store, no clock — so it is fully unit-testable on a synthetic series.
+    Mean-only resampling callers may omit the unused sample standard deviation
+    with ``include_cv=False``; the returned CV is then None. Published panels
+    retain the default complete computation.
     """
     vals = [float(r.bg) for r in readings if getattr(r, "bg", None) is not None]
     n = len(vals)
@@ -249,7 +252,7 @@ def compute_metrics(readings) -> GlycemicMetrics:
     gmi = round(3.31 + 0.02392 * mean, 1)
     # CV = SD / mean × 100. Needs ≥2 points for a sample stdev; a single reading has
     # no dispersion, so CV is None (honest — not a fabricated 0).
-    cv = round(100.0 * statistics.stdev(vals) / mean, 1) if n >= 2 and mean else None
+    cv = round(100.0 * statistics.stdev(vals) / mean, 1) if include_cv and n >= 2 and mean else None
     return GlycemicMetrics(
         n_readings=n,
         tir=_pct(in_range, n),

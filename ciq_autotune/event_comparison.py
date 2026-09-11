@@ -10,6 +10,7 @@ from bisect import bisect_left, bisect_right
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from math import ceil
 import math
 
 from .analyzers.classifiers import (
@@ -68,6 +69,15 @@ EVENT_CHARTS = {
     factor: {"view": view, "factor": factor}
     for view, config in VIEW_CONFIG.items()
     for factor in config["factors"]
+}
+
+# Sequence Findings share the meals producer's outcome population. They have no
+# event-comparison factor card of their own, so this is an ownership map rather
+# than a second Pattern roster.
+_FOCUS_VIEW_FOR_LEVER = {
+    **{factor: config["view"] for factor, config in EVENT_CHARTS.items()},
+    "high_carb_sequence": "meals",
+    "repeat_eating": "meals",
 }
 
 FACTOR_LABELS = {
@@ -644,6 +654,60 @@ def _build_catalog_capture(
     }
     _validate_capture(capture)
     return capture
+
+
+def scoped_outcome_occurrences(occurrences, *, start: datetime, end: datetime,
+                               query: WindowQuery) -> list[dict]:
+    """Choose complete producer traces by outcome landing inside one calendar arm.
+
+    Calendar membership belongs to an occurrence's published ``outcome_min``,
+    never to its exposure anchor.  The returned occurrence is deliberately not
+    clipped: its trace is the episode context that made the producer's landing
+    meaningful in the first place.
+    """
+    return [occurrence for occurrence in occurrences
+            if start <= _dt(occurrence["anchor_t"]) < end
+            and query.contains(occurrence.get("outcome_min"))]
+
+
+def scoped_focus_cohort(store, *, start: datetime, end: datetime,
+                        query: WindowQuery, lever: str) -> dict | None:
+    """Return full event traces whose producer-owned landing is in ``query``.
+
+    This is an evidence adapter for the durable Focus comparison, not a new
+    classifier: it rebuilds the existing event capture over enough history to
+    cover the requested arm, selects its existing trace identities, and keeps
+    every selected trace row intact.
+    """
+    view = _FOCUS_VIEW_FOR_LEVER.get(lever)
+    if view is None:
+        return None
+    from .explore_exposures import build_exposures
+
+    latest = store.latest_cgm_or_basal_timestamp()
+    if latest is None:
+        return {"view": view, "occurrences": (), "cgm_times": frozenset(),
+                "bolus_keys": frozenset()}
+    window_days = max(1, ceil((latest - start).total_seconds() / 86400))
+    exposures = build_exposures(store, window_days=window_days)
+    capture = _build_catalog_capture(
+        store, window_days=window_days, exposures_payload=exposures,
+    )
+    occurrences = scoped_outcome_occurrences(
+        capture["views"][view]["occurrences"], start=start, end=end, query=query,
+    )
+    cgm_times = frozenset(
+        _dt(row["t"])
+        for occurrence in occurrences
+        for row in occurrence["trace"].get("cgm", ())
+    )
+    bolus_keys = frozenset(
+        (row.get("seq_num"), _dt(row["t"]))
+        for occurrence in occurrences
+        for row in occurrence["trace"].get("boluses", ())
+    )
+    return {"view": view, "occurrences": tuple(occurrences),
+            "cgm_times": cgm_times, "bolus_keys": bolus_keys}
 
 
 def _finite(value) -> bool:

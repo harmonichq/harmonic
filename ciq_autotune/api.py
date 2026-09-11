@@ -1521,9 +1521,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise HTTPException(status_code=422, detail=f"invalid {key}")
         return True
 
-    def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False):
+    def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False,
+                  reconcile=True):
         from .store import FollowUpConflict, FocusAlreadyActive
-        from .watched_change import reconcile_follow_up
+        if reconcile:
+            from .watched_change import reconcile_follow_up
 
         def retry(store):
             if not durable:
@@ -1545,6 +1547,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if scope != payload.get("outcome_window"):
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
+                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if (operation == "conclude"
+                    and receipt["result"]["record"]["late_conclusion"]["conclusion"]
+                    != payload["conclusion"]):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
 
@@ -1582,7 +1588,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = _latest_instant(store) or datetime.now()
                         recorded_at = datetime.now()
-                        admission = reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                        admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                                     if reconcile else None)
                         record = mutate(store, admission, source, now, recorded_at)
                     # Saving a new retry receipt is itself a durable write. Reserve
                     # its revision before capturing the returned common verdict.
@@ -1590,7 +1597,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     if durable and revision == before:
                         revision += 1
                     frontier = store.follow_up_frontier()
-                    if frontier is not None:
+                    if reconcile and frontier is not None:
                         store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
                                                          reconciled_input_revision=store.input_data_revision())
                     result = {**{key: record[key] for key in (
@@ -1866,7 +1873,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "recorded_at": at.strftime("%Y-%m-%d %H:%M:%S"),
                 "conclusion": payload["conclusion"],
             }})
-        return lifecycle("conclude", "trial", trial_id, payload, durable=True, mutate=conclude)
+        return lifecycle("conclude", "trial", trial_id, payload, durable=True, mutate=conclude,
+                         reconcile=False)
 
     def signal_recompute() -> None:
         """Invalidate after a fetch and notify the lifespan-owned worker.

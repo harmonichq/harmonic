@@ -51,13 +51,32 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(before.json()['selected']['original']['ending'], record['ending'])
         body = {'request_id': 'late-conclusion', 'input_revision': revision,
                 'conclusion': 'The later evidence still supports the change.'}
-        response = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
-                                    headers=self.headers, json=body)
+        stale = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                 headers=self.headers, json={**body, 'request_id': 'stale',
+                                                             'input_revision': -1})
+        self.assertEqual(stale.status_code, 409, stale.text)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record('trial', record['id'])['late_conclusion']['state'],
+                             'unavailable')
+        # Conclusion writes are additive to an already-finished Trial; they never
+        # run reconciliation, which could otherwise create another active watch.
+        from unittest.mock import patch
+        with patch('ciq_autotune.watched_change.reconcile_follow_up',
+                   side_effect=AssertionError('late conclusion must not reconcile')):
+            response = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                        headers=self.headers, json=body)
         self.assertEqual(response.status_code, 200, response.text)
         saved = response.json()['record']
         self.assertEqual(saved['ending'], record['ending'])
         self.assertEqual(saved['late_conclusion']['conclusion'], body['conclusion'])
-        # A new retry identity cannot replace either immutable fact.
+        self.assertEqual(self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                          headers=self.headers, json=body).json(), response.json())
+        # Neither a changed request identity nor changed text under the same identity
+        # can replace the first immutable conclusion.
+        changed_same_id = self.client.post(
+            f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+            json={**body, 'conclusion': 'Different words'})
+        self.assertEqual(changed_same_id.status_code, 409, changed_same_id.text)
         retry = self.client.post(f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
                                  json={**body, 'request_id': 'late-conclusion-retry',
                                        'conclusion': 'Different words'})
@@ -67,6 +86,34 @@ class DurableApiTest(unittest.TestCase):
         self.assertEqual(after.status_code, 200, after.text)
         self.assertEqual(after.json()['selected']['original']['ending'], record['ending'])
         self.assertEqual(after.json()['selected']['original']['late_conclusion'], saved['late_conclusion'])
+
+    def test_pattern_focus_post_saves_scope_and_rejects_invalid_or_stale_navigation(self):
+        source = self.seed_case('high-carb-sequence-covered')
+        body = {'request_id': 'scoped-pattern-pin', 'input_revision': source['input_revision'],
+                'subject': 'pattern:highs_after_meals',
+                'analysis_generation': source['analysis_generation'],
+                'pattern_key': 'highs_after_meals', 'lever': 'high_carb_sequence',
+                'outcome_window': {'start_min': 0, 'end_min': 1439}}
+        invalid = self.client.post('/api/focus', headers=self.headers,
+                                   json={**body, 'request_id': 'invalid-scope', 'outcome_window': {}})
+        self.assertEqual(invalid.status_code, 422, invalid.text)
+        stale = self.client.post('/api/focus', headers=self.headers,
+                                 json={**body, 'request_id': 'stale-scope', 'input_revision': -1})
+        self.assertEqual(stale.status_code, 409, stale.text)
+        response = self.client.post('/api/focus', headers=self.headers, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        pinned = response.json()
+        self.assertEqual(pinned['record']['decision_context']['outcome_window'], body['outcome_window'])
+        # A later Diagnose navigation is a projection read; it cannot rewrite the
+        # selected scope captured by the public Focus POST.
+        navigation = self.client.get('/api/diagnose/findings', headers=self.headers,
+                                     params={'start_min': 720, 'end_min': 1080})
+        self.assertEqual(navigation.status_code, 200, navigation.text)
+        history = self.client.get('/api/verify/trials', headers=self.headers,
+                                  params={'kind': 'focus', 'selected': pinned['id']})
+        self.assertEqual(history.status_code, 200, history.text)
+        self.assertEqual(history.json()['selected']['original']['context']['outcome_window'],
+                         body['outcome_window'])
 
     def test_pattern_follow_up_reads_serve_the_roster_title_separately_from_context(self):
         with Store.open(self.path) as store:

@@ -1,0 +1,133 @@
+{
+  "application_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+  "replay_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+  "note": "S107 changed verification and ledger wording only. Earlier application suites remain applicable; both full v2 runs use the corrected replay.",
+  "checks": [
+    {
+      "name": "day",
+      "command": "node frontend/day-surface.browser.mjs",
+      "exit_code": 0,
+      "seconds": 2.28,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/day.log"
+    },
+    {
+      "name": "workstation",
+      "command": "node --test frontend/diagnose-workstation.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 200.08,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/workstation.log"
+    },
+    {
+      "name": "canvas",
+      "command": "node --test frontend/diagnose-canvas-composition.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 108.25,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/canvas.log"
+    },
+    {
+      "name": "cockpit",
+      "command": "node --test frontend/cockpit-shell.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 22.09,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/cockpit.log"
+    },
+    {
+      "name": "runner",
+      "command": "node --test frontend/browser-runner.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 0.3,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/runner.log"
+    },
+    {
+      "name": "desk",
+      "command": "node --test frontend-v2/desk.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 22.05,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/desk.log"
+    },
+    {
+      "name": "follow-up",
+      "command": "node --test frontend-v2/follow-up.browser.test.mjs",
+      "exit_code": 0,
+      "seconds": 341.87,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/follow-up.log"
+    },
+    {
+      "name": "first-plan",
+      "command": "node frontend/plan-first-match.browser.mjs",
+      "exit_code": 0,
+      "seconds": 1.84,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/first-plan.log"
+    },
+    {
+      "name": "workstation-ledger",
+      "command": "node frontend/diagnose-workstation-behavior.replay.mjs",
+      "exit_code": 0,
+      "seconds": 496.16,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/workstation-ledger.log"
+    },
+    {
+      "name": "event-ledger",
+      "command": "node frontend/diagnose-event-comparison-behavior.replay.mjs",
+      "exit_code": 0,
+      "seconds": 49.07,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/event-ledger.log"
+    },
+    {
+      "name": "support-audit",
+      "command": "node mockups/diagnose-event-comparison-support-audit.mjs",
+      "exit_code": 0,
+      "seconds": 13.88,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/support-audit.log"
+    },
+    {
+      "name": "verify-ledger",
+      "command": "node frontend/verify-660-story-behavior.replay.mjs",
+      "exit_code": 0,
+      "seconds": 11.94,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "browser-opus-final",
+      "raw_log": "browser-logs/verify-ledger.log"
+    },
+    {
+      "name": "v2-1280",
+      "command": "uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1280x720 --out /private/tmp/harmonic-404-final-verification/browser-v2-final/v2-1280",
+      "exit_code": 0,
+      "seconds": 784.78,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "browser-v2-final",
+      "raw_log": "browser-logs/v2-1280.log"
+    },
+    {
+      "name": "v2-1440",
+      "command": "uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py replay --viewport 1440x900 --out /private/tmp/harmonic-404-final-verification/browser-v2-final/v2-1440",
+      "exit_code": 0,
+      "seconds": 788.76,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "browser-v2-final",
+      "raw_log": "browser-logs/v2-1440.log"
+    }
+  ]
+}

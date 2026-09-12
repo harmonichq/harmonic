@@ -3609,6 +3609,11 @@
             "reason": "not_recorded",
             "state": "unavailable",
             "version": "386:1"
+          },
+          "late_conclusion": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
           }
         },
         "parameter": "basal_rate",
@@ -4570,6 +4575,11 @@
             "version": "386:1"
           },
           "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "late_conclusion": {
             "reason": "not_recorded",
             "state": "unavailable",
             "version": "386:1"

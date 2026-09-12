@@ -26,7 +26,7 @@ test('S107 carries the observed wrapped window into its pinned-read proof before
         // The scalar clock-pan reader accompanies the structured plot/state readers.
         if (callback.toString().includes("Number(document.getElementById('chart')")) return 360;
         return { x: 0, y: 0, w: 1000, h: 400, panOffset: gesture === 2 ? 360 : 0,
-          chip: gesture === 2 ? 'Window 22:00–02:00' : 'Window 07:00–13:00' };
+          chip: gesture === 2 ? '22:00–02:00' : '07:00–13:00' };
       },
       mouse: {
         down: async () => { gesture++; held = true; },
@@ -94,7 +94,7 @@ async function slicedProjection(sliceDrift = 0) {
       // The plot reader and state reader consume their own fields from this pose.
       x: 0, y: 0, w: 1000, h: 400, gripA: 0, gripB: 360,
       crumbMeta: scope === 'whole' ? '8 findings · 30 days' : '1 in this window',
-      chip: scope === 'slice' ? 'Window 04:30–06:00' : null,
+      chip: scope === 'slice' ? '04:30–06:00' : null,
       queue: scope === 'whole' ? Array.from({ length: 11 }, (_, i) => ({ title: `Row ${i}` }))
         : [{ title: 'Basal 05:30 · raise' }, { title: 'ISF' }],
       queueLeft: 1048 + (scope === 'whole' && animating ? 6 : 0)

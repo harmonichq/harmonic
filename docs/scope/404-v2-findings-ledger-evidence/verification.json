@@ -1,0 +1,94 @@
+{
+  "status": "All required local verification passed; final Full review converged",
+  "source_commit": "91cfc1af093cf5eb804ff9e491322f3caafe8d0d",
+  "backend": {
+    "passed": 2530,
+    "skipped": 1,
+    "commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa"
+  },
+  "node": {
+    "passed": 903,
+    "commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650"
+  },
+  "static_note": "Final build, frontend Node suite, OpenSpec/guards and affected generated-artifact checks pass on the application commit. Earlier complete backend suite remains applicable: later changes are frontend only.",
+  "v1": {
+    "passed": 168,
+    "commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+    "raw_log": "workstation-ledger.log"
+  },
+  "data_provenance": "Committed QA recipes and generated synthetic stores only. No personal database or captures are included.",
+  "drawn_window_correction": {
+    "commit": "67b8f222f536bea48598356d2eca433d0b3ae11c",
+    "paths": [
+      "frontend-v2/c4.replay.mjs",
+      "frontend-v2/c4.replay.test.js"
+    ],
+    "focused": "S101 and S103 pass at both viewports; actual mouse gesture and exact live chip assertion retained"
+  },
+  "held_drag_fix": {
+    "commit": "43d65f705829626723b8b835479bcfdec2c5a329",
+    "cause": "Asynchronous evidence repaint interrupted the chart event target during the held drag.",
+    "behavior": "Preserves live preparation/case reads, leaves overview and brace painting to the active drag, and observes its active pointer at document scope. A still-held mouse capture is restored after repaint loss; touch lost-capture retains cancellation.",
+    "proof": "Public browser regression proves held pinned refresh and exact terminal window; v1 S107 and v2 S101/S103 pass at both sizes. V1 S04/S05/S107 and v2 S101/S103 pass at both sizes."
+  },
+  "v2_baseline": {
+    "viewport": "1280x720",
+    "selected": 137,
+    "passed": 137,
+    "active": 119,
+    "retirements": 18,
+    "commit": "52ada009a06df07e3a8d7edfe34f91a28c19d752",
+    "note": "1440 run intentionally stopped for newly requested design corrections, not a passing receipt."
+  },
+  "application_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+  "design_review": {
+    "model": "claude-opus-5",
+    "effort": "high",
+    "assessment": "ready; no remaining required defect",
+    "independent_assessment": "Astra low detector and synthetic image assessment",
+    "final_report": "opus-design/final-design-verdict.md",
+    "marker_owner_disposition": "Existing history helper always resolves to glucose or a history rail; selected Pattern markers omit unknown glucose, a different public contract."
+  },
+  "replay_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+  "s107_correction": {
+    "commit": "91cfc1af093cf5eb804ff9e491322f3caafe8d0d",
+    "changes": "Replay, its negative contract, and matching ledger wording only; application code unchanged",
+    "focused": "S107 passes both sizes;17Node contracts pass",
+    "prior_full_1280": "136/137;sole stale per-row-tier premise corrected,notwaived",
+    "raw_logs": "browser-logs/final-s107-*"
+  },
+  "v2_1280": {
+    "passed": 137,
+    "failed": 0,
+    "deferred": 0,
+    "selected": 137,
+    "active": 119,
+    "existing_retirements": 18,
+    "commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+    "raw_log": "browser-logs/v2-1280.log"
+  },
+  "v2_1440": {
+    "passed": 137,
+    "failed": 0,
+    "deferred": 0,
+    "selected": 137,
+    "active": 119,
+    "existing_retirements": 18,
+    "commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+    "raw_log": "browser-logs/v2-1440.log"
+  },
+  "browser_checks": 14,
+  "code_review": {
+    "route": "Operator-approved unvalidated Codex-only Full review",
+    "model": "gpt-5.6-luna",
+    "effort": "medium",
+    "round": 2,
+    "reviewed_commit": "5fa118f0788d1499a308e1333f7cf7409bb440e8",
+    "standards": "20/20 Holds; Converged",
+    "specification": "47/47 checked; Converged",
+    "reports": [
+      "final-standards-review.md",
+      "final-spec-review.md"
+    ]
+  }
+}

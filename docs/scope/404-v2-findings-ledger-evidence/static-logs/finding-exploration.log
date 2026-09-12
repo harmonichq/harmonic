@@ -1,0 +1,5 @@
+(node:92166) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/404/frontend/diagnose-findings-queue.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/404/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+finding-evidence-routing artifacts current (data.json, evidence-table.extracted.js, app-base.extracted.css, chrome.extracted.html)

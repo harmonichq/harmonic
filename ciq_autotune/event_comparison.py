@@ -10,6 +10,7 @@ from bisect import bisect_left, bisect_right
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from math import ceil
 import math
 
 from .analyzers.classifiers import (
@@ -27,7 +28,7 @@ from .analyzers.scenario.meal_suspend import (
 from .analyzers.scenario_config import ScenarioConfig
 from .analyzers.scenario.evidence_population import completed_carb_bolus
 from .insulin import ACCOUNTING_DIA_MIN
-from .window_membership import WindowQuery, outcome_minute
+from .window_membership import WindowQuery, outcome_timestamp
 
 FMT = "%Y-%m-%d %H:%M:%S"
 CONFIG = ScenarioConfig()
@@ -68,6 +69,15 @@ EVENT_CHARTS = {
     factor: {"view": view, "factor": factor}
     for view, config in VIEW_CONFIG.items()
     for factor in config["factors"]
+}
+
+# Sequence Findings share the meals producer's outcome population. They have no
+# event-comparison factor card of their own, so this is an ownership map rather
+# than a second Pattern roster.
+_FOCUS_VIEW_FOR_LEVER = {
+    **{factor: config["view"] for factor, config in EVENT_CHARTS.items()},
+    "high_carb_sequence": "meals",
+    "repeat_eating": "meals",
 }
 
 FACTOR_LABELS = {
@@ -458,6 +468,10 @@ def _validate_capture(capture: dict) -> None:
             if (not isinstance(outcome_min, int) or isinstance(outcome_min, bool)
                     or not 0 <= outcome_min < 1440):
                 raise AssertionError(f"{occurrence['id']}: missing outcome minute")
+            outcome_t = occurrence.get("outcome_t")
+            if (not isinstance(outcome_t, str)
+                    or _dt(outcome_t).hour * 60 + _dt(outcome_t).minute != outcome_min):
+                raise AssertionError(f"{occurrence['id']}: missing outcome timestamp")
             if set(occurrence["routes"]) != set(view["factors"]):
                 raise AssertionError(f"{occurrence['id']}: incomplete factor routing")
             for factor, route in occurrence["routes"].items():
@@ -530,6 +544,10 @@ def _build_catalog_capture(
         before, after = config["window"]
         for index, source in enumerate(source_family["occurrences"]):
             anchor = _dt(source["t"])
+            outcome_at = outcome_timestamp(source, exposures_payload)
+            if outcome_at is None:
+                raise AssertionError(f"{view_name} source has no outcome timestamp")
+            outcome_at = _dt(outcome_at)
             meal = None
             if view_name == "meals":
                 ordinal = meal_ordinals.get(anchor, 0)
@@ -613,7 +631,8 @@ def _build_catalog_capture(
                     "ep_id": source["ep_id"],
                     "date": source["date"],
                     "anchor_t": source["t"],
-                    "outcome_min": outcome_minute(source, exposures_payload),
+                    "outcome_t": outcome_at.strftime(FMT),
+                    "outcome_min": outcome_at.hour * 60 + outcome_at.minute,
                     "anchor_bg": source.get("bg"),
                     "worst_bg": source.get("worst_bg"),
                     "label": source.get("label"),
@@ -644,6 +663,61 @@ def _build_catalog_capture(
     }
     _validate_capture(capture)
     return capture
+
+
+def scoped_outcome_occurrences(occurrences, *, start: datetime, end: datetime,
+                               query: WindowQuery) -> list[dict]:
+    """Choose complete producer traces by outcome landing inside one calendar arm.
+
+    Calendar membership belongs to the producer's published ``outcome_t``;
+    ``outcome_min`` supplies only its clock scope. The returned occurrence is
+    deliberately not clipped: its trace is the episode context that made the
+    producer's landing meaningful in the first place.
+    """
+    return [occurrence for occurrence in occurrences
+            if start <= _dt(occurrence["outcome_t"]) < end
+            and query.contains(occurrence.get("outcome_min"))]
+
+
+def scoped_focus_cohort(store, *, start: datetime, end: datetime,
+                        query: WindowQuery, lever: str) -> dict | None:
+    """Return full event traces whose producer-owned landing is in ``query``.
+
+    This is an evidence adapter for the durable Focus comparison, not a new
+    classifier: it rebuilds the existing event capture over enough history to
+    cover the requested arm, selects its existing trace identities, and keeps
+    every selected trace row intact.
+    """
+    view = _FOCUS_VIEW_FOR_LEVER.get(lever)
+    if view is None:
+        return None
+    from .explore_exposures import build_exposures
+
+    latest = store.latest_cgm_or_basal_timestamp()
+    if latest is None:
+        return {"view": view, "occurrences": (), "cgm_times": frozenset(),
+                "bolus_keys": frozenset()}
+    lead_days = ceil(EVENT_COMPARISON_CATALOG_LEAD_IN_MIN / (24 * 60))
+    window_days = max(1, ceil((latest - start).total_seconds() / 86400) + lead_days)
+    exposures = build_exposures(store, window_days=window_days)
+    capture = _build_catalog_capture(
+        store, window_days=window_days, exposures_payload=exposures,
+    )
+    occurrences = scoped_outcome_occurrences(
+        capture["views"][view]["occurrences"], start=start, end=end, query=query,
+    )
+    cgm_times = frozenset(
+        _dt(row["t"])
+        for occurrence in occurrences
+        for row in occurrence["trace"].get("cgm", ())
+    )
+    bolus_keys = frozenset(
+        (row.get("seq_num"), _dt(row["t"]))
+        for occurrence in occurrences
+        for row in occurrence["trace"].get("boluses", ())
+    )
+    return {"view": view, "occurrences": tuple(occurrences),
+            "cgm_times": cgm_times, "bolus_keys": bolus_keys}
 
 
 def _finite(value) -> bool:

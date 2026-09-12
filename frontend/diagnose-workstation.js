@@ -589,6 +589,7 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
   host.insertAdjacentHTML('beforeend',
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
   renderOccurrenceRoster(host, [{
+    compact: true,
     header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
@@ -614,6 +615,7 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
   const groups = cohorts.map((cohort) => {
     const rows = cohort.occurrence_ids.map((id, index) => roster.get(id) || { id, index });
     return {
+      compact: true,
       header: `<div class="ev-group"><b>${cohort.name}</b>
         <span class="n">· ${cohort.routed_count} occurrence${cohort.routed_count === 1 ? '' : 's'}</span></div>`,
       servedCount: cohort.routed_count,
@@ -626,8 +628,10 @@ function renderEventComparisonRoster(host, caseFile, selectedId, onSelect, onMor
         return {
           id: row.id,
           dataset: { comparisonCohort: cohort.key },
-          html: `<span class="when">${when}</span><span class="only">${detail}</span>
-            <span class="tier">${cohort.name}</span>`,
+          // The cohort heading already owns this constant label. Keeping only
+          // the occurrence description here leaves the narrow rail room for
+          // the evidence that changes from row to row.
+          html: `<span class="when">${when}</span><span class="only">${detail}</span>`,
         };
       }),
       empty: '<div class="empty">No occurrences in this population.</div>',
@@ -1207,6 +1211,7 @@ function boot(root, data, callbacks, signal) {
 
   renderInstruments(CFG.win, exposureCapture, (key) => {
     // a preset always clears the brace AND pins itself over any frame window
+    invalidateSlotReturn();
     presetKey = key; drawn = null; explicitPreset = true; failedKey = null; paint();
   });
   /* PORT DEVIATION (#654), same reason as the scope readout above: the status
@@ -1277,6 +1282,7 @@ function boot(root, data, callbacks, signal) {
   let shownRange = null;                            // the window the canvas resolved to
   let braceGripTop = 48;                            // y of the grip band, set by paintBrace
   let dragDisplayWindow = null;                     // monotonic minutes while a drag is live
+  let dragActive = false;                           // keeps async evidence paints off the held chart
   let clockPanOffset = 0;                           // left edge of the unrolled clock display
   /* An EXPLICIT window choice — a preset press or a drag — outranks the window
      a frame would derive. An explicit preset or drawn window survives factor and
@@ -1505,7 +1511,14 @@ function boot(root, data, callbacks, signal) {
   }
 
   function currentTileDescriptors() {
-    return tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
+    const current = tileDescriptors.filter((descriptor) => tileRuntime.get(descriptor.chartId)?.current);
+    /* A thin basal slot may be deliberately absent from the ranked findings,
+       but selecting it is still a request to inspect that slot's own evidence.
+       Keep this one transient descriptor local to the active slot frame: it is
+       neither a second findings list nor a new candidate for the queue. */
+    const active = activeSlotDescriptor();
+    return active && !current.some(({ chartId }) => chartId === active.chartId)
+      ? [...current, active] : current;
   }
 
   /* THE ROW ORDER IS DERIVED, NEVER CARRIED. It is the published findings rank
@@ -1529,10 +1542,11 @@ function boot(root, data, callbacks, signal) {
     /* The comparison tile's request quotes the same opaque projection id the
        inspector's own case-file drill quotes, and the preparation is where that
        id lives — the findings queue carries rows, not the served generation. */
-    const generated = descriptorsFromFindings(
+    const selectedSlot = activeSlotDescriptor();
+    const generated = [...descriptorsFromFindings(
       findings && { ...findings, projection_id: preparation?.projection_id },
       DIAGNOSE_EVIDENCE_CHARTS,
-    );
+    ), ...(selectedSlot ? [selectedSlot] : [])];
     const generationChanged = tileAnalysisGeneration !== null
       && tileAnalysisGeneration !== generation;
     const old = new Map(tileDescriptors.map((descriptor) => [descriptor.chartId, descriptor]));
@@ -1571,7 +1585,10 @@ function boot(root, data, callbacks, signal) {
       nextRuntime.set(seed.chartId, sameRequest
         ? carried
         : { current: true, pending: false, message: null, request: 0, retained: false });
-      return sameRequest ? prior : seed;
+      /* The active thin slot's evidence belongs to its frame request, not the
+         ordinary tile loader.  Let its settled response replace the prior
+         transient descriptor while ordinary tiles retain their fetched data. */
+      return sameRequest && !seed.transientSlot ? prior : seed;
     });
     tileDescriptors = next;
     tileRuntime = nextRuntime;
@@ -1587,7 +1604,7 @@ function boot(root, data, callbacks, signal) {
     seatingPolicyKey = nextPolicyKey;
     for (const descriptor of tileDescriptors) {
       const runtime = tileRuntime.get(descriptor.chartId);
-      if (!runtime.retained && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
+      if (!runtime.retained && !descriptor.transientSlot && !skipLoadIds.has(descriptor.chartId) && !runtime.pending
           && descriptor.data === null && descriptor.state === 'empty') {
         void fetchTile(descriptor);
       }
@@ -2040,6 +2057,24 @@ function boot(root, data, callbacks, signal) {
     drilledChartId = chartId;
     if (chartId && !fullscreen) focusChart(chartId);
   };
+  const readerWindow = () => ({
+    drawn: drawn ? drawn.slice() : null, presetKey, explicitPreset,
+  });
+  const restoreReaderWindow = (state) => {
+    if (!state) return;
+    drawn = state.drawn ? state.drawn.slice() : null;
+    presetKey = state.presetKey;
+    explicitPreset = state.explicitPreset;
+  };
+  // A slot remembers the reader's pre-drill scope only until the reader makes
+  // another explicit scope choice. Returning after that choice must retain the
+  // new server-owned population, while an ordinary slot return still restores
+  // its untouched caller scope.
+  function invalidateSlotReturn() {
+    for (const frame of stack) {
+      if (frame.k === 'slot') frame.returnWindow = null;
+    }
+  }
   const popTo = (i) => {
     ++caseGeneration;
     pendingKey = null;
@@ -2052,8 +2087,15 @@ function boot(root, data, callbacks, signal) {
        scrolling it back over rank one; direct All charts entry is not tagged
        queueOrigin and retains its saved queue position. */
     if (resetQueueRoot) queueScrollTop = 0;
+    const leavingSlot = top().k === 'slot' ? top() : null;
     const popped = popInspector(stack, i, currentTileDescriptors());
     stack.splice(0, stack.length, ...popped.stack);
+    if (leavingSlot && !stack.some((frame) => frame.k === 'slot')) {
+      // A slot supplies its own evidence scope while open. Its caller's
+      // explicit preset or drawn Window is reader state, so restore it only
+      // when the slot has actually been left rather than while swapping slots.
+      restoreReaderWindow(leavingSlot.returnWindow);
+    }
     seatDrill(popped.drilledChartId);
     /* LEAVING A DRILL RE-SEATS THE ACTIVE FINDING'S CHART, NEVER THE CHART
        JUST LEFT (ADR 306). `popped.drilledChartId` is null once the stack is
@@ -2081,8 +2123,10 @@ function boot(root, data, callbacks, signal) {
   }
 
   const chartDescriptor = (chartId) => tileDescriptors.find((item) => item.chartId === chartId);
+  // A frame-owned thin-slot descriptor must not masquerade as a Findings
+  // descriptor on the next paint and suppress its own regeneration.
   const slotDescriptor = (cell) => tileDescriptors.find((descriptor) => descriptor.kind === 'basal'
-    && descriptor.coordinates.slot === cell.i);
+    && !descriptor.transientSlot && descriptor.coordinates.slot === cell.i);
   const slotNightEvidence = (frame) => {
     const descriptor = slotDescriptor(frame.cell);
     if (descriptor?.data) return descriptor.data;
@@ -2118,6 +2162,18 @@ function boot(root, data, callbacks, signal) {
     requestSlotNightEvidence(frame);
     return frame;
   };
+  const activeSlotDescriptor = () => {
+    const frame = top();
+    if (frame?.k !== 'slot' || slotDescriptor(frame.cell)) return null;
+    const data = slotNightEvidence(frame);
+    return {
+      chartId: `basal:${frame.cell.startMin}`,
+      kind: 'basal', title: `Basal ${frame.cell.label}`, headline: null, meta: null,
+      mode: null, coordinates: { slot: frame.cell.i }, data,
+      state: data?.failed ? 'error' : descriptorHasData({ kind: 'basal', data }) ? 'ok' : 'empty',
+      transientSlot: true,
+    };
+  };
   const chartEntry = (descriptor) => DIAGNOSE_EVIDENCE_CHARTS
     .find((entry) => entry.kind === descriptor?.kind);
   /* Selection belongs to the standing case file, while descriptor data belongs
@@ -2125,7 +2181,7 @@ function boot(root, data, callbacks, signal) {
      mutating fetch-owned state that an in-flight tile response can replace. */
   const tileCaseFile = (descriptor) => {
     const frame = top();
-    return ['event-comparison', 'eating-sequence'].includes(descriptor.kind)
+    return ['event-comparison', 'pattern-case-file', 'eating-sequence'].includes(descriptor.kind)
       && frame.k === 'factor' && frame.rowId === descriptor.chartId
       && frame.caseFile?.projection?.alignment === 'event'
       ? frame.caseFile : descriptor.data;
@@ -2183,11 +2239,12 @@ function boot(root, data, callbacks, signal) {
        "Window 07:00–07:30" instead of "Slot 07:00"), and a 30-min span is under
        the 90-min floor a DRAWN window must respect — a slot boundary is data,
        not a drawn sample, and only the frame path renders it unsnapped. */
+    const returnWindow = top().k === 'slot' ? top().returnWindow : readerWindow();
     releaseWindow();
     if (top().k === 'slot') {
       prepareSlotFrame(Object.assign(top(), { cell, rowId })); paint(); return;
     }
-    push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin }));
+    push(prepareSlotFrame({ k: 'slot', cell, rowId, queueOrigin, returnWindow }));
   }
 
   /** The I:C findings-queue route: push from level 1, swap in place. */
@@ -2254,7 +2311,9 @@ function boot(root, data, callbacks, signal) {
          and never moves the brace. Reported in the control row's follow chip. */
       win = { label: 'Window', range: canvasDrawn };
       label = `WINDOW ${winText(win)}`;
-      markWindowSegment(`Window ${windowSpanText(canvasDrawn)}`, clearDrawn);
+      // The Window group already names this compact control; repeat only the
+      // chosen span in its follow chip.
+      markWindowSegment(windowSpanText(canvasDrawn), clearDrawn);
     } else if (explicitPreset) {
       /* A pressed preset is a workspace too, and it outranks the frame for the
          same reason — pressing one at any level is a scope CHANGE by the user,
@@ -2421,10 +2480,9 @@ function boot(root, data, callbacks, signal) {
     if (act === 'browse') button.id = 'explorer-trigger';
     button.title = CHART_ACTIONS[act].label;
     button.setAttribute('aria-label', CHART_ACTIONS[act].label);
-    button.append(chartActionFace(act));
     const label = document.createElement('span');
     label.textContent = CHART_ACTIONS[act].label;
-    button.append(label);
+    button.append(label, chartActionFace(act));
     button.onclick = (ev) => {
       ev.stopPropagation();
       if (fullscreen) {
@@ -3055,6 +3113,7 @@ function boot(root, data, callbacks, signal) {
 
     const active = filterActiveGroups();
     trigger.textContent = active ? `Filter ${active}` : 'Filter';
+    trigger.toggleAttribute('data-filter-active', active > 0);
     trigger.setAttribute('aria-label', active
       ? `Filter, ${active} active ${active === 1 ? 'group' : 'groups'}`
       : 'Filter, no active groups');
@@ -3432,7 +3491,7 @@ function boot(root, data, callbacks, signal) {
 
   // Esc and the chip's × both mean "restore the last preset" — which is an
   // explicit choice in its own right, so it outranks the frame's window too
-  function clearDrawn() { drawn = null; explicitPreset = true; paint(); }
+  function clearDrawn() { invalidateSlotReturn(); drawn = null; explicitPreset = true; paint(); }
 
   /** A lane click is a physical scope choice, so it REPLACES the workspace —
       and so does a basal or I:C drill reaching this picker, by queue row or
@@ -3568,8 +3627,7 @@ function boot(root, data, callbacks, signal) {
       paintLive(mode === 'slide' ? 'both'
         : mode === 'draw' ? (m >= anchor ? 'b' : 'a')
           : mode);
-      markWindowSegment(drawn
-        ? `Window ${windowSpanText(drawn)}` : 'Whole day', clearDrawn);
+      markWindowSegment(drawn ? windowSpanText(drawn) : 'Whole day', clearDrawn);
       /* A pin holds chart identity, not stale evidence. The drag coordinator
          keeps one request live and one latest position queued behind it. */
       ensurePinnedDragPreparation();
@@ -3671,6 +3729,7 @@ function boot(root, data, callbacks, signal) {
       if (ev.type !== 'lostpointercapture' && chartEl.hasPointerCapture(captured)) {
         chartEl.releasePointerCapture(captured);
       }
+      dragActive = false;
       // a press that never moved changed nothing, so there is nothing to commit
       // and nothing to undo — leave the panel exactly as the press found it
       if (!dragged) { committedBeforeDrag = null; return; }
@@ -3683,6 +3742,7 @@ function boot(root, data, callbacks, signal) {
         presetKey = 'all';
         explicitPreset = true;
       }
+      if (!cancelled) invalidateSlotReturn();
       committedBeforeDrag = null;
       dragDisplayWindow = null;
       clockPanOffset = 0;
@@ -3750,14 +3810,29 @@ function boot(root, data, callbacks, signal) {
       };
       lastX = localX(ev);
       pressMinute = minuteAt(lastX);
+      dragActive = true;
       chartEl.setPointerCapture(pointerId);
     }
 
     chartEl.addEventListener('pointerdown', (ev) => begin('draw', ev), { signal });
-    chartEl.addEventListener('pointermove', move, { signal });
-    chartEl.addEventListener('pointerup', finish, { signal });
-    chartEl.addEventListener('pointercancel', finish, { signal });
-    chartEl.addEventListener('lostpointercapture', finish, { signal });
+    /* Observe the active pointer at document scope while ECharts repaints the
+       chart. The chart remains its capture owner, preserving touch cancellation
+       and keeping its renderer from receiving moves on a replaced inner node. */
+    document.addEventListener('pointermove', move, { capture: true, signal });
+    document.addEventListener('pointerup', finish, { capture: true, signal });
+    document.addEventListener('pointercancel', finish, { capture: true, signal });
+    chartEl.addEventListener('lostpointercapture', (ev) => {
+      /* ECharts releases an active mouse capture after setOption() redraws the
+         held chart. Its mouse button is still down, so restore that same chart
+         capture and let the document observer receive the terminal pointer.
+         Touch loss is an explicit cancellation contract and still restores the
+         previous Window through finish(). */
+      if (mode && ev.pointerId === pointerId && pointerType === 'mouse' && ev.buttons !== 0) {
+        chartEl.setPointerCapture(pointerId);
+        return;
+      }
+      finish(ev);
+    }, { signal });
     // the only hover feedback: the cursor says which gesture this press will be
     chartEl.addEventListener('pointermove', (ev) => {
       if (mode || ev.pointerType !== 'mouse') return;
@@ -3808,8 +3883,14 @@ function boot(root, data, callbacks, signal) {
     renderLaneKey(lane);
     paintWatch();
     paintTiles();
-    paintChart();
-    paintBrace();
+    /* Pinned evidence may settle while its chart frame is still held. Its
+       tiles and inspector must refresh now, but re-rendering the overview would
+       replace the pointer-capture owner. `applyDrag()` remains the one live
+       owner of chart and brace paint until `finish()` commits this window. */
+    if (!dragActive) {
+      paintChart();
+      paintBrace();
+    }
     applyPendingFocus();
   }
 

@@ -74,3 +74,10 @@ alone — pair with shape, position, or label redundancy (the existing
 `--high`/`--low`/`--in-range`/`--on-target` tokens need a non-color tell
 wherever they're the only signal, e.g. daily chart bands, evidence markers).
 Single-user personal tool; no other known accessibility needs beyond this.
+
+## #404 evidence and follow-up amendment
+
+Readable v2 destination paths preserve old links. A Focus action is shown only
+when the backend admits it; a withholding reason and served parent route remain
+visible otherwise. Local reconciliation after an existing input write or stale
+startup never changes clinical policy, an immutable Trial ending, or a GET.

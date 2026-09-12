@@ -827,11 +827,17 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
   if (!query.scoped) rows = rows.filter((r) => r.register === 'assert');
   rows = [...rows, ...findingRows(exposures, scenarios, query),
     ...historyRows(analysis, query)];
+  const outcomePatterns = inputs.outcome_patterns_by_window?.[
+    bounds ? `${bounds.start_min}-${bounds.end_min}` : 'whole_day'
+  ];
   const patterns = new Map();
-  if (!query.scoped) {
+  {
     const byId = new Map(rows.map((r) => [r.id, r]));
-    for (const pattern of inputs.outcome_patterns) {
+    for (const pattern of (outcomePatterns || (query.scoped ? [] : inputs.outcome_patterns))) {
       if (pattern.collapse !== 'remain_pattern') continue;
+      if (query.scoped && !patternChartable(pattern, {
+        exposures: { [patternRateFamily(pattern)]: { n: pattern.n } },
+      })) continue;
       const subjects = new Set([...(pattern.rate_levers || []),
         ...(pattern.members || []).filter((member) => member.kind === 'habit')
           .map((member) => member.subject)]);
@@ -844,8 +850,8 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
       const projected = stampedRow({
         id: pattern.subject, register: 'finding', kind: 'pattern', title: pattern.title,
         priority: pattern.admission_route !== 'none' ? pattern.settled_price : null,
-        pattern: structuredClone(pattern), window_scope: 'whole_day',
-        pattern_chart: patternChartable(pattern, exposures)
+        pattern: structuredClone(pattern), window_scope: query.scoped ? 'window' : 'whole_day',
+        pattern_chart: (!query.scoped ? patternChartable(pattern, exposures) : pattern.n > 0)
           ? { key: pattern.key, window: structuredClone(query.dict) } : null,
       });
       rows.push(projected); patterns.set(pattern.subject, projected);
@@ -881,7 +887,7 @@ export function projectFindings(inputs, bounds = null, selectedId = null) {
     rows,
     // Prepared by Python's build_outcome_patterns once.  The fixture mirror
     // transcribes this backend roster; it does not classify or rank Patterns.
-    outcome_patterns: structuredClone(inputs.outcome_patterns),
+    outcome_patterns: structuredClone(outcomePatterns || inputs.outcome_patterns),
     selection: selection(analysis, query, selectedId),
     counts,
     chip_counts,

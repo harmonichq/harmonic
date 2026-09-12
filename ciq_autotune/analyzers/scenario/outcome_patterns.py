@@ -67,21 +67,47 @@ def opportunity_readiness(key: str, analysis: dict, exposures: dict) -> dict:
             **({"contributing_dates": dates} if dates is not None else {})}
 
 
-def _habit_members(scenarios: dict, levers: Iterable[str]) -> list[dict]:
+def _habit_members(scenarios: dict, levers: Iterable[str], *, exposures: dict | None = None,
+                   family: str | None = None) -> list[dict]:
+    """Use a scoped producer population when one was explicitly requested.
+
+    Scenario guidance still owns admission and price.  A clock-scoped Pattern
+    must not retain a member whose published episode ownership has no occurrence
+    in that same outcome population, however, so its count and interval come
+    from the already-filtered exposure rows rather than a whole-day scenario.
+    """
     by_lever = {
         row.get("lever"): row
         for row in [*(scenarios.get("patterns") or ()), *(scenarios.get("low_confidence") or ())]
     }
     out = []
+    occurrences = ((exposures or {}).get("exposures", {}).get(family or "", {})
+                   .get("occurrences", []))
+    denominator = len(occurrences)
     for lever in levers:
         row = by_lever.get(lever)
         if row is None:
             continue
         confidence = row.get("confidence") or {}
+        if exposures is not None:
+            subject = f"habit:{lever}"
+            owned = {item.get("ep_id") or item.get("t") for item in occurrences
+                     if subject in item.get("member_associations", [])
+                     or lever in item.get("attributed_levers", [])
+                     or item.get("cause_lever") == lever}
+            owned.discard(None)
+            if not owned:
+                continue
+            k = len(owned)
+            bounds = wilson(k, denominator) if denominator else None
+            lo, hi = (bounds[1], bounds[2]) if bounds else (None, None)
+        else:
+            k = confidence.get("k", 0)
+            lo, hi = confidence.get("lo"), confidence.get("hi")
         out.append({
-            "subject": f"habit:{lever}", "kind": "habit", "k": confidence.get("k", 0),
+            "subject": f"habit:{lever}", "kind": "habit", "k": k,
             "price": row.get("priority", 0), "admitted": bool(row.get("guidance", {}).get("action_id")),
-            "producer": "scenario", "lo": confidence.get("lo"), "hi": confidence.get("hi"),
+            "producer": "scenario", "lo": lo, "hi": hi,
             "seriousness": row.get("guidance", {}).get("seriousness"),
             "action": row.get("guidance", {}).get("action_id"),
         })
@@ -285,7 +311,8 @@ def _harm_low_overlaps(
     return rows
 
 
-def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> list[dict]:
+def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict, *,
+                           scoped_population: bool = False) -> list[dict]:
     """Return the closed five-pattern roster from already-published source outputs.
 
     Meal-bolus-short remains observation-only, but the meal opportunity attributed
@@ -298,7 +325,9 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
     candidate_rows = guidance_candidates(analysis, exposures, scenarios)
     overlaps = _cross_pattern_overlaps(exposures)
     for key, title, habit_levers, rate_levers, setting, family in _ROSTER:
-        habits = _habit_members(scenarios, habit_levers)
+        habits = _habit_members(scenarios, habit_levers,
+                                exposures=exposures if scoped_population else None,
+                                family=family)
         overnight = family == "nights"
         members = habits + _setting_member(
             analysis, candidate_rows, setting, overnight=overnight,
@@ -356,3 +385,12 @@ def build_outcome_patterns(analysis: dict, exposures: dict, scenarios: dict) -> 
             "member_set_fingerprint": fingerprint,
         })
     return roster
+
+
+def outcome_window_population(analysis: dict, exposures: dict, scenarios: dict, query):
+    """Return the one outcome-window evidence population and its Pattern roster."""
+    from ...window_membership import outcome_window_exposures
+
+    population = outcome_window_exposures(exposures, query)
+    return population, build_outcome_patterns(analysis, population, scenarios,
+                                               scoped_population=query.scoped)

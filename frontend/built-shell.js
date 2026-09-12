@@ -8,8 +8,9 @@ const { extname, join, resolve } = require('node:path');
 // server does not is structurally blind to a missing route, which is why the
 // page and asset sets below are the same closed sets ciq_autotune/api.py names.
 const PAGE_PATHS = new Set(['/', '/day', '/diagnose', '/verify', '/plan', '/settings', '/guide']);
-// #389: the v2 desk is one page path with its own fingerprinted asset prefix.
+// #404: the v2 desk keeps one shell at its three canonical destinations.
 const V2_PAGE = '/v2/';
+const V2_PAGE_PATHS = new Set([V2_PAGE, '/v2/diagnose', '/v2/changes', '/v2/day']);
 const V2_ASSET_PREFIX = '/v2/assets/';
 const CONTENT_TYPES = {
   '.css': 'text/css', '.html': 'text/html', '.js': 'text/javascript',
@@ -37,7 +38,7 @@ function createBuiltShell({
   // and would otherwise serve the shell from an asset URL the server 404s.
   function locate(pathname) {
     if (PAGE_PATHS.has(pathname)) return [index, root];
-    if (pathname === V2_PAGE) return [indexV2, rootV2];
+    if (V2_PAGE_PATHS.has(pathname)) return [indexV2, rootV2];
     if (pathname.startsWith(V2_ASSET_PREFIX)) {
       return [join(rootV2, pathname.slice(V2_PAGE.length)), join(rootV2, 'assets')];
     }

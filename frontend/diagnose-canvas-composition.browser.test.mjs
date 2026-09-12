@@ -498,7 +498,7 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
     expectAfternoon = true;
     await drawWindow(page, [840, 1260]);
     assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
-      node.textContent.replace('×', '').trim()), 'Window 14:00–21:00',
+      node.textContent.replace('×', '').trim()), '14:00–21:00',
       'the reader selects Afternoon while the Morning answer is held');
     assert.equal(await page.locator('#seg-window [data-follow]').getAttribute('aria-pressed'), 'true');
     assert.equal(await page.locator('#level').getAttribute('data-loading'), 'true');
@@ -539,7 +539,7 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
       `every seated chart belongs to the frozen Afternoon rows (${JSON.stringify(seated)})`);
     assert.ok(seated.includes('ic:720'), 'the Afternoon carb-ratio chart remains seated after Morning arrives');
     assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
-      node.textContent.replace('×', '').trim()), 'Window 14:00–21:00',
+      node.textContent.replace('×', '').trim()), '14:00–21:00',
       'the current drawn window remains selected after the older response arrives');
     assert.equal(await page.locator('#seg-window [data-follow]').getAttribute('aria-pressed'), 'true');
     assert.deepEqual(seated.filter((id) => morningOnly.includes(id)), [],

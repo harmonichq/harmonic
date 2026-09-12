@@ -29,10 +29,177 @@ class DurableApiTest(unittest.TestCase):
             self.assertEqual(store.input_data_revision(), revision)
             self.assertIsNone(store.follow_up_frontier())
 
+    def _manufacture_frontier_trial(self, *, changed_at, ending_record=None):
+        """Create only a durable synthetic Trial/frontier pair for lifecycle seams."""
+        from tests.test_follow_up_store import trial
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                record = store.save_follow_up_record({
+                    **trial(f"basal:0:{changed_at.replace('-', '').replace(':', '').replace(' ', '')}", changed_at),
+                    **({"ending": ending_record} if ending_record else {}),
+                })
+                store.advance_follow_up_frontier(
+                    record["id"], changed_at,
+                    reconciled_input_revision=store.input_data_revision())
+        return record
+
+    def test_carb_write_reconciles_a_stale_live_frontier_and_preserves_its_trial(self):
+        # A future manufactured transition remains live at this test's wall
+        # time. The carb write is a normal public lifecycle cause, not a
+        # hand-stamped frontier repair.
+        record = self._manufacture_frontier_trial(changed_at="2099-01-02 09:00:00")
+        with Store.open_readonly(self.path) as store:
+            original_ending = store.follow_up_record("trial", record["id"])["ending"]
+        response = self.client.post("/api/carbs", headers=self.headers, json={
+            "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
+        self.assertEqual(response.status_code, 200, response.text)
+        read = self.client.get("/api/plan", headers=self.headers)
+        self.assertEqual(read.status_code, 200, read.text)
+        self.assertEqual(read.json()["admission"]["active_kind"], "trial")
+        self.assertEqual(read.json()["admission"]["active_id"], record["id"])
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("trial", record["id"])["ending"], original_ending)
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                             store.input_data_revision())
+
+    def test_startup_recovers_stale_frontier_without_reopening_an_expired_trial(self):
+        from tests.test_follow_up_store import ending
+        record = self._manufacture_frontier_trial(
+            changed_at="2020-01-02 09:00:00", ending_record=ending("expired_unreviewed", None))
+        # Simulate an older local write that advanced the input revision but did
+        # not reach the lifecycle completion seam; no real data is involved.
+        with Store.open(self.path) as store:
+            store.upsert_carb_entry(self._carb("2026-09-11 12:00:00"))
+            self.assertNotEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                                store.input_data_revision())
+        restarted = TestClient(create_app(
+            db_path=self.path, token="synthetic-token", enable_fetch_loop=False))
+        read = restarted.get("/api/plan", headers=self.headers)
+        self.assertEqual(read.status_code, 200, read.text)
+        self.assertIsNone(read.json()["admission"]["active_kind"])
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record("trial", record["id"])["ending"]["kind"],
+                             "expired_unreviewed")
+            self.assertEqual(store.follow_up_frontier()["reconciled_input_revision"],
+                             store.input_data_revision())
+
+    def test_committed_carb_write_invalidates_the_cache_when_reconciliation_fails(self):
+        from unittest.mock import patch
+        failing = TestClient(create_app(db_path=self.path, token="synthetic-token",
+                                        enable_fetch_loop=False), raise_server_exceptions=False)
+        before = failing.app.state.result_cache.version
+        with patch("ciq_autotune.watched_change.reconcile_ingested_follow_up",
+                   side_effect=RuntimeError("manufactured reconcile failure")):
+            response = failing.post("/api/carbs", headers=self.headers, json={
+                "t": "2026-09-11 12:00:00", "grams": 8, "certainty": "exact"})
+        self.assertEqual(response.status_code, 500, response.text)
+        self.assertEqual(failing.app.state.result_cache.version, before + 1)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(len(store.carb_entries()), 1)
+
+    @staticmethod
+    def _carb(at):
+        from ciq_autotune.events import CarbEntry
+        from ciq_autotune.store import parse_t
+        return CarbEntry(t=parse_t(at), grams=8, certainty="exact", source="manual")
+
     def test_finish_is_authenticated_before_identity_lookup(self):
         response = self.client.post("/api/verify/trials/unknown/finish", json={
             "request_id": "finish", "input_revision": 0})
         self.assertEqual(response.status_code, 401)
+
+    def test_expired_trial_conclusion_is_additive_idempotent_and_refreshes_history(self):
+        # This record is manufactured through the Store's public durable shape;
+        # no detector, vendor connection, or personal database is involved.
+        from tests.test_follow_up_store import ending, trial
+        with Store.open(self.path) as store:
+            with store.follow_up_transaction():
+                record = store.save_follow_up_record({
+                    **trial('basal:0:20260902090000'),
+                    'ending': ending('expired_unreviewed', None),
+                })
+            revision = store.input_data_revision()
+        selected = {'kind': 'trial', 'selected': record['id']}
+        before = self.client.get('/api/verify/trials', headers=self.headers, params=selected)
+        self.assertEqual(before.status_code, 200, before.text)
+        self.assertEqual(before.json()['selected']['original']['ending'], record['ending'])
+        body = {'request_id': 'late-conclusion', 'input_revision': revision,
+                'conclusion': 'The later evidence still supports the change.'}
+        stale = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                 headers=self.headers, json={**body, 'request_id': 'stale',
+                                                             'input_revision': -1})
+        self.assertEqual(stale.status_code, 409, stale.text)
+        with Store.open_readonly(self.path) as store:
+            self.assertEqual(store.follow_up_record('trial', record['id'])['late_conclusion']['state'],
+                             'unavailable')
+        # Conclusion writes are additive to an already-finished Trial; they never
+        # run reconciliation, which could otherwise create another active watch.
+        from unittest.mock import patch
+        with patch('ciq_autotune.watched_change.reconcile_follow_up',
+                   side_effect=AssertionError('late conclusion must not reconcile')):
+            response = self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                        headers=self.headers, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        saved = response.json()['record']
+        self.assertEqual(saved['ending'], record['ending'])
+        self.assertEqual(saved['late_conclusion']['conclusion'], body['conclusion'])
+        self.assertEqual(self.client.post(f"/api/verify/trials/{record['id']}/conclusion",
+                                          headers=self.headers, json=body).json(), response.json())
+        # Neither a changed request identity nor changed text under the same identity
+        # can replace the first immutable conclusion.
+        changed_same_id = self.client.post(
+            f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+            json={**body, 'conclusion': 'Different words'})
+        self.assertEqual(changed_same_id.status_code, 409, changed_same_id.text)
+        retry = self.client.post(f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+                                 json={**body, 'request_id': 'late-conclusion-retry',
+                                       'conclusion': 'Different words'})
+        self.assertEqual(retry.status_code, 409, retry.text)
+        self.assertEqual(retry.json()['detail']['code'], 'late_conclusion_mismatch')
+        # A new request identity is only idempotent when it carries the saved
+        # immutable conclusion verbatim; it cannot turn a conflict into a
+        # misleading success.
+        same_payload = self.client.post(
+            f"/api/verify/trials/{record['id']}/conclusion", headers=self.headers,
+            json={**body, 'request_id': 'late-conclusion-same-payload'})
+        self.assertEqual(same_payload.status_code, 200, same_payload.text)
+        self.assertEqual(same_payload.json()['record']['late_conclusion'], saved['late_conclusion'])
+        after = self.client.get('/api/verify/trials', headers=self.headers, params=selected)
+        self.assertEqual(after.status_code, 200, after.text)
+        self.assertEqual(after.json()['selected']['original']['ending'], record['ending'])
+        self.assertEqual(after.json()['selected']['original']['late_conclusion'], saved['late_conclusion'])
+
+    def test_pattern_focus_post_saves_scope_and_rejects_invalid_or_stale_navigation(self):
+        source = self.seed_case('high-carb-sequence-covered')
+        body = {'request_id': 'scoped-pattern-pin', 'input_revision': source['input_revision'],
+                'subject': 'pattern:highs_after_meals',
+                'analysis_generation': source['analysis_generation'],
+                'pattern_key': 'highs_after_meals', 'lever': 'high_carb_sequence',
+                'outcome_window': {'start_min': 0, 'end_min': 1440}}
+        absent = self.client.post('/api/focus', headers=self.headers,
+                                  json={key: value for key, value in body.items()
+                                        if key != 'outcome_window'})
+        self.assertEqual(absent.status_code, 422, absent.text)
+        invalid = self.client.post('/api/focus', headers=self.headers,
+                                   json={**body, 'request_id': 'invalid-scope', 'outcome_window': {}})
+        self.assertEqual(invalid.status_code, 422, invalid.text)
+        stale = self.client.post('/api/focus', headers=self.headers,
+                                 json={**body, 'request_id': 'stale-scope', 'input_revision': -1})
+        self.assertEqual(stale.status_code, 409, stale.text)
+        response = self.client.post('/api/focus', headers=self.headers, json=body)
+        self.assertEqual(response.status_code, 200, response.text)
+        pinned = response.json()
+        self.assertEqual(pinned['record']['decision_context']['outcome_window'], body['outcome_window'])
+        # A later Diagnose navigation is a projection read; it cannot rewrite the
+        # selected scope captured by the public Focus POST.
+        navigation = self.client.get('/api/diagnose/findings', headers=self.headers,
+                                     params={'start_min': 720, 'end_min': 1080})
+        self.assertEqual(navigation.status_code, 200, navigation.text)
+        history = self.client.get('/api/verify/trials', headers=self.headers,
+                                  params={'kind': 'focus', 'selected': pinned['id']})
+        self.assertEqual(history.status_code, 200, history.text)
+        self.assertEqual(history.json()['selected']['original']['context']['outcome_window'],
+                         body['outcome_window'])
 
     def test_pattern_follow_up_reads_serve_the_roster_title_separately_from_context(self):
         with Store.open(self.path) as store:
@@ -318,6 +485,14 @@ class DurableApiTest(unittest.TestCase):
             with store.follow_up_transaction():
                 focus = store.pin_focus("late_bolus", str(pin), pattern_key="highs_after_meals")
                 record = {"kind": "focus", "version": "386:1", **focus,
+                    "decision_context": {"version": "386:1", "state": "available",
+                        "captured_at": str(pin), "input_revision": store.input_data_revision(),
+                        "action": None, "explanation": "Synthetic Pattern Focus.",
+                        "source_window": {"start": "2024-05-01 00:00:00",
+                                          "end": "2024-05-09 00:00:00"},
+                        "policy": "synthetic:1", "subjects": ["pattern:highs_after_meals"],
+                        "occurrences": [], "settings": [], "support": {}, "unknowns": [],
+                        "outcome_window": {"start_min": 17 * 60, "end_min": 19 * 60}},
                     "comparison_context": capture_comparison_context(store, at=pin,
                         input_revision=store.input_data_revision())}
                 store.save_follow_up_record(record)
@@ -328,14 +503,19 @@ class DurableApiTest(unittest.TestCase):
         response = self.client.get("/api/verify/trials", headers=self.headers, params=params)
         self.assertEqual(response.status_code, 200, response.text)
         selected = response.json()["selected"]
-        readiness = selected["reassessment"]["comparison"]["readiness"]
-        self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [12, 12])
-        self.assertTrue(all(r["criterion_met"] for r in readiness.values()))
+        comparison = selected["reassessment"]["comparison"]
+        readiness = comparison["readiness"]
+        self.assertEqual([readiness[arm]["count"] for arm in ("before", "after")], [4, 4])
+        self.assertEqual([comparison["denominators"][arm]["contributing_meals"]
+                          for arm in ("before", "after")], [4, 4])
+        self.assertTrue(all(comparison["denominators"][arm]["readings"] > 0
+                            for arm in ("before", "after")))
+        self.assertTrue(all(not r["criterion_met"] for r in readiness.values()))
         for arm in readiness.values():
             self.assertLessEqual({"unit", "observed", "measured", "unmeasured",
                 "elapsed_days", "required_elapsed_days", "criterion_met",
                 "contributing_dates", "reason", "count", "gate", "verdict"}, arm.keys())
-            self.assertEqual((arm["measured"], arm["unmeasured"]), (12, 0))
+            self.assertEqual((arm["measured"], arm["unmeasured"]), (4, 0))
             self.assertIsNone(arm["required_elapsed_days"])
         self.assertEqual(Path(self.path).read_bytes(), before_bytes)
         with Store.open_readonly(self.path) as store:

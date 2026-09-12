@@ -970,7 +970,7 @@ export const S02 = async (page) => {
     const mid = seen(await state(page));
     is(mid.live, ['brace-b'], 'S02 the moving edge is the live one');
     ok(/^\d\d:\d\d$/.test(mid.readout || ''), `S02 moving edge reads its snapped time (${mid.readout})`);
-    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(mid.chip || ''), `S02 chip follows the gesture (${mid.chip})`);
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(mid.chip || ''), `S02 chip follows the gesture (${mid.chip})`);
     is(mid.braceHidden, false, 'S02 the brace is drawn during the gesture');
     return { mid };
   }, "S02");
@@ -1842,7 +1842,7 @@ async function setupWorkspaceAtFactor(page) {
   const { s } = await waitForReplayAssertion(async seen => {
     const s = seen(await state(page));
     is(s.crumb.length, 2, '#666 setup: drilled to a factor (depth 2)');
-    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(s.chip || ''), `#666 setup: a user window stands (${s.chip})`);
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(s.chip || ''), `#666 setup: a user window stands (${s.chip})`);
     is(s.dock.kind, 'Plan · staged', '#666 setup: staged item survives the drill');
     return { s };
   }, "setupWorkspaceAtFactor");
@@ -1980,7 +1980,7 @@ export const S24 = async (page) => {
     const drawn = seen(await state(page));
     is(drawn.crumb, ['Findings'], 'S24 a drawn window is not a level either');
     ok(/^\d+ in this window$/.test(drawn.crumbMeta), 'S24 drawn scope retains the action-ready meta grammar');
-    ok(/^Window \d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(drawn.chip || ''), `S24 the chip owns the hours (${drawn.chip})`);
     assertNoRangeInMeta(drawn.crumbMeta);
 
     // term 38 — an explicit window is the one door to the demoted register
@@ -2774,13 +2774,13 @@ export const S82 = async (page) => {
   await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
     ok(during.panOffset > 0, 'S82 the day pans left under the right boundary');
-    is(during.chip, 'Window 22:00–02:00', 'S82 the draw reads its wrapped window before release');
+    is(during.chip, '22:00–02:00', 'S82 the draw reads its wrapped window before release');
   }, 'S82 gesture');
   await captureEvidence(page, 'S82-mid-pan-right');
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
-    is((seen(await state(page))).chip, 'Window 22:00–02:00', 'S82 draw right commits across midnight');
+    is((seen(await state(page))).chip, '22:00–02:00', 'S82 draw right commits across midnight');
   }, "S82");
 };
 
@@ -2799,13 +2799,13 @@ export const S83 = async (page) => {
   await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
     ok(during.panOffset < 0, 'S83 the day pans right under the left boundary');
-    is(during.chip, 'Window 23:00–03:00', 'S83 the draw reads its wrapped window before release');
+    is(during.chip, '23:00–03:00', 'S83 the draw reads its wrapped window before release');
   }, 'S83 gesture');
   await captureEvidence(page, 'S83-mid-pan-left');
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
-    is((seen(await state(page))).chip, 'Window 23:00–03:00', 'S83 draw left commits across midnight');
+    is((seen(await state(page))).chip, '23:00–03:00', 'S83 draw left commits across midnight');
   }, "S83");
 };
 
@@ -2820,13 +2820,13 @@ export const S84 = async (page) => {
   await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
     ok(during.panOffset < 0, 'S84 the start grip reaches its target through a leftward pan');
-    is(during.chip, 'Window 23:00–04:45', 'S84 the grip reads its wrapped window before release');
+    is(during.chip, '23:00–04:45', 'S84 the grip reads its wrapped window before release');
   }, 'S84 gesture');
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
     const after = seen(await state(page));
-    is(after.chip, 'Window 23:00–04:45', 'S84 start grip commits across midnight');
+    is(after.chip, '23:00–04:45', 'S84 start grip commits across midnight');
     near(after.gripB, before.gripB, 1, 'S84 the far endpoint remains anchored');
   }, "S84");
 };
@@ -2842,13 +2842,13 @@ export const S85 = async (page) => {
     'right', { past: 120, aim: 24 * 60 + 60 });
   await waitForReplayAssertion(async seen => {
     const during = seen(await state(page));
-    is(during.chip, 'Window 20:00–01:00', 'S85 the grip reads its wrapped window before release');
+    is(during.chip, '20:00–01:00', 'S85 the grip reads its wrapped window before release');
   }, 'S85 gesture');
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
     const after = seen(await state(page));
-    is(after.chip, 'Window 20:00–01:00', 'S85 end grip commits across midnight');
+    is(after.chip, '20:00–01:00', 'S85 end grip commits across midnight');
     near(after.gripA, before.gripA, 1, 'S85 the far endpoint remains anchored');
   }, "S85");
 };
@@ -2872,7 +2872,7 @@ export const S86 = async (page) => {
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
-    is((seen(await state(page))).chip, 'Window 23:00–01:00', 'S86 slide right commits across midnight');
+    is((seen(await state(page))).chip, '23:00–01:00', 'S86 slide right commits across midnight');
   }, "S86");
 };
 
@@ -2891,7 +2891,7 @@ export const S87 = async (page) => {
   await page.mouse.up();
   await settle(page, 500);
   await waitForReplayAssertion(async seen => {
-    is((seen(await state(page))).chip, 'Window 23:00–01:00', 'S87 slide left commits across midnight');
+    is((seen(await state(page))).chip, '23:00–01:00', 'S87 slide left commits across midnight');
   }, "S87");
 };
 
@@ -3282,7 +3282,7 @@ export const issue81SlicedProjection = async (page) => {
   await waitForLevelAnimations(page);
   await waitForReplayAssertion(async seen => {
     const sliced = seen(await state(page));
-    is(sliced.chip, 'Window 04:30–06:00', 'S43 the public brace lands on the intended slice');
+    is(sliced.chip, '04:30–06:00', 'S43 the public brace lands on the intended slice');
     is(sliced.crumbMeta, '1 in this window', 'S43 the slice meta counts its visible action-ready finding');
     is(sliced.queue.map((row) => row.title),
       ['Basal 05:30 · raise', 'ISF'],
@@ -4419,8 +4419,11 @@ export const S142 = async (page) => {
   await openWholeDay(page);
   await waitForReplayAssertion(async seen => {
     const tierWords = seen(await page.locator('#level .tier, #level .qtier').allTextContents());
-    is(tierWords, [TIER.next_in_line, TIER.worth_a_look],
-      'S142 tier words print once at each priced-tier change');
+    const served = seen(await servedRows(page, null));
+    const tierChanges = served.filter((row) => row.priority != null && !row.claimed_by
+      && row.register !== 'history').map((row) => row.tier)
+      .filter((tier, index, tiers) => index === 0 || tier !== tiers[index - 1]).map((tier) => TIER[tier]);
+    is(tierWords, tierChanges, 'S142 tier words print once at each producer-priced tier change');
     ok(tierWords.every((word) => Object.values(TIER).includes(word)),
       'S142 every printed tier word comes from the TIER map');
     ok(!(seen(await page.locator('#level').innerText())).includes('Decide now'),
@@ -4473,8 +4476,10 @@ export const S143 = async (page) => {
 export const S144 = async (page) => {
   await openWholeDay(page);
   await waitForReplayAssertion(async seen => {
-    is(seen(await page.locator('#level .qrow.priced').first().getAttribute('data-id')), 'ic:720',
-      'S144 the unsifted fixture begins with the served I:C row');
+    const served = seen(await servedRows(page, null));
+    const first = served.find((row) => row.priority != null && !row.claimed_by && row.register !== 'history');
+    is(seen(await page.locator('#level .qrow.priced').first().getAttribute('data-id')), first?.id,
+      'S144 the unsifted fixture begins with the server-owned first priced row');
   }, "S144");
   await page.getByRole('button', { name: /Filter/ }).click();
   for (const name of [/^Highs /, /^Lows /, /^Corrections /]) {
@@ -4484,8 +4489,12 @@ export const S144 = async (page) => {
   await settle(page, 450);
   await waitForReplayAssertion(async seen => {
     const priced = page.locator('#level .qrow.priced');
-    is(seen(await priced.count()), 2, 'S144 the meals-only sift retains both served priced rows');
-    is((seen(await priced.first().locator('.lab').innerText())).trim(), 'Highs after meals',
+    const servedMeals = (seen(await servedRows(page, null))).filter((row) => row.priority != null
+      && row.chips?.includes('meals'));
+    const ids = seen(await priced.evaluateAll((nodes) => nodes.map((node) => node.dataset.id)));
+    is(ids, servedMeals.map((row) => row.id),
+      'S144 the meals-only sift retains every served priced meal row in producer order');
+    is((seen(await priced.first().locator('.lab').innerText())).trim(), servedMeals[0]?.title,
       'S144 the served Pattern remains ahead of its claimed member');
     is(seen(await focalId(page)), 'pattern:highs_after_meals',
       'S144 the served Pattern chart moves onto the stage');
@@ -4980,7 +4989,7 @@ export const S107 = async (page) => {
   const chipWindow = async (label) => {
     const { match } = await waitForReplayAssertion(async seen => {
       const chip = (seen(await state(page))).chip || '';
-      const match = /^Window (\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
+      const match = /^(\d\d):(\d\d)–(\d\d):(\d\d)$/.exec(chip);
       ok(Boolean(match), `${label} did not expose a live drawn window: ${chip}`);
       return { match };
     }, "chipWindow");
@@ -5423,6 +5432,7 @@ export const S121 = async (page) => {
   const { analyzer, at } = await waitForReplayAssertion(async seen => {
     const analyzer = FINDINGS_PROJECTION.direction_only_inputs.analysis.isf[0];
     const rows = seen(await page.locator('#level .qrow').evaluateAll((nodes) => nodes.map((node) => ({
+      id: node.dataset.id || '',
       title: node.querySelector('.lab')?.textContent.trim() || '',
       rank: node.querySelector('.n')?.textContent.trim() || '',
       summary: node.querySelector('.sum')?.textContent.trim() || '',
@@ -5432,8 +5442,12 @@ export const S121 = async (page) => {
     const at = rows.findIndex((row) => row.title === 'ISF · weaken');
     ok(at >= 0, 'S121 the direction-only Correction factor warning remains reachable');
     ok(rows.slice(0, at).some((row) => row.rank), 'S121 priced rows precede the warning');
-    ok(rows.slice(at + 1).every((row) => !row.rank),
-      'S121 every remaining row is unpriced in backend order');
+    const served = seen(await servedRows(page, null));
+    const pricedByProducer = served.filter((row) => row.priority != null && !row.claimed_by
+      && row.register !== 'history').map((row) => row.id);
+    const pricedByRail = rows.filter((row) => /^\d+$/.test(row.rank)).map((row) => row.id);
+    is(pricedByRail, pricedByProducer,
+      'S121 rail pricing and order remain exactly producer-owned, including a later served I:C row');
     is(rows[at].register, 'assert', 'S121 the warning remains asserted');
     is(rows[at].tier, 'noted', 'S121 the warning keeps the backend-owned noted tier');
     is(rows[at].rank, '', 'S121 the warning carries no rank numeral');
@@ -5662,7 +5676,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [300, 420]);
   await waitForReplayAssertion(async seen => {
     const drawn1 = seen(await state(page));
-    ok(/^Window /.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(drawn1.chip || ''), `S126 precondition: a drawn window stands (${drawn1.chip})`);
   }, "S126");
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="basal:330-360"] .tile-body').click();
@@ -5677,7 +5691,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [700, 900]);
   await waitForReplayAssertion(async seen => {
     const drawn2 = seen(await state(page));
-    ok(/^Window /.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(drawn2.chip || ''), 'S126 the window is drawn again for the carb-ratio check');
   }, "S126");
   await openAllCharts(page);
   await page.locator('#tile-row .evidence-tile[data-chart-id="ic:720"] .tile-body').click();
@@ -5693,7 +5707,7 @@ export const S126 = async (page) => {
   await drawWindow(page, [540, 660]);
   const { drawn3 } = await waitForReplayAssertion(async seen => {
     const drawn3 = seen(await state(page));
-    ok(/^Window /.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
+    ok(/^\d\d:\d\d–\d\d:\d\d$/.test(drawn3.chip || ''), 'S126 the window is drawn a third time for the correction-factor check');
     return { drawn3 };
   }, "S126");
   await captureEvidence(page, 'S126-before-isf-chart-click');
@@ -5866,18 +5880,21 @@ export const S156 = (page) => sequenceDrill(page, 'repeat_eating');
 export const S157 = async (page) => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
     const input = await sequenceState(page, `${lever}_empty`);
-    const source = input.windows.global.preparation.rendered_rows.find((r) => r.lever === lever);
+    const expected = input.windows['0-360'].preparation.rendered_rows;
     await page.getByRole('button', { name: 'Overnight', exact: true }).click();
     await settle(page, 500);
     await waitForReplayAssertion(async seen => {
       const rows = seen(await servedRows(page, [0, 360]));
-      ok(!rows.some((r) => r.kind === 'pattern'), 'scoped query omits whole-feed Patterns');
-      const cause = rows.find((r) => r.id === source.id);
-      ok(cause && !cause.claimed_by, 'witnessed scoped cause remains without an orphan parent');
-      is(cause.priority, source.priority, 'source-window Priority is stable');
-      const node = page.locator(`#level .qrow[data-id="${source.id}"]`);
-      is(seen(await node.count()), 1, 'witnessed scoped cause renders');
-      is(seen(await page.locator('#level .qitem.claimed').count()), 0, 'scoped rail invents no nesting');
+      const shape = list => list.map(row => ({ id: row.id, kind: row.kind, priority: row.priority,
+        claimed_by: row.claimed_by, window: row.pattern_chart?.window || row.event_chart?.window || null }));
+      is(shape(rows), shape(expected), 'the scoped producer population owns its Pattern roster and child ownership');
+      const ids = seen(await page.locator('#level .qrow').evaluateAll(nodes => nodes.map(node => node.dataset.id)));
+      is(ids, expected.filter(row => row.register !== 'blind').map(row => row.id),
+        'the rail renders exactly the scoped producer parents and nested children, never global-only rows');
+      for (const row of expected.filter(row => row.claimed_by)) {
+        const parent = rows.find(candidate => candidate.id === row.claimed_by);
+        ok(parent?.kind === 'pattern', `scoped child ${row.id} retains its served Pattern parent`);
+      }
     }, "S157");
   }
 };

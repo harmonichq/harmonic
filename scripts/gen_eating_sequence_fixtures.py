@@ -153,7 +153,11 @@ def compact_findings_payload(body):
     def count(value):
         if isinstance(value, (dict, list)):
             key = identity(value)
-            if len(key) > 120:
+            # The two served windows repeat many short, structured case headers.
+            # Intern them as well as the larger case files: expansion restores the
+            # same public producer output, while the committed synthetic transport
+            # remains below its fixed fixture-size budget.
+            if len(key) > 40:
                 counts[key] += 1
             for child in value.values() if isinstance(value, dict) else value:
                 count(child)

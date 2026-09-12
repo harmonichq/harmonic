@@ -38,21 +38,22 @@ test('serves the built document, page paths, and existing assets only', () => {
   } finally { clean(); }
 });
 
-// #389: the harness serves the same closed set the Python policy does, so a v2
-// route the server never added cannot pass here.
+// #404: the harness serves the same closed set the Python policy does.
 test('serves the v2 desk at its own page path and asset prefix', () => {
   const { dist, distV2, clean } = builds();
   try {
     const shell = createBuiltShell({ dist, distV2 });
-    assert.equal(shell.serve('/v2/').body.toString(), '<main>desk</main>');
+    for (const path of ['/v2/', '/v2/diagnose', '/v2/changes', '/v2/day']) {
+      assert.equal(shell.serve(path).body.toString(), '<main>desk</main>');
+    }
     assert.equal(shell.serve('/v2/assets/desk.js').contentType, 'text/javascript');
     assert.equal(shell.serve('/v2/assets/missing.js'), null);
     // The two surfaces stay separate: neither prefix reaches the other's build.
     assert.equal(shell.serve('/assets/desk.js'), null);
     assert.equal(shell.serve('/v2/assets/app.js'), null);
-    // Not a page path: the desk's destinations are query state, not paths.
+    // The base without its trailing slash and unknown destinations stay closed.
     assert.equal(shell.serve('/v2'), null);
-    assert.equal(shell.serve('/v2/day'), null);
+    assert.equal(shell.serve('/v2/unknown'), null);
     assert.equal(shell.serve('/v2/assets/../index.html'), null);
   } finally { clean(); }
 });

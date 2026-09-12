@@ -88,12 +88,9 @@ export function writeRoute(route, { location = window.location, history = window
 // The v2 desk's address (#389). It extends this module rather than forking it:
 // one owner parses and serializes every address the app answers.
 //
-// v1 puts its page in the PATH because the server serves a page path per tab.
-// The v2 desk is served at one path, `/v2/`, and its three destinations are
-// query state — which is also where the contextual Day entry's own context
-// belongs, since HV2-14 makes that context frontend-owned route state rather
-// than a backend payload. Adding `/v2/<destination>` paths would widen the
-// server's closed non-API route set for no gain.
+// The v2 desk keeps its contextual entry in the query, but names the current
+// destination in the path. Old `?to=` links stay readable; an explicit path
+// wins when both are present.
 // ---------------------------------------------------------------------------
 export const V2_PAGE = '/v2/';
 export const V2_DESTINATIONS = ['diagnose', 'changes', 'day'];
@@ -108,23 +105,25 @@ export function resolveDestination(destination) {
   return V2_DESTINATIONS.includes(destination) ? destination : V2_DEFAULT_DESTINATION;
 }
 
-export function parseV2Route({ search = '' } = {}) {
+export function parseV2Route({ pathname = V2_PAGE, search = '' } = {}) {
   const params = new URLSearchParams(search);
   const context = {};
   for (const key of V2_CONTEXT_KEYS) {
     const value = params.get(key);
     if (value) context[key] = value;
   }
-  return { destination: resolveDestination(params.get('to')), context };
+  const pathDestination = pathname.startsWith(V2_PAGE)
+    ? pathname.slice(V2_PAGE.length).replace(/\/$/, '') : '';
+  return { destination: resolveDestination(pathDestination || params.get('to')), context };
 }
 
 export function serializeV2Route({ destination, context = {} } = {}) {
   const params = new URLSearchParams();
-  params.set('to', resolveDestination(destination));
   for (const key of V2_CONTEXT_KEYS) {
     if (context[key]) params.set(key, context[key]);
   }
-  return `${V2_PAGE}?${params.toString()}`;
+  const query = params.toString();
+  return `${V2_PAGE}${resolveDestination(destination)}${query ? `?${query}` : ''}`;
 }
 
 export function subscribeRoute(listener, browser = window, parse = parseRoute) {

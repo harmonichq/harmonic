@@ -395,7 +395,7 @@ function planFrame(candidate) {
   // Once the decision is recorded there is nothing left to save; what remains is
   // the pump, and — while it is still pending — the way to take it back.
   const end = record
-    ? '<button class="gf-btn" data-set="withdraw">Withdraw</button>'
+    ? '<button class="gf-btn" data-set="withdraw">Withdraw</button><button class="gf-btn" data-action="history">View change record</button>'
     : records().length
       ? ''
       : '<button class="gf-btn" data-set="save-draft">Save draft</button><button class="gf-btn primary" data-set="record">Record decision</button>';
@@ -459,6 +459,8 @@ function idleFrame() {
 /* --------------------------------------------------------------- the wiring */
 
 function bind(host) {
+  const history = host.querySelector('[data-action="history"]');
+  if (history) history.onclick = () => navigate('changes', { subject: 'history' });
   for (const button of host.querySelectorAll('[data-set]')) {
     button.onclick = () => {
       const action = button.dataset.set;

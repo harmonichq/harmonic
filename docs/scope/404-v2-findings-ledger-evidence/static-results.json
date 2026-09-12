@@ -1,0 +1,286 @@
+{
+  "application_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+  "note": "Latest applicable receipt per gate; each check retains its exact tested commit. The backend and unaffected synthetic generators were not repeated for frontend-only design corrections. The initial generator-3 provenance drift is superseded by its passing check. Public-tree export, links and contamination checks pass on the final application commit.",
+  "checks": [
+    {
+      "name": "install-build",
+      "command": "npm ci && npm run build",
+      "exit_code": 0,
+      "seconds": 1.93,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "static-opus-day",
+      "raw_log": "static-logs/install-build.log"
+    },
+    {
+      "name": "sync",
+      "command": "uv sync --frozen --extra api --extra sync",
+      "exit_code": 0,
+      "seconds": 0.07,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/sync.log"
+    },
+    {
+      "name": "backend",
+      "command": "uv run python -m pytest",
+      "exit_code": 0,
+      "seconds": 530.91,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/backend.log"
+    },
+    {
+      "name": "frontend",
+      "command": "node --test 'frontend/**/*.test.js' 'frontend-v2/**/*.test.js'",
+      "exit_code": 0,
+      "seconds": 1.42,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/frontend.log"
+    },
+    {
+      "name": "openspec",
+      "command": "npx --yes @fission-ai/openspec@1 validate --all --strict",
+      "exit_code": 0,
+      "seconds": 1.1,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/openspec.log"
+    },
+    {
+      "name": "adr",
+      "command": "python3 scripts/check_adr_numbers.py",
+      "exit_code": 0,
+      "seconds": 0.06,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/adr.log"
+    },
+    {
+      "name": "identifiers",
+      "command": "python3 scripts/check_owned_identifiers.py",
+      "exit_code": 0,
+      "seconds": 0.03,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/identifiers.log"
+    },
+    {
+      "name": "allowlist",
+      "command": "python3 scripts/check_public_allowlist.py",
+      "exit_code": 0,
+      "seconds": 0.04,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/allowlist.log"
+    },
+    {
+      "name": "acceptance-contract",
+      "command": "uv run python mockups/sweep/harmonic-v2-desktop/acceptance.test.py",
+      "exit_code": 0,
+      "seconds": 4.18,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "static-s107-final",
+      "raw_log": "static-logs/acceptance-contract.log"
+    },
+    {
+      "name": "guidance-plan",
+      "command": "node scripts/check_guidance_plan_contract.mjs",
+      "exit_code": 0,
+      "seconds": 1.44,
+      "tested_commit": "6a8d97e8577ffa89e1668b04c2f19665a66337be",
+      "run": "static-opus",
+      "raw_log": "static-logs/guidance-plan.log"
+    },
+    {
+      "name": "screenshot-wrapper",
+      "command": "node --test scripts/screenshots.local.test.mjs",
+      "exit_code": 0,
+      "seconds": 0.2,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/screenshot-wrapper.log"
+    },
+    {
+      "name": "event-capture",
+      "command": "node mockups/diagnose-event-comparison.synthetic/generate.mjs --check",
+      "exit_code": 0,
+      "seconds": 0.04,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "static-opus-day",
+      "raw_log": "static-logs/event-capture.log"
+    },
+    {
+      "name": "finding-exploration",
+      "command": "node mockups/finding-evidence-routing.exploration/build.mjs --check",
+      "exit_code": 0,
+      "seconds": 0.06,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "static-opus-day",
+      "raw_log": "static-logs/finding-exploration.log"
+    },
+    {
+      "name": "generator-1",
+      "command": "uv run python scripts/gen_ic_block_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.56,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-1.log"
+    },
+    {
+      "name": "generator-2",
+      "command": "uv run python mockups/diagnose-evidence-canvas.exploration/generate.py --check",
+      "exit_code": 0,
+      "seconds": 0.05,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "static-opus-day",
+      "raw_log": "static-logs/generator-2.log"
+    },
+    {
+      "name": "generator-3",
+      "command": "uv run python mockups/harmonic-v2.exploration/generate.py --check",
+      "exit_code": 0,
+      "seconds": 80.66,
+      "tested_commit": "1a2acbd4d154386a896926508a6114e35bcd28d7",
+      "run": "static-opus-day",
+      "raw_log": "static-logs/generator-3.log"
+    },
+    {
+      "name": "generator-4",
+      "command": "uv run python scripts/gen_annotation_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.12,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-4.log"
+    },
+    {
+      "name": "generator-5",
+      "command": "uv run python scripts/gen_chart_builder_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 2.31,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-5.log"
+    },
+    {
+      "name": "generator-6",
+      "command": "uv run python scripts/check_demo_fixtures.py",
+      "exit_code": 0,
+      "seconds": 0.8,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-6.log"
+    },
+    {
+      "name": "generator-7",
+      "command": "uv run python scripts/gen_qa_e2e_db.py --check",
+      "exit_code": 0,
+      "seconds": 0.22,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-7.log"
+    },
+    {
+      "name": "generator-8",
+      "command": "uv run python scripts/gen_findings_projection_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 7.4,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-8.log"
+    },
+    {
+      "name": "generator-9",
+      "command": "uv run python scripts/gen_ic_history_event_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.16,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-9.log"
+    },
+    {
+      "name": "generator-10",
+      "command": "uv run python scripts/gen_ic_block_evidence_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.15,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-10.log"
+    },
+    {
+      "name": "generator-11",
+      "command": "uv run python scripts/gen_basal_night_evidence_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.42,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-11.log"
+    },
+    {
+      "name": "generator-12",
+      "command": "uv run python scripts/gen_isf_rest_window_evidence_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.23,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-12.log"
+    },
+    {
+      "name": "generator-13",
+      "command": "uv run python scripts/gen_missed_meal_comparison_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 0.12,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-13.log"
+    },
+    {
+      "name": "generator-14",
+      "command": "uv run python scripts/gen_eating_sequence_fixtures.py --check",
+      "exit_code": 0,
+      "seconds": 15.28,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/generator-14.log"
+    },
+    {
+      "name": "case-cache",
+      "command": "uv run python mockups/sweep/harmonic-v2-desktop/acceptance.py case-cache --check --out /private/tmp/harmonic-404-final-verification/static-final-24h/case-cache",
+      "exit_code": 0,
+      "seconds": 9.54,
+      "tested_commit": "386357e24813f8a57238b13f1e2d09eb693fb6aa",
+      "run": "static-final-24h",
+      "raw_log": "static-logs/case-cache.log"
+    },
+    {
+      "name": "public-build",
+      "command": "python3 scripts/build_public_tree.py /private/tmp/harmonic-404-final-verification/public-s107-final/public-tree",
+      "exit_code": 0,
+      "seconds": 0.18,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "public-s107-final",
+      "raw_log": "static-logs/public-build.log"
+    },
+    {
+      "name": "public-links",
+      "command": "python3 scripts/check_public_links.py /private/tmp/harmonic-404-final-verification/public-s107-final/public-tree",
+      "exit_code": 0,
+      "seconds": 0.31,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "public-s107-final",
+      "raw_log": "static-logs/public-links.log"
+    },
+    {
+      "name": "public-scan",
+      "command": "python3 scripts/scan_public_tree.py /private/tmp/harmonic-404-final-verification/public-s107-final/public-tree",
+      "exit_code": 0,
+      "seconds": 24.53,
+      "tested_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650",
+      "run": "public-s107-final",
+      "raw_log": "static-logs/public-scan.log"
+    }
+  ],
+  "replay_commit": "81cc47de1b1863a729c29e3de2e0ec9d55739650"
+}

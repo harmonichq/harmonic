@@ -37,6 +37,7 @@ const stylesheets = [
     .map(([, css], index) => ({ name: `index.html:<style>[${index}]`, css })),
 ];
 const painter = readFileSync(new URL('./diagnose-workstation.js', import.meta.url), 'utf8');
+const roster = readFileSync(new URL('./occurrence-roster.js', import.meta.url), 'utf8');
 
 // Only the properties that make a box: what turns an inline run of text into a
 // laid-out one, and what adds height to it above its own line.
@@ -97,4 +98,12 @@ test('the case-file roster\'s numeric cell keeps its compact box (#31)', () => {
     'no unscoped `.entry` rule may give the evidence cell a box — it is an '
     + 'inline cell in a 4px-padded row, not a grid button with padding and '
     + 'a border on both edges');
+  assert.match(roster, /case-compact/,
+    'the shared roster marks its compact two-column evidence rows explicitly');
+  assert.match(stylesheets.find(({ name }) => name === 'diagnose-workstation.css').css,
+    /\.ev-row\.case-compact\s*\{[\s\S]*?--ev-only-column:\s*2;[\s\S]*?--ev-tier-column:\s*3;/,
+    'the row, rather than the inline numeric cell, owns its compact grid placement');
+  assert.doesNotMatch(stylesheets.find(({ name }) => name === 'diagnose-workstation.css').css,
+    /\.ev-row:has\(\.only\)/,
+    'the cell class never doubles as the selector that owns its parent geometry');
 });

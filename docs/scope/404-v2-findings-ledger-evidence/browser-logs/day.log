@@ -1,0 +1,11 @@
+✔ a cold Day hash mounts only the status-clamped day and fetches its timeline once (593.423875ms)
+✔ rapid back-navigation cancels the days stepped through, not just the one landed on (1152.584958ms)
+✔ Day navigator names mixed excursions in both tile summaries (370.361542ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2129.986209

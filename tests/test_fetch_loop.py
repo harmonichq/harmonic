@@ -126,18 +126,19 @@ class RunFetchOnceTest(unittest.TestCase):
         self.assertIsNotNone(run_fetch_once(self.tmp.name))
 
     @patch("ciq_autotune.sync.pull_from_tconnect")
-    def test_failure_that_committed_nothing_returns_none(self, mock_pull):
-        # Both failure branches, because record_fetch_result advances the
-        # revision itself: read after it, "the revision advanced" is always true
-        # and every bad-credential run would clear the cache and re-warm, hourly,
-        # forever (#146). Neither side effect here writes anything.
+    def test_failure_that_committed_nothing_returns_none_but_reconciles_status_revision(self, mock_pull):
+        # Status-only failures preserve the no-row return sentinel, while the
+        # frontier still catches up to their durable input revision (#404).
+        from unittest.mock import patch
         mock_pull.side_effect = PartialFetchError(
             RuntimeError("network blip"), written={"cgm_readings": 7},
             windows_completed=2, windows_total=5,
             failed_window=("2026-02-01", "2026-03-03"))
-        self.assertIsNone(run_fetch_once(self.tmp.name))
-        mock_pull.side_effect = RuntimeError("no creds")
-        self.assertIsNone(run_fetch_once(self.tmp.name))
+        with patch("ciq_autotune.watched_change.reconcile_ingested_follow_up") as reconcile:
+            self.assertIsNone(run_fetch_once(self.tmp.name))
+            mock_pull.side_effect = RuntimeError("no creds")
+            self.assertIsNone(run_fetch_once(self.tmp.name))
+        self.assertEqual(reconcile.call_count, 2)
 
     @patch("ciq_autotune.sync.pull_from_tconnect")
     def test_unexpected_exception_also_recorded_not_raised(self, mock_pull):

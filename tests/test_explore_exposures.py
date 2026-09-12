@@ -100,11 +100,20 @@ class ExploreExposuresTest(unittest.TestCase):
             self.assertEqual(set(family["levers"]), set(levers))
             self.assertEqual(len(family["levers"]), len(set(family["levers"])))
             for occurrence in occurrences:
-                self.assertEqual(set(occurrence), {
+                expected_keys = {
                     "t", "date", "bg", "worst_bg", "kind", "label", "state",
                     "attributed", "attributed_levers", "cause_lever", "cause_title",
                     "text", "verdicts", "ep_id",
-                })
+                }
+                optional_keys = set(occurrence) - expected_keys
+                self.assertIn(optional_keys, (
+                    set(), {"outcome_minute"},
+                    {"cause_occurrence_id", "outcome_minute"},
+                ))
+                if "outcome_minute" in occurrence:
+                    self.assertIsInstance(occurrence["outcome_minute"], int)
+                    self.assertGreaterEqual(occurrence["outcome_minute"], 0)
+                    self.assertLess(occurrence["outcome_minute"], 24 * 60)
                 self.assertEqual(occurrence["attributed"], occurrence["state"] == "fired")
                 for verdict in occurrence["verdicts"]:
                     self.assertEqual(set(verdict), {

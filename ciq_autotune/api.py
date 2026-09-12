@@ -99,6 +99,7 @@ _FRONTEND_V2_INDEX = _FRONTEND_V2_DIST / "index.html"
 _FRONTEND_V2_ASSETS = _FRONTEND_V2_DIST / "assets"
 V2_PAGE = "/v2/"
 V2_ASSETS = "/v2/assets"
+V2_DESTINATION_PAGES = tuple(f"{V2_PAGE}{destination}" for destination in ("diagnose", "changes", "day"))
 
 # #269 Guide-KB: the authored how-tos live as markdown here, served raw by
 # ``/api/kb/{slug}``. ``slug`` is restricted to this charset so a request can
@@ -183,6 +184,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 )
             except Exception:
                 logger.exception("Pattern subject migration remains pending")
+        # A prior local write can leave the frontier behind the durable input
+        # revision (for example, a carb-log write before #404). Recover through
+        # the existing transactional reconciler; GET handlers remain read-only
+        # and this does not invent a Focus admission.
+        frontier = store.follow_up_frontier()
+        if frontier and frontier["reconciled_input_revision"] != store.input_data_revision():
+            from .watched_change import reconcile_ingested_follow_up
+            reconcile_ingested_follow_up(store)
     if migrated_patterns:
         cache.bump()
     frontend_built = _FRONTEND_INDEX.is_file()
@@ -574,6 +583,9 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         app.add_api_route(f"/{_page}", index, methods=["GET"])
 
     @app.get(V2_PAGE)
+    @app.get("/v2/diagnose")
+    @app.get("/v2/changes")
+    @app.get("/v2/day")
     def index_v2():
         return built_shell(_FRONTEND_V2_INDEX)
 
@@ -583,7 +595,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     async def _frontend_no_store(request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if path == "/" or path == V2_PAGE or path.lstrip("/") in SPA_PAGES:
+        if path == "/" or path == V2_PAGE or path in V2_DESTINATION_PAGES or path.lstrip("/") in SPA_PAGES:
             response.headers["Cache-Control"] = "no-cache"
         elif (path.startswith("/assets/") or path.startswith(f"{V2_ASSETS}/")) \
                 and response.status_code == 200:
@@ -1314,6 +1326,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except (KeyError, TypeError, ValueError) as e:
             raise HTTPException(status_code=400, detail=f"invalid carb entry: {e}")
 
+    def reconcile_carb_write(store) -> None:
+        """Finish a carb/prompt write against the current Follow-up frontier."""
+        from .watched_change import reconcile_ingested_follow_up
+        reconcile_ingested_follow_up(store)
+
     @app.get("/api/carbs")
     def list_carbs_endpoint(start: Optional[datetime] = None,
                             end: Optional[datetime] = None,
@@ -1328,25 +1345,37 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def create_carb_endpoint(payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
         entry = _carb_entry_from_payload(payload)
-        with Store.open(db_path) as store:
-            new_id = store.upsert_carb_entry(entry)
-            result = store.get_carb_entry(new_id)
-        cache.bump()  # carb entries feed /api/analyze's fasting-ISF exclusion (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                new_id = store.upsert_carb_entry(entry)
+                committed = True
+                reconcile_carb_write(store)
+                result = store.get_carb_entry(new_id)
+        finally:
+            if committed:
+                cache.bump()  # a committed write stays invalidated if reconcile fails
         return result
 
     @app.patch("/api/carbs/{entry_id}")
     def update_carb_endpoint(entry_id: int, payload: dict = Body(...),
                              _: None = Depends(require_token)) -> dict:
-        with Store.open(db_path) as store:
-            existing = store.get_carb_entry(entry_id)
-            if existing is None:
-                raise HTTPException(status_code=404, detail="carb entry not found")
-            # PATCH is a partial merge over the stored row (source/created_at are
-            # preserved unless explicitly overridden), re-validated as a whole.
-            entry = _carb_entry_from_payload({**existing, **payload})
-            store.upsert_carb_entry(entry, id=entry_id)
-            result = store.get_carb_entry(entry_id)
-        cache.bump()  # (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                existing = store.get_carb_entry(entry_id)
+                if existing is None:
+                    raise HTTPException(status_code=404, detail="carb entry not found")
+                # PATCH is a partial merge over the stored row (source/created_at are
+                # preserved unless explicitly overridden), re-validated as a whole.
+                entry = _carb_entry_from_payload({**existing, **payload})
+                store.upsert_carb_entry(entry, id=entry_id)
+                committed = True
+                reconcile_carb_write(store)
+                result = store.get_carb_entry(entry_id)
+        finally:
+            if committed:
+                cache.bump()
         return result
 
     @app.delete("/api/carbs/{entry_id}")
@@ -1354,11 +1383,18 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                              _: None = Depends(require_token)) -> dict:
         # Deleting a prompt-sourced entry cascades its prompt_responses row away
         # (the #125 store rule) so the sourcing prompt resurrects.
-        with Store.open(db_path) as store:
-            n = store.delete_carb_entry(entry_id)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                n = store.delete_carb_entry(entry_id)
+                committed = bool(n)
+                if n:
+                    reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()
         if n == 0:
             raise HTTPException(status_code=404, detail="carb entry not found")
-        cache.bump()  # (#267)
         return {"deleted": n}
 
     # --- carb-log prompt review queue (#128) -------------------------------
@@ -1397,27 +1433,33 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=400, detail="anchor_t is required")
         anchor_t = parse_t(raw_anchor) if isinstance(raw_anchor, str) else raw_anchor
 
-        with Store.open(db_path) as store:
-            # Idempotent per (detector, anchor_t): clear any prior answer first so
-            # re-answering (revise) never leaves a duplicate/stale response row.
-            store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
-            if answer == "carbs":
-                # The carbs answer's source and time are server-authoritative: the
-                # entry is pinned to the anchor and tagged rise-prompt / low-prompt,
-                # regardless of what the #126 sheet echoes back.
-                entry_payload = dict(payload.get("entry") or {})
-                entry_payload["t"] = anchor_t
-                entry_payload["source"] = SOURCE_BY_DETECTOR[detector]
-                entry = _carb_entry_from_payload(entry_payload)
-                carb_id, resp_id = store.record_carb_entry_with_response(
-                    entry, detector=detector, anchor_t=anchor_t, answer="carbs")
-                result = {"answer": "carbs", "carb_entry_id": carb_id,
-                          "prompt_response_id": resp_id}
-            else:
-                resp_id = store.record_prompt_response(
-                    detector=detector, anchor_t=anchor_t, answer=answer)
-                result = {"answer": answer, "prompt_response_id": resp_id}
-        cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                # Idempotent per (detector, anchor_t): clear any prior answer first so
+                # re-answering (revise) never leaves a duplicate/stale response row.
+                store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
+                if answer == "carbs":
+                    # The carbs answer's source and time are server-authoritative: the
+                    # entry is pinned to the anchor and tagged rise-prompt / low-prompt,
+                    # regardless of what the #126 sheet echoes back.
+                    entry_payload = dict(payload.get("entry") or {})
+                    entry_payload["t"] = anchor_t
+                    entry_payload["source"] = SOURCE_BY_DETECTOR[detector]
+                    entry = _carb_entry_from_payload(entry_payload)
+                    carb_id, resp_id = store.record_carb_entry_with_response(
+                        entry, detector=detector, anchor_t=anchor_t, answer="carbs")
+                    result = {"answer": "carbs", "carb_entry_id": carb_id,
+                              "prompt_response_id": resp_id}
+                else:
+                    resp_id = store.record_prompt_response(
+                        detector=detector, anchor_t=anchor_t, answer=answer)
+                    result = {"answer": answer, "prompt_response_id": resp_id}
+                committed = True
+                reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()  # an answered prompt changes the carb-exclusion set (#267)
         return result
 
     @app.delete("/api/prompts/answer")
@@ -1435,9 +1477,16 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         if raw_anchor is None:
             raise HTTPException(status_code=400, detail="anchor_t is required")
         anchor_t = parse_t(raw_anchor) if isinstance(raw_anchor, str) else raw_anchor
-        with Store.open(db_path) as store:
-            n = store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
-        cache.bump()  # (#267)
+        committed = False
+        try:
+            with Store.open(db_path) as store:
+                n = store.clear_prompt_response(detector=detector, anchor_t=anchor_t)
+                committed = bool(n)
+                if n:
+                    reconcile_carb_write(store)
+        finally:
+            if committed:
+                cache.bump()
         return {"cleared": n}
 
     @app.get("/api/report")
@@ -1521,9 +1570,11 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 raise HTTPException(status_code=422, detail=f"invalid {key}")
         return True
 
-    def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False):
+    def lifecycle(operation, kind, identity, payload, *, durable, mutate, creation=False,
+                  reconcile=True):
         from .store import FollowUpConflict, FocusAlreadyActive
-        from .watched_change import reconcile_follow_up
+        if reconcile:
+            from .watched_change import reconcile_follow_up
 
         def retry(store):
             if not durable:
@@ -1541,7 +1592,14 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                           or "habit:" + receipt["result"]["record"]["lever"])
                 if actual != expected:
                     raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+                scope = (receipt["result"]["record"].get("decision_context") or {}).get("outcome_window")
+                if scope != payload.get("outcome_window"):
+                    raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             if operation == "apply" and payload["subject"] not in receipt["result"]["record"]["decision_context"]["subjects"]:
+                raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
+            if (operation == "conclude"
+                    and receipt["result"]["record"]["late_conclusion"]["conclusion"]
+                    != payload["conclusion"]):
                 raise FollowUpConflict("request_identity_mismatch", store.input_data_revision())
             return receipt["result"]
 
@@ -1551,6 +1609,10 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 if operation == "withdraw" and record["withdrawal"].get("state") == "available":
                     return record
                 if operation in ("finish", "resolve") and "kind" in record["ending"]:
+                    return record
+                if operation == "conclude" and record.get("late_conclusion", {}).get("state") == "available":
+                    if record["late_conclusion"]["conclusion"] != payload["conclusion"]:
+                        raise FollowUpConflict("late_conclusion_mismatch", store.input_data_revision())
                     return record
             return None
 
@@ -1577,7 +1639,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                             raise FollowUpConflict("stale_source", store.input_data_revision())
                         now = _latest_instant(store) or datetime.now()
                         recorded_at = datetime.now()
-                        admission = reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                        admission = (reconcile_follow_up(store, now=now, recorded_at=recorded_at)
+                                     if reconcile else None)
                         record = mutate(store, admission, source, now, recorded_at)
                     # Saving a new retry receipt is itself a durable write. Reserve
                     # its revision before capturing the returned common verdict.
@@ -1585,7 +1648,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                     if durable and revision == before:
                         revision += 1
                     frontier = store.follow_up_frontier()
-                    if frontier is not None:
+                    if reconcile and frontier is not None:
                         store.advance_follow_up_frontier(frontier["trial_id"], frontier["detected_at"],
                                                          reconciled_input_revision=store.input_data_revision())
                     result = {**{key: record[key] for key in (
@@ -1608,7 +1671,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error))
 
-    def source_context(source, candidate, recorded_at):
+    def source_context(source, candidate, recorded_at, *, outcome_window=None):
         from .guidance import COMPARISON_VERSION
         actions = candidate["action"] if isinstance(candidate.get("action"), list) else []
         return {"version": "386:1", "state": "available",
@@ -1619,7 +1682,8 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
                 "subjects": [candidate["subject"]], "occurrences": candidate["occurrence_ids"],
                 "settings": [{"value": action["recommended"], "unit": action["units"]}
                              for action in actions],
-                "support": candidate["support"], "unknowns": candidate["unknowns"]}
+                "support": candidate["support"], "unknowns": candidate["unknowns"],
+                **({"outcome_window": outcome_window} if outcome_window is not None else {})}
 
     def selected_source(store, source, payload, subject, durable):
         from .store import FollowUpConflict
@@ -1746,6 +1810,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
         from .follow_up_comparison import capture_comparison_context
         durable = durable_request(payload, creation=True)
         lever, pattern_key = payload.get("lever"), payload.get("pattern_key")
+        scope = payload.get("outcome_window")
         if pattern_key is not None:
             if not isinstance(pattern_key, str):
                 raise HTTPException(status_code=422, detail="pattern_key must be a string")
@@ -1762,6 +1827,36 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             raise HTTPException(status_code=422, detail="lever required")
         if not is_pinnable(lever, pattern_key):
             raise HTTPException(status_code=400, detail=f"{lever!r} is not a pinnable behavioral lever")
+        if pattern_key is not None:
+            from .window_membership import WindowQuery
+            if not isinstance(scope, dict) or set(scope) != {"start_min", "end_min"}:
+                raise HTTPException(status_code=422, detail="Pattern Focus requires an outcome window")
+            try:
+                scope = WindowQuery.clock(scope["start_min"], scope["end_min"]).to_dict()
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
+            scope = {key: scope[key] for key in ("start_min", "end_min")}
+            # Scope admission uses the same producer-owned Pattern population
+            # the Diagnose case showed. The global guidance row still supplies
+            # copy and the durable source generation; it cannot waive a scoped
+            # readiness verdict or derive membership in this endpoint.
+            try:
+                generation, snapshot = history_snapshot(
+                    findings_projection_module.DIAGNOSE_SOURCE_WINDOW_DAYS)
+                scoped = snapshot[0].project(
+                    WindowQuery.clock(scope["start_min"], scope["end_min"]),
+                    analysis_generation=generation,
+                )
+                # A Pattern may intentionally collapse to its served habit row
+                # in the reading queue. Admission still belongs to the scoped
+                # Pattern producer, whose roster survives that presentation.
+                scoped_pattern = next((row for row in scoped["outcome_patterns"]
+                                       if row.get("key") == pattern_key), None)
+            except ResultCache.GenerationChanged as error:
+                raise HTTPException(status_code=409, detail="Pattern evidence changed. Refresh findings.") from error
+            if (scoped_pattern is None
+                    or scoped_pattern.get("readiness", {}).get("verdict") != "ready"):
+                raise HTTPException(status_code=409, detail="Pattern Focus is not ready in this outcome window")
         def pin(store, admission, source, now, at):
             if not admission["focus_pin"]["available"]:
                 raise FollowUpConflict("occupied_admission", store.input_data_revision())
@@ -1780,7 +1875,7 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
             focus = store.pin_focus(lever, at.strftime("%Y-%m-%d %H:%M:%S"), pattern_key)
             return store.save_follow_up_record({"kind": "focus", "id": focus["id"], "version": "386:1", **focus,
                 **({"subject": subject} if pattern_key else {}),
-                "decision_context": source_context(source, candidate, at),
+                "decision_context": source_context(source, candidate, at, outcome_window=scope),
                 "comparison_context": capture_comparison_context(store, at=at, input_revision=store.input_data_revision())})
         return lifecycle("pin", "focus", None, payload, durable=durable, mutate=pin, creation=True)
 
@@ -1813,6 +1908,27 @@ def create_app(db_path: Optional[str] = None, token: Optional[str] = None,
     def finish_trial_endpoint(trial_id: str, payload: dict = Body(...),
                               _: None = Depends(require_token)) -> dict:
         return finish_follow_up("trial", trial_id, payload, durable_request(payload, required=True))
+
+    @app.post("/api/verify/trials/{trial_id}/conclusion")
+    def conclude_trial_endpoint(trial_id: str, payload: dict = Body(...),
+                                _: None = Depends(require_token)) -> dict:
+        from .store import FollowUpConflict
+        durable_request(payload, required=True)
+        if not isinstance(payload.get("conclusion"), str) or not payload["conclusion"].strip():
+            raise HTTPException(status_code=422, detail="late conclusion requires text")
+        def conclude(store, admission, source, now, at):
+            record = store.follow_up_record("trial", trial_id)
+            if record is None:
+                raise HTTPException(status_code=404, detail="unknown follow-up identity")
+            if record["ending"].get("kind") != "expired_unreviewed":
+                raise FollowUpConflict("trial_not_expired", store.input_data_revision())
+            return store.save_follow_up_record({**record, "late_conclusion": {
+                "version": "386:1", "state": "available",
+                "recorded_at": at.strftime("%Y-%m-%d %H:%M:%S"),
+                "conclusion": payload["conclusion"],
+            }})
+        return lifecycle("conclude", "trial", trial_id, payload, durable=True, mutate=conclude,
+                         reconcile=False)
 
     def signal_recompute() -> None:
         """Invalidate after a fetch and notify the lifespan-owned worker.

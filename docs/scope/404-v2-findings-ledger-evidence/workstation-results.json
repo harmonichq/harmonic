@@ -1,0 +1,11 @@
+{
+  "commit": "277b29fde33b721665b2b273da1bd117a34342e0",
+  "checks": [
+    {
+      "name": "workstation-ledger",
+      "command": "node frontend/diagnose-workstation-behavior.replay.mjs",
+      "exit_code": 0,
+      "seconds": 495.87
+    }
+  ]
+}

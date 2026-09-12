@@ -1,7 +1,8 @@
 // Amendment 1 acceptance: real manufactured records, served by the app.
 import { waitForReplayAssertion } from '../frontend/replay-assertions.mjs';
 import assert from 'node:assert/strict';
-import { C2_STORIES, waitForCharts } from './c2.replay.mjs';
+import { xAtMinute } from '../frontend/diagnose-workstation-chart.js';
+import { boundedWait, C2_STORIES, waitForCharts, waitForDesk } from './c2.replay.mjs';
 import { C3_STORIES } from './c3.replay.mjs';
 import { captureStory } from './capture.mjs';
 
@@ -53,7 +54,517 @@ async function readiness(page, unit, required) {
   return comparison;
 }
 
+// #404 · 2026-09-10. These are prospective fail-first obligations; browser
+// verdicts belong to the coordinator. No app response is replaced by a fixture.
+async function drawnWindow404(page) {
+  // Seed two interior edges with known minutes. Like drawWindow /
+  // resizeWindowStart in the workstation replay, solve pixels from the standing
+  // brace. Afternoon avoids the 24 h edge clamped to the last 23:45 category.
+  await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+  let grips = await laidOutBrace404(page, { label: 'Afternoon', range: [720, 1080] });
+  const moves = [
+    ['b', 720, 1080, 1290, '12:00–21:30'],
+    ['a', 720, 1290, 930, '15:30–21:30'],
+  ];
+  for (const [index, [edge, from, to, target, span]] of moves.entries()) {
+    const perMinute = (grips.b.x - grips.a.x) / (to - from);
+    assert.ok(perMinute > 0, '#404 drawn-window premise: laid-out brace edges must be ordered');
+    await page.mouse.move(grips[edge].x, grips[edge].y);
+    await page.mouse.down();
+    try {
+      const targetX = grips.a.x + (target - from) * perMinute;
+      await page.mouse.move(targetX, grips[edge].y, { steps: 8 });
+      // Playwright's stepped move can leave the chart's frame coordinator at
+      // its penultimate sample. Re-send the physical drag's final coordinate
+      // before observing the live chip; pointerup would otherwise cancel that
+      // outstanding repaint and make the accepted endpoint nondeterministic.
+      await page.mouse.move(targetX, grips[edge].y);
+      // Pointerup cancels a queued drag repaint. Observe the snapped live chip
+      // BEFORE release, so the final pointer move has actually been applied.
+      await drawnChip404(page, span);
+    } finally { await page.mouse.up(); }
+    await settled(page);
+    await drawnChip404(page, span);
+    if (index + 1 < moves.length) grips = await laidOutBrace404(page);
+  }
+}
+async function laidOutBrace404(page, expected = null) {
+  await settled(page);
+  const width = await page.locator('#chart').evaluate(node => node.clientWidth);
+  const positions = expected && expected.range.map(minute => xAtMinute({ clientWidth: width }, minute));
+  // A loading flag can clear before a queued control repaint begins. Wait for
+  // the actual named preset and its shared-chart brace, then sample it again;
+  // dragging the old 24 h brace commits a whole day and removes the follow chip.
+  await page.waitForFunction(async ({ label, width, positions: wanted }) => {
+    await document.fonts.ready;
+    const plot = document.querySelector('#chart');
+    const handles = ['a', 'b'].map(edge => document.querySelector(`#grip-${edge}`));
+    const chart = plot && globalThis.echarts.getInstanceByDom(plot);
+    const selected = label == null || [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
+      .some(button => button.textContent.trim() === label);
+    if (!chart || !selected || handles.some(handle => !handle)
+      || document.querySelector('#brace')?.hidden || plot.clientWidth !== width) return false;
+    const idle = () => chart.getZr().animation.isFinished() && !document.getAnimations().some(animation =>
+      (animation.playState === 'running' || animation.pending)
+      && animation.effect?.getComputedTiming().iterations !== Infinity);
+    const boxes = () => [plot, ...handles].flatMap(node => {
+      const box = node.getBoundingClientRect();
+      return [box.x, box.y, box.width, box.height];
+    });
+    if (!idle() || wanted && handles.some((handle, index) =>
+      Math.abs(parseFloat(handle.style.left) - wanted[index]) > .5)) return false;
+    const beforeBoxes = boxes();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return idle() && boxes().every((value, index) => Math.abs(value - beforeBoxes[index]) < .25);
+  }, { label: expected?.label ?? null, width, positions }, { timeout: 10000 });
+  const measured = await readBrace404(page);
+  if (expected) {
+    assert.equal(measured.selected, expected.label,
+      `#404 drawn-window premise: ${expected.label} must remain selected before dragging`);
+    const wanted = expected.range.map(minute => xAtMinute({ clientWidth: measured.width }, minute));
+    for (const [index, edge] of ['a', 'b'].entries()) assert.ok(
+      Math.abs(measured.grips[edge].left - wanted[index]) <= .5,
+      `#404 drawn-window premise: ${expected.label} brace must span 12:00–18:00 before dragging`,
+    );
+  }
+  return measured.grips;
+}
+const readBrace404 = page => page.locator('#chart').evaluate(node => {
+  const selected = [...document.querySelectorAll('#seg-window button[aria-pressed="true"]')]
+    .find(button => button.textContent.trim());
+  return {
+    width: node.clientWidth,
+    selected: selected?.textContent.trim() ?? null,
+    grips: Object.fromEntries(['a', 'b'].map(edge => {
+      const handle = document.querySelector(`#grip-${edge}`);
+      const box = handle.getBoundingClientRect();
+      return [edge, { x: box.x + box.width / 2, y: box.y + box.height / 2,
+        left: parseFloat(handle.style.left) }];
+    })),
+  };
+});
+async function drawnChip404(page, span) {
+  try {
+    await page.waitForFunction(expected => {
+      const text = document.querySelector('#seg-window [data-follow]')?.textContent;
+      return text?.replace(/^Window\s+/, '').replace('×', '').trim() === expected;
+    }, span, { timeout: 7000 });
+  } catch {
+    const seen = await page.locator('#seg-window').evaluate(node =>
+      node.querySelector('[data-follow]')?.textContent.trim() ?? '(absent)');
+    assert.fail(`#404 drawn-window premise: expected ${span}; chip seen: ${seen}`);
+  }
+}
+async function slot404(page) {
+  // pattern-near-tie has a Pattern and a thin 12:00 slot. Select the Pattern through
+  // its chart control first; checking only aria-pressed missed this regression.
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.kind === 'pattern' && row.pattern_chart);
+  assert.ok(pattern, 'S102 premise: a chartable served Pattern exists');
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor();
+  const slot = page.getByRole('button', { name: /^12:00 basal slot,/ });
+  assert.match(await slot.getAttribute('data-verdict'), /insufficient|nodata/,
+    'S102 premise: 12:00 is a thin slot, not an asserting chart');
+  await slot.click();
+  await page.waitForFunction(() => document.querySelector('#lane > button[aria-pressed="true"]')?.getAttribute('aria-label')?.startsWith('12:00 basal slot,'));
+  return pattern.id;
+}
+async function selectedPattern404(page) {
+  await fullDayDiagnose(page);
+  const preparation = await read(page, '/api/diagnose/finding-case-file-preparation');
+  const pattern = preparation.rendered_rows.find(row => row.kind === 'pattern' && row.pattern_chart);
+  assert.ok(pattern, 'S106 premise: a chartable served Pattern exists');
+  await page.getByRole('button', { name: 'All charts', exact: true }).click();
+  await press(page, `#tile-row .evidence-tile[data-chart-id="${pattern.id}"]`);
+  await page.locator(`#tile-focal .evidence-tile[data-chart-id="${pattern.id}"]`).waitFor({ timeout: 30000 });
+  const occurrence = await selectOccurrence(page);
+  const file = await read(page, '/api/diagnose/finding-case-file', {
+    projection_id: preparation.projection_id, finding_id: pattern.id, alignment: 'event', occ: occurrence,
+  });
+  const detail = file.selection?.detail;
+  assert.ok(Array.isArray(detail?.glucose) && detail.glucose.length,
+    'S106 premise: selected Pattern detail supplies glucose');
+  assert.ok(Array.isArray(detail?.markers) && detail.markers.length,
+    'S106 premise: selected Pattern detail supplies markers');
+  await waitForCharts(page);
+  const observed = await page.evaluate(() => {
+    const host = document.querySelector('#tile-focal .tile-chart');
+    const chart = host && globalThis.echarts.getInstanceByDom(host);
+    if (!chart) throw new Error('S106 focal Pattern ECharts instance is absent');
+    const label = value => typeof value === 'string' ? value
+      : typeof value?.formatter === 'string' ? value.formatter : '';
+    const point = (value, source, series) => {
+      const valueAt = value?.coord ?? value?.value ?? value;
+      const coords = Array.isArray(valueAt) ? valueAt : [];
+      const x = Number.isFinite(value?.xAxis) ? value.xAxis : coords[0];
+      const y = Number.isFinite(value?.yAxis) ? value.yAxis : coords[1];
+      const labels = [value?.name, label(value?.label), series.name, series.id].filter(Boolean).join(' ');
+      const style = source === 'line' ? { ...series.lineStyle, ...value?.lineStyle }
+        : { ...series.itemStyle, ...value?.itemStyle };
+      const visible = source === 'line'
+        ? style.opacity !== 0 && style.type !== 'none'
+        : series.symbol !== 'none' && series.symbolSize !== 0 && style.opacity !== 0;
+      return { source, x, y, labels, visible };
+    };
+    const series = chart.getOption().series.map(series => ({
+      id: series.id ?? null, data: Array.isArray(series.data) ? series.data : null,
+      markers: [
+        ...(series.type === 'scatter' ? (series.data || []).map(value => point(value, 'scatter', series)) : []),
+        ...((series.markPoint?.data || []).map(value => point(value, 'markPoint', series))),
+        ...((series.markLine?.data || []).map(value => point(value, 'line', series))),
+      ],
+    }));
+    return { series, markers: series.flatMap(entry => entry.markers) };
+  });
+  const expected = {
+    trace: detail.glucose.map(point => [point.minute, point.bg]),
+    markers: detail.markers.map(marker => ({ minute: marker.minute, kind: marker.kind })),
+  };
+  const actual = {
+    trace: observed.series.find(series => series.id === 'selected:trace')?.data ?? null,
+    markers: observed.markers,
+  };
+  // Keep both served facts in one observation: a highlighted roster row alone
+  // is not proof that its trace and event markers reached the focal option.
+  const matches = expected.markers.every(marker => actual.markers.some(observation =>
+    observation.x === marker.minute
+      && (Number.isFinite(observation.y) || observation.source === 'line')
+      && observation.visible && observation.labels.toLowerCase().includes(marker.kind.toLowerCase())));
+  const failures = [];
+  if (JSON.stringify(actual.trace) !== JSON.stringify(expected.trace) || !matches) failures.push({
+    expected: { selectedTrace: expected.trace, servedMarkers: expected.markers },
+    actual: { selectedTrace: actual.trace, markerObservations: actual.markers },
+  });
+  assert.deepEqual(failures, [], 'S106 selected Pattern focal option must carry the served trace and markers together');
+  const focusStatus = page.locator('[data-focus-context]');
+  await focusStatus.waitFor({ timeout: 30000 });
+  const visible = await focusStatus.innerText();
+  const reason = await focusStatus.getAttribute('title');
+  assert.match(visible, /^(View Plan|View Trial|View Focus|Focus unavailable|Focus status unavailable)$/,
+    `S106 selected Pattern parent must expose a compact reachable Focus action in Diagnose: ${visible}`);
+  assert.ok(reason?.trim(), 'S106 selected Pattern parent must retain the backend withholding explanation');
+  assert.doesNotMatch(`${visible} ${reason}`, /reconciliation_required|active_trial/,
+    'S106 Focus withholding copy must not expose backend admission tokens');
+}
+const geometry404 = page => page.evaluate(() => {
+  const box = node => {
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+      width: rect.width, height: rect.height };
+  };
+  const textBox = node => {
+    const range = document.createRange(); range.selectNodeContents(node);
+    const rect = range.getBoundingClientRect(); const clip = box(node);
+    const clipped = getComputedStyle(node).overflowX !== 'visible';
+    return { text: node.textContent.trim(), truncated: node.scrollWidth > node.clientWidth,
+      left: clipped ? Math.max(clip.left, rect.left) : rect.left,
+      right: clipped ? Math.min(clip.right, rect.right) : rect.right,
+      top: rect.top, bottom: rect.bottom };
+  };
+  return {
+    rail: box(document.querySelector('.v2-diagnose .panes > .inspector, .gf-desk > .gf-reading')),
+    focal: [...document.querySelectorAll('#tile-focal .tile-head')].map(head => ({
+      head: box(head), control: box(head.querySelector('.tile-fullscreen')),
+    })),
+    actions: [...document.querySelectorAll('#chart-headacts button[data-act]')].map(button => ({
+      text: button.textContent.trim(), aria: button.getAttribute('aria-label'),
+      label: box(button.querySelector('span')), icon: box(button.querySelector('svg')),
+    })),
+    cohortHeadings: [...document.querySelectorAll('#level .ev-group > b')]
+      .map(heading => heading.textContent.trim()),
+    rows: [...document.querySelectorAll('#level .case-occurrence')].map(row => {
+      const only = row.querySelector('.only'); const tier = row.querySelector('.tier');
+      return { comparisonCohort: row.dataset.comparisonCohort || null,
+        description: only ? textBox(only) : null, tier: tier ? textBox(tier) : null };
+    }),
+  };
+});
+
+const overlap404 = (left, right) => ({
+  x: Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left)),
+  y: Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top)),
+});
+
+// Comparison membership is grouped by a constant served cohort name. Ordinary
+// case rows instead retain their row-tier column, so the geometry witness must
+// prove both rendered shapes rather than treating one as the other.
+export function assertS107ComparisonGeometry(comparison, expectedCohorts) {
+  assert.deepEqual(comparison.cohortHeadings, expectedCohorts.map(cohort => cohort.name),
+    'S107 comparison headings must name the exact served cohorts once');
+  const groupedRows = comparison.rows.filter(row => row.comparisonCohort);
+  assert.ok(groupedRows.length, 'S107 premise: the long meal chart supplies comparison cohort rows');
+  for (const row of groupedRows) {
+    assert.ok(expectedCohorts.some(cohort => cohort.key === row.comparisonCohort),
+      `S107 comparison row names an unknown cohort: ${row.comparisonCohort}`);
+    assert.equal(row.tier, null, 'S107 comparison rows must not repeat their grouped cohort label');
+    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated,
+      `S107 comparison event text must remain fully readable: ${JSON.stringify(row.description)}`);
+  }
+}
+
+export function assertS107TierGeometry(tierRows) {
+  assert.ok(tierRows.length, 'S107 premise: the same meal case supplies ordinary tier rows');
+  const labels = new Set(tierRows.map(row => row.tier?.text).filter(Boolean));
+  assert.ok(labels.size > 1, `S107 needs mixed ordinary tier labels: ${JSON.stringify([...labels])}`);
+  for (const row of tierRows) {
+    assert.ok(row.description?.text.includes('Completed carb bolus') && !row.description.truncated
+      && row.tier && !row.tier.truncated,
+      `S107 ordinary event text and tier must remain fully readable: ${JSON.stringify(row)}`);
+    const overlap = overlap404(row.description, row.tier);
+    assert.equal(overlap.x > 0 && overlap.y > 0, false,
+      `S107 ordinary description and tier columns overlap: ${JSON.stringify({ row, overlap })}`);
+  }
+}
+
+export function assertS107RosterGeometry({ comparison, tierRows, expectedCohorts }) {
+  assertS107ComparisonGeometry(comparison, expectedCohorts);
+  assertS107TierGeometry(tierRows);
+}
+
+async function drillMeal404(page, alignment) {
+  const meal = page.locator('#tile-row .evidence-tile[data-chart-id="finding:meal_bolus_short"]');
+  assert.ok(await meal.count(), 'S107 premise: showcase supplies the long meal cohort chart');
+  const response = page.waitForResponse(reply => {
+    const url = new URL(reply.url());
+    return url.pathname === '/api/diagnose/finding-case-file'
+      && url.searchParams.get('finding_id') === 'finding:meal_bolus_short'
+      && url.searchParams.get('alignment') === alignment && reply.ok();
+  }, { timeout: 30000 });
+  await meal.click();
+  const served = await (await response).json();
+  assert.equal(served.projection.alignment, alignment,
+    `S107 meal drill must use the served ${alignment} case`);
+  await page.waitForFunction(id => document.querySelector('#tile-focal .evidence-tile')?.dataset.chartId === id,
+    'finding:meal_bolus_short', { timeout: 30000 });
+  await settled(page); await page.locator('#level .case-occurrence').first().waitFor({ timeout: 30000 });
+  return { served, geometry: await geometry404(page) };
+}
+
+async function deskGeometry404(page, destination) {
+  await press(page, `nav.v2-nav [data-destination="${destination}"]`);
+  await waitForDesk(page);
+  const report = await geometry404(page);
+  assert.ok(report.rail, `S107 premise: ${destination} publishes its reading rail`);
+  return report.rail.width;
+}
+
+const compactControl404 = page => page.evaluate(() => {
+  const fields = ['height', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'borderTopWidth',
+    'borderTopStyle', 'borderTopColor', 'borderRadius', 'backgroundColor', 'color', 'boxShadow'];
+  const read = node => Object.fromEntries(fields.map(field => [field, getComputedStyle(node)[field]]));
+  const filter = document.querySelector('#filter-trigger');
+  const selected = document.querySelector('#seg-window button[aria-pressed="true"]');
+  const resting = [...document.querySelectorAll('#seg-window button')]
+    .find(button => button.getAttribute('aria-pressed') === 'false');
+  const level = document.querySelector('#level');
+  if (!filter || !selected || !resting || !level) throw new Error('S107 Filter parity premise is absent');
+  return { loading: level.dataset.loading, filter: read(filter), selected: read(selected), resting: read(resting) };
+});
+
+async function filterParity404(page) {
+  const failures = [];
+  const before = await compactControl404(page);
+  if (JSON.stringify(before.filter) !== JSON.stringify(before.resting)) failures.push({ state: 'resting', before });
+  await page.locator('#filter-trigger').click();
+  const expanded = await compactControl404(page);
+  if (JSON.stringify(expanded.filter) !== JSON.stringify(expanded.selected)) failures.push({ state: 'expanded', expanded });
+  await page.locator('#filter-trigger').click();
+  let release; let arrive;
+  const arrived = new Promise(resolve => { arrive = resolve; });
+  const gate = new Promise(resolve => { release = resolve; });
+  // Root Findings owns this preparation. Holding it proves Filter retains the
+  // compact resting control while its own visible header is loading.
+  await page.route('**/api/diagnose/finding-case-file-preparation*', async route => {
+    arrive(); await gate; await route.continue();
+  });
+  try {
+    await page.getByRole('button', { name: 'Morning', exact: true }).click();
+    await boundedWait(arrived, 'S107 held Findings preparation');
+    await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'true', null,
+      { timeout: 30000 });
+    const loading = await compactControl404(page);
+    if (loading.loading !== 'true' || JSON.stringify(loading.filter) !== JSON.stringify(loading.resting)) {
+      failures.push({ state: 'loading', loading });
+    }
+  } finally {
+    release(); await page.unroute('**/api/diagnose/finding-case-file-preparation*');
+  }
+  await settled(page);
+  assert.deepEqual(failures, [],
+    'S107 Filter must share Window compact-control geometry and states, including Findings loading');
+}
+
 export const C4_STORIES = {
+  async S101(page) {
+    await fullDayDiagnose(page);
+    await drawnWindow404(page);
+    const label = (await page.locator('#seg-window [data-follow]').innerText()).replace('×', '').trim();
+    assert.equal(label, '15:30–21:30', 'S101 custom Window chip contains only the span');
+  },
+  async S102(page) {
+    await fullDayDiagnose(page);
+    const previous = await slot404(page);
+    const focal = page.locator('#tile-focal .evidence-tile');
+    // Lane selection precedes the asynchronous evidence repaint. Observe the
+    // final focal identity once per attempt, rather than two intermediate frames.
+    await waitForReplayAssertion(async seen => {
+      const chartId = seen(await focal.getAttribute('data-chart-id'));
+      assert.notEqual(chartId, previous,
+        'S102 thin basal slot click left the Pattern graph on stage');
+      assert.equal(chartId, 'basal:720',
+        'S102 the stage must open the selected 12:00 basal graph, including its thin state');
+    }, 'S102 selected thin basal focal chart');
+  },
+  async S103(page) {
+    // Separate from S102: a graph failure must not mask the lost-window proof.
+    const failures = [];
+    for (const mode of ['24 h', 'Morning', 'drawn']) {
+      await page.goto(new URL('/v2/?to=diagnose', page.url()).href);
+      await fullDayDiagnose(page);
+      if (mode === 'drawn') await drawnWindow404(page);
+      else if (mode !== '24 h') {
+        await page.getByRole('button', { name: mode, exact: true }).click(); await settled(page);
+      }
+      const before = await clockWindow(page);
+      await page.getByRole('button', { name: /^12:00 basal slot,/ }).click();
+      await page.getByRole('button', { name: 'Findings', exact: true }).click();
+      await settled(page);
+      const after = await clockWindow(page);
+      if (JSON.stringify(after) !== JSON.stringify(before)) failures.push({ mode, before, after });
+    }
+    assert.deepEqual(failures, [], 'S103 backing out of a slot must restore each reader-selected window');
+  },
+  async S104(page) {
+    await press(page, 'nav.v2-nav [data-destination="day"]');
+    await waitForDesk(page);
+    await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
+    // Showcase ends on Sunday 2024-06-30: its arrival week contains only
+    // that recorded day. S66's Previous recorded day control reaches Saturday
+    // and the preceding populated week before we observe the click under test.
+    const previous = page.getByRole('button', { name: 'Previous recorded day', exact: true });
+    assert.equal(await previous.isEnabled(), true, 'S104 premise: an earlier recorded day exists');
+    await previous.click();
+    await waitForDesk(page);
+    await page.locator('.gf-stage-day .gf-chart canvas').first().waitFor();
+    const dates = await page.locator('.gf-nav-col[data-pick]:not([disabled]):not([aria-pressed="true"])')
+      .evaluateAll(nodes => nodes.map(node => node.dataset.pick));
+    assert.ok(dates.length, 'S104 premise: the preceding week contains another recorded day');
+    const date = dates[0];
+    const pick = page.locator(`.gf-nav-col[data-pick="${date}"]`);
+    const nodes = await page.evaluateHandle(() => ({ stage: document.querySelector('.gf-stage-day'),
+      reading: document.querySelector('.gf-reading'), nav: document.querySelector('#gf-nav') }));
+    let release;
+    const gate = new Promise(resolve => { release = resolve; });
+    let arrive;
+    const arrived = new Promise(resolve => { arrive = resolve; });
+    const handler = async route => { arrive(); await gate; await route.continue(); };
+    await page.route('**/api/model-view*', handler);
+    const completion = page.waitForResponse(r => new URL(r.url()).pathname === '/api/model-view' && r.ok());
+    try {
+      await pick.click();
+      await boundedWait(arrived, 'S104 selected-day model read');
+      const retained = await nodes.evaluate(n => Object.fromEntries(Object.entries(n).map(([key, node]) => [key, node.isConnected])));
+      assert.deepEqual(retained, { stage: true, reading: true, nav: true },
+        'S104 day click detached the standing stage, reading pane or navigator while the read was pending');
+      release(); await completion; await waitForDesk(page);
+      assert.equal(await page.locator(`.gf-nav-col[data-pick="${date}"]`).getAttribute('aria-pressed'), 'true');
+      assert.equal(await nodes.evaluate(n => n.stage === document.querySelector('.gf-stage-day')
+        && n.reading === document.querySelector('.gf-reading')), true,
+      'S104 settled day must retain the same frame nodes');
+    } finally {
+      release(); await completion; await page.unroute('**/api/model-view*', handler); await nodes.dispose();
+    }
+  },
+  async S105(page, ctx) {
+    assert.ok(ctx.capturePump, 'S105 requires CASE_STORE_DIR for a synthetic on-pump capture');
+    await C3_STORIES.S52(page);
+    const roster = await read(page, '/api/verify/trials');
+    const ended = roster.trials.find(row => row.ending?.kind === 'user_finished');
+    assert.ok(ended, 'S105 premise: c3-trial retains a finished Trial');
+    assert.equal(roster.admission.active_kind, null, 'S105 premise: nothing is watched');
+    // Record the already-programmed basal value at an eligible served slot.
+    // The existing replay pump producer captures that same schedule. This
+    // creates an on-pump Plan without inventing another setting change.
+    const guidance = await read(page, '/api/guidance');
+    const candidate = guidance.candidates.find(row => row.parameter === 'basal_rate' && row.action?.length);
+    assert.ok(candidate, 'S105 premise: a served basal action admits the Plan slot');
+    const pump = await read(page, '/api/pump-settings');
+    const start = candidate.action[0].start_min;
+    const current = [...pump.profile.segments].reverse().find(row => row.start_min <= start).basal_rate;
+    const saved = await page.request.put(new URL('/api/plan', page.url()).href,
+      { data: { items: [{ type: 'basal', start_min: start, value: current }] } });
+    assert.equal(saved.status(), 200, 'S105 synthetic Plan draft must save');
+    const applied = await page.request.post(new URL('/api/plan/apply', page.url()).href, { data: {} });
+    assert.equal(applied.status(), 200, `S105 synthetic Plan decision: ${await applied.text()}`);
+    // 'mismatch' captures the existing source profile without an IDP switch;
+    // it matches this deliberately unchanged draft and creates no new Trial.
+    await ctx.capturePump('mismatch');
+    await page.goto(new URL('/v2/?to=changes&subject=plan', page.url()).href);
+    await page.locator('.gf-status[data-state="confirmed"]').waitFor({ timeout: 30000 });
+    assert.equal((await read(page, '/api/verify/trials')).admission.active_kind, null,
+      'S105 premise: confirmed Plan with no active watch');
+    assert.equal(await page.getByRole('button', { name: 'View change record', exact: true }).count(), 1,
+      'S105 on-pump Plan has no View change record door');
+    await page.getByRole('button', { name: 'View change record', exact: true }).click();
+    await press(page, `[data-record="trial:${ended.id}"]`);
+    await page.locator('[data-record-part="ending"]').waitFor();
+    const address = page.url();
+    assert.equal(new URL(address).searchParams.get('occurrence'), `record:trial:${ended.id}`);
+    await page.goto(address);
+    await page.locator('[data-ending-kind="user_finished"]').waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('occurrence'), `record:trial:${ended.id}`,
+      'S105 record address must reopen the exact saved subject');
+  },
+  async S106(page) {
+    await selectedPattern404(page);
+  },
+  async S107(page) {
+    await fullDayDiagnose(page);
+    await filterParity404(page);
+    const diagnose = await geometry404(page);
+    const allCharts = await page.getByRole('button', { name: 'All charts', exact: true }).evaluate(button => {
+      const box = node => {
+        const rect = node?.getBoundingClientRect();
+        return rect && { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+      };
+      return { text: button.textContent.trim(), label: box(button.querySelector('span')), icon: box(button.querySelector('svg')) };
+    });
+    const rails = { diagnose: diagnose.rail?.width };
+    assert.ok(Number.isFinite(rails.diagnose), 'S107 premise: Diagnose publishes its reading rail');
+    rails.changes = await deskGeometry404(page, 'changes');
+    rails.day = await deskGeometry404(page, 'day');
+    await fullDayDiagnose(page);
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('#chart-headacts button[aria-label="Close"]').waitFor({ timeout: 30000 });
+    const catalog = await geometry404(page);
+    const eventMeal = await drillMeal404(page, 'event');
+    const drilled = eventMeal.geometry;
+    const failures = [];
+    if (new Set(Object.values(rails)).size !== 1) failures.push({ rails });
+    for (const [state, actions, expectedAction] of [
+      ['all-charts', [allCharts], 'All charts'], ['catalog-close', catalog.actions, 'Close'], ['drilled-return', drilled.actions, 'All charts'],
+    ]) {
+      const matching = actions.filter(action => (action.aria || action.text) === expectedAction);
+      if (matching.length !== 1) failures.push({ state, expectedAction, actions });
+      for (const action of matching) {
+        if (!action.label || !action.icon || action.label.right > action.icon.left) failures.push({ state,
+          action: action.aria || action.text, label: action.label, icon: action.icon, expected: 'label before icon' });
+      }
+    }
+    for (const focal of diagnose.focal) {
+      if (!focal.control || focal.control.right > focal.head.right || focal.control.top < focal.head.top
+          || focal.control.top >= focal.head.top + focal.head.height / 2) failures.push({
+        focal, expected: 'top-right focal control',
+      });
+    }
+    assertS107ComparisonGeometry(drilled,
+      eventMeal.served.projection.cohorts.map(({ key, name }) => ({ key, name })));
+    assert.deepEqual(failures, [], 'S107 desk geometry must preserve labels, rails, focal placement and long cohort rows');
+  },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);
     // Each new context removes S91's deliberate served-verdict perturbation.

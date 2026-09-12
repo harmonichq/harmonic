@@ -62,7 +62,7 @@ test('the root filter has no retired Event charts view or state', () => {
 test('term 45 · the meta has three forms and no others', () => {
   // Meta counts only the rows a reader can currently see.
   assert.equal(queueMeta(W.global), '8 findings · 30 days');
-  assert.equal(queueMeta(W.afternoon), '3 in this window');
+  assert.equal(queueMeta(W.afternoon), '4 in this window');
   assert.equal(queueMeta(fixture.no_data.global), '5 findings · 30 days');
   // never sort language, never the window range restated — the chip owns the hours
   for (const projection of [W.global, W.afternoon, W.overnight, fixture.no_data.morning]) {
@@ -253,9 +253,11 @@ test('#363 · every drilling row is painted as a button, inside its own list ite
 });
 
 test('term 36 · a row is flavored by the server register, glyph and word together', () => {
-  for (const row of queueRows(W.afternoon)) {
-    assert.equal(row.flavor, row.raw.kind === 'setting' ? 'setting' : 'habit');
-  }
+  const rows = queueRows(W.afternoon);
+  assert.deepEqual(new Set(rows.map((row) => row.flavor)), new Set(['setting', 'pattern', 'habit']),
+    'the served scoped fixture exercises every public queue flavor');
+  for (const row of rows) assert.equal(row.flavor,
+    row.raw.kind === 'pattern' ? 'pattern' : row.raw.kind === 'setting' ? 'setting' : 'habit');
 });
 
 test('term 35 · a finding keeps EVERY family appearance, never a merged total', () => {
@@ -510,7 +512,7 @@ test('event-chart eligibility accepts a server-owned lever-and-window coordinate
 
 test('metadata and empty copy describe Sift, the only root filter', () => {
   assert.equal(queueMeta(W.global, new Set(['meals'])), '2 findings · 30 days');
-  assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '30 days');
+  assert.equal(queueMeta(W.afternoon, new Set(['meals'])), '1 in this window');
   assert.equal(EMPTY_SIFT_LINE, 'No findings match the current filters.');
 });
 
@@ -645,17 +647,22 @@ test('#395 · unknown Pattern keys stay title-only and do not break adjacent mem
 });
 
 
-test('#395 · the two-family browser input publishes exactly seven mini hosts', () => {
+test('#395 · the browser input publishes only its renderable mini hosts in served order', () => {
   const cases = JSON.parse(readFileSync(new URL(
     '../mockups/diagnose-workstation.synthetic/finding-case-files.json', import.meta.url), 'utf8'));
   const input = populateFindingsProjectionInput(fixture.inputs);
   const prepared = populateFindingCasePreparation(cases.preparation, projectFindings(input));
   const { miniSlots } = paint({ ...prepared.findings, rows: prepared.rendered_rows });
-  assert.deepEqual(miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
-    .map(({ row }) => row.id), [
-    'ic:720', 'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
-    'pattern:highs_after_meals', 'finding:carb_undercount', 'pattern:lows_after_correcting_highs',
+  const chartable = miniSlots.filter(({ row }) => DIAGNOSE_EVIDENCE_CHARTS.some((entry) => entry.matches(row)))
+    .map(({ row }) => row.id);
+  assert.deepEqual(chartable, [
+    'ic:720', 'pattern:highs_after_meals', 'finding:carb_undercount',
+    'basal:30-90', 'basal:330-360', 'finding:over_treated_low',
   ]);
+  const chartless = prepared.rendered_rows.find((row) => row.id === 'pattern:lows_after_correcting_highs');
+  assert.ok(chartless, 'the manufactured input retains the uncharted Pattern parent');
+  assert.deepEqual(DIAGNOSE_EVIDENCE_CHARTS.filter((entry) => entry.matches(chartless)), [],
+    'a Pattern without a served case file does not manufacture a mini host');
 });
 
 

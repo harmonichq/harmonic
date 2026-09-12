@@ -12,7 +12,7 @@ from .analyzers.classifiers import classify_correction_stacking
 from .analyzers.scenario.anchors import Anchor, AnchorKind
 from .analyzers.scenario.engine import _effective_isf, low_prompt_answers
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
-from .analyzers.scenario.outcome_patterns import _lever_identities
+from .analyzers.scenario.outcome_patterns import _lever_identities, outcome_window_population
 from .analyzers.scenario.evidence_population import policy_for
 from .analyzers.scenario.evaluation import evaluate
 from .analyzers.scenario.model_view import _build_episode_view
@@ -89,6 +89,7 @@ class PreparedCases:
     pins: int = 0
     exposures: dict | None = None
     scenarios: dict | None = None
+    pattern_exposures: dict | None = None
     sequence_report: dict | None = None
 
     def _roster(self, lever):
@@ -219,8 +220,6 @@ class PreparedCases:
         existing opportunity roster and member associations for the case-file
         transport consumed by the evidence chart.
         """
-        if self.query.scoped:
-            return None
         row = self._authoritative_row(finding_id)
         if row is None or row.get("kind") != "pattern":
             return None
@@ -228,7 +227,7 @@ class PreparedCases:
             return None
         pattern = row["pattern"]
         family = findings_projection.pattern_rate_family(pattern)
-        source = ((self.exposures.get("exposures") or {}).get(family.value) or {})
+        source = ((self.pattern_exposures or self.exposures or {}).get("exposures") or {}).get(family.value) or {}
         source_rows = tuple(source.get("occurrences") or ())
         rate_levers = [
             subject.removeprefix("habit:") for subject in pattern["rate_levers"]
@@ -245,7 +244,7 @@ class PreparedCases:
         claims_by_identity = {}
         for lever in rate_levers:
             for identity in _lever_identities(
-                self.exposures or {}, family.value, lever,
+                self.pattern_exposures or self.exposures or {}, family.value, lever,
             ):
                 claims_by_identity.setdefault(identity, lever)
         claimed_identities = set(claims_by_identity)
@@ -321,6 +320,9 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
         findings = projection.project(
             query, selected_id, analysis_generation=analysis_generation,
         )
+        pattern_exposures, _patterns = outcome_window_population(
+            analysis, exposures, scenarios, query,
+        )
         if sequence_report is None:
             sequence_report = report_dict(build_eating_sequence_report(store, window_days=window_days))
         recurrence = {
@@ -337,7 +339,8 @@ def prepare(store, *, query, version, analysis, exposures, scenarios, selected_i
                          members, associations, provenance, withheld, cgm, basal, bolus, carbs,
                          time.monotonic() + PREPARATION_LEASE_SECONDS,
                          source_window_days=window_days, exposures=deepcopy(exposures),
-                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report))
+                         scenarios=deepcopy(scenarios), sequence_report=deepcopy(sequence_report),
+                         pattern_exposures=deepcopy(pattern_exposures))
 
 
 def _population(

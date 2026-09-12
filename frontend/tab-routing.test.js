@@ -124,9 +124,9 @@ test('the v2 desk resolves a destination and defaults to Diagnose', () => {
 });
 
 test('a direct v2 entry carries no context and a contextual one round-trips all of it', () => {
-  const direct = parseV2Route({ search: '?to=day' });
+  const direct = parseV2Route({ pathname: '/v2/day', search: '' });
   assert.deepEqual(direct, { destination: 'day', context: {} });
-  assert.equal(serializeV2Route(direct), '/v2/?to=day');
+  assert.equal(serializeV2Route(direct), '/v2/day');
 
   // HV2-14: date, moment, canonical subject, occurrence, affected window,
   // applicable lever, source destination and precise return-focus target.
@@ -136,7 +136,7 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
     focus: "[data-question-card='q-7'] [data-action='day']",
   };
   const address = serializeV2Route({ destination: 'day', context });
-  const parsed = parseV2Route({ search: address.slice(address.indexOf('?')) });
+  const parsed = parseV2Route({ pathname: '/v2/day', search: address.slice(address.indexOf('?')) });
   assert.equal(parsed.destination, 'day');
   assert.deepEqual(parsed.context, context);
 });
@@ -144,15 +144,15 @@ test('a direct v2 entry carries no context and a contextual one round-trips all 
 test('the v2 address is written and subscribed through the one routing owner', () => {
   const pushes = [];
   writeRoute({ destination: 'diagnose', context: { occurrence: 'low-7' } }, {
-    location: { pathname: '/v2/', search: '?to=diagnose', hash: '' },
+    location: { pathname: '/v2/diagnose', search: '', hash: '' },
     history: { pushState: (_state, _title, address) => pushes.push(address) },
     serialize: serializeV2Route,
   });
-  assert.deepEqual(pushes, ['/v2/?to=diagnose&occurrence=low-7']);
+  assert.deepEqual(pushes, ['/v2/diagnose?occurrence=low-7']);
 
   const listeners = new Map();
   const browser = {
-    location: { pathname: '/v2/', search: '?to=day&date=2024-06-26&from=diagnose', hash: '' },
+    location: { pathname: '/v2/day', search: '?date=2024-06-26&from=diagnose', hash: '' },
     addEventListener(type, listener) { listeners.set(type, listener); },
     removeEventListener() {},
   };
@@ -161,4 +161,15 @@ test('the v2 address is written and subscribed through the one routing owner', (
   listeners.get('popstate')();
   unsubscribe();
   assert.deepEqual(seen, [{ destination: 'day', context: { date: '2024-06-26', from: 'diagnose' } }]);
+});
+
+test('readable v2 paths win over legacy query destinations while old links remain supported', () => {
+  assert.deepEqual(parseV2Route({ pathname: '/v2/', search: '?to=changes' }),
+    { destination: 'changes', context: {} });
+  assert.deepEqual(parseV2Route({ pathname: '/v2/day', search: '?to=changes&date=2024-06-26' }),
+    { destination: 'day', context: { date: '2024-06-26' } });
+  for (const destination of ['diagnose', 'changes', 'day']) {
+    assert.deepEqual(parseV2Route({ pathname: `/v2/${destination}`, search: '' }),
+      { destination, context: {} });
+  }
 });

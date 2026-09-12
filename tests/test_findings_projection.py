@@ -241,6 +241,11 @@ class OutcomeAnchoredMembershipTest(unittest.TestCase):
 
         import ciq_autotune.window_membership as module
 
+        next(
+            occurrence
+            for occurrence in self.projection._exposures["exposures"]["lows"]["occurrences"]
+            if occurrence["cause_lever"] == Lever.OVER_TREATED_LOW.value
+        ).pop("outcome_minute")
         with patch.object(module, "outcome_kind", lambda lever: None):
             rows = self.projection.project(WindowQuery.clock(*LOW_BLOCK))["rows"]
         self.assertIn("Over-treated low", _titles(rows, "finding"))
@@ -410,7 +415,7 @@ class ChipProjectionTest(unittest.TestCase):
         self.assertEqual(_row(afternoon["rows"], "Correction stacking")["chips"],
                          ["lows", "corrections"])
         self.assertEqual(afternoon["chip_counts"], {
-            "highs": 2, "lows": 1, "meals": 0, "corrections": 1,
+            "highs": 3, "lows": 1, "meals": 1, "corrections": 1,
         })
 
         global_counts = self.projection.project(WindowQuery.whole_day())["chip_counts"]
@@ -917,7 +922,7 @@ class PatternProjectionTest(unittest.TestCase):
                        if row["id"] == "pattern:highs_after_meals")
         self.assertIsNone(pattern["pattern_chart"])
 
-    def test_patterns_are_whole_day_only_and_claimed_rate_levers_follow_their_parent(self):
+    def test_patterns_and_claimed_rate_levers_share_the_scoped_population(self):
         pattern = next(row for row in self.result["rows"]
                        if row["id"] == "pattern:highs_after_meals")
         index = self.result["rows"].index(pattern)
@@ -947,7 +952,13 @@ class PatternProjectionTest(unittest.TestCase):
                 )))
 
         scoped = self.projection.project(WindowQuery.clock(*AFTERNOON))
-        self.assertFalse(any(row["kind"] == "pattern" for row in scoped["rows"]))
+        scoped_patterns = [row for row in scoped["rows"] if row["kind"] == "pattern"]
+        self.assertTrue(scoped_patterns)
+        for pattern_row in scoped_patterns:
+            self.assertEqual(pattern_row["window_scope"], "window")
+            self.assertEqual(pattern_row["pattern_chart"]["window"],
+                             WindowQuery.clock(*AFTERNOON).to_dict())
+            self.assertLessEqual(pattern_row["pattern"]["k"], pattern_row["pattern"]["n"])
         self.assertFalse(any(row.get("claimed_by") for row in scoped["rows"]))
 
     def test_claimed_members_add_nothing_to_counts_or_chip_counts(self):
@@ -1585,6 +1596,9 @@ class FindingEvidenceBlockTest(unittest.TestCase):
         self.assertIn(fired, produced["lows"]["occurrences"])
         self.assertIn(rebound, produced["highs"]["occurrences"])
         self.assertEqual(rebound["ep_id"], fired["ep_id"])
+        self.assertEqual(fired["t"], "2026-08-13 13:55:00")
+        self.assertEqual(rebound["t"], "2026-08-13 14:35:00")
+        self.assertEqual(fired["outcome_minute"], 14 * 60 + 35)
 
 
 class HeadlineTest(unittest.TestCase):
@@ -2048,6 +2062,25 @@ class ExplicitOutcomeWitnessTest(unittest.TestCase):
             for extra in ({}, {"outcome_minute": None}):
                 self.assertIsNone(outcome_minute(
                     {"cause_lever": "high_carb_sequence", "t": "2026-08-01 12:00:00", **extra}, {}))
+
+    def test_fallback_uses_latest_timestamp_across_midnight_not_largest_clock_minute(self):
+        from ciq_autotune.window_membership import outcome_minute
+
+        occurrence = {
+            "cause_lever": "over_treated_low", "ep_id": "overnight-rebound",
+            "t": "2026-08-01 22:30:00",
+        }
+        exposures = {"exposures": {
+            "lows": {"occurrences": [occurrence]},
+            "highs": {"occurrences": [
+                {"ep_id": "overnight-rebound", "kind": "high",
+                 "t": "2026-08-01 23:30:00"},
+                {"ep_id": "overnight-rebound", "kind": "high",
+                 "t": "2026-08-02 00:30:00"},
+            ]},
+        }}
+
+        self.assertEqual(outcome_minute(occurrence, exposures), 30)
 
     def test_habit_only_member_is_nested_without_becoming_a_rate_lever(self):
         projection = gen.projection()

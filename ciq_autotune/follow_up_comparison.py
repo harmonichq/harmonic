@@ -29,6 +29,7 @@ from .outcomes_trend import (
 )
 from .rescue_evidence import eligible_carb_entries, first_observation, observe
 from .trial_evidence import comparison_evidence, _in_block
+from .window_membership import WindowQuery
 
 _VERSION = "386:1"
 _FMT = "%Y-%m-%d %H:%M:%S"
@@ -315,12 +316,30 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         "after": _period(changed, end, "pin" if kind == "focus" else "setting_change", end_reason, cutoff, input_revision),
     }
     populations, groups, coverages, observations = [], [], [], []
+    scope = (record.get("decision_context") or {}).get("outcome_window")
+    query = (WindowQuery.clock(scope["start_min"], scope["end_min"])
+             if scope is not None else None)
+    pattern_key = record.get("pattern_key")
+    if pattern_key is None and (record.get("subject") or "").startswith("pattern:"):
+        pattern_key = record["subject"].split(":", 1)[1]
+    scoped_cohorts = {}
     for name, lo, hi in (("before", start, changed), ("after", changed, end)):
+        arm_cgm, arm_bolus, arm_basal = cgm, bolus, basal
+        if kind == "focus" and query is not None and pattern_key is not None:
+            from .event_comparison import scoped_focus_cohort
+            cohort = scoped_focus_cohort(
+                store, start=lo, end=hi, query=query, lever=record["lever"],
+            )
+            scoped_cohorts[name] = cohort
+            if cohort is not None:
+                arm_cgm = [row for row in cgm if row.t in cohort["cgm_times"]]
+                arm_bolus = [row for row in bolus
+                             if (row.seq_num, row.t) in cohort["bolus_keys"]]
         eligible_carbs = [c for c in eligible_carb_entries(carbs, hi) if c.t < cutoff]
         population = comparison_evidence(
             parameter=parameter, slot=slot, block=block, changed_at=changed,
             before=record.get("before"), after=record.get("after"), start=lo, end=hi,
-            cgm=cgm, bolus=bolus, basal=basal, carbs=eligible_carbs, snapshots=snapshots,
+            cgm=arm_cgm, bolus=arm_bolus, basal=arm_basal, carbs=eligible_carbs, snapshots=snapshots,
             pump_events=[e for e in store.pump_events() if e.t < cutoff] if hasattr(store, "pump_events") else (),
             isf=programmed["value"], captured_members=record.get("members"), focus=kind == "focus",
         )
@@ -328,8 +347,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
         day_groups, coverage = _glycemic(population, lo, hi)
         groups.append(day_groups)
         coverages.append(coverage)
-        owned_cgm = [r for r in cgm if lo <= r.t < hi]
-        ctx_meals = [b for b in bolus if _is_meal(b)]
+        owned_cgm = [r for r in arm_cgm if lo <= r.t < hi]
+        ctx_meals = [b for b in arm_bolus if _is_meal(b)]
         measurements = meal_measurements(population["meals"], owned_cgm, ctx_meals=ctx_meals)
         observations.append(measurements)
         comparison["views"][name] = {**population["view"], "period": periods[name]}
@@ -363,8 +382,13 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
                    scenario_config=ScenarioConfig(**context["configuration"]))
                    if pattern_key else ())
         for name, lo, hi in (("before", start, changed), ("after", changed, end)):
+            cohort = scoped_cohorts.get(name)
+            arm_cgm = ([row for row in cgm if row.t in cohort["cgm_times"]]
+                       if cohort is not None else cgm)
+            arm_bolus = ([row for row in bolus if (row.seq_num, row.t) in cohort["bolus_keys"]]
+                         if cohort is not None else bolus)
             observed = behavior_observations(
-                bolus, cgm, basal, lever=record["lever"], start=lo, end=hi,
+                arm_bolus, arm_cgm, basal, lever=record["lever"], start=lo, end=hi,
                 isf=programmed["value"], scenario_config=ScenarioConfig(**context["configuration"]),
                 low_answers=[a for a in low_prompt_answers(store, earliest, cutoff)
                              if a.answer == "false-low" or (a.answered_at or a.anchor_t) <= hi],
@@ -384,11 +408,17 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             # verdict. Other outcomes and adherence retain this existing gate.
             behavior_ready.append(arm["criterion_met"])
             if pattern_key:
-                sources = {}
-                for family, anchor_kind in (("meals", "meal"), ("lows", "low")):
-                    owned = [{"t": anchor.t.strftime(_FMT)} for anchor in anchors
-                             if anchor.kind.value == anchor_kind and lo <= anchor.t < hi]
-                    sources[family] = {"n": len(owned), "occurrences": owned}
+                if cohort is not None:
+                    owned = [{"t": occurrence["anchor_t"]}
+                             for occurrence in cohort["occurrences"]]
+                    sources = {cohort["view"]: {"n": len(owned), "occurrences": owned}}
+                else:
+                    sources = {}
+                    for family, anchor_kind in (("meals", "meal"), ("lows", "low")):
+                        owned = [{"t": anchor.t.strftime(_FMT)} for anchor in anchors
+                                 if anchor.kind.value == anchor_kind and lo <= anchor.t < hi
+                                 and (query is None or query.contains(anchor.t.hour * 60 + anchor.t.minute))]
+                        sources[family] = {"n": len(owned), "occurrences": owned}
                 criterion = opportunity_readiness(pattern_key, {}, {"exposures": sources})
                 arm.update({
                     **criterion, "observed": criterion["count"], "required": criterion["gate"],

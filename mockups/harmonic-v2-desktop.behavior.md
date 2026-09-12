@@ -1,5 +1,48 @@
 # Behavior ledger — harmonic-v2-desktop
 
+```text
+★ FROZEN 2026-09-10 · base cbcba39576c7d98c08be265a1255077c76b0f803
+  · generator cbcba39576c7d98c08be265a1255077c76b0f803 · window n/a
+  · fixtures mockups/qa-e2e.synthetic/harmonic.sqlite: 0856d0e09426
+  · predecessor shipped v2 desk · retired 18
+  · lifecycle revise · contract this ledger + frontend/harmonic-v2-desktop-behavior.replay.mjs
+```
+
+This #404 amendment freezes the inherited preservation obligations and the
+operator-requested fail-first repairs. Connor instructed “keep logging these
+things in the ticket ... then proceed with triaging” and, after the remaining
+workflow choices were disclosed, “codex, do it.” Product rulings are retained in
+docs/scope/404-v2-findings-ledger.md and the #404 change. No inherited behavior
+is retired. This is a revision contract, not a claim that the defective base
+passes the requested repairs, and creates no replacement visual mock or lock.
+
+Safe-start authority is AGENTS.md's explicit QA copy-then-serve command using
+`uv run harmonic serve --no-fetch --token '' --db <owned synthetic copy> --port 8765`.
+The named source is the committed synthetic showcase above, or a named store
+emitted by scripts/gen_qa_e2e_db.py from scripts/qa_e2e_cases.py and copied before
+serving. Exact retained generated base stores and raw runs are under
+/private/tmp/harmonic-404-triage-01a08ec1/cases/; retained new-report captures and
+probe case bytes are under /private/tmp/harmonic-404-new-report-evidence/.
+The fixture hashes are tripwires; these retained paths carry the executed bytes.
+The sole token-bearing exception is the user-approved separate synthetic S87
+server recorded in the scope ledger; its raw two-size passing logs are retained.
+
+Base preservation: both full runs reported 129 passes and six failures;
+S87 subsequently passed in isolation at both sizes. S101–S105 remain defect
+obligations, with S103's wider setup failure explicitly retained. Corrected
+S106/S107 both reached their feature assertions at both sizes: missing focal
+trace/markers, mismatched rails, reversed All charts/Close, and five overlapping
+meal rows. The runner reports `executed 0 · failed 2 · deferred 0 · selected 2`
+for this all-failing slice and exits 1; it is expected fail-first evidence,
+not a passing execution. Complete logs:
+/private/tmp/harmonic-404-new-stories-corrected-1280x720.log and
+/private/tmp/harmonic-404-new-stories-corrected-1440x900.log.
+The unchanged focal top anchoring passed its measured check. Every applicable
+story must pass after implementation; no failure is waived by this freeze.
+
+The earlier greenfield freeze and dated amendments below remain historical
+provenance. For #404 the shipped revise contract above governs.
+
 **★ FROZEN 2026-09-08 · this ledger is the contract.** Under
 `behavior-sweep` §7 the stories below, replayed against the surface, are what the
 v2 desktop must keep doing. A revision that drops one amends this ledger through
@@ -47,6 +90,28 @@ and geometry only. S100 and coupled Event S8 speech repair/proof belong to c2.
 The lock manifest (`mockups/harmonic-v2-desktop.lock.md`, 34 terms) says what the
 surface looks like. This says what it **does**. Together they are the build
 contract; neither alone is sufficient.
+
+**Amendment — 2026-09-10, issue #404 review-ready revise preflight.** The
+shipped surface was re-inventoried at base
+`cbcba39576c7d98c08be265a1255077c76b0f803`, using only the declared synthetic
+case stores and the existing app-only replay. The original retained fixture
+paths and SHA-256 tripwires below remain unchanged. The base replay reported 129
+pass and 6 fail at each locked desktop viewport; it is a mixed receipt, not a
+new green freeze. S87's separately authorized protected synthetic-server receipt
+passed at both locked sizes. S103's 1440px drawn-window
+setup failure remains a failure. No retirement, permanent absence, or prior
+story status is changed or waived.
+
+The new synthetic probe observed a Pattern selected occurrence whose served
+detail has glucose and markers while its focal event tile has neither a
+`selected:trace` nor a marker-bearing series; a regular low comparison retains
+`selected:trace`. It also measured rail disparity and long-row text overlap at
+the locked sizes. The focal action was already top anchored, so no focal
+placement change is contracted. These are pending acceptance changes, not
+revised behavior: before source admission, add a C4 story plus focused chart
+option assertion for Pattern selected trace/markers, and add geometry assertions
+for the observed rail/row cases. Existing S101–S105 remain their named
+fail-first stories and C4 functions.
 
 **18 stories are app-opener-only and have never passed.** `S53` (HV2-25),
 `S73b` and `S80b` (HV2-32) plus `S86`–`S100` name behavior the lock contracts and
@@ -362,6 +427,8 @@ S7 · A paired state is one flexible evidence stage beside a 300px reading pane
 ```
 Amended S7 · 2026-09-10 · ADR 397 / coordinator amendment 12: Diagnose .inspector is the carried v1 Findings rail at its shipped 430px, with a wider evidence stage; the 300px reading pane belongs to the paired desk states (Changes, Day), measured on .gf-desk > .gf-reading. The app replay uses a Changes case with a Trial underway to prove that paired width.
 The preceding wording and results are the attributed pre-amendment record.
+
+Amended S7 · 2026-09-11 · #404 browser correction: the paired desk reading rail is the same shipped 430px column as Diagnose. Changes and Day preserve that width beside their flexible stages.
 
 
 ```
@@ -1236,6 +1303,8 @@ S56 · Starting a Focus pins it and lands on Overview, leaving no Retry standing
 Amended S56 · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
 The preceding wording and results are the attributed pre-amendment record.
 
+Amended S56 · 2026-09-11 · #404 browser correction: Pattern Focus begins from a selected Diagnose outcome window; that exact served scope travels to the durable pin request and remains backend-admitted.
+
 
 ```
 S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
@@ -1250,6 +1319,8 @@ S56b · A failed pin keeps the form with its Retry focused and pins nothing; the
 
 Amended S56b · 2026-09-10 · ADR 397 / lock v2 389 2: The retained job uses canonical pattern:<key> identity, backend permissions and served opportunity readiness. A successful pin lands on its active Focus in Changes. Separate tables, failures and endings remain; c3 implements.
 The preceding wording and results are the attributed pre-amendment record.
+
+Amended S56b · 2026-09-11 · #404 browser correction: the failed and retried selected-window Pattern pin carry the same durable request identity and outcome scope; only a successful backend response opens Focus.
 
 
 ```
@@ -2334,3 +2405,192 @@ R18 · Historical past-setting tuning reads are absent everywhere in the app.
             historical identity, and prints the sanction
   status:   owed by the build — no passing result recorded
 ```
+
+## QA amendment — 2026-09-10, issue #404 (q1; no application fixes)
+
+Connor's #404 order adds these fail-first obligations. They retain the frozen
+stories and add coverage where the old assertions did not exercise the reported
+path. They are not passing browser evidence. Browser execution belongs to the
+coordinator at 1280x720 and 1440x900; the worker order prohibits build, serve and
+browser execution. The original freeze results above remain historical.
+
+Current inventory: **137 issued = 119 active + 18 retired**. S101–S107 are
+app-opener-only. No earlier ID or lock term is retired or re-settled by this QA
+pass. The design and expiry decisions were unresolved at this QA amendment;
+the final #404 triage disposition supersedes that historical status.
+
+```
+S101 · A drawn Window chip carries only the span; the enclosing Window label
+       supplies the noun once.
+  element:  #seg-window [data-follow], .cap
+  source:   frontend/diagnose-workstation.js markWindowSegment / paintChart
+  lock:     nearest HV2-11; no frozen story specifies this exact chip copy
+  data:     showcase; resize Afternoon's measured brace to 15:30–21:30
+  evidence: C4_STORIES.S101; registered app-only in the v2 replay
+  status:   browser fail-first pending coordinator; current source prefixes Window
+```
+
+```
+S102 · From a Pattern graph, clicking the thin 12:00 basal slot opens that
+       slot's own graph on the stage, including its thin-evidence state.
+  element:  #tile-row .evidence-tile, #lane > button, #tile-focal .evidence-tile
+  source:   frontend/diagnose-workstation.js pickCell / seatDrill
+  lock:     HV2-17, HV2-19; strengthens S43's stage-selection obligation
+  data:     pattern-near-tie; chartable Pattern and thin 12:00 basal slot
+  evidence: C4_STORIES.S102; checks stage identity after the slot selection
+  status:   coordinator confirmed the retained-Pattern assertion at both locked sizes
+```
+
+```
+S103 · Backing out of a basal slot restores the reader's preceding 24 h,
+       named Morning, or drawn 15:30–21:30 window.
+  element:  #lane > button, Findings breadcrumb, #seg-window, #chart
+  source:   frontend/diagnose-workstation.js pickCell / releaseWindow / popTo
+  lock:     nearest HV2-11, HV2-33; S43 covers selection, not this exact return
+  data:     showcase; three independently entered window states
+  evidence: C4_STORIES.S103; collects all three before/after window comparisons
+  status:   coordinator confirmed return-window assertion at 1280x720;
+            1440x900 drawn-window setup reproof pending
+```
+
+```
+S104 · Picking another recorded day keeps the Day stage, reading pane and
+       navigator mounted while the selected day's read is pending; completion
+       changes the held date without replacing the stage and reading pane nodes.
+  element:  .gf-nav-col[data-pick], .gf-stage-day, .gf-reading, #gf-nav
+  source:   frontend-v2/day.js bind / mount; routes.js render
+  lock:     nearest HV2-13, HV2-34; S63 covers picking, not node retention
+  data:     showcase; Previous recorded day enters the populated preceding week;
+            hold and then continue the real /api/model-view request on a ribbon pick
+  evidence: C4_STORIES.S104; node identity and connectedness across the read
+  status:   coordinator confirmed the teardown assertion at both locked sizes
+```
+
+```
+S105 · A confirmed-on-pump Plan with no active watch offers View change record;
+       the selected finished Trial opens its immutable ending and reloads from
+       its exact record address.
+  element:  .gf-status[data-state="confirmed"], View change record,
+            [data-record], [data-record-part="ending"], record route occurrence
+  source:   frontend-v2/plan-view.js planFrame; changes.js; history.js openRecord
+  lock:     HV2-12, HV2-28; extends S54b to the on-pump Plan state
+  data:     c3-trial; finish through S52, then record its already-programmed value at an eligible basal
+            slot and capture the same schedule through the replay pump producer
+  evidence: C4_STORIES.S105; asserts finished history, on-pump state and empty
+            admission before checking the missing door, then record/reload
+  status:   coordinator confirmed the missing-door assertion at 1280x720 and
+            1440x900; no application fix or passing replay claimed
+```
+
+```
+S106 · Selecting a served Pattern occurrence draws its exact served glucose
+       trace and served event markers together in the focal ECharts option.
+  element:  #tile-row .evidence-tile, #level .case-occurrence, #tile-focal .tile-chart
+  source:   frontend-v2/diagnose.js selection; frontend/diagnose-event-comparison.js option
+  lock:     HV2-17; S100/S26 retain the regular-comparison counterpart
+  data:     pattern-near-tie; selected Pattern detail supplies glucose and markers
+  evidence: C4_STORIES.S106; compares selected:trace plus visible supported
+            scatter/markPoint/markLine marker positions and served kind labels to case-file detail
+  status:   reached its feature assertion and failed at both locked sizes; corrected
+            marker-form evidence awaits coordinator reproof, while regular low retains its trace
+```
+
+```
+S107 · Diagnose, Changes and Day share one reading-rail width; All charts and
+       Close place each label before its icon; the focal action stays top-right;
+       grouped long-meal cohorts name themselves once while each event
+       description stays readable; ordinary verdict rows retain non-overlapping
+       varying tier text.
+  element:  .v2-diagnose .inspector, .gf-desk .gf-reading, All charts,
+            #chart-headacts, #tile-focal .tile-fullscreen, #level .case-occurrence
+  source:   frontend-v2/diagnose.js; frontend-v2/day.js; frontend-v2/plan-view.js;
+            frontend/diagnose-workstation.css
+  lock:     HV2-11; existing density tokens remain authoritative (no pixel target)
+  data:     showcase; All charts then finding:meal_bolus_short's long cohort roster
+  evidence: C4_STORIES.S107; aggregates every label/rail/focal/row observation,
+            including served grouped-cohort headings, full event-text ink, and
+            ordinary mixed-tier column geometry
+  status:   reached its feature assertion and failed at both locked sizes; corrected
+            Close/row evidence awaits coordinator reproof; focal top anchoring held
+```
+
+Additional handler inventory for this amendment:
+
+| Handler / registration | Source | Story |
+|---|---|---|
+| Clock drag and custom follow chip | frontend/diagnose-workstation.js | S101 |
+| Pattern tile then thin basal lane click | frontend/diagnose-workstation.js | S102 |
+| Basal lane click then Findings breadcrumb | frontend/diagnose-workstation.js | S103 |
+| Recorded-day click during model read | frontend-v2/day.js | S104 |
+| Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |
+| Pattern tile, occurrence selection and focal ECharts option | frontend-v2/diagnose.js, frontend/diagnose-event-comparison.js | S106 |
+| Destination navigation, All charts/Close and long cohort rows | frontend-v2/diagnose.js, day.js, plan-view.js, frontend/diagnose-workstation.css | S107 |
+
+### Coordinator amendment 1 — 2026-09-10
+
+The coordinator's first isolated browser runs did not reach the feature assertions
+for S101–S104: S101–S103 raised `diagnose is not defined`; S104 timed out reading
+the other-day locator. S105 reached its missing-history-door assertion at both
+locked viewports and is unchanged.
+
+S101–S103 now use their siblings' existing `fullDayDiagnose` opener. S104 first
+presses S66's Previous recorded day control: showcase arrives on Sunday June 30,
+whose week has no other recorded day; Saturday June 29's ribbon offers June 23–28.
+Only after that setup settles does the story retain nodes and hold the selected
+day's read. Node regression tests call the four exported stories and distinguish
+their feature assertion from setup errors; those tests are not browser evidence.
+Corrected S101–S104 still require the coordinator's isolated two-viewport reproof.
+
+### Coordinator amendment 5 — 2026-09-10
+
+The separately authorized synthetic authenticated S87 receipt completed: each of
+`/private/tmp/harmonic-404-auth-1280x720.log` and
+`/private/tmp/harmonic-404-auth-1440x900.log` reports `1 executed · 0 failed ·
+0 deferred · 1 selected`. Its dedicated no-fetch token server and copied store
+were cleaned up. This records an executed S87 proof only; it changes neither
+S87's function nor any other story's status.
+
+The completed synthetic probes at
+`/private/tmp/harmonic-404-new-report-evidence/probe.log` and
+`geometry-probe.log` exposed the two previously unrepresented behaviors above.
+S106 and S107 are now registered permanent fail-first stories with manufactured
+case recipes. Their first browser receipts reached feature failures at both sizes; corrected receipts are recorded in the #404 freeze header.
+The recorded defects are not waived and this amendment makes no revised-surface
+pass claim.
+
+### Coordinator amendment 6 — 2026-09-10
+
+The first dedicated S106/S107 receipts at
+`/private/tmp/harmonic-404-new-stories-1280x720.log` and
+`/private/tmp/harmonic-404-new-stories-1440x900.log` reached their feature
+assertions at both sizes and failed there. They reported `0 executed · 2 failed
+· 0 deferred · 2 selected` followed by the runner's retained fatal zero-executed
+summary; that accounting is not changed by this amendment. The receipts exposed
+only evidence defects: S107 read the post-drill All charts action as Close and
+clipped overflow-visible row ink, while S106 posed an invalid categorical marker
+y-coordinate. The corrected contracts await coordinator reproof; no product or
+application behavior is changed.
+
+### Coordinator amendment 2 — 2026-09-10
+
+The second run reached the intended S102 and S104 assertions at both locked sizes
+and S103's return-window assertion at 1280x720. Those proofs and S105's original
+proof remain accepted. S101 at both sizes and S103 at 1440x900 instead timed out
+waiting for the drawn chip; those are still setup failures.
+
+Their shared drawing setup now seeds Afternoon's interior brace, waits for fonts,
+finite animations and stable plot/grip boxes, then measures its two known edges.
+It resizes the end to 21:30 and the start to 15:30 through the public grips and
+the app's snap path. Each snapped chip must appear before pointer release, which
+otherwise cancels a queued drag repaint. Each chip wait is bounded to seven
+seconds and reports the text seen or its absence. The feature assertions and
+all other stories are unchanged. Node checks cover two manufactured chart widths
+and failed-chip diagnostics; the coordinator still owns browser reproof.
+
+### #404 revise amendment — 2026-09-11
+
+The shipped surface proves compact Filter/Window parity including named Findings
+loading, served selected Pattern trace/markers, exact record doors, readable v2
+paths, and backend-withheld Focus parent context. The operator requested Filter
+match the resized Window controls. This frozen historical prose remains baseline
+evidence rather than a replacement lock.

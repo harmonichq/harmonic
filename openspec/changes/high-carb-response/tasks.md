@@ -12,4 +12,4 @@
 
 - [x] 3.1 Extend the existing synthetic generator and its drift/parity checks for the new response and reachable sparse, missing, selected, scoped and in-sequence states; regenerate affected captures.
 - [x] 3.2 Amend the existing frozen behavior ledger and hand-listed browser suite for the sanctioned High-carb replacement, and run the affected stories through both shipped shells using the real renderer.
-- [ ] 3.3 Capture and inspect the prescribed before/after matrix, correct discovered defects, complete the final affected gates once, and update DESIGN.md and the surface ledger with the reviewed result.
+- [x] 3.3 Capture and inspect the prescribed before/after matrix, correct discovered defects, complete the final affected gates once, and update DESIGN.md and the surface ledger with the reviewed result.

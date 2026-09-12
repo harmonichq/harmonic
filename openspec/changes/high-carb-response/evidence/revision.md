@@ -64,11 +64,11 @@ PAYLOAD=mockups/diagnose-workstation.synthetic/payload.json node --test --test-n
 node --test --test-name-pattern='v2 Diagnose renders the generated High-carb|v2 High-carb scoped population|v2 High-carb rendered null_period' frontend-v2/desk.browser.test.mjs
 ```
 
-## Aggregate acceptance
+## Initial aggregate attempt
 
 Final verification on `f902c28f7917af332e475086c2d643c7007b5420` passed both builds, all 877 Node tests, OpenSpec strict validation, the three repository guards, and affected eating-sequence, Findings, showcase and event fixture drift checks. The QA suite passed 81 tests and 20 subtests in 58.25 seconds. However, its slowest generated case, `test_case_c4_profile`, took 16.62 seconds, exceeding the unchanged 15-second ceiling. An isolated rerun reproduced the breach at 16.11 seconds (one test passed in 16.18 seconds). The backend and QA case source are identical to the earlier passing measurement on `73212a8e`; no timing cause is established.
 
-The owned final-run process chain was stopped under the repository's budget rule. Full pytest was interrupted and is not a pass. Browser suites and complete ledgers had not started. No showcase, performance limit or product code was changed to suppress the breach. Task 3.3 remains incomplete; no PR was opened.
+The owned final-run process chain was stopped under the repository's budget rule. Full pytest was interrupted and is not a pass. Browser suites and complete ledgers had not started. No showcase, performance limit or product code was changed to suppress the breach. At that point task 3.3 was incomplete and no PR had been opened.
 
 Other measured budgets: showcase 1,417,216 bytes (limit25MiB), showcase drift0.31s (limit30s), focused QA58.25s (limit90s). Full pytest's400s ceiling remains unverified on this final revision. The previous full attempt on73212a8e finished in343.96s with2521passed,1failed,1skipped; its public-tree failure is fixed and independently verified in the compact correction, but that earlier run is not a successful full gate.
 
@@ -83,6 +83,33 @@ Both review axes converged without findings. The coordinator independently passe
 
 ## Final browser readiness corrections
 
-The integrated composition suite passed28cases and exposed two test timing failures: its first request barrier adopted an intermediate drag window, and Pattern capture scrolled a chart host during replacement. Commit `eb7c8b9c` distinguishes completed requests while explicitly asserting the final Morning window; all held-response and stale-adoption assertions remain. Pattern capture waits for a mounted supported series that survives a render frame and matches its host dimensions. Production code is unchanged.
+The integrated composition suite passed 28 cases and exposed two test timing failures: its first request barrier adopted an intermediate drag window, and Pattern capture scrolled a chart host during replacement. Commit `eb7c8b9c` distinguishes completed requests while explicitly asserting the final Morning window; all held-response and stale-adoption assertions remain. Pattern capture waits for a mounted supported series that survives a render frame and matches its host dimensions. Production code is unchanged.
 
-Both corrected cases passed twice, and independently passed once more. Both review axes converged without findings. The full backend passed2525tests with one expected real-database skip in366.24s, below400s; the QA suite passed81tests and20subtests in50.92s, slowestcase11.70s. Remaining browser gates and ledgers are resuming after this correction.
+Both corrected cases passed twice, and independently passed once more. Both review axes converged without findings. The full backend passed 2525 tests with one expected real-database skip in 366.24s, below 400s; the QA suite passed 81 tests and 20 subtests in 50.92s, slowest case 11.70s. Remaining browser gates and ledgers are resuming after this correction.
+
+## Completed aggregate acceptance
+
+All required affected gates now pass. Production source is unchanged after reviewed `93326f5`; subsequent changes only record completion. Backend and budget checks ran on `81603b9`, with the later delta confined to the browser test's readiness correction. The build and 877-test Node gate ran on `f902c28`; their frontend/configuration inputs are unchanged. No successful full backend or ledger was repeated for documentation-only changes.
+
+| Verification | Result | Raw output |
+| --- | --- | --- |
+| Full backend |2525 passed, 1 expected skip (no real database) |[Output](verification/pytest.txt) |
+| Full Node |877 passed, 0 skipped |[Output](verification/node.txt) |
+| Composition browser suite |30 passed |[Output](verification/composition.txt) |
+| Workstation browser suite |67 passed |[Output](verification/workstation.txt) |
+| v2 desk browser suite |24 passed |[Output](verification/v2-desk.txt) |
+| Workstation ledger |168/168 stories passed |[Output](verification/finding-ledger.txt) |
+| Event ledger |14/14 stories passed |[Output](verification/event-ledger.txt) |
+| Event support audit |Passed |[Output](verification/event-support.txt) |
+| v2 ledger,1280×720 |130 selected, 0 failed, 0 deferred |Four shard outputs below |
+| v2 ledger,1440×900 |130 selected, 0 failed, 0 deferred |Four shard outputs below |
+
+The frozen v2 inventory has 112 active and 18 retired stories at each size. All 130 registry entries were selected, preserving their retirement declarations. Each shard used fresh synthetic case stores. The final 1440×900 shard initially had four timeouts (S95, R2, R11 and R17). Its complete 33-case rerun passed on port 18410 using a temporary loopback-port override, preserved in [this patch](verification/local-port-override.patch). The override changed only the test transport and was reverted after the run; product source and story assertions stayed identical. The [original failed run](verification/v2-1440x900-4-of-4-original-failure.txt) remains available. Another task occupied the default port during investigation; contention was plausible but not established as the cause. All data and committed captures remain synthetic; no private preview data entered these artifacts.
+
+1280x720: [Shard 1](verification/v2-1280x720-1-of-4-stories.txt), [Shard 2](verification/v2-1280x720-2-of-4-stories.txt), [Shard 3](verification/v2-1280x720-3-of-4-stories.txt), [Shard 4](verification/v2-1280x720-4-of-4-stories.txt).
+
+1440x900: [Shard 1](verification/v2-1440x900-1-of-4-stories.txt), [Shard 2](verification/v2-1440x900-2-of-4-stories.txt), [Shard 3](verification/v2-1440x900-3-of-4-stories.txt), [Shard 4](verification/v2-1440x900-4-of-4-stories.txt).
+
+All five fixed budgets pass: showcase 1,417,216 bytes ≤25MiB; showcase drift 0.22s ≤30s; focused QA 50.92s ≤90s; slowest generated case 11.7s ≤15s; full backend 366.24s ≤400s. No limit or QA expectation was raised.
+
+OpenSpec strict validation, ADR numbering, owned identifiers, public allowlist, and affected generated fixture drift checks passed. [Command, commit and timing records](verification/results.json) identify each exact run. Both review axes converged for the feature, compact UI, performance correction and browser readiness corrections; no implementation findings remain. Earlier failures above remain historical evidence with explicit corrective dispositions.

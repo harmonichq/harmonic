@@ -1,0 +1,7 @@
+Command: uv run python -m pytest -q tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_profile --durations=1
+Checkout: f902c28f7917af332e475086c2d643c7007b5420
+Captured tool stdout:
+.                                                                        [100%]
+============================= slowest 1 durations ==============================
+16.11s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_profile
+1 passed in 16.18s

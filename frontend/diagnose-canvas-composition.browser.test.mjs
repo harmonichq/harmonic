@@ -30,6 +30,7 @@ import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  captureEvidence, openAllCharts, highCarbFailureScenario, assertHighCarbFailure,
   S151, S152, S153, S154, S155, S156, S157, S158,
   drawWindow, waitForPreparationWindow,
   generatedFindingPose,
@@ -66,6 +67,10 @@ if (missing.length) {
 const { createBrowserRunner } = require('./browser-runner.js');
 const runner = createBrowserRunner(() => chromium.launch({ executablePath: EXEC || undefined }));
 after(() => runner.close());
+const evidenceViewport = () => {
+  const [width, height] = (process.env.VIEWPORT || '').split('x').map(Number);
+  return Number.isInteger(width) && Number.isInteger(height) ? { width, height } : undefined;
+};
 
 const FINDINGS_FIXTURE = JSON.parse(await readFile(
   join(ROOT, 'frontend/__fixtures__/findings-projection.json'), 'utf8'));
@@ -478,12 +483,14 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
       if (url.pathname !== '/api/diagnose/finding-case-file-preparation') return;
       const window = [url.searchParams.get('start_min'), url.searchParams.get('end_min')];
       requested.push(window);
-      // Resolve with the first observed bounds, including a mis-draw. The
-      // caller checks the frozen bounds rather than waiting forever for them.
-      if (expectAfternoon) markAfternoonRequested(window);
-      if (holdMorning) {
+      // Drag updates may request intermediate bounds before mouse-up. Hold
+      // only the completed Morning window; the caller also checks the drawn UI.
+      if (expectAfternoon && window[0] === '840' && window[1] === '1260') {
+        markAfternoonRequested(window);
+      }
+      if (holdMorning && window[0] === '270' && window[1] === '480') {
         markMorningHeld(window);
-        if (window[0] === '270' && window[1] === '480') await morningReleased;
+        await morningReleased;
       }
     },
   });
@@ -494,6 +501,12 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
     await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false');
     holdMorning = true;
     await drawWindow(page, [270, 480]);
+    console.log('Morning gesture', JSON.stringify({ requested, rendered: await page.locator('#seg-window').innerText() }));
+    await captureEvidence(page, 'morning-gesture');
+    assert.equal(await page.locator('#seg-window [data-follow]').evaluate(node =>
+      node.textContent.replace('×', '').trim()), '04:30–08:00',
+      'the completed Morning gesture matches the frozen preparation bounds');
+    assert.equal(await page.locator('#seg-window [data-follow]').getAttribute('aria-pressed'), 'true');
     await waitForPreparationWindow(morningHeld, ['270', '480'], requested);
     expectAfternoon = true;
     await drawWindow(page, [840, 1260]);
@@ -524,6 +537,8 @@ test('an in-flight preparation cannot adopt findings for a window the reader lef
     /* THE DEFECT, STATED AS EVIDENCE: the held Morning answer lands after the
        reader has drawn 14:00–21:00. If any adoption path takes it, the field
        draws Morning's rows while every instrument reads Afternoon. */
+    console.log('Released preparation windows', JSON.stringify(requested));
+    await captureEvidence(page, 'afternoon-after-release');
     const seated = await page.locator('.evidence-tile')
       .evaluateAll((tiles) => tiles.map((tile) => tile.dataset.chartId));
     // findings-projection.json windows.morning (270–480) and windows.afternoon
@@ -858,7 +873,9 @@ for (const [id, story, sequenceState] of [
 ]) {
   test(`eating-sequence composition ${id} uses generated Python transports`, async () => {
     const browser = await runner.browser();
-    const page = await openApp(browser, { appSource: 'fixture', sequenceState });
+    const page = await openApp(browser, {
+      appSource: 'fixture', sequenceState, viewport: evidenceViewport(),
+    });
     try { await story(page); } finally { await page.close(); }
   });
 }
@@ -885,3 +902,70 @@ for (const defect of ['generation', 'counts']) {
     } finally { await page.close(); }
   });
 }
+
+for (const defect of ['missing', 'malformed', 'inconsistent', 'stale-recover', 'stale-error']) {
+  test(`High-carb response ${defect} preserves the existing recovery boundary`, async () => {
+    const scenario = highCarbFailureScenario(defect);
+    const browser = await runner.browser();
+    const page = await openApp(browser, { appSource: 'fixture',
+      sequenceState: 'high_carb_sequence_empty', viewport: evidenceViewport(), caseScenario: scenario });
+    try {
+      const { expandSequenceFixture } = await import('./eating-sequence-fixture.js');
+      const fixture = expandSequenceFixture(JSON.parse(await readFile(
+        join(ROOT, 'mockups/eating-sequence-findings.synthetic/payload.json'), 'utf8')));
+      await assertHighCarbFailure(page, scenario, defect,
+        fixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']);
+    } finally { await page.close(); }
+  });
+}
+
+// The same generated Pattern input can also inspect the source-read-only baseline
+// shell for paired revision evidence, without changing the shipped test default.
+test('High-carb same Pattern reference preserves the shared presentation', async () => {
+  const browser = await runner.browser();
+  const page = await openApp(browser, { appSource: 'fixture', sequenceState: 'high_carb_sequence_empty',
+    viewport: evidenceViewport(), frontendRoot: process.env.PATTERN_REFERENCE_ROOT || null });
+  const id = 'pattern:highs_after_meals';
+  const capture = async (rank, selector) => {
+    // Opening a case replaces the chart host. Read only a mounted comparison
+    // that survives the next render frame, including any scroll-driven resize.
+    const ready = await page.waitForFunction(async (selector) => {
+      const host = document.querySelector(selector);
+      const chart = host && window.echarts?.getInstanceByDom(host);
+      if (!chart || document.querySelector('#level .empty')?.textContent.includes('Opening case file')) return false;
+      if (!chart.getOption().series?.some(series => series.id === 'comparison:line:supported')) return false;
+      host.scrollIntoView({ block: 'nearest' });
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      if (!host.isConnected || window.echarts.getInstanceByDom(host) !== chart
+        || !host.clientWidth || !host.clientHeight
+        || chart.getWidth() !== host.clientWidth || chart.getHeight() !== host.clientHeight) return false;
+      const option = chart.getOption();
+      const labels = chart.getZr().storage.getDisplayList().filter((item) => item.type === 'tspan')
+        .map((item) => {
+          const box = item.getBoundingRect().clone();
+          if (item.transform) box.applyTransform(item.transform);
+          return { text: item.style.text, x: box.x, y: box.y, width: box.width, height: box.height };
+        });
+      return { width: host.clientWidth, height: host.clientHeight,
+        align: option.xAxis[0].axisLabel.align ?? null, labels,
+        series: option.series.map(({ id, data }) => ({ id, data })) };
+    }, selector);
+    const actual = await ready.jsonValue();
+    await ready.dispose();
+    assert.equal(actual.align, null, 'Pattern retains the original default label alignment');
+    console.log(`Pattern reference ${rank} ${JSON.stringify(actual)}`);
+    await captureEvidence(page, `pattern-${rank}`);
+  };
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await openAllCharts(page);
+    await capture('all-charts', `#tile-row [data-chart-id="${id}"] .tile-chart`);
+    await page.keyboard.press('Escape');
+    await page.locator(`#level .qrow[data-id="${id}"]`).click();
+    await page.locator('#tile-focal .tile-chart').waitFor();
+    await capture('stage', '#tile-focal .tile-chart');
+    await page.locator('#tile-focal .tile-fullscreen').click();
+    await page.locator('#tile-field[data-fullscreen-tile]').waitFor();
+    await capture('fullscreen', '#tile-focal .tile-chart');
+  } finally { await page.close(); }
+});

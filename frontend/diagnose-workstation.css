@@ -1455,6 +1455,26 @@
 .ev-detail .vd .pip { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; background: var(--mk-muted); opacity: .45; }
 .ev-detail .vd[data-matched="true"] .pip { background: var(--ck-accent); opacity: 1; }
 .ev-detail .vd .lab { font-size: 10.5px; color: var(--mk-muted); }
+.sequence-supporting-detail { color: var(--mk-secondary); container-type: inline-size; }
+.sequence-cap { color: var(--mk-muted); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.sequence-cohort { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; line-height: 1.6; }
+.sequence-cohort > :not(:first-child) { font-variant-numeric: tabular-nums; }
+.sequence-supporting-detail summary { min-height: 44px; align-content: center; cursor: pointer; color: var(--ck-accent); }
+.sequence-supporting-detail summary:focus-visible { outline: 2px solid var(--ck-accent); outline-offset: 2px; }
+.sequence-period { margin: 8px 0 14px; }
+.sequence-period .sequence-cohort { grid-template-columns: minmax(0, 1fr) auto; }
+.sequence-period .sequence-cohort > :nth-child(2) { grid-row: 2; grid-column: 1 / -1; }
+.sequence-period .sequence-cohort > :last-child { grid-column: 2; grid-row: 1; }
+.sequence-period .sequence-cohort + .sequence-cohort { margin-top: 6px; }
+.sequence-summary { margin: 12px 0 4px; line-height: 1.5; }
+.sequence-unavailable { line-height: 1.6; }
+/* The desktop inspector fits a row; narrower inspector bodies keep their wrap. */
+@container (min-width: 390px) {
+  .sequence-period .sequence-cohort { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .sequence-period .sequence-cohort > :nth-child(2),
+  .sequence-period .sequence-cohort > :last-child { grid-column: auto; grid-row: auto; }
+}
+
 .more {
   width: 100%; text-align: left; padding: 8px var(--ck-pad); background: none; border: 0;
   color: var(--ck-accent); cursor: pointer; font-size: 11.5px;
@@ -2136,3 +2156,28 @@
 /* Fullscreen is temporary canvas state, not a parallel pane composition. It
    borrows the fullscreen header and body rows above; `data-fullscreen-tile`
    owns only the one-chart field geometry. */
+
+/* High-carb uses the shared readout in its existing headline. Overlaying that
+   readout keeps pointer inspection from moving the Full control before a click. */
+.tile-head:has(> .high-carb-readout) { position: relative; }
+.tile-head > .high-carb-readout {
+  position: absolute; inset: 8px 34px 8px var(--ck-grid-left);
+  display: flex; flex-wrap: wrap; align-content: center; align-items: baseline;
+  gap: 6px 14px; visibility: hidden; pointer-events: none;
+  font-family: var(--ck-mono); font-size: var(--ck-data);
+}
+.tile-head[data-hover="1"]:has(> .high-carb-readout) > .tile-id { visibility: hidden; }
+.tile-head[data-hover="1"] > .high-carb-readout { visibility: visible; }
+.high-carb-readout > * { flex-shrink: 0; }
+.canvas-head[data-full] .head-full:has(> .high-carb-readout) { position: relative; }
+.canvas-head[data-full] .head-full > .high-carb-readout {
+  position: absolute; inset: 0; flex-wrap: wrap; align-content: center;
+  gap: 6px 14px; pointer-events: none; white-space: normal;
+}
+.head-full[data-hover="1"]:has(> .high-carb-readout) > #full-title { visibility: hidden; }
+@media (max-width: 600px) {
+  .tile-field:not([data-fullscreen-tile]):not([data-explorer])
+    > .tile-focal > .evidence-tile > .tile-head:has(> .high-carb-readout) { min-height: 72px; }
+  .canvas-head:has(.high-carb-readout) > .head-swap { min-height: 62px; }
+  .canvas-head .high-carb-readout .rd-pair { gap: 4px; }
+}

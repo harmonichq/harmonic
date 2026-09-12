@@ -312,13 +312,23 @@ when its winning episode covers no meal. The parent keeps its meals denominator
 and Pattern case chart.
 
 The sixth registry family, eating-sequence, reuses the shared tile, mini mount,
-All charts and fullscreen shell. Its cohort aggregate dots use the shipped
-comparison/matched colors with diamond/circle redundancy. Time in range (%) and
-glucose SD (mg/dL) have separate labeled rulers. Three served intervals remain
-visible; a labeled dot identifies the producer-selected period. Cohort counts
-come from that comparison. Nulls stay absent numeric points with an explicit
-unavailable label. Mini rank omits axis furniture and interaction.
-The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js.
+All charts and fullscreen shell. Repeat eating uses cohort aggregate dots with
+the shipped comparison/matched colors and diamond/circle redundancy. High-carb
+sequence uses the backend-owned title “Glucose after high-carb eating” (or
+“Glucose during high-carb eating” for an in-sequence comparison) and the shared
+response renderer: observed glucose in mg/dL over time
+from the end of eating, the target range, named highest-carb and other-sequence
+curves, cohort support and source scope. The legend names “Sequences at all times
+of day” or “Evening sequences” within the source population, independently of the
+clock-filtered roster. A selected singleton paints one focus-colored marker;
+dense selected traces retain lines without markers. Its supporting detail retains the full numerical comparison summary and all three
+served aggregate intervals, including explicit unavailable cells. The mini rank
+omits axis furniture and interaction. The end anchor keeps two lines; narrow
+High-carb charts omit the adjacent +1 h label to leave reading space. Short
+during-eating windows retain a tick at the zero-minute end anchor. The shared
+readout overlays the High-carb headline without moving its Full control, with
+three reserved rows in narrow stage and fullscreen headers. Pattern alignment is unchanged.
+The dedicated fixture retains producer preparations (including findings.rows), rendered rows and cases for global and 0–360 windows, interns repeated JSON values as $ref entries, and expands them unchanged through frontend/eating-sequence-fixture.js. It losslessly retains every roster selection, including clean reference sequences, through shared JSON values.
 The component harness reads generator-owned public Python cases. The coordinator
 owns rendered direction review and the three-viewport evidence matrix.
 

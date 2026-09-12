@@ -22,7 +22,10 @@
  * Issue #341 revises the canvas composition below: the evidence spotlight
  * leads, followed by the real clock overview and basal lane.
  */
-import { isEatingSequence, validEatingSequenceCase, eatingSequenceComparison } from './diagnose-eating-sequences.js';
+import {
+  highCarbResponseCase, isEatingSequence, validEatingSequenceCase,
+  eatingSequenceComparison,
+} from './diagnose-eating-sequences.js';
 import {
   buildEnvelope, renderCanvas, observeResize, stripGlucoseRange,
   buildSlotLane, cellAtMinute, windowStats, hhmm, windowSpanText,
@@ -66,7 +69,7 @@ import { watchDockView, paintWatchDock } from './watched-change-dock.js';
    from this module too; the cycle is safe because neither side calls the
    other's import at module-evaluation time, only from inside functions run
    later, after both modules have finished loading. */
-import { renderEventSurface } from './diagnose-event-comparison.js';
+import { eventComparisonGlucoseValues, renderEventSurface } from './diagnose-event-comparison.js';
 
 /* VERBATIM from the mock's shared harness chrome. The ported chartColors() calls it, and
    it must read the live stylesheet rather than any restated token (R3). */
@@ -559,6 +562,7 @@ function renderCaseHead(host, caseFile, lane, onViewSlot, icBlocks, onViewSegmen
     <div class="statline"><b>${summary.claimed}</b> of <b>${summary.denominator}</b>
       ${FAMILY_LABEL[family]} in ${caseFile.window.label || '24 h'}
       · <b>${summary.denominator - summary.claimed}</b> not attributed</div>`;
+  if (finding.lever === 'high_carb_sequence') box.querySelector('.statline').remove();
   const clock = projection.alignment === 'clock' ? projection.clock : null;
   renderCaseClock(box, clock);
   if (clock) {
@@ -590,7 +594,9 @@ function renderCaseRoster(host, caseFile, verdict, selectedId, onSelect, onMore,
     `<div class="lvl-cap">Occurrences<span class="meta">${publishedCount} of ${caseFile.summary.denominator}</span></div>`);
   renderOccurrenceRoster(host, [{
     compact: true,
-    header: `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
+    header: caseFile.finding.lever === 'high_carb_sequence'
+      ? `<div class="ev-group"><b>${label}</b></div>`
+      : `<div class="ev-group"><b>${caseFile.finding.title}</b> — ${label}
       <span class="n">· ${publishedCount} ${caseFile.family === 'sequences' ? 'sequence' : 'episode'}${publishedCount === 1 ? '' : 's'}</span></div>`,
     servedCount: publishedCount,
     rows: rows.map((row) => ({
@@ -721,7 +727,24 @@ function renderBehavioralFullscreen(host, f) {
      shared-header ruling (#72) settled at the By-event mount that fullscreen
      replaced. */
   const previous = window.__diagnoseEventComparison;
-  const mounted = renderEventSurface(host, f.caseFile, { headline: el('canvas-fullhead') });
+  const caseFile = f.caseFile.finding.lever === 'high_carb_sequence'
+    ? highCarbResponseCase(f.caseFile) : f.caseFile;
+  const mounted = renderEventSurface(host, caseFile, { headline: el('canvas-fullhead') });
+  mounted.restoreGlobal = () => {
+    if (window.__diagnoseEventComparison === mounted) {
+      window.__diagnoseEventComparison = previous;
+    }
+  };
+  return mounted;
+}
+
+function renderHighCarbStage(host, caseFile, range) {
+  const previous = window.__diagnoseEventComparison;
+  const headline = host.closest('.evidence-tile')?.querySelector('.tile-head');
+  const response = highCarbResponseCase(caseFile);
+  const mounted = renderEventSurface(host, response, {
+    range: glucoseRange([...range, ...eventComparisonGlucoseValues(response)]), headline,
+  });
   mounted.restoreGlobal = () => {
     if (window.__diagnoseEventComparison === mounted) {
       window.__diagnoseEventComparison = previous;
@@ -1595,10 +1618,12 @@ function boot(root, data, callbacks, signal) {
     tileAnalysisGeneration = generation;
     const available = new Set(tileDescriptors.map(({ chartId }) => chartId));
     canvasLayout = createCanvasLayout({
-      focalId: available.has(canvasLayout.focalId)
-        ? canvasLayout.focalId
-        : fallbackFocalId(findings, currentTileDescriptors(),
-          currentTileCandidates(), canvasLayout.pins),
+      // A new scope may change the queue's first-ranked chart. Keep the open
+      // inspector's own chart seated while it still belongs to that scope.
+      focalId: available.has(drilledChartId) ? drilledChartId
+        : available.has(canvasLayout.focalId) ? canvasLayout.focalId
+          : fallbackFocalId(findings, currentTileDescriptors(),
+            currentTileCandidates(), canvasLayout.pins),
       pins: canvasLayout.pins,
     });
     seatingPolicyKey = nextPolicyKey;
@@ -2859,8 +2884,14 @@ function boot(root, data, callbacks, signal) {
                smear — so every seat but the focal one draws in the registry's
                `mini` treatment: the tight grid and the small label rank. Only the
                focal chart is read at full size, and only it gets full furniture. */
-            if (fullscreen && descriptor.kind === 'event-comparison') {
+            if (fullscreen && (descriptor.kind === 'event-comparison'
+              || (descriptor.kind === 'eating-sequence'
+                && caseFile.finding.lever === 'high_carb_sequence'))) {
               const mounted = renderBehavioralFullscreen(chartHost, { caseFile });
+              tileMounts.push(installTileMount(chartHost, mounted));
+            } else if (descriptor.kind === 'eating-sequence'
+              && caseFile.finding.lever === 'high_carb_sequence' && seat.seat === 'focal') {
+              const mounted = renderHighCarbStage(chartHost, caseFile, sharedGlucoseRange);
               tileMounts.push(installTileMount(chartHost, mounted));
             } else {
               const mounted = mountDescriptorChart(chartHost, descriptor, seat.seat === 'mini', {
@@ -3445,10 +3476,69 @@ function boot(root, data, callbacks, signal) {
     renderCaseHead(host, caseFile, lane, pickCell, icBlocks, pickBlock);
     if (caseFile.projection.kind === 'eating-sequence') {
       const comparison = eatingSequenceComparison(caseFile);
-      const caption = document.createElement('div');
-      caption.className = 'statline sequence-comparison';
-      caption.textContent = comparison.finding.summary;
-      host.append(caption);
+      if (caseFile.finding.lever === 'high_carb_sequence') {
+        const facts = document.createElement('section');
+        facts.className = 'ev-detail case-facts sequence-supporting-detail sequence-comparison';
+        const cohortRow = (name, cohort, full) => {
+          const line = document.createElement('div');
+          line.className = 'sequence-cohort';
+          const value = (metric, unit) => cohort[metric] == null
+            ? 'Not enough data' : `${Math.round(cohort[metric])}${unit}`;
+          const label = document.createElement('span');
+          label.textContent = name;
+          const figures = document.createElement('span');
+          figures.textContent = cohort.tir_pct == null && cohort.sd_mgdl == null
+            ? 'Not enough data'
+            : `${value('tir_pct', '% in range')}${full
+              ? ` · SD ${value('sd_mgdl', ' mg/dL')}` : ''}`;
+          const count = document.createElement('span');
+          count.textContent = `n ${cohort.n}`;
+          line.append(label, figures, count);
+          return line;
+        };
+        const periodRows = (row, full) => {
+          const period = document.createElement('div');
+          period.className = full ? 'sequence-period' : 'sequence-current';
+          if (full) period.dataset.period = row.period;
+          const label = document.createElement('div');
+          label.className = 'sequence-cap';
+          label.textContent = `${full ? '' : 'Comparison · '}${row.label}`;
+          period.append(label);
+          if ([row.comparison, row.reference].every((cohort) => cohort.tir_pct == null && cohort.sd_mgdl == null)) {
+            const unavailable = document.createElement('div');
+            unavailable.className = 'sequence-unavailable';
+            unavailable.textContent = `Not enough data · Highest-carb fifth n ${row.comparison.n} · Other sequences n ${row.reference.n}`;
+            period.append(unavailable);
+          } else period.append(
+            cohortRow('Highest-carb fifth', row.comparison, full),
+            cohortRow('Other sequences', row.reference, full));
+          return period;
+        };
+        const active = comparison.periods.find((row) => row.selected);
+        facts.append(periodRows(active, false));
+        const disclosure = document.createElement('details');
+        disclosure.open = Boolean(f.sequenceDetailOpen);
+        const control = document.createElement('summary');
+        control.textContent = 'All three periods';
+        control.setAttribute('aria-expanded', String(disclosure.open));
+        disclosure.addEventListener('toggle', () => {
+          f.sequenceDetailOpen = disclosure.open;
+          control.setAttribute('aria-expanded', String(disclosure.open));
+        });
+        disclosure.append(control);
+        for (const row of comparison.periods) disclosure.append(periodRows(row, true));
+        const caption = document.createElement('p');
+        caption.className = 'sequence-summary';
+        caption.textContent = comparison.finding.summary;
+        disclosure.append(caption);
+        facts.append(disclosure);
+        host.append(facts);
+      } else {
+        const caption = document.createElement('div');
+        caption.className = 'statline sequence-comparison';
+        caption.textContent = comparison.finding.summary;
+        host.append(caption);
+      }
     }
     const eventComparison = caseFile.projection.alignment === 'event'
       && caseFile.projection.kind !== 'eating-sequence';

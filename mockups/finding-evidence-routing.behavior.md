@@ -3895,6 +3895,81 @@ hand-set.
 Revision evidence and chart-direction review remain pending with the coordinator.
 The issued inventory is 183, with 168 active IDs and 15 retired IDs.
 
+## Amendment — 2026-09-11, issue #410 High-carb response replacement
+
+S153, S155 and S158 keep their issued identities and their Repeat eating arms.
+High-carb sequence now uses the existing response renderer for its queue mini,
+All charts cell, stage and fullscreen: observed glucose is aligned to the end of
+eating, and the legend names `Highest-carb fifth` and `Other sequences` with
+their served support. Its stage uses the renderer's body-only mount inside the
+existing tile header; it does not nest the standalone response pane or duplicate
+its generic title. The parent Pattern remains the same independent case chart.
+
+S153 checks the served response curves in the mini and All charts cell rather
+than the retired aggregate scatters. S155 retains keyboard and pointer drill,
+selected sequence, fullscreen return, focus and clock window; the selected trace
+still comes only from the served case. S158 retains no-substitute thin states and
+keeps an unavailable aggregate period in supporting detail while the response
+curves remain visible. No ranking, detector, eligibility, ownership, support or
+Repeat eating behavior changes.
+
+The #410 correction preserves every public roster selection, including clean
+reference sequences and a second fired sequence. The generator shares repeated
+values and object field layouts through its `$ref` transport; expansion is
+lossless in both Python and JavaScript and retains the multiple-episode state.
+
+- **S153 amendment:** the mini remains inert. The High-carb end anchor paints in
+  All charts. Narrow response charts omit the crowded `+1 h` label, retaining
+  `+2 h` and the two-line end anchor. Pattern keeps its original alignment.
+- **S155 amendment:** select the second fired sequence, then the Clean verdict
+  band's reference sequence. Each mounted trace equals the served observations.
+  Stage and fullscreen keep the same response series, selected trace, range and
+  source-matched keyboard readout. Both shells also move the actual browser mouse
+  to the served minute-330 observation using the chart's coordinate transform;
+  stage and fullscreen disclose `+5 h 30 min`, 270 mg/dL (n=8) and 110 mg/dL
+  (n=32). This follows Home, proving that pointer movement updates the readout.
+  Escape restores selection, window and opener
+  focus. The High-carb readout overlays its headline without moving Full; the
+  narrow stage and fullscreen headers reserve space for their three readout rows.
+- **S157 amendment:** open the scoped High-carb case. Its response equals the
+  whole source population while its clock roster is narrower and keeps the
+  existing verdict filter and five-row disclosure.
+- **S158 amendment:** the in-sequence state paints both supported observations
+  (270 and 110 mg/dL at minute zero, n=8 and n=32). The differing-duration state
+  retains its -30 to +5 minute domain, visible zero-minute end anchor, supported candidate observations and
+  limited reference observations. The missing minute-zero point remains a gap,
+  followed by the observed minute-five point. No trajectory bridges the gap.
+
+The v2 singleton-selection story also checks the selected series' own painted
+marker at 0 minutes, 270 mg/dL, in stage and fullscreen, then clears selection.
+Dense selected traces retain no point markers. The response legend translates
+source scope to “Sequences at all times of day” or “Evening sequences”; the
+backend report summary and clock-roster boundary remain unchanged.
+
+The existing hand-listed composition and v2 desk suites also own these named
+browser stories through the actual High-carb case-file integration:
+
+- **High-carb response missing / malformed / inconsistent:** each invalid
+  response exposes `inconsistent_projection`, paints no substitute result,
+  makes no clock fallback or automatic retry, and recovers on manual reopen
+  after a valid response arrives.
+- **High-carb response stale-recover:** `stale_projection` refreshes preparation
+  once, retries the same event case once, and displays the valid response.
+- **High-carb response stale-error:** a second stale response remains a visible
+  typed error after one refresh. Manual reopen can recover; no retry loop runs.
+- **v2 High-carb scoped population, roster selections and fullscreen:** the
+  second fired and clean/reference selections, clear, opened clock roster,
+  source response, fullscreen values/readout and return use the same shared
+  assertions as v1.
+- **v2 High-carb rendered empty / in_sequence / limited / null_period:** the
+  mounted series and gaps equal generated public evidence. Captures include
+  the resting stage and the empty-state recipe's mini, All charts and same
+  Highs after meals Pattern reference (the recipe has a supported High-carb
+  Finding with no covered meals, not an empty response).
+
+These are focused revision checks. Full integrated ledgers and aggregate
+completion remain the coordinator's final gate.
+
 ## Amendment — 2026-09-10, issue #389 coordinator amendment 11
 
 The 2026-09-08 retirement in `895b596b` remains in force: Connor Griffin,
@@ -3944,3 +4019,82 @@ it never computes its expectation through the mirror. This supersedes amendment
 11's preset-bound and preset-button clauses: the selected-window assertion checks
 the 14:00–21:00 window chip. The held-response ordering, retained Afternoon chart,
 absence of Morning-only charts and no-page-error assertions remain.
+
+
+## Baseline re-inventory — 2026-09-11, issue #410
+
+Base: `12388f58` (the ticket branch's fetched main). The existing High-carb
+sequence implementation was inspected through the declared component harness in
+manufactured mode. Both shells built. The existing `eating-sequence` selection
+of `frontend/diagnose-canvas-composition.browser.test.mjs` passed all ten tests
+with no skips, including S151–S158 and generation/count mismatch checks. This is
+a focused baseline under AGENTS.md's iteration rule, not a claim of a complete
+ledger replay. The existing ledger and replay remain frozen.
+
+The chart-specific inventory maps registry seating and minis to S153, row/All
+charts entry and fullscreen/focus/selection return to S155, window membership
+to S157, and periods/units/nulls/cohort support to S158. S151 keeps nesting and
+sequence counting. The imported shared mount owns resize and disposal. The
+legend names the cohorts and their support. Live stage/fullscreen label clicks
+left the ECharts selected map unchanged; no durable visibility toggle is
+claimed. The revision uses the sibling response chart's pointer/keyboard
+readout to disclose values in place of the item-tooltip option. The miniature remains inert.
+
+Connor approved the existing Pattern response-comparison presentation for the
+High-carb sequence chart: “yep.” The selected direction and source boundaries
+are recorded in ADR 410 in `openspec/changes/high-carb-response/design.md`.
+The aggregate dot panels are the replaced presentation, not a retirement of
+their evidence: all three periods, units, values, counts and unavailable states
+remain in supporting detail. No navigation behavior is
+retired. Repeat eating retains the current S152/S154/S156 and S158 branches.
+
+Implementation amends S153/S155/S158 for the new High-carb presentation and adds
+its observed-response readout/visibility evidence before declaring the revision
+complete. The issued and active story inventories are unchanged by this baseline
+record. The public synthetic probe and generated facts are in the active change.
+
+### #410 direct user correction — 2026-09-11
+
+Connor said “also bro this title is redic.” The High-carb stage now receives
+“Glucose after high-carb eating” from the backend, or “Glucose during high-carb
+eating” for an in-sequence comparison. The full numerical summary moves into
+Supporting comparison detail, retaining its percentages, counts, period and
+source scope beside all three aggregate intervals. The report and conclusions
+are unchanged. The shared response assertions check both the short title and
+exact full supporting summary in both shells. All other Finding titles remain
+unchanged. The coordinator records the aggregate OpenSpec amendment.
+
+
+### 2026-09-11 — #410 compact High-carb inspector amendment
+
+Connor explicitly rejected the supporting-detail wall and authorized a compact
+inspector. S155 and S158 now keep two selected-period cohort rows visible, with
+whole-percent TIR and each served integer count. A native “All three periods”
+disclosure starts collapsed; it retains all periods, whole mg/dL glucose SD,
+units, per-row counts, unavailable values and the complete server summary.
+The full summary is accessible when expanded, rather than duplicated initially.
+High-carb uses “During eating”; Repeat eating retains its existing presentation.
+The chart continues to identify its source population independently of the clock
+roster. Redundant High-carb header and roster-group counts are removed; the
+breadcrumb, verdict controls and occurrence total retain their distinct roles.
+
+The shared compact-inspector assertion runs through v1 S155/S158 and the existing
+v2 High-carb selection/scoped/null-period tests. It checks the two served rows,
+compact height, a 44px disclosure target, keyboard expansion, pointer collapse,
+all three periods, no horizontal overflow, full summary access, selection/clear
+persistence and Escape coexistence. Captures explicitly scroll the inspector into
+view in both shells. This is a sanctioned presentation change, not a detector or
+backend evidence change; final aggregate verification remains coordinator-owned.
+
+
+### 2026-09-11 — #410 compact inspector follow-up
+
+The fully unavailable period now says “Not enough data” once and retains both
+cohort counts. A singly missing metric does not hide the other metric. Existing
+compact-inspector browser checks pin literal strings for the known synthetic
+recipes, independently of the renderer; the v2 null-period case additionally
+exercises independently missing TIR and SD at the API boundary.
+Measured desktop inspector content is 405px; complete rows need about 288px at
+the existing readable font size. The same local grid uses a single line when its
+container is at least 390px, while the measured 365px mobile body retains wrapped metrics.
+There is no viewport-based width assumption or JavaScript layout controller.

@@ -440,7 +440,8 @@ def compare_follow_up(store, *, record, data_cutoff, input_revision, context_mod
             statistic = lambda counts: _pct(sum(k for k, n in counts), sum(n for k, n in counts)) if counts else None
         else:
             rate_groups = groups
-            statistic = lambda readings, attr=attr: getattr(compute_metrics(readings), attr)
+            statistic = lambda readings, attr=attr: getattr(
+                compute_metrics(readings, include_cv=attr == "cv"), attr)
         outcome_ready = ready
         if kind == "focus" and key == target:
             # Mapped glucose retains its own measurement/coverage checks below;

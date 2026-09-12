@@ -1,0 +1,100 @@
+................................................................. [ 80%]
+................                                            [100%]
+=============================== warnings summary ===============================
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_history
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_history
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_history_register
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_history_register
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_showcase
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_showcase
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_exact_rest_windows_and_history_series_are_load_bearing
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_exact_rest_windows_and_history_series_are_load_bearing
+  /Users/connor/worktrees/harmonic/410/ciq_autotune/store.py:974: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes
+    return self.conn.execute(sql, params).fetchall()
+
+tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_covered
+  /Users/connor/worktrees/harmonic/410/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+============================== slowest durations ===============================
+11.70s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_profile
+3.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_exact_rest_windows_and_history_series_are_load_bearing
+3.06s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_showcase
+2.33s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_generator_owned_pattern_case_matches_the_served_roster_counts
+2.10s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c3_preempted
+2.06s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c3_history
+2.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c3_trial
+1.94s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_missing
+1.87s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_pattern_near_tie
+1.48s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_correction_on_iob
+1.46s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_direction_only_weaken
+1.46s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_held
+1.45s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_isf_strengthen
+1.44s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_direction_only_isf_never_stages_or_ranks
+1.31s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_correction_stacking
+1.31s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_over_treated_low
+1.29s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_pattern_collapse
+1.21s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_isf
+1.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_ic
+0.52s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_thin_reference
+0.45s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_multiple
+0.44s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_empty
+0.44s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_covered
+0.44s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_losing
+0.44s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_repeat_eating_thin_candidate
+0.29s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_covered
+0.28s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c3_pin
+0.27s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_undercount
+0.26s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_late_bolus
+0.26s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meal_bolus_short
+0.25s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meal_over_delivery
+0.24s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_missed_meal
+0.18s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_multiple
+0.17s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_thin_reference
+0.17s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_losing
+0.16s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_thin_candidate
+0.16s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_high_carb_sequence_empty
+0.11s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c3_focus
+0.11s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_c4_history
+0.10s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_showcase_materializes_a_dense_thirty_day_source_window
+0.08s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_pattern_focus_meals
+0.08s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_capped_and_uncapped_ic_recommendations_are_distinct
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_counting
+0.07s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_post_meal_correction_burden
+0.06s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_meals_start_high
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_a_literal_default_row_is_load_bearing
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_lower
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_exact_expectation_classes_reject_perturbations
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_gate
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_lower
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_capped_lower
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_raise
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_capped_raise
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_no_baseline
+0.04s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_no_change
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_history_register
+0.03s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_carb_log_fasting_exclusion_changes_isf_support
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_collecting
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_capped_lower
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_setting_recommendation
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_preempted_detector
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_held
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_precedence
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_lower
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_capped_raise
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_raise
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_existing_cases_reject_an_extra_behavioral_summary_expectation
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_ic_quiet_seven_run
+0.02s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_carb_log_fasting_exclusion
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_insufficient_unsupported_sign
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_insufficient_seven_night
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_false_low_suppressed
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_lone_correction_clean
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_recurring_low_no_clean_median
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_basal_blind
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_low_no_suppressed
+0.01s call     tests/test_qa_e2e_cases.py::QaE2ECasesTest::test_case_behavioral_uncaused_highs
+
+(186 durations < 0.005s hidden.  Use -vv to show these durations.)
+81 passed, 9 warnings, 20 subtests passed in 50.59s

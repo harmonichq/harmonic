@@ -1,0 +1,66 @@
+diff --git a/frontend-v2/replay-cases.mjs b/frontend-v2/replay-cases.mjs
+index aee3c0b2..87f61103 100644
+--- a/frontend-v2/replay-cases.mjs
++++ b/frontend-v2/replay-cases.mjs
+@@ -1,5 +1,5 @@
+ // Synthetic-only replay transport. Each story gets a fresh copy, served on the
+-// declared QA port. The caller opts in with CASE_STORE_DIR; an existing server
++// selected loopback QA port. The caller opts in with CASE_STORE_DIR; an existing server
+ // is never stopped or reused under a different case name.
+ import { boundedWait } from './c2.replay.mjs';
+ import { C3_CASES } from './c3.replay.mjs';
+@@ -25,7 +25,12 @@ export function storyCase(id, overrides = '') {
+ }
+
+ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:8765' }) {
+-  if (baseURL !== 'http://127.0.0.1:8765') throw new Error('Case stores use the declared QA port 8765 only.');
++  const endpoint = new URL(baseURL);
++  if (endpoint.protocol !== 'http:' || endpoint.hostname !== '127.0.0.1' ||
++      endpoint.username || endpoint.password || endpoint.pathname !== '/' || endpoint.search || endpoint.hash)
++    throw new Error('Case stores require an HTTP loopback origin at 127.0.0.1.');
++  const port = endpoint.port || '80';
++  baseURL = endpoint.origin;
+   const scratch = join(resolve(directory), `run-${Date.now()}-${process.pid}`);
+   const db = join(scratch, "harmonic-qa-e2e.sqlite");
+   let child = null;
+@@ -75,14 +80,14 @@ export function createCaseServer({ directory, repo, baseURL = 'http://127.0.0.1:
+     // Do not turn an unrelated listener into this story's apparent success.
+     try {
+       await fetch(`${baseURL}/api/status`, { signal: AbortSignal.timeout(1000) });
+-      throw new Error('Port 8765 is occupied; stop the external QA server before CASE_STORE_DIR replay.');
+-    } catch (error) { if (error.message.startsWith('Port 8765')) throw error; }
++      throw new Error(`Port ${port} is occupied; choose another BASE_URL before CASE_STORE_DIR replay.`);
++    } catch (error) { if (error.message.startsWith(`Port ${port} is occupied`)) throw error; }
+     const result = await prepare(id, name);
+     await serve();
+     return result;
+   }
+   async function serve() {
+-    child = spawn('uv', ['run', 'harmonic', 'serve', '--no-fetch', '--token', '', '--db', db, '--port', '8765'],
++    child = spawn('uv', ['run', 'harmonic', 'serve', '--no-fetch', '--token', '', '--db', db, '--port', port],
+       { cwd: repo, detached: true, stdio: ['ignore', log.fd, log.fd] });
+     for (let attempt = 0; attempt < 120; attempt += 1) {
+       if (child.exitCode !== null) throw new Error(`Synthetic server exited ${child.exitCode}`);
+diff --git a/frontend-v2/replay-cases.test.js b/frontend-v2/replay-cases.test.js
+index a935c1e0..2ca1cb0b 100644
+--- a/frontend-v2/replay-cases.test.js
++++ b/frontend-v2/replay-cases.test.js
+@@ -75,7 +75,7 @@ test('one invocation selects the generated case each story needs', () => {
+   assert.equal(storyCase('S98'), 'ic-lower');
+   assert.equal(storyCase('S90', 'S90=basal-raise,S100=showcase'), 'basal-raise');
+   assert.throws(() => storyCase('S88', 'S88=../../real'), /Invalid/);
+-  assert.throws(() => createCaseServer({ directory: '/tmp', baseURL: 'https://example.com' }), /8765/);
++  assert.throws(() => createCaseServer({ directory: '/tmp', baseURL: 'https://example.com' }), /loopback/);
+ });
+
+ test('S7 distinguishes the carried Diagnose rail from the paired Changes reading pane', async () => {
+@@ -428,3 +428,9 @@ test('S29 observes the focus event before a later repaint can move activeElement
+     assert.ok(removed && disposed, 'failure removes the observer too');
+   } finally { globalThis.document = previous; }
+ });
++
++test('case servers accept separate loopback ports and reject remote origins', () => {
++  assert.doesNotThrow(() => createCaseServer({ directory: '/tmp', baseURL: 'http://127.0.0.1:18410' }));
++  for (const baseURL of ['http://example.com:18410', 'https://127.0.0.1:18410', 'http://user@127.0.0.1:18410', 'http://127.0.0.1:18410/path'])
++    assert.throws(() => createCaseServer({ directory: '/tmp', baseURL }), /loopback/);
++});

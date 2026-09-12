@@ -1,0 +1,410 @@
+{
+  "openspec": {
+    "name": "openspec",
+    "argv": [
+      "npx",
+      "--yes",
+      "@fission-ai/openspec@1",
+      "validate",
+      "--all",
+      "--strict"
+    ],
+    "returncode": 0,
+    "seconds": 1.14,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "check_adr_numbers": {
+    "name": "check_adr_numbers",
+    "argv": [
+      "python3",
+      "scripts/check_adr_numbers.py"
+    ],
+    "returncode": 0,
+    "seconds": 0.05,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "check_owned_identifiers": {
+    "name": "check_owned_identifiers",
+    "argv": [
+      "python3",
+      "scripts/check_owned_identifiers.py"
+    ],
+    "returncode": 0,
+    "seconds": 0.04,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "check_public_allowlist": {
+    "name": "check_public_allowlist",
+    "argv": [
+      "python3",
+      "scripts/check_public_allowlist.py"
+    ],
+    "returncode": 0,
+    "seconds": 0.04,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "gen_eating_sequence_fixtures": {
+    "name": "gen_eating_sequence_fixtures",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_eating_sequence_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 17.62,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "gen_findings_projection_fixtures": {
+    "name": "gen_findings_projection_fixtures",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_findings_projection_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 6.03,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "gen_qa_e2e_db": {
+    "name": "gen_qa_e2e_db",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_qa_e2e_db.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.22,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "event-fixture": {
+    "name": "event-fixture",
+    "argv": [
+      "node",
+      "mockups/diagnose-event-comparison.synthetic/generate.mjs",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.07,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "qa-budget": {
+    "name": "qa-budget",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/test_qa_e2e_cases.py",
+      "--durations=0"
+    ],
+    "returncode": 0,
+    "seconds": 50.92,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "pytest": {
+    "name": "pytest",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "-m",
+      "pytest",
+      "-ra"
+    ],
+    "returncode": 0,
+    "seconds": 366.24,
+    "head": "81603b942188395a20fc44609326e0e8d072dad3"
+  },
+  "composition": {
+    "name": "composition",
+    "argv": [
+      "node",
+      "--test",
+      "frontend/diagnose-canvas-composition.browser.test.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 126.36,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "workstation": {
+    "name": "workstation",
+    "argv": [
+      "node",
+      "--test",
+      "frontend/diagnose-workstation.browser.test.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 198.68,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-desk": {
+    "name": "v2-desk",
+    "argv": [
+      "node",
+      "--test",
+      "frontend-v2/desk.browser.test.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 28.86,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "event-support": {
+    "name": "event-support",
+    "argv": [
+      "node",
+      "mockups/diagnose-event-comparison-support-audit.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 14.04,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "finding-ledger": {
+    "name": "finding-ledger",
+    "argv": [
+      "node",
+      "frontend/diagnose-workstation-behavior.replay.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 501.81,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "event-ledger": {
+    "name": "event-ledger",
+    "argv": [
+      "node",
+      "frontend/diagnose-event-comparison-behavior.replay.mjs"
+    ],
+    "returncode": 0,
+    "seconds": 50.23,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1280x720-1-of-4": {
+    "name": "v2-1280x720-1-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1280x720",
+      "--shard",
+      "1/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1280x720-1-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 238.6,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1280x720-2-of-4": {
+    "name": "v2-1280x720-2-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1280x720",
+      "--shard",
+      "2/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1280x720-2-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 144.1,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1280x720-3-of-4": {
+    "name": "v2-1280x720-3-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1280x720",
+      "--shard",
+      "3/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1280x720-3-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 260.23,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1280x720-4-of-4": {
+    "name": "v2-1280x720-4-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1280x720",
+      "--shard",
+      "4/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1280x720-4-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 217.21,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1440x900-1-of-4": {
+    "name": "v2-1440x900-1-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1440x900",
+      "--shard",
+      "1/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1440x900-1-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 238.68,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1440x900-2-of-4": {
+    "name": "v2-1440x900-2-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1440x900",
+      "--shard",
+      "2/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1440x900-2-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 149.13,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1440x900-3-of-4": {
+    "name": "v2-1440x900-3-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1440x900",
+      "--shard",
+      "3/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1440x900-3-of-4"
+    ],
+    "returncode": 0,
+    "seconds": 266.7,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "v2-1440x900-4-of-4": {
+    "argv": [
+      "node",
+      "frontend/harmonic-v2-desktop-behavior.replay.mjs"
+    ],
+    "seconds": 227.96,
+    "returncode": 0,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8",
+    "base_url": "http://127.0.0.1:18410",
+    "selected": [
+      "S89",
+      "S90",
+      "S91",
+      "S92",
+      "S93",
+      "S94",
+      "S95",
+      "S96",
+      "S97",
+      "S98",
+      "S99",
+      "S100",
+      "S80b",
+      "S73b",
+      "S53",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "R5",
+      "R6",
+      "R7",
+      "R8",
+      "R9",
+      "R10",
+      "R11",
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18"
+    ],
+    "uncommitted_delta": "frontend-v2/replay-cases.mjs and replay-cases.test.js: configurable loopback port"
+  },
+  "v2-1440x900-4-of-4-original-failure": {
+    "name": "v2-1440x900-4-of-4",
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/sweep/harmonic-v2-desktop/acceptance.py",
+      "replay",
+      "--viewport",
+      "1440x900",
+      "--shard",
+      "4/4",
+      "--out",
+      "/private/tmp/ticket-410-completion-gates/v2-1440x900-4-of-4"
+    ],
+    "returncode": 1,
+    "seconds": 229.56,
+    "head": "93326f585d116bf289a16936ce63bb037019ade8"
+  },
+  "node": {
+    "name": "node",
+    "argv": [
+      "node",
+      "--test",
+      "frontend/**/*.test.js",
+      "frontend-v2/**/*.test.js"
+    ],
+    "returncode": 0,
+    "seconds": 1.99,
+    "head": "f902c28f7917af332e475086c2d643c7007b5420"
+  },
+  "build": {
+    "name": "build",
+    "argv": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "returncode": 0,
+    "seconds": 1.5,
+    "head": "f902c28f7917af332e475086c2d643c7007b5420"
+  }
+}

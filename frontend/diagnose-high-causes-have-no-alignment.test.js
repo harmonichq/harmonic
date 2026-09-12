@@ -84,7 +84,7 @@ test('ADR 79 · every visible behavioral row requests its opaque case id', () =>
     'the row identity and its server-published chart coordinate open the server case');
   assert.match(source, /function findingRowFor\(frame\) \{\s*if \(frame\.k !== 'factor'\) return null;\s*return \(findings\?\.rows \|\| \[\]\)\.find\(\(row\) => row\.id === frame\.rowId\) \|\| null;\s*\}/,
     'a standing case resolves its active Finding from the current projection');
-  assert.match(source, /renderEventSurface\(host, f\.caseFile/,
+  assert.match(source, /renderEventSurface\(host, (?:f\.)?caseFile/,
     'Highs and correction clusters use the shared server event-projection path');
 });
 

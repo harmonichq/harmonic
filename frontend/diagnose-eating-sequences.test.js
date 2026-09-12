@@ -95,7 +95,10 @@ test('closed selectors reject unknown values', () => {
   assert.throws(() => matrixSeries(adapted, { period: 'post_4h', metric: 'mean_mgdl' }));
 });
 
-import { eatingSequenceComparison, eatingSequenceChartOption, validEatingSequenceCase } from './diagnose-eating-sequences.js';
+import {
+  eatingSequenceComparison, eatingSequenceChartOption, highCarbResponseCase,
+  validEatingSequenceCase, validHighCarbResponse,
+} from './diagnose-eating-sequences.js';
 import { DIAGNOSE_EVIDENCE_CHARTS } from './diagnose-evidence-charts.js';
 import { descriptorsFromFindings } from './diagnose-canvas-layout.js';
 
@@ -105,7 +108,7 @@ const sequenceFixture = expandSequenceFixture(JSON.parse(readFileSync(
 
 test('public sequence cases select the dedicated chart before the generic response chart', () => {
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
-    for (const state of ['covered', 'empty', 'multiple']) {
+    for (const state of lever === 'high_carb_sequence' ? ['covered', 'empty', 'limited'] : ['covered', 'empty', 'multiple']) {
       const generated = sequenceFixture.states[`${lever}_${state}`].windows.global;
       const prepared = generated.preparation;
       const data = generated.cases[`finding:${lever}`].event;
@@ -123,6 +126,16 @@ test('public sequence cases select the dedicated chart before the generic respon
       const detector = data.projection.report[lever === 'repeat_eating' ? 'repeat_eating_amplifier' : 'high_carb_sequence'];
       assert.equal(view.finding, detector.finding);
       assert.equal(view.periods.find((p) => p.selected).period, detector.finding.period);
+      if (lever === 'high_carb_sequence') {
+        assert.equal(validHighCarbResponse(data), true);
+        assert.equal(highCarbResponseCase(data).projection, data.projection.response);
+        const option = DIAGNOSE_EVIDENCE_CHARTS.find((entry) => entry.kind === 'eating-sequence')
+          .option(null, { caseFile: data, range: [60, 200] });
+        assert.equal(option.xAxis.axisLabel.formatter(0).replace('\n', ' '), 'End of eating sequence');
+        assert.ok(option.series.some((series) => series.name === 'Highest-carb fifth'));
+        assert.ok(option.series.some((series) => series.name === 'Other sequences'));
+        continue;
+      }
       const option = eatingSequenceChartOption(data);
       assert.match(option.title[0].text, /%/);
       assert.match(option.title[1].text, /mg\/dL/);
@@ -144,6 +157,10 @@ test('public sequence cases select the dedicated chart before the generic respon
 
 test('selection validation retains exact served sequence details and rejects malformed cases', () => {
   const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'];
+  const aggregateOnly = structuredClone(stored.event);
+  delete aggregateOnly.projection.response;
+  assert.equal(validEatingSequenceCase(aggregateOnly), false,
+    'the aggregate-only predecessor cannot masquerade as a response case');
   const selected = { ...stored.event, selection: Object.values(stored.selections)[0] };
   assert.equal(validEatingSequenceCase(selected), true);
   for (const mutate of [
@@ -151,10 +168,29 @@ test('selection validation retains exact served sequence details and rejects mal
     (c) => { c.selection.detail.sequence.carbs = -1; },
     (c) => { c.projection.report.high_carb_sequence.finding = null; },
     (c) => { c.occurrences[0].id = 'bad'; },
+    (c) => { c.projection.response.cohorts[0].name = 'High-carb sequences'; },
+    (c) => { c.projection.response.cohorts[0].points[2].minute = 15; },
   ]) {
     const broken = structuredClone(selected); mutate(broken);
     assert.equal(validEatingSequenceCase(broken), false);
   }
+});
+
+test('producer-derived responses stop before their endpoint', () => {
+  const stored = sequenceFixture.states.high_carb_sequence_empty.windows.global
+    .cases['finding:high_carb_sequence'].event;
+  const post = structuredClone(stored);
+  assert.equal(validHighCarbResponse(post), true);
+  const endpoint = post.projection.response.window_min[1];
+  post.projection.response.cohorts[0].points.at(-1).minute = endpoint;
+  assert.equal(validHighCarbResponse(post), false);
+
+  const during = structuredClone(sequenceFixture.states.high_carb_sequence_in_sequence
+    .windows.global.cases['finding:high_carb_sequence'].event);
+  assert.equal(validHighCarbResponse(during), true);
+  const last = during.projection.response.cohorts[1].points.length - 1;
+  during.projection.response.cohorts[1].points[last].minute += 5;
+  assert.equal(validHighCarbResponse(during), false);
 });
 
 test('thin source cohorts produce no substitute finding and adapter nulls remain null', () => {
@@ -175,6 +211,7 @@ test('a supported case keeps a null period visible without a zero-filled point',
   for (const lever of ['high_carb_sequence', 'repeat_eating']) {
     const data = sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event;
     assert.equal(validEatingSequenceCase(data), true);
+    if (lever === 'high_carb_sequence') continue;
     const option = eatingSequenceChartOption(data);
     assert.equal(option.series[0].data[0].value[1], null);
     assert.equal(option.series[1].data[0].value[1], null);
@@ -201,5 +238,22 @@ test('expanded sequence fixtures satisfy preparation and selection transport con
         }
       }
     }
+  }
+});
+
+
+test('High-carb period copy and counts follow each served comparison; Repeat eating keeps its labels', () => {
+  for (const lever of ['high_carb_sequence', 'repeat_eating']) {
+    const data = sequenceFixture.states[`${lever}_null_period`].windows.global.cases[`finding:${lever}`].event;
+    const view = eatingSequenceComparison(data);
+    assert.equal(view.periods[0].label, lever === 'high_carb_sequence' ? 'During eating' : 'During sequence');
+    const detector = data.projection.report[lever === 'high_carb_sequence' ? 'high_carb_sequence' : 'repeat_eating_amplifier'];
+    for (const row of view.periods) {
+      const source = detector.comparisons.find((item) => item.period === row.period && (lever === 'high_carb_sequence'
+        ? item.scope === detector.finding.scope : item.carb_quintile === detector.finding.carb_quintile));
+      assert.deepEqual(row.reference, source.reference);
+      assert.deepEqual(row.comparison, lever === 'high_carb_sequence' ? source.high : source.repeat);
+    }
+    assert.equal(view.periods[0].reference.tir_pct, null);
   }
 });

@@ -1,0 +1,20 @@
+(node:51106) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/410/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/410/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS S1
+PASS S2
+PASS S3
+PASS S4
+PASS S5
+PASS S6
+PASS S7
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+PASS S8
+PASS S9
+PASS S10
+PASS S11
+PASS S12
+PASS S13
+PASS S14
+14/14 stories passed against app

@@ -1,0 +1,168 @@
+(node:65648) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/410/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/410/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1280x720 fonts=behaviour
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S89 case=basal-lower milliseconds=193.350
+# S89 synthetic case=basal-lower (fresh copy)
+PASS S89
+# story-time S89 milliseconds=1926.940
+# case-copy S90 case=basal-lower milliseconds=1.276
+# S90 synthetic case=basal-lower (fresh copy)
+PASS S90
+# story-time S90 milliseconds=923.207
+# case-copy S91 case=c3-trial milliseconds=405.063
+# S91 synthetic case=c3-trial (fresh copy)
+# case-copy S91 case=c4-ic milliseconds=433.029
+# S91 proved synthetic variant=c4-ic
+# case-copy S91 case=c4-isf milliseconds=717.948
+# S91 proved synthetic variant=c4-isf
+# case-copy S91 case=c4-profile milliseconds=10653.199
+# S91 proved synthetic variant=c4-profile
+PASS S91
+# story-time S91 milliseconds=42533.028
+# case-copy S92 case=c3-trial milliseconds=2.985
+# S92 synthetic case=c3-trial (fresh copy)
+PASS S92
+# story-time S92 milliseconds=7778.386
+# case-copy S93 case=c3-focus milliseconds=266.008
+# S93 synthetic case=c3-focus (fresh copy)
+PASS S93
+# story-time S93 milliseconds=1462.015
+# case-copy S94 case=c3-trial milliseconds=2.004
+# S94 synthetic case=c3-trial (fresh copy)
+PASS S94
+# story-time S94 milliseconds=6942.558
+# case-copy S95 case=c3-preempted milliseconds=503.807
+# S95 synthetic case=c3-preempted (fresh copy)
+PASS S95
+# story-time S95 milliseconds=6256.056
+# case-copy S96 case=c3-history milliseconds=540.323
+# S96 synthetic case=c3-history (fresh copy)
+PASS S96
+# story-time S96 milliseconds=7477.721
+# case-copy S97 case=basal-lower milliseconds=2.135
+# S97 synthetic case=basal-lower (fresh copy)
+PASS S97
+# story-time S97 milliseconds=1536.216
+# case-copy S98 case=ic-lower milliseconds=199.224
+# S98 synthetic case=ic-lower (fresh copy)
+PASS S98
+# story-time S98 milliseconds=1518.184
+# case-copy S99 case=basal-insufficient-seven-night milliseconds=190.250
+# S99 synthetic case=basal-insufficient-seven-night (fresh copy)
+PASS S99
+# story-time S99 milliseconds=1196.304
+# case-copy S100 case=showcase milliseconds=211.762
+# S100 synthetic case=showcase (fresh copy)
+UNRETIRED S8 — sanction: live-judging ruling · 2026-08-28 · "The visible comparison chart keeps its keyboard cursor; it is the reader's keyboard route into comparison evidence."
+PASS S100
+# story-time S100 milliseconds=7400.191
+# case-copy S80b case=basal-no-change milliseconds=209.953
+# S80b synthetic case=basal-no-change (fresh copy)
+PASS S80b
+# story-time S80b milliseconds=1039.387
+# case-copy S73b case=showcase milliseconds=2.013
+# S73b synthetic case=showcase (fresh copy)
+PASS S73b
+# story-time S73b milliseconds=6799.470
+# case-copy S53 case=c3-trial milliseconds=3.706
+# S53 synthetic case=c3-trial (fresh copy)
+PASS S53
+# story-time S53 milliseconds=7079.017
+# case-copy R1 case=showcase milliseconds=3.830
+# R1 synthetic case=showcase (fresh copy)
+RETIRED R1 — Connor Griffin · 2026-09-01 · "light theme retired by operator decision."
+PASS R1
+# story-time R1 milliseconds=6500.541
+# case-copy R2 case=showcase milliseconds=2.127
+# R2 synthetic case=showcase (fresh copy)
+RETIRED R2 — Connor Griffin · 2026-08-18 · "the dead occurrenceModal hash machinery goes with them."
+PASS R2
+# story-time R2 milliseconds=8071.648
+# case-copy R3 case=showcase milliseconds=2.500
+# R3 synthetic case=showcase (fresh copy)
+RETIRED R3 — Connor Griffin · 2026-08-25 · "it just keeps my selector. The selection is a slicing method that lets me then dig into findings. Those findings will show up as dots on the chart anyway that I can then trace into."
+AMENDED R3 premise — ADR 397 · Connor Griffin · 2026-09-08; coordinator amendment 4 transcribed 2026-09-10: drill the shipped Finding row; cohorts remain served member groups.
+PASS R3
+# story-time R3 milliseconds=8184.875
+# case-copy R4 case=showcase milliseconds=2.736
+# R4 synthetic case=showcase (fresh copy)
+RETIRED R4 — Connor Griffin · 2026-08-19 · "Occurrence selection should not change the window. The window is a filter view in order to get to selectable occurrences. Having selectable occurrences then retrace the window would be tautological."
+PASS R4
+# story-time R4 milliseconds=8010.195
+# case-copy R5 case=basal-lower milliseconds=2.421
+# R5 synthetic case=basal-lower (fresh copy)
+RETIRED R5 — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
+PASS R5
+# story-time R5 milliseconds=1230.191
+# case-copy R6 case=showcase milliseconds=2.079
+# R6 synthetic case=showcase (fresh copy)
+RETIRED R6 — Connor Griffin · 2026-08-23 · "#55 removed installSegKeys; the shipped Align control is two ordinary Tab stops"
+PASS R6
+# story-time R6 milliseconds=7327.305
+# case-copy R7 case=showcase milliseconds=1.584
+# R7 synthetic case=showcase (fresh copy)
+RETIRED R7 — Connor Griffin · 2026-08-27 · "these dots mean nothing, just take them off the glucose chart. User can get to them from the findings panel."
+PASS R7
+# story-time R7 milliseconds=7713.951
+# case-copy R8 case=behavioral-carb-undercount milliseconds=268.896
+# R8 synthetic case=behavioral-carb-undercount (fresh copy)
+RETIRED R8 — Connor Griffin · 2026-08-27 · "Please also remove meal markers from the glucose chart."
+PASS R8
+# story-time R8 milliseconds=3650.323
+# case-copy R9 case=showcase milliseconds=4.173
+# R9 synthetic case=showcase (fresh copy)
+RETIRED R9 — Connor Griffin · 2026-08-19 · "I don't find the content of the drill-down view particularly useful. So, I think we could just simply have the if there's a current specific detail that needs to show, I think it should just mutate the standing screen."
+PASS R9
+# story-time R9 milliseconds=7711.329
+# case-copy R10 case=ic-lower milliseconds=2.754
+# R10 synthetic case=ic-lower (fresh copy)
+RETIRED R10 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R10
+# story-time R10 milliseconds=943.971
+# case-copy R11 case=showcase milliseconds=2.001
+# R11 synthetic case=showcase (fresh copy)
+RETIRED R11 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R11
+# story-time R11 milliseconds=7712.071
+# case-copy R12 case=showcase milliseconds=1.615
+# R12 synthetic case=showcase (fresh copy)
+RETIRED R12 — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+PASS R12
+# story-time R12 milliseconds=9715.838
+# case-copy R13 case=showcase milliseconds=2.430
+# R13 synthetic case=showcase (fresh copy)
+RETIRED R13 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+PASS R13
+# story-time R13 milliseconds=7786.362
+# case-copy R14 case=showcase milliseconds=1.764
+# R14 synthetic case=showcase (fresh copy)
+RETIRED R14 — ADR 215 amendment · 2026-08-26 · "A pin orders the dock; it is not membership of a position."
+PASS R14
+# story-time R14 milliseconds=6720.818
+# case-copy R15 case=showcase milliseconds=1.490
+# R15 synthetic case=showcase (fresh copy)
+RETIRED R15 — ADR 215 amendment · 2026-08-26 · "The dock is the whole ordered set, spotlight included."
+AMENDED R15 premise — ADR 397 · Connor Griffin · 2026-09-08; transcribed 2026-09-10: Diagnose preserves Findings, Spotlight and All Charts.
+PASS R15
+# story-time R15 milliseconds=7394.443
+# case-copy R16 case=showcase milliseconds=1.255
+# R16 synthetic case=showcase (fresh copy)
+RETIRED R16 — Connor Griffin · 2026-08-26 · "The ring and the raised rail mark the drilled tile. The chip was noise."
+PASS R16
+# story-time R16 milliseconds=6860.878
+# case-copy R17 case=c3-trial milliseconds=2.807
+# R17 synthetic case=c3-trial (fresh copy)
+RETIRED R17 — ADR 340 · Connor Griffin · 2026-09-04 · "Sure." (after the proposal stated that Keep saved nothing and Revert-to-Plan should remain)
+AMENDED R17 premise — ADR 397 · Connor Griffin · 2026-09-08; coordinator amendment 4 transcribed 2026-09-10: a served finishable Trial replaces the prototype ready scenario.
+PASS R17
+# story-time R17 milliseconds=7111.507
+# case-copy R18 case=c4-history milliseconds=232.356
+# R18 synthetic case=c4-history (fresh copy)
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+PASS R18
+# story-time R18 milliseconds=1748.566
+
+# executed 33 · failed 0 · deferred 0 · selected 33 · chromium launches 1

@@ -1,0 +1,7 @@
+RUN registry: node --input-type=module -e import {REGISTRY} from './frontend/harmonic-v2-desktop-behavior.replay.mjs';console.log(JSON.stringify(REGISTRY.map(([id])=>id)))
+registry: exit 0, 0.125 s
+ledger inventory: {'issued': 130, 'active': 112, 'retired': 18}
+ledger=130 registry=130 missing=[] extra=[]
+RUN complete-replay: node frontend/harmonic-v2-desktop-behavior.replay.mjs
+complete-replay: exit 0, 238.000 s
+# executed 32 · failed 0 · deferred 0 · selected 32

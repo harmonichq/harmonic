@@ -1,0 +1,235 @@
+(node:40377) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/410/frontend/eating-sequence-fixture.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/410/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+High-carb anchor geometry {"width":443,"labels":[{"text":"End of eating","x":4.5322265625,"y":178,"width":58.935546875,"height":10.220001220703125},{"text":"sequence","x":12.3154296875,"y":188.22000122070312,"width":43.369140625,"height":10.220001220703125},{"text":"+1 h","x":86.62939453125,"y":178,"width":19.7412109375,"height":10.220001220703125},{"text":"+2 h","x":149.12939453125,"y":178,"width":19.7412109375,"height":10.220001220703125},{"text":"+3 h","x":211.62939453125,"y":178,"width":19.7412109375,"height":10.220001220703125},{"text":"+4 h","x":274.12939453125,"y":178,"width":19.7412109375,"height":10.220001220703125},{"text":"+5 h","x":336.62939453125,"y":178,"width":19.7412109375,"height":10.220001220703125},{"text":"+6 h","x":399.12939453125,"y":178,"width":19.7412109375,"height":10.220001220703125}]}
+Expanded High-carb widths [{"available":405,"required":284.21881103515625,"text":"Highest-carb fifth100% in range · SD 0 mg/dLn 8","textWidths":[97.23443603515625,153.6875,17.296875],"tops":[278.78125,278.78125,278.78125]},{"available":405,"required":287.39068603515625,"text":"Other sequences100% in range · SD 0 mg/dLn 32","textWidths":[93.12506103515625,153.6875,24.578125],"tops":[303.171875,303.171875,303.171875]},{"available":405,"required":284.21881103515625,"text":"Highest-carb fifth100% in range · SD 0 mg/dLn 8","textWidths":[97.23443603515625,153.6875,17.296875],"tops":[353.5625,353.5625,353.5625]},{"available":405,"required":287.39068603515625,"text":"Other sequences100% in range · SD 0 mg/dLn 32","textWidths":[93.12506103515625,153.6875,24.578125],"tops":[377.953125,377.953125,377.953125]},{"available":405,"required":284.21881103515625,"text":"Highest-carb fifth93% in range · SD 41 mg/dLn 8","textWidths":[97.23443603515625,153.6875,17.296875],"tops":[428.34375,428.34375,428.34375]},{"available":405,"required":287.39068603515625,"text":"Other sequences100% in range · SD 0 mg/dLn 32","textWidths":[93.12506103515625,153.6875,24.578125],"tops":[452.734375,452.734375,452.734375]}]
+Compact High-carb comparison: selected rows ["Highest-carb fifth 93% in range n 8","Other sequences 100% in range n 32"]; height 54.78125; all 3 periods verified
+High-carb anchor geometry {"width":966,"labels":[{"text":"End of eating","x":4.5322265625,"y":330,"width":58.935546875,"height":10.220001220703125},{"text":"sequence","x":12.3154296875,"y":340.2200012207031,"width":43.369140625,"height":10.220001220703125},{"text":"+1 h","x":173.79606119791666,"y":330,"width":19.7412109375,"height":10.220001220703125},{"text":"+2 h","x":323.4627278645833,"y":330,"width":19.7412109375,"height":10.220001220703125},{"text":"+3 h","x":473.12939453125,"y":330,"width":19.7412109375,"height":10.220001220703125},{"text":"+4 h","x":622.7960611979166,"y":330,"width":19.7412109375,"height":10.220001220703125},{"text":"+5 h","x":772.4627278645834,"y":330,"width":19.7412109375,"height":10.220001220703125},{"text":"+6 h","x":922.12939453125,"y":330,"width":19.7412109375,"height":10.220001220703125}]}
+High-carb readout geometry {"box":{"x":44,"y":102,"width":922,"height":31.890625,"top":102,"right":966,"bottom":133.890625,"left":44},"items":[{"text":"End of eating sequence","box":{"x":44,"y":110.9375,"width":164.234375,"height":14,"top":110.9375,"right":208.234375,"bottom":124.9375,"left":44}},{"text":"Highest-carb fifth110 · n8","box":{"x":222.234375,"y":110.9375,"width":198.84375,"height":14,"top":110.9375,"right":421.078125,"bottom":124.9375,"left":222.234375}},{"text":"Other sequences110 · n32","box":{"x":435.078125,"y":110.9375,"width":183.578125,"height":14,"top":110.9375,"right":618.65625,"bottom":124.9375,"left":435.078125}}],"time":"End of eating sequence","pairs":[{"name":"Highest-carb fifth","value":"110 · n8"},{"name":"Other sequences","value":"110 · n32"}]}
+High-carb readout geometry {"box":{"x":44,"y":102,"width":922,"height":31.890625,"top":102,"right":966,"bottom":133.890625,"left":44},"items":[{"text":"+5 h 30 min","box":{"x":44,"y":110.9375,"width":82.125,"height":14,"top":110.9375,"right":126.125,"bottom":124.9375,"left":44}},{"text":"Highest-carb fifth270 · n8","box":{"x":140.125,"y":110.9375,"width":198.84375,"height":14,"top":110.9375,"right":338.96875,"bottom":124.9375,"left":140.125}},{"text":"Other sequences110 · n32","box":{"x":352.96875,"y":110.9375,"width":183.578125,"height":14,"top":110.9375,"right":536.546875,"bottom":124.9375,"left":352.96875}}],"time":"+5 h 30 min","pairs":[{"name":"Highest-carb fifth","value":"270 · n8"},{"name":"Other sequences","value":"110 · n32"}]}
+High-carb stage pointer {"x":867.1666666666666,"y":182.3451704545455,"minute":330,"cohorts":[{"name":"Highest-carb fifth","point":{"median":270,"minute":330,"n":8,"p25":270,"p75":270,"support":"supported"}},{"name":"Other sequences","point":{"median":110,"minute":330,"n":32,"p25":110,"p75":110,"support":"supported"}}]}
+High-carb anchor geometry {"width":1416,"labels":[{"text":"End of eating","x":4.5322265625,"y":607,"width":58.935546875,"height":10.220001220703125},{"text":"sequence","x":12.3154296875,"y":617.2200012207031,"width":43.369140625,"height":10.220001220703125},{"text":"+1 h","x":248.79606119791663,"y":607,"width":19.7412109375,"height":10.220001220703125},{"text":"+2 h","x":473.4627278645833,"y":607,"width":19.7412109375,"height":10.220001220703125},{"text":"+3 h","x":698.12939453125,"y":607,"width":19.7412109375,"height":10.220001220703125},{"text":"+4 h","x":922.7960611979166,"y":607,"width":19.7412109375,"height":10.220001220703125},{"text":"+5 h","x":1147.4627278645835,"y":607,"width":19.7412109375,"height":10.220001220703125},{"text":"+6 h","x":1372.12939453125,"y":607,"width":19.7412109375,"height":10.220001220703125}]}
+High-carb readout geometry {"box":{"x":34,"y":91.5,"width":1270.9375,"height":14,"top":91.5,"right":1304.9375,"bottom":105.5,"left":34},"items":[{"text":"End of eating sequence","box":{"x":34,"y":91.5,"width":164.234375,"height":14,"top":91.5,"right":198.234375,"bottom":105.5,"left":34}},{"text":"Highest-carb fifth110 · n8","box":{"x":212.234375,"y":91.5,"width":198.84375,"height":14,"top":91.5,"right":411.078125,"bottom":105.5,"left":212.234375}},{"text":"Other sequences110 · n32","box":{"x":425.078125,"y":91.5,"width":183.578125,"height":14,"top":91.5,"right":608.65625,"bottom":105.5,"left":425.078125}}],"time":"End of eating sequence","pairs":[{"name":"Highest-carb fifth","value":"110 · n8"},{"name":"Other sequences","value":"110 · n32"}]}
+High-carb readout geometry {"box":{"x":34,"y":91.5,"width":1270.9375,"height":14,"top":91.5,"right":1304.9375,"bottom":105.5,"left":34},"items":[{"text":"+5 h 30 min","box":{"x":34,"y":91.5,"width":82.125,"height":14,"top":91.5,"right":116.125,"bottom":105.5,"left":34}},{"text":"Highest-carb fifth270 · n8","box":{"x":130.125,"y":91.5,"width":198.84375,"height":14,"top":91.5,"right":328.96875,"bottom":105.5,"left":130.125}},{"text":"Other sequences110 · n32","box":{"x":342.96875,"y":91.5,"width":183.578125,"height":14,"top":91.5,"right":526.546875,"bottom":105.5,"left":342.96875}}],"time":"+5 h 30 min","pairs":[{"name":"Highest-carb fifth","value":"270 · n8"},{"name":"Other sequences","value":"110 · n32"}]}
+High-carb fullscreen pointer {"x":1269.6666666666667,"y":166.0454545454545,"minute":330,"cohorts":[{"name":"Highest-carb fifth","point":{"median":270,"minute":330,"n":8,"p25":270,"p75":270,"support":"supported"}},{"name":"Other sequences","point":{"median":110,"minute":330,"n":32,"p25":110,"p75":110,"support":"supported"}}]}
+High-carb anchor geometry {"width":966,"labels":[{"text":"End of eating","x":774.2465122767857,"y":381,"width":58.935546875,"height":10.220001220703125},{"text":"sequence","x":782.0297154017857,"y":391.2200012207031,"width":43.369140625,"height":10.220001220703125},{"text":"+5 min","x":916.853515625,"y":381,"width":30.29296875,"height":10.220001220703125}]}
+Expanded High-carb widths [{"available":405,"required":284.21881103515625,"text":"Highest-carb fifth100% in range · SD 0 mg/dLn 8","textWidths":[97.23443603515625,153.6875,17.296875],"tops":[329.171875,329.171875,329.171875]},{"available":405,"required":287.39068603515625,"text":"Other sequences100% in range · SD 0 mg/dLn 32","textWidths":[93.12506103515625,153.6875,24.578125],"tops":[353.5625,353.5625,353.5625]},{"available":405,"required":284.21881103515625,"text":"Highest-carb fifth93% in range · SD 41 mg/dLn 8","textWidths":[97.23443603515625,153.6875,17.296875],"tops":[403.953125,403.953125,403.953125]},{"available":405,"required":287.39068603515625,"text":"Other sequences100% in range · SD 0 mg/dLn 32","textWidths":[93.12506103515625,153.6875,24.578125],"tops":[428.34375,428.34375,428.34375]}]
+Compact High-carb unavailable: selected rows ["Highest-carb fifth 93% in range n 8","Other sequences 100% in range n 32"]; height 54.78125; all 3 periods verified
+RETIRED S33 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S34 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S35 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S37 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S38 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S49 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S50 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S51 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S52 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S57 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S58 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S59 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S60 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S61 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S62 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S65 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S66 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S67 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S69 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S70 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S71 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S72 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S77 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S80 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED S90 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+S92 retired by the ADR 215 dock amendment
+S93 retired by the ADR 215 dock amendment
+S94 retired by the ADR 215 dock amendment
+S95 retired by the ADR 215 dock amendment
+S96 retired by the ADR 215 dock amendment
+S97 retired by the ADR 215 dock amendment
+S98 retired by the ADR 215 dock amendment
+S99 retired by the ADR 215 dock amendment
+S100 retired by the ADR 215 dock amendment
+S101 retired by the ADR 215 dock amendment
+S109 retired by the ADR 215 dock amendment
+S112 retired by the ADR 215 dock amendment
+S113 retired by the ADR 215 dock amendment
+S127 RETIRED — sanction: Connor Griffin · 2026-09-04 · "Exactly," confirming "Charts opens the full-screen All charts browser directly. Choose a chart to return to A with that finding selected. Close or Escape returns without changing the selection or time window. The spotlight keeps Expand for viewing just its selected chart fullscreen." Premise: queue minis supply quick previews while All charts retains the broader catalog, including Watching reads.
+RETIRED C46 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C47 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C48 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C49 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C50 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C51 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C52 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+RETIRED C53 — Connor Griffin · 2026-08-25 · "Rewrite or retire every replay story and browser-test contract that still drives the retired 'Event charts' root filter and the global 'By event' control."
+  ok S151
+  ok S152
+  ok S153
+  ok S154
+  ok S155
+  ok S156
+  ok S157
+  ok S158
+  ok S01
+  ok S02
+  ok S03
+  ok S04
+  ok S05
+  ok S06
+  ok S07
+  ok S08
+  ok S09
+  ok S10
+  ok S11
+  ok S12 — RETIRED — Connor Griffin · 2026-08-23 · "the roster is drawn vertically; one key model per list."
+  ok S13
+  ok S14
+  ok S15
+  ok S16
+  ok S17 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  ok S18
+  ok S19
+  ok S20
+  ok S21
+  ok S22
+  ok S23
+  ok S24
+  ok S25
+  ok S26 — RETIRED — Connor Griffin · 2026-08-19 · "Decided by Connor Griffin in a ruling session on 2026-08-19."
+  ok S27
+  ok S28
+  ok S29
+  ok S30
+  ok S31
+  ok S32
+  ok S33
+  ok S34
+  ok S35
+  ok S36
+  ok S37
+  ok S38
+  ok S39
+  ok S40
+  ok S42
+  ok S49
+  ok S50
+  ok S51
+  ok S52
+  ok S57
+  ok S58
+  ok S59
+  ok S60
+  ok S61
+  ok S62
+  ok S65
+  ok S66
+  ok S67
+  ok S69
+  ok S70
+  ok S71
+  ok S72
+  ok S73
+  ok S74
+  ok S75
+  ok S76
+  ok S77
+  ok S78
+  ok S79
+  ok S80
+  ok S81
+  ok S82
+  ok S83
+  ok S84
+  ok S85
+  ok S86
+  ok S87
+  ok S88
+  ok S89
+  ok S90
+  ok S91
+  ok S92
+  ok S93
+  ok S94
+  ok S95
+  ok S96
+  ok S97
+  ok S98
+  ok S99
+  ok S100
+  ok S101
+  ok S102
+  ok S103
+  ok S104
+  ok S105
+  ok S106
+  ok S107
+  ok S108
+  ok S109
+  ok S110
+  ok S111
+  ok S112
+  ok S113
+  ok S114
+  ok S115
+  ok S116
+  ok S118
+  ok S119
+  ok S120
+  ok S121
+  ok S122
+  ok S123
+  ok S124
+  ok S125
+  ok S126
+  ok S127
+  ok S128
+  ok S129
+  ok S130
+  ok S131
+  ok S132
+  ok S133
+  ok S134
+  ok S135
+  ok S136
+  ok S137
+  ok S138
+  ok S139
+  ok S140
+  ok S141
+  ok S142
+  ok S143
+  ok S144
+  ok S145
+  ok S146
+  ok S147
+  ok S148
+  ok S149
+  ok S150
+  ok C41
+  ok C42
+  ok C43
+  ok C44
+  ok C45
+  ok C46
+  ok C47
+  ok C48
+  ok C49
+  ok C50
+  ok C51
+  ok C52
+  ok C53
+  ok C54
+  ok C55
+  ok C56
+  ok C57
+  ok C58
+  ok C60
+  ok C59
+  ok C61
+  ok C62
+  ok D1
+  ok D2
+  ok D3
+
+app: 168 of 168 stories passed

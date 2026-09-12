@@ -1,0 +1,136 @@
+(node:77729) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/410/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/410/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900 fonts=behaviour
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S60 case=showcase milliseconds=235.057
+# S60 synthetic case=showcase (fresh copy)
+PASS S60
+# story-time S60 milliseconds=9647.607
+# case-copy S61 case=showcase milliseconds=1.851
+# S61 synthetic case=showcase (fresh copy)
+PASS S61
+# story-time S61 milliseconds=10502.954
+# case-copy S62 case=showcase milliseconds=1.815
+# S62 synthetic case=showcase (fresh copy)
+PASS S62
+# story-time S62 milliseconds=11356.046
+# case-copy S63 case=showcase milliseconds=2.523
+# S63 synthetic case=showcase (fresh copy)
+PASS S63
+# story-time S63 milliseconds=9940.447
+# case-copy S64 case=showcase milliseconds=2.626
+# S64 synthetic case=showcase (fresh copy)
+PASS S64
+# story-time S64 milliseconds=11093.209
+# case-copy S65 case=showcase milliseconds=3.237
+# S65 synthetic case=showcase (fresh copy)
+PASS S65
+# story-time S65 milliseconds=10691.405
+# case-copy S66 case=showcase milliseconds=2.989
+# S66 synthetic case=showcase (fresh copy)
+PASS S66
+# story-time S66 milliseconds=11216.979
+# case-copy S67 case=showcase milliseconds=3.325
+# S67 synthetic case=showcase (fresh copy)
+PASS S67
+# story-time S67 milliseconds=10423.927
+# case-copy S68 case=showcase milliseconds=2.946
+# S68 synthetic case=showcase (fresh copy)
+PASS S68
+# story-time S68 milliseconds=8909.018
+# case-copy S69 case=showcase milliseconds=2.550
+# S69 synthetic case=showcase (fresh copy)
+PASS S69
+# story-time S69 milliseconds=8494.329
+# case-copy S70 case=showcase milliseconds=3.090
+# S70 synthetic case=showcase (fresh copy)
+PASS S70
+# story-time S70 milliseconds=9011.796
+# case-copy S71 case=showcase milliseconds=3.032
+# S71 synthetic case=showcase (fresh copy)
+PASS S71
+# story-time S71 milliseconds=9275.388
+# case-copy S72 case=showcase milliseconds=3.982
+# S72 synthetic case=showcase (fresh copy)
+PASS S72
+# story-time S72 milliseconds=8483.766
+# case-copy S72b case=showcase milliseconds=2.502
+# S72b synthetic case=showcase (fresh copy)
+PASS S72b
+# story-time S72b milliseconds=8745.163
+# case-copy S73 case=showcase milliseconds=3.726
+# S73 synthetic case=showcase (fresh copy)
+PASS S73
+# story-time S73 milliseconds=9290.944
+# case-copy S74 case=showcase milliseconds=2.821
+# S74 synthetic case=showcase (fresh copy)
+PASS S74
+# story-time S74 milliseconds=8038.317
+# case-copy S75 case=showcase milliseconds=1.785
+# S75 synthetic case=showcase (fresh copy)
+PASS S75
+# story-time S75 milliseconds=7217.028
+# case-copy S75b case=showcase milliseconds=1.979
+# S75b synthetic case=showcase (fresh copy)
+PASS S75b
+# story-time S75b milliseconds=13964.661
+# case-copy S73c case=showcase milliseconds=3.574
+# S73c synthetic case=showcase (fresh copy)
+PASS S73c
+# story-time S73c milliseconds=8944.811
+# case-copy S76 case=showcase milliseconds=1.537
+# S76 synthetic case=showcase (fresh copy)
+PASS S76
+# story-time S76 milliseconds=9763.850
+# case-copy S77 case=basal-lower milliseconds=221.065
+# S77 synthetic case=basal-lower (fresh copy)
+PASS S77
+# story-time S77 milliseconds=1086.902
+# case-copy S78 case=basal-lower milliseconds=1.198
+# S78 synthetic case=basal-lower (fresh copy)
+PASS S78
+# story-time S78 milliseconds=938.000
+# case-copy S79 case=basal-lower milliseconds=1.825
+# S79 synthetic case=basal-lower (fresh copy)
+PASS S79
+# story-time S79 milliseconds=844.774
+# case-copy S80 case=showcase milliseconds=3.058
+# S80 synthetic case=showcase (fresh copy)
+PASS S80
+# story-time S80 milliseconds=7850.911
+# case-copy S81 case=basal-lower milliseconds=0.863
+# S81 synthetic case=basal-lower (fresh copy)
+PASS S81
+# story-time S81 milliseconds=1855.217
+# case-copy S82 case=showcase milliseconds=1.969
+# S82 synthetic case=showcase (fresh copy)
+PASS S82
+# story-time S82 milliseconds=7677.006
+# case-copy S83 case=showcase milliseconds=2.749
+# S83 synthetic case=showcase (fresh copy)
+PASS S83
+# story-time S83 milliseconds=11331.872
+# case-copy S84 case=showcase milliseconds=1.593
+# S84 synthetic case=showcase (fresh copy)
+PASS S84
+# story-time S84 milliseconds=7651.193
+# case-copy S85 case=showcase milliseconds=1.427
+# S85 synthetic case=showcase (fresh copy)
+PASS S85
+# story-time S85 milliseconds=7214.606
+# case-copy S86 case=showcase milliseconds=1.296
+# S86 synthetic case=showcase (fresh copy)
+PASS S86
+# story-time S86 milliseconds=6829.993
+# case-copy S87 case=showcase milliseconds=1.362
+# S87 synthetic case=showcase (fresh copy)
+PASS S87
+# story-time S87 milliseconds=16028.280
+# case-copy S88 case=basal-lower milliseconds=1.744
+# S88 synthetic case=basal-lower (fresh copy)
+PASS S88
+# story-time S88 milliseconds=1423.194
+
+# executed 32 · failed 0 · deferred 0 · selected 32 · chromium launches 1

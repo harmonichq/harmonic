@@ -1,0 +1,1 @@
+{"argv": ["node", "--test", "--test-name-pattern=Escape dismisses fullscreen|All charts confines|touch phone flow|lower-rank drill returns|asynchronous repaint", "frontend/diagnose-workstation.browser.test.mjs"], "returncode": 0, "seconds": 17.94}

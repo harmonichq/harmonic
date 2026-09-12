@@ -1070,7 +1070,7 @@ test('glucose projections expose served values and thumbnails have no axis furni
   for (const entry of DIAGNOSE_EVIDENCE_CHARTS) {
     if (entry.kind === 'eating-sequence') {
       const data = expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
-        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence'].event;
+        .states.repeat_eating_empty.windows.global.cases['finding:repeat_eating'].event;
       const thumb = entry.thumbnail(data);
       assert.ok(thumb.xAxis.every((axis) => axis.axisLabel.show === false));
       assert.ok(thumb.yAxis.every((axis) => axis.axisLabel.show === false));
@@ -1140,7 +1140,8 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     setOption: (option) => { mountedOption = option; },
     on() {}, getZr: () => ({ on() {} }), resize() {}, dispose() {},
   };
-  const key = { dataset: {}, innerHTML: '', insertAdjacentHTML() {} };
+  const key = { dataset: {}, innerHTML: '',
+    insertAdjacentHTML: (_position, html) => { key.innerHTML += html; } };
   const chartElement = { addEventListener() {}, setAttribute() {} };
   const surface = {
     innerHTML: '',
@@ -1164,6 +1165,21 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     renderEventSurface(surface, widened);
     assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max],
       [GLUCOSE_ENVELOPE[0], 280]);
+
+    const highCarb = structuredClone(event);
+    highCarb.projection = { ...highCarb.projection,
+      schema: 'high-carb-sequence-response-v1', scope: 'pooled', period: 'post_6h',
+      source_window: expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
+        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']
+        .event.projection.response.source_window };
+    renderEventSurface(surface, highCarb, { range: [80, 240] });
+    assert.match(key.innerHTML, /Source population · Sequences at all times of day · 30 days · Next 6 h/);
+    assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [80, 240],
+      'the focal surface preserves its injected shared range');
+    highCarb.projection.scope = 'evening';
+    renderEventSurface(surface, highCarb);
+    assert.match(key.innerHTML, /Source population · Evening sequences · 30 days · Next 6 h/);
+    assert.doesNotMatch(key.innerHTML, /pooled|evening scope/);
   } finally {
     globalThis.window = prior.window;
     globalThis.ResizeObserver = prior.ResizeObserver;

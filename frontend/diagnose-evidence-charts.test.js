@@ -1169,7 +1169,9 @@ test('the shipped event-comparison mount derives its axis from rendered cohort g
     const highCarb = structuredClone(event);
     highCarb.projection = { ...highCarb.projection,
       schema: 'high-carb-sequence-response-v1', scope: 'pooled', period: 'post_6h',
-      source_window: { days: 30, start: '2039-12-22T06:00:00', end: '2040-01-21T06:00:00' } };
+      source_window: expandSequenceFixture(fixture('../mockups/eating-sequence-findings.synthetic/payload.json'))
+        .states.high_carb_sequence_empty.windows.global.cases['finding:high_carb_sequence']
+        .event.projection.response.source_window };
     renderEventSurface(surface, highCarb, { range: [80, 240] });
     assert.match(key.innerHTML, /Source population · Sequences at all times of day · 30 days · Next 6 h/);
     assert.deepEqual([mountedOption.yAxis.min, mountedOption.yAxis.max], [80, 240],

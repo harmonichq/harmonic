@@ -5876,6 +5876,13 @@ export async function assertHighCarbFailure(page, scenario, defect, stored) {
   await page.getByRole('button', { name: '24 h', exact: true }).click();
   const row = '#level .qrow[data-id="finding:high_carb_sequence"]';
   await page.locator(row).waitFor();
+  // The roster preloads this case for its miniature. Finish that read before
+  // faulting the separate inspector request; its retry count starts at drill-in.
+  await page.waitForFunction((selector) => {
+    const host = document.querySelector(`${selector} .mini`);
+    const chart = host && window.echarts.getInstanceByDom(host);
+    return chart?.getOption().series?.some((series) => /^(matched|comparison):/.test(series.id || ''));
+  }, row);
   scenario.armed = true;
   await page.locator(row).click();
   if (defect === 'stale-recover') {

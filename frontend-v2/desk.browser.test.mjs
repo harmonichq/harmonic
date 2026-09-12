@@ -718,13 +718,15 @@ for (const name of ['empty', 'in_sequence', 'limited', 'null_period']) {
       const row = page.locator('#level .qrow[data-id="finding:high_carb_sequence"]');
       await row.waitFor();
       if (name === 'empty') {
-        const mini = row.locator('.mini');
-        const inert = await mini.evaluate((host) => {
-          const option = window.echarts.getInstanceByDom(host).getOption();
-          return !option.tooltip[0].show && !option.xAxis[0].axisLabel.show
-            && !option.yAxis[0].axisLabel.show && option.series.every((series) => series.silent);
-        });
-        assert.ok(inert, 'queue miniature remains inert');
+        const miniature = await (await page.waitForFunction(() => {
+          const host = document.querySelector('#level .qrow[data-id="finding:high_carb_sequence"] .mini');
+          const chart = host && window.echarts.getInstanceByDom(host);
+          const option = chart?.getOption();
+          if (!option?.series?.some((series) => /^(matched|comparison):/.test(series.id || ''))) return null;
+          return { inert: !option.tooltip[0].show && !option.xAxis[0].axisLabel.show
+            && !option.yAxis[0].axisLabel.show && option.series.every((series) => series.silent) };
+        })).jsonValue();
+        assert.ok(miniature.inert, 'queue miniature remains inert');
         await row.scrollIntoViewIfNeeded();
         await captureEvidence(page, 'high_carb_sequence-mini');
         await openAllCharts(page);

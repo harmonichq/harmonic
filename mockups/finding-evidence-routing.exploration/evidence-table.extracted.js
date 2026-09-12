@@ -30,7 +30,7 @@ function renderOccurrenceRoster(host, groups, {
     for (const row of group.rows.slice(0, shownCount)) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'ev-row case-occurrence';
+      button.className = `ev-row case-occurrence${group.compact ? ' case-compact' : ''}`;
       button.dataset.occurrenceId = row.id;
       Object.assign(button.dataset, row.dataset);
       button.setAttribute('aria-pressed', String(row.id === selectedId));

@@ -1,0 +1,35 @@
+(node:25224) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/404-c3/frontend-v2/c4.replay.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/404-c3/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+RETIRED R18 — Connor Griffin · 2026-09-08 · "We dont' need historical reads in the app."
+AMENDED R17 premise — ADR 397 · Connor Griffin · 2026-09-08; coordinator amendment 4 transcribed 2026-09-10: a served finishable Trial replaces the prototype ready scenario.
+AMENDED R17 premise — ADR 397 · Connor Griffin · 2026-09-08; coordinator amendment 4 transcribed 2026-09-10: a served finishable Trial replaces the prototype ready scenario.
+(node:25224) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+✔ R18 is a unique app-only registry function with a manufactured history case (0.405292ms)
+✔ S106 and S107 are unique app-only C4 stories with their required manufactured cases (0.085542ms)
+✔ S107 keeps a grouped comparison heading distinct from readable mixed-tier case rows (1.121583ms)
+✔ R18 fails before touching the UI when historical input is absent (0.2515ms)
+✔ R18 refuses to prove absence by also removing current evidence or records (0.131583ms)
+✔ R17 requires the generated finishable Trial, never a mock ready selector (0.181084ms)
+✔ clinical pairs use served setting IDs and the shared Watching control when needed (1.158584ms)
+✔ clinical pairs fail if either consumer misses the expected endpoint or consumes different coordinates (0.183209ms)
+✔ S101 reaches the Window copy assertion after the shared full-day opener (0.529458ms)
+✔ S102 reaches graph identity after opening a Pattern and selecting a thin slot (0.266125ms)
+✔ S103 reaches its aggregate return assertion after exercising all three window entries (0.389375ms)
+✔ S104 establishes a populated week before observing teardown and releases the held read on failure (0.38225ms)
+✔ S101 measures the brace at chart width 480 and observes each snapped move before release (0.414042ms)
+✔ S101 measures the brace at chart width 760 and observes each snapped move before release (0.146792ms)
+✔ S101 rejects an unpainted 24 h brace before it can drag the named Afternoon preset (0.145083ms)
+✔ a bounded drawn-window failure reports chip seen: (absent) (0.178208ms)
+✔ a bounded drawn-window failure reports chip seen: 12:00–18:00 × (0.086708ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 100.803959

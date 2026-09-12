@@ -22,7 +22,7 @@
 .gf { position:relative; min-width:0; min-height:0; display:grid; grid-template-rows:minmax(0,1fr); overflow:hidden;
   font-size:var(--ck-body); color:var(--wk-ink-body);
   --ec-matched:var(--mk-primary); --ec-nearly-matched:var(--mk-warn); --ec-comparison:var(--mk-accent); --ec-focus:var(--mk-text);
-  --gf-reading:300px; }
+  --gf-reading:430px; }
 .gf * { box-sizing:border-box; }
 .gf p { margin:0; line-height:1.5; }
 .gf h1,.gf h2,.gf h3 { margin:0; }
@@ -265,6 +265,12 @@
    each column a button. The month expands in place, never as a floating panel;
    the chart gives up the height and keeps its minimum. */
 .gf-stage-day { grid-template-rows:auto auto auto minmax(var(--gf-day-min,300px),1fr); }
+.gf-stage-day[aria-busy="true"] { position:relative; opacity:.55; }
+.gf-stage-day .gf-loading.gf-day-loading { display:none; }
+.gf-stage-day[aria-busy="true"] .gf-day-loading {
+  display:block; position:absolute; inset:0 0 auto; z-index:2; margin:0;
+  min-height:2px; height:2px; background:var(--mk-primary); pointer-events:none;
+}
 .gf .gf-month-toggle { min-height:26px; padding:2px 8px; font-size:var(--ck-micro); }
 .gf-nav { border-top:1px solid var(--wk-rule); background:var(--wk-field); min-height:0; }
 .gf-nav[data-open="month"] { max-height:min(46vh, 360px); overflow:auto; scrollbar-gutter:stable; }

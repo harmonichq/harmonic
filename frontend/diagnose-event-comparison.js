@@ -101,11 +101,31 @@ function episodeSeries(surface, cohort, selectedCohort) {
 
 function selectedSeries(surface, detail) {
   if (!detail) return [];
-  return [{ id: 'selected:trace', name: 'Selected trace', type: 'line', silent: true,
+  const trace = [{ id: 'selected:trace', name: 'Selected trace', type: 'line', silent: true,
     showSymbol: detail.glucose.length === 1, symbol: 'circle', symbolSize: 7,
     itemStyle: { color: css(surface, '--ec-focus') },
     data: detail.glucose.map((point) => [point.minute, point.bg]),
     lineStyle: { color: css(surface, '--ec-focus'), width: 2.5 }, z: 6 }];
+  /* The selected occurrence is evidence, not just a highlighted roster row.
+     Its trace and each served marker therefore travel together into the focal
+     option.  A marker without its own glucose value seats at the nearest
+     observed selected-trace point; the server still owns its time and kind. */
+  const observed = detail.glucose.filter((point) => Number.isFinite(point?.minute)
+    && Number.isFinite(point?.bg));
+  const atMinute = (minute) => observed.reduce((nearest, point) => (
+    !nearest || Math.abs(point.minute - minute) < Math.abs(nearest.minute - minute) ? point : nearest
+  ), null)?.bg;
+  const markers = (detail.markers || []).flatMap((marker, index) => {
+    const bg = Number.isFinite(marker.bg) ? marker.bg : atMinute(marker.minute);
+    // A marker may name an event without a glucose reading. The focal chart
+    // does not fabricate a clinical value to place it; it draws only served
+    // glucose or a real observed point from the selected trace.
+    if (!Number.isFinite(bg)) return [];
+    return [{ id: `selected:marker:${index}`, name: `Selected ${marker.kind} marker`, type: 'scatter',
+      silent: true, symbol: 'circle', symbolSize: 7,
+      data: [[marker.minute, bg]], itemStyle: { color: css(surface, '--ec-focus') }, z: 7 }];
+  });
+  return [...trace, ...markers];
 }
 
 function legend(surface, caseFile, selected) {

@@ -1,0 +1,155 @@
+[
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_ic_block_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.48
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/diagnose-evidence-canvas.exploration/generate.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.04
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "mockups/harmonic-v2.exploration/generate.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 82.55
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_annotation_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.11
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_chart_builder_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 1.55
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/check_demo_fixtures.py"
+    ],
+    "returncode": 0,
+    "seconds": 0.63
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_qa_e2e_db.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.17
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_findings_projection_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 5.32
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_ic_history_event_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.09
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_ic_block_evidence_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.09
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_basal_night_evidence_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.26
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_isf_rest_window_evidence_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.13
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_missed_meal_comparison_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 0.08
+  },
+  {
+    "argv": [
+      "uv",
+      "run",
+      "python",
+      "scripts/gen_eating_sequence_fixtures.py",
+      "--check"
+    ],
+    "returncode": 0,
+    "seconds": 15.55
+  }
+]

@@ -64,7 +64,9 @@ from .ic_history import decode_history_id
 # the habit causes' highs/meals display chips.
 from .analyzers.scenario.levers import Exposure, Lever, exposure, outcome_kind, title
 from .analyzers.scenario.evidence_population import policy_for
-from .analyzers.scenario.outcome_patterns import _ROSTER, build_outcome_patterns
+from .analyzers.scenario.outcome_patterns import (
+    _ROSTER, build_outcome_patterns, outcome_window_population,
+)
 from .safety import Status
 from .window_membership import DAY_MINUTES, WindowQuery, outcome_minute
 
@@ -198,10 +200,29 @@ class FindingsProjection:
         rows = self._parameter_rows(query, scoped=query.scoped)
         rows += self._finding_rows(query)
         rows += self._history_rows(query)
-        pattern_by_subject = {}
-        if not query.scoped:
-            pattern_rows, pattern_by_subject = self._pattern_rows(rows, query)
-            rows += pattern_rows
+        if query.scoped:
+            pattern_exposures, scoped_patterns = outcome_window_population(
+                self._analysis, self._exposures, self._scenarios, query,
+            )
+            scoped_by_key = {pattern["key"]: pattern for pattern in scoped_patterns}
+            outcome_patterns = []
+            for prepared in self._outcome_patterns:
+                scoped = scoped_by_key.get(prepared.get("key"))
+                if scoped is None:
+                    continue
+                outcome_patterns.append(deepcopy(prepared) | {
+                    field: deepcopy(scoped[field])
+                    for field in ("n", "k", "rate", "wilson", "readiness",
+                                  "rate_producer", "overlap_counts", "harm_low_overlap")
+                    if field in scoped
+                })
+        else:
+            pattern_exposures = self._exposures
+            outcome_patterns = self._outcome_patterns
+        pattern_rows, pattern_by_subject = self._pattern_rows(
+            rows, query, outcome_patterns, pattern_exposures,
+        )
+        rows += pattern_rows
         rows.sort(key=lambda row: _sort_key(row, pattern_by_subject))
         _assign_tiers(rows)
         for row in rows:
@@ -226,7 +247,7 @@ class FindingsProjection:
             # The prepared roster is the Pattern producer's output, not a second
             # Findings-policy pass.  Keep it additive while the shipped queue
             # continues to render its existing setting and Lever rows.
-            "outcome_patterns": deepcopy(self._outcome_patterns),
+            "outcome_patterns": deepcopy(outcome_patterns),
             "selection": self._selection(query, selected_id),
             # Keyed by the register name each row carries, so a count and a row can
             # never be read as two different vocabularies.
@@ -235,14 +256,20 @@ class FindingsProjection:
             "uncaused_highs": self._uncaused_highs(),
         }
 
-    def _pattern_rows(self, rows: List[dict], query: WindowQuery):
+    def _pattern_rows(self, rows: List[dict], query: WindowQuery,
+                      outcome_patterns: list[dict] | None = None,
+                      pattern_exposures: dict | None = None):
         """Place the prepared roster in the queue without re-deciding its policy."""
         by_id = {row["id"]: row for row in rows}
         pattern_rows, pattern_by_subject = [], {}
-        for pattern in self._outcome_patterns:
+        outcome_patterns = self._outcome_patterns if outcome_patterns is None else outcome_patterns
+        pattern_exposures = self._exposures if pattern_exposures is None else pattern_exposures
+        for pattern in outcome_patterns:
             # Partial rosters occur in the producer-isolation tests; they remain
             # additive evidence, but are not renderable Pattern contracts.
             if pattern.get("collapse") != "remain_pattern":
+                continue
+            if query.scoped and not pattern_chartable(pattern, pattern_exposures):
                 continue
             subject = pattern["subject"]
             subjects = dict.fromkeys([
@@ -258,9 +285,10 @@ class FindingsProjection:
                 id=subject, register="finding", kind="pattern", title=pattern["title"],
                 priority=(pattern["settled_price"]
                           if pattern["admission_route"] != "none" else None),
-                episodes=None, pattern=deepcopy(pattern), window_scope="whole_day",
+                episodes=None, pattern=deepcopy(pattern),
+                window_scope="window" if query.scoped else "whole_day",
                 pattern_chart=({"key": pattern["key"], "window": query.to_dict()}
-                               if pattern_chartable(pattern, self._exposures) else None),
+                               if pattern_chartable(pattern, pattern_exposures) else None),
             )
             pattern_rows.append(pattern_row)
             pattern_by_subject[subject] = pattern_row

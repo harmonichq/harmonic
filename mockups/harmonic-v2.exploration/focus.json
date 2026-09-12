@@ -103806,7 +103806,7 @@
         {
           "comparison_context": {
             "captured_at": "2024-05-30 12:00:00",
-            "code_version": "b56323dcc0f93829ebcf648d7a317b3f3f2b007a1041f4e2e44f6be21ecb0044",
+            "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
             "configuration": {
               "anchor_high_mgdl": 250.0,
               "anchor_meal_min_carbs": 10.0,
@@ -103898,7 +103898,7 @@
               "user_override_harm_low_mgdl": 80.0,
               "user_override_pump_zero_rec_u": 0.2
             },
-            "id": "c22cb3078caddc731005673663646c96fd41e5039d03c8533c1f3c810eff3bcc",
+            "id": "1924b32582a93cd4afa5616476d6cc45fa20a70f4c11914aa2f1eab32d4fa7ab",
             "input_revision": 5,
             "policy": "340:1/386:1/387:1",
             "programmed_isf": {
@@ -103986,7 +103986,7 @@
               },
               "comparison_context": {
                 "captured_at": "2024-05-30 12:00:00",
-                "code_version": "b56323dcc0f93829ebcf648d7a317b3f3f2b007a1041f4e2e44f6be21ecb0044",
+                "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
                 "configuration": {
                   "anchor_high_mgdl": 250.0,
                   "anchor_meal_min_carbs": 10.0,
@@ -104078,7 +104078,7 @@
                   "user_override_harm_low_mgdl": 80.0,
                   "user_override_pump_zero_rec_u": 0.2
                 },
-                "id": "c22cb3078caddc731005673663646c96fd41e5039d03c8533c1f3c810eff3bcc",
+                "id": "1924b32582a93cd4afa5616476d6cc45fa20a70f4c11914aa2f1eab32d4fa7ab",
                 "input_revision": 5,
                 "policy": "340:1/386:1/387:1",
                 "programmed_isf": {
@@ -105500,6 +105500,11 @@
             "version": "386:1"
           },
           "ending": {
+            "reason": "not_recorded",
+            "state": "unavailable",
+            "version": "386:1"
+          },
+          "late_conclusion": {
             "reason": "not_recorded",
             "state": "unavailable",
             "version": "386:1"

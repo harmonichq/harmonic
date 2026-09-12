@@ -1,0 +1,1 @@
+{"argv": ["uv", "run", "python", "-m", "pytest", "tests/test_finding_case_file.py", "tests/test_finding_case_file_api.py", "tests/test_findings_projection.py", "tests/test_explore_exposures.py", "tests/test_follow_up_comparison.py", "tests/test_event_comparison.py", "tests/test_eating_sequence_finding_fixture.py", "-q"], "returncode": 0, "seconds": 154.94}

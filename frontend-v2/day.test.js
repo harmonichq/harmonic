@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { buildEpisodeLedger, dayStats } from '../frontend/day-chart.js';
 import { dayFrame, dayReturnTarget } from './day.js';
@@ -136,6 +137,14 @@ test('a month still being read says so instead of drawing every day as no data',
   assert.match(loading, /data-day="prev-month"/);
   assert.match(loading, /data-day="next-month"/);
   assert.match(loading, /aria-label="May 2024"/);
+});
+
+test('a retained Day frame has a visible, non-destructive loading treatment', () => {
+  const source = readFileSync(new URL('./desk.css', import.meta.url), 'utf8');
+  assert.match(source, /\.gf-stage-day\[aria-busy="true"\]\s*\{[^}]*opacity:\.55/);
+  assert.match(source, /\.gf-stage-day\[aria-busy="true"\] \.gf-day-loading/);
+  assert.match(source, /\.gf-loading\.gf-day-loading/,
+    'the retained frame reuses the desk loading primitive instead of replacing the Day context');
 });
 
 test('each Episode Log row renders its served state word and its kind', () => {

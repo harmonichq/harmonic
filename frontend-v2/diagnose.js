@@ -8,8 +8,25 @@ import { loadingFrame, emptyFrame } from './frame.js';
 import { openUtility } from './utilities.js';
 import { stageEvidence, evidenceIsStaged, loadPlanState } from './plan-view.js';
 import { createCaseContext, evidenceDayContext } from './diagnose-context.js';
-import { focusOfferForCase, readFocusOptions } from './focus-entry.js';
+import { focusContextForCase, focusOfferForCase, readFocusOptions } from './focus-entry.js';
 import { formatStartMin } from '../frontend/plan.js';
+
+// A case-file's unscoped WindowQuery is the reader's explicit 24 h selection.
+// Routes carry concrete coordinates because Pattern Focus requires a retained
+// outcome scope on its durable write; ordinary clock selections retain their
+// served coordinates unchanged.
+export function outcomeWindowForCase(selected) {
+  const window = selected?.window;
+  if (Number.isInteger(window?.start_min) && Number.isInteger(window?.end_min)) {
+    return { start_min: window.start_min, end_min: window.end_min };
+  }
+  return window?.scoped === false ? { start_min: 0, end_min: 1440 } : null;
+}
+
+const outcomeWindowRoute = selected => {
+  const scope = outcomeWindowForCase(selected);
+  return scope ? `${scope.start_min}-${scope.end_min}` : '';
+};
 
 /** One mounted shared view and one coherent initial read. loadCase remains an
  * unchanged Promise seam for the journey's caller; it is NOT a selection event.
@@ -201,6 +218,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
 
   function showFocusAction() {
     root?.querySelector('[data-start-focus]')?.remove();
+    root?.querySelector('[data-focus-context]')?.remove();
+    root?.querySelector('[data-focus-retry]')?.remove();
+    root?.querySelector('[data-focus-reason]')?.remove();
     root?.querySelector('[data-action="watch"]')?.remove();
     if (!seated) return;
     if (entry.from === 'changes' && payload?.watched) {
@@ -210,14 +230,51 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       root.querySelector('header.crumb')?.append(back);
     }
     const selected = caseContext.current();
+    const selectedWindow = outcomeWindowRoute(selected);
     const offered = focusOfferForCase(selected);
-    if (!offered) return;
+    const context = focusContextForCase(selected);
+    if (!offered) {
+      if (!context) return;
+      const crumb = root.querySelector('header.crumb');
+      const reason = root.ownerDocument.createElement('span');
+      reason.className = 'focus-reason'; reason.id = 'focus-context-reason';
+      reason.dataset.focusReason = context.subject;
+      reason.dataset.focusReasonKind = context.retry ? 'retry' : 'withheld';
+      reason.textContent = context.reason;
+      if (context.retry) {
+        // A read error needs an explanation and a reachable recovery action.
+        // Keeping Retry its own compact control prevents a long status label
+        // from hiding the only available action in the narrow findings header.
+        const status = root.ownerDocument.createElement('span');
+        status.className = 'focus-context'; status.dataset.focusContext = context.subject;
+        status.textContent = 'Focus status unavailable'; status.title = context.reason;
+        status.setAttribute('role', 'status');
+        const retry = root.ownerDocument.createElement('button');
+        retry.className = 'gf-btn focus-retry'; retry.dataset.focusRetry = context.subject;
+        retry.textContent = 'Retry'; retry.title = context.reason;
+        retry.setAttribute('aria-describedby', reason.id);
+        retry.onclick = () => readFocusOptions().then(showFocusAction);
+        crumb?.append(status, retry, reason);
+      } else {
+        const action = root.ownerDocument.createElement(context.route ? 'button' : 'span');
+        action.className = context.route ? 'gf-btn focus-context' : 'focus-context';
+        action.dataset.focusContext = context.subject;
+        action.textContent = context.action;
+        action.title = context.reason;
+        action.setAttribute('aria-describedby', reason.id);
+        if (context.route) action.onclick = () => navigate('changes', context.route);
+        else action.setAttribute('role', 'status');
+        crumb?.append(action, reason);
+      }
+      return;
+    }
     const button = root.ownerDocument.createElement('button');
     button.className = 'gf-btn'; button.dataset.startFocus = offered.subject;
     button.textContent = 'Start Focus';
     button.onclick = () => {
       if (focusOfferForCase(caseContext.current())?.subject === offered.subject)
-        navigate('changes', { subject: offered.subject, from: 'diagnose' });
+        navigate('changes', { subject: offered.subject, from: 'diagnose',
+          window: selectedWindow });
     };
     root.querySelector('header.crumb')?.append(button);
   }

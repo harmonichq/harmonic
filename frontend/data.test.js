@@ -446,15 +446,19 @@ test('retained selection and durable follow-up writes preserve caller identities
   assert.equal(query.get('selected'), '4');
   const body = { request_id: 'same-retry', input_revision: 8, conclusion: 'Synthetic observation' };
   await api.finishTrial('basal:180/2024', body);
+  await api.concludeTrial('basal:180/2024', body);
   assert.equal(calls[1].url, '/api/verify/trials/basal%3A180%2F2024/finish');
   assert.deepEqual(JSON.parse(calls[1].opts.body), body);
-  await api.resolveFocus(4, body);
+  assert.equal(calls[2].url, '/api/verify/trials/basal%3A180%2F2024/conclusion');
   assert.deepEqual(JSON.parse(calls[2].opts.body), body);
+  await api.resolveFocus(4, body);
+  assert.deepEqual(JSON.parse(calls[3].opts.body), body);
   await api.resolveFocus(4);
-  assert.equal(calls[3].opts.body, undefined, 'v1 keeps its legacy bodyless request');
-  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served', analysis_generation: 'g' };
+  assert.equal(calls[4].opts.body, undefined, 'v1 keeps its legacy bodyless request');
+  const pin = { request_id: 'pin', input_revision: 8, subject: 'pattern:served', pattern_key: 'served',
+    outcome_window: { start_min: 720, end_min: 1080 }, analysis_generation: 'g' };
   await api.pinFocus(null, pin);
-  assert.deepEqual(JSON.parse(calls[4].opts.body), pin, 'no browser-selected member enters the Pattern pin');
+  assert.deepEqual(JSON.parse(calls[5].opts.body), pin, 'no browser-selected member enters the Pattern pin');
   await api.pinFocus('late_bolus');
-  assert.deepEqual(JSON.parse(calls[5].opts.body), { lever: 'late_bolus' }, 'v1 pin remains compatible');
+  assert.deepEqual(JSON.parse(calls[6].opts.body), { lever: 'late_bolus' }, 'v1 pin remains compatible');
 });

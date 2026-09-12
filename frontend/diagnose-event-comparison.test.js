@@ -20,6 +20,57 @@ test('case-file comparison selection uses its served cohort identity', () => {
     'the renderer does not derive a comparison cohort from a verdict');
 });
 
+test('a selected event case carries each served marker with its selected glucose trace', () => {
+  const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
+  try {
+    globalThis.document = { documentElement: {} };
+    globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#9b7448' });
+    const source = Object.values(caseFiles().cases['finding:missed_meal'].selected_event)
+      .find((caseFile) => caseFile.selection.state === 'selected');
+    const option = eventComparisonChartOption(source, GLUCOSE_ENVELOPE);
+    const detail = source.selection.detail;
+    assert.deepEqual(option.series.find((series) => series.id === 'selected:trace').data,
+      detail.glucose.map((point) => [point.minute, point.bg]));
+    const markers = option.series.filter((series) => series.id?.startsWith('selected:marker:'));
+    assert.equal(markers.length, detail.markers.length);
+    for (const [index, marker] of detail.markers.entries()) {
+      assert.equal(markers[index].name, `Selected ${marker.kind} marker`);
+      assert.equal(markers[index].data[0][0], marker.minute);
+      assert.ok(Number.isFinite(markers[index].data[0][1]));
+    }
+  } finally { Object.assign(globalThis, prior); }
+});
+
+test('selected event markers use only served glucose, skip an empty trace, and bridge null gaps honestly', () => {
+  const prior = { document: globalThis.document, getComputedStyle: globalThis.getComputedStyle };
+  try {
+    globalThis.document = { documentElement: {} };
+    globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#9b7448' });
+    const source = Object.values(caseFiles().cases['finding:missed_meal'].selected_event)
+      .find((caseFile) => caseFile.selection.state === 'selected');
+    const option = (detail) => eventComparisonChartOption({ ...source, selection: {
+      ...source.selection, detail,
+    } }, GLUCOSE_ENVELOPE);
+    const markers = (chart) => chart.series.filter((series) => series.id?.startsWith('selected:marker:'));
+
+    const empty = option({ ...source.selection.detail, glucose: [], markers: [{ minute: 0, kind: 'meal' }] });
+    assert.equal(markers(empty).length, 0, 'an event without glucose never receives an invented marker value');
+
+    const gap = option({ ...source.selection.detail,
+      glucose: [{ minute: -5, bg: null }, { minute: 4, bg: 147 }],
+      markers: [{ minute: -5, kind: 'meal' }],
+    });
+    assert.deepEqual(markers(gap)[0].data, [[-5, 147]],
+      'a null CGM gap uses the nearest real selected-trace observation');
+
+    const supplied = option({ ...source.selection.detail, glucose: [],
+      markers: [{ minute: 10, kind: 'meal', bg: 93 }],
+    });
+    assert.deepEqual(markers(supplied)[0].data, [[10, 93]],
+      'a served marker glucose remains visible even without a trace');
+  } finally { Object.assign(globalThis, prior); }
+});
+
 /* THE CAPTION MUST NOT BE STRUCK BY THE LINE IT NAMES (#355). ECharts places an
    unpositioned markArea label at the centre of the area's TOP edge — here the
    y = 180 target boundary — with no background, so the boundary rule struck the

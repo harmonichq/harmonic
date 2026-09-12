@@ -199,7 +199,7 @@ async function shippedEvidenceTable() {
   /* The three things the fidelity comparison hangs off. If the shipped painter
      ever stops emitting them the mock's table is no longer the app's, and the
      build says so here rather than in a screenshot nobody re-reads. */
-  for (const needle of ["className = 'ev-row case-occurrence'", 'group.header', "className = 'more'"]) {
+  for (const needle of ["className = `ev-row case-occurrence${group.compact ? ' case-compact' : ''}`", 'group.header', "className = 'more'"]) {
     if (!render.includes(needle)) {
       throw new Error(`extracted \`renderOccurrenceRoster\` no longer emits ${needle} — extraction is corrupt`);
     }

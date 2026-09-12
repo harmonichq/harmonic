@@ -1,0 +1,37 @@
+(node:97801) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/404/mockups/explore-investigation.fixture.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/404/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the retired occurrence route has no production source (2.517291ms)
+✔ the page never scrolls, the panes do, and the advisory stays whole on every tab (1240.570167ms)
+✔ top bar and footer expose the locked destination inventory and neutral profile facts (733.231333ms)
+✔ a bare or hash arrival is promoted to a maturing Trial, and a named page is not (2512.112791ms)
+✔ clean page paths own direct load, refresh, history, canonicalization, and local assets (2068.6315ms)
+cockpit-shell current ratios: outline 8.00, disc 6.19, label 17.76, focus 6.19
+cockpit-shell retirement R1: Connor · 2026-08-18 · "the dead `occurrenceModal` hash machinery goes with them."
+cockpit-shell applicable stories: 10
+✔ cockpit shell behavior ledger replays every registered story (3777.204084ms)
+✔ Log carbs speaks the chrome control vocabulary and stays readable (251.711125ms)
+✔ cockpit chrome uses only the locked type ranks and three grounds (253.549959ms)
+✔ Verify headers share a seam while Diagnose keeps its overview header with its chart (897.323416ms)
+✔ small widths retain a labeled destination drawer without changing desktop cockpit chrome (526.820042ms)
+✔ transferred live counts and Verify clinical-color guard remain wired to real state (265.73525ms)
+✔ each cockpit lock assertion proves red under deliberate mutation and restores (256.351583ms)
+﹣ build renders cover both locked sizes (0.076125ms) # SKIP
+﹣ retired occurrence route evidence covers both desktop sizes (0.0175ms) # SKIP
+✔ event comparisons render the served case-file cohorts and retain no standalone controls (861.570542ms)
+✔ event comparisons fail closed when the served case file is malformed (finding:over_treated_low) (736.430833ms)
+✔ event comparisons fail closed when the served case file is malformed (pattern:highs_after_meals) (722.365291ms)
+✔ a refused Plan save leaves nothing staged on Diagnose (basal) (931.916708ms)
+✔ a refused Plan save leaves nothing staged on Diagnose (I:C) (892.083583ms)
+✔ a refused Plan save leaves nothing staged on Diagnose (ISF) (810.46375ms)
+✔ a refused stage gives back the hand-edit it cleared from another family (884.778875ms)
+✔ a second stage inside a refused save leaves the button, the badge and the draft agreeing (3180.193792ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 22056.81075

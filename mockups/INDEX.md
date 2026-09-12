@@ -19,6 +19,12 @@ retracting is that the row now says exactly what an unlocked exploration says. A
 retraction is recorded in the File column and in the surface's decision record,
 so the next lock round reads why before it re-locks.
 
+## #404 revise evidence pointer
+
+The v2 findings ledger uses generated synthetic case stores and the shipped app
+for selected evidence, geometry, routing, and record-door proof. Private source
+images and patient data are not included in this ledger.
+
 | Surface | Concept | Status | Issue | File |
 |---|---|---|---|---|
 | Harmonic v2 desktop | Glucose-first workstation on a fixed dark desk: Diagnose is the default and carries the shipped Findings rail, including Patterns, and its evidence; Changes owns the backend-selected leading change and next action, the Plan/Focus record and its ending; Day owns the chronology; served at `/v2/` alongside shipped v1 | `locked` | [#348](https://github.com/harmonichq/harmonic/issues/348) | locked mock: `mockups/harmonic-v2-glucose.html?source=journey` (+ `harmonic-v2-glucose.css`, `harmonic-v2-glucose.js` and its `-journey`/`-setting`/`-focus`/`-day`/`-utilities`/`-basal` modules) · lock manifest: `mockups/harmonic-v2-desktop.lock.md` · scaffold: `mockups/_theme.css` + `mockups/_shell.js` · generated inputs: `mockups/harmonic-v2.exploration/*.json` from `generate.py` · concept comparison and repair records: `mockups/harmonic-v2-review.html`, `mockups/harmonic-v2.exploration/{BRIEF,REVIEW,FABLE-REVIEW,COLD-WALKTHROUGHS,OPUS-QA-REPAIRS,AUDIT}.md` · historical variants reviewed in merged [#379](https://github.com/harmonichq/harmonic/pull/379) are retained as evidence: `mockups/harmonic-v2-guided.html`, `mockups/harmonic-v2-journal.html`, `mockups/harmonic-v2-chrome.html` · plan and decision records: `openspec/changes/harmonic-v2/` (ADR 348 ×7) · carried v1 jobs: `openspec/changes/harmonic-v2/predecessor.md`. #397 / ADR 397 supersedes navigation and affected copy. Pre-#397 behavior ledger **★ FROZEN**: `mockups/harmonic-v2-desktop.behavior.md`, the executable half of this lock, with its fail-closed replay `frontend/harmonic-v2-desktop-behavior.replay.mjs` and its retained evidence `mockups/sweep/harmonic-v2-desktop/`. At the original freeze, replayed against the unchanged locked prototype at both locked viewports — 111 passed, 0 failed, 18 deferred, 129 selected — with one feature-specific negative proof per mock-applicable story (111 proved, 0 not proved) and 25 capture ids at both sizes. All 17 retirements keep their external sanctions and premises. **18 stories were app-opener-only and had never passed at that freeze**: durable persistence and packaged delivery (`S86`–`S100`), a failed durable Trial finish (HV2-25), and heading focus on a full-width empty destination and on a Guide article (HV2-32). Their production proofs remain obligations on the build. The v2 behavior/fidelity ledgers and replay are present on this #389 branch; #389 must amend affected ledger entries, permanent retirements, LOCK assertions and fidelity evidence before dependent implementation resumes. V1 remains shipped and is not retired by this lock |
@@ -167,3 +173,9 @@ contract remains `finding-evidence-routing.behavior.md` and its app-only replay.
   limited-support and missing-point states remain generator-owned. Both shipped
   shells use these captures for the focused response and recovery checks.
   This is generated test input, not a mock implementation.
+
+#404 re-freezes the shipped v2 revision contract in
+[harmonic-v2-desktop.behavior.md](harmonic-v2-desktop.behavior.md), with the
+registered S106/S107 fail-first trace and geometry obligations. The ledger's
+header retains the synthetic base-byte and raw-run locators; no replacement
+mock or real-data screenshot is published.

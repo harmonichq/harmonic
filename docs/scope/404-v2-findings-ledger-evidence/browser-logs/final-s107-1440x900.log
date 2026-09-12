@@ -1,0 +1,12 @@
+(node:24779) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/404-c3/frontend/browser-fixture-population.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/404-c3/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+# harmonic-v2-desktop behaviour replay — TARGET=app viewport=1440x900 fonts=behaviour
+# FROZEN ledger: mockups/harmonic-v2-desktop.behavior.md
+# case-copy S107 case=showcase milliseconds=180.771
+# S107 synthetic case=showcase (fresh copy)
+PASS S107
+# story-time S107 milliseconds=9699.681
+
+# executed 1 · failed 0 · deferred 0 · selected 1 · chromium launches 1

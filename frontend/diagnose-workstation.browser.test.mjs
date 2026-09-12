@@ -622,7 +622,7 @@ test('#341 · touch phone flow keeps selection, windowing, overlays, return, and
     const drawnWindow = await waitForReplayAssertion(async seen => {
       const value = seen((await page.locator('#seg-window [data-follow]').innerText())
         .replace('×', '').trim());
-      assert.match(value, /^Window \d\d:\d\d–\d\d:\d\d$/,
+      assert.match(value, /^\d\d:\d\d–\d\d:\d\d$/,
         'the touch drag commits the shown time range');
       return value;
     }, '#341 touch drag window');
@@ -785,7 +785,7 @@ test('#341 · useful queue previews remain present and legible at narrow width',
     await page.waitForFunction(() => {
       const level = document.querySelector('#level');
       return document.querySelector('#seg-window [aria-pressed="true"]')?.textContent.trim() === '24 h'
-        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+        && document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 6
         && !level.textContent.includes('Loading evidence');
     });
     const previews = await page.locator('#level .qrow.priced .mini[data-preview-kind]').evaluateAll((hosts) =>
@@ -865,7 +865,7 @@ test('#341 · All charts dismissal preserves a genuinely scrolled phone reading 
     await page.getByRole('button', { name: '24 h', exact: true }).click();
     await page.waitForFunction(() => {
       const node = document.querySelector('#level');
-      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 7
+      return document.querySelectorAll('#level .mini[data-preview-kind] canvas').length === 6
         && !node.textContent.includes('Loading evidence')
         && document.querySelector('.cockpit-stage > .main-content').scrollHeight
           > document.querySelector('.cockpit-stage > .main-content').clientHeight;
@@ -2078,7 +2078,7 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
     // day's 02:00 — a held boundary is travel, never a place to release on
     const during = await panThenAim(page, { x: xAt(22 * 60), y }, 'right',
       { past: 180, aim: 24 * 60 + 2 * 60 });
-    assert.equal(during.chip, 'Window 22:00–02:00', 'the draw wraps before release');
+    assert.equal(during.chip, '22:00–02:00', 'the draw wraps before release');
     await page.mouse.up();
     await settle(page, 500);
 
@@ -2091,7 +2091,7 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
       axisPoints: window.echarts.getInstanceByDom(document.getElementById('chart'))
         .getOption().xAxis[0].data.length,
     }));
-    assert.equal(wrapped.chip, 'Window 22:00–02:00');
+    assert.equal(wrapped.chip, '22:00–02:00');
     /* Edge and grip counts are static markup and paintBrace writes the same
        two offsets into both, so counting them or comparing them proves
        nothing. What can actually move is WHERE each one lands: pin all four
@@ -2125,6 +2125,71 @@ test('#130 · a wrapped draw leaves two endpoint edges without adding basal sele
     'no opener problems while proving the wrapped window');
 });
 
+test('#404 · a pinned Finding refreshes during its held brace drag without losing the endpoint', async () => {
+  const browser = await runner.browser();
+  const before = openerProblems().length;
+  const page = await openApp(browser, {
+    state: 'typical', viewport: { width: 1280, height: 720 }, appSource: 'fixture',
+  });
+  const preparations = [];
+  const cases = [];
+  const onRequest = (request) => {
+    const url = new URL(request.url());
+    if (url.pathname === '/api/diagnose/finding-case-file-preparation') {
+      preparations.push([url.searchParams.get('start_min'), url.searchParams.get('end_min')]);
+    }
+    if (url.pathname === '/api/diagnose/finding-case-file') {
+      cases.push({
+        projection: url.searchParams.get('projection_id'),
+        finding: url.searchParams.get('finding_id'), alignment: url.searchParams.get('alignment'),
+      });
+    }
+  };
+  page.on('request', onRequest);
+  try {
+    await page.getByRole('button', { name: '24 h', exact: true }).click();
+    await settle(page, 450);
+    await page.getByRole('button', { name: 'All charts', exact: true }).click();
+    await page.locator('.evidence-tile[data-chart-id="finding:over_treated_low"] .tile-pin').click();
+    await page.keyboard.press('Escape');
+    await settle(page, 450);
+    await page.getByRole('button', { name: 'Afternoon', exact: true }).click();
+    await settle(page, 450);
+    preparations.length = 0;
+    cases.length = 0;
+    const grip = await page.locator('#grip-b').boundingBox();
+    const first = await page.locator('#grip-a').boundingBox();
+    assert.ok(grip && first, 'the visible Afternoon brace exposes both endpoints');
+    const targetX = first.x + (1290 - 720) * (grip.x - first.x) / (1080 - 720);
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(targetX, grip.y + grip.height / 2, { steps: 8 });
+    await page.mouse.move(targetX, grip.y + grip.height / 2);
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await page.locator('#brace-readout').innerText()).trim()), '21:30',
+        'the held endpoint reaches 21:30 before release');
+    }, '#404 held drawn endpoint');
+    await waitForReplayAssertion(async seen => {
+      const preparation = preparations.some(([start, end]) => start === '720' && end === '1290');
+      const caseRead = cases.some((request) => request.finding === 'finding:over_treated_low'
+        && request.alignment === 'event');
+      assert.equal(seen(preparation && caseRead), true,
+        'the held endpoint refreshes its pinned preparation and matching case file');
+    }, '#404 held pinned refresh');
+    await page.mouse.up();
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen((await page.locator('#seg-window [data-follow]').innerText())
+        .replace('×', '').trim()), '12:00–21:30',
+      'the released brace commits the exact prepared scope');
+    }, '#404 released drawn endpoint');
+  } finally {
+    page.off('request', onRequest);
+    await page.close();
+  }
+  assert.deepEqual(openerProblems().slice(before), [],
+    'no opener problems while committing the held brace');
+});
+
 test('the Filter menu renders each server-published Sift count', async () => {
     const browser = await runner.browser();
     try {
@@ -2149,6 +2214,13 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       const page = await openApp(browser, { state: 'drawn', appSource: 'fixture' });
       const trigger = page.getByRole('button', { name: /Filter/ });
       const drawnBefore = await page.locator('#seg-window [data-follow]').innerText();
+      const resting = await trigger.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { border: style.borderTopWidth, background: style.backgroundColor, padding: style.paddingTop };
+      });
+      assert.equal(resting.border, '1px', 'the v1 Filter keeps its shipped outlined resting control');
+      assert.notEqual(resting.background, 'rgba(0, 0, 0, 0)', 'the v1 Filter is not a browser-default bare word');
+      await shot(page, 'opus-design', 'v1-filter-resting', { width: 1280, height: 720 });
       await trigger.click();
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs ')), true);
@@ -2164,6 +2236,10 @@ test('#83 · Filter is a roving ARIA menu and Escape wins over the drawn window'
       assert.equal(await page.getByRole('menu').isVisible(), true,
         'Space changes a Sift choice without closing the menu');
       assert.equal(await trigger.innerText(), 'Filter 1');
+      assert.equal(await trigger.getAttribute('data-filter-active'), '',
+        'an active Sift is carried as an explicit visual state, not only a digit in the label');
+      const active = await trigger.evaluate((node) => getComputedStyle(node).boxShadow);
+      assert.notEqual(active, 'none', 'the active Sift count has visible weight');
       await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Highs '));
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.startsWith('Lows ')), true);

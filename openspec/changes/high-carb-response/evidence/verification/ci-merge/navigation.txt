@@ -1,0 +1,17 @@
+(node:59587) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/connor/worktrees/harmonic/410/frontend/eating-sequence-fixture.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/connor/worktrees/harmonic/410/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ #135 · Escape dismisses fullscreen and restores the exact canvas arrangement (2244.106667ms)
+✔ #341 · All charts confines interaction and dismissal preserves the window context (1908.764541ms)
+✔ #341 · touch phone flow keeps selection, windowing, overlays, return, and Watching usable (7785.531792ms)
+✔ #341 · a narrow lower-rank drill returns with rank one readable (1781.65075ms)
+✔ #100 · an asynchronous repaint does not move focus without navigation (3940.783542ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17906.702

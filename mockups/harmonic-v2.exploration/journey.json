@@ -105383,7 +105383,7 @@
           {
             "comparison_context": {
               "captured_at": "2024-06-02 12:00:00",
-              "code_version": "b56323dcc0f93829ebcf648d7a317b3f3f2b007a1041f4e2e44f6be21ecb0044",
+              "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
               "configuration": {
                 "anchor_high_mgdl": 250.0,
                 "anchor_meal_min_carbs": 10.0,
@@ -105475,7 +105475,7 @@
                 "user_override_harm_low_mgdl": 80.0,
                 "user_override_pump_zero_rec_u": 0.2
               },
-              "id": "43ee4cf2e381948c0b0836adbc2480aa6db8865b94254c2788c4d1cc2c35e145",
+              "id": "8f784a36ac5ddac0b027558e2b4104f70f9da5683dbfc08c67f5a29fed439450",
               "input_revision": 9,
               "policy": "340:1/386:1/387:1",
               "programmed_isf": {
@@ -105563,7 +105563,7 @@
                 },
                 "comparison_context": {
                   "captured_at": "2024-06-02 12:00:00",
-                  "code_version": "b56323dcc0f93829ebcf648d7a317b3f3f2b007a1041f4e2e44f6be21ecb0044",
+                  "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
                   "configuration": {
                     "anchor_high_mgdl": 250.0,
                     "anchor_meal_min_carbs": 10.0,
@@ -105655,7 +105655,7 @@
                     "user_override_harm_low_mgdl": 80.0,
                     "user_override_pump_zero_rec_u": 0.2
                   },
-                  "id": "43ee4cf2e381948c0b0836adbc2480aa6db8865b94254c2788c4d1cc2c35e145",
+                  "id": "8f784a36ac5ddac0b027558e2b4104f70f9da5683dbfc08c67f5a29fed439450",
                   "input_revision": 9,
                   "policy": "340:1/386:1/387:1",
                   "programmed_isf": {
@@ -107095,6 +107095,11 @@
               "version": "386:1"
             },
             "ending": {
+              "reason": "not_recorded",
+              "state": "unavailable",
+              "version": "386:1"
+            },
+            "late_conclusion": {
               "reason": "not_recorded",
               "state": "unavailable",
               "version": "386:1"
@@ -296294,6 +296299,11 @@
               "reason": "not_recorded",
               "state": "unavailable",
               "version": "386:1"
+            },
+            "late_conclusion": {
+              "reason": "not_recorded",
+              "state": "unavailable",
+              "version": "386:1"
             }
           },
           "parameter": "basal_rate",
@@ -297317,6 +297327,11 @@
               "version": "386:1"
             },
             "ending": {
+              "reason": "not_recorded",
+              "state": "unavailable",
+              "version": "386:1"
+            },
+            "late_conclusion": {
               "reason": "not_recorded",
               "state": "unavailable",
               "version": "386:1"

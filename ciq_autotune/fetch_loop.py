@@ -63,6 +63,9 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             summary = (f"{e.windows_completed} of {e.windows_total} windows succeeded, "
                        f"partial data kept: {e.cause}")
             store.record_fetch_result(attempted_at=attempted_at, ok=False, error=summary)
+            # Fetch status is an input revision too.  Complete the same durable
+            # frontier before returning the historical no-row sentinel.
+            reconcile_needed = True
             if committed:
                 return e.written
         except Exception as e:  # any failure must not kill the loop
@@ -70,6 +73,7 @@ def run_fetch_once(db_path: str, *, key_path: str = DEFAULT_KEY_PATH,
             reconcile_needed = committed
             logger.warning("Hourly fetch failed: %s", e)
             store.record_fetch_result(attempted_at=attempted_at, ok=False, error=str(e))
+            reconcile_needed = True
             if committed:
                 # Rows landed — the settings snapshot, or part of a window — but
                 # this path carries no counts to report them by.

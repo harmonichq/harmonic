@@ -222,6 +222,22 @@ test('hasAction reads the served action rather than the concern\'s shape', async
   assert.equal(guidance.hasAction(null), false);
 });
 
+test('Focus admission copy translates known backend tokens without inventing admission', async () => {
+  const { guidance } = await withClient(() => guidancePayload());
+  assert.deepEqual(guidance.admissionReason('reconciliation_required'), {
+    said: 'Harmonic has not reconciled the latest pump and sensor data yet, so it is not offering an action from this read.',
+    label: 'Waiting for reconciliation', action: 'Focus unavailable', route: null,
+  });
+  assert.deepEqual(guidance.admissionReason('active_trial'), {
+    said: 'A Trial is already being watched, so Harmonic is not offering a Focus from this read.',
+    label: 'Trial in progress', action: 'View Trial', route: { subject: 'trial' },
+  });
+  assert.deepEqual(guidance.admissionReason('new_backend_reason'), {
+    said: 'Harmonic is not offering a Focus from this read.',
+    label: 'Unavailable from this read', action: 'Focus unavailable', route: null,
+  });
+});
+
 test('candidateFor finds a subject the read carries, and nothing else', async () => {
   const { guidance } = await withClient(() => guidancePayload());
   guidance.loadGuidance();

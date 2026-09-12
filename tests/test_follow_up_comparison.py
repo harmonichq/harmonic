@@ -459,9 +459,11 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
 
     def comparison(self, store, *, pin=datetime(2024, 5, 5),
                    cutoff=datetime(2024, 5, 9), key="highs_after_meals",
-                   lever="late_bolus", ending=None):
+                   lever="late_bolus", ending=None, outcome_window=None):
         record = FollowUpComparisonTest().focus(store, pin, lever=lever, ending=ending)
         record.update(pattern_key=key, subject=f"pattern:{key}")
+        if outcome_window is not None:
+            record['decision_context'] = {'outcome_window': outcome_window}
         original = copy.deepcopy(record)
         result = compare_follow_up(store, record=record, data_cutoff=cutoff, input_revision=2)
         self.assertEqual(record, original)
@@ -489,6 +491,46 @@ class PatternOpportunityComparisonTest(unittest.TestCase):
             self.assertEqual(result["adherence"][arm]["rate"], 0)
         self.assertEqual(result["adherence"]["assessment"]["state"], "unclear")
         self.assertEqual(result["assessment"]["state"], "unclear")
+
+    def test_saved_outcome_window_filters_each_calendar_arm_without_clipping_context(self):
+        path = self.materialize()
+        with Store.open_readonly(path) as store:
+            unscoped = self.comparison(store)
+            result = self.comparison(
+                store, outcome_window={'start_min': 17 * 60, 'end_min': 19 * 60},
+            )
+        # The manufactured meals remain at 06:00, 12:00 and 18:00. The retained
+        # evening outcome scope admits exactly the 18:00 outcome episode in each
+        # arm. Its comparison population follows that producer-owned membership,
+        # rather than merely changing the Pattern readiness tally.
+        self.assertEqual([result['readiness'][arm]['count'] for arm in ('before', 'after')], [4, 4])
+        self.assertEqual([result['denominators'][arm]['contributing_meals']
+                          for arm in ('before', 'after')], [4, 4])
+        self.assertTrue(all(result['denominators'][arm]['readings']
+                            < unscoped['denominators'][arm]['readings']
+                            for arm in ('before', 'after')))
+
+    def test_saved_explicit_whole_day_scope_keeps_23_59_in_both_comparison_arms(self):
+        from ciq_autotune.event_comparison import scoped_outcome_occurrences
+        from ciq_autotune.window_membership import WindowQuery
+
+        path = self.materialize()
+        scope = {'start_min': 0, 'end_min': 1440}
+        with Store.open_readonly(path) as store:
+            unscoped = self.comparison(store)
+            retained = self.comparison(store, outcome_window=scope)
+        for arm in ('before', 'after'):
+            self.assertEqual(retained['readiness'][arm]['count'], unscoped['readiness'][arm]['count'])
+            self.assertEqual(retained['denominators'][arm]['contributing_meals'],
+                             unscoped['denominators'][arm]['contributing_meals'])
+        query = WindowQuery.clock(**scope)
+        for start, end in ((datetime(2024, 5, 1), datetime(2024, 5, 2)),
+                           (datetime(2024, 5, 5), datetime(2024, 5, 6))):
+            included = scoped_outcome_occurrences([{
+                'outcome_t': (end - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S'),
+                'outcome_min': 1439,
+            }], start=start, end=end, query=query)
+            self.assertEqual(len(included), 1, 'the saved whole-day scope includes 23:59 in each arm')
 
     def test_elapsed_time_and_other_arm_cannot_supply_missing_opportunities(self):
         path = self.materialize()

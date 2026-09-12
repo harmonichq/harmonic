@@ -20,7 +20,9 @@ spec.loader.exec_module(acceptance)
 class RuntimeProofTest(unittest.TestCase):
     def setUp(self):
         self.replies = {}
-        for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/")]:
+        for page, prefix in [("/", "/assets/"), ("/v2/", "/v2/assets/"),
+                             ("/v2/diagnose", "/v2/assets/"), ("/v2/changes", "/v2/assets/"),
+                             ("/v2/day", "/v2/assets/")]:
             self.replies[page] = (200, f'<script src="{prefix}app.js"></script>'.encode(), {"cache-control": "no-cache"})
             self.replies[prefix + "app.js"] = (200, b"bundled code", {"cache-control": "public, max-age=31536000, immutable"})
 
@@ -35,7 +37,9 @@ class RuntimeProofTest(unittest.TestCase):
 
     def test_both_shells_assets_closed_routes_and_auth_are_requested(self):
         rows = self.probe()
-        self.assertEqual(len(rows), 15)
+        self.assertEqual(len(rows), 19)
+        for path in ["/v2/diagnose", "/v2/changes", "/v2/day"]:
+            self.assertIn({"path": path, "status": 200}, rows)
         self.assertEqual([r["status"] for r in rows if r["path"] == "/api/status"], [401, 401, 200])
 
     def test_carried_v1_google_fonts_are_recorded_without_network_requests(self):
@@ -56,9 +60,17 @@ class RuntimeProofTest(unittest.TestCase):
             self.probe()
 
     def test_unlisted_route_cannot_fall_back_to_the_shell(self):
-        self.replies["/v2/day"] = self.replies["/v2/"]
+        self.replies["/v2/unlisted"] = self.replies["/v2/"]
         with self.assertRaisesRegex(RuntimeError, "expected 404, got 200"):
             self.probe()
+
+    def test_missing_canonical_page_cannot_pass_on_root_success(self):
+        for path in ["/v2/diagnose", "/v2/changes", "/v2/day"]:
+            with self.subTest(path=path):
+                reply = self.replies.pop(path)
+                with self.assertRaisesRegex(RuntimeError, f"{path}: 404"):
+                    self.probe()
+                self.replies[path] = reply
 
     def test_anonymous_api_success_is_rejected(self):
         original = self.request
@@ -264,7 +276,7 @@ class ReplayPlanTest(unittest.TestCase):
                                     env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             plan = json.loads((out / 'plan.json').read_text())
-            self.assertEqual(plan['count'], 130)
+            self.assertEqual(plan['count'], 137)
             self.assertEqual(plan['shards'], json.loads(inventories)['full'])
             self.assertIn('mode=full\n', output.read_text())
 
@@ -331,11 +343,11 @@ class InventoryProofTest(unittest.TestCase):
                 acceptance.inventory(Run())
 
     def test_stated_active_and_retired_inventory(self):
-        self.inventory([f"S{i}" for i in range(1, 113)] + [f"R{i}" for i in range(1, 19)])
+        self.inventory([f"S{i}" for i in range(1, 120)] + [f"R{i}" for i in range(1, 19)])
 
     def test_same_total_cannot_hide_changed_active_retired_counts(self):
-        ids = [f"S{i}" for i in range(1, 112)] + [f"R{i}" for i in range(1, 20)]
-        self.assertEqual(len(ids), 130)
+        ids = [f"S{i}" for i in range(1, 119)] + [f"R{i}" for i in range(1, 20)]
+        self.assertEqual(len(ids), 137)
         with self.assertRaisesRegex(RuntimeError, "frozen ledger inventory changed"):
             self.inventory(ids)
 

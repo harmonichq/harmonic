@@ -1,0 +1,1 @@
+{"argv": ["node", "--test", "frontend/diagnose-canvas-composition.browser.test.mjs"], "returncode": 0, "seconds": 126.64}

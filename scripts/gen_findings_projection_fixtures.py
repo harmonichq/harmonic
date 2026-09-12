@@ -73,6 +73,7 @@ from ciq_autotune.findings_projection import (  # noqa: E402
     WindowQuery,
     prepare_findings_projection,
 )
+from ciq_autotune.window_membership import outcome_minute  # noqa: E402
 from ciq_autotune.model import _slot_label  # noqa: E402
 from ciq_autotune.harm import HarmArm, HarmConfig, PrintedLow  # noqa: E402
 from ciq_autotune.insulin import InsulinActivity, basal_microdoses  # noqa: E402
@@ -614,12 +615,16 @@ def exposures():
                 "attributed_levers",
                 [item["cause_lever"]] if item["cause_lever"] is not None else [],
             )
-    return {
+    payload = {
         "window": {"start": (DAY - timedelta(days=WINDOW_DAYS)).isoformat(),
                    "end": DAY.isoformat()},
         "exposures": {name: _rollup(occurrences, driven)
                       for name, occurrences in families.items()},
     }
+    over_treated["fired"]["outcome_minute"] = outcome_minute(
+        over_treated["fired"], payload,
+    )
+    return payload
 
 
 def _rollup(occurrences, driven):
@@ -867,6 +872,15 @@ def payload() -> dict:
             "exposures": prepared._exposures,
             "scenarios": prepared._scenarios,
             "outcome_patterns": prepared._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                prepared.project(
+                    WindowQuery.whole_day() if bounds is None
+                    else WindowQuery.clock(*bounds),
+                    analysis_generation=ANALYSIS_GENERATION,
+                )["outcome_patterns"]
+                for bounds in (*WINDOWS.values(), (720, 900))
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         # The browser-gate workstation has a denser, independently generated
@@ -883,6 +897,13 @@ def payload() -> dict:
             "exposures": direction_only._exposures,
             "scenarios": direction_only._scenarios,
             "outcome_patterns": direction_only._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                direction_only.project(WindowQuery.whole_day() if bounds is None
+                                       else WindowQuery.clock(*bounds),
+                                       analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
+                for bounds in WINDOWS.values()
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "direction_only_windows": {
@@ -902,7 +923,8 @@ def payload() -> dict:
                 else WindowQuery.clock(*bounds),
                 analysis_generation=ANALYSIS_GENERATION)
             for name, bounds in WINDOWS.items()
-        },
+        } | {"drawn": prepared.project(
+            WindowQuery.clock(720, 900), analysis_generation=ANALYSIS_GENERATION)},
         "settings_cases": {
             "carb_ratio_raise": prepare_findings_projection(
                 analysis=analysis(blocks=ic_raise_blocks()), exposures=exposures(),
@@ -935,6 +957,13 @@ def payload() -> dict:
             "exposures": no_data._exposures,
             "scenarios": no_data._scenarios,
             "outcome_patterns": no_data._outcome_patterns,
+            "outcome_patterns_by_window": {
+                ("whole_day" if bounds is None else f"{bounds[0]}-{bounds[1]}"):
+                no_data.project(WindowQuery.whole_day() if bounds is None
+                                else WindowQuery.clock(*bounds),
+                                analysis_generation=ANALYSIS_GENERATION)["outcome_patterns"]
+                for bounds in (None, WINDOWS["morning"])
+            },
             "analysis_generation": ANALYSIS_GENERATION,
         },
         "no_data": {

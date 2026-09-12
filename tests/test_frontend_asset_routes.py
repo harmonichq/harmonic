@@ -28,7 +28,7 @@ _ASSET_REF = re.compile(r'''(?:src|href)=["'](/assets/[^"']+)["']''')
 _ASSET_REF_V2 = re.compile(r'''(?:src|href)=["'](/v2/assets/[^"']+)["']''')
 # The complete non-API route set, named here so a new one cannot be added
 # without this test being updated to say so.
-_NON_API_ROUTES = {"/", "/assets", "/v2/", "/v2/assets"}
+_NON_API_ROUTES = {"/", "/assets", "/v2/", "/v2/diagnose", "/v2/changes", "/v2/day", "/v2/assets"}
 
 
 def _built_assets() -> set[Path]:
@@ -98,16 +98,18 @@ class FrontendAssetRoutesTest(unittest.TestCase):
                 self.assertEqual(response.headers["cache-control"],
                                  "public, max-age=31536000, immutable", path)
 
-            # #389: /v2/ serves the second built surface from the same process,
+            # #404: each readable v2 destination serves the second built surface
+            # from the same process,
             # against this same API and database, and its fingerprinted assets
             # live under their own prefix.
-            response = client.get("/v2/")
-            self.assertEqual(response.status_code, 200)
-            self.assertTrue(response.headers["content-type"].startswith("text/html"))
-            self.assertEqual(response.headers["cache-control"], "no-cache")
-            self.assertEqual(response.content, _INDEX_V2.read_bytes())
-            self.assertNotEqual(response.content, _INDEX.read_bytes(),
-                                "v1 and v2 must serve their own shells, not one shell twice")
+            for page in ["/v2/", "/v2/diagnose", "/v2/changes", "/v2/day"]:
+                response = client.get(page)
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.headers["content-type"].startswith("text/html"))
+                self.assertEqual(response.headers["cache-control"], "no-cache")
+                self.assertEqual(response.content, _INDEX_V2.read_bytes())
+                self.assertNotEqual(response.content, _INDEX.read_bytes(),
+                                    "v1 and v2 must serve their own shells, not one shell twice")
             for asset in sorted(_built_assets_v2()):
                 path = "/v2/" + asset.relative_to(_DIST_V2).as_posix()
                 response = client.get(path)
@@ -142,10 +144,8 @@ class FrontendAssetRoutesTest(unittest.TestCase):
                 # which is why the browser router migrates none of them.
                 "/dashboard", "/pump", "/review", "/patterns", "/daily",
                 "/modelview", "/outcomes",
-                # #389: the v2 desk is ONE page path. Its four destinations are
-                # query state, so a destination-shaped path is not served, and
-                # neither is its build's interior.
-                "/v2/day", "/v2/overview", "/v2/index.html", "/v2/assets/",
+                # Only the three live v2 destinations are page paths.
+                "/v2/overview", "/v2/index.html", "/v2/assets/",
                 "/v2/assets/no-such.js", "/v2/main.js",
             ]:
                 self.assertEqual(client.get(path).status_code, 404, path)

@@ -664,6 +664,9 @@ rate) — and *outcome* — did the **Clean rate** / **Post-meal arc** improve. 
 outcome on a Focus is ambiguous until read against its adherence (didn't help vs
 didn't stick); a flat outcome on a Trial is not. Resolves when it sticks or the user
 drops it.
+When started from a scoped Pattern, Focus retains that outcome clock window for
+its eligibility and both comparison arms. It keeps the full contributing episode
+as evidence; changing the Diagnose window later does not rewrite the Focus.
 _Avoid_: commitment, goal, habit (the thing changed, not the tracked object),
 working-on (fine as a UI label only).
 

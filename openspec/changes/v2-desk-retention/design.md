@@ -19,8 +19,9 @@ so they are not the signal. Leaving to another destination detaches the root, ke
 reading-pane stack, drilled chart and case context (they are the drill the
 return preserves), and still disconnects the entry-restoration observer, which
 is restoration machinery rather than retained state. The workstation stays
-seated while detached; a read that completes off-screen applies its data when
-the root is next seated and never restores against a detached root. The
+seated while detached; a read that completes off-screen is discarded before it
+records an input revision or a payload, so the next return re-reads through the
+normal path rather than presenting pre-write data as current. The
 pagehide arm keeps today's full teardown (S84). A retained return runs only the focus-action
 repaint; entry restoration runs only after a read. A contextual entry whose subject, occurrence or window differs
 from the retained entry is a different subject.

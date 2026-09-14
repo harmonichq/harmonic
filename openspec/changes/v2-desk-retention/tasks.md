@@ -34,7 +34,8 @@
   on leaving to another destination detach its root and disconnect the
   entry-restoration observer only (no surface reset, no case-context reset);
   the pagehide arm keeps today's full teardown; a read completing while the
-  root is detached applies when next seated and never restores; on return re-seat the root, resize its charts, run
+  root is detached is discarded (no age, payload or restoration), so the next
+  return re-reads through the normal path; on return re-seat the root, resize its charts, run
   only the focus-action repaint, and issue no served read. Retain the
   reader's window, drilled subject and reading scroll. Re-read (and then run the
   entry restoration as today) only on Retry, on a contextual entry whose
@@ -44,7 +45,8 @@
 - [ ] 2.2 Failed reads keep their existing frames (S19, S20): a retained desk
   never presents a stale result as a new one after a failed re-read. Unit
   coverage through the destination's mount and held cleanup: the pagehide arm
-  runs the full teardown; an off-screen read completion does not restore.
+  runs the full teardown; an off-screen read completion advances neither the recorded input revision
+  nor the payload and does not restore.
 
 ## 3. Changes roster and loading text (desk)
 

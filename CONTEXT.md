@@ -699,6 +699,14 @@ family) and compute on different gates — keep them separate.
 _Avoid_: settling (that is the Diagnose-side recommendation-hold, not the Trial phase);
 warming-up, incubating.
 
+**Edit**:
+A run of retained setting changes within a day of each other, grouped for
+reading in **Changes**. Not a Plan (it stages nothing), not a Trial identity
+(each member keeps its own record and route) — purely a reading aid over
+retained Trial history: a record joins the previous retained record's Edit
+when they landed within a day of one another, else it starts a new one.
+_Avoid_: episode, session, batch.
+
 **At most one change is active at a time — Plan, Trial, and Focus all obey one
 variable under study.** A Plan stages one tuning variable, a Trial watches one
 detected setting change, and a Focus watches one behavior. Pump settings take

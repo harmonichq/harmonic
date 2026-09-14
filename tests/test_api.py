@@ -374,6 +374,16 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(body["earliest_data_day"], "2026-06-01")
         self.assertEqual(body["latest_data_day"], "2026-06-05")
 
+    def test_status_includes_input_revision(self):
+        # #414 1.3: the status endpoint's revision must be the live store's own,
+        # not a stale or hardcoded value — cross-check it directly against Store.
+        with Store.open(self.tmp.name) as store:
+            expected = store.input_data_revision()
+
+        r = self.client.get("/api/status")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["input_revision"], expected)
+
     def test_credentials_unconfigured_by_default(self):
         r = self.client.get("/api/credentials")
         self.assertEqual(r.status_code, 200)

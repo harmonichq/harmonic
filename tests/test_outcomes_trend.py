@@ -92,14 +92,25 @@ class _FakeStore:
         self.conn.execute("PRAGMA query_only = ON")
         return self
 
+    @staticmethod
+    def _bounded(events, start, end):
+        """The real Store's own ``[start, end)`` read window (store.py:958)."""
+        if start is not None:
+            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+            events = [e for e in events if e.t >= start]
+        if end is not None:
+            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
+            events = [e for e in events if e.t < end]
+        return events
+
     def basal_events(self):
         return list(self._basal)
 
-    def bolus_events(self):
-        return list(self._bolus)
+    def bolus_events(self, start=None, end=None):
+        return self._bounded(list(self._bolus), start, end)
 
-    def cgm_readings(self):
-        return list(self._cgm)
+    def cgm_readings(self, start=None, end=None):
+        return self._bounded(list(self._cgm), start, end)
 
     def settings_snapshots(self):
         return list(self._snaps)

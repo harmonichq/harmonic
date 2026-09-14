@@ -171,6 +171,29 @@ def _seed_raw_candidates(path, *, revert=False):
         store.upsert_cgm(cgm)
 
 
+def _seed_retained_trials(path, records):
+    """Directly save RETAINED trial follow-up records (#414 ADR), bypassing full
+    detection evidence, to exercise Edit chaining without a corroborating history.
+
+    Each entry is ``(parameter, slot, changed_at, before, after)``; the id
+    mirrors the production ``_review_id`` stamp (watched_change.py:1508) so the
+    roster row this seeds is addressable the same way a real one would be.
+    """
+    with Store.open(path) as store:
+        with store.follow_up_transaction():
+            for parameter, slot, changed_at, before, after in records:
+                stamp = datetime.strptime(changed_at, "%Y-%m-%d %H:%M:%S").strftime("%Y%m%d%H%M%S")
+                slot_key = (slot or "all").replace(":", "-")
+                store.save_follow_up_record({
+                    "kind": "trial", "id": f"{parameter}-{slot_key}-{stamp}", "version": "386:1",
+                    "parameter": parameter, "slot": slot, "changed_at": changed_at,
+                    "before": before, "after": after,
+                    "first_observed_at": changed_at,
+                    "observed_context": {"version": "386:1", "state": "unavailable",
+                                         "reason": "not_recorded"},
+                })
+
+
 def _seed_raw_whole_profile_candidate(path):
     with Store.open(path) as store:
         boluses, cgm = [], []
@@ -535,6 +558,33 @@ class VerifyTrialsApiTest(unittest.TestCase):
             "state": "complete",
             "maturing": {"days_elapsed": 14, "days_required": 14, "gap_count": 0},
         }])
+
+    def test_edit_chains_retained_records_within_a_day_and_breaks_past_it(self):
+        # #414 ADR: a retained record joins the previous retained record's Edit at
+        # exactly one day's gap; one day plus one minute starts a new Edit. The
+        # third record here pins that boundary — it must NOT chain onto the second.
+        _seed_retained_trials(self.tmp.name, [
+            ("isf", None, "2026-06-01 00:00:00", 40, 36),
+            ("isf", None, "2026-06-02 00:00:00", 36, 34),
+            ("isf", None, "2026-06-03 00:01:00", 34, 32),
+        ])
+
+        response = self.client.get("/api/verify/trials")
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        edit_by_changed_at = {row["changed_at"]: row["edit"] for row in body["trials"]}
+        self.assertEqual(edit_by_changed_at["2026-06-01 00:00:00"], "edit-isf-all-20260601000000")
+        self.assertEqual(edit_by_changed_at["2026-06-02 00:00:00"], "edit-isf-all-20260601000000")
+        self.assertEqual(edit_by_changed_at["2026-06-03 00:01:00"], "edit-isf-all-20260603000100")
+
+        self.assertEqual(body["edits"], [
+            {"key": "edit-isf-all-20260601000000", "first_changed_at": "2026-06-01 00:00:00",
+             "last_changed_at": "2026-06-02 00:00:00", "count": 2,
+             "parameters": [{"parameter": "isf", "count": 2}]},
+            {"key": "edit-isf-all-20260603000100", "first_changed_at": "2026-06-03 00:01:00",
+             "last_changed_at": "2026-06-03 00:01:00", "count": 1,
+             "parameters": [{"parameter": "isf", "count": 1}]},
+        ])
 
 
 if __name__ == "__main__":

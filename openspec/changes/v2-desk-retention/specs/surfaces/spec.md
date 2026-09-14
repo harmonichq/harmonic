@@ -17,7 +17,7 @@ That status read SHALL be the only request a retained return issues. A
 failed re-read SHALL replace the retained desk with the existing error frame and
 SHALL NOT present the retained result as new.
 
-#### Scenario: A tab round trip fires no read and keeps the window
+#### Scenario: A tab round trip makes one status read and keeps the window
 
 - **GIVEN** Diagnose is open on the 24 h window with a drilled finding
 - **WHEN** the reader opens Changes and returns to Diagnose

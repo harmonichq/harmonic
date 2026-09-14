@@ -42,9 +42,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   // — the payload read the desk already holds must not be disturbed while it runs.
   let checking = false;
   let readRevision = null;
-  // A read that finished while seated but detached (the workstation's own
-  // Retry, resolving off-screen) is recorded here rather than applied; the
-  // next return that reattaches the root applies it, with its restoration.
+  // The one statement of this flag's lifecycle. Set when a guidance read
+  // completes seated but detached (the workstation's own Retry resolving
+  // off-screen), because nothing may paint against a detached root. Consumed
+  // by the return that re-seats that same read: mount applies the payload
+  // with its restoration. Cleared by leave(), both the pagehide teardown and
+  // the teardown every re-read starts with, because a re-read's own completion
+  // decides what the next mount applies and the recorded one is stale.
   let deferredApply = false;
   let seated = false;
   let arrival = null;
@@ -87,11 +91,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // is the workstation's own Retry, which starts seated with the root attached.
       // Everywhere else `seated` is false here (mount's own branches own the apply).
       if (seated && root.isConnected) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
-      // Retry resolved off-screen: seated but detached. Record it rather than
-      // painting against a detached root; the next return that re-seats THIS
-      // read applies it (mount's wasDetached arm). A re-read in between
-      // (leave(); read()) discards it instead — leave() clears the flag,
-      // because that read's own completion, not this stale one, now decides.
+      // Retry resolved off-screen: record it (see deferredApply's lifecycle).
       else if (seated) { deferredApply = true; }
     }).catch((cause) => {
       error = cause;
@@ -322,11 +322,7 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // before its no-payload return. No private renderer cleanup is copied here.
     workstation.setData(null);
     root.remove();
-    // A recorded off-screen completion belongs to the read this teardown just
-    // discarded; leave() always precedes a fresh read() (a changed entry, a
-    // moved revision, Retry), whose own completion — not this stale flag —
-    // decides what the next mount applies.
-    deferredApply = false;
+    deferredApply = false;  // the recorded completion died with this read
   }
 
   // Retention (ADR 414): leaving TO ANOTHER DESTINATION detaches only what a
@@ -391,11 +387,8 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // return that skipped the re-read, not a fresh seat and not an in-place render.
     const wasDetached = seated && !root.isConnected;
     host.replaceChildren(root);
-    // deferredApply is never true here: it is set only under `seated` (:92),
-    // and leave() — the only place `seated` turns false again — clears it in
-    // the same breath. This cold seat's own read() completion already applied
-    // (or, off-screen, is a contradiction: `!seated` and the completion's
-    // `seated` gate cannot both hold), so there is nothing to consume.
+    // A cold seat never has a deferred completion to consume: the flag is set
+    // only while seated, and leave() is the one place seated turns false.
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
     else if (wasDetached && deferredApply) {
       // A Retry finished off-screen: apply the completion it recorded, restoration included.

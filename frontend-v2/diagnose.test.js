@@ -40,9 +40,12 @@ function host() {
   const ownerDocument = { body: { append(node) { node.isConnected = true; node.parked = true; } } };
   ownerDocument.createElement = () => Object.assign(makeRoot(), { ownerDocument });
   return {
-    innerHTML: '', isConnected: true, dataset: {},
+    // Writing markup gives the host a fresh first element, as the DOM would.
+    get innerHTML() { return this._html || ''; },
+    set innerHTML(v) { this._html = v; this.firstElementChild = { dataset: {} }; },
+    isConnected: true,
     ownerDocument,
-    replaceChildren(node) { this.node = node; node.isConnected = true; node.parked = false; },
+    replaceChildren(node) { this.node = node; node.isConnected = true; node.parked = false; this.firstElementChild = node; },
     querySelector(selector) { if (!controls.has(selector)) controls.set(selector, {}); return controls.get(selector); },
   };
 }
@@ -225,7 +228,8 @@ test('re-pressing Diagnose while on Diagnose re-reads and restores the index, ne
 test('a render arriving while the failed frame stands leaves its Retry control in place', async () => {
   const served = source(); const seat = host();
   let writes = 0;
-  Object.defineProperty(seat, 'innerHTML', { get() { return this._html || ''; }, set(v) { writes += 1; this._html = v; } });
+  const write = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(seat), 'innerHTML') || Object.getOwnPropertyDescriptor(seat, 'innerHTML');
+  Object.defineProperty(seat, 'innerHTML', { get() { return this._html || ''; }, set(v) { writes += 1; write.set.call(this, v); } });
   const destination = createDiagnoseDestination({ api: served.api,
     createView: () => ({ setData() {}, leaveSurface() {}, refresh() {}, setError() {} }) });
   await destination.read();
@@ -241,6 +245,10 @@ test('a render arriving while the failed frame stands leaves its Retry control i
   destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
   assert.equal(writes, before, 'a second render of the same failed frame rewrites nothing');
   assert.equal(seat.querySelector('[data-action="retry"]'), retry, 'the Retry control keeps its identity');
+  // Another destination's failure frame, with its own Retry, is not this frame.
+  seat.innerHTML = '<section class="gf-empty"><button data-action="retry">Retry</button></section>';
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(writes, before + 2, 'a foreign frame on the surface is replaced by the Diagnose frame');
   served.fail(false);
   destination.leave();
 });

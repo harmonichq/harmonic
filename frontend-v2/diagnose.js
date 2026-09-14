@@ -355,9 +355,6 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   function mount(host, deps = {}) {
     const previousEntry = entry;
     entry = deps.context || {};
-    // Only the error branch below re-marks the host; every other frame clears it.
-    const standingFrame = host.dataset.diagnoseFrame;
-    delete host.dataset.diagnoseFrame;
 
     // A return: the desk was seated and a navigation moved since. A changed
     // subject/occurrence/window always re-reads; the same entry only checks
@@ -393,12 +390,16 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       // options read's own change notification lands a beat after the failed
       // guidance read's) must not rebuild it: rebuilding replaces the Retry
       // control under the reader's press and moves focus a second time.
+      // The mark lives on the frame element itself, never on the shared
+      // surface: another destination's failure frame carries its own Retry but
+      // not this mark, and the surface sweep between destinations takes the
+      // marked frame away with it.
       const frame = payload ? 'current-read-failed' : 'evidence-unavailable';
-      host.dataset.diagnoseFrame = frame;
-      if (standingFrame === frame && host.querySelector('[data-action="retry"]')) return;
+      if (host.firstElementChild?.dataset?.diagnoseFrame === frame) return;
       host.innerHTML = emptyFrame('Diagnose', payload ? 'Current read failed' : 'Evidence unavailable',
         payload ? 'The current read failed. The last read that answered is not a new result.' : 'The evidence read could not load.',
         '<button class="gf-btn primary" data-action="retry">Retry</button><button class="gf-btn" data-action="open-diagnose">Open Diagnose</button>');
+      host.firstElementChild.dataset.diagnoseFrame = frame;
       host.querySelector('[data-action="retry"]').onclick = read;
       // Retry preserves the failed entry; Open Diagnose starts at Findings.
       host.querySelector('[data-action="open-diagnose"]').onclick = () => {

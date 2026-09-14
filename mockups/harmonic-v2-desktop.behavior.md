@@ -2551,8 +2551,10 @@ S108 · Returning to Diagnose from Changes issues exactly one GET /api/status;
   evidence: C4_STORIES.S108; holds /api/status, asserts no other request fires,
             then compares the pre- and post-return crumb and whichever window
             chip was left pressed
-  status:   browser fail-first pending coordinator; base build has no retained
-            desk to return to, so the round trip re-reads everything instead
+  status:   base app fails — "the return must issue GET /api/status; none
+            arrived within 30 s" (the base tears the desk down and re-reads
+            every guidance read on return; no status check exists); coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
 ```
@@ -2567,8 +2569,9 @@ S109 · The reading pane's scroll position survives the same Diagnose round trip
             are the desk's last arrival traffic, and each repaints the roster
             to its remembered drill position) before scrolling, then compares
             #level.scrollTop before and after the round trip
-  status:   browser fail-first pending coordinator; base build resets the
-            reading pane scroll to 0 on return
+  status:   base app fails the same way — no status read arrives on return,
+            so the base re-reads and the pane re-seats at 0; coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
 ```
@@ -2584,8 +2587,9 @@ S110 · The record roster groups a served multi-member Edit into one titled entr
             Edit, a fourth a week earlier stays its own
   evidence: C4_STORIES.S110; counts the titled entry and its members, then opens
             a member and reloads its address as S105 does
-  status:   browser fail-first pending coordinator; base build has no Edit grouping
-            at all, so every record renders as its own flat row
+  status:   base app fails — "premise: edit-chain serves exactly one titled
+            Edit entry": 0 !== 1 (no Edit grouping on the base roster);
+            coordinator confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
 ```
@@ -2596,9 +2600,9 @@ S111 · Every Still open cell names the served watch disposition as a word,
   lock:     HV2-28
   data:     edit-chain; every retained record is unwatched (not_selected_for_watch)
   evidence: C4_STORIES.S111; reads every Still open cell's disposition word
-  status:   browser fail-first pending coordinator; base build has no Edit grouping
-            or STATUS_WORD entry for not_selected_for_watch, so Still open prints
-            the raw served token instead of a word
+  status:   base app fails — "a Still open cell must carry a word, never a
+            raw disposition token: not_selected_for_watch"; coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
 ```
@@ -2611,8 +2615,10 @@ S112 · The roster read and a requested reassessment each show their own named
             requesting a reassessment are both live reads
   evidence: C4_STORIES.S112; holds the roster read, the record read and the
             reassessment read in turn, and reads the loading frame's text at each
-  status:   browser fail-first pending coordinator; base build's loading frame
-            carried no message, so a reader could not tell which read was pending
+  status:   base app fails — locator.waitFor timeout waiting for .gf-loading
+            with text "Reading change records" (the base loading frame
+            carries no text); coordinator confirmed the branch passes at
+            1280x720 and 1440x900, coordinator-run 2026-09-14
 ```
 
 ### Coordinator amendment 1 — 2026-09-10

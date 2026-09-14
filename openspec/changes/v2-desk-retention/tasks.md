@@ -43,8 +43,8 @@
   while already on Diagnose (not a return), on a contextual entry whose
   subject, occurrence or window differs from the retained entry, or when one
   status read on return shows `/api/status.input_revision` differing from the
-  revision the read recorded: the read issues one status read before its
-  payload reads and keeps that `input_revision` (no payload field carries it;
+  revision the read recorded: the read issues one status read first, alongside
+  its payload reads, and keeps that `input_revision` (no payload field carries it;
   `input_data_age` is attached only to a labelled stale predecessor). The
   re-read path renders immediately after leaving so the loading frame, never a
   blank desk, stands until the guidance read answers.

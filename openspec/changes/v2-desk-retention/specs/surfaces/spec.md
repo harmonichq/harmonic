@@ -4,8 +4,10 @@
 
 The v2 desk SHALL keep the Diagnose workstation mounted across navigation to
 Changes and Day, detaching and re-seating its root rather than tearing it down.
-A return to Diagnose SHALL issue no guidance or evidence read and SHALL retain
-the reader's selected window, drilled subject and reading scroll. The desk SHALL
+Leaving to another destination SHALL detach the root and disconnect the
+entry-restoration observer and nothing else; the pagehide teardown is
+unchanged. A return to Diagnose SHALL issue no guidance or evidence read and
+SHALL retain the reader's selected window, drilled subject and reading scroll. The desk SHALL
 re-read only on Retry, on a contextual entry whose subject, occurrence or window
 differs from the retained entry, or when one status read on return shows
 `/api/status.input_revision` differing from the `input_data_age.revision` the
@@ -32,8 +34,9 @@ SHALL NOT present the retained result as new.
 ### Requirement: The trials roster read is bounded per record and serves edits
 
 The trials roster read SHALL read only the readings inside each retained
-record's own window, once per record, and SHALL return the same maturity and
-data-gap facts as an unbounded read. Every retained trial roster row SHALL carry
+record's own window, once per record, inclusive of a reading at exactly the
+window end, and SHALL return the same maturity and data-gap facts as an
+unbounded read. Every retained trial roster row SHALL carry
 a served `edit` key, and the roster SHALL carry an `edits` summary (key, first
 and last change instants, member count, and `parameters` as an ordered list of
 `{parameter, count}`); retained records SHALL

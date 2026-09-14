@@ -15,9 +15,12 @@ store's input data revision: the fixed Diagnose payloads already carry it as
 `input_data_age.revision`, and `/api/status` serves it as `input_revision`; one
 status read on return is the only request a retained return makes. The
 fetch-status write counts are not an instant and do not move on in-app writes,
-so they are not the signal. A
-retained return runs only the focus-action repaint; entry restoration runs only
-after a read. A contextual entry whose subject, occurrence or window differs
+so they are not the signal. Leaving to another destination detaches the root, keeps the workstation's
+reading-pane stack, drilled chart and case context (they are the drill the
+return preserves), and still disconnects the entry-restoration observer, which
+is restoration machinery rather than retained state. The pagehide arm keeps
+today's full teardown (S84). A retained return runs only the focus-action
+repaint; entry restoration runs only after a read. A contextual entry whose subject, occurrence or window differs
 from the retained entry is a different subject.
 
 ### Authority
@@ -84,7 +87,8 @@ serve a stronger key; this rule is the fallback when none exists.
   writes remains a clear stop with Retry.
 - **Unsupported:** grouping records across more than the one-day tolerance;
   inferring an edit for records with no `changed_at`.
-- **Evidence owed:** bounded-read equivalence of maturity and gap facts;
+- **Evidence owed:** bounded-read equivalence of maturity and gap facts,
+  including a reading at exactly the window end (the store read is half-open);
   edit chaining at the boundary (exactly one day apart chains, one day plus
   one minute does not); zero guidance or evidence reads on a tab round trip (the one status read is the only request); an in-app write on Changes followed by a return triggers one re-read; window, drill
   and scroll retention; failed re-read frames; the roster entry title and member

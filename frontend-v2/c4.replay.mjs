@@ -413,7 +413,9 @@ async function drilledDiagnose414(page) {
 }
 // The one status read a Diagnose return owns (ADR 414): navigate away, hold
 // /api/status, observe the loading frame standing, then release and settle.
-async function heldReturnToDiagnose414(page) {
+// `storyId` names every assertion and timeout this raises, so a caller's own
+// failure never reads with a different story's id.
+async function heldReturnToDiagnose414(page, storyId) {
   await press(page, 'nav.v2-nav [data-destination="changes"]');
   await page.locator('.gf-stage-table, .gf-stage-trial, .gf-empty').first().waitFor({ timeout: 30000 });
   const requests = [];
@@ -424,7 +426,7 @@ async function heldReturnToDiagnose414(page) {
   const arrived = new Promise(resolve => { arrive = resolve; });
   const handler = async route => { arrive(); await gate; await route.continue(); };
   await page.route('**/api/status*', handler);
-  const STATUS_TIMEOUT = 'S108 the return must issue GET /api/status; none arrived within 30 s';
+  const STATUS_TIMEOUT = `${storyId} the return must issue GET /api/status; none arrived within 30 s`;
   const completion = page.waitForResponse(r => new URL(r.url()).pathname === '/api/status' && r.ok());
   // Playwright's own wait races the held-request wait below on the same
   // 30 s clock and can reject first. A bare promise like this one is flagged
@@ -445,6 +447,22 @@ async function heldReturnToDiagnose414(page) {
   }
   await waitForDesk(page);
   return requests;
+}
+// `ctx.requests` is the opener's live response log (`openApp`'s page.on
+// 'response' listener never stops), so this both tolerates paths that already
+// answered before this call and keeps polling for ones still in flight —
+// no forward-only page.waitForResponse could see an already-answered read.
+async function waitForAnsweredPaths(ctx, paths, description, timeout = 30000) {
+  const remaining = new Set(paths);
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    for (const entry of ctx.requests) remaining.delete(entry.path);
+    if (!remaining.size) return;
+    if (Date.now() >= deadline) {
+      throw new Error(`Timed out after ${timeout} ms: ${description}; still waiting on ${[...remaining].join(', ')}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
 }
 async function editChainRoster414(page) {
   await page.goto(new URL('/v2/?to=changes&subject=history', page.url()).href);
@@ -644,7 +662,7 @@ export const C4_STORIES = {
     // (e.g. "Slot 03:00"), not 24 h. The obligation is that whichever window
     // was left pressed survives, not that it is always the whole day.
     const windowBefore = (await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim();
-    const requests = await heldReturnToDiagnose414(page);
+    const requests = await heldReturnToDiagnose414(page, 'S108');
     assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
       'S108 the return to Diagnose must issue no request besides the held status check');
     assert.equal(requests.filter(path => path === '/api/status').length, 1,
@@ -654,12 +672,21 @@ export const C4_STORIES = {
     assert.equal((await page.locator('#crumb-trail .here').innerText()).trim(), trailBefore,
       'S108 the drilled row must remain open after the held return');
   },
-  async S109(page) {
+  async S109(page, ctx) {
     // Undrilled: a drilled pane fits its viewport exactly at 1440x900 (the
     // overflow is on the factors roster itself, not every level), so this
     // scrolls #level before any row is picked, at whatever bounded offset its
     // own overflow allows.
     await fullDayDiagnose(page);
+    // diagnose.js's read() fires two post-load completions beside the main
+    // payload — readFocusOptions (GET /api/focus) and loadPlanState (GET
+    // /api/plan, /api/plan/history, /api/pump-settings) — and each repaints
+    // the factors roster when it resolves, 14-33 ms after the main read,
+    // wiping any scroll set before they land. They fire once, on this fresh
+    // page's very first navigation, which the opener performs before this
+    // story runs, so one or more may already have answered by now.
+    await waitForAnsweredPaths(ctx, ['/api/focus', '/api/plan', '/api/plan/history', '/api/pump-settings'],
+      "S109 the desk's post-load focus/plan reads");
     const level = page.locator('#level');
     await level.waitFor({ timeout: 30000 });
     const scrolled = await level.evaluate(node => {
@@ -667,7 +694,12 @@ export const C4_STORIES = {
       return node.scrollTop;
     });
     assert.ok(scrolled > 0, 'S109 premise: the reading pane must actually be scrollable');
-    await heldReturnToDiagnose414(page);
+    // A repaint queued just before those reads landed could still be pending;
+    // confirm the offset survives one more animation frame before leaving.
+    const holds = await level.evaluate(node => new Promise(resolve =>
+      requestAnimationFrame(() => resolve(node.scrollTop))));
+    assert.equal(holds, scrolled, 'S109 premise: the scrolled offset must still hold before the round trip begins');
+    await heldReturnToDiagnose414(page, 'S109');
     const after = await page.locator('#level').evaluate(node => node.scrollTop);
     assert.equal(after, scrolled, 'S109 the reading pane scroll must survive the round trip through Changes');
   },

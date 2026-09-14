@@ -171,10 +171,21 @@ test('S108 surfaces a lost status response as its own assertion, never an unhand
   }
 });
 
+const S109_READS = ['/api/focus', '/api/plan', '/api/plan/history', '/api/pump-settings'];
+
 test('S109 preserves the reading pane scroll position across the held round trip', async () => {
   const { C4_STORIES } = await import('./c4.replay.mjs');
   const page = qa414Page();
-  await C4_STORIES.S109(page);
+  const ctx = { requests: S109_READS.map(path => ({ path, status: 200 })) };
+  await C4_STORIES.S109(page, ctx);
+});
+
+test('S109 tolerates a post-load read that only answers after the wait starts', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  const page = qa414Page();
+  const ctx = { requests: S109_READS.slice(0, 3).map(path => ({ path, status: 200 })) };
+  setTimeout(() => ctx.requests.push({ path: S109_READS[3], status: 200 }), 10);
+  await C4_STORIES.S109(page, ctx);
 });
 
 function qa414EditChainPage({ summary = '3 setting changes · Basal · Sep 8 – Sep 10', editKey = 'edit-1',

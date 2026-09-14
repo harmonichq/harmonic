@@ -20,7 +20,7 @@ Scope ledger. Opened 2026-09-14 by triage; route: interview mode.
 
 ## Review rounds
 
-- (filled by plan review)
+- Round 1 (cold Opus, read-only): BLOCKED, 7 blocking, all `authoring`, all reproduced against the tree. (1) last_written is fetch upsert counts, not a write signal → status serves input_revision; (2) "episode" collides with the glossary → "edit"; (3) disposition word needs no served key → STATUS_WORD entry; (4) retained return must not run restoreEntry; occurrence/window count as a different subject; (5) unretained candidates and Focus rows carry no key; (6) the edit entry's title was unspecified → "<count> setting changes"; (7) the candidate-detection CGM read stays, the test asserts per-record reads only. Fixed in the pinned source and the order; same reviewer re-checks the deltas.
 
 ## Spawned tasks
 

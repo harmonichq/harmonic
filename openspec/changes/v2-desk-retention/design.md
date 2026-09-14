@@ -7,7 +7,9 @@
 The Diagnose destination keeps its mounted workstation across navigation to
 Changes and Day. A repeated press of Diagnose while already on Diagnose is
 not a return (nothing detached the root) and re-reads as it always has,
-restoring the shipped Findings index (S3). Leaving detaches the root; returning re-seats it and resizes
+restoring the shipped Findings index (S3). A press that lands while a return's
+status check is still open joins that return: the check answers and the
+retained desk re-seats, with no second read started for the press. Leaving detaches the root; returning re-seats it and resizes
 its charts. The only request a return issues is one status read; no guidance
 or evidence read runs. The reader's window and drilled subject are retained
 as a consequence of the node surviving, not as a second state store; the

@@ -9,8 +9,10 @@ entry-restoration observer and nothing else; the pagehide teardown is
 unchanged. A return to Diagnose SHALL show the loading frame until its one
 status read answers, SHALL issue no guidance or evidence read, and SHALL then
 retain the reader's selected window, drilled subject and reading scroll. The desk SHALL
-re-read only on Retry, on a contextual entry whose subject, occurrence or window
-differs from the retained entry, or when one status read on return shows
+re-read only on Retry, on a repeated press of Diagnose while already on
+Diagnose (which is not a return: nothing detached the root), on a contextual
+entry whose subject, occurrence or window differs from the retained entry, or
+when one status read on return shows
 `/api/status.input_revision` differing from the input revision the Diagnose
 read recorded through its own status read issued before its payload reads.
 That status read SHALL be the only request a retained return issues. A

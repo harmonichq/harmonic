@@ -39,7 +39,8 @@
   re-seat the root, resize its charts, run only the focus-action repaint, and
   issue no other served read. Retain the
   reader's window, drilled subject and reading scroll. Re-read (and then run the
-  entry restoration as today) only on Retry, on a contextual entry whose
+  entry restoration as today) only on Retry, on a repeated press of Diagnose
+  while already on Diagnose (not a return), on a contextual entry whose
   subject, occurrence or window differs from the retained entry, or when one
   status read on return shows `/api/status.input_revision` differing from the
   revision the read recorded: the read issues one status read before its

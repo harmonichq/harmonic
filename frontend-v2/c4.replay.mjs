@@ -398,6 +398,79 @@ async function filterParity404(page) {
     'S107 Filter must share Window compact-control geometry and states, including Findings loading');
 }
 
+// #414 chunk 3: Diagnose retention through a Changes round trip, and the
+// edit-chain roster's grouped presentation. Fail-first against the base build,
+// which has neither the retained desk nor the grouped Edit entry at all.
+async function drilledDiagnose414(page) {
+  await fullDayDiagnose(page);
+  const row = page.locator('#level .qrow[data-id]').first();
+  await row.waitFor({ timeout: 30000 });
+  const subject = await row.getAttribute('data-id');
+  await row.click();
+  await page.waitForFunction(() => Boolean(document.querySelector('#crumb-trail .here')?.textContent),
+    null, { timeout: 30000 });
+  return subject;
+}
+// The one status read a Diagnose return owns (ADR 414): navigate away, hold
+// /api/status, observe the loading frame standing, then release and settle.
+// `storyId` names every assertion and timeout this raises, so a caller's own
+// failure never reads with a different story's id.
+async function heldReturnToDiagnose414(page, storyId) {
+  await press(page, 'nav.v2-nav [data-destination="changes"]');
+  await page.locator('.gf-stage-table, .gf-stage-trial, .gf-empty').first().waitFor({ timeout: 30000 });
+  const requests = [];
+  const onRequest = request => requests.push(new URL(request.url()).pathname);
+  page.on('request', onRequest);
+  let release; let arrive;
+  const gate = new Promise(resolve => { release = resolve; });
+  const arrived = new Promise(resolve => { arrive = resolve; });
+  const handler = async route => { arrive(); await gate; await route.continue(); };
+  await page.route('**/api/status*', handler);
+  const STATUS_TIMEOUT = `${storyId} the return must issue GET /api/status; none arrived within 30 s`;
+  const completion = page.waitForResponse(r => new URL(r.url()).pathname === '/api/status' && r.ok());
+  // Playwright's own wait races the held-request wait below on the same
+  // 30 s clock and can reject first. A bare promise like this one is flagged
+  // as an unhandled rejection — aborting the whole runner, not just this
+  // story — the instant it rejects with nothing yet awaiting it. Attach a
+  // swallowing handler immediately, and surface the real failure as this
+  // story's own assertion instead of letting it escape as a crash.
+  const settled = completion.catch(() => null);
+  try {
+    await press(page, 'nav.v2-nav [data-destination="diagnose"]');
+    await boundedWait(arrived, STATUS_TIMEOUT);
+    await page.locator('.gf-loading[aria-label="Loading Diagnose"]').waitFor({ timeout: 30000 });
+    release();
+    assert.ok(await settled, STATUS_TIMEOUT);
+  } finally {
+    release(); await settled;
+    await page.unroute('**/api/status*', handler); page.off('request', onRequest);
+  }
+  await waitForDesk(page);
+  return requests;
+}
+async function editChainRoster414(page) {
+  await page.goto(new URL('/v2/?to=changes&subject=history', page.url()).href);
+  await page.locator('.gf-stage-table[aria-label="Change records"] table.gf-table').waitFor({ timeout: 30000 });
+}
+// Holds the next request matching `pattern` that also satisfies `matches`
+// (other traffic on the same pattern is let through), so a caller can prove
+// which named loading frame stands for which in-flight read.
+async function heldRequest414(page, pattern, matches) {
+  let release; let arrive;
+  const gate = new Promise(resolve => { release = resolve; });
+  const arrived = new Promise(resolve => { arrive = resolve; });
+  const handler = async route => {
+    if (matches && !matches(route.request())) { await route.continue(); return; }
+    arrive(); await gate; await route.continue();
+  };
+  await page.route(pattern, handler);
+  return {
+    wait: description => boundedWait(arrived, description),
+    release: () => release(),
+    close: () => page.unroute(pattern, handler),
+  };
+}
+
 export const C4_STORIES = {
   async S101(page) {
     await fullDayDiagnose(page);
@@ -564,6 +637,117 @@ export const C4_STORIES = {
     assertS107ComparisonGeometry(drilled,
       eventMeal.served.projection.cohorts.map(({ key, name }) => ({ key, name })));
     assert.deepEqual(failures, [], 'S107 desk geometry must preserve labels, rails, focal placement and long cohort rows');
+  },
+  async S108(page) {
+    const subject = await drilledDiagnose414(page);
+    assert.ok(subject, 'S108 premise: the first ranked row must drill');
+    const trailBefore = (await page.locator('#crumb-trail .here').innerText()).trim();
+    // The showcase's first ranked row drills straight to its own slot window
+    // (e.g. "Slot 03:00"), not 24 h. The obligation is that whichever window
+    // was left pressed survives, not that it is always the whole day.
+    const windowBefore = (await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim();
+    const requests = await heldReturnToDiagnose414(page, 'S108');
+    assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
+      'S108 the return to Diagnose must issue no request besides the held status check');
+    assert.equal(requests.filter(path => path === '/api/status').length, 1,
+      'S108 the return to Diagnose must issue exactly one GET /api/status');
+    assert.equal((await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), windowBefore,
+      'S108 the selected window must remain pressed after the held return');
+    assert.equal((await page.locator('#crumb-trail .here').innerText()).trim(), trailBefore,
+      'S108 the drilled row must remain open after the held return');
+  },
+  async S109(page) {
+    // Undrilled: a drilled pane fits its viewport exactly at 1440x900 (the
+    // overflow is on the factors roster itself, not every level), so this
+    // scrolls #level before any row is picked, at whatever bounded offset its
+    // own overflow allows.
+    await fullDayDiagnose(page);
+    // The rail's own tile reads (diagnose-workstation.js fetchTile -> paint ->
+    // paintLevel) land after the main read and each repaint the roster from
+    // scratch, restoring only the workstation's own remembered drill position
+    // (queueScrollTop) — 0 here, since nothing is drilled — which wipes any
+    // scroll set before the last one lands. Those reads are the last traffic
+    // this desk issues on arrival, so settle on the network rather than a
+    // named set of paths: no in-flight request for 500 ms.
+    await page.waitForLoadState('networkidle');
+    const level = page.locator('#level');
+    await level.waitFor({ timeout: 30000 });
+    const scrolled = await level.evaluate(node => {
+      node.scrollTop = Math.min(40, node.scrollHeight - node.clientHeight);
+      return node.scrollTop;
+    });
+    assert.ok(scrolled > 0, 'S109 premise: the reading pane must actually be scrollable');
+    // A repaint queued just before those reads landed could still be pending;
+    // confirm the offset survives one more animation frame before leaving.
+    const holds = await level.evaluate(node => new Promise(resolve =>
+      requestAnimationFrame(() => resolve(node.scrollTop))));
+    assert.equal(holds, scrolled, 'S109 premise: the scrolled offset must still hold before the round trip begins');
+    await heldReturnToDiagnose414(page, 'S109');
+    const after = await page.locator('#level').evaluate(node => node.scrollTop);
+    assert.equal(after, scrolled, 'S109 the reading pane scroll must survive the round trip through Changes');
+  },
+  async S110(page) {
+    await editChainRoster414(page);
+    const editRows = page.locator('table.gf-table > tbody > tr.gf-edit-row');
+    assert.equal(await editRows.count(), 1, 'S110 premise: edit-chain serves exactly one titled Edit entry');
+    const summaryText = (await editRows.first().locator('.gf-edit-summary').innerText()).trim();
+    assert.match(summaryText, /^3 setting changes/, 'S110 the titled entry must name its member count');
+    const editKey = await editRows.first().getAttribute('data-edit');
+    const members = page.locator(`table.gf-table > tbody > tr[data-edit-member="${editKey}"]`);
+    assert.equal(await members.count(), 3, 'S110 the titled entry must carry its three member rows beneath it');
+    const flatRows = page.locator('table.gf-table > tbody > tr:not(.gf-edit-row):not([data-edit-member])');
+    assert.equal(await flatRows.count(), 1, 'S110 the lone record must render as one flat row');
+    const memberButton = members.first().locator('[data-record]');
+    const recordSelector = await memberButton.getAttribute('data-record');
+    await memberButton.click();
+    await page.locator('[data-record-part="original"]').waitFor({ timeout: 30000 });
+    assert.equal(new URL(page.url()).searchParams.get('occurrence'), `record:${recordSelector}`,
+      'S110 opening a member must open its exact record address');
+    await page.goto(page.url());
+    await page.locator('[data-record-part="original"]').waitFor({ timeout: 30000 });
+    assert.equal(new URL(page.url()).searchParams.get('occurrence'), `record:${recordSelector}`,
+      'S110 the record address must reopen the exact same subject on reload');
+  },
+  async S111(page) {
+    await editChainRoster414(page);
+    const cells = page.locator('[data-record-open="true"]');
+    const count = await cells.count();
+    assert.ok(count >= 4, 'S111 premise: edit-chain serves at least four still-open records');
+    for (let index = 0; index < count; index += 1) {
+      const word = (await cells.nth(index).locator('xpath=following-sibling::small').innerText()).trim();
+      assert.doesNotMatch(word, /_/, `S111 a Still open cell must carry a word, never a raw disposition token: ${word}`);
+      assert.equal(word, 'Not watched', `S111 every Still open cell must show the served disposition: ${word}`);
+    }
+  },
+  async S112(page) {
+    const rosterHold = await heldRequest414(page, '**/api/verify/trials*',
+      request => !new URL(request.url()).searchParams.has('selected'));
+    await page.goto(new URL('/v2/?to=changes&subject=history', page.url()).href);
+    await rosterHold.wait('S112 held roster read');
+    await page.locator('.gf-loading', { hasText: 'Reading change records' }).waitFor({ timeout: 30000 });
+    rosterHold.release(); await rosterHold.close();
+    await page.locator('table.gf-table').waitFor({ timeout: 30000 });
+
+    const recordHold = await heldRequest414(page, '**/api/verify/trials*', request => {
+      const params = new URL(request.url()).searchParams;
+      return params.has('selected') && !params.has('assessment');
+    });
+    const button = page.locator('table.gf-table [data-record]').first();
+    await button.click();
+    await recordHold.wait('S112 held record read');
+    await page.locator('.gf-loading', { hasText: 'Reading change records' }).waitFor({ timeout: 30000 });
+    recordHold.release(); await recordHold.close();
+    await page.locator('[data-record-part="ending"]').waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('[data-unavailable="ending"]').count(), 1,
+      'S112 premise: an edit-chain record carries no ending');
+
+    const reassessHold = await heldRequest414(page, '**/api/verify/trials*',
+      request => new URL(request.url()).searchParams.has('assessment'));
+    await press(page, '[data-assessment="retained"]');
+    await reassessHold.wait('S112 held reassessment read');
+    await page.locator('.gf-loading', { hasText: 'Computing reassessment' }).waitFor({ timeout: 30000 });
+    reassessHold.release(); await reassessHold.close();
+    await page.locator('[data-reassessment-context="retained"]').waitFor({ timeout: 30000 });
   },
   async S91(page, ctx) {
     await C3_STORIES.S91(page);

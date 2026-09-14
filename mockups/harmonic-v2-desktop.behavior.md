@@ -1758,6 +1758,7 @@ S81 · The reading pane keeps its scroll only while it stays on the same subject
 
 Amended S81 · 2026-09-10 · ADR 397 / lock v2 389 2: Apply the retained job to Diagnose / Changes / Day with Diagnose default. Evidence and its returns belong to Diagnose; Changes-origin returns remain Changes. No Overview/Explore destination survives. Shipped Findings, Spotlight, All Charts and case selectors are carried as-is.
 The preceding wording and results are the attributed pre-amendment record.
+Amended S81 · 2026-09-14 · ADR 414 / lock v2 414 1: A Changes round trip is a return to the same subject (Diagnose stays seated, S109) and keeps the reading scroll, so the subject change that must arrive at its head is now the step back from the scrolled lane to the Findings roster through the crumb trail; the locked term is unchanged. App body: frontend-v2/c2.replay.mjs S81.
 
 
 ```
@@ -1785,6 +1786,9 @@ S83 · Repeatedly entering and leaving destinations, figures and utilities leave
   evidence: replay fn S83
   status:   replayed-pass (1280x720 and 1440x900) · negative proof: proved
 ```
+
+Amended S83 · 2026-09-14 · ADR 414 / lock v2 414 1: Diagnose stays seated off-screen, parked hidden in the document while Changes or Day holds the surface; leaving takes the Diagnose view off the surface, not out of the document. App body: frontend-v2/c2.replay.mjs cleanup (the [data-v2-diagnose] absence check reads visible views). Canvas and utility accounting are unchanged.
+The preceding wording and results are the attributed pre-amendment record.
 
 ```
 S84 · pagehide disposes every chart, observer and registered cleanup.
@@ -2414,7 +2418,7 @@ path. They are not passing browser evidence. Browser execution belongs to the
 coordinator at 1280x720 and 1440x900; the worker order prohibits build, serve and
 browser execution. The original freeze results above remain historical.
 
-Current inventory: **137 issued = 119 active + 18 retired**. S101–S107 are
+Current inventory: **142 issued = 124 active + 18 retired**. S101–S112 are
 app-opener-only. No earlier ID or lock term is retired or re-settled by this QA
 pass. The design and expiry decisions were unresolved at this QA amendment;
 the final #404 triage disposition supersedes that historical status.
@@ -2525,6 +2529,101 @@ Additional handler inventory for this amendment:
 | Plan history door and exact record address | frontend-v2/plan-view.js, history.js, changes.js | S105 |
 | Pattern tile, occurrence selection and focal ECharts option | frontend-v2/diagnose.js, frontend/diagnose-event-comparison.js | S106 |
 | Destination navigation, All charts/Close and long cohort rows | frontend-v2/diagnose.js, day.js, plan-view.js, frontend/diagnose-workstation.css | S107 |
+| Destination round trip: held status read, retained drill and scroll | frontend-v2/diagnose.js | S108, S109 |
+| Edit-grouped record roster and its member addresses | frontend-v2/history.js | S110 |
+| Still open disposition word | frontend-v2/history.js | S111 |
+| Named roster/reassessment loading frames | frontend-v2/history.js | S112 |
+
+## #414 chunk 3 amendment — 2026-09-14, issue #414
+
+S108–S112 are the fail-first obligations for ADR 414's Diagnose retention and
+edit-chaining app work (chunks 1 and 2). They are app-opener-only, like
+S101–S107. Browser execution belongs to the coordinator at 1280x720 and
+1440x900; the worker order prohibits build, serve and browser execution.
+
+```
+S108 · Returning to Diagnose from Changes issues exactly one GET /api/status;
+       the loading frame stands until it answers, and the selected window and
+       the drilled reading-pane subject are both still current once it does.
+  element:  nav.v2-nav [data-destination], .gf-loading, #seg-window
+            [aria-pressed="true"], #crumb-trail .here
+  source:   frontend-v2/diagnose.js mount / read (the ADR 414 status-check branch)
+  lock:     HV2-34; extends S104's held-read pattern to the destination round trip
+  data:     showcase; select 24 h, drill the first ranked row (which selects
+            that row's own slot window, e.g. Slot 03:00, not 24 h), open
+            Changes, return
+  evidence: C4_STORIES.S108; holds /api/status, asserts no other request fires,
+            then compares the pre- and post-return crumb and whichever window
+            chip was left pressed
+  status:   base app fails — "the return must issue GET /api/status; none
+            arrived within 30 s" (the base tears the desk down and re-reads
+            every guidance read on return; no status check exists); coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
+```
+
+```
+S109 · The reading pane's scroll position survives the same Diagnose round trip.
+  element:  #level
+  source:   frontend-v2/diagnose.js detach / mount (root parked, not rebuilt)
+  lock:     HV2-34
+  data:     showcase; select 24 h with no row drilled (the undrilled factors
+            roster overflows its pane; a drilled pane does not), scroll #level
+            by a bounded offset that fits inside its own overflow, return
+  evidence: C4_STORIES.S109; settles the network (the rail's own tile reads
+            are the desk's last arrival traffic, and each repaints the roster
+            to its remembered drill position) before scrolling, then compares
+            #level.scrollTop before and after the round trip
+  status:   base app fails the same way — no status read arrives on return,
+            so the base re-reads and the pane re-seats at 0; coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
+```
+
+```
+S110 · The record roster groups a served multi-member Edit into one titled entry
+       ("<count> setting changes") with its member rows beneath, while the one
+       lone-record Edit stays a flat row; opening a member addresses that exact
+       record, and reloading the address reopens it.
+  element:  tr.gf-edit-row, [data-edit-member], [data-record]
+  source:   frontend-v2/history.js editEntryHtml / recordRoster
+  lock:     HV2-28; ADR 414 (openspec/changes/v2-desk-retention/design.md) is the
+            chaining rule itself
+  data:     edit-chain; three records within a day of each other chain into one
+            Edit, a fourth a week earlier stays its own
+  evidence: C4_STORIES.S110; counts the titled entry and its members, then opens
+            a member and reloads its address as S105 does
+  status:   base app fails — "premise: edit-chain serves exactly one titled
+            Edit entry": 0 !== 1 (no Edit grouping on the base roster);
+            coordinator confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
+```
+
+```
+S111 · Every Still open cell names the served watch disposition as a word,
+       never the raw backend token — including a grouped Edit's shared cell.
+  element:  [data-record-open="true"]
+  source:   frontend-v2/history.js openCell / editEndingCell
+  lock:     HV2-28
+  data:     edit-chain; every retained record is unwatched (not_selected_for_watch)
+  evidence: C4_STORIES.S111; reads every Still open cell's disposition word
+  status:   base app fails — "a Still open cell must carry a word, never a
+            raw disposition token: not_selected_for_watch"; coordinator
+            confirmed the branch passes at 1280x720 and 1440x900, coordinator-run 2026-09-14
+```
+
+```
+S112 · The roster read and a requested reassessment each show their own named
+       loading frame while pending.
+  element:  .gf-loading
+  source:   frontend-v2/history.js mount (loadRoster / loadRecord)
+  lock:     HV2-28
+  data:     edit-chain; a retained record with no ending, so opening it and
+            requesting a reassessment are both live reads
+  evidence: C4_STORIES.S112; holds the roster read, the record read and the
+            reassessment read in turn, and reads the loading frame's text at each
+  status:   base app fails — locator.waitFor timeout waiting for .gf-loading
+            with text "Reading change records" (the base loading frame
+            carries no text); coordinator confirmed the branch passes at
+            1280x720 and 1440x900, coordinator-run 2026-09-14
+```
 
 ### Coordinator amendment 1 — 2026-09-10
 

@@ -906,8 +906,14 @@ test('repeated entry and exit leaves no duplicate chart, pane or utility behind'
       strips: document.querySelectorAll('.gf-utility-strip').length,
       reading: document.querySelectorAll('.gf-desk > .gf-reading').length,
     }));
+    assert.ok((await counts()).canvases > 0, 'the Day figure mounted no chart to dispose');
+    // ADR 414: Diagnose stays seated off-screen, parked hidden in the document
+    // while Day holds the surface, so its charts are part of the steady state.
+    // The baseline is taken after the first round trip; repeated entry must
+    // then add nothing.
+    await press(page, '[data-destination="diagnose"]');
+    await press(page, '[data-destination="day"]');
     const first = await counts();
-    assert.ok(first.canvases > 0, 'the Day figure mounted no chart to dispose');
     for (let i = 0; i < 3; i += 1) {
       await press(page, '[data-destination="diagnose"]');
       await press(page, '[data-destination="day"]');
@@ -943,7 +949,9 @@ for (const viewport of Object.keys(VIEWPORTS)) {
       assert.ok(before > 0);
       for (let visit = 0; visit < 3; visit += 1) {
         await press(page, '[data-destination="changes"]');
-        assert.equal(await countOf(page, '[data-event-view="glucose"]'), 0);
+        // ADR 414: the parked Diagnose root keeps its composition off the
+        // surface; nothing of it is visible while Changes holds the surface.
+        assert.equal(await page.locator('[data-event-view="glucose"]:visible').count(), 0);
         await press(page, '[data-destination="diagnose"]');
         await page.waitForFunction(() => document.querySelector('#level')?.dataset.loading === 'false', null, { timeout: 30000 });
         await page.getByRole('button', { name: '24 h', exact: true }).click();
@@ -996,7 +1004,10 @@ for (const outcome of ['resolved', 'rejected']) {
       await boundedWait(requested, 'shared teardown regression basal request');
       assert.ok(held.length > 0, 'the regression holds a real basal tile request');
       await press(page, '[data-destination="changes"]');
-      assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
+      // ADR 414: leaving parks the Diagnose view hidden rather than removing
+      // it; a late tile response paints into the parked root and must raise
+      // no page error (checked at close) and show nothing on the surface.
+      assert.equal(await page.locator('[data-v2-diagnose]:visible').count(), 0);
       const finished = held.map(route => page.waitForResponse(response => response.request() === route.request(), { timeout: 30000 }));
       await Promise.all(held.map(route => route.fulfill(outcome === 'resolved'
         ? { status: 200, json: basalEvidence }
@@ -1007,7 +1018,7 @@ for (const outcome of ['resolved', 'rejected']) {
       // Let request continuations and the queued brace paint run before close
       // checks the collected page errors; frame turns are not timed sleeps.
       await boundedWait(page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))), 'shared teardown continuation frames');
-      assert.equal(await page.locator('[data-v2-diagnose]').count(), 0);
+      assert.equal(await page.locator('[data-v2-diagnose]:visible').count(), 0);
     } finally { await desk.close(); }
   });
 }

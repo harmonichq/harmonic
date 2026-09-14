@@ -3296,6 +3296,16 @@ export const S105 = appOnly('HV2-12', '#404 on-pump Plan opens addressable histo
 export const S106 = appOnly('HV2-17', '#404 selected Pattern focal chart carries served trace and markers', C4_STORIES.S106);
 // STORY:harmonic-v2-desktop:S107
 export const S107 = appOnly('HV2-11', '#404 desk geometry remains coherent across destinations and long cohorts', C4_STORIES.S107);
+// STORY:harmonic-v2-desktop:S108
+export const S108 = appOnly('HV2-34', '#414 a Diagnose round trip holds one status read and keeps the selected window and drilled subject', C4_STORIES.S108);
+// STORY:harmonic-v2-desktop:S109
+export const S109 = appOnly('HV2-34', '#414 the reading pane scroll survives a Diagnose round trip', C4_STORIES.S109);
+// STORY:harmonic-v2-desktop:S110
+export const S110 = appOnly('HV2-28', '#414 ADR 414 groups a chained Edit with its members and keeps the lone record flat', C4_STORIES.S110);
+// STORY:harmonic-v2-desktop:S111
+export const S111 = appOnly('HV2-28', '#414 every Still open cell names the served disposition, never its raw token', C4_STORIES.S111);
+// STORY:harmonic-v2-desktop:S112
+export const S112 = appOnly('HV2-28', '#414 the roster and reassessment loading frames name what they are reading', C4_STORIES.S112);
 
 /* -------------------------------------------------------------- the registry */
 
@@ -3341,6 +3351,7 @@ export const REGISTRY = [
   ['S98', S98, J()], ['S99', S99, J()], ['S100', S100, J()],
   ['S101', S101, J()], ['S102', S102, J()], ['S103', S103, J()],
   ['S104', S104, J()], ['S105', S105, J()], ['S106', S106, J()], ['S107', S107, J()],
+  ['S108', S108, J()], ['S109', S109, J()], ['S110', S110, J()], ['S111', S111, J()], ['S112', S112, J()],
   ['S80b', S80b, J()], ['S73b', S73b, J()], ['S53', S53, J()],
   ['R1', R1, J()], ['R2', R2, J()], ['R3', R3, M()], ['R4', R4, M()],
   ['R5', R5, J()], ['R6', R6, M()], ['R7', R7, M()], ['R8', R8, M()],

@@ -62,10 +62,12 @@ export function emptyFrame(cap, title, copy, actions, note = '') {
 }
 
 /** The one loading frame, so a destination waiting on the API says so rather
-    than standing empty. It carries no count and no former row (HV2-31). */
-export function loadingFrame(title) {
+    than standing empty. It carries no count and no former row (HV2-31). An
+    optional `message` names what is being read, for a destination whose
+    loading state would otherwise say nothing about what it is waiting on. */
+export function loadingFrame(title, message = '') {
   return desk(
-    `<section class="pane gf-stage" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}"></div></section>`,
+    `<section class="pane gf-stage" aria-label="${e(title)}"><div class="gf-loading" role="status" aria-label="Loading ${e(title)}">${message ? `<p>${e(message)}</p>` : ''}</div></section>`,
     `<aside class="pane gf-reading" aria-label="${e(title)}">${readingHeader(e(title))}<div class="gf-pane-body"></div></aside>`,
   );
 }

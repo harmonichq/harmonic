@@ -38,6 +38,26 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let payload = null;
   let error = null;
   let pending = null;
+  // Retention (ADR 414): a status read on return, gated separately from `pending`
+  // — the payload read the desk already holds must not be disturbed while it runs.
+  let checking = false;
+  let readRevision = null;
+  // The one statement of this flag's lifecycle. Set when a guidance read
+  // completes seated but parked (the workstation's own Retry resolving
+  // off-screen), because a parked desk must not be re-seated by a completion. Consumed
+  // by the return that re-seats that same read: mount applies the payload
+  // with its restoration. Cleared by leave(), both the pagehide teardown and
+  // the teardown every re-read starts with, because a re-read's own completion
+  // decides what the next mount applies and the recorded one is stale.
+  let deferredApply = false;
+  // The reading pane's scroll offset when the root is parked. A browser
+  // drops the scroll offset of an element it no longer lays out, so the
+  // surviving node alone does not carry it; the retained re-seat puts it back.
+  let levelScroll = null;
+  // The root is parked hidden at the end of the document while another
+  // destination holds the surface (see detach()). While parked, nothing
+  // paints it from here; the workstation's own in-flight reads may.
+  let parked = false;
   let seated = false;
   let arrival = null;
   let entry = {};
@@ -46,26 +66,48 @@ export function createDiagnoseDestination({ api = client, createView = createDia
   let activeSubject = null;
   let restoreObserver = null;
 
+  // Context names a served identity or an explicit slot; the window is the
+  // route's own string coordinate. Equal on all three means "the same return".
+  function sameEntry(a, b) {
+    return (a?.subject || null) === (b?.subject || null)
+      && (a?.occurrence || null) === (b?.occurrence || null)
+      && (a?.window || null) === (b?.window || null);
+  }
+
   async function read() {
     if (pending) return pending;
     error = null;
-    readFocusOptions().then(() => { if (seated) showFocusAction(); });
-    loadPlanState().then(() => { if (seated) workstation.refresh(); }).catch(() => {});
-    pending = Promise.all([
-      api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
-      api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
-      api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
-    ]).then(([a, s, e, x, preparation, outcomes]) => {
+    readFocusOptions().then(() => { if (seated && !parked) showFocusAction(); });
+    loadPlanState().then(() => { if (seated && !parked) workstation.refresh(); }).catch(() => {});
+    // The one status read this call owns: answered before the payload reads
+    // are issued, so the recorded revision is at or before every payload
+    // snapshot and a write landing during them always moves the revision the
+    // next return compares. Issued concurrently it could record a post-write
+    // revision against a pre-write payload, and the return would seat a
+    // stale desk as current.
+    pending = api.fetchStatus().then((status) => {
+      readRevision = status.input_revision;
+      return Promise.all([
+        api.fetchAnalysis({ window: 30, pool: true }), api.fetchScenarios(30),
+        api.fetchExploreTimeOfDay(), api.fetchExploreExposures(),
+        api.fetchDiagnoseFindingCasePreparation(null), api.fetchOutcomesTrend(30),
+      ]);
+    }).then(([a, s, e, x, preparation, outcomes]) => {
       const values = [a, s, e, x, outcomes].map((value, i) =>
         recordDiagnoseAge(ages, ['analysis', 'scenarios', 'time_of_day', 'exposures', 'trend'][i], value));
       if (values.some((value) => value === null)) throw new Error('Diagnose received invalid input-data age.');
       payload = { analyze: values[0], scenarios: values[1], evidence: values[2], exposures: values[3],
         casePreparation: preparation, findings: { ...preparation.findings, rows: preparation.rendered_rows },
         watched: values[4]?.watched_change || null };
-      if (seated) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      // seated && !parked: the one live path where this can fire mid-read is
+      // the workstation's own Retry, which starts seated on the surface.
+      // Everywhere else `seated` is false here (mount's own branches own the apply).
+      if (seated && !parked) { workstation.setData(payload); restoreEntry(); showFocusAction(); }
+      // Retry resolved off-screen: record it (see deferredApply's lifecycle).
+      else if (seated) { deferredApply = true; }
     }).catch((cause) => {
       error = cause;
-      if (seated) workstation.setError(cause);
+      if (seated && !parked) workstation.setError(cause);
     }).finally(() => { pending = null; render(); });
     return pending;
   }
@@ -279,6 +321,9 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     root.querySelector('header.crumb')?.append(button);
   }
 
+  // The full teardown: every guidance completion mid-read becomes a no-op
+  // (seated is false), and a return re-seats from scratch. Owns pagehide (S84)
+  // and every re-read (a changed entry, a moved revision, Retry).
   function leave() {
     if (!seated) return;
     seated = false;
@@ -289,26 +334,76 @@ export function createDiagnoseDestination({ api = client, createView = createDia
     // before its no-payload return. No private renderer cleanup is copied here.
     workstation.setData(null);
     root.remove();
+    root.style.display = ''; parked = false;
+    deferredApply = false;  // the recorded completion died with this read
+  }
+
+  // Retention (ADR 414): leaving TO ANOTHER DESTINATION disconnects only what
+  // a return repaint must not inherit stale — the observer that would re-click
+  // a row — and parks the root. `seated` stays true: the workstation keeps its
+  // drill, its scroll and its canvas layout, none of which this discards.
+  // Parked, not removed: the workstation resolves its elements by document id,
+  // and a rail read that completes while the reader is away paints into them.
+  // Hidden but in the document, that paint lands harmlessly; removed, it would
+  // throw. The park is the end of the body, so an on-screen element that
+  // shared an id would win a lookup (S83).
+  function detach() {
+    restoreObserver?.disconnect(); restoreObserver = null;
+    // Only ever called after ensureView() has run (seated implies root is set).
+    levelScroll = root.querySelector('#level')?.scrollTop ?? null;
+    root.style.display = 'none';
+    root.ownerDocument.body.append(root);
+    parked = true;
   }
 
   function mount(host, deps = {}) {
+    const previousEntry = entry;
     entry = deps.context || {};
-    if (payload && arrival !== null && deps.navigation !== arrival) {
+
+    // A return: the desk was seated and a navigation moved since. A changed
+    // subject/occurrence/window always re-reads; the same entry only checks
+    // whether the store moved, and the loading frame stands for either. A
+    // repeated press of Diagnose while on Diagnose is not a return: the root
+    // was never parked by leaving, and re-pressing the destination restores
+    // the shipped Findings index the way it always has (S3), by re-reading.
+    if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
-      leave();
+      if (!parked || !sameEntry(previousEntry, entry)) {
+        leave();
+        host.innerHTML = loadingFrame('Diagnose');
+        read();
+        return;
+      }
+      checking = true;
       host.innerHTML = loadingFrame('Diagnose');
-      read();
+      api.fetchStatus().then((status) => {
+        checking = false;
+        if (status.input_revision !== readRevision) { leave(); read(); }
+        else render();
+      }).catch(() => { checking = false; leave(); read(); });
       return;
     }
+
     if (!payload && !error) {
       host.innerHTML = loadingFrame('Diagnose');
       read();
       return;
     }
     if (error) {
+      // A render that arrives while this frame already stands (the focus
+      // options read's own change notification lands a beat after the failed
+      // guidance read's) must not rebuild it: rebuilding replaces the Retry
+      // control under the reader's press and moves focus a second time.
+      // The mark lives on the frame element itself, never on the shared
+      // surface: another destination's failure frame carries its own Retry but
+      // not this mark, and the next destination's own write takes the marked
+      // frame away with it.
+      const frame = payload ? 'current-read-failed' : 'evidence-unavailable';
+      if (host.firstElementChild?.dataset?.diagnoseFrame === frame) return;
       host.innerHTML = emptyFrame('Diagnose', payload ? 'Current read failed' : 'Evidence unavailable',
         payload ? 'The current read failed. The last read that answered is not a new result.' : 'The evidence read could not load.',
         '<button class="gf-btn primary" data-action="retry">Retry</button><button class="gf-btn" data-action="open-diagnose">Open Diagnose</button>');
+      host.firstElementChild.dataset.diagnoseFrame = frame;
       host.querySelector('[data-action="retry"]').onclick = read;
       // Retry preserves the failed entry; Open Diagnose starts at Findings.
       host.querySelector('[data-action="open-diagnose"]').onclick = () => {
@@ -318,12 +413,41 @@ export function createDiagnoseDestination({ api = client, createView = createDia
       view.focusAfterRender = '[data-action="retry"]';
       return;
     }
+    // A render arriving mid-read (the status check, or the guidance read
+    // itself) must not re-seat the pre-write desk over its own loading frame.
+    // A Retry pressed on the failed frame starts a read while that frame
+    // stands; a render arriving mid-read (the focus options completion of the
+    // previous cycle, S20b) leaves it standing: it is still the truthful
+    // state, and swapping it for the loading frame would pull the Retry out
+    // from under the reader's press. Every other mid-read render shows the
+    // loading frame, never the retained desk.
+    if (pending && host.firstElementChild?.dataset?.diagnoseFrame) return;
+    if (checking || pending) { host.innerHTML = loadingFrame('Diagnose'); return; }
     ensureView(host);
+    // Read before re-seating: a seated desk whose root is parked is a return
+    // that skipped the re-read, not a fresh seat and not an in-place render.
+    const wasParked = seated && parked;
+    if (wasParked) { root.style.display = ''; parked = false; }
     host.replaceChildren(root);
+    // A cold seat never has a deferred completion to consume: the flag is set
+    // only while seated, and leave() is the one place seated turns false.
     if (!seated) { seated = true; workstation.setData(payload); restoreEntry(); showFocusAction(); }
-    else if (deps.navigation !== arrival) { workstation.leaveSurface(); workstation.refresh(); restoreEntry(); }
+    else if (wasParked && deferredApply) {
+      // A Retry finished off-screen: apply the completion it recorded, restoration included.
+      deferredApply = false;
+      workstation.setData(payload); restoreEntry(); showFocusAction();
+    // Never restoreEntry() here: the drill and scroll retention preserves are
+    // exactly what restoreEntry()'s row/occurrence clicks would disturb.
+    } else if (wasParked) {
+      workstation.refresh(); showFocusAction();
+      const level = root.querySelector('#level');
+      if (level && levelScroll !== null) level.scrollTop = levelScroll;
+    }
     arrival = deps.navigation;
-    (deps.hold || hold)((pagehide) => { if (pagehide || currentDestination() !== 'diagnose' || !host.isConnected) leave(); });
+    (deps.hold || hold)((pagehide) => {
+      if (pagehide) { leave(); return; }
+      if (currentDestination() !== 'diagnose' || !host.isConnected) detach();
+    });
   }
   return { mount, read, leave };
 }

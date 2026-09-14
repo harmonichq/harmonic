@@ -103802,11 +103802,25 @@
         "reason": "active_trial",
         "state": "available"
       },
+      "edits": [
+        {
+          "count": 1,
+          "first_changed_at": "2024-06-30 12:00:00",
+          "key": "edit-isf-all-20240630120000",
+          "last_changed_at": "2024-06-30 12:00:00",
+          "parameters": [
+            {
+              "count": 1,
+              "parameter": "isf"
+            }
+          ]
+        }
+      ],
       "focuses": [
         {
           "comparison_context": {
             "captured_at": "2024-05-30 12:00:00",
-            "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
+            "code_version": "1a19556272e35a61e6cd96fc03c1ca64bb4f630eeaee169ac4a7fb92efa5084c",
             "configuration": {
               "anchor_high_mgdl": 250.0,
               "anchor_meal_min_carbs": 10.0,
@@ -103898,7 +103912,7 @@
               "user_override_harm_low_mgdl": 80.0,
               "user_override_pump_zero_rec_u": 0.2
             },
-            "id": "1924b32582a93cd4afa5616476d6cc45fa20a70f4c11914aa2f1eab32d4fa7ab",
+            "id": "71a92705feaae83dab738ac3c9edc4f827e1f55847e091a8b50f3c6f6119f996",
             "input_revision": 5,
             "policy": "340:1/386:1/387:1",
             "programmed_isf": {
@@ -103986,7 +104000,7 @@
               },
               "comparison_context": {
                 "captured_at": "2024-05-30 12:00:00",
-                "code_version": "0b292e24d3902469b86c1f1cb47e51026f81608c871c26cb1bc5c82aca0db8bb",
+                "code_version": "1a19556272e35a61e6cd96fc03c1ca64bb4f630eeaee169ac4a7fb92efa5084c",
                 "configuration": {
                   "anchor_high_mgdl": 250.0,
                   "anchor_meal_min_carbs": 10.0,
@@ -104078,7 +104092,7 @@
                   "user_override_harm_low_mgdl": 80.0,
                   "user_override_pump_zero_rec_u": 0.2
                 },
-                "id": "1924b32582a93cd4afa5616476d6cc45fa20a70f4c11914aa2f1eab32d4fa7ab",
+                "id": "71a92705feaae83dab738ac3c9edc4f827e1f55847e091a8b50f3c6f6119f996",
                 "input_revision": 5,
                 "policy": "340:1/386:1/387:1",
                 "programmed_isf": {
@@ -105550,6 +105564,7 @@
           "after": 45.0,
           "before": 40.0,
           "changed_at": "2024-06-30 12:00:00",
+          "edit": "edit-isf-all-20240630120000",
           "ending": {
             "reason": "not_recorded",
             "state": "unavailable",

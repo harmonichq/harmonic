@@ -460,8 +460,11 @@ async function cleanup(page, ctx, pagehide = false) {
     });
   } else {
     for (let i = 0; i < 3; i += 1) {
+      // Amended under #414 (ADR 414): Diagnose stays seated off-screen, parked
+      // hidden in the document; leaving must take it off the surface, not out
+      // of the document.
       await go(page, 'changes'); await waitForReplayAssertion(async seen => {
-        assert.equal(seen(await page.locator('[data-v2-diagnose]').count()), 0);
+        assert.equal(seen(await page.locator('[data-v2-diagnose]:visible').count()), 0);
       }, "cleanup");
       await go(page, 'diagnose');
       await waitForCharts(page);
@@ -817,7 +820,17 @@ export const C2_STORIES = {
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), before, 'same-subject night selection retains reading scroll');
     }, "S81");
+    // Amended under #414 (ADR 414): a Changes round trip returns to the same
+    // subject and keeps the reading scroll (S109). The subject change that must
+    // arrive at its head is the step back from the scrolled lane to the
+    // Findings roster through the crumb trail; the lane's offset (`before`,
+    // nonzero at both sizes) is the offset the change must not carry.
     await go(page, 'changes'); await go(page, 'diagnose');
+    await waitForReplayAssertion(async seen => {
+      assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), before, 'a return to the same subject keeps the reading scroll');
+    }, "S81");
+    await press(page, '#crumb-trail button');
+    await page.locator('#level .qrow[data-id]').first().waitFor({ timeout: 30000 });
     await waitForReplayAssertion(async seen => {
       assert.equal(seen(await page.locator('#level').evaluate(n => n.scrollTop)), 0, 'a new subject arrives at its head');
     }, "S81");

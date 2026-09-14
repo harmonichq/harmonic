@@ -74,6 +74,7 @@ span-start 2025-07-01
 # teaches the next reader that pins are decorative.
 uv.lock | 77 in-span dates, package upload stamps (§3.1 [R6])
 tests/test_store.py | 16 invented round test dates (§3.1 [R6])
+tests/test_verify_trials.py | 8 invented round test dates (§3.1 [R6])
 frontend/daily-nav.test.js | 16 invented round test dates (§3.1 [R6])
 frontend/__fixtures__/ic-blocks.json | 26 dates, stamped exemplar (§3.1 [R6])
 frontend/cockpit-shell.browser.test.mjs | 12 invented round test dates (§3.1 [R6])

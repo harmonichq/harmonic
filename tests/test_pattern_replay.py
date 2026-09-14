@@ -80,6 +80,7 @@ EXPECTED_ACTIVE_KINDS = {
     "c4-profile": None,
     "c4-missing": "trial",
     "c4-history": "trial",
+    "edit-chain": None,
 }
 
 

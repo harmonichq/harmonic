@@ -347,10 +347,13 @@ export function createDiagnoseDestination({ api = client, createView = createDia
 
     // A return: the desk was seated and a navigation moved since. A changed
     // subject/occurrence/window always re-reads; the same entry only checks
-    // whether the store moved, and the loading frame stands for either.
+    // whether the store moved, and the loading frame stands for either. A
+    // repeated press of Diagnose while on Diagnose is not a return: the root
+    // was never detached by leaving, and re-pressing the destination restores
+    // the shipped Findings index the way it always has (S3), by re-reading.
     if (seated && arrival !== null && deps.navigation !== arrival) {
       arrival = deps.navigation;
-      if (!sameEntry(previousEntry, entry)) {
+      if (root.isConnected || !sameEntry(previousEntry, entry)) {
         leave();
         host.innerHTML = loadingFrame('Diagnose');
         read();

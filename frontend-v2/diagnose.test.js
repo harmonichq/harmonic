@@ -190,6 +190,30 @@ test('a same-entry return puts the reading pane scroll back where the reader lef
   destination.leave();
 });
 
+test('re-pressing Diagnose while on Diagnose re-reads and restores the index, never the retained drill', async () => {
+  const served = source(); const seat = host();
+  let rowClicks = 0;
+  const row = { dataset: { id: 'finding:served' }, click() { rowClicks += 1; } };
+  const root = makeRoot({ querySelectorAll: selector => (selector === '.qrow[data-id]' ? [row] : []) });
+  seat.ownerDocument.createElement = () => root;
+  let setDataCalls = 0; let leaveSurfaceCalls = 0;
+  const destination = createDiagnoseDestination({ api: served.api,
+    createView: () => ({ setData(data) { if (data) setDataCalls += 1; }, leaveSurface() { leaveSurfaceCalls += 1; }, refresh() {}, setError() {} }) });
+  await destination.read();
+  destination.mount(seat, { navigation: 0, hold() {}, context: { subject: 'finding:served' } });
+  served.requests.length = 0; setDataCalls = 0; rowClicks = 0;
+  // The root is still attached: no other destination rendered in between.
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.match(seat.innerHTML, /gf-loading/, 'the re-press shows the loading frame while it re-reads');
+  for (let i = 0; i < 10; i += 1) await Promise.resolve();
+  assert.ok(served.requests.includes('analysis'), 'the re-press re-reads the guidance, as before retention');
+  assert.equal(leaveSurfaceCalls, 1, 'the re-press resets the workstation surface to the index');
+  destination.mount(seat, { navigation: 1, hold() {}, context: { subject: 'finding:served' } });
+  assert.equal(setDataCalls, 1, 'the fresh seat applies the re-read payload');
+  assert.equal(rowClicks, 1, 'the fresh seat runs entry restoration');
+  destination.leave();
+});
+
 test('a moved input_revision on return re-reads behind the loading frame, never the retained desk', async () => {
   const served = source(); const seat = host();
   let setDataCalls = 0;

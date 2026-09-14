@@ -3297,7 +3297,7 @@ export const S106 = appOnly('HV2-17', '#404 selected Pattern focal chart carries
 // STORY:harmonic-v2-desktop:S107
 export const S107 = appOnly('HV2-11', '#404 desk geometry remains coherent across destinations and long cohorts', C4_STORIES.S107);
 // STORY:harmonic-v2-desktop:S108
-export const S108 = appOnly('HV2-34', '#414 a Diagnose round trip holds one status read and keeps the drilled subject', C4_STORIES.S108);
+export const S108 = appOnly('HV2-34', '#414 a Diagnose round trip holds one status read and keeps the selected window and drilled subject', C4_STORIES.S108);
 // STORY:harmonic-v2-desktop:S109
 export const S109 = appOnly('HV2-34', '#414 the reading pane scroll survives a Diagnose round trip', C4_STORIES.S109);
 // STORY:harmonic-v2-desktop:S110

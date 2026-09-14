@@ -632,13 +632,17 @@ export const C4_STORIES = {
     const subject = await drilledDiagnose414(page);
     assert.ok(subject, 'S108 premise: the first ranked row must drill');
     const trailBefore = (await page.locator('#crumb-trail .here').innerText()).trim();
+    // The showcase's first ranked row drills straight to its own slot window
+    // (e.g. "Slot 03:00"), not 24 h. The obligation is that whichever window
+    // was left pressed survives, not that it is always the whole day.
+    const windowBefore = (await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim();
     const requests = await heldReturnToDiagnose414(page);
     assert.deepEqual(requests.filter(path => path !== '/api/status'), [],
       'S108 the return to Diagnose must issue no request besides the held status check');
     assert.equal(requests.filter(path => path === '/api/status').length, 1,
       'S108 the return to Diagnose must issue exactly one GET /api/status');
-    assert.equal(await page.getByRole('button', { name: '24 h', exact: true }).getAttribute('aria-pressed'), 'true',
-      'S108 24 h must remain selected after the held return');
+    assert.equal((await page.locator('#seg-window [aria-pressed="true"]').innerText()).trim(), windowBefore,
+      'S108 the selected window must remain pressed after the held return');
     assert.equal((await page.locator('#crumb-trail .here').innerText()).trim(), trailBefore,
       'S108 the drilled row must remain open after the held return');
   },

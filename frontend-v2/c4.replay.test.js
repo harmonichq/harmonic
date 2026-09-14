@@ -109,7 +109,8 @@ function qa414Page({ crumb = 'Finding X', extraRequest = null } = {}) {
       if (name === 'aria-pressed') return 'true';
       return null;
     },
-    innerText: async () => selector.includes('crumb-trail') ? crumb : '',
+    innerText: async () => selector.includes('crumb-trail') ? crumb
+      : selector.includes('seg-window') ? 'Slot 03:00' : '',
     evaluate: async fn => {
       if (selector !== '#level') return null;
       if (fn.toString().includes('node.scrollTop = Math.max')) {
@@ -202,6 +203,41 @@ test('S111 fails on a raw disposition token, and passes on the served word', asy
   await C4_STORIES.S111(qa414EditChainPage());
   await assert.rejects(C4_STORIES.S111(qa414EditChainPage({ cellWord: 'not_selected_for_watch' })),
     /never a raw disposition token/);
+});
+
+function qa414RecordHoldPage({ recordSelector = 'trial:member-1' } = {}) {
+  let url = 'http://synthetic.invalid/v2/?to=diagnose';
+  const routes = new Map();
+  const fire = (pathname, search = '') => {
+    const request = { url: () => `http://synthetic.invalid${pathname}${search}` };
+    for (const [pattern, handler] of routes) {
+      const base = pattern.replace('**', '').replace('*', '');
+      if (base && pathname.startsWith(base)) handler({ request: () => request, continue: async () => {} });
+    }
+  };
+  const node = selector => ({
+    filter() { return this; }, first() { return this; },
+    waitFor: async () => {},
+    click: async () => {
+      if (selector.startsWith('table.gf-table [data-record]')) fire('/api/verify/trials', `?selected=${recordSelector}`);
+      if (selector === '[data-assessment="retained"]') fire('/api/verify/trials', `?selected=${recordSelector}&assessment=retained`);
+    },
+    getAttribute: async () => recordSelector,
+    count: async () => 1,
+    locator: nested => node(nested),
+  });
+  return {
+    url: () => url,
+    goto: async target => { url = target; fire('/api/verify/trials', ''); },
+    locator: selector => node(selector),
+    route: async (pattern, handler) => { routes.set(pattern, handler); },
+    unroute: async pattern => { routes.delete(pattern); },
+  };
+}
+
+test('S112 holds the roster, record and reassessment reads in turn and reaches its final assertion', async () => {
+  const { C4_STORIES } = await import('./c4.replay.mjs');
+  await C4_STORIES.S112(qa414RecordHoldPage());
 });
 
 test('R18 fails before touching the UI when historical input is absent', async () => {

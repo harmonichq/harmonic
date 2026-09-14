@@ -2539,15 +2539,18 @@ S101–S107. Browser execution belongs to the coordinator at 1280x720 and
 
 ```
 S108 · Returning to Diagnose from Changes issues exactly one GET /api/status;
-       the loading frame stands until it answers, and the 24 h window and the
-       drilled reading-pane subject are both still current once it does.
-  element:  nav.v2-nav [data-destination], .gf-loading, #seg-window button,
-            #crumb-trail .here
+       the loading frame stands until it answers, and the selected window and
+       the drilled reading-pane subject are both still current once it does.
+  element:  nav.v2-nav [data-destination], .gf-loading, #seg-window
+            [aria-pressed="true"], #crumb-trail .here
   source:   frontend-v2/diagnose.js mount / read (the ADR 414 status-check branch)
   lock:     HV2-34; extends S104's held-read pattern to the destination round trip
-  data:     showcase; select 24 h, drill the first ranked row, open Changes, return
+  data:     showcase; select 24 h, drill the first ranked row (which selects
+            that row's own slot window, e.g. Slot 03:00, not 24 h), open
+            Changes, return
   evidence: C4_STORIES.S108; holds /api/status, asserts no other request fires,
-            then compares the pre- and post-return crumb and window state
+            then compares the pre- and post-return crumb and whichever window
+            chip was left pressed
   status:   browser fail-first pending coordinator; base build has no retained
             desk to return to, so the round trip re-reads everything instead
 ```
@@ -2588,8 +2591,9 @@ S111 · Every Still open cell names the served watch disposition as a word,
   lock:     HV2-28
   data:     edit-chain; every retained record is unwatched (not_selected_for_watch)
   evidence: C4_STORIES.S111; reads every Still open cell's disposition word
-  status:   browser fail-first pending coordinator; base build's edit-summary cell
-            defaulted to a hardcoded "Active" word regardless of the served status
+  status:   browser fail-first pending coordinator; base build has no Edit grouping
+            or STATUS_WORD entry for not_selected_for_watch, so Still open prints
+            the raw served token instead of a word
 ```
 
 ```
